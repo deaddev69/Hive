@@ -2,10 +2,10 @@
   "name": "hive-platform",
   "version": "0.0.1",
   "private": true,
-  "packageManager": "pnpm@9.1.4",
+  "packageManager": "npm@11.7.0",
   "engines": {
     "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
+    "npm": ">=9.0.0"
   },
   "scripts": {
     "build": "turbo run build",
