@@ -1,22 +1,30 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useLocation } from "@/context/LocationContext";
 import { useCart } from "@/context/CartContext";
 import { useSessionStore } from "@/context/SessionContext";
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
-import { MapPin, ShoppingBag, Sparkles, Plus, ShoppingCart } from "lucide-react";
+import { MapPin, Sparkles, Plus, ShoppingCart } from "lucide-react";
 import { HeroSection } from "@/components/home/HeroSection";
+import { OccasionRail } from "@/components/home/OccasionRail";
 
 export default function HomePage() {
   const { pincode, regionName, isServiceable, setGateOpen } = useLocation();
   const { addToCart, itemsCount } = useCart();
   const { user, loginAsMockUser } = useSessionStore();
+  const [selectedOccasion, setSelectedOccasion] = useState("all");
 
   return (
     <div className="flex flex-col items-center bg-hive-cream/10 min-h-screen text-hive-text w-full">
       {/* Phase 4.1: Hero Section */}
       <HeroSection />
+
+      {/* Phase 4.2: Occasion Rail */}
+      <OccasionRail
+        selectedOccasion={selectedOccasion}
+        onOccasionChange={setSelectedOccasion}
+      />
 
       {/* Shell Inner Container - Testing Controls */}
       <div className="max-w-7xl w-full mx-auto px-6 lg:px-8 py-12 flex flex-col gap-8">
@@ -128,6 +136,26 @@ export default function HomePage() {
                   </span>
                   <span className="text-xs text-hive-text-muted">
                     Tracks items count across router transitions
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Occasion Status Card */}
+            <Card className="flex-1">
+              <CardContent className="p-6 flex flex-col justify-between h-full gap-4 text-left">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-hive-text-muted">
+                    Selected Occasion
+                  </span>
+                  <Sparkles className="w-5 h-5 text-hive-gold" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-2xl font-extrabold capitalize">
+                    {selectedOccasion}
+                  </span>
+                  <span className="text-xs text-hive-text-muted">
+                    Reactive filter state managed by home page
                   </span>
                 </div>
               </CardContent>
