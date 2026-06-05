@@ -8,7 +8,8 @@ import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } fro
 import { MapPin, Sparkles, Plus, ShoppingCart } from "lucide-react";
 import { HeroSection } from "@/components/home/HeroSection";
 import { OccasionRail } from "@/components/home/OccasionRail";
-import { ProductCardDemo } from "@/components/product/ProductCardDemo";
+import { ProductGrid } from "@/components/product/ProductGrid";
+import { mockProducts } from "@/lib/mockProducts";
 
 export default function HomePage() {
   const { pincode, regionName, isServiceable, setGateOpen } = useLocation();
@@ -27,8 +28,12 @@ export default function HomePage() {
         onOccasionChange={setSelectedOccasion}
       />
 
-      {/* Phase 4.3: Product Card Demo Showcase */}
-      <ProductCardDemo />
+      {/* Phase 4.4: Dynamic Product Grid */}
+      <ProductGrid
+        products={mockProducts}
+        selectedOccasion={selectedOccasion}
+        onResetFilter={() => setSelectedOccasion("all")}
+      />
 
       {/* Shell Inner Container - Testing Controls */}
       <div className="max-w-7xl w-full mx-auto px-6 lg:px-8 py-12 flex flex-col gap-8">
