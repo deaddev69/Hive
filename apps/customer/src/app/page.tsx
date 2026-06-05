@@ -4,8 +4,9 @@ import React from "react";
 import { useLocation } from "@/context/LocationContext";
 import { useCart } from "@/context/CartContext";
 import { useSessionStore } from "@/context/SessionContext";
-import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, StatCard } from "@hive/ui";
-import { MapPin, ShoppingBag, Sparkles, Plus, AlertCircle, ShoppingCart } from "lucide-react";
+import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
+import { MapPin, ShoppingBag, Sparkles, Plus, ShoppingCart } from "lucide-react";
+import { HeroSection } from "@/components/home/HeroSection";
 
 export default function HomePage() {
   const { pincode, regionName, isServiceable, setGateOpen } = useLocation();
@@ -13,29 +14,29 @@ export default function HomePage() {
   const { user, loginAsMockUser } = useSessionStore();
 
   return (
-    <div className="flex flex-col items-center p-8 bg-hive-cream/20 min-h-[75vh] text-hive-text">
-      {/* Shell Inner Container */}
-      <div className="max-w-4xl w-full flex flex-col gap-8">
+    <div className="flex flex-col items-center bg-hive-cream/10 min-h-screen text-hive-text w-full">
+      {/* Phase 4.1: Hero Section */}
+      <HeroSection />
+
+      {/* Shell Inner Container - Testing Controls */}
+      <div className="max-w-7xl w-full mx-auto px-6 lg:px-8 py-12 flex flex-col gap-8">
         
-        {/* Welcome Block */}
-        <section className="bg-white border border-hive-border rounded-3xl p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div className="flex flex-col gap-1.5 text-left">
-            <span className="text-xs font-bold text-hive-gold uppercase tracking-wider">
-              Permanent Application Shell
-            </span>
-            <h2 className="text-2xl md:text-3xl font-extrabold font-serif">
-              Welcome to Hive customer
-            </h2>
-            <p className="text-xs text-hive-text-muted max-w-md">
-              Future pages (product profiles, search filters, order forms) will inject directly into this wrapper shell.
-            </p>
-          </div>
-          {!user && (
+        {/* Mock Sign In Control Bar */}
+        {!user && (
+          <section className="bg-white border border-hive-border rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex flex-col text-left">
+              <span className="text-xs font-bold text-hive-gold uppercase tracking-wider">
+                Permanent Application Shell
+              </span>
+              <h2 className="text-lg font-bold font-serif mt-0.5">
+                Sign in to validate session and checkout states
+              </h2>
+            </div>
             <Button variant="primary" onClick={() => loginAsMockUser("customer")}>
               Sign In (Mock Profile)
             </Button>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* Live Interaction Playground */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
