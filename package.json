@@ -1,0 +1,32 @@
+{
+  "name": "hive-platform",
+  "version": "0.0.1",
+  "private": true,
+  "packageManager": "pnpm@9.1.4",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "dev:customer": "turbo run dev --filter=@hive/customer",
+    "dev:boutique": "turbo run dev --filter=@hive/boutique",
+    "dev:admin": "turbo run dev --filter=@hive/admin",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\" --ignore-path .gitignore"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}
