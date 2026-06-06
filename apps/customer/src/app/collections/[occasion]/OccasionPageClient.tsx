@@ -126,11 +126,11 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
             {paginatedProducts.length > 0 ? (
               <>
                 {/* Product Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 md:gap-6">
+                <div className="relative z-0 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 md:gap-6">
                   {paginatedProducts.map((product, idx) => (
                     <div
                       key={`${sortOption}-${currentPage}-${product.id}`}
-                      className="animate-[collectionCardIn_0.5s_cubic-bezier(0.215,0.61,0.355,1)_forwards] opacity-0"
+                      className="relative z-0 animate-[collectionCardIn_0.5s_cubic-bezier(0.215,0.61,0.355,1)_forwards] opacity-0"
                       style={{ animationDelay: `${idx * 40}ms` }}
                     >
                       <ProductCard product={product} />

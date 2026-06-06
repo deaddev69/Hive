@@ -31,7 +31,7 @@ export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
   boutiques,
 }) => {
   return (
-    <div className="w-full bg-white/60 backdrop-blur-md border border-hive-border/40 rounded-3xl p-3 md:p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-sm">
+    <div className="relative z-40 w-full bg-white/60 backdrop-blur-md border border-hive-border/40 rounded-3xl p-3 md:p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-sm">
       {/* Desktop Layout — Left panel with count and active summary */}
       <div className="hidden md:flex items-center gap-3">
         <CatalogResultsSummary

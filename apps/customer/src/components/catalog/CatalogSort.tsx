@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   ArrowUpFromLine,
@@ -8,8 +8,9 @@ import {
   Star,
   TrendingUp,
   Truck,
-  ChevronDown,
   Check,
+  X,
+  ChevronDown,
   type LucideProps,
 } from "lucide-react";
 import { cn } from "@hive/ui";
@@ -31,76 +32,10 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   Truck,
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SortOption — single row inside the dropdown
-// ─────────────────────────────────────────────────────────────────────────────
-interface SortOptionRowProps {
-  option: SortOptionMeta;
-  isActive: boolean;
-  onSelect: (id: ProductSortOption) => void;
-}
-
-const SortOptionRow: React.FC<SortOptionRowProps> = ({
-  option,
-  isActive,
-  onSelect,
-}) => {
-  const Icon = ICON_MAP[option.icon];
-
-  return (
-    <button
-      type="button"
-      role="option"
-      aria-selected={isActive}
-      onClick={() => onSelect(option.id)}
-      className={cn(
-        "w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-150 group outline-none",
-        "focus-visible:bg-hive-comb/20",
-        isActive
-          ? "bg-hive-gold/12 text-hive-amber"
-          : "hover:bg-hive-comb/15 text-hive-dark"
-      )}
-    >
-      {/* Icon */}
-      <div
-        className={cn(
-          "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors duration-150",
-          isActive
-            ? "bg-hive-gold/25 text-hive-amber"
-            : "bg-hive-comb/30 text-hive-text-muted group-hover:bg-hive-comb/60 group-hover:text-hive-amber"
-        )}
-      >
-        {Icon && <Icon className="w-3.5 h-3.5" strokeWidth={2.2} />}
-      </div>
-
-      {/* Text */}
-      <div className="flex-1 min-w-0">
-        <div className="text-xs font-bold leading-tight truncate">{option.label}</div>
-        <div className="text-[10px] text-hive-text-muted/70 font-medium mt-0.5 leading-tight">
-          {option.description}
-        </div>
-      </div>
-
-      {/* Active checkmark */}
-      <div
-        className={cn(
-          "flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center transition-all duration-150",
-          isActive ? "bg-hive-gold opacity-100" : "opacity-0"
-        )}
-      >
-        <Check className="w-2.5 h-2.5 text-hive-dark" strokeWidth={3} />
-      </div>
-    </button>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SortDropdown — full component with trigger + panel
-// ─────────────────────────────────────────────────────────────────────────────
 export interface SortDropdownProps {
   value: ProductSortOption;
   onChange: (value: ProductSortOption) => void;
-  /** Compact mode for mobile — shows just the icon + short label */
+  /** Legacy prop - retained for component compatibility */
   compact?: boolean;
   className?: string;
 }
@@ -108,135 +43,177 @@ export interface SortDropdownProps {
 export const SortDropdown: React.FC<SortDropdownProps> = ({
   value,
   onChange,
-  compact = false,
   className,
 }) => {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const activeMeta = getSortMeta(value);
-  const isDefault = value === DEFAULT_SORT;
+  const ActiveIcon = ICON_MAP[activeMeta.icon];
 
-  // Close on outside click / focus-out
+  // Disable body scroll when mobile bottom sheet is open
   useEffect(() => {
-    const handler = (e: MouseEvent | FocusEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    document.addEventListener("focusin", handler);
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
     return () => {
-      document.removeEventListener("mousedown", handler);
-      document.removeEventListener("focusin", handler);
+      document.body.style.overflow = "";
     };
-  }, []);
-
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
+  }, [isOpen]);
 
   const handleSelect = (id: ProductSortOption) => {
     onChange(id);
-    setOpen(false);
+    setIsOpen(false);
   };
 
-  const ActiveIcon = ICON_MAP[activeMeta.icon];
-
   return (
-    <div ref={containerRef} className={cn("relative", className)}>
-      {/* ── Trigger button ── */}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={`Sort by: ${activeMeta.label}`}
-        className={cn(
-          "inline-flex items-center gap-2 rounded-2xl border transition-all duration-200 text-sm font-bold",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold focus-visible:ring-offset-2",
-          open
-            ? "border-hive-gold/50 bg-hive-comb/20 shadow-sm"
-            : "border-hive-border/60 bg-white hover:border-hive-gold/40 hover:bg-hive-comb/10",
-          compact ? "px-3 py-2" : "px-4 py-2.5"
-        )}
-      >
-        {/* Icon */}
+    <div className={cn("w-full md:w-auto", className)}>
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* Desktop Layout: Horizontal Sort Pills                                */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <div className="hidden md:flex items-center gap-2 flex-wrap" role="radiogroup" aria-label="Sort options">
+        {SORT_OPTIONS.map((opt) => {
+          const Icon = ICON_MAP[opt.icon];
+          const isActive = value === opt.id;
+
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              role="radio"
+              aria-checked={isActive}
+              onClick={() => onChange(opt.id)}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold border transition-all duration-300 ease-in-out outline-none",
+                "focus-visible:ring-2 focus-visible:ring-hive-gold focus-visible:ring-offset-2",
+                isActive
+                  ? "bg-hive-amber border-hive-amber text-white shadow-sm shadow-hive-amber/15 scale-[1.02]"
+                  : "bg-white border-hive-border/60 text-hive-dark hover:border-hive-amber/40 hover:bg-hive-comb/10 hover:text-hive-amber"
+              )}
+            >
+              {Icon && (
+                <Icon
+                  className={cn(
+                    "w-3.5 h-3.5 transition-colors duration-300",
+                    isActive ? "text-white" : "text-hive-text-muted group-hover:text-hive-amber"
+                  )}
+                  strokeWidth={2.2}
+                />
+              )}
+              <span>{opt.shortLabel}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      {/* Mobile Layout: Premium Bottom Sheet Trigger                          */}
+      {/* ─────────────────────────────────────────────────────────────────── */}
+      <div className="block md:hidden w-full">
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className={cn(
+            "w-full inline-flex items-center justify-between gap-2 px-4 py-2.5 rounded-2xl border transition-all duration-200 text-sm font-bold bg-white border-hive-border/60 text-hive-dark hover:border-hive-gold/40"
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center rounded-lg text-hive-amber w-4 h-4">
+              {ActiveIcon && <ActiveIcon className="w-3.5 h-3.5" strokeWidth={2.2} />}
+            </div>
+            <span className="text-xs">Sort: {activeMeta.shortLabel}</span>
+          </div>
+          <ChevronDown className="w-3.5 h-3.5 text-hive-text-muted" strokeWidth={2.5} />
+        </button>
+
+        {/* Bottom Sheet Backdrop */}
         <div
           className={cn(
-            "flex items-center justify-center rounded-lg flex-shrink-0",
-            isDefault ? "text-hive-text-muted" : "text-hive-amber",
-            compact ? "w-4 h-4" : "w-5 h-5"
+            "fixed inset-0 z-[999] bg-hive-dark/40 backdrop-blur-sm transition-opacity duration-300",
+            isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           )}
-        >
-          {ActiveIcon && (
-            <ActiveIcon
-              className={compact ? "w-3.5 h-3.5" : "w-4 h-4"}
-              strokeWidth={2.2}
-            />
-          )}
-        </div>
-
-        {/* Label */}
-        <span
-          className={cn(
-            "transition-colors duration-200",
-            isDefault ? "text-hive-dark/80" : "text-hive-amber",
-            compact ? "text-xs" : "text-xs"
-          )}
-        >
-          {compact ? activeMeta.shortLabel : `Sort: ${activeMeta.label}`}
-        </span>
-
-        {/* Chevron */}
-        <ChevronDown
-          className={cn(
-            "flex-shrink-0 text-hive-text-muted transition-transform duration-200",
-            compact ? "w-3 h-3" : "w-3.5 h-3.5",
-            open && "rotate-180"
-          )}
-          strokeWidth={2.5}
+          onClick={() => setIsOpen(false)}
+          aria-hidden="true"
         />
-      </button>
 
-      {/* ── Dropdown panel ── */}
-      <div
-        role="listbox"
-        aria-label="Sort options"
-        className={cn(
-          "absolute right-0 top-[calc(100%+6px)] w-[260px] z-30",
-          "bg-white border border-hive-border/60 rounded-[20px] shadow-xl shadow-hive-dark/8",
-          "overflow-hidden",
-          "transition-all duration-200 origin-top-right",
-          open
-            ? "opacity-100 scale-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 scale-[0.96] -translate-y-1 pointer-events-none"
-        )}
-      >
-        {/* Panel header */}
-        <div className="px-4 py-3 border-b border-hive-border/40 bg-hive-cream/50">
-          <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-widest">
-            Sort By
-          </span>
-        </div>
+        {/* Bottom Sheet Modal */}
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Sort options"
+          className={cn(
+            "fixed bottom-0 left-0 right-0 z-[1000] flex flex-col",
+            "bg-white rounded-t-[32px] shadow-2xl",
+            "max-h-[85vh] transition-transform duration-400 ease-out",
+            isOpen ? "translate-y-0" : "translate-y-full"
+          )}
+        >
+          {/* Drag Handle */}
+          <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+            <div className="w-10 h-1 rounded-full bg-hive-border" />
+          </div>
 
-        {/* Options list */}
-        <div className="py-1">
-          {SORT_OPTIONS.map((opt) => (
-            <SortOptionRow
-              key={opt.id}
-              option={opt}
-              isActive={value === opt.id}
-              onSelect={handleSelect}
-            />
-          ))}
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-hive-border/60 flex-shrink-0">
+            <span className="text-sm font-extrabold text-hive-dark">Sort By</span>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="p-2 rounded-full hover:bg-hive-cream/60 transition-colors"
+              aria-label="Close sort options"
+            >
+              <X className="w-4 h-4 text-hive-dark" strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* Options List */}
+          <div className="flex-1 overflow-y-auto py-2 px-3">
+            <div className="flex flex-col gap-1.5">
+              {SORT_OPTIONS.map((opt) => {
+                const Icon = ICON_MAP[opt.icon];
+                const isActive = value === opt.id;
+
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleSelect(opt.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3.5 px-4 py-3.5 text-left rounded-2xl transition-all duration-200 outline-none",
+                      isActive
+                        ? "bg-hive-gold/12 text-hive-amber"
+                        : "hover:bg-hive-comb/10 text-hive-dark"
+                    )}
+                  >
+                    {/* Icon Box */}
+                    <div
+                      className={cn(
+                        "w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200",
+                        isActive ? "bg-hive-gold/25 text-hive-amber" : "bg-hive-comb/30 text-hive-text-muted"
+                      )}
+                    >
+                      {Icon && <Icon className="w-4 h-4" strokeWidth={2.2} />}
+                    </div>
+
+                    {/* Text block */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-bold leading-tight">{opt.label}</div>
+                      <div className="text-[10px] text-hive-text-muted/70 font-medium mt-0.5 leading-tight">
+                        {opt.description}
+                      </div>
+                    </div>
+
+                    {/* Checkmark */}
+                    {isActive && (
+                      <div className="flex-shrink-0 w-4 h-4 rounded-full bg-hive-gold flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 text-hive-dark" strokeWidth={3} />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -244,8 +221,7 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CatalogSort — top-bar wrapper that combines the dropdown with result context
-// Placed in the results bar above the product grid.
+// CatalogSort — top-bar wrapper that combines sort options with result context
 // ─────────────────────────────────────────────────────────────────────────────
 export interface CatalogSortProps {
   value: ProductSortOption;
@@ -261,19 +237,14 @@ export const CatalogSort: React.FC<CatalogSortProps> = ({
   className,
 }) => {
   return (
-    <div
-      className={cn(
-        "flex items-center justify-between gap-4 flex-wrap",
-        className
-      )}
-    >
+    <div className={cn("flex items-center justify-between gap-4 flex-wrap", className)}>
       {/* Left: result count */}
       <p className="text-sm text-hive-text-muted">
         <span className="font-bold text-hive-dark">{resultCount}</span>{" "}
         {resultCount === 1 ? "product" : "products"}
       </p>
 
-      {/* Right: sort dropdown */}
+      {/* Right: sort pills */}
       <SortDropdown value={value} onChange={onChange} />
     </div>
   );
