@@ -5,7 +5,7 @@ import { useLocation } from "@/context/LocationContext";
 import { useCart } from "@/context/CartContext";
 import { useSessionStore } from "@/context/SessionContext";
 import { Button, Badge, Input } from "@hive/ui";
-import { ShoppingBag, MapPin, Search, User, LogOut } from "lucide-react";
+import { ShoppingBag, MapPin, Search, User, LogOut, List } from "lucide-react";
 import Link from "next/link";
 
 export const Navbar: React.FC = () => {
@@ -75,6 +75,14 @@ export const Navbar: React.FC = () => {
           {/* Profile Trigger */}
           {user ? (
             <div className="flex items-center gap-2 border-l border-hive-border/50 pl-3">
+              <Link
+                href="/account/orders"
+                className="p-2 rounded-full hover:bg-hive-cream text-hive-text-muted hover:text-hive-text transition-colors flex items-center gap-1.5"
+                title="My Orders"
+              >
+                <List className="w-4.5 h-4.5" />
+                <span className="text-xs font-bold hidden md:inline-block">My Orders</span>
+              </Link>
               <div className="flex flex-col text-right hidden sm:flex">
                 <span className="text-xs font-bold text-hive-text">{user.name}</span>
                 <span className="text-[10px] text-hive-text-muted font-medium capitalize">

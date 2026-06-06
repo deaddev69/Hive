@@ -7,9 +7,11 @@ export interface CheckoutState {
   appliedPromo: string | null;
   discountAmount: number;
   deliveryInstructions: string;
+  selectedPaymentMethod: string | null;
   setDeliverySelection: (date: string, slot: string) => void;
   setAppliedPromo: (promo: string | null, discount: number) => void;
   setDeliveryInstructions: (instructions: string) => void;
+  setSelectedPaymentMethod: (method: string | null) => void;
   clearCheckout: () => void;
 }
 
@@ -21,6 +23,7 @@ export const useCheckoutStore = create<CheckoutState>()(
       appliedPromo: null,
       discountAmount: 0,
       deliveryInstructions: "",
+      selectedPaymentMethod: null,
       setDeliverySelection: (date, slot) => {
         set({ selectedDate: date, selectedSlot: slot });
       },
@@ -30,6 +33,9 @@ export const useCheckoutStore = create<CheckoutState>()(
       setDeliveryInstructions: (instructions) => {
         set({ deliveryInstructions: instructions });
       },
+      setSelectedPaymentMethod: (method) => {
+        set({ selectedPaymentMethod: method });
+      },
       clearCheckout: () => {
         set({
           selectedDate: null,
@@ -37,6 +43,7 @@ export const useCheckoutStore = create<CheckoutState>()(
           appliedPromo: null,
           discountAmount: 0,
           deliveryInstructions: "",
+          selectedPaymentMethod: null,
         });
       },
     }),
