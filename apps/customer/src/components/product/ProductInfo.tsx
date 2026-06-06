@@ -6,6 +6,7 @@ import { cn } from "@hive/ui";
 import { ProductDetail } from "@/lib/mockProductDetails";
 import { SizeSelector, SizeSelectorSkeleton } from "./SizeSelector";
 import { MeasurementMatrix, MeasurementMatrixSkeleton } from "./MeasurementMatrix";
+import { ProductTrustStrip, PurchaseConfidenceCard, TrustStripSkeleton } from "./ProductTrustStrip";
 
 export interface ProductInfoProps {
   product: ProductDetail;
@@ -160,6 +161,15 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         />
       </div>
 
+      {/* ── TRUST LAYER (Phase 6.6 Insertion) ── */}
+      <div className="flex flex-col gap-4 border-b border-hive-border/40 pb-5">
+        <ProductTrustStrip
+          videoUrl={product.videoUrl}
+          sameDayEligible={product.sameDayEligible}
+        />
+        <PurchaseConfidenceCard />
+      </div>
+
       {/* ── SECTION 6: CLAMPABLE DESCRIPTION ── */}
       <div className="space-y-2">
         <div
@@ -185,25 +195,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         city={product.boutique.city}
       />
 
-      {/* ── SECTION 8: TRUST SIGNALS BADGES ── */}
-      <div className="grid grid-cols-2 gap-3.5 border-t border-b border-hive-border/40 py-5">
-        <div className="flex items-center gap-2 text-[11px] font-bold text-hive-dark">
-          <ShieldCheck className="w-4 h-4 text-hive-amber flex-shrink-0" />
-          <span>Verified Boutique Partner</span>
-        </div>
-        <div className="flex items-center gap-2 text-[11px] font-bold text-hive-dark">
-          <Truck className="w-4 h-4 text-hive-amber flex-shrink-0" />
-          <span>Same Day Eligible</span>
-        </div>
-        <div className="flex items-center gap-2 text-[11px] font-bold text-hive-dark">
-          <Award className="w-4 h-4 text-hive-amber flex-shrink-0" />
-          <span>Premium Fabric Guarantee</span>
-        </div>
-        <div className="flex items-center gap-2 text-[11px] font-bold text-hive-dark">
-          <Sparkles className="w-4 h-4 text-hive-amber flex-shrink-0" />
-          <span>100% Handcrafted Design</span>
-        </div>
-      </div>
+      {/* Description space placeholder - clean layout without redundant trust badges */}
       
     </div>
   );
@@ -244,6 +236,9 @@ export const ProductInfoSkeleton: React.FC = () => {
 
       {/* Measurement Matrix skeleton */}
       <MeasurementMatrixSkeleton />
+
+      {/* Trust Strip & Confidence Card skeleton */}
+      <TrustStripSkeleton />
 
       {/* Description lines skeletons */}
       <div className="space-y-2">

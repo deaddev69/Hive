@@ -5,7 +5,6 @@ import { CatalogLayout } from "@/components/catalog/CatalogLayout";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductInfo } from "@/components/product/ProductInfo";
 import { ProductMeasurements } from "@/components/product/ProductMeasurements";
-import { ProductTrustStrip } from "@/components/product/ProductTrustStrip";
 import { ProductRecommendations } from "@/components/product/ProductRecommendations";
 import { ProductDetail } from "@/lib/mockProductDetails";
 
@@ -39,9 +38,6 @@ export function ProductDetailPageClient({ product }: ProductDetailPageClientProp
             <ProductInfo product={product} />
           </div>
         </div>
-
-        {/* Product Trust Strip section */}
-        <ProductTrustStrip />
 
         {/* Product Reviews section */}
         {product.featuredReviews && product.featuredReviews.length > 0 && (
