@@ -7,6 +7,7 @@ import { ProductDetail } from "@/lib/mockProductDetails";
 import { SizeSelector, SizeSelectorSkeleton } from "./SizeSelector";
 import { MeasurementMatrix, MeasurementMatrixSkeleton } from "./MeasurementMatrix";
 import { ProductTrustStrip, PurchaseConfidenceCard, TrustStripSkeleton } from "./ProductTrustStrip";
+import { PurchaseActions, PurchaseActionsSkeleton } from "./PurchaseActions";
 
 export interface ProductInfoProps {
   product: ProductDetail;
@@ -195,6 +196,15 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         city={product.boutique.city}
       />
 
+      {/* ── PURCHASE ACTIONS (Phase 6.7 Integration) ── */}
+      <PurchaseActions
+        product={product}
+        selectedSize={selectedSize}
+        onOpenSizeGuide={() => {
+          measurementMatrixRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }}
+      />
+
       {/* Description space placeholder - clean layout without redundant trust badges */}
       
     </div>
@@ -250,11 +260,8 @@ export const ProductInfoSkeleton: React.FC = () => {
       {/* DeliveryPromiseCard skeleton */}
       <div className="h-20 w-full bg-hive-comb/10 rounded-2xl border border-hive-border/20" />
 
-      {/* Trust badges skeleton */}
-      <div className="grid grid-cols-2 gap-3.5 border-t border-b border-hive-border/40 py-5">
-        <div className="h-3 w-2/3 bg-hive-comb/10 rounded" />
-        <div className="h-3 w-2/3 bg-hive-comb/10 rounded" />
-      </div>
+      {/* Purchase Actions skeleton */}
+      <PurchaseActionsSkeleton />
     </div>
   );
 };
