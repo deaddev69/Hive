@@ -8,6 +8,7 @@ import { ArrowLeft, Plus, Edit2, Trash2, CheckCircle2, AlertTriangle, MapPin, Sp
 import { useCartStore } from "@/store/cart-store";
 import { useLocation } from "@/context/LocationContext";
 import { useCheckoutStore } from "@/store/checkout-store";
+import { getEffectiveCheckoutItems } from "@/lib/getEffectiveCheckoutItems";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
@@ -129,7 +130,7 @@ export default function CheckoutAddressPage() {
 
   const selectedAddress = addresses.find((addr) => addr._id === selectedAddressId) || null;
   const isServiceable = selectedAddress ? isAddressServiceable(selectedAddress) : false;
-  const effectiveItems = checkoutItems.length > 0 ? checkoutItems : items;
+  const effectiveItems = getEffectiveCheckoutItems(items, checkoutItems);
   
   const subtotal = effectiveItems.reduce((total, item) => total + item.price * item.quantity, 0);
   const deliveryFee = subtotal >= 5000 ? 0 : 99;
@@ -243,7 +244,7 @@ export default function CheckoutAddressPage() {
   };
 
   // Redirect if cart is empty
-  if (items.length === 0) {
+  if (effectiveItems.length === 0) {
     return (
       <div className="min-h-screen bg-hive-cream/30 py-20 px-6 flex items-center justify-center">
         <div className="max-w-md w-full text-center space-y-6">

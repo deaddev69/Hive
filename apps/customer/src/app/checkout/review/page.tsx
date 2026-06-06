@@ -8,6 +8,7 @@ import { useCartStore } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
+import { getEffectiveCheckoutItems } from "@/lib/getEffectiveCheckoutItems";
 
 export default function OrderReviewPage() {
   const router = useRouter();
@@ -56,7 +57,7 @@ export default function OrderReviewPage() {
   }, []);
 
   const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
-  const orderItems = checkoutItems.length > 0 ? checkoutItems : items;
+  const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
   const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
 
   // Dynamic pricing calculations

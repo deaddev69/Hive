@@ -23,13 +23,14 @@ import {
   Truck,
   RotateCcw
 } from "lucide-react";
-import { useCartStore } from "@/store/cart-store";
+import { useCartStore, CartItem } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useOrderStore } from "@/store/order-store";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
+import { getEffectiveCheckoutItems } from "@/lib/getEffectiveCheckoutItems";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types & Interface definitions
@@ -101,7 +102,7 @@ export default function SecurePaymentPage() {
     ?? convexAddresses[0]
     ?? null;
 
-  const orderItems = checkoutItems.length > 0 ? checkoutItems : items;
+  const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
 
   // Real database serviceability check
   const checkServiceability = useQuery(
@@ -139,7 +140,7 @@ export default function SecurePaymentPage() {
   }
 
   // Price calculations
-  const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const subtotal = orderItems.reduce((total: number, item: CartItem) => total + item.price * item.quantity, 0);
   let deliveryFee = subtotal >= 5000 ? 0 : 99;
   if (appliedPromo === "FREESHIP") {
     deliveryFee = 0;
@@ -223,7 +224,7 @@ export default function SecurePaymentPage() {
     if (!validatePaymentInput()) return;
     if (!selectedAddress) return;
 
-    const snapshotItems = orderItems.map((item) => ({
+    const snapshotItems = orderItems.map((item: CartItem) => ({
       productId: item.productId,
       name: item.name,
       price: item.price,
@@ -291,11 +292,15 @@ export default function SecurePaymentPage() {
         });
       }
 
+      const isBuyNow = checkoutItems.length > 0;
+
       // Navigate first, then cleanup
       router.push("/order/success");
       setTimeout(() => {
-        clearCartMutation({}).catch(console.error);
-        clearCart();
+        if (!isBuyNow) {
+          clearCartMutation({}).catch(console.error);
+          clearCart();
+        }
         clearCheckout();
         setIsPlacingOrder(false);
         isOrderPlacing.current = false;
@@ -723,6 +728,7 @@ export default function SecurePaymentPage() {
 
             {/* 1. Payment Summary */}
             <PaymentSummary
+              itemCount={orderItems.reduce((count: number, item: CartItem) => count + item.quantity, 0)}
               subtotal={subtotal}
               deliveryFee={deliveryFee}
               discountAmount={discountAmount}
@@ -843,6 +849,7 @@ function PaymentMethodCard({
 // Component: PaymentSummary
 // ─────────────────────────────────────────────────────────────────────────────
 function PaymentSummary({
+  itemCount,
   subtotal,
   deliveryFee,
   discountAmount,
@@ -850,6 +857,7 @@ function PaymentSummary({
   codFee,
   total,
 }: {
+  itemCount: number;
   subtotal: number;
   deliveryFee: number;
   discountAmount: number;
@@ -864,6 +872,11 @@ function PaymentSummary({
       </h2>
 
       <div className="space-y-2.5">
+        <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
+          <span>Total Items</span>
+          <span>{itemCount} {itemCount === 1 ? "item" : "items"}</span>
+        </div>
+
         <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
           <span>Items Subtotal</span>
           <span>₹{subtotal.toLocaleString("en-IN")}</span>

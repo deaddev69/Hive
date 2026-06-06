@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Clock, ShieldCheck, ChevronRight, Calendar, AlertTriangle, Sparkles, MapPin, Phone } from "lucide-react";
-import { useAddressStore } from "@/store/address-store";
-import { useCartStore } from "@/store/cart-store";
+import { useCartStore, CartItem } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
+import { getEffectiveCheckoutItems } from "@/lib/getEffectiveCheckoutItems";
 
 export interface DeliverySlot {
   id: string;
@@ -25,9 +27,11 @@ export default function DeliverySlotPage() {
   const router = useRouter();
 
   // Zustand State hooks
-  const addresses = useAddressStore((state) => state.addresses);
-  const selectedAddressId = useAddressStore((state) => state.selectedAddressId);
-  const getCartTotal = useCartStore((state) => state.getCartTotal);
+  const storedAddressId = useCheckoutStore((state) => state.selectedAddressId);
+  const convexAddresses = useQuery(api.addresses.list);
+
+  const items = useCartStore((state) => state.items);
+  const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
 
   const selectedDate = useCheckoutStore((state) => state.selectedDate);
   const selectedSlot = useCheckoutStore((state) => state.selectedSlot);
@@ -65,12 +69,35 @@ export default function DeliverySlotPage() {
     setDates(generated);
   }, []);
 
-  if (!mounted) {
+  const isLoading = !mounted || convexAddresses === undefined;
+
+  if (isLoading) {
     return <DeliverySlotSkeleton />;
   }
 
-  const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
-  const subtotal = getCartTotal();
+  const addresses = (convexAddresses ?? []).map((a: any) => ({
+    id:        a._id,
+    name:      a.label,
+    phone:     "9876543210", // Fallback placeholder since phone is not in addresses schema
+    addressLine1: a.line1,
+    addressLine2: a.line2,
+    city:      a.city,
+    state:     a.state,
+    pincode:   a.pincode,
+    isDefault: a.isDefault,
+  }));
+
+  const selectedAddressIdVal = storedAddressId || (addresses.find((a: any) => a.isDefault)?.id || addresses[0]?.id || null);
+  const selectedAddress = addresses.find((addr: any) => addr.id === selectedAddressIdVal) || null;
+
+  // Validation redirect
+  if (!selectedAddress) {
+    router.replace("/checkout/address");
+    return <DeliverySlotSkeleton />;
+  }
+
+  const effectiveItems = getEffectiveCheckoutItems(items, checkoutItems);
+  const subtotal = effectiveItems.reduce((total: number, item: CartItem) => total + item.price * item.quantity, 0);
   const deliveryFee = subtotal >= 5000 ? 0 : 99;
   const total = subtotal + deliveryFee;
 
@@ -273,6 +300,10 @@ export default function DeliverySlotPage() {
               </h2>
 
               <div className="space-y-2.5">
+                <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
+                  <span>Total Items</span>
+                  <span>{effectiveItems.reduce((count: number, item: CartItem) => count + item.quantity, 0)} {effectiveItems.reduce((count: number, item: CartItem) => count + item.quantity, 0) === 1 ? "item" : "items"}</span>
+                </div>
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Cart Subtotal</span>
                   <span>₹{subtotal.toLocaleString("en-IN")}</span>
