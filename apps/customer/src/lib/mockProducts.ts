@@ -1,5 +1,6 @@
 export interface ProductCardData {
   id: string;
+  slug: string;
   name: string;
   boutiqueName: string;
   imageUrl: string;
@@ -20,6 +21,7 @@ export interface ProductCardData {
 export const mockProducts: ProductCardData[] = [
   {
     id: "prod_1",
+    slug: "varanasi-silk-katan-saree",
     name: "Varanasi Silk Katan Saree",
     boutiqueName: "Zari & Loom",
     imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80",
@@ -36,6 +38,7 @@ export const mockProducts: ProductCardData[] = [
   },
   {
     id: "prod_2",
+    slug: "crimson-rose-embroidered-lehenga",
     name: "Crimson Rose Embroidered Lehenga",
     boutiqueName: "Chanderi House",
     imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80",
@@ -52,6 +55,7 @@ export const mockProducts: ProductCardData[] = [
   },
   {
     id: "prod_3",
+    slug: "emerald-hand-painted-anarkali-kurti",
     name: "Emerald Hand-Painted Anarkali Kurti",
     boutiqueName: "Odhni Couture",
     imageUrl: "https://images.unsplash.com/photo-1596783074918-c84cb06531ca?auto=format&fit=crop&w=600&q=80",
@@ -68,6 +72,7 @@ export const mockProducts: ProductCardData[] = [
   },
   {
     id: "prod_4",
+    slug: "saffron-linen-wide-leg-co-ord-set",
     name: "Saffron Linen Wide-Leg Co-ord Set",
     boutiqueName: "Stitch Studio",
     imageUrl: "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=600&q=80",
@@ -84,6 +89,7 @@ export const mockProducts: ProductCardData[] = [
   },
   {
     id: "prod_5",
+    slug: "silk-bandhani-midi-dress",
     name: "Silk Bandhani Tie-Dye Midi Dress",
     boutiqueName: "Brocade & Co",
     imageUrl: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80",
@@ -100,6 +106,7 @@ export const mockProducts: ProductCardData[] = [
   },
   {
     id: "prod_6",
+    slug: "pastel-pink-chikankari-palazzo-suit",
     name: "Pastel Pink Chikankari Palazzo Suit",
     boutiqueName: "Awadh Handlooms",
     imageUrl: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80",
@@ -116,6 +123,7 @@ export const mockProducts: ProductCardData[] = [
   },
   {
     id: "prod_7",
+    slug: "mulberry-handloom-silk-saree",
     name: "Mulberry Handloom Silk Saree",
     boutiqueName: "Zari & Loom",
     imageUrl: "https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=600&q=80",
@@ -132,6 +140,7 @@ export const mockProducts: ProductCardData[] = [
   },
   {
     id: "prod_8",
+    slug: "royal-indigo-hand-block-print-maxi",
     name: "Royal Indigo Hand-Block Print Maxi",
     boutiqueName: "Indigo Jaipur",
     imageUrl: "https://images.unsplash.com/photo-1561414927-6d86591d0c4f?auto=format&fit=crop&w=600&q=80",

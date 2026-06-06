@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Link from "next/link";
 import { ProductCardData } from "@/lib/mockProducts";
 import { Button } from "@hive/ui";
 import { Heart, ShieldCheck, Play, Truck } from "lucide-react";
@@ -31,11 +32,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       <div className="relative w-full aspect-[3/4] overflow-hidden rounded-2xl bg-hive-cream/20">
         
         {/* Product Image */}
-        <img
-          src={product.imageUrl}
-          alt={product.name}
-          className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500 pointer-events-none"
-        />
+        <Link href={`/products/${product.slug}`} className="absolute inset-0 block w-full h-full z-10">
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+          />
+        </Link>
 
         {/* Top-Left Badges Overlay */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-20">
@@ -122,9 +125,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
 
           {/* Product Name */}
-          <h3 className="text-sm font-semibold text-hive-dark leading-tight mt-1.5 line-clamp-2 min-h-[40px] tracking-wide">
-            {product.name}
-          </h3>
+          <Link href={`/products/${product.slug}`} className="hover:text-hive-amber transition-colors block">
+            <h3 className="text-sm font-semibold text-hive-dark leading-tight mt-1.5 line-clamp-2 min-h-[40px] tracking-wide">
+              {product.name}
+            </h3>
+          </Link>
 
           {/* Metadata Row: Rating & Occasion */}
           <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
