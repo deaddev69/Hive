@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ProductCardData } from "@/lib/mockProducts";
 import { Button } from "@hive/ui";
 import { Heart, ShieldCheck, Play, Truck } from "lucide-react";
@@ -33,9 +34,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         
         {/* Product Image */}
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block w-full h-full z-10">
-          <img
+          <Image
             src={product.imageUrl}
             alt={product.name}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            loading="lazy"
             className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500 pointer-events-none"
           />
         </Link>

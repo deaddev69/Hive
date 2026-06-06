@@ -6,6 +6,7 @@ import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductInfo } from "@/components/product/ProductInfo";
 import { ProductMeasurements } from "@/components/product/ProductMeasurements";
 import { ProductRecommendations } from "@/components/product/ProductRecommendations";
+import { RelatedProductsSection } from "@/components/product/RelatedProductsSection";
 import { ProductDetail } from "@/lib/mockProductDetails";
 
 interface ProductDetailPageClientProps {
@@ -84,12 +85,8 @@ export function ProductDetailPageClient({ product }: ProductDetailPageClientProp
           </div>
         )}
 
-        {/* Product Recommendations section */}
-        <ProductRecommendations
-          currentProductId={product.id}
-          occasion={product.occasionTags[0]}
-          boutiqueName={product.boutique.name}
-        />
+        {/* Related Products section (Phase 6.8 Insertion) */}
+        <RelatedProductsSection product={product} />
       </div>
     </CatalogLayout>
   );

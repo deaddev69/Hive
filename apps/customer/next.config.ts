@@ -7,12 +7,17 @@ const nextConfig: NextConfig = {
   // Transpile shared workspace packages
   transpilePackages: ["@hive/types", "@hive/ui", "@hive/utils"],
 
-  // Image optimization — allow Cloudinary CDN
+  // Image optimization — allow Cloudinary and Unsplash CDNs
   images: {
     remotePatterns: [
       {
         protocol: "https",
         hostname:  "res.cloudinary.com",
+        pathname:  "/**",
+      },
+      {
+        protocol: "https",
+        hostname:  "images.unsplash.com",
         pathname:  "/**",
       },
     ],
