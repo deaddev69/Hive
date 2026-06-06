@@ -1,242 +1,273 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShieldCheck, Star, Truck, Ruler, Heart, Sparkles } from "lucide-react";
+import { ShieldCheck, Star, Truck, Award, Sparkles, HelpCircle } from "lucide-react";
 import { cn } from "@hive/ui";
-import { BoutiqueMeta } from "@/lib/mockProductDetails";
+import { ProductDetail } from "@/lib/mockProductDetails";
 
 export interface ProductInfoProps {
-  name: string;
-  description: string;
-  price: number;
-  compareAtPrice?: number;
-  rating?: number;
-  reviewCount?: number;
-  boutique: BoutiqueMeta;
-  sizes: string[];
-  inventory: Record<string, number>;
-  fitNote: string;
-  deliveryInfo: string;
-  sameDayEligible: boolean;
-  onOpenMeasurements: () => void;
+  product: ProductDetail;
 }
 
-export const ProductInfo: React.FC<ProductInfoProps> = ({
-  name,
-  description,
-  price,
-  compareAtPrice,
-  rating,
-  reviewCount,
-  boutique,
-  sizes,
-  inventory,
-  fitNote,
-  deliveryInfo,
-  sameDayEligible,
-  onOpenMeasurements,
+// ─────────────────────────────────────────────────────────────────────────────
+// Subcomponent: DeliveryPromiseCard (Section 7)
+// ─────────────────────────────────────────────────────────────────────────────
+const DeliveryPromiseCard: React.FC<{ sameDay: boolean; city: string }> = ({
+  sameDay,
+  city,
 }) => {
-  const [selectedSize, setSelectedSize] = useState<string>(sizes[0] || "");
-  const [isFavorite, setIsFavorite] = useState(false);
+  return (
+    <div className="w-full bg-[#FFFDF5] border border-hive-gold/30 rounded-2xl p-4 text-left flex gap-3.5 shadow-sm">
+      <div className="w-10 h-10 rounded-xl bg-hive-gold/10 border border-hive-gold/30 flex items-center justify-center text-hive-amber flex-shrink-0">
+        <Truck className="w-5 h-5" strokeWidth={2} />
+      </div>
+      <div className="flex-1 text-xs">
+        <div className="flex items-center justify-between flex-wrap gap-1">
+          <span className="font-extrabold uppercase tracking-wider text-hive-dark">
+            {sameDay ? "Delivered Today" : "Express Delivery"}
+          </span>
+          {sameDay && (
+            <span className="text-[9px] font-extrabold uppercase bg-hive-amber text-white px-2 py-0.5 rounded-full tracking-wide">
+              Same Day Eligible
+            </span>
+          )}
+        </div>
+        <p className="text-hive-text-muted mt-1 leading-relaxed font-medium">
+          {sameDay
+            ? `Order by 3:00 PM for delivery by 7:00 PM inside the ${city} delivery zone.`
+            : `Delivered to your doorstep inside the ${city} zone in 24–48 hours.`}
+        </p>
+      </div>
+    </div>
+  );
+};
 
-  const discountPercent = compareAtPrice
-    ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
+export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
+
+  const discountPercent = product.compareAtPrice
+    ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : 0;
 
-  const currentStock = selectedSize ? inventory[selectedSize] ?? 0 : 0;
+  // Occasion tags formatter helper
+  const formatTag = (tag: string) => {
+    return tag
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  // Calculate overall inventory stock level (do not implement size inventory selectors yet)
+  const totalStock = Object.values(product.inventory).reduce((acc, curr) => acc + curr, 0);
+
+  const getInventoryStatus = () => {
+    if (totalStock === 0) {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs text-red-600 font-extrabold bg-red-50 border border-red-200 px-3 py-1 rounded-full">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+          Out of Stock
+        </span>
+      );
+    }
+    if (totalStock < 10) {
+      return (
+        <span className="inline-flex items-center gap-1.5 text-xs text-amber-600 font-extrabold bg-amber-50 border border-amber-200 px-3 py-1 rounded-full animate-pulse">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          Low Stock — Only {totalStock} left
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs text-green-600 font-extrabold bg-green-50/50 border border-green-200 px-3 py-1 rounded-full">
+        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+        In Stock
+      </span>
+    );
+  };
 
   return (
     <div className="w-full flex flex-col gap-6 text-left">
-      {/* ── Section 1: Boutique Header ── */}
-      <div className="flex items-center justify-between border-b border-hive-border/40 pb-4">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-extrabold uppercase tracking-widest text-hive-amber">
-              {boutique.name}
+      
+      {/* ── SECTION 1: BOUTIQUE DETAILS ── */}
+      <div className="flex items-center justify-between border-b border-hive-border/40 pb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-extrabold uppercase tracking-widest text-hive-amber">
+            {product.boutique.name}
+          </span>
+          {product.boutique.verified && (
+            <span className="inline-flex items-center gap-0.5 bg-hive-gold/10 border border-hive-gold/30 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold text-hive-amber uppercase tracking-wider">
+              <ShieldCheck className="w-3 h-3" strokeWidth={2.5} />
+              VERIFIED
             </span>
-            {boutique.verified && (
-              <ShieldCheck className="w-4 h-4 text-hive-amber" strokeWidth={2.5} />
-            )}
-          </div>
-          <p className="text-[10px] text-hive-text-muted font-bold uppercase tracking-wider mt-0.5">
-            Boutique Partner in {boutique.city}
-          </p>
+          )}
         </div>
-
-        {boutique.rating && (
-          <div className="flex items-center gap-1 bg-hive-cream/30 border border-hive-border/50 px-2.5 py-1 rounded-xl text-xs font-semibold">
-            <Star className="w-3.5 h-3.5 fill-hive-amber text-hive-amber" />
-            <span className="font-extrabold text-hive-dark">{boutique.rating}</span>
-            <span className="text-hive-text-muted font-medium">({boutique.reviewCount})</span>
-          </div>
-        )}
+        <button
+          type="button"
+          className="text-[10px] font-bold text-hive-text-muted hover:text-hive-amber transition-colors uppercase tracking-widest underline decoration-dotted underline-offset-4"
+        >
+          View Boutique Details
+        </button>
       </div>
 
-      {/* ── Section 2: Product Name & Meta ── */}
+      {/* ── SECTION 2: PRODUCT NAME ── */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-serif font-extrabold text-hive-dark tracking-tight leading-tight">
-          {name}
+        <h1 className="text-2xl md:text-3xl font-serif font-extrabold text-hive-dark tracking-tight leading-tight line-clamp-2">
+          {product.name}
         </h1>
-
-        {rating && (
-          <div className="flex items-center gap-1.5 mt-2">
-            <div className="flex items-center text-hive-amber text-xs">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <span key={i} className={cn(i < Math.floor(rating) ? "text-hive-amber" : "text-hive-border")}>
-                  ★
-                </span>
-              ))}
-            </div>
-            <span className="text-xs font-extrabold text-hive-dark">{rating}</span>
-            <span className="text-hive-border text-xs">·</span>
-            <span className="text-xs text-hive-text-muted font-medium">
-              {reviewCount} Verified Reviews
-            </span>
-          </div>
-        )}
       </div>
 
-      {/* ── Section 3: Pricing ── */}
-      <div className="flex items-baseline gap-3 bg-hive-cream/10 border border-hive-border/30 p-4 rounded-[20px]">
+      {/* ── SECTION 3: RATING (CLICKABLE PLACEHOLDER ONLY) ── */}
+      {product.rating && (
+        <button
+          type="button"
+          className="flex items-center gap-2 self-start hover:opacity-80 transition-opacity"
+        >
+          <div className="flex items-center gap-1 bg-hive-cream/35 border border-hive-border/50 px-2.5 py-1 rounded-xl text-xs font-bold text-hive-dark">
+            <Star className="w-3.5 h-3.5 fill-hive-amber text-hive-amber" />
+            <span>{product.rating.toFixed(1)}</span>
+          </div>
+          <span className="text-[11px] text-hive-text-muted hover:underline font-semibold mt-0.5">
+            ({product.reviewCount} Reviews)
+          </span>
+        </button>
+      )}
+
+      {/* ── SECTION 4: PRICING ── */}
+      <div className="flex items-baseline gap-3.5 border-b border-hive-border/40 pb-5">
         <span className="text-2xl font-extrabold text-hive-dark tracking-tight">
-          ₹{price.toLocaleString("en-IN")}
+          ₹{product.price.toLocaleString("en-IN")}
         </span>
-        {compareAtPrice && (
+        {product.compareAtPrice && (
           <>
             <span className="text-sm text-hive-text-muted line-through font-medium">
-              ₹{compareAtPrice.toLocaleString("en-IN")}
+              ₹{product.compareAtPrice.toLocaleString("en-IN")}
             </span>
-            <span className="bg-hive-gold/15 text-hive-amber border border-hive-gold/30 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+            <span className="bg-hive-gold/15 text-hive-amber border border-hive-gold/30 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
               {discountPercent}% OFF
             </span>
           </>
         )}
       </div>
 
-      {/* ── Section 4: Product Description ── */}
-      <div>
-        <p className="text-sm text-hive-text-muted leading-relaxed font-medium">
-          {description}
-        </p>
+      {/* ── SECTION 5: OCCASION TAGS ── */}
+      {product.occasionTags && product.occasionTags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {product.occasionTags.map((tag) => (
+            <span
+              key={tag}
+              className="bg-white border border-hive-border text-hive-dark text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm select-none"
+            >
+              {formatTag(tag)}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* ── SECTION 6: CLAMPABLE DESCRIPTION ── */}
+      <div className="space-y-2">
+        <div
+          className={cn(
+            "text-sm text-hive-text-muted leading-relaxed font-medium transition-all duration-300",
+            !isDescExpanded && "line-clamp-3"
+          )}
+        >
+          {product.description}
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsDescExpanded(!isDescExpanded)}
+          className="text-xs font-extrabold text-hive-amber hover:text-hive-gold transition-colors uppercase tracking-widest"
+        >
+          {isDescExpanded ? "Read Less" : "Read More"}
+        </button>
       </div>
 
-      {/* ── Section 5: Size Selection ── */}
-      <div className="border-t border-hive-border/40 pt-5">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-hive-dark">
-            Select Size
-          </span>
-          <button
-            type="button"
-            onClick={onOpenMeasurements}
-            className="inline-flex items-center gap-1 text-xs font-extrabold text-hive-amber hover:text-hive-gold transition-colors"
-          >
-            <Ruler className="w-3.5 h-3.5" />
-            Actual Measurements Matrix
-          </button>
+      {/* ── SECTION 7: DELIVERY PROMISE CARD ── */}
+      <DeliveryPromiseCard
+        sameDay={product.sameDayEligible}
+        city={product.boutique.city}
+      />
+
+      {/* ── SECTION 8: TRUST SIGNALS BADGES ── */}
+      <div className="grid grid-cols-2 gap-3.5 border-t border-b border-hive-border/40 py-5">
+        <div className="flex items-center gap-2 text-[11px] font-bold text-hive-dark">
+          <ShieldCheck className="w-4 h-4 text-hive-amber flex-shrink-0" />
+          <span>Verified Boutique Partner</span>
         </div>
-
-        <div className="flex items-center gap-2.5 flex-wrap">
-          {sizes.map((size) => {
-            const stock = inventory[size] ?? 0;
-            const isOutOfStock = stock === 0;
-            const isSelected = selectedSize === size;
-
-            return (
-              <button
-                key={size}
-                type="button"
-                disabled={isOutOfStock}
-                onClick={() => setSelectedSize(size)}
-                className={cn(
-                  "h-12 min-w-[3rem] px-4 rounded-xl text-xs font-extrabold border flex items-center justify-center transition-all duration-200 relative",
-                  isSelected
-                    ? "bg-hive-amber border-hive-amber text-white shadow-md shadow-hive-amber/15 scale-[1.02]"
-                    : isOutOfStock
-                    ? "border-hive-border/40 bg-hive-cream/10 text-hive-text-muted/40 cursor-not-allowed line-through"
-                    : "bg-white border-hive-border hover:border-hive-amber/50 hover:bg-hive-comb/10 text-hive-dark"
-                )}
-              >
-                {size}
-                {stock > 0 && stock < 5 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                )}
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-2 text-[11px] font-bold text-hive-dark">
+          <Truck className="w-4 h-4 text-hive-amber flex-shrink-0" />
+          <span>Same Day Eligible</span>
         </div>
-
-        {/* Stock Inventory Warning Message */}
-        {selectedSize && (
-          <div className="mt-3.5 min-h-[20px]">
-            {currentStock === 0 ? (
-              <span className="text-xs text-red-500 font-bold">Out of stock in selected size.</span>
-            ) : currentStock < 5 ? (
-              <span className="text-xs text-amber-600 font-extrabold flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                Hurry! Only {currentStock} left in this handmade size.
-              </span>
-            ) : (
-              <span className="text-xs text-green-600 font-bold">Size is in stock & ready for pickup.</span>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2 text-[11px] font-bold text-hive-dark">
+          <Award className="w-4 h-4 text-hive-amber flex-shrink-0" />
+          <span>Premium Fabric Guarantee</span>
+        </div>
+        <div className="flex items-center gap-2 text-[11px] font-bold text-hive-dark">
+          <Sparkles className="w-4 h-4 text-hive-amber flex-shrink-0" />
+          <span>100% Handcrafted Design</span>
+        </div>
       </div>
 
-      {/* ── Section 6: Fit Notes ── */}
-      <div className="bg-hive-cream/25 border border-hive-border/40 rounded-2xl p-4 text-xs">
-        <span className="font-extrabold uppercase tracking-wider text-hive-dark block mb-1">
-          Fit & Styling Notes
+      {/* ── SECTION 9: INVENTORY PREVIEW ── */}
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-extrabold uppercase tracking-wider text-hive-dark">
+          Availability:
         </span>
-        <p className="text-hive-text-muted leading-relaxed font-medium">{fitNote}</p>
+        {getInventoryStatus()}
+      </div>
+      
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Loading State Skeleton
+// ─────────────────────────────────────────────────────────────────────────────
+export const ProductInfoSkeleton: React.FC = () => {
+  return (
+    <div className="w-full flex flex-col gap-6 animate-pulse text-left p-2">
+      {/* Boutique header skeleton */}
+      <div className="flex items-center justify-between border-b border-hive-border/40 pb-3">
+        <div className="h-3 w-1/3 bg-hive-comb/15 rounded" />
+        <div className="h-2 w-1/4 bg-hive-comb/10 rounded" />
       </div>
 
-      {/* ── Section 7: Delivery SLA ── */}
-      <div className="border-t border-b border-hive-border/40 py-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-hive-cream flex items-center justify-center text-hive-amber flex-shrink-0">
-          <Truck className="w-5 h-5" />
-        </div>
-        <div className="flex-1 text-xs">
-          <span className="font-extrabold uppercase tracking-wider text-hive-dark flex items-center gap-1.5">
-            Delivery Information
-            {sameDayEligible && (
-              <span className="text-[9px] font-extrabold uppercase bg-hive-gold/15 text-hive-amber border border-hive-gold/30 px-1.5 py-0.5 rounded">
-                SAME DAY ELIGIBLE
-              </span>
-            )}
-          </span>
-          <p className="text-hive-text-muted mt-0.5 font-medium leading-relaxed">
-            {deliveryInfo}
-          </p>
-        </div>
+      {/* Product name skeleton */}
+      <div className="space-y-2">
+        <div className="h-6 w-full bg-hive-comb/20 rounded" />
+        <div className="h-6 w-3/4 bg-hive-comb/20 rounded" />
       </div>
 
-      {/* ── Section 8: Action Buttons ── */}
-      <div className="flex gap-3 mt-2">
-        <button
-          type="button"
-          disabled={!selectedSize || inventory[selectedSize] === 0}
-          className={cn(
-            "flex-1 h-14 rounded-2xl bg-hive-dark text-hive-gold text-sm font-extrabold uppercase tracking-widest shadow-lg shadow-hive-dark/15 hover:bg-hive-amber hover:text-white hover:shadow-hive-amber/10 transition-all duration-300 transform active:scale-[0.98] disabled:opacity-40 disabled:hover:bg-hive-dark disabled:hover:text-hive-gold disabled:cursor-not-allowed"
-          )}
-        >
-          Add to Bag
-        </button>
+      {/* Rating skeleton */}
+      <div className="h-4 w-1/3 bg-hive-comb/10 rounded" />
 
-        <button
-          type="button"
-          onClick={() => setIsFavorite(!isFavorite)}
-          className={cn(
-            "w-14 h-14 rounded-2xl border flex items-center justify-center transition-all duration-300",
-            isFavorite
-              ? "bg-hive-amber/15 border-hive-amber/35 text-hive-amber"
-              : "bg-white border-hive-border hover:border-hive-amber/50 text-hive-text-muted hover:text-hive-amber hover:bg-hive-comb/10"
-          )}
-          aria-label="Add to wishlist"
-        >
-          <Heart className={cn("w-5 h-5", isFavorite && "fill-current")} />
-        </button>
+      {/* Pricing skeleton */}
+      <div className="h-8 w-1/2 bg-hive-comb/15 rounded border-b border-hive-border/40 pb-5" />
+
+      {/* Occasion tags skeletons */}
+      <div className="flex gap-2">
+        <div className="h-6 w-16 bg-hive-comb/10 rounded-full" />
+        <div className="h-6 w-20 bg-hive-comb/10 rounded-full" />
       </div>
+
+      {/* Description lines skeletons */}
+      <div className="space-y-2">
+        <div className="h-3.5 w-full bg-hive-comb/10 rounded" />
+        <div className="h-3.5 w-full bg-hive-comb/10 rounded" />
+        <div className="h-3.5 w-2/3 bg-hive-comb/10 rounded" />
+      </div>
+
+      {/* DeliveryPromiseCard skeleton */}
+      <div className="h-20 w-full bg-hive-comb/10 rounded-2xl border border-hive-border/20" />
+
+      {/* Trust badges skeleton */}
+      <div className="grid grid-cols-2 gap-3.5 border-t border-b border-hive-border/40 py-5">
+        <div className="h-3 w-2/3 bg-hive-comb/10 rounded" />
+        <div className="h-3 w-2/3 bg-hive-comb/10 rounded" />
+      </div>
+
+      {/* Inventory preview skeleton */}
+      <div className="h-6 w-1/4 bg-hive-comb/15 rounded-full" />
     </div>
   );
 };

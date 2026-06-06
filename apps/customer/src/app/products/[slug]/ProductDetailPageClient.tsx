@@ -14,8 +14,6 @@ interface ProductDetailPageClientProps {
 }
 
 export function ProductDetailPageClient({ product }: ProductDetailPageClientProps) {
-  const [isMeasurementsOpen, setIsMeasurementsOpen] = useState(false);
-
   return (
     <CatalogLayout
       breadcrumbs={[
@@ -38,21 +36,7 @@ export function ProductDetailPageClient({ product }: ProductDetailPageClientProp
 
           {/* Right Column: Info & Checkout CTAs (Spans 5 columns, sticky) */}
           <div className="lg:col-span-5 xl:col-span-4 w-full lg:sticky lg:top-[100px] bg-white rounded-3xl p-6 border border-hive-border/40 shadow-sm">
-            <ProductInfo
-              name={product.name}
-              description={product.description}
-              price={product.price}
-              compareAtPrice={product.compareAtPrice}
-              rating={product.rating}
-              reviewCount={product.reviewCount}
-              boutique={product.boutique}
-              sizes={product.sizes}
-              inventory={product.inventory}
-              fitNote={product.fitNote}
-              deliveryInfo={product.deliveryInfo}
-              sameDayEligible={product.sameDayEligible}
-              onOpenMeasurements={() => setIsMeasurementsOpen(true)}
-            />
+            <ProductInfo product={product} />
           </div>
         </div>
 
@@ -111,14 +95,6 @@ export function ProductDetailPageClient({ product }: ProductDetailPageClientProp
           boutiqueName={product.boutique.name}
         />
       </div>
-
-      {/* Actual Sizing Matrix Collapsible Drawer / Modal */}
-      <ProductMeasurements
-        isOpen={isMeasurementsOpen}
-        onClose={() => setIsMeasurementsOpen(false)}
-        measurementMatrix={product.measurementMatrix}
-        productName={product.name}
-      />
     </CatalogLayout>
   );
 }
