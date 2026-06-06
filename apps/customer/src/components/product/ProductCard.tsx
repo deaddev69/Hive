@@ -1,10 +1,14 @@
+"use client";
+
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ProductCardData } from "@/lib/mockProducts";
-import { Button } from "@hive/ui";
-import { Heart, ShieldCheck, Play, Truck } from "lucide-react";
+import { Button, Modal } from "@hive/ui";
+import { Heart, ShieldCheck, Play, Truck, X } from "lucide-react";
 import { cn } from "@hive/ui";
+import { useCartStore } from "@/store/cart-store";
+import { useCart } from "@/context/CartContext";
 
 export interface ProductCardProps {
   product: ProductCardData;
@@ -13,6 +17,11 @@ export interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [isFavorite, setIsFavorite] = useState(product.favorite || false);
   const [pulse, setPulse] = useState(false);
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+  const [selectedSize, setSelectedSize] = useState("Free");
+
+  const addItem = useCartStore((state) => state.addItem);
+  const { setSidebarOpen } = useCart();
 
   const toggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -20,6 +29,39 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     setIsFavorite(!isFavorite);
     setPulse(true);
     setTimeout(() => setPulse(false), 300);
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    addItem({
+      productId: product.id,
+      size: "Free",
+      price: product.price,
+      name: product.name,
+      imageUrl: product.imageUrl,
+      boutiqueName: product.boutiqueName,
+    });
+    setSidebarOpen(true);
+  };
+
+  const handleQuickView = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setIsQuickViewOpen(true);
+  };
+
+  const handleQuickViewAddToCart = () => {
+    addItem({
+      productId: product.id,
+      size: selectedSize,
+      price: product.price,
+      name: product.name,
+      imageUrl: product.imageUrl,
+      boutiqueName: product.boutiqueName,
+    });
+    setIsQuickViewOpen(false);
+    setSidebarOpen(true);
   };
 
   const discountPercent = product.compareAtPrice
@@ -43,7 +85,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500 pointer-events-none"
           />
         </Link>
-
+ 
         {/* Top-Left Badges Overlay */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-20">
           {product.isNewArrival && (
@@ -62,7 +104,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             </span>
           )}
         </div>
-
+ 
         {/* Top-Right Favorite Heart Icon */}
         <button
           onClick={toggleFavorite}
@@ -81,7 +123,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             )}
           />
         </button>
-
+ 
         {/* Bottom-Left Same Day Delivery Badge */}
         {product.sameDayDelivery && (
           <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm border border-hive-border/40 text-hive-dark text-[10px] font-extrabold px-2.5 py-1 rounded-xl flex items-center gap-1 z-20 shadow-sm select-none">
@@ -89,7 +131,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             Same Day
           </div>
         )}
-
+ 
         {/* Bottom-Right Play Video Overlay */}
         {product.videoAvailable && (
           <button
@@ -99,22 +141,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
           </button>
         )}
-
+ 
         {/* Desktop Slide-up Actions Overlay */}
         <div className="absolute inset-x-3 bottom-3 z-30 md:flex hidden flex-col gap-2 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-          <Button variant="primary" size="sm" className="w-full shadow-md font-bold">
+          <Button variant="primary" size="sm" className="w-full shadow-md font-bold" onClick={handleAddToCart}>
             Add to Cart
           </Button>
           <Button
             variant="secondary"
             size="sm"
             className="w-full bg-white/95 border border-hive-border/40 backdrop-blur-sm text-hive-text font-bold"
+            onClick={handleQuickView}
           >
             Quick View
           </Button>
         </div>
       </div>
-
+ 
       {/* Card Content Details Section */}
       <div className="px-1.5 py-3 flex flex-col flex-1 justify-between text-left">
         <div>
@@ -127,14 +170,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <ShieldCheck className="w-3.5 h-3.5 text-hive-amber" />
             )}
           </div>
-
+ 
           {/* Product Name */}
           <Link href={`/products/${product.slug}`} className="hover:text-hive-amber transition-colors block">
             <h3 className="text-sm font-semibold text-hive-dark leading-tight mt-1.5 line-clamp-2 min-h-[40px] tracking-wide">
               {product.name}
             </h3>
           </Link>
-
+ 
           {/* Metadata Row: Rating & Occasion */}
           <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
             {product.rating && (
@@ -152,7 +195,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             )}
           </div>
         </div>
-
+ 
         {/* Pricing details */}
         <div className="mt-3.5 pt-3 border-t border-hive-border/40">
           <div className="flex items-baseline gap-2.5">
@@ -171,21 +214,110 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             )}
           </div>
         </div>
-
+ 
         {/* Mobile Persistent Action Buttons */}
         <div className="flex md:hidden flex-col gap-2 mt-4 w-full">
-          <Button variant="primary" size="sm" className="w-full py-2.5 font-bold">
+          <Button variant="primary" size="sm" className="w-full py-2.5 font-bold" onClick={handleAddToCart}>
             Add to Cart
           </Button>
           <Button
             variant="secondary"
             size="sm"
             className="w-full py-2.5 border border-hive-border/40 bg-white text-hive-text font-bold"
+            onClick={handleQuickView}
           >
             Quick View
           </Button>
         </div>
       </div>
+
+      {/* Quick View Modal Overlay */}
+      <Modal
+        isOpen={isQuickViewOpen}
+        onClose={() => setIsQuickViewOpen(false)}
+        title="Quick View"
+        className="max-w-2xl w-full"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2 text-left select-none">
+          {/* Product Image */}
+          <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-100">
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              fill
+              className="object-cover"
+            />
+          </div>
+          
+          {/* Product Details Section */}
+          <div className="flex flex-col justify-between h-full">
+            <div className="space-y-4">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-hive-amber">
+                  {product.boutiqueName}
+                </span>
+                <h3 className="text-base font-bold text-hive-dark mt-1 leading-snug">
+                  {product.name}
+                </h3>
+              </div>
+
+              <div className="text-base font-extrabold text-hive-dark">
+                ₹{product.price.toLocaleString("en-IN")}
+                {product.compareAtPrice && (
+                  <span className="text-xs text-hive-text-muted line-through font-medium ml-2.5">
+                    ₹{product.compareAtPrice.toLocaleString("en-IN")}
+                  </span>
+                )}
+              </div>
+
+              {/* Size Selector */}
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                  Select Size
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {["XS", "S", "M", "L", "XL", "Free"].map((sz) => {
+                    const isSel = selectedSize === sz;
+                    return (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => setSelectedSize(sz)}
+                        className={cn(
+                          "w-10 h-10 rounded-xl border text-xs font-bold transition-all duration-200 select-none",
+                          isSel
+                            ? "border-hive-dark bg-hive-dark text-white"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 active:scale-95"
+                        )}
+                      >
+                        {sz}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* CTAs */}
+            <div className="space-y-3 mt-6 pt-4 border-t border-slate-100">
+              <Button
+                variant="primary"
+                className="w-full font-bold uppercase tracking-wider py-3"
+                onClick={handleQuickViewAddToCart}
+              >
+                Add to Bag
+              </Button>
+              <Link
+                href={`/products/${product.slug}`}
+                onClick={() => setIsQuickViewOpen(false)}
+                className="block text-center text-xs font-bold text-hive-text hover:text-hive-amber transition-colors border border-slate-200 py-3 rounded-xl bg-white active:scale-[0.98]"
+              >
+                View Full Details
+              </Link>
+            </div>
+          </div>
+        </div>
+      </Modal>
       
     </div>
   );

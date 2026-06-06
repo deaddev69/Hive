@@ -14,7 +14,7 @@ export const Footer: React.FC = () => {
             <span className="font-serif font-black tracking-wider text-sm">HIVE BY TAILORBEE</span>
           </div>
           <p className="text-[11px] text-hive-text-muted max-w-xs">
-            Hyperlocal boutique fashion delivered to your doorstep in Hyderabad in hours. Custom alterations and trial on delivery.
+            Hyperlocal boutique fashion delivered to your doorstep in Kochi in hours. Custom alterations and trial on delivery.
           </p>
         </div>
 
