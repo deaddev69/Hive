@@ -6,7 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { useSessionStore } from "@/context/SessionContext";
 import { Button, Badge, Input } from "@hive/ui";
 import { ShoppingBag, MapPin, Search, User, LogOut } from "lucide-react";
-import Link from "next/navigation";
+import Link from "next/link";
 
 export const Navbar: React.FC = () => {
   const { pincode, setGateOpen } = useLocation();

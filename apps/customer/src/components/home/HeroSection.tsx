@@ -1,5 +1,5 @@
 import React from "react";
-import { Button } from "@hive/ui";
+import Link from "next/link";
 import { ShoppingBag, ArrowRight, MapPin, Truck, ShieldCheck, Star } from "lucide-react";
 
 export interface HeroStatItem {
@@ -77,13 +77,19 @@ export const HeroSection: React.FC = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-4 mt-2">
-              <Button variant="primary" size="lg" className="w-full sm:w-auto group">
+              <Link
+                href="/collections"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl text-sm font-bold uppercase tracking-widest text-hive-dark bg-hive-gold hover:bg-hive-amber shadow-md shadow-hive-gold/25 hover:shadow-lg hover:shadow-hive-gold/35 hover:-translate-y-0.5 transition-all duration-300 group w-full sm:w-auto"
+              >
                 Explore Collections
-                <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
-              </Button>
-              <Button variant="secondary" size="lg" className="w-full sm:w-auto border border-hive-border/60 bg-white hover:bg-hive-cream/35 text-hive-text">
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </Link>
+              <Link
+                href="/collections"
+                className="inline-flex items-center justify-center px-7 py-3.5 rounded-2xl text-sm font-bold text-hive-text border border-hive-border/60 bg-white hover:bg-hive-cream/35 transition-all duration-300 w-full sm:w-auto"
+              >
                 Become a Boutique Partner
-              </Button>
+              </Link>
             </div>
           </div>
 

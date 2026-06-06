@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import Link from "next/link";
 import { ProductCardData } from "@/lib/mockProducts";
 import { ProductCard } from "./ProductCard";
 import { ProductGridSkeleton } from "./ProductGridSkeleton";
@@ -10,6 +11,8 @@ export interface ProductGridProps {
   selectedOccasion: string;
   onResetFilter?: () => void;
   isLoading?: boolean;
+  /** When provided, renders a "View All" link in the grid header */
+  viewAllHref?: string;
 }
 
 const occasionLabels: Record<string, string> = {
@@ -29,6 +32,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   selectedOccasion,
   onResetFilter,
   isLoading = false,
+  viewAllHref,
 }) => {
   // Memoized product filtering
   const filteredProducts = useMemo(() => {
@@ -78,9 +82,20 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         <h2 className="text-xl md:text-2xl font-extrabold font-serif text-hive-dark transition-all duration-300">
           {collectionTitle}
         </h2>
-        <span className="text-xs md:text-sm font-semibold text-hive-text-muted">
-          Showing {filteredProducts.length} {filteredProducts.length === 1 ? "Product" : "Products"}
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-xs md:text-sm font-semibold text-hive-text-muted">
+            {filteredProducts.length} {filteredProducts.length === 1 ? "Product" : "Products"}
+          </span>
+          {viewAllHref && (
+            <Link
+              href={viewAllHref}
+              className="hidden sm:inline-flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-hive-amber hover:text-hive-gold transition-colors group"
+            >
+              View All
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* Product Grid / Empty State Handler */}

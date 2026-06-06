@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLocation } from "@/context/LocationContext";
 import { useCart } from "@/context/CartContext";
 import { useSessionStore } from "@/context/SessionContext";
@@ -18,17 +19,26 @@ export default function HomePage() {
   const { pincode, regionName, isServiceable, setGateOpen } = useLocation();
   const { addToCart, itemsCount } = useCart();
   const { user, loginAsMockUser } = useSessionStore();
+  const router = useRouter();
   const [selectedOccasion, setSelectedOccasion] = useState("all");
+
+  const handleOccasionChange = (id: string) => {
+    if (id === "all") {
+      setSelectedOccasion("all");
+    } else {
+      router.push(`/collections/${id}`);
+    }
+  };
 
   return (
     <div className="flex flex-col items-center bg-hive-cream/10 min-h-screen text-hive-text w-full">
       {/* Phase 4.1: Hero Section */}
       <HeroSection />
 
-      {/* Phase 4.2: Occasion Rail */}
+      {/* Phase 4.2: Occasion Rail — navigates to /collections/[slug] */}
       <OccasionRail
         selectedOccasion={selectedOccasion}
-        onOccasionChange={setSelectedOccasion}
+        onOccasionChange={handleOccasionChange}
       />
 
       {/* Phase 4.4: Dynamic Product Grid */}
@@ -36,6 +46,7 @@ export default function HomePage() {
         products={mockProducts}
         selectedOccasion={selectedOccasion}
         onResetFilter={() => setSelectedOccasion("all")}
+        viewAllHref="/products"
       />
 
       {/* Phase 4.5: Boutique Spotlight */}
