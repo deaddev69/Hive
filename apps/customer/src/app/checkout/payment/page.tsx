@@ -1,22 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { 
-  ArrowLeft, 
-  CheckCircle2, 
-  CreditCard, 
-  ShoppingBag, 
-  Landmark, 
-  Wallet, 
-  Sparkles, 
-  ShieldCheck, 
-  Lock, 
-  Smartphone, 
-  Banknote, 
-  ChevronRight, 
-  Ticket, 
+import {
+  ArrowLeft,
+  CheckCircle2,
+  CreditCard,
+  ShoppingBag,
+  Landmark,
+  Wallet,
+  Sparkles,
+  ShieldCheck,
+  Lock,
+  Smartphone,
+  Banknote,
+  ChevronRight,
+  Ticket,
   AlertCircle,
   ShieldAlert,
   Award,
@@ -27,6 +27,7 @@ import { useAddressStore } from "@/store/address-store";
 import { useCartStore } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useOrderStore } from "@/store/order-store";
+import { isServiceablePincode } from "@/data/mockServiceablePincodes";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types & Interface definitions
@@ -49,27 +50,30 @@ export default function SecurePaymentPage() {
   // Zustand State hooks
   const addresses = useAddressStore((state) => state.addresses);
   const selectedAddressId = useAddressStore((state) => state.selectedAddressId);
-  
+
   const items = useCartStore((state) => state.items);
-  const getCartTotal = useCartStore((state) => state.getCartTotal);
   const clearCart = useCartStore((state) => state.clearCart);
 
   const selectedDate = useCheckoutStore((state) => state.selectedDate);
   const selectedSlot = useCheckoutStore((state) => state.selectedSlot);
+  const selectedSlotWindow = useCheckoutStore((state) => state.selectedSlotWindow);
   const discountAmount = useCheckoutStore((state) => state.discountAmount);
   const appliedPromo = useCheckoutStore((state) => state.appliedPromo);
   const selectedPaymentMethod = useCheckoutStore((state) => state.selectedPaymentMethod);
+  const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
   const setSelectedPaymentMethod = useCheckoutStore((state) => state.setSelectedPaymentMethod);
   const clearCheckout = useCheckoutStore((state) => state.clearCheckout);
   const placeOrder = useOrderStore((state) => state.placeOrder);
 
   const [mounted, setMounted] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  
+  // Ref to bypass validation guard while submitting order
+  const isOrderPlacing = useRef(false);
+
   // Specific payment states
   const [upiId, setUpiId] = useState("");
   const [upiError, setUpiError] = useState<string | null>(null);
-  
+
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvv, setCardCvv] = useState("");
@@ -84,29 +88,34 @@ export default function SecurePaymentPage() {
     setMounted(true);
   }, []);
 
+  const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
+  const orderItems = checkoutItems.length > 0 ? checkoutItems : items;
+
   // Validation redirect filter: block access if previous checkout phases are missing
+  // Skip when order is being placed — clearCheckout nullifies state before navigation completes
   useEffect(() => {
-    if (mounted) {
+    if (mounted && !isOrderPlacing.current) {
       if (!selectedAddressId) {
         router.replace("/checkout/address");
       } else if (!selectedDate || !selectedSlot) {
         router.replace("/checkout/delivery");
+      } else if (selectedAddress && !isServiceablePincode(selectedAddress.pincode)) {
+        router.replace("/not-serviceable");
       }
     }
-  }, [mounted, selectedAddressId, selectedDate, selectedSlot, router]);
+  }, [mounted, selectedAddressId, selectedDate, selectedSlot, selectedAddress, router]);
 
   if (!mounted) {
     return <PaymentSkeleton />;
   }
 
   // Pre-requisites validation
-  const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
-  if (items.length === 0 || !selectedAddress || !selectedDate) {
+  if (orderItems.length === 0 || !selectedAddress || !selectedDate || !selectedSlot) {
     return <PaymentSkeleton />;
   }
 
   // Price calculations
-  const subtotal = getCartTotal();
+  const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
   let deliveryFee = subtotal >= 5000 ? 0 : 99;
   if (appliedPromo === "FREESHIP") {
     deliveryFee = 0;
@@ -192,39 +201,64 @@ export default function SecurePaymentPage() {
       return;
     }
 
+    // Snapshot all values before any async work (Zustand state could change)
+    const snapshotItems = orderItems;
+    const snapshotSubtotal = subtotal;
+    const snapshotDiscount = discountAmount;
+    const snapshotDeliveryFee = deliveryFee;
+    const snapshotCodFee = codFee;
+    const snapshotTotal = total;
+    const snapshotPaymentMethod = selectedPaymentMethod;
+    const snapshotAddress = selectedAddress;
+    const snapshotDate = selectedDate!;
+    const snapshotSlot = selectedSlot!;
+    const snapshotSlotWindow = selectedSlotWindow || undefined;
+
+    console.log("[PlaceOrder] Snapshot state:", {
+      address: snapshotAddress?.name,
+      date: snapshotDate,
+      slot: snapshotSlot,
+      payment: snapshotPaymentMethod,
+    });
+
+    // Flag ON: bypass validation guard during order submission
+    isOrderPlacing.current = true;
     setIsPlacingOrder(true);
 
     // Simulate placing order delay
     setTimeout(() => {
-      setIsPlacingOrder(false);
-      
-      // Save order details to orderStore
+      // Persist order to order store using snapshotted values
       placeOrder({
-        items,
-        subtotal,
-        discount: discountAmount,
-        deliveryFee,
-        codFee,
-        total,
-        paymentMethod: selectedPaymentMethod,
-        address: selectedAddress,
-        deliveryDate: selectedDate!,
-        deliverySlot: selectedSlot!,
+        items: snapshotItems,
+        subtotal: snapshotSubtotal,
+        discount: snapshotDiscount,
+        deliveryFee: snapshotDeliveryFee,
+        codFee: snapshotCodFee,
+        total: snapshotTotal,
+        paymentMethod: snapshotPaymentMethod,
+        address: snapshotAddress,
+        deliveryDate: snapshotDate,
+        deliverySlot: snapshotSlot,
+        deliverySlotWindow: snapshotSlotWindow,
       });
 
-      // Reset state stores
-      clearCart();
-      clearCheckout();
-
-      // Navigate to success page
+      // ✅ Navigate FIRST — then defer cleanup so the guard never fires before navigation
       router.push("/order/success");
+
+      setTimeout(() => {
+        clearCart();
+        clearCheckout();
+        setIsPlacingOrder(false);
+        isOrderPlacing.current = false;
+      }, 500);
     }, 1500);
   };
+
 
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
-        
+
         {/* Back Link */}
         <button
           type="button"
@@ -264,11 +298,11 @@ export default function SecurePaymentPage() {
 
         {/* Responsive Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mt-2 pb-24 sm:pb-0">
-          
+
           {/* Left Panel: Payment Method Selection */}
           <div className="lg:col-span-8 space-y-6">
             <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-6">
-              
+
               <div className="border-b border-hive-border/40 pb-4">
                 <span className="text-xs font-extrabold text-hive-dark uppercase tracking-wider block">
                   Select a Secure Payment Option
@@ -280,7 +314,7 @@ export default function SecurePaymentPage() {
 
               {/* PaymentMethodSelector component layout */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                
+
                 {/* Payment method cards list - 5 columns on medium screens */}
                 <div className="md:col-span-5 flex flex-col gap-3">
                   {paymentMethods.map((method) => (
@@ -295,7 +329,7 @@ export default function SecurePaymentPage() {
 
                 {/* Sub-form section based on selection - 7 columns */}
                 <div className="md:col-span-7 bg-hive-cream/10 border border-hive-border/30 rounded-2xl p-5 min-h-[280px] flex flex-col justify-between">
-                  
+
                   {!selectedPaymentMethod ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
                       <Lock className="w-8 h-8 text-hive-text-muted/40" />
@@ -305,7 +339,7 @@ export default function SecurePaymentPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      
+
                       {/* UPI Detail Form */}
                       {selectedPaymentMethod === "upi" && (
                         <div className="space-y-4 text-left">
@@ -487,8 +521,8 @@ export default function SecurePaymentPage() {
                             </span>
                             <div className="flex gap-2">
                               {["Visa", "Mastercard", "RuPay", "Amex"].map((cardName) => (
-                                <span 
-                                  key={cardName} 
+                                <span
+                                  key={cardName}
                                   className="px-2 py-1 bg-white border border-hive-border/40 rounded-lg text-[8px] font-extrabold text-hive-dark select-none"
                                 >
                                   {cardName}
@@ -522,11 +556,10 @@ export default function SecurePaymentPage() {
                                   key={bank.id}
                                   type="button"
                                   onClick={() => setSelectedBank(bank.id)}
-                                  className={`py-3 px-4 rounded-xl border text-xs font-bold text-center transition-colors duration-200 ${
-                                    isBankSelected
+                                  className={`py-3 px-4 rounded-xl border text-xs font-bold text-center transition-colors duration-200 ${isBankSelected
                                       ? "border-hive-dark bg-hive-comb/30 text-hive-dark"
                                       : "border-hive-border/50 hover:border-hive-border bg-white text-hive-text-muted"
-                                  }`}
+                                    }`}
                                 >
                                   {bank.name}
                                 </button>
@@ -578,16 +611,14 @@ export default function SecurePaymentPage() {
                                   key={wallet.id}
                                   type="button"
                                   onClick={() => setSelectedWallet(wallet.id)}
-                                  className={`py-3.5 px-4 rounded-xl border text-xs font-bold text-left flex justify-between items-center transition-colors duration-200 ${
-                                    isWalletSelected
+                                  className={`py-3.5 px-4 rounded-xl border text-xs font-bold text-left flex justify-between items-center transition-colors duration-200 ${isWalletSelected
                                       ? "border-hive-dark bg-hive-comb/30 text-hive-dark"
                                       : "border-hive-border/50 hover:border-hive-border bg-white text-hive-text-muted"
-                                  }`}
+                                    }`}
                                 >
                                   <span>{wallet.name}</span>
-                                  <span className={`w-3.5 h-3.5 rounded-full border border-hive-border flex items-center justify-center ${
-                                    isWalletSelected ? "bg-hive-dark border-hive-dark" : "bg-white"
-                                  }`}>
+                                  <span className={`w-3.5 h-3.5 rounded-full border border-hive-border flex items-center justify-center ${isWalletSelected ? "bg-hive-dark border-hive-dark" : "bg-white"
+                                    }`}>
                                     {isWalletSelected && <span className="w-1.5 h-1.5 rounded-full bg-hive-gold" />}
                                   </span>
                                 </button>
@@ -635,9 +666,9 @@ export default function SecurePaymentPage() {
 
           {/* Right Panel: Pricing calculations & trust banners */}
           <div className="lg:col-span-4 space-y-6">
-            
+
             {/* 1. Payment Summary */}
-            <PaymentSummary 
+            <PaymentSummary
               subtotal={subtotal}
               deliveryFee={deliveryFee}
               discountAmount={discountAmount}
@@ -647,7 +678,7 @@ export default function SecurePaymentPage() {
             />
 
             {/* 2. Place Order Section */}
-            <PlaceOrderSection 
+            <PlaceOrderSection
               selectedPaymentMethod={selectedPaymentMethod}
               total={total}
               isPlacingOrder={isPlacingOrder}
@@ -718,17 +749,15 @@ function PaymentMethodCard({
       type="button"
       disabled={method.disabled}
       onClick={onClick}
-      className={`w-full text-left p-4.5 rounded-2xl border transition-all duration-200 select-none flex items-start gap-3 relative ${
-        method.disabled
+      className={`w-full text-left p-4.5 rounded-2xl border transition-all duration-200 select-none flex items-start gap-3 relative ${method.disabled
           ? "opacity-45 cursor-not-allowed border-hive-border/30 bg-hive-cream/10"
           : isSelected
-          ? "border-hive-dark bg-hive-comb/15 ring-[0.5px] ring-hive-dark"
-          : "border-hive-border/50 hover:border-hive-border/80 hover:bg-hive-cream/10 bg-white"
-      }`}
+            ? "border-hive-dark bg-hive-comb/15 ring-[0.5px] ring-hive-dark"
+            : "border-hive-border/50 hover:border-hive-border/80 hover:bg-hive-cream/10 bg-white"
+        }`}
     >
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-colors ${
-        isSelected ? "bg-hive-dark border-hive-dark text-hive-gold" : "bg-hive-comb/30 border-hive-border/50 text-hive-dark"
-      } flex-shrink-0`}>
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-colors ${isSelected ? "bg-hive-dark border-hive-dark text-hive-gold" : "bg-hive-comb/30 border-hive-border/50 text-hive-dark"
+        } flex-shrink-0`}>
         <IconComponent className="w-4.5 h-4.5" />
       </div>
 
@@ -779,7 +808,7 @@ function PaymentSummary({
       <h2 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2">
         Order Billing
       </h2>
-      
+
       <div className="space-y-2.5">
         <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
           <span>Items Subtotal</span>
@@ -858,7 +887,7 @@ function PlaceOrderSection({
 
   return (
     <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm flex flex-col gap-3">
-      
+
       {!selectedPaymentMethod && (
         <div className="flex items-center gap-1.5 text-[10px] text-red-600 bg-red-50 border border-red-200/50 p-2.5 rounded-xl">
           <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
@@ -913,7 +942,7 @@ function PaymentTrustStrip() {
       <span className="text-[10px] font-extrabold text-hive-amber uppercase tracking-wider block">
         Secure Escrow Guarantees
       </span>
-      
+
       <div className="space-y-3">
         {guarantees.map((item, idx) => {
           const Icon = item.icon;
@@ -941,7 +970,7 @@ function PaymentSkeleton() {
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
-        
+
         {/* Back link skeleton */}
         <div className="h-4 w-24 bg-hive-comb/10 rounded-lg" />
 

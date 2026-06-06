@@ -139,6 +139,9 @@ function OrderCard({ order }: { order: Order }) {
                 <span className="font-extrabold text-hive-dark">{order.deliveryDate}</span>
               </span>
             </p>
+            <p className="text-[10px] text-hive-text-muted leading-tight font-medium">
+              Slot: <span className="font-extrabold text-hive-dark">{order.deliverySlot}</span>{order.deliverySlotWindow ? ` • ${order.deliverySlotWindow}` : ""}
+            </p>
             
             <p className="text-xs font-extrabold text-hive-dark">
               Total Payable: ₹{order.total.toLocaleString("en-IN")}
@@ -152,7 +155,7 @@ function OrderCard({ order }: { order: Order }) {
       <div className="flex flex-col sm:flex-row md:flex-col justify-center gap-2 pt-3 border-t border-hive-border/20 md:border-t-0 md:pt-0">
         <button
           type="button"
-          onClick={() => router.push(`/account/orders/${order.id}`)}
+          onClick={() => router.push(`/orders/${order.id}`)}
           className="h-10 px-5 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm"
         >
           <span>Track Order</span>

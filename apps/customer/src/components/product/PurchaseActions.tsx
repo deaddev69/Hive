@@ -1,10 +1,14 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { MessageCircle, ShoppingBag, ArrowRight, Bell, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { cn } from "@hive/ui";
 import { ProductDetail } from "@/lib/mockProductDetails";
 import { useCartStore } from "@/store/cart-store";
 import { useCart } from "@/context/CartContext";
+import { useCheckoutStore } from "@/store/checkout-store";
+import { useLocation } from "@/context/LocationContext";
+import { isServiceablePincode } from "@/data/mockServiceablePincodes";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Subcomponent: AddToCartButton
@@ -214,12 +218,16 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
 
+  const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
+  const setCheckoutItems = useCheckoutStore((state) => state.setCheckoutItems);
   const { setSidebarOpen } = useCart();
+  const { pincode, isServiceable } = useLocation();
 
   const inventoryCount = selectedSize ? product.inventory[selectedSize] ?? 0 : 0;
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
   const isLowStock = selectedSize ? inventoryCount > 0 && inventoryCount <= 3 : false;
+  const isLocationServiceable = !pincode || (isServiceable && isServiceablePincode(pincode));
 
   const triggerToast = (message: string, type: "success" | "info" = "success") => {
     setToast({ message, type });
@@ -229,7 +237,16 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   };
 
   const handleAddToCart = () => {
-    if (!selectedSize) return;
+    if (!selectedSize) {
+      triggerToast("Please select a size first", "info");
+      return;
+    }
+
+    if (!isLocationServiceable) {
+      router.push("/not-serviceable");
+      return;
+    }
+
     setLoading(true);
     // Simulate API delay
     setTimeout(() => {
@@ -252,8 +269,29 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   };
 
   const handleBuyNow = () => {
-    if (!selectedSize) return;
-    triggerToast("Checkout preview is coming in Phase 7", "info");
+    if (!selectedSize) {
+      triggerToast("Please select a size first", "info");
+      return;
+    }
+
+    if (!isLocationServiceable) {
+      router.push("/not-serviceable");
+      return;
+    }
+
+    setCheckoutItems([
+      {
+        productId: product.id,
+        size: selectedSize,
+        quantity: 1,
+        price: product.price,
+        name: product.name,
+        imageUrl: product.images[0] || "",
+        boutiqueName: product.boutique.name,
+      },
+    ]);
+
+    router.push("/checkout/address");
   };
 
   const handleNotifyMe = (e: React.FormEvent) => {

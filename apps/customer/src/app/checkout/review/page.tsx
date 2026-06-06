@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle2, ShoppingBag, MapPin, Calendar, Clock, Sparkles
 import { useAddressStore } from "@/store/address-store";
 import { useCartStore } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
+import { isServiceablePincode } from "@/data/mockServiceablePincodes";
 
 export default function OrderReviewPage() {
   const router = useRouter();
@@ -16,10 +17,11 @@ export default function OrderReviewPage() {
   const selectedAddressId = useAddressStore((state) => state.selectedAddressId);
   
   const items = useCartStore((state) => state.items);
-  const getCartTotal = useCartStore((state) => state.getCartTotal);
+  const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
 
   const selectedDate = useCheckoutStore((state) => state.selectedDate);
   const selectedSlot = useCheckoutStore((state) => state.selectedSlot);
+  const selectedSlotWindow = useCheckoutStore((state) => state.selectedSlotWindow);
   const appliedPromo = useCheckoutStore((state) => state.appliedPromo);
   const discountAmount = useCheckoutStore((state) => state.discountAmount);
   const deliveryInstructions = useCheckoutStore((state) => state.deliveryInstructions);
@@ -37,23 +39,9 @@ export default function OrderReviewPage() {
     setMounted(true);
   }, []);
 
-  // Validation redirect filter
-  useEffect(() => {
-    if (mounted) {
-      if (!selectedAddressId) {
-        router.replace("/checkout/address");
-      } else if (!selectedDate || !selectedSlot) {
-        router.replace("/checkout/delivery");
-      }
-    }
-  }, [mounted, selectedAddressId, selectedDate, selectedSlot, router]);
-
-  if (!mounted) {
-    return <OrderReviewSkeleton />;
-  }
-
   const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
-  const subtotal = getCartTotal();
+  const orderItems = checkoutItems.length > 0 ? checkoutItems : items;
+  const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
   
   // Dynamic pricing calculations
   let deliveryFee = subtotal >= 5000 ? 0 : 99;
@@ -62,6 +50,23 @@ export default function OrderReviewPage() {
   }
   const taxAmount = 0;
   const total = Math.max(0, subtotal - discountAmount + deliveryFee + taxAmount);
+
+  // Validation redirect filter
+  useEffect(() => {
+    if (mounted) {
+      if (!selectedAddressId) {
+        router.replace("/checkout/address");
+      } else if (!selectedDate || !selectedSlot) {
+        router.replace("/checkout/delivery");
+      } else if (selectedAddress && !isServiceablePincode(selectedAddress.pincode)) {
+        router.replace("/not-serviceable");
+      }
+    }
+  }, [mounted, selectedAddressId, selectedDate, selectedSlot, selectedAddress, router]);
+
+  if (!mounted) {
+    return <OrderReviewSkeleton />;
+  }
 
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +101,7 @@ export default function OrderReviewPage() {
     setPromoError(null);
   };
 
-  if (items.length === 0 || !selectedAddress || !selectedDate) {
+  if (orderItems.length === 0 || !selectedAddress || !selectedDate || !selectedSlot) {
     return <OrderReviewSkeleton />;
   }
 
@@ -195,7 +200,7 @@ export default function OrderReviewPage() {
                   <span>Date: {selectedDate}</span>
                 </p>
                 <p className="text-hive-text-muted font-bold ml-5.5">
-                  Window: {selectedSlot}
+                  Window: {selectedSlotWindow || selectedSlot}
                 </p>
                 <p className="text-[10px] text-green-700 bg-green-50 border border-green-200/50 px-2.5 py-1 rounded-xl inline-block ml-5.5 font-semibold">
                   Hyperlocal Fit-Agent Included: Try-on and minor alterations supported at the door.
@@ -211,7 +216,7 @@ export default function OrderReviewPage() {
               </h3>
 
               <div className="divide-y divide-hive-border/30 flex flex-col">
-                {items.map((item) => (
+                {orderItems.map((item) => (
                   <div key={`${item.productId}-${item.size}`} className="flex gap-4 py-4.5 first:pt-0 last:pb-0">
                     <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-hive-cream/30 border border-hive-border/20 flex-shrink-0">
                       {item.imageUrl ? (

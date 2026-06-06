@@ -31,6 +31,7 @@ export default function DeliverySlotPage() {
   
   const selectedDate = useCheckoutStore((state) => state.selectedDate);
   const selectedSlot = useCheckoutStore((state) => state.selectedSlot);
+  const selectedSlotWindow = useCheckoutStore((state) => state.selectedSlotWindow);
   const setDeliverySelection = useCheckoutStore((state) => state.setDeliverySelection);
 
   const [mounted, setMounted] = useState(false);
@@ -74,11 +75,11 @@ export default function DeliverySlotPage() {
   const total = subtotal + deliveryFee;
 
   const handleSelectDate = (dateLabel: string) => {
-    setDeliverySelection(dateLabel, selectedSlot || "");
+    setDeliverySelection(dateLabel, selectedSlot || "", selectedSlotWindow || "");
   };
 
-  const handleSelectSlot = (slotName: string) => {
-    setDeliverySelection(selectedDate || "", slotName);
+  const handleSelectSlot = (slotName: string, timeRange: string) => {
+    setDeliverySelection(selectedDate || "", slotName, timeRange);
   };
 
   const isContinueEnabled = !!selectedDate && !!selectedSlot;
@@ -169,7 +170,7 @@ export default function DeliverySlotPage() {
                       key={slot.id}
                       type="button"
                       disabled={isFull}
-                      onClick={() => handleSelectSlot(slot.name)}
+                      onClick={() => handleSelectSlot(slot.name, slot.timeRange)}
                       className={`bg-white border rounded-3xl p-5 shadow-sm text-left flex flex-col justify-between gap-3 relative transition-all duration-300 ${
                         isFull
                           ? "opacity-45 cursor-not-allowed border-hive-border/30 bg-hive-cream/10"
@@ -249,7 +250,7 @@ export default function DeliverySlotPage() {
                     <span className="font-extrabold text-hive-dark block">Estimated Speed Slot</span>
                     <p className="text-hive-text-muted font-medium leading-normal mt-0.5">
                       {selectedDate && selectedSlot 
-                        ? `${selectedDate} (${selectedSlot})`
+                        ? `${selectedDate} (${selectedSlot}${selectedSlotWindow ? ` • ${selectedSlotWindow}` : ""})`
                         : "Please choose date & slot."}
                     </p>
                   </div>

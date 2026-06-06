@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { isValidPincode } from "@hive/utils";
+import { isServiceablePincode } from "@/data/mockServiceablePincodes";
 
 export interface LocationState {
   pincode: string | null;
@@ -12,15 +13,11 @@ export interface LocationState {
 
 export interface LocationContextType extends LocationState {
   setGateOpen: (open: boolean) => void;
-  updateLocation: (pincode: string) => Promise<{ success: boolean; error?: string }>;
+  updateLocation: (pincode: string) => Promise<{ success: boolean; error?: string; isServiceable?: boolean }>;
   clearLocation: () => void;
 }
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
-
-// In a real application, serviceability would be checked via Convex query against the regions table.
-// For the application shell, we implement a client-side mock filter matching the Hyderabad specs (starting with 500).
-const SERVICEABLE_PINCODES = new Set(["500034", "500082", "500001", "500016", "500033"]);
 
 export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<LocationState>({
@@ -58,7 +55,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return { success: false, error: "Invalid pincode pattern. Must be exactly 6 digits." };
     }
 
-    const isServiceable = SERVICEABLE_PINCODES.has(pincode) || pincode.startsWith("500");
+    const isServiceable = isServiceablePincode(pincode);
     const regionName = isServiceable ? "Hyderabad Central (Banjara Hills)" : null;
 
     localStorage.setItem("hive_customer_pincode", pincode);
@@ -72,7 +69,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       isGateOpen: false,
     });
 
-    return { success: true };
+    return { success: true, isServiceable };
   };
 
   const clearLocation = () => {

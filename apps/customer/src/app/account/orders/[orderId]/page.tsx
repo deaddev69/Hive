@@ -129,7 +129,7 @@ export default function OrderTrackingPage() {
               address={order.address}
               date={order.deliveryDate}
               slot={order.deliverySlot}
-              window={getEstimatedWindow(order.deliverySlot)}
+              window={order.deliverySlotWindow || getEstimatedWindow(order.deliverySlot)}
             />
 
             {/* Price details summary */}

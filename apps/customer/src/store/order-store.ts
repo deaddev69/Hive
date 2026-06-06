@@ -16,6 +16,7 @@ export interface Order {
   address: Address;
   deliveryDate: string;
   deliverySlot: string;
+  deliverySlotWindow?: string;
   createdAt: string;
   status: "placed" | "confirmed" | "picked_up" | "out_for_delivery" | "delivered" | "cancelled";
   cancellationReason?: string;

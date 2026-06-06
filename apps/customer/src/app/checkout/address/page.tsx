@@ -6,8 +6,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Edit2, Trash2, CheckCircle2, AlertTriangle, MapPin, Sparkles, ChevronRight, X, Phone, User, Landmark, Building, Bell, ShoppingBag } from "lucide-react";
 import { useAddressStore, Address } from "@/store/address-store";
-import { isPincodeServiceable } from "@/data/mockServiceablePincodes";
+import { isServiceablePincode } from "@/data/mockServiceablePincodes";
 import { useCartStore } from "@/store/cart-store";
+import { useCheckoutStore } from "@/store/checkout-store";
 
 export default function CheckoutAddressPage() {
   const router = useRouter();
@@ -20,8 +21,8 @@ export default function CheckoutAddressPage() {
   const deleteAddress = useAddressStore((state) => state.deleteAddress);
   const selectAddress = useAddressStore((state) => state.selectAddress);
   
-  const getCartTotal = useCartStore((state) => state.getCartTotal);
   const items = useCartStore((state) => state.items);
+  const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
 
   const [mounted, setMounted] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -54,9 +55,10 @@ export default function CheckoutAddressPage() {
   }
 
   const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
-  const isServiceable = selectedAddress ? isPincodeServiceable(selectedAddress.pincode) : false;
+  const isServiceable = selectedAddress ? isServiceablePincode(selectedAddress.pincode) : false;
+  const effectiveItems = checkoutItems.length > 0 ? checkoutItems : items;
   
-  const subtotal = getCartTotal();
+  const subtotal = effectiveItems.reduce((total, item) => total + item.price * item.quantity, 0);
   const deliveryFee = subtotal >= 5000 ? 0 : 99;
   const total = subtotal + (isServiceable ? deliveryFee : 0);
 
@@ -216,7 +218,7 @@ export default function CheckoutAddressPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {addresses.map((addr) => {
                 const isSelected = addr.id === selectedAddressId;
-                const serviceable = isPincodeServiceable(addr.pincode);
+                const serviceable = isServiceablePincode(addr.pincode);
                 
                 return (
                   <div

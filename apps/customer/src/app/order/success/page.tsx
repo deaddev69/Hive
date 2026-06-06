@@ -92,6 +92,7 @@ export default function OrderSuccessPage() {
   };
 
   const itemCount = latestOrder.items.reduce((acc, item) => acc + item.quantity, 0);
+  const slotWindow = latestOrder.deliverySlotWindow || getEstimatedWindow(latestOrder.deliverySlot);
 
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
@@ -109,7 +110,7 @@ export default function OrderSuccessPage() {
             <DeliveryConfirmationCard 
               date={latestOrder.deliveryDate} 
               slot={latestOrder.deliverySlot} 
-              window={getEstimatedWindow(latestOrder.deliverySlot)} 
+              window={slotWindow} 
             />
 
             <NextStepsSection />
@@ -128,6 +129,9 @@ export default function OrderSuccessPage() {
               paymentMethod={paymentMethodLabel(latestOrder.paymentMethod)} 
               address={latestOrder.address} 
               items={latestOrder.items}
+              deliveryDate={latestOrder.deliveryDate}
+              deliverySlot={latestOrder.deliverySlot}
+              deliverySlotWindow={slotWindow}
               showDetails={showDetails}
               onToggleDetails={() => setShowDetails(!showDetails)}
             />
@@ -292,6 +296,9 @@ function OrderSummaryCard({
   paymentMethod,
   address,
   items,
+  deliveryDate,
+  deliverySlot,
+  deliverySlotWindow,
   showDetails,
   onToggleDetails,
 }: {
@@ -300,6 +307,9 @@ function OrderSummaryCard({
   paymentMethod: string;
   address: any;
   items: any[];
+  deliveryDate: string;
+  deliverySlot: string;
+  deliverySlotWindow: string;
   showDetails: boolean;
   onToggleDetails: () => void;
 }) {
@@ -315,6 +325,18 @@ function OrderSummaryCard({
       </div>
 
       <div className="space-y-2.5 text-xs font-bold text-hive-dark">
+        <div className="flex justify-between items-center text-hive-text-muted">
+          <span>Delivery Date</span>
+          <span className="text-hive-dark font-semibold">{deliveryDate}</span>
+        </div>
+        <div className="flex justify-between items-center text-hive-text-muted">
+          <span>Delivery Slot</span>
+          <span className="text-hive-dark font-semibold text-right">{deliverySlot}</span>
+        </div>
+        <div className="flex justify-between items-center text-hive-text-muted">
+          <span>Time Window</span>
+          <span className="text-hive-dark font-semibold text-right">{deliverySlotWindow}</span>
+        </div>
         <div className="flex justify-between items-center text-hive-text-muted">
           <span>Payment Method</span>
           <span className="text-hive-dark font-semibold">{paymentMethod}</span>
@@ -375,11 +397,12 @@ function OrderSummaryCard({
 // ─────────────────────────────────────────────────────────────────────────────
 function SuccessActions() {
   const router = useRouter();
+  const latestOrder = useOrderStore((state) => state.latestOrder);
   return (
     <div className="w-full space-y-3">
       <button
         type="button"
-        onClick={() => router.push("/account/orders")}
+        onClick={() => router.push(latestOrder ? `/orders/${latestOrder.id}` : "/orders")}
         className="w-full h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-sm"
       >
         <span>Track Order</span>

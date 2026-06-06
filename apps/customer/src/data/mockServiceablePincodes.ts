@@ -8,6 +8,8 @@ export const mockServiceablePincodes = [
   "500032", // Hyderabad Gachibowli
 ];
 
-export const isPincodeServiceable = (pincode: string): boolean => {
+export const isServiceablePincode = (pincode: string): boolean => {
   return mockServiceablePincodes.includes(pincode.trim());
 };
+
+export const isPincodeServiceable = isServiceablePincode;

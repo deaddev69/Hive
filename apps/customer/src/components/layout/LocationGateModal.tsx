@@ -24,9 +24,7 @@ export const LocationGateModal: React.FC = () => {
     if (!result.success) {
       setError(result.error);
     } else {
-      // Re-read serviceability from context directly
-      const savedServiceable = localStorage.getItem("hive_customer_serviceable") === "true";
-      if (!savedServiceable) {
+      if (!result.isServiceable) {
         router.push("/not-serviceable");
       } else {
         router.push("/");
