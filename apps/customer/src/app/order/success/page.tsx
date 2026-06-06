@@ -1,7 +1,6 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle2,
   Sparkles,
@@ -20,27 +19,86 @@ import {
 } from "lucide-react";
 import { useOrderStore } from "@/store/order-store";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Redesigned Success Page Route Implementation
 // ─────────────────────────────────────────────────────────────────────────────
 export default function OrderSuccessPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const orderIdParam = searchParams.get("orderId");
   const [mounted, setMounted] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
   const latestOrder = useOrderStore((state) => state.latestOrder);
 
+  const queriedOrder = useQuery(
+    api.orders.getOrderByNumber,
+    orderIdParam ? { orderNumber: orderIdParam } : "skip"
+  );
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
+  const isLoading = orderIdParam ? (queriedOrder === undefined) : false;
+
+  if (!mounted || isLoading) {
     return <OrderSuccessSkeleton />;
   }
 
+  // Map queried order properties to match latestOrder store format
+  const resolvedOrder = (() => {
+    if (orderIdParam && queriedOrder) {
+      const notes = queriedOrder.notes || "";
+      const paymentMethod = notes.match(/Payment: (\w+)/)?.[1] || "online";
+      const deliverySlotStr = notes.split("Slot: ")?.[1] || "";
+      const [deliveryDate, ...slotParts] = deliverySlotStr.split(" ");
+      const deliverySlot = slotParts.join(" ");
+
+      return {
+        id: queriedOrder.orderNumber,
+        convexId: queriedOrder._id,
+        items: queriedOrder.items.map((item: any) => ({
+          productId: item.productId,
+          name: item.productName,
+          size: item.variantSize,
+          price: item.priceAtPurchase,
+          quantity: item.quantity,
+          imageUrl: item.imageUrl,
+          boutiqueName: item.boutiqueName || "Hive Marketplace",
+        })),
+        subtotal: queriedOrder.subtotal,
+        discount: queriedOrder.discount || 0,
+        deliveryFee: queriedOrder.deliveryFee || 0,
+        codFee: paymentMethod === "cod" ? 49 : 0,
+        total: queriedOrder.total,
+        paymentMethod,
+        address: {
+          id: queriedOrder.addressId,
+          name: queriedOrder.deliveryAddress.label,
+          phone: "",
+          addressLine1: queriedOrder.deliveryAddress.line1,
+          addressLine2: queriedOrder.deliveryAddress.line2,
+          city: queriedOrder.deliveryAddress.city,
+          state: queriedOrder.deliveryAddress.state,
+          pincode: queriedOrder.deliveryAddress.pincode,
+          isDefault: false,
+        },
+        deliveryDate: deliveryDate || "",
+        deliverySlot: deliverySlot || "",
+        deliverySlotWindow: undefined,
+        createdAt: new Date(queriedOrder.createdAt).toISOString(),
+        status: queriedOrder.status,
+      };
+    }
+    return latestOrder;
+  })();
+
   // Edge case: if no order session exists, show missing screen
-  if (!latestOrder) {
+  if (!resolvedOrder) {
     return (
       <div className="min-h-screen bg-hive-cream/30 flex items-center justify-center py-20 px-6 text-center select-none text-left animate-[scaleUp_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards]">
         <div className="max-w-md w-full bg-white border border-hive-border rounded-3xl p-8 shadow-sm space-y-6 flex flex-col items-center">
@@ -92,15 +150,15 @@ export default function OrderSuccessPage() {
     return "Expected within slot time range";
   };
 
-  const itemCount = latestOrder.items.reduce((acc, item) => acc + item.quantity, 0);
-  const slotWindow = latestOrder.deliverySlotWindow || getEstimatedWindow(latestOrder.deliverySlot);
+  const itemCount = resolvedOrder.items.reduce((acc: number, item: any) => acc + item.quantity, 0);
+  const slotWindow = resolvedOrder.deliverySlotWindow || getEstimatedWindow(resolvedOrder.deliverySlot);
 
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
       <div className="max-w-[900px] mx-auto flex flex-col gap-6 animate-[scaleUp_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards]">
 
         {/* Success Hero */}
-        <OrderSuccessHero orderId={latestOrder.id} />
+        <OrderSuccessHero orderId={resolvedOrder.id} />
 
         {/* Desktop grid layout: 2 columns */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
@@ -109,8 +167,8 @@ export default function OrderSuccessPage() {
           <div className="md:col-span-7 space-y-6">
 
             <DeliveryConfirmationCard
-              date={latestOrder.deliveryDate}
-              slot={latestOrder.deliverySlot}
+              date={resolvedOrder.deliveryDate}
+              slot={resolvedOrder.deliverySlot}
               window={slotWindow}
             />
 
@@ -126,19 +184,19 @@ export default function OrderSuccessPage() {
 
             <OrderSummaryCard
               itemCount={itemCount}
-              totalAmount={latestOrder.total}
-              paymentMethod={paymentMethodLabel(latestOrder.paymentMethod)}
-              address={latestOrder.address}
-              items={latestOrder.items}
-              deliveryDate={latestOrder.deliveryDate}
-              deliverySlot={latestOrder.deliverySlot}
+              totalAmount={resolvedOrder.total}
+              paymentMethod={paymentMethodLabel(resolvedOrder.paymentMethod)}
+              address={resolvedOrder.address}
+              items={resolvedOrder.items}
+              deliveryDate={resolvedOrder.deliveryDate}
+              deliverySlot={resolvedOrder.deliverySlot}
               deliverySlotWindow={slotWindow}
               showDetails={showDetails}
               onToggleDetails={() => setShowDetails(!showDetails)}
             />
 
             {/* Action buttons */}
-            <SuccessActions />
+            <SuccessActions resolvedOrder={resolvedOrder} />
 
           </div>
 
@@ -395,32 +453,31 @@ function OrderSummaryCard({
 // ─────────────────────────────────────────────────────────────────────────────
 // Component: SuccessActions
 // ─────────────────────────────────────────────────────────────────────────────
-function SuccessActions() {
+function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
   const router = useRouter();
-  const latestOrder = useOrderStore((state) => state.latestOrder);
   const { downloadInvoiceByOrderId, isDownloading } = useInvoiceDownload();
 
   const handleDownload = () => {
-    if (latestOrder?.convexId) {
-      downloadInvoiceByOrderId(latestOrder.convexId);
+    if (resolvedOrder?.convexId) {
+      downloadInvoiceByOrderId(resolvedOrder.convexId);
     }
   };
 
-  const downloading = latestOrder?.convexId ? isDownloading(latestOrder.convexId) : false;
+  const downloading = resolvedOrder?.convexId ? isDownloading(resolvedOrder.convexId) : false;
 
-  console.log("LATEST ORDER", latestOrder);
+  console.log("RESOLVED ORDER", resolvedOrder);
   return (
     <div className="w-full space-y-3">
       <button
         type="button"
-        onClick={() => router.push(latestOrder?.convexId ? `/orders/${latestOrder.convexId}` : "/orders")}
+        onClick={() => router.push(resolvedOrder?.convexId ? `/orders/${resolvedOrder.convexId}` : "/orders")}
         className="w-full h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-sm"
       >
         <span>Track Order</span>
         <ChevronRight className="w-4 h-4" />
       </button>
 
-      {latestOrder?.convexId && (
+      {resolvedOrder?.convexId && (
         <button
           type="button"
           disabled={downloading}

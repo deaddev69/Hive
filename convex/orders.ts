@@ -412,6 +412,14 @@ export const getOrderByNumber = query({
       .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
       .take(20);
 
-    return { ...order, items };
+    const boutique = await ctx.db.get(order.boutiqueId);
+    const boutiqueName = boutique?.name || "Hive Marketplace";
+
+    const itemsWithBoutiqueName = items.map((item) => ({
+      ...item,
+      boutiqueName,
+    }));
+
+    return { ...order, items: itemsWithBoutiqueName };
   },
 });

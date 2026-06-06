@@ -295,7 +295,7 @@ export default function SecurePaymentPage() {
       const isBuyNow = checkoutItems.length > 0;
 
       // Navigate first, then cleanup
-      router.push("/order/success");
+      router.push(`/order/success?orderId=${result.orderNumber}`);
       setTimeout(() => {
         if (!isBuyNow) {
           clearCartMutation({}).catch(console.error);
@@ -303,7 +303,7 @@ export default function SecurePaymentPage() {
         }
         clearCheckout();
         setIsPlacingOrder(false);
-        isOrderPlacing.current = false;
+        // Do NOT set isOrderPlacing.current = false upon success to prevent unmount race redirects
       }, 500);
     } catch (err) {
       console.error("[PlaceOrder] Failed:", err);
