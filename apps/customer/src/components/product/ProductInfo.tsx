@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShieldCheck, Star, Truck, Award, Sparkles, HelpCircle } from "lucide-react";
+import { ShieldCheck, Star, Truck, Award, Sparkles } from "lucide-react";
 import { cn } from "@hive/ui";
 import { ProductDetail } from "@/lib/mockProductDetails";
+import { SizeSelector, SizeSelectorSkeleton } from "./SizeSelector";
 
 export interface ProductInfoProps {
   product: ProductDetail;
@@ -43,6 +44,7 @@ const DeliveryPromiseCard: React.FC<{ sameDay: boolean; city: string }> = ({
 };
 
 export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
+  const [selectedSize, setSelectedSize] = useState<string>("");
   const [isDescExpanded, setIsDescExpanded] = useState(false);
 
   const discountPercent = product.compareAtPrice
@@ -55,34 +57,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
-  };
-
-  // Calculate overall inventory stock level (do not implement size inventory selectors yet)
-  const totalStock = Object.values(product.inventory).reduce((acc, curr) => acc + curr, 0);
-
-  const getInventoryStatus = () => {
-    if (totalStock === 0) {
-      return (
-        <span className="inline-flex items-center gap-1.5 text-xs text-red-600 font-extrabold bg-red-50 border border-red-200 px-3 py-1 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-          Out of Stock
-        </span>
-      );
-    }
-    if (totalStock < 10) {
-      return (
-        <span className="inline-flex items-center gap-1.5 text-xs text-amber-600 font-extrabold bg-amber-50 border border-amber-200 px-3 py-1 rounded-full animate-pulse">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-          Low Stock — Only {totalStock} left
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-green-600 font-extrabold bg-green-50/50 border border-green-200 px-3 py-1 rounded-full">
-        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-        In Stock
-      </span>
-    );
   };
 
   return (
@@ -132,6 +106,20 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         </button>
       )}
 
+      {/* ── SECTION 5: OCCASION TAGS ── */}
+      {product.occasionTags && product.occasionTags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {product.occasionTags.map((tag) => (
+            <span
+              key={tag}
+              className="bg-white border border-hive-border text-hive-dark text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm select-none"
+            >
+              {formatTag(tag)}
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* ── SECTION 4: PRICING ── */}
       <div className="flex items-baseline gap-3.5 border-b border-hive-border/40 pb-5">
         <span className="text-2xl font-extrabold text-hive-dark tracking-tight">
@@ -149,19 +137,16 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         )}
       </div>
 
-      {/* ── SECTION 5: OCCASION TAGS ── */}
-      {product.occasionTags && product.occasionTags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {product.occasionTags.map((tag) => (
-            <span
-              key={tag}
-              className="bg-white border border-hive-border text-hive-dark text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm select-none"
-            >
-              {formatTag(tag)}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* ── SIZE SELECTOR UX (Phase 6.4 Insertion) ── */}
+      <SizeSelector
+        sizes={product.sizes}
+        inventory={product.inventory}
+        selectedSize={selectedSize}
+        onSelectSize={setSelectedSize}
+        onOpenSizeGuide={() => {
+          console.log("Placeholder action: View Measurement Guide clicked");
+        }}
+      />
 
       {/* ── SECTION 6: CLAMPABLE DESCRIPTION ── */}
       <div className="space-y-2">
@@ -207,14 +192,6 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
           <span>100% Handcrafted Design</span>
         </div>
       </div>
-
-      {/* ── SECTION 9: INVENTORY PREVIEW ── */}
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-extrabold uppercase tracking-wider text-hive-dark">
-          Availability:
-        </span>
-        {getInventoryStatus()}
-      </div>
       
     </div>
   );
@@ -241,14 +218,17 @@ export const ProductInfoSkeleton: React.FC = () => {
       {/* Rating skeleton */}
       <div className="h-4 w-1/3 bg-hive-comb/10 rounded" />
 
-      {/* Pricing skeleton */}
-      <div className="h-8 w-1/2 bg-hive-comb/15 rounded border-b border-hive-border/40 pb-5" />
-
       {/* Occasion tags skeletons */}
       <div className="flex gap-2">
         <div className="h-6 w-16 bg-hive-comb/10 rounded-full" />
         <div className="h-6 w-20 bg-hive-comb/10 rounded-full" />
       </div>
+
+      {/* Pricing skeleton */}
+      <div className="h-8 w-1/2 bg-hive-comb/15 rounded border-b border-hive-border/40 pb-5" />
+
+      {/* Size Selector skeleton */}
+      <SizeSelectorSkeleton />
 
       {/* Description lines skeletons */}
       <div className="space-y-2">
@@ -265,9 +245,6 @@ export const ProductInfoSkeleton: React.FC = () => {
         <div className="h-3 w-2/3 bg-hive-comb/10 rounded" />
         <div className="h-3 w-2/3 bg-hive-comb/10 rounded" />
       </div>
-
-      {/* Inventory preview skeleton */}
-      <div className="h-6 w-1/4 bg-hive-comb/15 rounded-full" />
     </div>
   );
 };
