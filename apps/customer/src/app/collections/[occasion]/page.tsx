@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { mockCollections, getCollectionBySlug } from "@/lib/mockCollections";
+import { mockCollections, getCollectionDetails } from "@/lib/mockCollections";
 import { OccasionPageClient } from "./OccasionPageClient";
 
 interface OccasionPageProps {
@@ -8,11 +8,11 @@ interface OccasionPageProps {
 
 export async function generateMetadata({ params }: OccasionPageProps) {
   const { occasion } = await params;
-  const collection = getCollectionBySlug(occasion);
-  if (!collection) return {};
+  const details = getCollectionDetails(occasion);
+  if (!details) return {};
   return {
-    title: `${collection.title} — Hive by TailorBee`,
-    description: collection.longDescription,
+    title: `${details.title} Collection — Hive by TailorBee`,
+    description: details.editorialCopy,
   };
 }
 
@@ -22,11 +22,11 @@ export async function generateStaticParams() {
 
 export default async function OccasionPage({ params }: OccasionPageProps) {
   const { occasion } = await params;
-  const collection = getCollectionBySlug(occasion);
+  const details = getCollectionDetails(occasion);
 
-  if (!collection) {
+  if (!details) {
     notFound();
   }
 
-  return <OccasionPageClient collection={collection} />;
+  return <OccasionPageClient details={details} />;
 }
