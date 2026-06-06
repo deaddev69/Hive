@@ -11,12 +11,15 @@ export interface CheckoutState {
   deliveryInstructions: string;
   selectedPaymentMethod: string | null;
   checkoutItems: CartItem[];
+  /** Convex address _id stored as string — persists across checkout steps */
+  selectedAddressId: string | null;
   setDeliverySelection: (date: string, slot: string, slotWindow: string) => void;
   setAppliedPromo: (promo: string | null, discount: number) => void;
   setDeliveryInstructions: (instructions: string) => void;
   setSelectedPaymentMethod: (method: string | null) => void;
   setCheckoutItems: (items: CartItem[]) => void;
   clearCheckoutItems: () => void;
+  setSelectedAddressId: (id: string | null) => void;
   clearCheckout: () => void;
 }
 
@@ -31,6 +34,7 @@ export const useCheckoutStore = create<CheckoutState>()(
       deliveryInstructions: "",
       selectedPaymentMethod: null,
       checkoutItems: [],
+      selectedAddressId: null,
       setDeliverySelection: (date, slot, slotWindow) => {
         set({ selectedDate: date, selectedSlot: slot, selectedSlotWindow: slotWindow });
       },
@@ -49,6 +53,9 @@ export const useCheckoutStore = create<CheckoutState>()(
       clearCheckoutItems: () => {
         set({ checkoutItems: [] });
       },
+      setSelectedAddressId: (id) => {
+        set({ selectedAddressId: id });
+      },
       clearCheckout: () => {
         set({
           selectedDate: null,
@@ -59,6 +66,7 @@ export const useCheckoutStore = create<CheckoutState>()(
           deliveryInstructions: "",
           selectedPaymentMethod: null,
           checkoutItems: [] as CartItem[],
+          selectedAddressId: null,
         });
       },
     }),

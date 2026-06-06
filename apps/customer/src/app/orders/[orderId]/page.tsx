@@ -19,7 +19,9 @@ import {
   AlertTriangle,
   CheckCircle2,
 } from "lucide-react";
-import { useOrderStore, Order } from "@/store/order-store";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
+import { Id } from "../../../../../../convex/_generated/dataModel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /orders/[orderId] — Order Tracking & Details Page
@@ -30,17 +32,17 @@ export default function OrderDetailPage() {
   const orderId = params.orderId as string;
   const [mounted, setMounted] = useState(false);
 
-  const orders = useOrderStore((state) => state.orders);
+  const order = useQuery(api.orders.getOrderById, {
+    orderId: orderId as Id<"orders">,
+  });
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
+  if (!mounted || order === undefined) {
     return <OrderDetailSkeleton />;
   }
-
-  const order = orders.find((o) => o.id === orderId) ?? null;
 
   // ── Order not found ───────────────────────────────────────────────────────
   if (!order) {
@@ -69,25 +71,43 @@ export default function OrderDetailPage() {
     );
   }
 
+  // Map Convex status to UI status
+  const mapStatus = (s: string): string => {
+    const m: Record<string, string> = {
+      pending_payment: "placed", pending_confirmation: "placed",
+      confirmed: "confirmed", pickup_scheduled: "confirmed",
+      picked_up: "picked_up", in_transit: "picked_up",
+      out_for_delivery: "out_for_delivery",
+      delivered: "delivered", cancelled: "cancelled",
+    };
+    return m[s] ?? "placed";
+  };
+  const uiStatus = mapStatus(order.status);
+
   const paymentLabel = (m: string) => {
     const map: Record<string, string> = {
-      upi: "UPI Payment",
-      card: "Credit / Debit Card",
-      netbanking: "Net Banking",
-      wallet: "Digital Wallet",
-      cod: "Cash On Delivery",
+      upi: "UPI Payment", card: "Credit / Debit Card",
+      netbanking: "Net Banking", wallet: "Digital Wallet", cod: "Cash On Delivery",
     };
     return map[m] ?? "Online Checkout";
   };
 
-  const slotWindow = order.deliverySlotWindow ?? (() => {
-    const s = order.deliverySlot.toLowerCase();
+  // Extract payment method from notes ("Payment: upi | Slot: ...")
+  const paymentMethodRaw = order.notes?.match(/Payment: (\w+)/)?.[1] ?? "online";
+  const deliverySlotStr  = order.notes?.split("Slot: ")?.[1] ?? "";
+  const [deliveryDate, ...slotParts] = deliverySlotStr.split(" ");
+  const deliverySlot = slotParts.join(" ");
+
+  const slotWindow = (() => {
+    const s = deliverySlot.toLowerCase();
     if (s.includes("morning")) return "Expected before 1:00 PM";
     if (s.includes("afternoon")) return "Expected before 4:00 PM";
     if (s.includes("evening")) return "Expected before 7:00 PM";
     if (s.includes("night")) return "Expected before 9:00 PM";
     return "Expected within slot time range";
   })();
+
+  const addr = order.deliveryAddress;
 
   // ── Main Render ───────────────────────────────────────────────────────────
   return (
@@ -108,18 +128,15 @@ export default function OrderDetailPage() {
           <div className="space-y-1.5">
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-lg font-extrabold text-hive-dark font-mono select-all">
-                {order.id}
+                {order.orderNumber}
               </h1>
-              <OrderStatusBadge status={order.status} />
+              <OrderStatusBadge status={uiStatus} />
             </div>
             <p className="text-[11px] text-hive-text-muted font-medium">
               Placed on{" "}
               {new Date(order.createdAt).toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
+                day: "numeric", month: "long", year: "numeric",
+                hour: "2-digit", minute: "2-digit",
               })}
             </p>
           </div>
@@ -134,22 +151,24 @@ export default function OrderDetailPage() {
 
           {/* Left: Timeline + Items */}
           <div className="md:col-span-7 space-y-6">
-
-            {/* Status Timeline */}
-            <TrackingTimeline status={order.status} />
-
-            {/* Items */}
+            <TrackingTimeline status={uiStatus} />
             <OrderItemsList items={order.items} />
-
           </div>
 
           {/* Right: Delivery + Pricing + Actions */}
           <div className="md:col-span-5 space-y-6">
-
             <DeliveryCard
-              address={order.address}
-              date={order.deliveryDate}
-              slot={order.deliverySlot}
+              address={{
+                name:         addr.label,
+                addressLine1: addr.line1,
+                addressLine2: addr.line2,
+                city:         addr.city,
+                state:        addr.state,
+                pincode:      addr.pincode,
+                phone:        "",
+              }}
+              date={deliveryDate ?? "—"}
+              slot={deliverySlot ?? "—"}
               window={slotWindow}
             />
 
@@ -157,13 +176,12 @@ export default function OrderDetailPage() {
               subtotal={order.subtotal}
               discount={order.discount}
               deliveryFee={order.deliveryFee}
-              codFee={order.codFee}
+              codFee={0}
               total={order.total}
-              paymentMethod={paymentLabel(order.paymentMethod)}
+              paymentMethod={paymentLabel(paymentMethodRaw)}
             />
 
-            <ContextualActions order={order} />
-
+            <ContextualActionsConvex status={uiStatus} orderId={order._id} cancelReason={order.cancelReason} />
           </div>
         </div>
 
@@ -256,7 +274,7 @@ function TrackingTimeline({ status }: { status: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Component: OrderItemsList
+// Component: OrderItemsList — uses Convex orderItems shape
 // ─────────────────────────────────────────────────────────────────────────────
 function OrderItemsList({ items }: { items: any[] }) {
   return (
@@ -271,7 +289,7 @@ function OrderItemsList({ items }: { items: any[] }) {
           <div key={idx} className="flex gap-4 py-4 first:pt-0 last:pb-0">
             <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-hive-cream/30 border border-hive-border/25 flex-shrink-0">
               {item.imageUrl ? (
-                <Image src={item.imageUrl} alt={item.name} fill sizes="64px" className="object-cover" />
+                <Image src={item.imageUrl} alt={item.productName ?? item.name ?? ""} fill sizes="64px" className="object-cover" />
               ) : (
                 <div className="w-full h-full bg-hive-comb/30" />
               )}
@@ -279,23 +297,20 @@ function OrderItemsList({ items }: { items: any[] }) {
 
             <div className="flex-1 flex flex-col sm:flex-row justify-between sm:items-start gap-2">
               <div className="space-y-1">
-                <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-                  {item.boutiqueName}
-                </span>
-                <h4 className="text-xs font-bold text-hive-dark leading-tight">{item.name}</h4>
+                <h4 className="text-xs font-bold text-hive-dark leading-tight">{item.productName ?? item.name}</h4>
                 <div className="flex gap-2 flex-wrap items-center">
                   <span className="text-[9px] font-extrabold text-hive-dark bg-hive-comb px-2 py-0.5 rounded-lg border border-hive-gold/15">
-                    Size: {item.size}
+                    Size: {item.variantSize ?? item.size}
                   </span>
                   <span className="text-[9px] font-bold text-hive-text-muted">Qty: {item.quantity}</span>
                 </div>
               </div>
               <div className="text-right">
                 <span className="text-xs font-extrabold text-hive-dark block">
-                  ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                  ₹{((item.priceAtPurchase ?? item.price) * item.quantity).toLocaleString("en-IN")}
                 </span>
                 <span className="text-[9px] text-hive-text-muted mt-0.5 block">
-                  ₹{item.price.toLocaleString("en-IN")} × {item.quantity}
+                  ₹{(item.priceAtPurchase ?? item.price).toLocaleString("en-IN")} × {item.quantity}
                 </span>
               </div>
             </div>
@@ -437,10 +452,18 @@ function BillingCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Component: ContextualActions
+// Component: ContextualActionsConvex
 // ─────────────────────────────────────────────────────────────────────────────
-function ContextualActions({ order }: { order: Order }) {
-  if (order.status === "cancelled") {
+function ContextualActionsConvex({
+  status,
+  orderId,
+  cancelReason,
+}: {
+  status: string;
+  orderId: Id<"orders">;
+  cancelReason?: string;
+}) {
+  if (status === "cancelled") {
     return (
       <div className="bg-red-50/60 border border-red-200/50 rounded-3xl p-5 shadow-sm space-y-2.5">
         <div className="flex items-center gap-1.5 text-xs text-red-700 font-extrabold uppercase tracking-wider">
@@ -448,13 +471,13 @@ function ContextualActions({ order }: { order: Order }) {
           <span>Cancellation Notice</span>
         </div>
         <p className="text-xs leading-relaxed text-red-600/90 font-medium italic">
-          &quot;{order.cancellationReason ?? "No reason provided."}&quot;
+          &quot;{cancelReason ?? "No reason provided."}&quot;
         </p>
       </div>
     );
   }
 
-  if (order.status === "delivered") {
+  if (status === "delivered") {
     return (
       <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3.5">
         <div className="space-y-1">
@@ -464,7 +487,7 @@ function ContextualActions({ order }: { order: Order }) {
           </p>
         </div>
         <Link
-          href={`/claims/new?orderId=${order.id}`}
+          href={`/claims/new?orderId=${orderId}`}
           className="w-full h-11 border border-hive-amber text-hive-amber hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm"
         >
           <span>Report An Issue</span>

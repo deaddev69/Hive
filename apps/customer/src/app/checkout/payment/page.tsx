@@ -23,11 +23,14 @@ import {
   Truck,
   RotateCcw
 } from "lucide-react";
-import { useAddressStore } from "@/store/address-store";
 import { useCartStore } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useOrderStore } from "@/store/order-store";
 import { isServiceablePincode } from "@/data/mockServiceablePincodes";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
+import { Id } from "../../../../../../convex/_generated/dataModel";
+import { useUser } from "@clerk/nextjs";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types & Interface definitions
@@ -46,10 +49,15 @@ interface PaymentMethodConfig {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function SecurePaymentPage() {
   const router = useRouter();
+  const { isLoaded: clerkLoaded, isSignedIn } = useUser();
 
-  // Zustand State hooks
-  const addresses = useAddressStore((state) => state.addresses);
-  const selectedAddressId = useAddressStore((state) => state.selectedAddressId);
+  // Convex: persistent addresses for the logged-in user
+  const convexAddresses = useQuery(api.addresses.list) ?? [];
+  const placeOrderMutation = useMutation(api.orders.placeOrder);
+  const clearCartMutation  = useMutation(api.cart.clearCart);
+
+  // selectedAddressId comes from checkout store (set by address page)
+  const storedAddressId = useCheckoutStore((state) => state.selectedAddressId);
 
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
@@ -88,14 +96,19 @@ export default function SecurePaymentPage() {
     setMounted(true);
   }, []);
 
-  const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
+  // Resolve selectedAddress from Convex addresses list
+  const selectedAddress = convexAddresses.find((a) => a._id === storedAddressId)
+    ?? convexAddresses.find((a) => a.isDefault)
+    ?? convexAddresses[0]
+    ?? null;
+
   const orderItems = checkoutItems.length > 0 ? checkoutItems : items;
 
   // Validation redirect filter: block access if previous checkout phases are missing
   // Skip when order is being placed — clearCheckout nullifies state before navigation completes
   useEffect(() => {
     if (mounted && !isOrderPlacing.current) {
-      if (!selectedAddressId) {
+      if (!storedAddressId) {
         router.replace("/checkout/address");
       } else if (!selectedDate || !selectedSlot) {
         router.replace("/checkout/delivery");
@@ -103,9 +116,15 @@ export default function SecurePaymentPage() {
         router.replace("/not-serviceable");
       }
     }
-  }, [mounted, selectedAddressId, selectedDate, selectedSlot, selectedAddress, router]);
+  }, [mounted, storedAddressId, selectedDate, selectedSlot, selectedAddress, router]);
 
-  if (!mounted) {
+  if (!mounted || !clerkLoaded) {
+    return <PaymentSkeleton />;
+  }
+
+  // Auth guard — redirect to sign-in before any Convex mutation can throw
+  if (!isSignedIn) {
+    router.replace("/sign-in?redirect_url=" + encodeURIComponent("/checkout/payment"));
     return <PaymentSkeleton />;
   }
 
@@ -194,64 +213,91 @@ export default function SecurePaymentPage() {
     return true;
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!selectedPaymentMethod) return;
+    if (!validatePaymentInput()) return;
+    if (!selectedAddress) return;
 
-    if (!validatePaymentInput()) {
-      return;
-    }
+    const snapshotItems = orderItems.map((item) => ({
+      productId:   item.productId,
+      name:        item.name,
+      price:       item.price,
+      imageUrl:    item.imageUrl,
+      boutiqueName:item.boutiqueName,
+      size:        item.size,
+      quantity:    item.quantity,
+    }));
 
-    // Snapshot all values before any async work (Zustand state could change)
-    const snapshotItems = orderItems;
-    const snapshotSubtotal = subtotal;
-    const snapshotDiscount = discountAmount;
-    const snapshotDeliveryFee = deliveryFee;
-    const snapshotCodFee = codFee;
-    const snapshotTotal = total;
-    const snapshotPaymentMethod = selectedPaymentMethod;
-    const snapshotAddress = selectedAddress;
-    const snapshotDate = selectedDate!;
-    const snapshotSlot = selectedSlot!;
-    const snapshotSlotWindow = selectedSlotWindow || undefined;
+    const snapshotDate   = selectedDate!;
+    const snapshotSlot   = selectedSlot!;
 
-    console.log("[PlaceOrder] Snapshot state:", {
-      address: snapshotAddress?.name,
-      date: snapshotDate,
-      slot: snapshotSlot,
-      payment: snapshotPaymentMethod,
-    });
-
-    // Flag ON: bypass validation guard during order submission
     isOrderPlacing.current = true;
     setIsPlacingOrder(true);
 
-    // Simulate placing order delay
-    setTimeout(() => {
-      // Persist order to order store using snapshotted values
-      placeOrder({
-        items: snapshotItems,
-        subtotal: snapshotSubtotal,
-        discount: snapshotDiscount,
-        deliveryFee: snapshotDeliveryFee,
-        codFee: snapshotCodFee,
-        total: snapshotTotal,
-        paymentMethod: snapshotPaymentMethod,
-        address: snapshotAddress,
-        deliveryDate: snapshotDate,
-        deliverySlot: snapshotSlot,
-        deliverySlotWindow: snapshotSlotWindow,
+    try {
+      const result = await placeOrderMutation({
+        addressId:       selectedAddress._id as Id<"addresses">,
+        addressSnapshot: {
+          label:   selectedAddress.label,
+          line1:   selectedAddress.line1,
+          line2:   selectedAddress.line2,
+          city:    selectedAddress.city,
+          state:   selectedAddress.state,
+          pincode: selectedAddress.pincode,
+          lat:     0,
+          lng:     0,
+        },
+        deliveryDate:  snapshotDate,
+        deliverySlot:  snapshotSlot,
+        paymentMethod: selectedPaymentMethod,
+        items:         snapshotItems,
+        subtotal,
+        deliveryFee,
+        discount:      discountAmount,
+        total,
       });
 
-      // ✅ Navigate FIRST — then defer cleanup so the guard never fires before navigation
-      router.push("/order/success");
+      // Store orderNumber for success page
+      if (result) {
+        placeOrder({
+          items:         orderItems,
+          subtotal,
+          discount:      discountAmount,
+          deliveryFee,
+          codFee,
+          total,
+          paymentMethod: selectedPaymentMethod,
+          address:       {
+            id:          selectedAddress._id,
+            name:        selectedAddress.label,
+            phone:       "",
+            addressLine1:selectedAddress.line1,
+            addressLine2:selectedAddress.line2,
+            city:        selectedAddress.city,
+            state:       selectedAddress.state,
+            pincode:     selectedAddress.pincode,
+            isDefault:   selectedAddress.isDefault,
+          },
+          deliveryDate:  snapshotDate,
+          deliverySlot:  snapshotSlot,
+        });
+      }
 
+      // Navigate first, then cleanup
+      router.push("/order/success");
       setTimeout(() => {
+        clearCartMutation({}).catch(console.error);
         clearCart();
         clearCheckout();
         setIsPlacingOrder(false);
         isOrderPlacing.current = false;
       }, 500);
-    }, 1500);
+    } catch (err) {
+      console.error("[PlaceOrder] Failed:", err);
+      setIsPlacingOrder(false);
+      isOrderPlacing.current = false;
+      alert("Failed to place order. Please try again.");
+    }
   };
 
 

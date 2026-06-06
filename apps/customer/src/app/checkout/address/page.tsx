@@ -5,24 +5,71 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Edit2, Trash2, CheckCircle2, AlertTriangle, MapPin, Sparkles, ChevronRight, X, Phone, User, Landmark, Building, Bell, ShoppingBag } from "lucide-react";
-import { useAddressStore, Address } from "@/store/address-store";
 import { isServiceablePincode } from "@/data/mockServiceablePincodes";
 import { useCartStore } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
+import { Id } from "../../../../../../convex/_generated/dataModel";
+import { useUser } from "@clerk/nextjs";
+
+// Local type alias that mirrors what the UI expects
+type Address = {
+  _id: Id<"addresses">;
+  label: string;
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  isDefault: boolean;
+};
 
 export default function CheckoutAddressPage() {
   const router = useRouter();
-  
-  // Zustand Store selectors
-  const addresses = useAddressStore((state) => state.addresses);
-  const selectedAddressId = useAddressStore((state) => state.selectedAddressId);
-  const addAddress = useAddressStore((state) => state.addAddress);
-  const updateAddress = useAddressStore((state) => state.updateAddress);
-  const deleteAddress = useAddressStore((state) => state.deleteAddress);
-  const selectAddress = useAddressStore((state) => state.selectAddress);
-  
+  const { isLoaded: clerkLoaded, isSignedIn } = useUser();
+
+  // ── Convex data & mutations ──────────────────────────────────────────────
+  // useQuery will return [] when unauthenticated (query returns [] for anon users)
+  const convexAddresses = useQuery(api.addresses.list) ?? [];
+  const addAddressMutation    = useMutation(api.addresses.add);
+  const updateAddressMutation = useMutation(api.addresses.update);
+  const removeAddressMutation = useMutation(api.addresses.remove);
+  const setDefaultMutation    = useMutation(api.addresses.setDefault);
+
+  // Map Convex docs to local type
+  const addresses: Address[] = convexAddresses.map((a) => ({
+    _id:       a._id,
+    label:     a.label,
+    line1:     a.line1,
+    line2:     a.line2,
+    city:      a.city,
+    state:     a.state,
+    pincode:   a.pincode,
+    isDefault: a.isDefault,
+  }));
+
+  // Selected address — default to the default one or first
+  const [selectedAddressId, setSelectedAddressId] = useState<Id<"addresses"> | null>(null);
+
+  const handleSelectAddress = (id: Id<"addresses">) => {
+    setSelectedAddressId(id);
+    setSelectedAddressIdInCheckout(id);
+  };
+
+  useEffect(() => {
+    if (addresses.length > 0 && !selectedAddressId) {
+      const def = addresses.find((a) => a.isDefault) ?? addresses[0];
+      if (def) {
+        setSelectedAddressId(def._id);
+        setSelectedAddressIdInCheckout(def._id);
+      }
+    }
+  }, [addresses.length]);
+
   const items = useCartStore((state) => state.items);
   const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
+  const setSelectedAddressIdInCheckout = useCheckoutStore((state) => state.setSelectedAddressId);
 
   const [mounted, setMounted] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -50,11 +97,19 @@ export default function CheckoutAddressPage() {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
+  // ── Auth guard ─────────────────────────────────────────────────────────────
+  // Wait for Clerk to initialize before making any decisions
+  if (!mounted || !clerkLoaded) {
     return <AddressSkeleton />;
   }
 
-  const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
+  // If Clerk is loaded and user is NOT signed in → redirect to sign-in
+  if (!isSignedIn) {
+    router.replace("/sign-in?redirect_url=" + encodeURIComponent("/checkout/address"));
+    return <AddressSkeleton />;
+  }
+
+  const selectedAddress = addresses.find((addr) => addr._id === selectedAddressId) || null;
   const isServiceable = selectedAddress ? isServiceablePincode(selectedAddress.pincode) : false;
   const effectiveItems = checkoutItems.length > 0 ? checkoutItems : items;
   
@@ -83,11 +138,11 @@ export default function CheckoutAddressPage() {
     e.stopPropagation();
     setEditingAddress(addr);
     setFormData({
-      name: addr.name,
-      phone: addr.phone,
-      addressLine1: addr.addressLine1,
-      addressLine2: addr.addressLine2 || "",
-      landmark: addr.landmark || "",
+      name: addr.label,
+      phone: "",
+      addressLine1: addr.line1,
+      addressLine2: addr.line2 || "",
+      landmark: "",
       city: addr.city,
       state: addr.state,
       pincode: addr.pincode,
@@ -117,22 +172,34 @@ export default function CheckoutAddressPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
+    const convexPayload = {
+      label:     formData.name,
+      line1:     formData.addressLine1,
+      line2:     formData.addressLine2 || undefined,
+      city:      formData.city,
+      state:     formData.state,
+      pincode:   formData.pincode,
+      isDefault: formData.isDefault,
+    };
+
     if (editingAddress) {
-      updateAddress(editingAddress.id, formData);
+      await updateAddressMutation({ addressId: editingAddress._id, ...convexPayload });
     } else {
-      addAddress(formData);
+      const newId = await addAddressMutation(convexPayload);
+      if (newId) setSelectedAddressId(newId as Id<"addresses">);
     }
     setShowForm(false);
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: Id<"addresses">, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm("Are you sure you want to delete this address?")) {
-      deleteAddress(id);
+      await removeAddressMutation({ addressId: id });
+      if (selectedAddressId === id) setSelectedAddressId(null);
     }
   };
 
@@ -217,13 +284,13 @@ export default function CheckoutAddressPage() {
             {/* Grid of Address cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {addresses.map((addr) => {
-                const isSelected = addr.id === selectedAddressId;
+                const isSelected = addr._id === selectedAddressId;
                 const serviceable = isServiceablePincode(addr.pincode);
                 
                 return (
                   <div
-                    key={addr.id}
-                    onClick={() => selectAddress(addr.id)}
+                    key={addr._id}
+                    onClick={() => handleSelectAddress(addr._id)}
                     className={`bg-white border rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-4 relative cursor-pointer group transition-all duration-300 ${
                       isSelected
                         ? "border-hive-dark ring-1 ring-hive-dark"
@@ -237,11 +304,11 @@ export default function CheckoutAddressPage() {
                           type="radio"
                           name="selected_address"
                           checked={isSelected}
-                          onChange={() => selectAddress(addr.id)}
+                          onChange={() => handleSelectAddress(addr._id)}
                           className="w-4.5 h-4.5 accent-hive-dark cursor-pointer"
                         />
                         <span className="text-xs font-bold text-hive-dark truncate max-w-[140px]">
-                          {addr.name}
+                          {addr.label}
                         </span>
                       </div>
                       
@@ -254,13 +321,9 @@ export default function CheckoutAddressPage() {
 
                     {/* Address details block */}
                     <div className="space-y-1 text-xs text-hive-text leading-relaxed font-medium">
-                      <p>{addr.addressLine1}</p>
-                      {addr.addressLine2 && <p>{addr.addressLine2}</p>}
+                      <p>{addr.line1}</p>
+                      {addr.line2 && <p>{addr.line2}</p>}
                       <p>{addr.city}, {addr.state} - <span className="font-extrabold">{addr.pincode}</span></p>
-                      <p className="text-hive-text-muted mt-1.5 flex items-center gap-1">
-                        <Phone className="w-3.5 h-3.5 opacity-60" />
-                        <span>{addr.phone}</span>
-                      </p>
                     </div>
 
                     {/* Action buttons */}
@@ -290,7 +353,7 @@ export default function CheckoutAddressPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={(e) => handleDelete(addr.id, e)}
+                          onClick={(e) => handleDelete(addr._id, e)}
                           className="flex items-center gap-1 text-hive-text-muted hover:text-red-500 transition-colors duration-200"
                         >
                           <Trash2 className="w-3 h-3" />

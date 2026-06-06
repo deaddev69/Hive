@@ -686,5 +686,22 @@ export default defineSchema({
   })
     .index("by_source_eventId", ["source", "eventId"]) // unique check
     .index("by_status",         ["status"]),
+  // ─── CART ITEMS ───────────────────────────────────────────────────────────
+  // Lightweight per-user cart storage for the customer app.
+  // Flat table: one row per line item, keyed by userId.
+  cartItems: defineTable({
+    userId:      v.id("users"),
+    productId:   v.string(),          // slug or mock ID from frontend
+    productSlug: v.optional(v.string()),
+    name:        v.string(),
+    price:       v.number(),          // rupees (not paise – consistent with UI)
+    imageUrl:    v.string(),
+    boutiqueName:v.string(),
+    size:        v.string(),
+    quantity:    v.number(),
+    addedAt:     v.number(),          // epoch ms
+  })
+    .index("by_userId", ["userId"])
+    .index("by_userId_product_size", ["userId", "productId", "size"]),
 
 });

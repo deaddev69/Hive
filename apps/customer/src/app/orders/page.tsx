@@ -14,7 +14,8 @@ import {
   Clock,
   MapPin,
 } from "lucide-react";
-import { useOrderStore, Order } from "@/store/order-store";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /orders — My Orders Page
@@ -23,20 +24,35 @@ export default function MyOrdersPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  const orders = useOrderStore((state) => state.orders);
+  const convexOrders = useQuery(api.orders.listMyOrders);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted) {
+  if (!mounted || convexOrders === undefined) {
     return <OrdersSkeleton />;
   }
 
-  // Sort: newest first
-  const sortedOrders = [...orders].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  // Sort: newest first (already ordered by Convex desc, but defensive)
+  const sortedOrders = [...convexOrders].sort((a, b) => b.createdAt - a.createdAt);
+
+  // Map Convex status to UI status values
+  const mapStatus = (s: string): string => {
+    const map: Record<string, string> = {
+      pending_payment:         "placed",
+      pending_confirmation:    "placed",
+      confirmed:               "confirmed",
+      pickup_scheduled:        "confirmed",
+      picked_up:               "picked_up",
+      in_transit:              "picked_up",
+      out_for_delivery:        "out_for_delivery",
+      delivered:               "delivered",
+      cancelled:               "cancelled",
+    };
+    return map[s] ?? "placed";
+  };
+
 
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
@@ -69,7 +85,7 @@ export default function MyOrdersPage() {
               {
                 label: "Active",
                 value: sortedOrders.filter((o) =>
-                  ["placed", "confirmed", "picked_up", "out_for_delivery"].includes(o.status)
+                  ["pending_payment", "pending_confirmation", "confirmed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery"].includes(o.status)
                 ).length,
               },
               {
@@ -102,7 +118,7 @@ export default function MyOrdersPage() {
         ) : (
           <div className="space-y-4">
             {sortedOrders.map((order) => (
-              <OrderCard key={order.id} order={order} />
+              <OrderCard key={order._id} order={order} mapStatus={mapStatus} />
             ))}
           </div>
         )}
@@ -113,16 +129,19 @@ export default function MyOrdersPage() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Component: OrderCard
+// Component: OrderCard — uses Convex order shape
 // ─────────────────────────────────────────────────────────────────────────────
-function OrderCard({ order }: { order: Order }) {
+type ConvexOrder = NonNullable<ReturnType<typeof useQuery<typeof api.orders.listMyOrders>>>[number];
+
+function OrderCard({ order, mapStatus }: { order: ConvexOrder; mapStatus: (s: string) => string }) {
   const firstItem = order.items[0];
   const itemsCount = order.items.reduce((acc, item) => acc + item.quantity, 0);
-  const isActive = ["placed", "confirmed", "picked_up", "out_for_delivery"].includes(order.status);
+  const uiStatus = mapStatus(order.status);
+  const isActive = ["placed", "confirmed", "picked_up", "out_for_delivery"].includes(uiStatus);
 
-  const formatDate = (isoString: string) => {
+  const formatDate = (epochMs: number) => {
     try {
-      return new Date(isoString).toLocaleDateString("en-IN", {
+      return new Date(epochMs).toLocaleDateString("en-IN", {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -132,9 +151,12 @@ function OrderCard({ order }: { order: Order }) {
     }
   };
 
+  // Extract delivery slot from notes field ("Payment: upi | Slot: 2026-06-07 10:00 AM")
+  const deliverySlot = order.notes?.split("Slot: ")[1] ?? "";
+
   return (
     <Link
-      href={`/orders/${order.id}`}
+      href={`/orders/${order._id}`}
       className="group bg-white border border-hive-border/50 rounded-3xl p-5 shadow-sm hover:shadow-md hover:border-hive-border transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-5 text-left block"
     >
       <div className="flex gap-4 flex-1">
@@ -144,7 +166,7 @@ function OrderCard({ order }: { order: Order }) {
           {firstItem?.imageUrl ? (
             <Image
               src={firstItem.imageUrl}
-              alt={firstItem.name}
+              alt={firstItem.productName}
               fill
               sizes="80px"
               className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -164,20 +186,17 @@ function OrderCard({ order }: { order: Order }) {
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-extrabold text-hive-dark select-all font-mono">
-                {order.id}
+                {order.orderNumber}
               </span>
-              <OrderStatusBadge status={order.status} />
+              <OrderStatusBadge status={uiStatus} />
             </div>
 
             <div className="space-y-0.5">
               <p className="text-[11px] font-bold text-hive-dark truncate">
-                {firstItem?.name}
+                {firstItem?.productName}
                 {itemsCount > 1 && (
                   <span className="text-hive-text-muted font-medium"> +{itemsCount - 1} more</span>
                 )}
-              </p>
-              <p className="text-[10px] text-hive-text-muted font-medium">
-                {firstItem?.boutiqueName}
               </p>
             </div>
           </div>
@@ -187,10 +206,12 @@ function OrderCard({ order }: { order: Order }) {
               <Calendar className="w-3 h-3 text-hive-gold" />
               {formatDate(order.createdAt)}
             </span>
-            <span className="text-[10px] text-hive-text-muted flex items-center gap-1">
-              <Clock className="w-3 h-3 text-hive-gold" />
-              {order.deliverySlot}
-            </span>
+            {deliverySlot && (
+              <span className="text-[10px] text-hive-text-muted flex items-center gap-1">
+                <Clock className="w-3 h-3 text-hive-gold" />
+                {deliverySlot}
+              </span>
+            )}
           </div>
         </div>
       </div>

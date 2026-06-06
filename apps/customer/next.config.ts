@@ -43,6 +43,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Resolve @convex/* alias to the monorepo convex/_generated directory
+  webpack(config) {
+    const path = require("path");
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@convex": path.resolve(__dirname, "../../convex/_generated"),
+    };
+    return config;
+  },
 };
 
 export default nextConfig;
