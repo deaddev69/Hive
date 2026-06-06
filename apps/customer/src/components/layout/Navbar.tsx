@@ -25,15 +25,19 @@ export const Navbar: React.FC = () => {
     <nav className="sticky top-0 z-40 w-full bg-white/80 dark:bg-hive-dark/80 backdrop-blur-md border-b border-hive-border/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
-        {/* Brand / Logo */}
-        <div className="flex items-center gap-2">
+        {/* Brand / Logo — navigates to Home from anywhere */}
+        <Link
+          href="/"
+          aria-label="Go to Home"
+          className="flex items-center gap-2 hover:opacity-80 active:scale-[0.97] transition-all duration-200 cursor-pointer"
+        >
           <div className="w-8 h-8 rounded-lg bg-hive-gold flex items-center justify-center font-bold text-hive-dark">
             H
           </div>
           <span className="font-serif font-black tracking-tight text-lg text-hive-text hidden sm:inline-block">
             HIVE
           </span>
-        </div>
+        </Link>
 
         {/* Location Selector */}
         <button
