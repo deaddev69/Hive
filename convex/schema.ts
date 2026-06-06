@@ -719,4 +719,26 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"]),
 
+  // ─── SERVICEABILITY ZONES ──────────────────────────────────────────────────
+  serviceZones: defineTable({
+    city:      v.string(),
+    state:     v.string(),
+    isActive:  v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_city", ["city"])
+    .index("by_isActive", ["isActive"]),
+
+  // ─── SERVICE DEMAND REQUESTS ────────────────────────────────────────────────
+  serviceRequests: defineTable({
+    userId:    v.optional(v.string()), // Clerk or Convex user identifier
+    city:      v.string(),
+    state:     v.string(),
+    latitude:  v.optional(v.number()),
+    longitude: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_city_state", ["city", "state"])
+    .index("by_userId", ["userId"]),
+
 });

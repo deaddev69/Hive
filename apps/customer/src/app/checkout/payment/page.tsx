@@ -26,7 +26,6 @@ import {
 import { useCartStore } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useOrderStore } from "@/store/order-store";
-import { isServiceablePincode } from "@/data/mockServiceablePincodes";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
@@ -104,6 +103,12 @@ export default function SecurePaymentPage() {
 
   const orderItems = checkoutItems.length > 0 ? checkoutItems : items;
 
+  // Real database serviceability check
+  const checkServiceability = useQuery(
+    api.serviceability.checkServiceability,
+    selectedAddress ? { city: selectedAddress.city } : "skip"
+  );
+
   // Validation redirect filter: block access if previous checkout phases are missing
   // Skip when order is being placed — clearCheckout nullifies state before navigation completes
   useEffect(() => {
@@ -112,11 +117,11 @@ export default function SecurePaymentPage() {
         router.replace("/checkout/address");
       } else if (!selectedDate || !selectedSlot) {
         router.replace("/checkout/delivery");
-      } else if (selectedAddress && !isServiceablePincode(selectedAddress.pincode)) {
-        router.replace("/not-serviceable");
+      } else if (checkServiceability !== undefined && checkServiceability.isServiceable === false) {
+        router.replace("/");
       }
     }
-  }, [mounted, storedAddressId, selectedDate, selectedSlot, selectedAddress, router]);
+  }, [mounted, storedAddressId, selectedDate, selectedSlot, checkServiceability, router]);
 
   if (!mounted || !clerkLoaded) {
     return <PaymentSkeleton />;

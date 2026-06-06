@@ -5,8 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Edit2, Trash2, CheckCircle2, AlertTriangle, MapPin, Sparkles, ChevronRight, X, Phone, User, Landmark, Building, Bell, ShoppingBag } from "lucide-react";
-import { isServiceablePincode } from "@/data/mockServiceablePincodes";
 import { useCartStore } from "@/store/cart-store";
+import { useLocation } from "@/context/LocationContext";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -71,6 +71,18 @@ export default function CheckoutAddressPage() {
   const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
   const setSelectedAddressIdInCheckout = useCheckoutStore((state) => state.setSelectedAddressId);
 
+  const { isServiceable: isGlobalServiceable } = useLocation();
+  const activeZones = useQuery(api.serviceability.getActiveZones) ?? [];
+  const requestService = useMutation(api.serviceability.requestService);
+  const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
+
+  const isAddressServiceable = (addr: Address) => {
+    if (!addr.city) return false;
+    return activeZones.some(
+      (zone) => zone.city.trim().toLowerCase() === addr.city.trim().toLowerCase()
+    );
+  };
+
   const [mounted, setMounted] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
@@ -97,6 +109,12 @@ export default function CheckoutAddressPage() {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (mounted && !isGlobalServiceable) {
+      router.replace("/");
+    }
+  }, [mounted, isGlobalServiceable, router]);
+
   // ── Auth guard ─────────────────────────────────────────────────────────────
   // Wait for Clerk to initialize before making any decisions
   if (!mounted || !clerkLoaded) {
@@ -110,7 +128,7 @@ export default function CheckoutAddressPage() {
   }
 
   const selectedAddress = addresses.find((addr) => addr._id === selectedAddressId) || null;
-  const isServiceable = selectedAddress ? isServiceablePincode(selectedAddress.pincode) : false;
+  const isServiceable = selectedAddress ? isAddressServiceable(selectedAddress) : false;
   const effectiveItems = checkoutItems.length > 0 ? checkoutItems : items;
   
   const subtotal = effectiveItems.reduce((total, item) => total + item.price * item.quantity, 0);
@@ -203,14 +221,25 @@ export default function CheckoutAddressPage() {
     }
   };
 
-  const handleWaitlistSubmit = (e: React.FormEvent) => {
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!waitlistEmail) return;
-    setWaitlistSuccess(true);
-    setTimeout(() => {
-      setWaitlistSuccess(false);
-      setWaitlistEmail("");
-    }, 3500);
+    if (!selectedAddress) return;
+    setIsSubmittingWaitlist(true);
+    try {
+      await requestService({
+        city: selectedAddress.city,
+        state: selectedAddress.state,
+      });
+      setWaitlistSuccess(true);
+      setTimeout(() => {
+        setWaitlistSuccess(false);
+        setWaitlistEmail("");
+      }, 3500);
+    } catch (err) {
+      console.error("Failed to request service:", err);
+    } finally {
+      setIsSubmittingWaitlist(false);
+    }
   };
 
   // Redirect if cart is empty
@@ -285,7 +314,7 @@ export default function CheckoutAddressPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {addresses.map((addr) => {
                 const isSelected = addr._id === selectedAddressId;
-                const serviceable = isServiceablePincode(addr.pincode);
+                const serviceable = isAddressServiceable(addr);
                 
                 return (
                   <div
@@ -447,7 +476,8 @@ export default function CheckoutAddressPage() {
                             />
                             <button
                               type="submit"
-                              className="h-9 px-4 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 transition-all text-xs font-extrabold uppercase tracking-wider rounded-xl shadow-sm"
+                              disabled={isSubmittingWaitlist}
+                              className="h-9 px-4 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 transition-all text-xs font-extrabold uppercase tracking-wider rounded-xl shadow-sm disabled:opacity-50"
                             >
                               Notify
                             </button>

@@ -13,7 +13,7 @@ export interface LocationDrawerProps {
 export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose }) => {
   const [shouldRender, setShouldRender] = useState(isOpen);
   const [animate, setAnimate] = useState(false);
-  const { city, stateName, postcode, detectLocation, updateLocationDetails } = useLocation();
+  const { city, stateName, postcode, detectLocation, updateLocationDetails, isServiceable } = useLocation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -61,7 +61,11 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
     if (result.success) {
       onClose();
     } else {
-      setError(result.error || "Could not refresh location.");
+      if (city) {
+        alert(result.error || "Could not refresh location.");
+      } else {
+        setError(result.error || "Could not refresh location.");
+      }
     }
   };
 
@@ -161,9 +165,20 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
         <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-6">
           {/* Section: Current Location */}
           <div className="bg-white rounded-2xl p-5 border border-slate-100 flex flex-col gap-3.5">
-            <h3 className="text-xs font-extrabold uppercase tracking-widest text-slate-400">
-              Current Location
-            </h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xs font-extrabold uppercase tracking-widest text-slate-400">
+                Current Location
+              </h3>
+              {city && (
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  isServiceable 
+                    ? "bg-green-500/10 text-green-600" 
+                    : "bg-red-500/10 text-red-600"
+                }`}>
+                  {isServiceable ? "🟢 Delivery Available" : "🔴 Not Yet Serviceable"}
+                </span>
+              )}
+            </div>
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-full bg-amber-50 flex items-center justify-center text-hive-gold flex-shrink-0 mt-0.5">
                 <MapPin className="w-5 h-5" />
@@ -233,7 +248,7 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
               Re-Detect
             </h3>
 
-            {error && <p className="text-xs text-red-500 font-medium px-1">{error}</p>}
+            {error && !city && <p className="text-xs text-red-500 font-medium px-1">{error}</p>}
 
             <Button
               variant="outline"

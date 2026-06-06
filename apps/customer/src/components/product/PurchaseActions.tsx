@@ -18,6 +18,7 @@ interface AddToCartButtonProps {
   loading: boolean;
   onClick: () => void;
   className?: string;
+  isServiceable?: boolean;
 }
 
 export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
@@ -25,15 +26,16 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
   loading,
   onClick,
   className = "",
+  isServiceable = true,
 }) => {
   return (
     <button
       type="button"
-      disabled={disabled || loading}
+      disabled={disabled || loading || !isServiceable}
       onClick={onClick}
       className={cn(
         "h-12 w-full rounded-xl flex items-center justify-center gap-2.5 font-extrabold uppercase tracking-widest transition-all duration-300 relative outline-none focus-visible:ring-2 focus-visible:ring-hive-amber focus-visible:ring-offset-2 select-none",
-        disabled
+        (disabled || !isServiceable)
           ? "bg-hive-border/40 border border-hive-border/20 text-hive-text-muted/50 cursor-not-allowed"
           : "bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] shadow-sm hover:shadow-md",
         className
@@ -41,6 +43,8 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
     >
       {loading ? (
         <span className="w-5 h-5 rounded-full border-2 border-hive-gold border-t-transparent animate-spin" />
+      ) : !isServiceable ? (
+        <span>Delivery Not Available In Your Area</span>
       ) : (
         <>
           <ShoppingBag className="w-4.5 h-4.5 stroke-[2.2]" />
@@ -58,28 +62,30 @@ interface BuyNowButtonProps {
   disabled: boolean;
   onClick: () => void;
   className?: string;
+  isServiceable?: boolean;
 }
 
 export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
   disabled,
   onClick,
   className = "",
+  isServiceable = true,
 }) => {
   return (
     <button
       type="button"
-      disabled={disabled}
+      disabled={disabled || !isServiceable}
       onClick={onClick}
       className={cn(
         "h-12 w-full rounded-xl border border-hive-dark text-hive-dark font-extrabold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2.5 hover:bg-hive-dark/5 active:scale-[0.98] outline-none focus-visible:ring-2 focus-visible:ring-hive-amber select-none",
-        disabled
-          ? "border-hive-border/40 text-hive-text-muted/40 cursor-not-allowed"
+        (disabled || !isServiceable)
+          ? "border-hive-border/40 text-hive-text-muted/40 cursor-not-allowed bg-slate-100/50"
           : "",
         className
       )}
     >
-      <span>Buy Now</span>
-      <ArrowRight className="w-4.5 h-4.5 stroke-[2.2]" />
+      <span>{isServiceable ? "Buy Now" : "Delivery Not Available"}</span>
+      {isServiceable && <ArrowRight className="w-4.5 h-4.5 stroke-[2.2]" />}
     </button>
   );
 };
@@ -128,6 +134,7 @@ interface StickyMobilePurchaseBarProps {
   onSelectSizePrompt: () => void;
   loading: boolean;
   className?: string;
+  isServiceable?: boolean;
 }
 
 export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = ({
@@ -139,6 +146,7 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
   onSelectSizePrompt,
   loading,
   className = "",
+  isServiceable = true,
 }) => {
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
 
@@ -161,7 +169,15 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
 
       {/* Button CTA */}
       <div className="flex-1 max-w-[200px]">
-        {!selectedSize ? (
+        {!isServiceable ? (
+          <button
+            type="button"
+            disabled
+            className="h-11 w-full rounded-xl bg-hive-border/40 text-hive-text-muted/50 font-extrabold uppercase tracking-wider text-[10px] cursor-not-allowed leading-tight px-1"
+          >
+            Delivery Not Available
+          </button>
+        ) : !selectedSize ? (
           <button
             type="button"
             onClick={onSelectSizePrompt}
@@ -183,6 +199,7 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
             loading={loading}
             onClick={onAddToCart}
             className="h-11 text-xs"
+            isServiceable={isServiceable}
           />
         )}
       </div>
@@ -222,12 +239,12 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const addItem = useCartStore((state) => state.addItem);
   const setCheckoutItems = useCheckoutStore((state) => state.setCheckoutItems);
   const { setSidebarOpen } = useCart();
-  const { pincode, isServiceable } = useLocation();
+  const { isServiceable } = useLocation();
 
   const inventoryCount = selectedSize ? product.inventory[selectedSize] ?? 0 : 0;
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
   const isLowStock = selectedSize ? inventoryCount > 0 && inventoryCount <= 3 : false;
-  const isLocationServiceable = !pincode || (isServiceable && isServiceablePincode(pincode));
+  const isLocationServiceable = isServiceable;
 
   const triggerToast = (message: string, type: "success" | "info" = "success") => {
     setToast({ message, type });
@@ -243,7 +260,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
     }
 
     if (!isLocationServiceable) {
-      router.push("/not-serviceable");
+      triggerToast("Delivery is not available in your area.", "info");
       return;
     }
 
@@ -275,7 +292,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
     }
 
     if (!isLocationServiceable) {
-      router.push("/not-serviceable");
+      triggerToast("Delivery is not available in your area.", "info");
       return;
     }
 
@@ -310,7 +327,12 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       
       {/* 1. Validation Alerts & Feedback */}
       <div className="min-h-[30px] flex items-center">
-        {!selectedSize ? (
+        {!isLocationServiceable ? (
+          <div className="flex items-center gap-2 text-xs font-bold text-red-700 bg-red-50 px-3.5 py-1.5 rounded-xl border border-red-200 w-full">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-500" />
+            <span>Delivery Not Available: HIVE does not serve your area yet.</span>
+          </div>
+        ) : !selectedSize ? (
           <div className="flex items-center gap-2 text-xs font-bold text-hive-amber bg-hive-gold/10 px-3.5 py-1.5 rounded-xl border border-hive-gold/25 w-full">
             <Info className="w-4 h-4 flex-shrink-0" />
             <span>Please select a size to view availability and purchase options.</span>
@@ -371,8 +393,9 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             disabled={!selectedSize}
             loading={loading}
             onClick={handleAddToCart}
+            isServiceable={isLocationServiceable}
           />
-          <BuyNowButton disabled={!selectedSize} onClick={handleBuyNow} />
+          <BuyNowButton disabled={!selectedSize} onClick={handleBuyNow} isServiceable={isLocationServiceable} />
         </div>
       )}
 
@@ -409,6 +432,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         onAddToCart={handleAddToCart}
         onSelectSizePrompt={onOpenSizeGuide}
         loading={loading}
+        isServiceable={isLocationServiceable}
       />
 
       <style>{`
