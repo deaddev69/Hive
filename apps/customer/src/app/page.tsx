@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocation } from "@/context/LocationContext";
 import { useCart } from "@/context/CartContext";
-import { useSessionStore } from "@/context/SessionContext";
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
 import { MapPin, Sparkles, Plus, ShoppingCart } from "lucide-react";
 import { HeroSection } from "@/components/home/HeroSection";
@@ -18,7 +17,6 @@ import { ExpansionCTA } from "@/components/expansion/ExpansionCTA";
 export default function HomePage() {
   const { pincode, regionName, isServiceable, setGateOpen } = useLocation();
   const { addToCart, itemsCount } = useCart();
-  const { user, loginAsMockUser } = useSessionStore();
   const router = useRouter();
   const [selectedOccasion, setSelectedOccasion] = useState("all");
 
@@ -61,23 +59,6 @@ export default function HomePage() {
       {/* Shell Inner Container - Testing Controls */}
       <div className="max-w-7xl w-full mx-auto px-6 lg:px-8 py-12 flex flex-col gap-8">
         
-        {/* Mock Sign In Control Bar */}
-        {!user && (
-          <section className="bg-white border border-hive-border rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex flex-col text-left">
-              <span className="text-xs font-bold text-hive-gold uppercase tracking-wider">
-                Permanent Application Shell
-              </span>
-              <h2 className="text-lg font-bold font-serif mt-0.5">
-                Sign in to validate session and checkout states
-              </h2>
-            </div>
-            <Button variant="primary" onClick={() => loginAsMockUser("customer")}>
-              Sign In (Mock Profile)
-            </Button>
-          </section>
-        )}
-
         {/* Live Interaction Playground */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
           

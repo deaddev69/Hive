@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { ClerkProvider, useAuth } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient } from "convex/react";
 
@@ -17,19 +17,15 @@ import { CartProvider } from "@/context/CartContext";
 const convex = new ConvexReactClient(convexUrl || "https://placeholder-url.convex.cloud");
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
-  const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
   return (
-    <ClerkProvider publishableKey={clerkKey}>
-      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-        <SessionProvider>
-          <LocationProvider>
-            <CartProvider>
-              {children}
-            </CartProvider>
-          </LocationProvider>
-        </SessionProvider>
-      </ConvexProviderWithClerk>
-    </ClerkProvider>
+    <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+      <SessionProvider>
+        <LocationProvider>
+          <CartProvider>
+            {children}
+          </CartProvider>
+        </LocationProvider>
+      </SessionProvider>
+    </ConvexProviderWithClerk>
   );
 }
