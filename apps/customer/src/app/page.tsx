@@ -11,6 +11,7 @@ import { OccasionRail } from "@/components/home/OccasionRail";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { mockProducts } from "@/lib/mockProducts";
 import { BoutiqueSpotlight } from "@/components/boutique/BoutiqueSpotlight";
+import { TrustStrip } from "@/components/trust/TrustStrip";
 
 export default function HomePage() {
   const { pincode, regionName, isServiceable, setGateOpen } = useLocation();
@@ -38,6 +39,9 @@ export default function HomePage() {
 
       {/* Phase 4.5: Boutique Spotlight */}
       <BoutiqueSpotlight />
+
+      {/* Phase 4.6: Trust Strip Assurances */}
+      <TrustStrip />
 
       {/* Shell Inner Container - Testing Controls */}
       <div className="max-w-7xl w-full mx-auto px-6 lg:px-8 py-12 flex flex-col gap-8">
