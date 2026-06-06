@@ -5,6 +5,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUser } from "./lib/auth";
+import { validateProductSizeAndStock } from "./lib/mockInventory";
 
 /**
  * Fetch all cart items for the current user.
@@ -46,6 +47,9 @@ export const addItem = mutation({
   },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
+
+    // Validate size and stock
+    await validateProductSizeAndStock(ctx.db, args.productId, args.size, args.quantity);
 
     // Check for existing matching item
     const existing = await ctx.db

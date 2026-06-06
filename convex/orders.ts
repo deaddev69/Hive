@@ -6,6 +6,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUser } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
+import { validateProductSizeAndStock, normalizeSize } from "./lib/mockInventory";
 
 // ─── Cart item input shape for order placement ────────────────────────────
 const cartItemArg = v.object({
@@ -60,6 +61,11 @@ export const placeOrder = mutation({
 
     if (args.items.length === 0) {
       throw new Error("Cart is empty");
+    }
+
+    // Validate size and stock for each item before placing the order
+    for (const item of args.items) {
+      await validateProductSizeAndStock(ctx.db, item.productId, item.size, item.quantity);
     }
 
     const now = Date.now();
@@ -131,14 +137,19 @@ export const placeOrder = mutation({
         .withIndex("by_slug", (q) => q.eq("slug", item.productId))
         .unique();
 
+      const normalized = normalizeSize(item.size);
+
       if (productRow) {
-        // Find a matching variant
-        const variant = await ctx.db
+        // Find a matching variant by product ID and matching size
+        const variants = await ctx.db
           .query("productVariants")
           .withIndex("by_productId", (q) => q.eq("productId", productRow._id))
-          .take(1);
+          .collect();
 
-        const variantRow = variant[0];
+        const variantRow = variants.find(
+          (v) => normalizeSize(v.size) === normalized
+        );
+
         if (variantRow) {
           await ctx.db.insert("orderItems", {
             orderId,
@@ -175,10 +186,14 @@ export const placeOrder = mutation({
         updatedAt:   now,
       });
 
+      const variantSizeLiteral = (normalized === "Free" || ["XS", "S", "M", "L", "XL", "XXL"].includes(normalized))
+        ? normalized
+        : "Free";
+
       const placeholderVariantId = await ctx.db.insert("productVariants", {
         productId:  placeholderProductId,
         boutiqueId,
-        size:       item.size as "XS" | "S" | "M" | "L" | "XL" | "XXL" | "Free",
+        size:       variantSizeLiteral as "XS" | "S" | "M" | "L" | "XL" | "XXL" | "Free",
         sku:        `SKU-${orderNumber}-${item.productId}`,
         price:      item.price,
         isActive:   true,

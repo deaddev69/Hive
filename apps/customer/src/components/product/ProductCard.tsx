@@ -3,25 +3,34 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ProductCardData } from "@/lib/mockProducts";
 import { Button, Modal } from "@hive/ui";
 import { Heart, ShieldCheck, Play, Truck, X } from "lucide-react";
 import { cn } from "@hive/ui";
 import { useCartStore } from "@/store/cart-store";
 import { useCart } from "@/context/CartContext";
+import { mockProductDetails } from "@/lib/mockProductDetails";
+import { SizeSelectionModal } from "./SizeSelectionModal";
+import { useCheckoutStore } from "@/store/checkout-store";
 
 export interface ProductCardProps {
   product: ProductCardData;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(product.favorite || false);
   const [pulse, setPulse] = useState(false);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-  const [selectedSize, setSelectedSize] = useState("Free");
+  const [isSizeModalOpen, setIsSizeModalOpen] = useState(false);
+  const [selectedSize, setSelectedSize] = useState("");
 
   const addItem = useCartStore((state) => state.addItem);
+  const setCheckoutItems = useCheckoutStore((state) => state.setCheckoutItems);
   const { setSidebarOpen } = useCart();
+
+  const detailInfo = mockProductDetails[product.slug];
 
   const toggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -34,9 +43,47 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+
+    if (!detailInfo) {
+      // Fallback
+      addItem({
+        productId: product.id,
+        size: "Free",
+        price: product.price,
+        name: product.name,
+        imageUrl: product.imageUrl,
+        boutiqueName: product.boutiqueName,
+      });
+      setSidebarOpen(true);
+      return;
+    }
+
+    // Get all sizes with stock > 0
+    const availableSizes = detailInfo.sizes.filter(
+      (sz) => (detailInfo.inventory[sz] ?? 0) > 0
+    );
+
+    if (availableSizes.length === 1 && availableSizes[0]) {
+      // Auto use that single available size
+      addItem({
+        productId: product.id,
+        size: availableSizes[0],
+        price: product.price,
+        name: product.name,
+        imageUrl: product.imageUrl,
+        boutiqueName: product.boutiqueName,
+      });
+      setSidebarOpen(true);
+    } else {
+      // Trigger modal
+      setIsSizeModalOpen(true);
+    }
+  };
+
+  const handleConfirmSizeSelection = (size: string) => {
     addItem({
       productId: product.id,
-      size: "Free",
+      size,
       price: product.price,
       name: product.name,
       imageUrl: product.imageUrl,
@@ -48,10 +95,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const handleQuickView = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    
+    if (detailInfo) {
+      const available = detailInfo.sizes.filter(
+        (sz) => (detailInfo.inventory[sz] ?? 0) > 0
+      );
+      if (available.length === 1 && available[0]) {
+        setSelectedSize(available[0]);
+      } else {
+        setSelectedSize("");
+      }
+    } else {
+      setSelectedSize("");
+    }
     setIsQuickViewOpen(true);
   };
 
   const handleQuickViewAddToCart = () => {
+    if (!selectedSize) return;
     addItem({
       productId: product.id,
       size: selectedSize,
@@ -62,6 +123,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     });
     setIsQuickViewOpen(false);
     setSidebarOpen(true);
+  };
+
+  const handleQuickViewBuyNow = () => {
+    if (!selectedSize) return;
+    setCheckoutItems([
+      {
+        productId: product.id,
+        size: selectedSize,
+        quantity: 1,
+        price: product.price,
+        name: product.name,
+        imageUrl: product.imageUrl,
+        boutiqueName: product.boutiqueName,
+      },
+    ]);
+    setIsQuickViewOpen(false);
+    router.push("/checkout/address");
   };
 
   const discountPercent = product.compareAtPrice
@@ -231,6 +309,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
       </div>
 
+      {/* Size Selection Modal Overlay */}
+      {detailInfo && (
+        <SizeSelectionModal
+          isOpen={isSizeModalOpen}
+          onClose={() => setIsSizeModalOpen(false)}
+          productName={product.name}
+          price={product.price}
+          imageUrl={product.imageUrl}
+          sizes={detailInfo.sizes}
+          inventory={detailInfo.inventory}
+          onConfirm={handleConfirmSizeSelection}
+        />
+      )}
+
       {/* Quick View Modal Overlay */}
       <Modal
         isOpen={isQuickViewOpen}
@@ -276,16 +368,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                   Select Size
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {["XS", "S", "M", "L", "XL", "Free"].map((sz) => {
+                  {detailInfo?.sizes.map((sz) => {
+                    const stock = detailInfo.inventory[sz] ?? 0;
+                    const isOutOfStock = stock <= 0;
                     const isSel = selectedSize === sz;
                     return (
                       <button
                         key={sz}
                         type="button"
+                        disabled={isOutOfStock}
                         onClick={() => setSelectedSize(sz)}
                         className={cn(
-                          "w-10 h-10 rounded-xl border text-xs font-bold transition-all duration-200 select-none",
-                          isSel
+                          "min-w-[40px] h-10 px-2 rounded-xl border text-xs font-bold transition-all duration-200 select-none relative",
+                          isOutOfStock
+                            ? "border-slate-100 bg-slate-50 text-slate-300 opacity-60 cursor-not-allowed line-through"
+                            : isSel
                             ? "border-hive-dark bg-hive-dark text-white"
                             : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 active:scale-95"
                         )}
@@ -303,9 +400,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               <Button
                 variant="primary"
                 className="w-full font-bold uppercase tracking-wider py-3"
+                disabled={!selectedSize}
                 onClick={handleQuickViewAddToCart}
               >
                 Add to Bag
+              </Button>
+              <Button
+                variant="secondary"
+                className="w-full font-bold uppercase tracking-wider py-3 border border-hive-border/40 text-hive-text bg-white"
+                disabled={!selectedSize}
+                onClick={handleQuickViewBuyNow}
+              >
+                Buy Now
               </Button>
               <Link
                 href={`/products/${product.slug}`}

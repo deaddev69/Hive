@@ -198,6 +198,11 @@ function OrderCard({ order, mapStatus }: { order: ConvexOrder; mapStatus: (s: st
                   <span className="text-hive-text-muted font-medium"> +{itemsCount - 1} more</span>
                 )}
               </p>
+              {firstItem && (
+                <span className="inline-flex items-center text-[9px] font-extrabold text-hive-dark bg-hive-comb px-1.5 py-0.5 rounded-lg border border-hive-gold/15 mt-1">
+                  Size: {firstItem.variantSize || "Free"}
+                </span>
+              )}
             </div>
           </div>
 
