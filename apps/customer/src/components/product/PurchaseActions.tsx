@@ -8,7 +8,6 @@ import { useCartStore } from "@/store/cart-store";
 import { useCart } from "@/context/CartContext";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useLocation } from "@/context/LocationContext";
-import { isServiceablePincode } from "@/data/mockServiceablePincodes";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Subcomponent: AddToCartButton

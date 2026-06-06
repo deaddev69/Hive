@@ -59,6 +59,21 @@ export const placeOrder = mutation({
       throw new Error("Invalid address");
     }
 
+    // Validate that the address city is a serviceable zone
+    const searchCity = args.addressSnapshot.city.trim().toLowerCase();
+    const activeZones = await ctx.db
+      .query("serviceZones")
+      .withIndex("by_isActive", (q) => q.eq("isActive", true))
+      .collect();
+
+    const isCityServiceable = activeZones.some(
+      (z) => z.city.trim().toLowerCase() === searchCity
+    );
+
+    if (!isCityServiceable) {
+      throw new Error("Delivery address is in an unserviceable area.");
+    }
+
     if (args.items.length === 0) {
       throw new Error("Cart is empty");
     }

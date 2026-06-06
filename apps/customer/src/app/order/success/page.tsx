@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  CheckCircle2, 
-  Sparkles, 
-  ShoppingBag, 
-  Calendar, 
-  Clock, 
-  ShieldCheck, 
-  ChevronRight, 
+import {
+  CheckCircle2,
+  Sparkles,
+  ShoppingBag,
+  Calendar,
+  Clock,
+  ShieldCheck,
+  ChevronRight,
   Sparkle,
   Lock,
   RotateCcw,
@@ -97,20 +97,20 @@ export default function OrderSuccessPage() {
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
       <div className="max-w-[900px] mx-auto flex flex-col gap-6 animate-[scaleUp_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards]">
-        
+
         {/* Success Hero */}
         <OrderSuccessHero orderId={latestOrder.id} />
 
         {/* Desktop grid layout: 2 columns */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-          
+
           {/* Left Panel - Delivery schedule & Visual timeline */}
           <div className="md:col-span-7 space-y-6">
-            
-            <DeliveryConfirmationCard 
-              date={latestOrder.deliveryDate} 
-              slot={latestOrder.deliverySlot} 
-              window={slotWindow} 
+
+            <DeliveryConfirmationCard
+              date={latestOrder.deliveryDate}
+              slot={latestOrder.deliverySlot}
+              window={slotWindow}
             />
 
             <NextStepsSection />
@@ -122,12 +122,12 @@ export default function OrderSuccessPage() {
 
           {/* Right Panel - Summary & Actions */}
           <div className="md:col-span-5 space-y-6">
-            
-            <OrderSummaryCard 
-              itemCount={itemCount} 
-              totalAmount={latestOrder.total} 
-              paymentMethod={paymentMethodLabel(latestOrder.paymentMethod)} 
-              address={latestOrder.address} 
+
+            <OrderSummaryCard
+              itemCount={itemCount}
+              totalAmount={latestOrder.total}
+              paymentMethod={paymentMethodLabel(latestOrder.paymentMethod)}
+              address={latestOrder.address}
               items={latestOrder.items}
               deliveryDate={latestOrder.deliveryDate}
               deliverySlot={latestOrder.deliverySlot}
@@ -258,17 +258,16 @@ function NextStepsSection() {
       <div className="flex flex-col md:flex-row md:justify-between gap-6 relative pt-2">
         {steps.map((step, idx) => (
           <div key={idx} className="flex md:flex-col items-start md:items-center text-left md:text-center gap-3 md:gap-1.5 flex-1 relative group">
-            
+
             {/* Horizontal line connector for desktop */}
             {idx < steps.length - 1 && (
               <div className="hidden md:block absolute left-[50%] top-4 w-full h-[1.5px] bg-hive-border/40 group-hover:bg-hive-border transition-colors duration-300 -z-0" />
             )}
 
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center border text-[10px] font-extrabold flex-shrink-0 z-10 transition-all ${
-              step.active
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center border text-[10px] font-extrabold flex-shrink-0 z-10 transition-all ${step.active
                 ? "bg-hive-dark border-hive-dark text-hive-gold shadow-sm ring-4 ring-hive-gold/10"
                 : "bg-hive-cream/35 border-hive-border/40 text-hive-text-muted"
-            }`}>
+              }`}>
               {step.active ? "✓" : idx + 1}
             </div>
 
@@ -398,11 +397,12 @@ function OrderSummaryCard({
 function SuccessActions() {
   const router = useRouter();
   const latestOrder = useOrderStore((state) => state.latestOrder);
+  console.log("LATEST ORDER", latestOrder);
   return (
     <div className="w-full space-y-3">
       <button
         type="button"
-        onClick={() => router.push(latestOrder ? `/orders/${latestOrder.id}` : "/orders")}
+        onClick={() => router.push(latestOrder?.convexId ? `/orders/${latestOrder.convexId}` : "/orders")}
         className="w-full h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-sm"
       >
         <span>Track Order</span>
@@ -467,7 +467,7 @@ function OrderSuccessSkeleton() {
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
       <div className="max-w-[900px] mx-auto flex flex-col gap-6">
-        
+
         {/* Hero skeleton */}
         <div className="h-[200px] bg-white border border-hive-border/20 rounded-3xl" />
 

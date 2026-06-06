@@ -71,7 +71,7 @@ export default function CheckoutAddressPage() {
   const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
   const setSelectedAddressIdInCheckout = useCheckoutStore((state) => state.setSelectedAddressId);
 
-  const { isServiceable: isGlobalServiceable } = useLocation();
+  const { isServiceable: isGlobalServiceable, city: currentCity, stateName: currentState } = useLocation();
   const activeZones = useQuery(api.serviceability.getActiveZones) ?? [];
   const requestService = useMutation(api.serviceability.requestService);
   const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
@@ -94,8 +94,8 @@ export default function CheckoutAddressPage() {
     addressLine1: "",
     addressLine2: "",
     landmark: "",
-    city: "Hyderabad",
-    state: "Telangana",
+    city: currentCity || "",
+    state: currentState || "",
     pincode: "",
     isDefault: false,
   });
@@ -143,8 +143,8 @@ export default function CheckoutAddressPage() {
       addressLine1: "",
       addressLine2: "",
       landmark: "",
-      city: "Hyderabad",
-      state: "Telangana",
+      city: currentCity || "",
+      state: currentState || "",
       pincode: "",
       isDefault: false,
     });
@@ -667,7 +667,7 @@ export default function CheckoutAddressPage() {
                     id="form-city"
                     type="text"
                     required
-                    placeholder="e.g. Hyderabad"
+                    placeholder="e.g. Kochi"
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     className={`h-10 px-3 text-xs border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium ${
@@ -685,7 +685,7 @@ export default function CheckoutAddressPage() {
                     id="form-state"
                     type="text"
                     required
-                    placeholder="e.g. Telangana"
+                    placeholder="e.g. Kerala"
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                     className={`h-10 px-3 text-xs border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium ${

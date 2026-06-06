@@ -3,14 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "@hive/ui";
 import { useLocation } from "@/context/LocationContext";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { MapPinOff, Bell, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 
 
 export const UnsupportedArea: React.FC = () => {
-  const { isServiceable, city, stateName, latitude, longitude } = useLocation();
+  const { isServiceable, city, stateName, latitude, longitude, setGateOpen } = useLocation();
   const requestService = useMutation(api.serviceability.requestService);
+  const activeZonesQuery = useQuery(api.serviceability.getActiveZones) ?? [];
 
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,13 +54,13 @@ export const UnsupportedArea: React.FC = () => {
     }
   };
 
-  const activeZones = ["Kochi", "Kakkanad", "Aluva", "Thrippunithura", "Edappally", "Hyderabad"];
+  const activeZones = activeZonesQuery.map((z) => z.city);
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={() => setIsOpen(false)}
-      title="Location Unavailable"
+      title="HIVE is not available in your area yet"
       className="max-w-md"
     >
       <div className="flex flex-col gap-6 text-center items-center py-3">
@@ -98,14 +99,10 @@ export const UnsupportedArea: React.FC = () => {
 
             <div className="flex flex-col gap-2">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                HIVE is not available here yet
+                HIVE is not available in your area yet
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
-                We currently don't deliver to{" "}
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {city}
-                </span>
-                . You can still browse our collections, but checkout will be disabled.
+                We currently serve selected locations in Kerala. We’ll be expanding to more cities soon.
               </p>
             </div>
 
@@ -118,7 +115,7 @@ export const UnsupportedArea: React.FC = () => {
                 {activeZones.map((zone) => (
                   <span
                     key={zone}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 shadow-sm border border-slate-100 dark:border-slate-700/50"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 shadow-sm border border-slate-100 dark:border-slate-700/50"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
                     {zone}
@@ -134,29 +131,21 @@ export const UnsupportedArea: React.FC = () => {
             <div className="w-full flex flex-col gap-2.5 mt-2">
               <Button
                 variant="primary"
-                onClick={handleNotifyMe}
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-2"
+                onClick={() => {
+                  setIsOpen(false);
+                  setGateOpen(true);
+                }}
+                className="w-full flex items-center justify-center gap-2 font-extrabold uppercase tracking-wider text-xs py-3"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Recording request...
-                  </>
-                ) : (
-                  <>
-                    <Bell className="w-4 h-4" />
-                    Notify Me When Available
-                  </>
-                )}
+                Change Location
               </Button>
 
               <Button
                 variant="outline"
                 onClick={() => setIsOpen(false)}
-                className="w-full flex items-center justify-center gap-1.5"
+                className="w-full flex items-center justify-center gap-1.5 font-extrabold uppercase tracking-wider text-xs py-3"
               >
-                Browse Collections
+                Browse Products
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </div>

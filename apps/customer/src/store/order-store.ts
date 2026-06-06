@@ -6,6 +6,7 @@ import { mockOrders } from "../data/mockOrders";
 
 export interface Order {
   id: string;
+  convexId?: string;
   items: CartItem[];
   subtotal: number;
   discount: number;
@@ -25,7 +26,7 @@ export interface Order {
 export interface OrderState {
   orders: Order[];
   latestOrder: Order | null;
-  placeOrder: (orderDetails: Omit<Order, "id" | "createdAt" | "status" | "cancellationReason">) => string;
+  placeOrder: (orderDetails: Omit<Order, "createdAt" | "status" | "cancellationReason">) => string;
   clearLatestOrder: () => void;
 }
 
@@ -35,12 +36,10 @@ export const useOrderStore = create<OrderState>()(
       orders: mockOrders,
       latestOrder: null,
       placeOrder: (orderDetails) => {
-        const orderId = `HIVE-${Math.floor(100000 + Math.random() * 900000)}`;
         const createdAt = new Date().toISOString();
         
         const newOrder: Order = {
           ...orderDetails,
-          id: orderId,
           createdAt,
           status: "placed",
         };
@@ -50,7 +49,7 @@ export const useOrderStore = create<OrderState>()(
           latestOrder: newOrder,
         }));
 
-        return orderId;
+        return newOrder.id;
       },
       clearLatestOrder: () => {
         set({ latestOrder: null });

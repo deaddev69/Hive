@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Truck } from "lucide-react";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useLocation } from "@/context/LocationContext";
-import { isServiceablePincode } from "@/data/mockServiceablePincodes";
 
 interface CartSummaryProps {
   subtotal: number;
@@ -15,7 +14,7 @@ interface CartSummaryProps {
 export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onClose }) => {
   const router = useRouter();
   const clearCheckoutItems = useCheckoutStore((state) => state.clearCheckoutItems);
-  const { pincode, isServiceable } = useLocation();
+  const { isServiceable } = useLocation();
 
   const deliveryFee = subtotal >= 5000 ? 0 : 99;
   const total = subtotal + deliveryFee;
@@ -23,8 +22,7 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
   const handleCheckout = () => {
     clearCheckoutItems();
     onClose();
-    const locationServiceable = !pincode || (isServiceable && isServiceablePincode(pincode));
-    if (!locationServiceable) {
+    if (!isServiceable) {
       router.push("/not-serviceable");
       return;
     }

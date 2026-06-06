@@ -23,12 +23,12 @@ const mockSlots: DeliverySlot[] = [
 
 export default function DeliverySlotPage() {
   const router = useRouter();
-  
+
   // Zustand State hooks
   const addresses = useAddressStore((state) => state.addresses);
   const selectedAddressId = useAddressStore((state) => state.selectedAddressId);
   const getCartTotal = useCartStore((state) => state.getCartTotal);
-  
+
   const selectedDate = useCheckoutStore((state) => state.selectedDate);
   const selectedSlot = useCheckoutStore((state) => state.selectedSlot);
   const selectedSlotWindow = useCheckoutStore((state) => state.selectedSlotWindow);
@@ -40,23 +40,23 @@ export default function DeliverySlotPage() {
   // Hydration delay protection & dynamic Date generation
   useEffect(() => {
     setMounted(true);
-    
+
     // Generate next 7 days dynamically
     const generated = [];
     const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    
+
     for (let i = 0; i < 7; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
-      
+
       let label = "";
       if (i === 0) label = "Today";
       else if (i === 1) label = "Tomorrow";
       else {
         label = `${daysOfWeek[d.getDay()]}, ${months[d.getMonth()]} ${String(d.getDate()).padStart(2, "0")}`;
       }
-      
+
       generated.push({
         id: d.toISOString().split("T")[0] ?? String(i),
         label,
@@ -87,7 +87,7 @@ export default function DeliverySlotPage() {
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
-        
+
         {/* Back Link */}
         <button
           type="button"
@@ -121,10 +121,10 @@ export default function DeliverySlotPage() {
         </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mt-2">
-          
+
           {/* Left panel: Date & Slot Selectors */}
           <div className="lg:col-span-8 space-y-6">
-            
+
             {/* 1. Date Selector */}
             <div className="space-y-3">
               <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
@@ -140,11 +140,10 @@ export default function DeliverySlotPage() {
                       key={date.id}
                       type="button"
                       onClick={() => handleSelectDate(date.label)}
-                      className={`flex-shrink-0 snap-start px-5 py-3 rounded-2xl border text-xs font-bold transition-all duration-300 ${
-                        isSelected
+                      className={`flex-shrink-0 snap-start px-5 py-3 rounded-2xl border text-xs font-bold transition-all duration-300 ${isSelected
                           ? "bg-hive-dark text-hive-gold border-hive-dark"
                           : "bg-white border-hive-border/50 text-hive-text hover:border-hive-border"
-                      }`}
+                        }`}
                     >
                       {date.label}
                     </button>
@@ -171,20 +170,19 @@ export default function DeliverySlotPage() {
                       type="button"
                       disabled={isFull}
                       onClick={() => handleSelectSlot(slot.name, slot.timeRange)}
-                      className={`bg-white border rounded-3xl p-5 shadow-sm text-left flex flex-col justify-between gap-3 relative transition-all duration-300 ${
-                        isFull
+                      className={`bg-white border rounded-3xl p-5 shadow-sm text-left flex flex-col justify-between gap-3 relative transition-all duration-300 ${isFull
                           ? "opacity-45 cursor-not-allowed border-hive-border/30 bg-hive-cream/10"
                           : isSelected
-                          ? "border-hive-dark ring-1 ring-hive-dark bg-hive-comb/10"
-                          : "border-hive-border/50 hover:border-hive-border"
-                      }`}
+                            ? "border-hive-dark ring-1 ring-hive-dark bg-hive-comb/10"
+                            : "border-hive-border/50 hover:border-hive-border"
+                        }`}
                     >
                       <div className="flex justify-between items-start w-full">
                         <div className="flex flex-col gap-0.5 text-xs">
                           <span className="font-extrabold text-hive-dark">{slot.name}</span>
                           <span className="text-hive-text-muted font-semibold">{slot.timeRange}</span>
                         </div>
-                        
+
                         {/* Availability Badges */}
                         <div>
                           {isFull ? (
@@ -205,23 +203,23 @@ export default function DeliverySlotPage() {
 
                       {/* Estimated delivery notes */}
                       <p className="text-[10px] text-hive-text-muted leading-relaxed font-medium">
-                        {isFull 
+                        {isFull
                           ? "All delivery couriers booked for this slot."
                           : isLimited
-                          ? "Hyperlocal try-on slots filling fast. Lock in now."
-                          : "Standard Try-On slot with flexible local courier windows."}
+                            ? "Hyperlocal try-on slots filling fast. Lock in now."
+                            : "Standard Try-On slot with flexible local courier windows."}
                       </p>
                     </button>
                   );
                 })}
               </div>
             </div>
-            
+
           </div>
 
           {/* Right panel: summary details review */}
           <div className="lg:col-span-4 space-y-6">
-            
+
             {/* 1. Selected Delivery Summary */}
             <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
               <h2 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2">
@@ -249,7 +247,7 @@ export default function DeliverySlotPage() {
                   <div>
                     <span className="font-extrabold text-hive-dark block">Estimated Speed Slot</span>
                     <p className="text-hive-text-muted font-medium leading-normal mt-0.5">
-                      {selectedDate && selectedSlot 
+                      {selectedDate && selectedSlot
                         ? `${selectedDate} (${selectedSlot}${selectedSlotWindow ? ` • ${selectedSlotWindow}` : ""})`
                         : "Please choose date & slot."}
                     </p>
@@ -273,7 +271,7 @@ export default function DeliverySlotPage() {
               <h2 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2">
                 Billing Overview
               </h2>
-              
+
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Cart Subtotal</span>
@@ -302,9 +300,9 @@ export default function DeliverySlotPage() {
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-            
+
           </div>
-          
+
         </div>
       </div>
     </div>

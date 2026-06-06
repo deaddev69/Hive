@@ -14,6 +14,7 @@ export const seedServiceZones = mutation({
     const defaultZones = [
       { city: "Kochi", state: "Kerala" },
       { city: "Kakkanad", state: "Kerala" },
+      { city: "Kalamassery", state: "Kerala" },
       { city: "Aluva", state: "Kerala" },
       { city: "Thrippunithura", state: "Kerala" },
       { city: "Edappally", state: "Kerala" },

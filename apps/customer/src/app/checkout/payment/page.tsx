@@ -53,7 +53,7 @@ export default function SecurePaymentPage() {
   // Convex: persistent addresses for the logged-in user
   const convexAddresses = useQuery(api.addresses.list) ?? [];
   const placeOrderMutation = useMutation(api.orders.placeOrder);
-  const clearCartMutation  = useMutation(api.cart.clearCart);
+  const clearCartMutation = useMutation(api.cart.clearCart);
 
   // selectedAddressId comes from checkout store (set by address page)
   const storedAddressId = useCheckoutStore((state) => state.selectedAddressId);
@@ -224,67 +224,70 @@ export default function SecurePaymentPage() {
     if (!selectedAddress) return;
 
     const snapshotItems = orderItems.map((item) => ({
-      productId:   item.productId,
-      name:        item.name,
-      price:       item.price,
-      imageUrl:    item.imageUrl,
-      boutiqueName:item.boutiqueName,
-      size:        item.size,
-      quantity:    item.quantity,
+      productId: item.productId,
+      name: item.name,
+      price: item.price,
+      imageUrl: item.imageUrl,
+      boutiqueName: item.boutiqueName,
+      size: item.size,
+      quantity: item.quantity,
     }));
 
-    const snapshotDate   = selectedDate!;
-    const snapshotSlot   = selectedSlot!;
+    const snapshotDate = selectedDate!;
+    const snapshotSlot = selectedSlot!;
 
     isOrderPlacing.current = true;
     setIsPlacingOrder(true);
 
     try {
       const result = await placeOrderMutation({
-        addressId:       selectedAddress._id as Id<"addresses">,
+        addressId: selectedAddress._id as Id<"addresses">,
         addressSnapshot: {
-          label:   selectedAddress.label,
-          line1:   selectedAddress.line1,
-          line2:   selectedAddress.line2,
-          city:    selectedAddress.city,
-          state:   selectedAddress.state,
+          label: selectedAddress.label,
+          line1: selectedAddress.line1,
+          line2: selectedAddress.line2,
+          city: selectedAddress.city,
+          state: selectedAddress.state,
           pincode: selectedAddress.pincode,
-          lat:     0,
-          lng:     0,
+          lat: 0,
+          lng: 0,
         },
-        deliveryDate:  snapshotDate,
-        deliverySlot:  snapshotSlot,
+        deliveryDate: snapshotDate,
+        deliverySlot: snapshotSlot,
         paymentMethod: selectedPaymentMethod,
-        items:         snapshotItems,
+        items: snapshotItems,
         subtotal,
         deliveryFee,
-        discount:      discountAmount,
+        discount: discountAmount,
         total,
       });
+      console.log("PLACE ORDER RESULT", result);
 
       // Store orderNumber for success page
       if (result) {
         placeOrder({
-          items:         orderItems,
+          id: result.orderNumber,
+          convexId: result.orderId,
+          items: orderItems,
           subtotal,
-          discount:      discountAmount,
+          discount: discountAmount,
           deliveryFee,
           codFee,
           total,
           paymentMethod: selectedPaymentMethod,
-          address:       {
-            id:          selectedAddress._id,
-            name:        selectedAddress.label,
-            phone:       "",
-            addressLine1:selectedAddress.line1,
-            addressLine2:selectedAddress.line2,
-            city:        selectedAddress.city,
-            state:       selectedAddress.state,
-            pincode:     selectedAddress.pincode,
-            isDefault:   selectedAddress.isDefault,
+          address: {
+            id: selectedAddress._id,
+            name: selectedAddress.label,
+            phone: "",
+            addressLine1: selectedAddress.line1,
+            addressLine2: selectedAddress.line2,
+            city: selectedAddress.city,
+            state: selectedAddress.state,
+            pincode: selectedAddress.pincode,
+            isDefault: selectedAddress.isDefault,
           },
-          deliveryDate:  snapshotDate,
-          deliverySlot:  snapshotSlot,
+          deliveryDate: snapshotDate,
+          deliverySlot: snapshotSlot,
         });
       }
 
@@ -608,8 +611,8 @@ export default function SecurePaymentPage() {
                                   type="button"
                                   onClick={() => setSelectedBank(bank.id)}
                                   className={`py-3 px-4 rounded-xl border text-xs font-bold text-center transition-colors duration-200 ${isBankSelected
-                                      ? "border-hive-dark bg-hive-comb/30 text-hive-dark"
-                                      : "border-hive-border/50 hover:border-hive-border bg-white text-hive-text-muted"
+                                    ? "border-hive-dark bg-hive-comb/30 text-hive-dark"
+                                    : "border-hive-border/50 hover:border-hive-border bg-white text-hive-text-muted"
                                     }`}
                                 >
                                   {bank.name}
@@ -663,8 +666,8 @@ export default function SecurePaymentPage() {
                                   type="button"
                                   onClick={() => setSelectedWallet(wallet.id)}
                                   className={`py-3.5 px-4 rounded-xl border text-xs font-bold text-left flex justify-between items-center transition-colors duration-200 ${isWalletSelected
-                                      ? "border-hive-dark bg-hive-comb/30 text-hive-dark"
-                                      : "border-hive-border/50 hover:border-hive-border bg-white text-hive-text-muted"
+                                    ? "border-hive-dark bg-hive-comb/30 text-hive-dark"
+                                    : "border-hive-border/50 hover:border-hive-border bg-white text-hive-text-muted"
                                     }`}
                                 >
                                   <span>{wallet.name}</span>
@@ -801,10 +804,10 @@ function PaymentMethodCard({
       disabled={method.disabled}
       onClick={onClick}
       className={`w-full text-left p-4.5 rounded-2xl border transition-all duration-200 select-none flex items-start gap-3 relative ${method.disabled
-          ? "opacity-45 cursor-not-allowed border-hive-border/30 bg-hive-cream/10"
-          : isSelected
-            ? "border-hive-dark bg-hive-comb/15 ring-[0.5px] ring-hive-dark"
-            : "border-hive-border/50 hover:border-hive-border/80 hover:bg-hive-cream/10 bg-white"
+        ? "opacity-45 cursor-not-allowed border-hive-border/30 bg-hive-cream/10"
+        : isSelected
+          ? "border-hive-dark bg-hive-comb/15 ring-[0.5px] ring-hive-dark"
+          : "border-hive-border/50 hover:border-hive-border/80 hover:bg-hive-cream/10 bg-white"
         }`}
     >
       <div className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-colors ${isSelected ? "bg-hive-dark border-hive-dark text-hive-gold" : "bg-hive-comb/30 border-hive-border/50 text-hive-dark"

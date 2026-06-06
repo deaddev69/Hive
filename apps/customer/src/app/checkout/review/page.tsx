@@ -4,18 +4,32 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, ShoppingBag, MapPin, Calendar, Clock, Sparkles, CreditCard, Phone, Ticket, AlertCircle, RefreshCw, Ruler, Store, Truck, ChevronRight } from "lucide-react";
-import { useAddressStore } from "@/store/address-store";
 import { useCartStore } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
-import { isServiceablePincode } from "@/data/mockServiceablePincodes";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
 
 export default function OrderReviewPage() {
   const router = useRouter();
 
   // Zustand state stores
-  const addresses = useAddressStore((state) => state.addresses);
-  const selectedAddressId = useAddressStore((state) => state.selectedAddressId);
-  
+  const storedAddressId = useCheckoutStore((state) => state.selectedAddressId);
+  const convexAddresses = useQuery(api.addresses.list) ?? [];
+
+  const addresses = convexAddresses.map((a) => ({
+    id: a._id,
+    name: a.label,
+    phone: "9876543210", // Fallback placeholder since phone is not in addresses schema
+    addressLine1: a.line1,
+    addressLine2: a.line2,
+    city: a.city,
+    state: a.state,
+    pincode: a.pincode,
+    isDefault: a.isDefault,
+  }));
+
+  const selectedAddressId = storedAddressId || (addresses.find(a => a.isDefault)?.id || addresses[0]?.id || null);
+
   const items = useCartStore((state) => state.items);
   const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
 
@@ -25,7 +39,7 @@ export default function OrderReviewPage() {
   const appliedPromo = useCheckoutStore((state) => state.appliedPromo);
   const discountAmount = useCheckoutStore((state) => state.discountAmount);
   const deliveryInstructions = useCheckoutStore((state) => state.deliveryInstructions);
-  
+
   const setAppliedPromo = useCheckoutStore((state) => state.setAppliedPromo);
   const setDeliveryInstructions = useCheckoutStore((state) => state.setDeliveryInstructions);
 
@@ -33,6 +47,8 @@ export default function OrderReviewPage() {
   const [promoInput, setPromoInput] = useState("");
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoSuccessMsg, setPromoSuccessMsg] = useState<string | null>(null);
+
+  const activeZones = useQuery(api.serviceability.getActiveZones);
 
   // Client hydration delay checker
   useEffect(() => {
@@ -42,7 +58,7 @@ export default function OrderReviewPage() {
   const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
   const orderItems = checkoutItems.length > 0 ? checkoutItems : items;
   const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  
+
   // Dynamic pricing calculations
   let deliveryFee = subtotal >= 5000 ? 0 : 99;
   if (appliedPromo === "FREESHIP") {
@@ -53,16 +69,21 @@ export default function OrderReviewPage() {
 
   // Validation redirect filter
   useEffect(() => {
-    if (mounted) {
+    if (mounted && activeZones !== undefined) {
       if (!selectedAddressId) {
         router.replace("/checkout/address");
       } else if (!selectedDate || !selectedSlot) {
         router.replace("/checkout/delivery");
-      } else if (selectedAddress && !isServiceablePincode(selectedAddress.pincode)) {
-        router.replace("/not-serviceable");
+      } else if (selectedAddress) {
+        const isServiceable = activeZones.some(
+          (zone) => zone.city.trim().toLowerCase() === selectedAddress.city.trim().toLowerCase()
+        );
+        if (!isServiceable) {
+          router.replace("/not-serviceable");
+        }
       }
     }
-  }, [mounted, selectedAddressId, selectedDate, selectedSlot, selectedAddress, router]);
+  }, [mounted, selectedAddressId, selectedDate, selectedSlot, selectedAddress, activeZones, router]);
 
   if (!mounted) {
     return <OrderReviewSkeleton />;
@@ -108,7 +129,7 @@ export default function OrderReviewPage() {
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
-        
+
         {/* Back Link */}
         <button
           type="button"
@@ -148,10 +169,10 @@ export default function OrderReviewPage() {
 
         {/* Responsive Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mt-2 pb-16 sm:pb-0">
-          
+
           {/* Left Panel: Summaries & Items table */}
           <div className="lg:col-span-8 space-y-6">
-            
+
             {/* 1. Address summary review */}
             <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3.5">
               <div className="flex items-center justify-between border-b border-hive-border/40 pb-2">
@@ -225,7 +246,7 @@ export default function OrderReviewPage() {
                         <div className="w-full h-full bg-hive-comb/25" />
                       )}
                     </div>
-                    
+
                     <div className="flex-1 flex flex-col sm:flex-row justify-between sm:items-start text-left gap-2">
                       <div>
                         <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
@@ -236,7 +257,7 @@ export default function OrderReviewPage() {
                           Size: {item.size}
                         </span>
                       </div>
-                      
+
                       <div className="text-right">
                         <span className="text-xs font-extrabold text-hive-dark block">
                           ₹{(item.price * item.quantity).toLocaleString("en-IN")}
@@ -269,13 +290,13 @@ export default function OrderReviewPage() {
 
           {/* Right Panel: Pricing calculations & trust banners */}
           <div className="lg:col-span-4 space-y-6">
-            
+
             {/* 1. Summary pricing totals card */}
             <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
               <h2 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2">
                 Order Billing
               </h2>
-              
+
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Items Subtotal</span>
@@ -314,7 +335,7 @@ export default function OrderReviewPage() {
                 <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider block mb-2">
                   Have a Coupon?
                 </span>
-                
+
                 {!appliedPromo ? (
                   <form onSubmit={handleApplyPromo} className="flex gap-2">
                     <input
@@ -378,7 +399,7 @@ export default function OrderReviewPage() {
               <span className="text-[10px] font-extrabold text-hive-amber uppercase tracking-wider block">
                 Hive Assurances
               </span>
-              
+
               <div className="space-y-2.5">
                 <div className="flex items-center gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-hive-comb/30 flex items-center justify-center border border-hive-border/40 text-hive-dark flex-shrink-0">
@@ -421,9 +442,9 @@ export default function OrderReviewPage() {
                 </div>
               </div>
             </div>
-            
+
           </div>
-          
+
         </div>
       </div>
 
