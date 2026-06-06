@@ -1,0 +1,158 @@
+"use client";
+
+import React from "react";
+import { cn } from "@hive/ui";
+import { X, RotateCcw } from "lucide-react";
+import {
+  CatalogFilterState,
+  DEFAULT_FILTER_STATE,
+  countActiveFilters,
+} from "@/lib/catalogFilters";
+import { OccasionFilter } from "./filters/OccasionFilter";
+import { CategoryFilter } from "./filters/CategoryFilter";
+import { BoutiqueFilter } from "./filters/BoutiqueFilter";
+import { PriceRangeFilter } from "./filters/PriceRangeFilter";
+import { DeliveryFilter } from "./filters/DeliveryFilter";
+
+export interface CatalogFiltersProps {
+  filters: CatalogFilterState;
+  onChange: (filters: CatalogFilterState) => void;
+  /** Compact mode — used inside mobile drawer, hides sticky positioning */
+  compact?: boolean;
+  className?: string;
+}
+
+export const CatalogFilters: React.FC<CatalogFiltersProps> = ({
+  filters,
+  onChange,
+  compact = false,
+  className,
+}) => {
+  const activeCount = countActiveFilters(filters);
+
+  const reset = () => onChange(DEFAULT_FILTER_STATE);
+
+  const patch = (patch: Partial<CatalogFilterState>) =>
+    onChange({ ...filters, ...patch });
+
+  return (
+    <aside
+      className={cn(
+        "flex flex-col bg-white border border-hive-border/60 rounded-[24px] overflow-hidden",
+        !compact && "sticky top-[100px] max-h-[calc(100vh-120px)] overflow-y-auto",
+        "[&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent",
+        "[&::-webkit-scrollbar-thumb]:bg-hive-border [&::-webkit-scrollbar-thumb]:rounded-full",
+        className
+      )}
+      aria-label="Product filters"
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-hive-border/60 bg-hive-cream/30">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-extrabold text-hive-dark">Filters</span>
+          {activeCount > 0 && (
+            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-hive-gold text-hive-dark text-[10px] font-extrabold min-w-[20px]">
+              {activeCount}
+            </span>
+          )}
+        </div>
+        {activeCount > 0 && (
+          <button
+            type="button"
+            onClick={reset}
+            className="inline-flex items-center gap-1 text-[10px] font-bold text-hive-text-muted hover:text-hive-amber transition-colors uppercase tracking-widest"
+          >
+            <RotateCcw className="w-3 h-3" strokeWidth={2.5} />
+            Clear all
+          </button>
+        )}
+      </div>
+
+      {/* Filter sections */}
+      <div className="flex flex-col px-5 divide-y divide-hive-border/40">
+        <DeliveryFilter
+          sameDayDelivery={filters.sameDayDelivery}
+          onChange={(v) => patch({ sameDayDelivery: v })}
+        />
+
+        <PriceRangeFilter
+          minPrice={filters.minPrice}
+          maxPrice={filters.maxPrice}
+          onChange={(min, max) => patch({ minPrice: min, maxPrice: max })}
+        />
+
+        <OccasionFilter
+          selected={filters.occasions}
+          onChange={(v) => patch({ occasions: v })}
+        />
+
+        <CategoryFilter
+          selected={filters.categories}
+          onChange={(v) => patch({ categories: v })}
+        />
+
+        <BoutiqueFilter
+          selected={filters.boutiques}
+          onChange={(v) => patch({ boutiques: v })}
+        />
+      </div>
+
+      {/* Active tags — quick remove chips */}
+      {activeCount > 0 && (
+        <div className="flex flex-wrap gap-2 px-5 py-4 border-t border-hive-border/40 bg-hive-cream/20">
+          {filters.occasions.map((id) => (
+            <ActiveTag
+              key={`occ-${id}`}
+              label={id}
+              onRemove={() =>
+                patch({ occasions: filters.occasions.filter((o) => o !== id) })
+              }
+            />
+          ))}
+          {filters.categories.map((id) => (
+            <ActiveTag
+              key={`cat-${id}`}
+              label={id}
+              onRemove={() =>
+                patch({ categories: filters.categories.filter((c) => c !== id) })
+              }
+            />
+          ))}
+          {filters.boutiques.map((id) => (
+            <ActiveTag
+              key={`bou-${id}`}
+              label={id}
+              onRemove={() =>
+                patch({ boutiques: filters.boutiques.filter((b) => b !== id) })
+              }
+            />
+          ))}
+          {filters.sameDayDelivery && (
+            <ActiveTag
+              label="Same Day"
+              onRemove={() => patch({ sameDayDelivery: false })}
+            />
+          )}
+        </div>
+      )}
+    </aside>
+  );
+};
+
+/* ── Small chip to remove a single active filter ── */
+const ActiveTag: React.FC<{ label: string; onRemove: () => void }> = ({
+  label,
+  onRemove,
+}) => (
+  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-hive-gold/15 border border-hive-gold/30 text-[10px] font-bold text-hive-amber capitalize">
+    {label}
+    <button
+      type="button"
+      onClick={onRemove}
+      className="ml-0.5 hover:text-red-500 transition-colors"
+      aria-label={`Remove ${label} filter`}
+    >
+      <X className="w-2.5 h-2.5" strokeWidth={3} />
+    </button>
+  </span>
+);
