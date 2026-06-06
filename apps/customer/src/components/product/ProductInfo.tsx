@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { ShieldCheck, Star, Truck, Award, Sparkles } from "lucide-react";
 import { cn } from "@hive/ui";
 import { ProductDetail } from "@/lib/mockProductDetails";
 import { SizeSelector, SizeSelectorSkeleton } from "./SizeSelector";
+import { MeasurementMatrix, MeasurementMatrixSkeleton } from "./MeasurementMatrix";
 
 export interface ProductInfoProps {
   product: ProductDetail;
@@ -46,6 +47,7 @@ const DeliveryPromiseCard: React.FC<{ sameDay: boolean; city: string }> = ({
 export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [isDescExpanded, setIsDescExpanded] = useState(false);
+  const measurementMatrixRef = useRef<HTMLDivElement>(null);
 
   const discountPercent = product.compareAtPrice
     ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
@@ -144,9 +146,19 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
         selectedSize={selectedSize}
         onSelectSize={setSelectedSize}
         onOpenSizeGuide={() => {
-          console.log("Placeholder action: View Measurement Guide clicked");
+          measurementMatrixRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
         }}
       />
+
+      {/* ── MEASUREMENT MATRIX & FIT GUIDANCE (Phase 6.5 Insertion) ── */}
+      <div ref={measurementMatrixRef} className="scroll-mt-6">
+        <MeasurementMatrix
+          productName={product.name}
+          measurementMatrix={product.measurementMatrix}
+          selectedSize={selectedSize}
+          fitNote={product.fitNote}
+        />
+      </div>
 
       {/* ── SECTION 6: CLAMPABLE DESCRIPTION ── */}
       <div className="space-y-2">
@@ -229,6 +241,9 @@ export const ProductInfoSkeleton: React.FC = () => {
 
       {/* Size Selector skeleton */}
       <SizeSelectorSkeleton />
+
+      {/* Measurement Matrix skeleton */}
+      <MeasurementMatrixSkeleton />
 
       {/* Description lines skeletons */}
       <div className="space-y-2">

@@ -13,6 +13,9 @@ export interface MeasurementRow {
   waist: string;  // in inches
   shoulder: string; // in inches
   length: string; // in inches
+  hip?: string;
+  fitType?: string;
+  stretch?: string;
 }
 
 export interface BoutiqueMeta {
@@ -81,7 +84,7 @@ export const mockProductDetails: Record<string, ProductDetail> = {
       FS: 5,
     },
     measurementMatrix: [
-      { size: "FS", chest: "N/A", waist: "N/A", shoulder: "N/A", length: "5.5 meters" },
+      { size: "FS", chest: "N/A", waist: "N/A", shoulder: "N/A", length: "5.5 meters", hip: "N/A", fitType: "Draped", stretch: "None" },
     ],
     featuredReviews: [
       { id: "rev_1", userName: "Anjana K.", rating: 5, date: "May 24, 2026", comment: "The gold zari work is breathtakingly fine. Hand drapes beautifully. An absolute heritage piece!", sizePurchased: "FS" },
@@ -121,9 +124,9 @@ export const mockProductDetails: Record<string, ProductDetail> = {
       L: 0,
     },
     measurementMatrix: [
-      { size: "S", chest: "34\"", waist: "28\"", shoulder: "14.5\"", length: "42\"" },
-      { size: "M", chest: "36\"", waist: "30\"", shoulder: "15\"", length: "43\"" },
-      { size: "L", chest: "38\"", waist: "32\"", shoulder: "15.5\"", length: "44\"" },
+      { size: "S", chest: "34\"", waist: "28\"", shoulder: "14.5\"", length: "42\"", hip: "36\"", fitType: "Structured", stretch: "None" },
+      { size: "M", chest: "36\"", waist: "30\"", shoulder: "15\"", length: "43\"", hip: "38\"", fitType: "Structured", stretch: "None" },
+      { size: "L", chest: "38\"", waist: "32\"", shoulder: "15.5\"", length: "44\"", hip: "40\"", fitType: "Structured", stretch: "None" },
     ],
     featuredReviews: [
       { id: "rev_3", userName: "Divya N.", rating: 5, date: "May 12, 2026", comment: "Extremely heavy embroidery, identical to high-end couture studios. Hand-measured fit was flawless.", sizePurchased: "S" },
@@ -164,10 +167,10 @@ export const mockProductDetails: Record<string, ProductDetail> = {
       XL: 2,
     },
     measurementMatrix: [
-      { size: "S", chest: "34\"", waist: "28\"", shoulder: "14\"", length: "48\"" },
-      { size: "M", chest: "36\"", waist: "30\"", shoulder: "14.5\"", length: "48\"" },
-      { size: "L", chest: "38\"", waist: "32\"", shoulder: "15\"", length: "49\"" },
-      { size: "XL", chest: "40\"", waist: "34\"", shoulder: "15.5\"", length: "49\"" },
+      { size: "S", chest: "34\"", waist: "28\"", shoulder: "14\"", length: "48\"", hip: "38\"", fitType: "Regular", stretch: "Low" },
+      { size: "M", chest: "36\"", waist: "30\"", shoulder: "14.5\"", length: "48\"", hip: "40\"", fitType: "Regular", stretch: "Low" },
+      { size: "L", chest: "38\"", waist: "32\"", shoulder: "15\"", length: "49\"", hip: "42\"", fitType: "Regular", stretch: "Low" },
+      { size: "XL", chest: "40\"", waist: "34\"", shoulder: "15.5\"", length: "49\"", hip: "44\"", fitType: "Regular", stretch: "Low" },
     ],
     featuredReviews: [
       { id: "rev_4", userName: "Aishwarya S.", rating: 5, date: "June 02, 2026", comment: "The hand-painted colors are extremely vibrant and didn't fade after wash. Highly recommended!", sizePurchased: "M" },
@@ -206,9 +209,9 @@ export const mockProductDetails: Record<string, ProductDetail> = {
       L: 4,
     },
     measurementMatrix: [
-      { size: "S", chest: "35\"", waist: "26\"-29\"", shoulder: "15\"", length: "Vest: 22\" / Pants: 39\"" },
-      { size: "M", chest: "37\"", waist: "28\"-31\"", shoulder: "15.5\"", length: "Vest: 22.5\" / Pants: 40\"" },
-      { size: "L", chest: "39\"", waist: "30\"-33\"", shoulder: "16\"", length: "Vest: 23\" / Pants: 41\"" },
+      { size: "S", chest: "35\"", waist: "26\"-29\"", shoulder: "15\"", length: "Vest: 22\" / Pants: 39\"", hip: "38\"", fitType: "Relaxed", stretch: "None" },
+      { size: "M", chest: "37\"", waist: "28\"-31\"", shoulder: "15.5\"", length: "Vest: 22.5\" / Pants: 40\"", hip: "40\"", fitType: "Relaxed", stretch: "None" },
+      { size: "L", chest: "39\"", waist: "30\"-33\"", shoulder: "16\"", length: "Vest: 23\" / Pants: 41\"", hip: "42\"", fitType: "Relaxed", stretch: "None" },
     ],
     featuredReviews: [
       { id: "rev_5", userName: "Kavya Menon", rating: 4, date: "May 29, 2026", comment: "Top-grade breathable linen. Fits nicely on the waist due to the elasticated back. Love the saffron color!", sizePurchased: "S" },
@@ -248,9 +251,9 @@ export const mockProductDetails: Record<string, ProductDetail> = {
       L: 2,
     },
     measurementMatrix: [
-      { size: "S", chest: "34\"", waist: "28\"", shoulder: "14\"", length: "44\"" },
-      { size: "M", chest: "36\"", waist: "30\"", shoulder: "14.5\"", length: "45\"" },
-      { size: "L", chest: "38\"", waist: "32\"", shoulder: "15\"", length: "46\"" },
+      { size: "S", chest: "34\"", waist: "28\"", shoulder: "14\"", length: "44\"", hip: "37\"", fitType: "Regular", stretch: "None" },
+      { size: "M", chest: "36\"", waist: "30\"", shoulder: "14.5\"", length: "45\"", hip: "39\"", fitType: "Regular", stretch: "None" },
+      { size: "L", chest: "38\"", waist: "32\"", shoulder: "15\"", length: "46\"", hip: "41\"", fitType: "Regular", stretch: "None" },
     ],
     featuredReviews: [
       { id: "rev_6", userName: "Neha J.", rating: 5, date: "May 10, 2026", comment: "True hand-tied bandhani work. Flows gorgeous and has a premium silk sheen. Perfect for evening dates!", sizePurchased: "M" },
@@ -289,9 +292,9 @@ export const mockProductDetails: Record<string, ProductDetail> = {
       XL: 6,
     },
     measurementMatrix: [
-      { size: "M", chest: "36\"", waist: "30\"", shoulder: "14.5\"", length: "Kurti: 44\" / Palazzo: 38\"" },
-      { size: "L", chest: "38\"", waist: "32\"", shoulder: "15\"", length: "Kurti: 44\" / Palazzo: 39\"" },
-      { size: "XL", chest: "40\"", waist: "34\"", shoulder: "15.5\"", length: "Kurti: 45\" / Palazzo: 40\"" },
+      { size: "M", chest: "36\"", waist: "30\"", shoulder: "14.5\"", length: "Kurti: 44\" / Palazzo: 38\"", hip: "40\"", fitType: "Regular", stretch: "Low" },
+      { size: "L", chest: "38\"", waist: "32\"", shoulder: "15\"", length: "Kurti: 44\" / Palazzo: 39\"", hip: "42\"", fitType: "Regular", stretch: "Low" },
+      { size: "XL", chest: "40\"", waist: "34\"", shoulder: "15.5\"", length: "Kurti: 45\" / Palazzo: 40\"", hip: "44\"", fitType: "Regular", stretch: "Low" },
     ],
     featuredReviews: [
       { id: "rev_7", userName: "Anupama R.", rating: 4.5, date: "April 30, 2026", comment: "Very delicate hand-embroidery. Palazzos are fully lined and not sheer. Excellent daily or festive suit.", sizePurchased: "L" },
@@ -329,7 +332,7 @@ export const mockProductDetails: Record<string, ProductDetail> = {
       FS: 3,
     },
     measurementMatrix: [
-      { size: "FS", chest: "N/A", waist: "N/A", shoulder: "N/A", length: "5.5 meters" },
+      { size: "FS", chest: "N/A", waist: "N/A", shoulder: "N/A", length: "5.5 meters", hip: "N/A", fitType: "Draped", stretch: "None" },
     ],
     featuredReviews: [
       { id: "rev_8", userName: "Aparna Dev", rating: 5, date: "May 03, 2026", comment: "Beautiful handloom weave, very soft and drapes easily. The silver pallu looks modern yet traditional.", sizePurchased: "FS" },
@@ -369,10 +372,10 @@ export const mockProductDetails: Record<string, ProductDetail> = {
       XL: 8,
     },
     measurementMatrix: [
-      { size: "S", chest: "34\"", waist: "30\"", shoulder: "14\"", length: "52\"" },
-      { size: "M", chest: "36\"", waist: "32\"", shoulder: "14.5\"", length: "52\"" },
-      { size: "L", chest: "38\"", waist: "34\"", shoulder: "15\"", length: "53\"" },
-      { size: "XL", chest: "40\"", waist: "36\"", shoulder: "15.5\"", length: "53\"" },
+      { size: "S", chest: "34\"", waist: "30\"", shoulder: "14\"", length: "52\"", hip: "40\"", fitType: "Relaxed", stretch: "Low" },
+      { size: "M", chest: "36\"", waist: "32\"", shoulder: "14.5\"", length: "52\"", hip: "42\"", fitType: "Relaxed", stretch: "Low" },
+      { size: "L", chest: "38\"", waist: "34\"", shoulder: "15\"", length: "53\"", hip: "44\"", fitType: "Relaxed", stretch: "Low" },
+      { size: "XL", chest: "40\"", waist: "36\"", shoulder: "15.5\"", length: "53\"", hip: "46\"", fitType: "Relaxed", stretch: "Low" },
     ],
     featuredReviews: [
       { id: "rev_9", userName: "Rashmi M.", rating: 5, date: "May 15, 2026", comment: "So comfortable for hot summer afternoons! Indigo print is uniform. Pockets are a huge plus.", sizePurchased: "M" },
