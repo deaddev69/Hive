@@ -2,14 +2,17 @@
 
 import React from "react";
 import { useCart } from "@/context/CartContext";
+import { useLocation } from "@/context/LocationContext";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
-import { LocationGateModal } from "./LocationGateModal";
+import { LocationPermissionModal } from "./LocationPermissionModal";
+import { LocationDrawer } from "./LocationDrawer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { UserSync } from "@/components/auth/UserSync";
 
 export const CustomerLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isSidebarOpen, setSidebarOpen } = useCart();
+  const { isDrawerOpen, setDrawerOpen } = useLocation();
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -24,7 +27,12 @@ export const CustomerLayout: React.FC<{ children: React.ReactNode }> = ({ childr
       <Footer />
 
       {/* Global location overlays */}
-      <LocationGateModal />
+      <LocationPermissionModal />
+      
+      <LocationDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
       
       {/* Shopping Cart Side Drawer */}
       <CartDrawer

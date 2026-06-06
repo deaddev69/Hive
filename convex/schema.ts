@@ -704,4 +704,19 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_userId_product_size", ["userId", "productId", "size"]),
 
+  // ─── USER LOCATIONS ───────────────────────────────────────────────────────
+  // Location coordinates and details detected/chosen by the user.
+  userLocations: defineTable({
+    userId:    v.id("users"),
+    latitude:  v.number(),
+    longitude: v.number(),
+    city:      v.string(),
+    state:     v.string(),
+    country:   v.string(),
+    postcode:  v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"]),
+
 });

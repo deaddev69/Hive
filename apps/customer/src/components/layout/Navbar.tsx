@@ -15,7 +15,7 @@ import {
 } from "@clerk/nextjs";
 
 export const Navbar: React.FC = () => {
-  const { pincode, setGateOpen } = useLocation();
+  const { city, setDrawerOpen } = useLocation();
   const { itemsCount, setSidebarOpen } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -46,11 +46,14 @@ export const Navbar: React.FC = () => {
 
         {/* Location Selector */}
         <button
-          onClick={() => setGateOpen(true)}
+          onClick={() => {
+            console.log('[Navbar] Location button clicked, calling setDrawerOpen(true)');
+            setDrawerOpen(true);
+          }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-hive-cream/80 hover:bg-hive-comb border border-hive-border/50 text-xs font-semibold text-hive-text transition-colors duration-200"
         >
           <MapPin className="w-3.5 h-3.5 text-hive-gold" />
-          <span>{pincode ? `Delivering to: ${pincode}` : "Select Location"}</span>
+          <span>{city ? city : "Select Location"}</span>
         </button>
 
         {/* Search Bar */}
@@ -60,53 +63,49 @@ export const Navbar: React.FC = () => {
             placeholder="Search local designer sarees, kurtis..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-xl border border-hive-border bg-hive-cream/10 text-xs text-hive-text placeholder-hive-text-muted/60 focus:border-hive-gold focus:ring-1 focus:ring-hive-gold outline-none transition-all duration-200"
+            className="w-full h-10 pl-4 pr-10 rounded-xl bg-hive-cream/60 border border-hive-border/40 focus:outline-none focus:ring-1.5 focus:ring-hive-gold focus:border-transparent text-xs font-medium text-hive-text placeholder-hive-text-muted transition-all duration-200"
           />
-          <Search className="w-4 h-4 text-hive-text-muted absolute left-3.5 top-3 pointer-events-none" />
+          <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-hive-text-muted hover:text-hive-dark transition-colors duration-150">
+            <Search className="w-4 h-4" />
+          </button>
         </form>
 
-        {/* Action Triggers */}
-        <div className="flex items-center gap-3">
+        {/* Action icons / CTA */}
+        <div className="flex items-center gap-4">
 
-          {/* My Orders — always visible */}
           <Link
             href="/orders"
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-hive-border/50 text-xs font-bold text-hive-text hover:bg-hive-cream transition-colors duration-200"
+            className="flex items-center gap-1.5 text-xs font-bold text-hive-text hover:text-hive-gold transition-colors duration-150"
           >
-            <List className="w-3.5 h-3.5 text-hive-gold" />
-            <span>My Orders</span>
+            <List className="w-4 h-4" />
+            <span className="hidden sm:inline">My Orders</span>
           </Link>
 
-          {/* Cart Trigger */}
+          {/* Cart Bag Icon */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="relative p-2 rounded-full hover:bg-hive-cream transition-colors text-hive-text"
-            aria-label="Open Cart"
+            className="relative p-1.5 text-hive-text hover:text-hive-gold transition-colors duration-150 outline-none"
+            aria-label="Open cart"
           >
-            <ShoppingBag className="w-5 h-5" />
+            <ShoppingBag className="w-5 h-5 stroke-[1.8]" />
             {itemsCount > 0 && (
-              <Badge
-                className="absolute top-0 right-0 px-1.5 min-w-[18px] h-[18px] flex items-center justify-center text-[10px]"
-                variant="primary"
-              >
+              <Badge variant="primary" className="absolute -top-1.5 -right-1.5 scale-90 min-w-5 h-5 flex items-center justify-center font-bold px-1.5">
                 {itemsCount}
               </Badge>
             )}
           </button>
 
-          {/* ── Clerk Auth Controls ───────────────────────────────────── */}
-
-          {/* Signed In: show Clerk UserButton (avatar + dropdown with sign-out) */}
+          {/* User Profile / Auth State */}
           <SignedIn>
-            <div className="border-l border-hive-border/50 pl-3">
+            <div className="flex items-center border-l border-hive-border/50 pl-3">
               <UserButton
+                userProfileUrl="/profile"
+                afterSignOutUrl="/"
                 appearance={{
                   elements: {
-                    avatarBox: "w-8 h-8",
-                    userButtonTrigger: "focus:shadow-none",
+                    avatarBox: "w-8 h-8 rounded-full border border-hive-border/60 hover:scale-[1.03] transition-transform duration-200",
                   },
                 }}
-                afterSignOutUrl="/"
               />
             </div>
           </SignedIn>
