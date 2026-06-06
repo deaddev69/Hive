@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useCartStore } from "@/store/cart-store";
 
 export interface CartState {
   itemsCount: number;
@@ -17,53 +18,58 @@ export interface CartContextType extends CartState {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<CartState>({
-    itemsCount: 0,
-    isSidebarOpen: false,
-  });
+  const [mounted, setMounted] = useState(false);
+  const [isSidebarOpen, setSidebarOpenState] = useState(false);
 
-  // Hydrate cart count from storage on mount
+  const getCartCount = useCartStore((state) => state.getCartCount);
+  const clearCartStore = useCartStore((state) => state.clearCart);
+  const addItemStore = useCartStore((state) => state.addItem);
+  const items = useCartStore((state) => state.items);
+
+  // Hydrate store on mount to prevent Next.js hydration mismatches
   useEffect(() => {
-    const savedCount = localStorage.getItem("hive_customer_cart_count");
-    if (savedCount) {
-      setState((prev) => ({ ...prev, itemsCount: parseInt(savedCount, 10) || 0 }));
-    }
+    setMounted(true);
   }, []);
 
+  const itemsCount = mounted ? getCartCount() : 0;
+
   const setSidebarOpen = (open: boolean) => {
-    setState((prev) => ({ ...prev, isSidebarOpen: open }));
+    setSidebarOpenState(open);
   };
 
   const addToCart = (quantity = 1) => {
-    setState((prev) => {
-      const newCount = prev.itemsCount + quantity;
-      localStorage.setItem("hive_customer_cart_count", String(newCount));
-      return {
-        ...prev,
-        itemsCount: newCount,
-        isSidebarOpen: true, // open checkout sidebar drawer on additions
-      };
+    addItemStore({
+      productId: "mock-product-id",
+      size: "M",
+      price: 1999,
+      name: "Boutique Cotton Kurta",
+      imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=400",
+      boutiqueName: "Zari Boutique",
     });
+    setSidebarOpenState(true); // open checkout sidebar drawer on additions
   };
 
   const removeFromCart = () => {
-    setState((prev) => {
-      const newCount = Math.max(0, prev.itemsCount - 1);
-      localStorage.setItem("hive_customer_cart_count", String(newCount));
-      return { ...prev, itemsCount: newCount };
-    });
+    if (items.length > 0) {
+      const lastItem = items[items.length - 1];
+      if (lastItem) {
+        const { updateQuantity, removeItem } = useCartStore.getState();
+        if (lastItem.quantity > 1) {
+          updateQuantity(lastItem.productId, lastItem.size, lastItem.quantity - 1);
+        } else {
+          removeItem(lastItem.productId, lastItem.size);
+        }
+      }
+    }
   };
 
   const clearCart = () => {
-    localStorage.removeItem("hive_customer_cart_count");
-    setState({
-      itemsCount: 0,
-      isSidebarOpen: false,
-    });
+    clearCartStore();
+    setSidebarOpenState(false);
   };
 
   return (
-    <CartContext.Provider value={{ ...state, setSidebarOpen, addToCart, removeFromCart, clearCart }}>
+    <CartContext.Provider value={{ itemsCount, isSidebarOpen, setSidebarOpen, addToCart, removeFromCart, clearCart }}>
       {children}
     </CartContext.Provider>
   );
@@ -76,3 +82,4 @@ export const useCart = () => {
   }
   return context;
 };
+

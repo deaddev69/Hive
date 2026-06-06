@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { MessageCircle, ShoppingBag, ArrowRight, Bell, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { cn } from "@hive/ui";
 import { ProductDetail } from "@/lib/mockProductDetails";
+import { useCartStore } from "@/store/cart-store";
+import { useCart } from "@/context/CartContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Subcomponent: AddToCartButton
@@ -212,6 +214,9 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
 
+  const addItem = useCartStore((state) => state.addItem);
+  const { setSidebarOpen } = useCart();
+
   const inventoryCount = selectedSize ? product.inventory[selectedSize] ?? 0 : 0;
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
   const isLowStock = selectedSize ? inventoryCount > 0 && inventoryCount <= 3 : false;
@@ -229,6 +234,18 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
     // Simulate API delay
     setTimeout(() => {
       setLoading(false);
+
+      addItem({
+        productId: product.id,
+        size: selectedSize,
+        price: product.price,
+        name: product.name,
+        imageUrl: product.images[0] || "",
+        boutiqueName: product.boutique.name,
+      });
+
+      setSidebarOpen(true);
+
       console.log(`Add to bag: ${product.name} (Size: ${selectedSize})`);
       triggerToast(`Added ${product.name} (Size ${selectedSize}) to your bag!`);
     }, 850);
