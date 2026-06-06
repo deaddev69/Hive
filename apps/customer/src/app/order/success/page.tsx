@@ -19,6 +19,7 @@ import {
   Scissors
 } from "lucide-react";
 import { useOrderStore } from "@/store/order-store";
+import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Redesigned Success Page Route Implementation
@@ -397,6 +398,16 @@ function OrderSummaryCard({
 function SuccessActions() {
   const router = useRouter();
   const latestOrder = useOrderStore((state) => state.latestOrder);
+  const { downloadInvoiceByOrderId, isDownloading } = useInvoiceDownload();
+
+  const handleDownload = () => {
+    if (latestOrder?.convexId) {
+      downloadInvoiceByOrderId(latestOrder.convexId);
+    }
+  };
+
+  const downloading = latestOrder?.convexId ? isDownloading(latestOrder.convexId) : false;
+
   console.log("LATEST ORDER", latestOrder);
   return (
     <div className="w-full space-y-3">
@@ -408,6 +419,21 @@ function SuccessActions() {
         <span>Track Order</span>
         <ChevronRight className="w-4 h-4" />
       </button>
+
+      {latestOrder?.convexId && (
+        <button
+          type="button"
+          disabled={downloading}
+          onClick={handleDownload}
+          className="w-full h-12 border border-hive-border text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+        >
+          {downloading ? (
+            <span className="w-4 h-4 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
+          ) : (
+            <span>Download Invoice</span>
+          )}
+        </button>
+      )}
 
       <button
         type="button"

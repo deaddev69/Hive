@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
+import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /orders — My Orders Page
@@ -134,6 +135,8 @@ export default function MyOrdersPage() {
 type ConvexOrder = NonNullable<ReturnType<typeof useQuery<typeof api.orders.listMyOrders>>>[number];
 
 function OrderCard({ order, mapStatus }: { order: ConvexOrder; mapStatus: (s: string) => string }) {
+  const { downloadInvoiceByOrderId, isDownloading } = useInvoiceDownload();
+  const downloading = isDownloading(order._id);
   const firstItem = order.items[0];
   const itemsCount = order.items.reduce((acc, item) => acc + item.quantity, 0);
   const uiStatus = mapStatus(order.status);
@@ -232,10 +235,29 @@ function OrderCard({ order, mapStatus }: { order: ConvexOrder; mapStatus: (s: st
           </span>
         </div>
 
-        <span className="h-10 px-5 bg-hive-dark text-hive-gold group-hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm flex-shrink-0">
-          <span>Track Order</span>
-          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-        </span>
+        <div className="flex items-center gap-2 mt-1 sm:mt-0">
+          <button
+            type="button"
+            disabled={downloading}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              downloadInvoiceByOrderId(order._id);
+            }}
+            className="h-9 px-3.5 border border-hive-border text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[9px] flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+          >
+            {downloading ? (
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
+            ) : (
+              <span>Download Invoice</span>
+            )}
+          </button>
+
+          <span className="h-9 px-4 bg-hive-dark text-hive-gold group-hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[9px] flex items-center justify-center gap-1.5 shadow-sm flex-shrink-0">
+            <span>Track Order</span>
+            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+          </span>
+        </div>
       </div>
     </Link>
   );

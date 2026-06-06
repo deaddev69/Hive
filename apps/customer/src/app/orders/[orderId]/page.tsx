@@ -22,6 +22,7 @@ import {
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
+import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /orders/[orderId] — Order Tracking & Details Page
@@ -180,6 +181,8 @@ export default function OrderDetailPage() {
               total={order.total}
               paymentMethod={paymentLabel(paymentMethodRaw)}
             />
+
+            <InvoiceInformationCard orderId={order._id} />
 
             <ContextualActionsConvex status={uiStatus} orderId={order._id} cancelReason={order.cancelReason} />
           </div>
@@ -543,6 +546,78 @@ function OrderDetailSkeleton() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component: InvoiceInformationCard
+// ─────────────────────────────────────────────────────────────────────────────
+function InvoiceInformationCard({ orderId }: { orderId: string }) {
+  const invoice = useQuery(api.invoices.getInvoiceByOrderId, { orderId: orderId as any });
+  const { downloadInvoiceData, isDownloading } = useInvoiceDownload();
+
+  if (invoice === undefined) {
+    return (
+      <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm animate-pulse space-y-3">
+        <div className="h-4 w-1/3 bg-hive-comb/10 rounded" />
+        <div className="h-3.5 w-2/3 bg-hive-comb/10 rounded" />
+      </div>
+    );
+  }
+
+  if (!invoice) {
+    return (
+      <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3 text-left">
+        <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2">
+          Invoice Information
+        </h3>
+        <p className="text-xs text-hive-text-muted">No invoice available.</p>
+      </div>
+    );
+  }
+
+  const downloading = isDownloading(invoice._id);
+
+  const formattedDate = new Date(invoice.generatedAt).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  return (
+    <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-4 text-left">
+      <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2">
+        Invoice Information
+      </h3>
+
+      <div className="space-y-2.5 text-xs font-bold text-hive-dark">
+        <div className="flex justify-between items-center text-hive-text-muted">
+          <span>Invoice Number</span>
+          <span className="text-hive-dark font-mono select-all">{invoice.invoiceNumber}</span>
+        </div>
+        <div className="flex justify-between items-center text-hive-text-muted">
+          <span>Transaction ID</span>
+          <span className="text-hive-dark font-mono select-all">{invoice.transactionId}</span>
+        </div>
+        <div className="flex justify-between items-center text-hive-text-muted">
+          <span>Generated Date</span>
+          <span className="text-hive-dark font-semibold">{formattedDate}</span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        disabled={downloading}
+        onClick={() => downloadInvoiceData(invoice)}
+        className="w-full h-11 border border-hive-border text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 mt-2"
+      >
+        {downloading ? (
+          <span className="w-4 h-4 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
+        ) : (
+          <span>Download Invoice</span>
+        )}
+      </button>
     </div>
   );
 }

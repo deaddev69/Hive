@@ -741,4 +741,53 @@ export default defineSchema({
     .index("by_city_state", ["city", "state"])
     .index("by_userId", ["userId"]),
 
+  // ─── INVOICES ─────────────────────────────────────────────────────────────
+  invoices: defineTable({
+    invoiceNumber:   v.string(),
+    orderId:         v.id("orders"),
+    orderNumber:     v.string(),
+    userId:          v.id("users"),
+    transactionId:   v.string(),
+    customerName:    v.string(),
+    customerEmail:   v.string(),
+    customerPhone:   v.string(),
+    billingAddress:  v.object({
+      line1:         v.string(),
+      line2:         v.optional(v.string()),
+      city:          v.string(),
+      state:         v.string(),
+      pincode:       v.string(),
+    }),
+    shippingAddress: v.object({
+      line1:         v.string(),
+      line2:         v.optional(v.string()),
+      city:          v.string(),
+      state:         v.string(),
+      pincode:       v.string(),
+    }),
+    items: v.array(
+      v.object({
+        productId:    v.string(),
+        productName:  v.string(),
+        productImage: v.string(),
+        size:         v.string(),
+        quantity:     v.number(),
+        unitPrice:    v.number(),
+        totalPrice:   v.number(),
+      })
+    ),
+    subtotal:        v.number(),
+    deliveryFee:     v.number(),
+    discount:        v.number(),
+    tax:             v.number(),
+    totalAmount:     v.number(),
+    paymentMethod:   v.string(),
+    paymentStatus:   v.string(),
+    generatedAt:     v.number(),
+    pdfUrl:          v.optional(v.string()),
+  })
+    .index("by_order_id",       ["orderId"])
+    .index("by_invoice_number", ["invoiceNumber"])
+    .index("by_user",           ["userId"]),
+
 });

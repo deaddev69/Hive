@@ -231,6 +231,82 @@ export const placeOrder = mutation({
       });
     }
 
+    // Generate unique invoice number: INV-YYYYMMDD-XXXX
+    let invoiceNumber = "";
+    let isUnique = false;
+    const dateObj = new Date(now);
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const dd = String(dateObj.getDate()).padStart(2, "0");
+    const dateStr = `${yyyy}${mm}${dd}`;
+    while (!isUnique) {
+      const randomSeq = Math.floor(1000 + Math.random() * 9000);
+      invoiceNumber = `INV-${dateStr}-${randomSeq}`;
+      const existing = await ctx.db
+        .query("invoices")
+        .withIndex("by_invoice_number", (q) => q.eq("invoiceNumber", invoiceNumber))
+        .unique();
+      if (!existing) {
+        isUnique = true;
+      }
+    }
+
+    // Generate transaction ID
+    const transactionId = `TXN-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
+    // Get customer profile display name
+    const profile = await ctx.db
+      .query("customerProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .unique();
+    const customerName = profile?.displayName || user.email || "Hive Customer";
+
+    // Snapshot items for the invoice
+    const invoiceItems = args.items.map((item) => ({
+      productId: item.productId,
+      productName: item.name,
+      productImage: item.imageUrl,
+      size: item.size,
+      quantity: item.quantity,
+      unitPrice: item.price,
+      totalPrice: item.price * item.quantity,
+    }));
+
+    // Create the invoice record
+    await ctx.db.insert("invoices", {
+      invoiceNumber,
+      orderId,
+      orderNumber,
+      userId: user._id,
+      transactionId,
+      customerName,
+      customerEmail: user.email || "",
+      customerPhone: user.phone || "",
+      billingAddress: {
+        line1: args.addressSnapshot.line1,
+        line2: args.addressSnapshot.line2,
+        city: args.addressSnapshot.city,
+        state: args.addressSnapshot.state,
+        pincode: args.addressSnapshot.pincode,
+      },
+      shippingAddress: {
+        line1: args.addressSnapshot.line1,
+        line2: args.addressSnapshot.line2,
+        city: args.addressSnapshot.city,
+        state: args.addressSnapshot.state,
+        pincode: args.addressSnapshot.pincode,
+      },
+      items: invoiceItems,
+      subtotal: args.subtotal,
+      deliveryFee: args.deliveryFee,
+      discount: args.discount,
+      tax: 0,
+      totalAmount: args.total,
+      paymentMethod: args.paymentMethod,
+      paymentStatus: args.paymentMethod === "cod" ? "pending" : "paid",
+      generatedAt: now,
+    });
+
     // Clear the user's cart
     const cartItemsToDelete = await ctx.db
       .query("cartItems")
