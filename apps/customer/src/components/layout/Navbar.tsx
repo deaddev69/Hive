@@ -100,7 +100,7 @@ export const Navbar: React.FC = () => {
             <div className="flex items-center border-l border-hive-border/50 pl-3">
               <UserButton
                 userProfileUrl="/profile"
-                afterSignOutUrl="/"
+                afterSignOutUrl="http://localhost:3000/"
                 appearance={{
                   elements: {
                     avatarBox: "w-8 h-8 rounded-full border border-hive-border/60 hover:scale-[1.03] transition-transform duration-200",

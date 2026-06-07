@@ -5,12 +5,13 @@ import { useAuth, SignOutButton, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, ShieldAlert, Loader2 } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, ShieldAlert, Loader2, Users } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@hive/ui";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "Users", href: "/admin/users", icon: Users },
   { label: "Categories", href: "/admin/categories", icon: FolderKanban },
   { label: "Banners", href: "/admin/banners", icon: ImageIcon },
   { label: "Boutiques", href: "/admin/boutiques", icon: Store },
@@ -141,7 +142,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
 
-          <SignOutButton>
+          <SignOutButton redirectUrl="http://localhost:3000/">
             <Button 
               variant="outline" 
               className="w-full justify-start gap-2 border-white/10 text-white/90 hover:bg-red-500 hover:text-white hover:border-transparent rounded-xl text-xs py-2"

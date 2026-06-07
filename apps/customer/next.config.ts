@@ -26,23 +26,6 @@ const nextConfig: NextConfig = {
   // Experimental: Server Actions are stable in Next.js 15
   // Enable partial pre-rendering when ready
   experimental: {
-    // ppr: true,  // enable when stable for your deployment
-  },
-
-  // Redirect /admin traffic to the admin console port (3001)
-  async redirects() {
-    return [
-      {
-        source: "/admin",
-        destination: "http://localhost:3001",
-        permanent: false,
-      },
-      {
-        source: "/admin/:path*",
-        destination: "http://localhost:3001/admin/:path*",
-        permanent: false,
-      },
-    ];
   },
 
   // Security headers

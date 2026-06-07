@@ -89,6 +89,16 @@ export const makeMeAdmin = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthenticated");
 
+    // Bootstrap check: prevent promotion if any admin already exists
+    const existingAdmin = await ctx.db
+      .query("users")
+      .withIndex("by_role", (q) => q.eq("role", "admin"))
+      .first();
+
+    if (existingAdmin) {
+      throw new Error("Admin already initialized");
+    }
+
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
@@ -96,7 +106,70 @@ export const makeMeAdmin = mutation({
 
     if (!user) throw new Error("User record not found");
 
-    await ctx.db.patch(user._id, { role: "admin" });
+    await ctx.db.patch(user._id, { role: "admin", updatedAt: Date.now() });
     return user._id;
+  },
+});
+
+/**
+ * Checks if at least one admin exists in the system.
+ */
+export const hasAdmins = query({
+  args: {},
+  handler: async (ctx) => {
+    const existingAdmin = await ctx.db
+      .query("users")
+      .withIndex("by_role", (q) => q.eq("role", "admin"))
+      .first();
+    return !!existingAdmin;
+  },
+});
+
+/**
+ * Returns all users. Requires admin privileges.
+ */
+export const getUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const me = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!me || me.role !== "admin") {
+      throw new Error("Unauthorized: Only admins can view users.");
+    }
+
+    // Since there's no updatedAt index, sort by default ID (chronological) and reverse
+    return await ctx.db.query("users").order("desc").collect();
+  },
+});
+
+/**
+ * Updates a user's role. Requires admin privileges.
+ */
+export const updateUserRole = mutation({
+  args: {
+    userId: v.id("users"),
+    role: v.union(v.literal("customer"), v.literal("boutique_owner"), v.literal("admin")),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const me = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!me || me.role !== "admin") {
+      throw new Error("Unauthorized: Only admins can change roles.");
+    }
+
+    await ctx.db.patch(args.userId, { role: args.role, updatedAt: Date.now() });
+    return true;
   },
 });
