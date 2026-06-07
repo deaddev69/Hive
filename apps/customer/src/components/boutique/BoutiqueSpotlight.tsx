@@ -53,7 +53,7 @@ export const BoutiqueSpotlight: React.FC<BoutiqueSpotlightProps> = ({ boutiques,
       </div>
 
       {/* Horizontal Scroll Track */}
-      <div className="flex gap-6 overflow-x-auto w-full pb-4 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory">
+      <div className="flex gap-6 overflow-x-auto w-full pb-4 -mx-6 px-6 lg:-mx-8 lg:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory">
         {displayBoutiques.map((boutique) => (
           <div
             key={boutique.id}

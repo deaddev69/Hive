@@ -295,19 +295,19 @@ export default function HomePage() {
           <div className="text-left text-xs text-hive-text-muted font-bold py-4">No categories setup.</div>
         ) : (
           // Interactive category bubble rail
-          <div className="flex gap-5 md:gap-7 overflow-x-auto w-full py-2 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex gap-5 md:gap-7 overflow-x-auto w-full py-2 -mx-6 px-6 sm:mx-0 sm:px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             
             {/* Category Bubble: "All" */}
             <button
               onClick={() => setSelectedCategoryId("all")}
               className="flex flex-col items-center gap-3.5 group cursor-pointer flex-shrink-0 select-none"
             >
-              <div className={`w-18 h-18 md:w-20 md:h-20 rounded-full border flex items-center justify-center transition-all duration-300 relative shadow-sm ${
+              <div className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full border flex items-center justify-center transition-all duration-300 relative shadow-sm ${
                 selectedCategoryId === "all"
                   ? "bg-hive-dark border-hive-dark text-white scale-105 ring-2 ring-hive-gold/45"
                   : "bg-white border-hive-border/60 hover:border-hive-gold hover:scale-102 text-hive-dark"
               }`}>
-                <Sparkles className={`w-6 h-6 ${selectedCategoryId === "all" ? "text-hive-gold" : "text-hive-amber"}`} />
+                <Sparkles className={`w-5 h-5 sm:w-6 sm:h-6 ${selectedCategoryId === "all" ? "text-hive-gold" : "text-hive-amber"}`} />
               </div>
               <span className={`text-[11px] font-bold tracking-wide transition-colors ${
                 selectedCategoryId === "all" ? "text-hive-amber font-extrabold" : "text-hive-text-muted group-hover:text-hive-dark"
@@ -325,7 +325,7 @@ export default function HomePage() {
                   onClick={() => handleCategorySelect(cat._id)}
                   className="flex flex-col items-center gap-3.5 group cursor-pointer flex-shrink-0 select-none"
                 >
-                  <div className={`w-18 h-18 md:w-20 md:h-20 rounded-full border overflow-hidden transition-all duration-300 relative shadow-sm ${
+                  <div className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full border overflow-hidden transition-all duration-300 relative shadow-sm ${
                     isSelected
                       ? "border-hive-gold ring-2 ring-hive-gold/45 scale-105"
                       : "border-hive-border/60 group-hover:border-hive-gold hover:scale-102"

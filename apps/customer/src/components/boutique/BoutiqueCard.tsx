@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { Boutique } from "@/lib/mockBoutiques";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 import { cn } from "@hive/ui";
@@ -17,11 +18,14 @@ export const BoutiqueCard: React.FC<BoutiqueCardProps> = ({ boutique, className 
       )}
     >
       {/* Cover Image Wrapper */}
-      <div className="relative w-full aspect-[16/10] overflow-hidden rounded-t-[30px] bg-hive-cream/20">
-        <img
+      <div className="relative w-full aspect-[4/5] sm:aspect-[16/10] overflow-hidden rounded-t-[30px] bg-hive-cream/20">
+        <Image
           src={boutique.imageUrl}
           alt={boutique.name}
-          className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover transform group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+          priority={false}
         />
 
         {/* Verified Badge */}
