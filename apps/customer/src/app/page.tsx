@@ -8,7 +8,6 @@ import { useLocation } from "@/context/LocationContext";
 import { useCart } from "@/context/CartContext";
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
 import { MapPin, Sparkles, Plus, ShoppingCart, ChevronLeft, ChevronRight, Check } from "lucide-react";
-import { OccasionRail } from "@/components/home/OccasionRail";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { BoutiqueSpotlight } from "@/components/boutique/BoutiqueSpotlight";
 import { TrustStrip } from "@/components/trust/TrustStrip";
@@ -103,7 +102,6 @@ export default function HomePage() {
   const router = useRouter();
 
   // Selected Discovery Filters
-  const [selectedOccasion, setSelectedOccasion] = useState("all");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
 
   // Fetch from Convex
@@ -145,19 +143,12 @@ export default function HomePage() {
   const mappedBoutiques = (dbBoutiques || []).map((b) => mapDbBoutique(b, dbProducts || []));
 
   const filteredProducts = products.filter((p) => {
-    // Occasion filter (handled on page level instead of internally in ProductGrid)
-    const matchesOccasion = selectedOccasion === "all" || p.occasion === selectedOccasion;
-    
     // Category filter
     const originalProd = dbProducts?.find((dp) => dp._id === p.id);
     const matchesCategory = selectedCategoryId === "all" || (originalProd && originalProd.categoryId === selectedCategoryId);
 
-    return matchesOccasion && matchesCategory;
+    return matchesCategory;
   });
-
-  const handleOccasionChange = (id: string) => {
-    setSelectedOccasion(id);
-  };
 
   const handleCategorySelect = (id: string) => {
     setSelectedCategoryId((prev) => (prev === id ? "all" : id));
@@ -280,7 +271,7 @@ export default function HomePage() {
       {/* ──────────────────────────────────────────────────
           2. CATEGORIES DISCOVERY TRACK (MEESHO-STYLE VISUAL RAILS)
           ────────────────────────────────────────────────── */}
-      <section className="w-full max-w-7xl mx-auto px-6 lg:px-8 py-10 flex flex-col gap-5">
+      <section className="w-full max-w-7xl mx-auto px-6 lg:px-8 pt-10 pb-0 flex flex-col gap-5">
         <div className="flex flex-col text-left items-start gap-1">
           <span className="text-[10px] font-bold text-hive-amber tracking-widest uppercase">
             POPULAR CATEGORIES
@@ -371,21 +362,12 @@ export default function HomePage() {
       </section>
 
       {/* ──────────────────────────────────────────────────
-          3. DYNAMIC OCCASION RAIL (VIBE SELECTION)
-          ────────────────────────────────────────────────── */}
-      <OccasionRail
-        selectedOccasion={selectedOccasion}
-        onOccasionChange={handleOccasionChange}
-      />
-
-      {/* ──────────────────────────────────────────────────
           4. DYNAMIC PRODUCTS GRID FEED (NO MOCK DATA)
           ────────────────────────────────────────────────── */}
       <ProductGrid
         products={filteredProducts}
         selectedOccasion="all" // already filtered on page level to respect dual filter
         onResetFilter={() => {
-          setSelectedOccasion("all");
           setSelectedCategoryId("all");
         }}
         isLoading={dbProducts === undefined}
