@@ -8,16 +8,14 @@ import {
   DEFAULT_FILTER_STATE,
   countActiveFilters,
 } from "@/lib/catalogFilters";
-import { OccasionFilter } from "./filters/OccasionFilter";
 import { CategoryFilter } from "./filters/CategoryFilter";
-import { BoutiqueFilter } from "./filters/BoutiqueFilter";
 import { PriceRangeFilter } from "./filters/PriceRangeFilter";
 import { DeliveryFilter } from "./filters/DeliveryFilter";
 
 export interface CatalogFiltersProps {
   filters: CatalogFilterState;
   onChange: (filters: CatalogFilterState) => void;
-  /** Compact mode — used inside mobile drawer, hides sticky positioning */
+  /** Compact mode — used inside mobile drawer */
   compact?: boolean;
   className?: string;
 }
@@ -32,8 +30,8 @@ export const CatalogFilters: React.FC<CatalogFiltersProps> = ({
 
   const reset = () => onChange(DEFAULT_FILTER_STATE);
 
-  const patch = (patch: Partial<CatalogFilterState>) =>
-    onChange({ ...filters, ...patch });
+  const patch = (partial: Partial<CatalogFilterState>) =>
+    onChange({ ...filters, ...partial });
 
   return (
     <aside
@@ -68,7 +66,7 @@ export const CatalogFilters: React.FC<CatalogFiltersProps> = ({
         )}
       </div>
 
-      {/* Filter sections */}
+      {/* Filter sections — Delivery → Price → Category */}
       <div className="flex flex-col px-5 divide-y divide-hive-border/40">
         <DeliveryFilter
           sameDayDelivery={filters.sameDayDelivery}
@@ -81,49 +79,21 @@ export const CatalogFilters: React.FC<CatalogFiltersProps> = ({
           onChange={(min, max) => patch({ minPrice: min, maxPrice: max })}
         />
 
-        <OccasionFilter
-          selected={filters.occasions}
-          onChange={(v) => patch({ occasions: v })}
-        />
-
         <CategoryFilter
           selected={filters.categories}
           onChange={(v) => patch({ categories: v })}
         />
-
-        <BoutiqueFilter
-          selected={filters.boutiques}
-          onChange={(v) => patch({ boutiques: v })}
-        />
       </div>
 
-      {/* Active tags — quick remove chips */}
+      {/* Active filter chips — quick remove */}
       {activeCount > 0 && (
         <div className="flex flex-wrap gap-2 px-5 py-4 border-t border-hive-border/40 bg-hive-cream/20">
-          {filters.occasions.map((id) => (
-            <ActiveTag
-              key={`occ-${id}`}
-              label={id}
-              onRemove={() =>
-                patch({ occasions: filters.occasions.filter((o) => o !== id) })
-              }
-            />
-          ))}
           {filters.categories.map((id) => (
             <ActiveTag
               key={`cat-${id}`}
               label={id}
               onRemove={() =>
                 patch({ categories: filters.categories.filter((c) => c !== id) })
-              }
-            />
-          ))}
-          {filters.boutiques.map((id) => (
-            <ActiveTag
-              key={`bou-${id}`}
-              label={id}
-              onRemove={() =>
-                patch({ boutiques: filters.boutiques.filter((b) => b !== id) })
               }
             />
           ))}

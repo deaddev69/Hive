@@ -7,7 +7,6 @@ import {
   ArrowDownFromLine,
   Star,
   TrendingUp,
-  Truck,
   Check,
   X,
   ChevronDown,
@@ -29,7 +28,6 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   ArrowDownFromLine,
   Star,
   TrendingUp,
-  Truck,
 };
 
 export interface SortDropdownProps {

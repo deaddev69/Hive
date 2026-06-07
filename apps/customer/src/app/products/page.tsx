@@ -11,6 +11,7 @@ import { CatalogEmptyState } from "@/components/catalog/CatalogEmptyState";
 import { ProductCard } from "@/components/product/ProductCard";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
+import { Id } from "../../../../../convex/_generated/dataModel";
 import { ProductCardData } from "@/lib/mockProducts";
 import { Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -19,7 +20,8 @@ import {
   CatalogFilterState,
   DEFAULT_FILTER_STATE,
   countActiveFilters,
-  applyFilters,
+  PRICE_MIN,
+  PRICE_MAX,
 } from "@/lib/catalogFilters";
 import {
   ProductSortOption,
@@ -34,37 +36,21 @@ function getProductOccasion(product: any): string {
   const catName = (product.categoryName || "").toLowerCase();
   const name = (product.name || "").toLowerCase();
   const desc = (product.description || "").toLowerCase();
-  
-  if (name.includes("wedding") || desc.includes("wedding") || name.includes("lehenga") || catName.includes("lehengas")) {
-    return "wedding";
-  }
-  if (name.includes("festival") || desc.includes("festival") || name.includes("saree") || catName.includes("sarees")) {
-    return "festival";
-  }
-  if (name.includes("co-ord") || name.includes("coord") || catName.includes("coords") || catName.includes("co-ord")) {
-    return "coords";
-  }
-  if (name.includes("kurta") || name.includes("kurti") || catName.includes("kurtis")) {
-    return "ethnic";
-  }
-  if (name.includes("party") || desc.includes("party")) {
-    return "party";
-  }
-  if (name.includes("date") || desc.includes("date") || name.includes("dress") || catName.includes("dresses")) {
-    return "date";
-  }
-  if (name.includes("work") || name.includes("office")) {
-    return "workwear";
-  }
+  if (name.includes("wedding") || desc.includes("wedding") || name.includes("lehenga") || catName.includes("lehengas")) return "wedding";
+  if (name.includes("festival") || desc.includes("festival") || name.includes("saree") || catName.includes("sarees")) return "festival";
+  if (name.includes("co-ord") || name.includes("coord") || catName.includes("coords") || catName.includes("co-ord")) return "coords";
+  if (name.includes("kurta") || name.includes("kurti") || catName.includes("kurtis")) return "ethnic";
+  if (name.includes("party") || desc.includes("party")) return "party";
+  if (name.includes("date") || desc.includes("date") || name.includes("dress") || catName.includes("dresses")) return "date";
+  if (name.includes("work") || name.includes("office")) return "workwear";
   return "casual";
 }
 
-// Helper to map DB product to ProductCardData interface
+// Map DB product → ProductCardData
 function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number> } {
   const hasDiscount = p.discountPrice !== undefined && p.discountPrice < p.price;
   const price = hasDiscount ? p.discountPrice! : p.price;
   const compareAtPrice = hasDiscount ? p.price : undefined;
-
   return {
     id: p._id,
     slug: p.slug,
@@ -73,8 +59,8 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
     price,
     compareAtPrice,
-    rating: 4.8, // Fallback rating
-    reviewCount: 12, // Fallback review count
+    rating: 4.8,
+    reviewCount: 12,
     occasion: getProductOccasion(p),
     isVerifiedBoutique: p.boutique?.verified || false,
     isNewArrival: Date.now() - p.createdAt < 7 * 24 * 60 * 60 * 1000,
@@ -107,42 +93,67 @@ function ProductsCatalog() {
 
   const { latitude, longitude } = useLocation();
 
-  const dbProducts = useQuery(
-    api.products.getActiveProducts,
-    browseAll
-      ? {}
-      : (latitude !== null && longitude !== null ? { userLat: latitude, userLng: longitude } : {})
-  );
-
   const [filters, setFilters] = useState<CatalogFilterState>(DEFAULT_FILTER_STATE);
   const [sortOption, setSortOption] = useState<ProductSortOption>(DEFAULT_SORT);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Fetch DB categories for resolving names in the toolbar summary
+  const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
+
+  // Resolve selected category names for the results summary pill
+  const selectedCategoryNames = useMemo(() => {
+    if (!dbCategories || filters.categories.length === 0) return [];
+    return filters.categories
+      .map((id) => dbCategories.find((c) => c._id === id)?.name)
+      .filter(Boolean) as string[];
+  }, [dbCategories, filters.categories]);
+
+  // Build query args — backend does the filtering
+  const queryArgs = useMemo(() => {
+    const args: Record<string, any> = {};
+    if (!browseAll && latitude !== null && longitude !== null) {
+      args.userLat = latitude;
+      args.userLng = longitude;
+    }
+    if (filters.categories.length > 0) {
+      args.categoryIds = filters.categories as Id<"categories">[];
+    }
+    if (filters.minPrice > PRICE_MIN) {
+      args.minPrice = filters.minPrice;
+    }
+    if (filters.maxPrice < PRICE_MAX) {
+      args.maxPrice = filters.maxPrice;
+    }
+    return args;
+  }, [browseAll, latitude, longitude, filters]);
+
+  const dbProducts = useQuery(api.products.getActiveProducts, queryArgs);
+
   const activeFilterCount = countActiveFilters(filters);
 
-  // Map products
-  const products = useMemo(() => {
-    return (dbProducts || []).map(mapDbProduct);
-  }, [dbProducts]);
+  // Map + sort — no client-side category/price filtering (done by backend)
+  const products = useMemo(() => (dbProducts || []).map(mapDbProduct), [dbProducts]);
 
-  // Filter then sort — both memoised separately so each step is cheap
-  const filteredProducts = useMemo(
-    () => applyFilters(products, filters),
-    [products, filters]
-  );
-  
+  // Client-side same-day filter (lightweight, not worth a backend trip)
+  const filteredProducts = useMemo(() => {
+    if (filters.sameDayDelivery) {
+      return products.filter((p) => p.sameDayDelivery);
+    }
+    return products;
+  }, [products, filters.sameDayDelivery]);
+
   const sortedProducts = useMemo(
     () => applySort(filteredProducts, sortOption),
     [filteredProducts, sortOption]
   );
 
-  // Reset page when filters or sorting change
+  // Reset to page 1 whenever filters or sort change
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, sortOption]);
 
-  // Paginated products list
+  // Pagination
   const totalPages = Math.ceil(sortedProducts.length / PAGE_SIZE);
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
@@ -167,9 +178,8 @@ function ProductsCatalog() {
 
   return (
     <CatalogLayout breadcrumbs={[{ label: "All Products" }]}>
-      {/* 1. Products Page Header (using CatalogHeader with Honeycomb bg) */}
+      {/* Page header */}
       <div className="relative w-full">
-        {/* Subtle decorative background honeycomb pattern */}
         <div className="absolute inset-0 -z-10 pointer-events-none opacity-[0.06] bg-gradient-to-br from-white via-[#FFFDF5] to-[#FFF3CC]/20">
           <svg className="w-full h-full" aria-hidden="true">
             <defs>
@@ -181,7 +191,6 @@ function ProductsCatalog() {
             <rect width="100%" height="100%" fill="url(#products-hc)" />
           </svg>
         </div>
-
         <CatalogHeader
           title="All Products"
           description="Every piece, every occasion — handpicked from verified boutiques near you."
@@ -191,6 +200,7 @@ function ProductsCatalog() {
         />
       </div>
 
+      {/* Browse-all banner */}
       {browseAll && (
         <div className="max-w-[1440px] mx-auto px-6 lg:px-8 w-full mt-4">
           <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2">
@@ -200,10 +210,9 @@ function ProductsCatalog() {
         </div>
       )}
 
-      {/* 2. Body: sidebar + grid */}
+      {/* Body: sidebar + grid */}
       <div className="max-w-[1440px] mx-auto px-6 lg:px-8 w-full flex flex-col gap-6 py-6">
-        
-        {/* Catalog Toolbar */}
+        {/* Toolbar */}
         <CatalogToolbar
           activeFilterCount={activeFilterCount}
           resultCount={sortedProducts.length}
@@ -212,22 +221,19 @@ function ProductsCatalog() {
           onOpenMobileFilters={() => setDrawerOpen(true)}
           onClearFilters={clearFilters}
           accentColor="#C9A84C"
-          occasions={filters.occasions}
-          categories={filters.categories}
-          boutiques={filters.boutiques}
+          categoryNames={selectedCategoryNames}
         />
 
         <div className="w-full flex gap-8 items-start">
-          {/* Desktop Sidebar Filters */}
+          {/* Desktop sidebar */}
           <div className="hidden lg:block w-[300px] xl:w-[320px] flex-shrink-0">
             <CatalogFilters filters={filters} onChange={setFilters} />
           </div>
 
-          {/* Product Listing Main Slot */}
+          {/* Product grid */}
           <div className="flex-1 min-w-0 flex flex-col gap-6">
             {paginatedProducts.length > 0 ? (
               <>
-                {/* Product Grid */}
                 <div className="relative z-0 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 md:gap-6">
                   {paginatedProducts.map((product, idx) => (
                     <div
@@ -240,7 +246,6 @@ function ProductsCatalog() {
                   ))}
                 </div>
 
-                {/* Catalog Pagination */}
                 <CatalogPagination
                   currentPage={currentPage}
                   totalPages={totalPages}
@@ -251,7 +256,6 @@ function ProductsCatalog() {
                 />
               </>
             ) : (
-              /* Catalog Empty State */
               <CatalogEmptyState
                 onClearFilters={clearFilters}
                 accentColor="#C9A84C"

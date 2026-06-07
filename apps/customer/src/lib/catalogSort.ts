@@ -11,8 +11,7 @@ export type ProductSortOption =
   | "priceAsc"
   | "priceDesc"
   | "rating"
-  | "trending"
-  | "sameDay";
+  | "trending";
 
 export const DEFAULT_SORT: ProductSortOption = "newest";
 
@@ -60,13 +59,6 @@ export const SORT_OPTIONS: SortOptionMeta[] = [
     description: "Most popular right now",
     icon: "TrendingUp",
   },
-  {
-    id: "sameDay",
-    label: "Same Day Delivery",
-    shortLabel: "Same Day",
-    description: "Delivered today, eligible pieces first",
-    icon: "Truck",
-  },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -108,15 +100,6 @@ export function applySort(
           (b.isBestSeller ? 2 : 0) +
           (b.reviewCount ?? 0) / 100;
         return bScore - aScore;
-      });
-
-    case "sameDay":
-      // same-day eligible first, then by price ascending
-      return sorted.sort((a, b) => {
-        if (a.sameDayDelivery === b.sameDayDelivery) {
-          return a.price - b.price;
-        }
-        return a.sameDayDelivery ? -1 : 1;
       });
 
     default:

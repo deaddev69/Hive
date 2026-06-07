@@ -3,10 +3,12 @@
 import React from "react";
 import { cn } from "@hive/ui";
 import { FilterSection } from "./FilterSection";
-import { CATEGORY_OPTIONS } from "@/lib/catalogFilters";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
+import { Loader2 } from "lucide-react";
 
 interface CategoryFilterProps {
-  selected: string[];
+  selected: string[]; // Array of category DB IDs
   onChange: (values: string[]) => void;
 }
 
@@ -14,6 +16,8 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   selected,
   onChange,
 }) => {
+  const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
+
   const toggle = (id: string) => {
     onChange(
       selected.includes(id)
@@ -22,35 +26,73 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
     );
   };
 
+  if (dbCategories === undefined) {
+    return (
+      <FilterSection title="Category" activeCount={selected.length}>
+        <div className="flex flex-col gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-9 rounded-xl bg-hive-comb/20 animate-pulse border border-hive-border/30"
+            />
+          ))}
+        </div>
+      </FilterSection>
+    );
+  }
+
+  if (dbCategories.length === 0) {
+    return (
+      <FilterSection title="Category" activeCount={0}>
+        <p className="text-xs text-hive-text-muted py-2 text-center">
+          No categories available.
+        </p>
+      </FilterSection>
+    );
+  }
+
   return (
     <FilterSection title="Category" activeCount={selected.length}>
-      <div className="flex flex-wrap gap-2">
-        {CATEGORY_OPTIONS.map((opt) => {
-          const active = selected.includes(opt.id);
+      <div className="flex flex-col gap-1.5">
+        {dbCategories.map((cat) => {
+          const active = selected.includes(cat._id);
           return (
             <button
-              key={opt.id}
+              key={cat._id}
               type="button"
-              onClick={() => toggle(opt.id)}
-              aria-pressed={active}
+              onClick={() => toggle(cat._id)}
               className={cn(
-                "px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all duration-200",
+                "w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all duration-200 text-left group",
                 active
-                  ? "bg-hive-gold text-hive-dark border-hive-amber shadow-sm shadow-hive-gold/20"
-                  : "bg-white border-hive-border/60 text-hive-text hover:border-hive-gold/50 hover:bg-hive-comb/20"
+                  ? "bg-hive-gold/15 border border-hive-gold/40 text-hive-amber font-bold"
+                  : "border border-transparent hover:bg-hive-comb/30 hover:border-hive-border/50 text-hive-text"
               )}
+              aria-pressed={active}
             >
-              {opt.label}
-              {opt.count !== undefined && (
+              <span className="flex items-center gap-2.5">
+                {/* Custom checkbox */}
                 <span
                   className={cn(
-                    "ml-1.5 text-[10px] font-medium",
-                    active ? "text-hive-dark/70" : "text-hive-text-muted/60"
+                    "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all duration-200",
+                    active
+                      ? "bg-hive-gold border-hive-amber"
+                      : "border-hive-border group-hover:border-hive-gold/60"
                   )}
                 >
-                  ({opt.count})
+                  {active && (
+                    <svg viewBox="0 0 10 8" className="w-2.5 h-2" fill="none">
+                      <path
+                        d="M1 4l2.5 2.5L9 1"
+                        stroke="white"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
                 </span>
-              )}
+                <span className="text-xs font-medium">{cat.name}</span>
+              </span>
             </button>
           );
         })}

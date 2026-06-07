@@ -278,30 +278,45 @@ function calculateDistanceKm(lat1: number, lng1: number, lat2: number, lng2: num
 
 /**
  * Public query to fetch products matching filters (for Customer App).
+ * Supports multi-category, price range, and location-based delivery radius filtering.
  */
 export const getActiveProducts = query({
   args: {
-    categoryId: v.optional(v.id("categories")),
+    categoryIds: v.optional(v.array(v.id("categories"))),
     featuredOnly: v.optional(v.boolean()),
+    minPrice: v.optional(v.number()),
+    maxPrice: v.optional(v.number()),
     userLat: v.optional(v.number()),
     userLng: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    let query = ctx.db
+    const products = await ctx.db
       .query("products")
-      .withIndex("by_active", (q) => q.eq("active", true));
+      .withIndex("by_active", (q) => q.eq("active", true))
+      .collect();
 
-    const products = await query.collect();
-
-    // Filter post-query due to multiple filters on index limits
     let filtered = products;
-    if (args.categoryId) {
-      filtered = filtered.filter(p => p.categoryId === args.categoryId);
+
+    // Category filter — multi-select, applied at query level
+    if (args.categoryIds && args.categoryIds.length > 0) {
+      const catSet = new Set(args.categoryIds);
+      filtered = filtered.filter(p => catSet.has(p.categoryId));
     }
+
+    // Featured filter
     if (args.featuredOnly) {
       filtered = filtered.filter(p => p.featured === true);
     }
 
+    // Price range filter
+    if (args.minPrice !== undefined) {
+      filtered = filtered.filter(p => p.price >= args.minPrice!);
+    }
+    if (args.maxPrice !== undefined) {
+      filtered = filtered.filter(p => p.price <= args.maxPrice!);
+    }
+
+    // Location-based delivery radius filter
     if (args.userLat !== undefined && args.userLng !== undefined) {
       const boutiques = await ctx.db
         .query("boutiques")
