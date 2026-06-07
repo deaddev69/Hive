@@ -241,7 +241,14 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const { setSidebarOpen } = useCart();
   const { latitude, longitude } = useLocation();
 
-  const inventoryCount = selectedSize ? product.inventory[selectedSize] ?? 0 : 0;
+  // ── Single source of truth for stock ──────────────────────────────────────
+  // Convex DB products use `stockBySize`; mock products use `inventory`.
+  const stockMap: Record<string, number> =
+    (product as any).stockBySize ?? product.inventory ?? {};
+
+  console.log("[PurchaseActions] stockMap:", stockMap, "selectedSize:", selectedSize);
+
+  const inventoryCount = selectedSize ? (stockMap[selectedSize] ?? 0) : 0;
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
   const isLowStock = selectedSize ? inventoryCount > 0 && inventoryCount <= 3 : false;
 
