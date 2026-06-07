@@ -98,8 +98,27 @@ function ProductsCatalog() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const categorySlugFromUrl = searchParams.get("category");
+
   // Fetch DB categories for resolving names in the toolbar summary
   const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
+
+  // When URL ?category=slug changes and categories load, pre-select the matching category
+  useEffect(() => {
+    if (!dbCategories) return;
+    if (!categorySlugFromUrl) {
+      // No category in URL — clear category filter but keep other filters
+      setFilters((prev) => ({ ...prev, categories: [] }));
+      return;
+    }
+    const match = dbCategories.find(
+      (c) => c.slug === categorySlugFromUrl || c.name.toLowerCase().replace(/\s+/g, "-") === categorySlugFromUrl
+    );
+    if (match) {
+      setFilters((prev) => ({ ...prev, categories: [match._id] }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categorySlugFromUrl, dbCategories]);
 
   // Resolve selected category names for the results summary pill
   const selectedCategoryNames = useMemo(() => {

@@ -7,7 +7,7 @@ import { api } from "../../../../convex/_generated/api";
 import { useLocation } from "@/context/LocationContext";
 import { useCart } from "@/context/CartContext";
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
-import { MapPin, Sparkles, Plus, ShoppingCart, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { MapPin, Sparkles, Plus, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { BoutiqueSpotlight } from "@/components/boutique/BoutiqueSpotlight";
 import { TrustStrip } from "@/components/trust/TrustStrip";
@@ -101,9 +101,6 @@ export default function HomePage() {
   const { addToCart, itemsCount } = useCart();
   const router = useRouter();
 
-  // Selected Discovery Filters
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
-
   // Fetch from Convex
   const dbBanners = useQuery(api.banners.getActiveBanners);
   const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
@@ -143,21 +140,9 @@ export default function HomePage() {
     setCurrentBannerIndex((prev) => (prev + 1) % dbBanners.length);
   };
 
-  // Map & Filter Products
+  // Map products and boutiques
   const products = (dbProducts || []).map(mapDbProduct);
   const mappedBoutiques = (dbBoutiques || []).map((b) => mapDbBoutique(b, dbProducts || []));
-
-  const filteredProducts = products.filter((p) => {
-    // Category filter
-    const originalProd = dbProducts?.find((dp) => dp._id === p.id);
-    const matchesCategory = selectedCategoryId === "all" || (originalProd && originalProd.categoryId === selectedCategoryId);
-
-    return matchesCategory;
-  });
-
-  const handleCategorySelect = (id: string) => {
-    setSelectedCategoryId((prev) => (prev === id ? "all" : id));
-  };
 
   return (
     <div className="flex flex-col items-center bg-[#FFFDF9]/40 min-h-screen text-hive-text w-full pb-20">
@@ -304,37 +289,27 @@ export default function HomePage() {
             
             {/* Category Bubble: "All" */}
             <button
-              onClick={() => setSelectedCategoryId("all")}
+              onClick={() => router.push("/products")}
               className="flex flex-col items-center gap-3.5 group cursor-pointer flex-shrink-0 select-none"
             >
-              <div className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full border flex items-center justify-center transition-all duration-300 relative shadow-sm ${
-                selectedCategoryId === "all"
-                  ? "bg-hive-dark border-hive-dark text-white scale-105 ring-2 ring-hive-gold/45"
-                  : "bg-white border-hive-border/60 hover:border-hive-gold hover:scale-102 text-hive-dark"
-              }`}>
-                <Sparkles className={`w-5 h-5 sm:w-6 sm:h-6 ${selectedCategoryId === "all" ? "text-hive-gold" : "text-hive-amber"}`} />
+              <div className="w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full border flex items-center justify-center transition-all duration-300 relative shadow-sm bg-white border-hive-border/60 hover:border-hive-gold hover:scale-105 text-hive-dark">
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-hive-amber" />
               </div>
-              <span className={`text-[11px] font-bold tracking-wide transition-colors ${
-                selectedCategoryId === "all" ? "text-hive-amber font-extrabold" : "text-hive-text-muted group-hover:text-hive-dark"
-              }`}>
+              <span className="text-[11px] font-bold tracking-wide transition-colors text-hive-text-muted group-hover:text-hive-dark">
                 All Design
               </span>
             </button>
 
-            {/* Dyn Categories Bubbles */}
+            {/* Dynamic Category Bubbles — navigate to /products?category=slug */}
             {dbCategories.map((cat) => {
-              const isSelected = selectedCategoryId === cat._id;
+              const categorySlug = cat.slug || cat.name.toLowerCase().replace(/\s+/g, "-");
               return (
                 <button
                   key={cat._id}
-                  onClick={() => handleCategorySelect(cat._id)}
+                  onClick={() => router.push(`/products?category=${categorySlug}`)}
                   className="flex flex-col items-center gap-3.5 group cursor-pointer flex-shrink-0 select-none"
                 >
-                  <div className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full border overflow-hidden transition-all duration-300 relative shadow-sm ${
-                    isSelected
-                      ? "border-hive-gold ring-2 ring-hive-gold/45 scale-105"
-                      : "border-hive-border/60 group-hover:border-hive-gold hover:scale-102"
-                  }`}>
+                  <div className="w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full border overflow-hidden transition-all duration-300 relative shadow-sm border-hive-border/60 group-hover:border-hive-gold hover:scale-105">
                     {cat.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -347,16 +322,8 @@ export default function HomePage() {
                         👗
                       </div>
                     )}
-                    {/* Checked overlay if selected */}
-                    {isSelected && (
-                      <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center">
-                        <Check className="w-5 h-5 text-white stroke-[3.5]" />
-                      </div>
-                    )}
                   </div>
-                  <span className={`text-[11px] font-bold tracking-wide transition-colors ${
-                    isSelected ? "text-hive-amber font-extrabold" : "text-hive-text-muted group-hover:text-hive-dark"
-                  }`}>
+                  <span className="text-[11px] font-bold tracking-wide transition-colors text-hive-text-muted group-hover:text-hive-dark">
                     {cat.name}
                   </span>
                 </button>
@@ -370,11 +337,9 @@ export default function HomePage() {
           4. DYNAMIC PRODUCTS GRID FEED (NO MOCK DATA)
           ────────────────────────────────────────────────── */}
       <ProductGrid
-        products={filteredProducts}
-        selectedOccasion="all" // already filtered on page level to respect dual filter
-        onResetFilter={() => {
-          setSelectedCategoryId("all");
-        }}
+        products={products}
+        selectedOccasion="all"
+        onResetFilter={() => {}}
         isLoading={dbProducts === undefined}
         viewAllHref="/products"
       />
