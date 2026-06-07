@@ -53,6 +53,8 @@ export default function SecurePaymentPage() {
 
   // Convex: persistent addresses for the logged-in user
   const convexAddresses = useQuery(api.addresses.list) ?? [];
+  // Convex cart is the AUTHORITATIVE source — productId is validated on insert
+  const convexCart = useQuery(api.cart.getCart);
   const placeOrderMutation = useMutation(api.orders.placeOrder);
   const clearCartMutation = useMutation(api.cart.clearCart);
 
@@ -61,6 +63,7 @@ export default function SecurePaymentPage() {
 
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
+  const addItem = useCartStore((state) => state.addItem);
 
   const selectedDate = useCheckoutStore((state) => state.selectedDate);
   const selectedSlot = useCheckoutStore((state) => state.selectedSlot);
@@ -95,6 +98,37 @@ export default function SecurePaymentPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Heal stale Zustand items that lack productId by syncing from Convex cart.
+  // This fixes items that were added before the PurchaseActions slug fix.
+  useEffect(() => {
+    if (!convexCart || convexCart.length === 0) return;
+    const zustandItems = useCartStore.getState().items;
+    let needsHeal = false;
+    for (const item of zustandItems) {
+      if (!item.productId) {
+        needsHeal = true;
+        break;
+      }
+    }
+    if (!needsHeal) return;
+
+    // Replace Zustand store with healed items from Convex
+    const { clearCart: clearZustand } = useCartStore.getState();
+    clearZustand();
+    for (const ci of convexCart) {
+      addItem({
+        productId: ci.productId,
+        name: ci.name,
+        price: ci.price,
+        imageUrl: ci.imageUrl,
+        boutiqueName: ci.boutiqueName,
+        size: ci.size,
+        quantity: ci.quantity,
+      });
+    }
+    console.log("[CartHeal] Healed stale Zustand cart from Convex:", convexCart.map(c => ({ productId: c.productId, name: c.name })));
+  }, [convexCart]);
 
   // Resolve selectedAddress from Convex addresses list
   const selectedAddress = convexAddresses.find((a) => a._id === storedAddressId)
@@ -216,15 +250,48 @@ export default function SecurePaymentPage() {
     if (!validatePaymentInput()) return;
     if (!selectedAddress) return;
 
-    const snapshotItems = orderItems.map((item: CartItem) => ({
-      productId: item.productId,
-      name: item.name,
-      price: item.price,
-      imageUrl: item.imageUrl,
-      boutiqueName: item.boutiqueName,
-      size: item.size,
-      quantity: item.quantity,
-    }));
+    // Build authoritative snapshot: prefer Convex cart productId over Zustand
+    // (Convex cart always has productId validated on insert — Zustand may have stale undefined)
+    const convexCartMap = new Map(
+      (convexCart ?? []).map((ci) => [`${ci.productId}|${ci.size}`, ci])
+    );
+
+    const snapshotItems = orderItems.map((item: CartItem) => {
+      // Look up the matching Convex cart row by name+size as fallback key
+      const convexMatch =
+        convexCartMap.get(`${item.productId}|${item.size}`) ??
+        (convexCart ?? []).find((ci) => ci.name === item.name && ci.size === item.size);
+
+      const resolvedProductId = item.productId || convexMatch?.productId || "";
+
+      console.log("[OrderItem]", {
+        name: item.name,
+        size: item.size,
+        zustandProductId: item.productId,
+        convexProductId: convexMatch?.productId,
+        resolvedProductId,
+      });
+
+      return {
+        productId: resolvedProductId,
+        name: item.name,
+        price: item.price,
+        imageUrl: item.imageUrl,
+        boutiqueName: item.boutiqueName,
+        size: item.size,
+        quantity: item.quantity,
+      };
+    });
+
+    // Safety guard: reject if any item still lacks productId
+    const invalid = snapshotItems.filter((i) => !i.productId);
+    if (invalid.length > 0) {
+      console.error("[PlaceOrder] Items missing productId after heal:", invalid);
+      alert(`Cannot place order: ${invalid.length} item(s) are missing a product ID. Please remove them from your cart and add again.`);
+      return;
+    }
+
+    console.log("[OrderPayload] snapshotItems:", snapshotItems);
 
     const snapshotDate = selectedDate!;
     const snapshotSlot = selectedSlot!;
@@ -242,8 +309,9 @@ export default function SecurePaymentPage() {
           city: selectedAddress.city,
           state: selectedAddress.state,
           pincode: selectedAddress.pincode,
-          lat: 0,
-          lng: 0,
+          // Use real saved coordinates — never 0,0 which breaks the distance check
+          lat: (selectedAddress as any).lat ?? 0,
+          lng: (selectedAddress as any).lng ?? 0,
         },
         deliveryDate: snapshotDate,
         deliverySlot: snapshotSlot,

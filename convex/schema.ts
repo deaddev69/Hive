@@ -338,7 +338,9 @@ export default defineSchema({
   orderItems: defineTable({
     orderId:         v.id("orders"),
     productId:       v.id("products"),
-    variantId:       v.id("productVariants"),
+    // variantId stores the same products._id — this platform uses stockBySize on products
+    // directly and does not use the productVariants table for checkout.
+    variantId:       v.optional(v.id("products")),
     boutiqueId:      v.id("boutiques"),
     // Immutable snapshots at order creation time:
     productName:     v.string(),

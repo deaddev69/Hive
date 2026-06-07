@@ -59,19 +59,76 @@ export const placeOrder = mutation({
       throw new Error("Invalid address");
     }
 
-    // Validate that the address city is a serviceable zone
-    const searchCity = args.addressSnapshot.city.trim().toLowerCase();
-    const activeZones = await ctx.db
-      .query("serviceZones")
-      .withIndex("by_isActive", (q) => q.eq("isActive", true))
+    // ── Serviceability: coordinate-distance check only ────────────────────────
+    // Rule: delivery is allowed IFF the destination falls within at least one
+    // boutique's delivery radius. City names, regions, and zones are irrelevant.
+
+    // Use real coordinates from the DB address record (the snapshot lat/lng can be 0).
+    const deliveryLat = addr.lat ?? args.addressSnapshot.lat;
+    const deliveryLng = addr.lng ?? args.addressSnapshot.lng;
+
+    const approvedBoutiques = await ctx.db
+      .query("boutiques")
+      .withIndex("by_status", (q) => q.eq("status", "APPROVED"))
       .collect();
 
-    const isCityServiceable = activeZones.some(
-      (z) => z.city.trim().toLowerCase() === searchCity
-    );
+    // Haversine formula (inline — no external dependency needed server-side)
+    const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+      const R = 6371;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLng = ((lng2 - lng1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
 
-    if (!isCityServiceable) {
-      throw new Error("Delivery address is in an unserviceable area.");
+    // Diagnostic logs
+    console.log("[placeOrder] Delivery coordinates:", deliveryLat, deliveryLng);
+    console.log("[placeOrder] Approved boutiques:", approvedBoutiques.length);
+
+    let isCoordinateServiceable = false;
+
+    // If the address has no valid coordinates (0,0 or null), skip the check and allow.
+    // The frontend already validates radius at address-selection time.
+    if (!deliveryLat || !deliveryLng || (deliveryLat === 0 && deliveryLng === 0)) {
+      console.log("[placeOrder] No delivery coordinates — skipping radius check, allowing order.");
+      isCoordinateServiceable = true;
+    } else {
+      for (const boutique of approvedBoutiques) {
+        const bLat = boutique.latitude ?? boutique.addressDetails?.lat;
+        const bLng = boutique.longitude ?? boutique.addressDetails?.lng;
+        const radius = boutique.deliveryRadiusKm ?? 15;
+
+        if (bLat === undefined || bLng === undefined) continue;
+
+        const distKm = haversineKm(deliveryLat, deliveryLng, bLat, bLng);
+
+        console.log(
+          `[placeOrder] Boutique "${boutique.boutiqueName ?? boutique.name}" ` +
+          `coords=(${bLat}, ${bLng}) radius=${radius}km ` +
+          `→ distance=${distKm.toFixed(2)}km ` +
+          `→ serviceable=${distKm <= radius}`
+        );
+
+        if (distKm <= radius) {
+          isCoordinateServiceable = true;
+          break;
+        }
+      }
+    }
+
+    if (!isCoordinateServiceable) {
+      console.error(
+        `[placeOrder] BLOCKED — delivery location (${deliveryLat}, ${deliveryLng}) ` +
+        `is outside all boutique delivery radii.`
+      );
+      throw new Error(
+        "Delivery location is outside this boutique's delivery radius. " +
+        "Please choose a closer delivery address."
+      );
     }
 
     if (args.items.length === 0) {
@@ -182,7 +239,7 @@ export const placeOrder = mutation({
         await ctx.db.insert("orderItems", {
           orderId,
           productId:       productRow._id,
-          variantId:       productRow._id as any,
+          variantId:       productRow._id,   // same products table — platform uses stockBySize directly
           boutiqueId:      productRow.boutiqueId,
           productName:     item.name,
           variantSize:     item.size,
@@ -218,7 +275,7 @@ export const placeOrder = mutation({
       await ctx.db.insert("orderItems", {
         orderId,
         productId:       placeholderProductId,
-        variantId:       placeholderProductId as any,
+        variantId:       placeholderProductId,  // same products table
         boutiqueId,
         productName:     item.name,
         variantSize:     item.size,

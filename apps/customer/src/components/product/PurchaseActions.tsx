@@ -286,7 +286,9 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       setLoading(false);
 
       addItem({
-        productId: product.id,
+        // product.slug is the canonical identifier — Convex products have _id + slug
+        // but not .id. The order handler looks up products by slug.
+        productId: product.slug ?? (product as any)._id ?? product.id,
         size: selectedSize,
         price: product.price,
         name: product.name,
@@ -314,7 +316,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
 
     setCheckoutItems([
       {
-        productId: product.id,
+        productId: product.slug ?? (product as any)._id ?? product.id,
         size: selectedSize,
         quantity: 1,
         price: product.price,
