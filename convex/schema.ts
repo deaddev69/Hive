@@ -75,40 +75,44 @@ export default defineSchema({
 
   // ─── BOUTIQUES ────────────────────────────────────────────────────────────
   boutiques: defineTable({
-    userId:         v.id("users"),
-    name:           v.string(),
-    slug:           v.string(),
-    description:    v.optional(v.string()),
-    logoUrl:        v.optional(v.string()),
-    bannerUrl:      v.optional(v.string()),
-    phoneNumber:    v.string(),
-    email:          v.string(),
-    address: v.object({
-      line1:   v.string(),
-      line2:   v.optional(v.string()),
-      city:    v.string(),
-      state:   v.string(),
-      pincode: v.string(),
-      lat:     v.number(),
-      lng:     v.number(),
-    }),
-    regionIds:       v.array(v.id("regions")),
-    status:          v.union(
-                       v.literal("pending"),
-                       v.literal("approved"),
-                       v.literal("suspended"),
-                       v.literal("rejected")
-                     ),
-    commissionRate:  v.number(),                    // percentage, e.g. 15
-    gstNumber:       v.optional(v.string()),
-    hiveScore:       v.number(),
-    totalSales:      v.number(),                    // paise, denormalised
-    totalOrders:     v.number(),
-    approvedAt:      v.optional(v.number()),
-    approvedBy:      v.optional(v.id("users")),
-    rejectionReason: v.optional(v.string()),
-    createdAt:       v.number(),
-    updatedAt:       v.number(),
+    boutiqueName:     v.string(),
+    ownerName:        v.string(),
+    email:            v.string(),
+    phone:            v.string(),
+    address:          v.string(),
+    latitude:         v.number(),
+    longitude:        v.number(),
+    deliveryRadiusKm: v.number(),
+    description:      v.string(),
+    status:           v.string(), // PENDING, APPROVED, REJECTED, SUSPENDED
+    createdAt:        v.number(),
+
+    // Legacy fields (made optional to prevent compilation failures in existing code)
+    userId:           v.optional(v.id("users")),
+    name:             v.optional(v.string()),
+    slug:             v.optional(v.string()),
+    logoUrl:          v.optional(v.string()),
+    bannerUrl:        v.optional(v.string()),
+    phoneNumber:      v.optional(v.string()),
+    addressDetails:   v.optional(v.object({
+      line1:          v.string(),
+      line2:          v.optional(v.string()),
+      city:           v.string(),
+      state:          v.string(),
+      pincode:        v.string(),
+      lat:            v.number(),
+      lng:            v.number(),
+    })),
+    regionIds:        v.optional(v.array(v.id("regions"))),
+    commissionRate:   v.optional(v.number()),
+    gstNumber:        v.optional(v.string()),
+    hiveScore:        v.optional(v.number()),
+    totalSales:       v.optional(v.number()),
+    totalOrders:      v.optional(v.number()),
+    approvedAt:       v.optional(v.number()),
+    approvedBy:       v.optional(v.id("users")),
+    rejectionReason:  v.optional(v.string()),
+    updatedAt:        v.optional(v.number()),
   })
     .index("by_slug",      ["slug"])
     .index("by_userId",    ["userId"])
@@ -789,5 +793,30 @@ export default defineSchema({
     .index("by_order_id",       ["orderId"])
     .index("by_invoice_number", ["invoiceNumber"])
     .index("by_user",           ["userId"]),
+
+  // ─── CATEGORIES ───────────────────────────────────────────────────────────
+  categories: defineTable({
+    name:      v.string(),
+    slug:      v.string(),
+    imageUrl:  v.string(),
+    active:    v.boolean(),
+    sortOrder: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_active_and_sortOrder", ["active", "sortOrder"]),
+
+  // ─── BANNERS ──────────────────────────────────────────────────────────────
+  banners: defineTable({
+    title:           v.string(),
+    subtitle:        v.string(),
+    desktopImageUrl: v.string(),
+    mobileImageUrl:  v.string(),
+    ctaText:         v.string(),
+    ctaLink:         v.string(),
+    active:          v.boolean(),
+    sortOrder:       v.number(),
+    createdAt:       v.number(),
+  })
+    .index("by_active_and_sortOrder", ["active", "sortOrder"]),
 
 });

@@ -1,13 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Enable React strict mode for development quality
   reactStrictMode: true,
-
-  // Transpile shared workspace packages
   transpilePackages: ["@hive/types", "@hive/ui", "@hive/utils"],
-
-  // Image optimization — allow Cloudinary and Unsplash CDNs
   images: {
     remotePatterns: [
       {
@@ -22,30 +17,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-
-  // Experimental: Server Actions are stable in Next.js 15
-  // Enable partial pre-rendering when ready
-  experimental: {
-    // ppr: true,  // enable when stable for your deployment
-  },
-
-  // Redirect /admin traffic to the admin console port (3001)
-  async redirects() {
-    return [
-      {
-        source: "/admin",
-        destination: "http://localhost:3001",
-        permanent: false,
-      },
-      {
-        source: "/admin/:path*",
-        destination: "http://localhost:3001/admin/:path*",
-        permanent: false,
-      },
-    ];
-  },
-
-  // Security headers
   async headers() {
     return [
       {
@@ -59,7 +30,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Resolve @convex/* alias to the monorepo convex/_generated directory
   webpack(config) {
     const path = require("path");
     config.resolve.alias = {

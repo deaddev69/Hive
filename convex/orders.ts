@@ -100,12 +100,25 @@ export const placeOrder = mutation({
       // If no boutique exists at all, we can't create an order with the strict schema.
       // Create a placeholder boutique owned by this user.
       boutiqueId = await ctx.db.insert("boutiques", {
-        userId:        user._id,
-        name:          "Hive Marketplace",
-        slug:          "hive-marketplace",
-        phoneNumber:   "0000000000",
-        email:         "marketplace@hive.in",
-        address: {
+        // Phase 1.5 fields
+        boutiqueName:     "Hive Marketplace",
+        ownerName:        "System Admin",
+        email:            "marketplace@hive.in",
+        phone:            "0000000000",
+        address:          "Hive HQ, Hyderabad, Telangana - 500034",
+        latitude:         17.385,
+        longitude:        78.487,
+        deliveryRadiusKm: 15,
+        description:      "Main Marketplace Boutique Hub",
+        status:           "APPROVED",
+        createdAt:        now,
+
+        // Legacy fields for backward compatibility
+        userId:           user._id,
+        name:             "Hive Marketplace",
+        slug:             "hive-marketplace",
+        phoneNumber:      "0000000000",
+        addressDetails: {
           line1:   "Hive HQ",
           city:    "Hyderabad",
           state:   "Telangana",
@@ -114,12 +127,10 @@ export const placeOrder = mutation({
           lng:     78.487,
         },
         regionIds:      [],
-        status:         "approved",
         commissionRate: 0,
         hiveScore:      100,
         totalSales:     0,
         totalOrders:    0,
-        createdAt:      now,
         updatedAt:      now,
       });
     }

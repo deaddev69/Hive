@@ -78,3 +78,25 @@ export const getMe = query({
       .unique();
   },
 });
+
+/**
+ * Promotes the currently authenticated user to admin.
+ * Used for development/testing access to admin views.
+ */
+export const makeMeAdmin = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) throw new Error("User record not found");
+
+    await ctx.db.patch(user._id, { role: "admin" });
+    return user._id;
+  },
+});
