@@ -323,7 +323,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
 
   return (
     <div className={cn("w-full flex flex-col gap-4 text-left border-t border-hive-border/40 pt-5 mt-4", className)}>
-      
+
       {/* 1. Validation Alerts & Feedback */}
       <div className="min-h-[30px] flex items-center">
         {!isLocationServiceable ? (

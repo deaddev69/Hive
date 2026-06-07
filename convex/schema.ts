@@ -88,6 +88,9 @@ export default defineSchema({
     status:           v.string(), // PENDING, APPROVED, REJECTED, SUSPENDED
     createdAt:        v.number(),
 
+    ownerUserId:      v.optional(v.id("users")),
+    ownerEmail:       v.string(),
+
     // Legacy fields (made optional to prevent compilation failures in existing code)
     userId:           v.optional(v.id("users")),
     name:             v.optional(v.string()),
@@ -119,7 +122,9 @@ export default defineSchema({
     .index("by_userId",    ["userId"])
     .index("by_status",    ["status"])
     .index("by_email",     ["email"])
-    .index("by_regionIds", ["regionIds"]),
+    .index("by_regionIds", ["regionIds"])
+    .index("by_ownerUserId", ["ownerUserId"])
+    .index("by_ownerEmail", ["ownerEmail"]),
 
   // ─── BOUTIQUE DOCUMENTS ───────────────────────────────────────────────────
   boutiqueDocuments: defineTable({
@@ -266,6 +271,7 @@ export default defineSchema({
                             v.literal("pending_payment"),
                             v.literal("pending_confirmation"),
                             v.literal("confirmed"),
+                            v.literal("packed"),
                             v.literal("pickup_scheduled"),
                             v.literal("picked_up"),
                             v.literal("in_transit"),

@@ -1,13 +1,14 @@
 "use client";
 
 import React from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Card, CardContent } from "@hive/ui";
 import { Loader2, ClipboardList, Package, Phone, Calendar, ShieldAlert } from "lucide-react";
 
 export default function BoutiqueOrders() {
   const orders = useQuery(api.orders.getBoutiqueOrders);
+  const updateStatus = useMutation(api.orders.updateBoutiqueOrderStatus);
 
   if (orders === undefined) {
     return (
@@ -85,13 +86,35 @@ export default function BoutiqueOrders() {
                       <span>₹{(order.total / 100).toLocaleString("en-IN")}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                        order.status === "delivered" ? "bg-green-50 text-green-700 border border-green-200" :
-                        order.status === "cancelled" ? "bg-red-50 text-red-700 border border-red-200" :
-                        "bg-amber-50 text-amber-700 border border-amber-200"
-                      }`}>
-                        {order.status.replace("_", " ")}
-                      </span>
+                      <select
+                        value={order.status}
+                        onChange={async (e) => {
+                          try {
+                            await updateStatus({
+                              orderId: order._id,
+                              status: e.target.value as any
+                            });
+                          } catch (err: any) {
+                            alert("Failed to update status: " + err.message);
+                          }
+                        }}
+                        className={`px-3 py-1.5 border rounded-xl text-xs font-bold bg-white focus:outline-none cursor-pointer ${
+                          order.status === "delivered" ? "border-green-200 text-green-700 bg-green-50/20" :
+                          order.status === "cancelled" ? "border-red-200 text-red-700 bg-red-50/20" :
+                          "border-amber-200 text-amber-700 bg-amber-50/20"
+                        }`}
+                      >
+                        <option value="pending_payment">Pending Payment</option>
+                        <option value="pending_confirmation">Pending Confirmation</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="packed">Packed</option>
+                        <option value="pickup_scheduled">Pickup Scheduled</option>
+                        <option value="picked_up">Picked Up</option>
+                        <option value="in_transit">In Transit</option>
+                        <option value="out_for_delivery">Out For Delivery</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
                     </td>
                   </tr>
                 ))}

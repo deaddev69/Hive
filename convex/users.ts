@@ -70,8 +70,11 @@ export const syncUser = mutation({
         .unique();
 
       if (boutique && boutique.status === "APPROVED" && targetUserId) {
-        await ctx.db.patch(boutique._id, { userId: targetUserId });
-        await ctx.db.patch(targetUserId, { role: "boutique", updatedAt: now });
+        await ctx.db.patch(boutique._id, { 
+          userId: targetUserId,
+          ownerUserId: targetUserId 
+        });
+        await ctx.db.patch(targetUserId, { role: "boutique_owner", updatedAt: now });
       }
     }
 

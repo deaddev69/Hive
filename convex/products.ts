@@ -71,17 +71,17 @@ export const generateBoutiqueUploadUrl = mutation({
  */
 export const createProduct = mutation({
   args: {
-    name:             v.string(),
-    description:      v.string(),
-    categoryId:       v.id("categories"),
-    price:            v.number(),
-    discountPrice:    v.optional(v.number()),
-    images:           v.array(v.string()), // Storage IDs or URLs
-    sizes:            v.array(v.string()),
-    stockBySize:      v.record(v.string(), v.number()),
-    sameDayEligible:  v.boolean(),
-    featured:         v.boolean(),
-    active:           v.boolean(),
+    name: v.string(),
+    description: v.string(),
+    categoryId: v.id("categories"),
+    price: v.number(),
+    discountPrice: v.optional(v.number()),
+    images: v.array(v.string()), // Storage IDs or URLs
+    sizes: v.array(v.string()),
+    stockBySize: v.record(v.string(), v.number()),
+    sameDayEligible: v.boolean(),
+    featured: v.boolean(),
+    active: v.boolean(),
   },
   handler: async (ctx, args) => {
     const boutique = await getMyBoutique(ctx);
@@ -115,18 +115,18 @@ export const createProduct = mutation({
  */
 export const updateProduct = mutation({
   args: {
-    id:               v.id("products"),
-    name:             v.string(),
-    description:      v.string(),
-    categoryId:       v.id("categories"),
-    price:            v.number(),
-    discountPrice:    v.optional(v.number()),
-    images:           v.array(v.string()),
-    sizes:            v.array(v.string()),
-    stockBySize:      v.record(v.string(), v.number()),
-    sameDayEligible:  v.boolean(),
-    featured:         v.boolean(),
-    active:           v.boolean(),
+    id: v.id("products"),
+    name: v.string(),
+    description: v.string(),
+    categoryId: v.id("categories"),
+    price: v.number(),
+    discountPrice: v.optional(v.number()),
+    images: v.array(v.string()),
+    sizes: v.array(v.string()),
+    stockBySize: v.record(v.string(), v.number()),
+    sameDayEligible: v.boolean(),
+    featured: v.boolean(),
+    active: v.boolean(),
   },
   handler: async (ctx, args) => {
     const boutique = await getMyBoutique(ctx);
@@ -328,7 +328,7 @@ export const getDashboardMetrics = query({
     const totalProducts = products.length;
     const activeProducts = products.filter(p => p.active).length;
 
-    const pendingOrders = orders.filter(o => 
+    const pendingOrders = orders.filter(o =>
       o.status === "pending_confirmation" || o.status === "confirmed"
     ).length;
 

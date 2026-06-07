@@ -7,18 +7,23 @@ const nextConfig: NextConfig = {
   // Transpile shared workspace packages
   transpilePackages: ["@hive/types", "@hive/ui", "@hive/utils"],
 
-  // Image optimization — allow Cloudinary and Unsplash CDNs
+  // Image optimization — allow Cloudinary, Unsplash, and Convex CDNs
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname:  "res.cloudinary.com",
-        pathname:  "/**",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
       },
       {
         protocol: "https",
-        hostname:  "images.unsplash.com",
-        pathname:  "/**",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.convex.cloud",
+        pathname: "/**",
       },
     ],
   },
@@ -34,10 +39,10 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
-          { key: "X-Frame-Options",        value: "DENY" },
-          { key: "X-Content-Type-Options",  value: "nosniff" },
-          { key: "Referrer-Policy",         value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy",      value: "geolocation=(self)" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "geolocation=(self)" },
         ],
       },
     ];

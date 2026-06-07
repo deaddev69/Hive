@@ -18,9 +18,6 @@ export function UserSync() {
     if (whoAmI === undefined) return;
 
     if (!whoAmI.authenticated) {
-      console.error(
-        "[UserSync] Convex cannot see Clerk identity even though user is signed in."
-      );
       return;
     }
 

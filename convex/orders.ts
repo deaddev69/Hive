@@ -112,6 +112,8 @@ export const placeOrder = mutation({
         description:      "Main Marketplace Boutique Hub",
         status:           "APPROVED",
         createdAt:        now,
+        ownerEmail:       "marketplace@hive.in",
+        ownerUserId:      user._id,
 
         // Legacy fields for backward compatibility
         userId:           user._id,
@@ -447,5 +449,43 @@ export const getBoutiqueOrders = query({
         };
       })
     );
+  },
+});
+
+export const updateBoutiqueOrderStatus = mutation({
+  args: {
+    orderId: v.id("orders"),
+    status: v.union(
+      v.literal("pending_payment"),
+      v.literal("pending_confirmation"),
+      v.literal("confirmed"),
+      v.literal("packed"),
+      v.literal("pickup_scheduled"),
+      v.literal("picked_up"),
+      v.literal("in_transit"),
+      v.literal("out_for_delivery"),
+      v.literal("delivered"),
+      v.literal("cancelled"),
+      v.literal("claim_submitted"),
+      v.literal("replacement_requested"),
+      v.literal("replacement_approved"),
+      v.literal("replacement_dispatched"),
+      v.literal("replacement_delivered"),
+      v.literal("refund_requested"),
+      v.literal("refunded")
+    ),
+  },
+  handler: async (ctx, args) => {
+    const boutique = await getMyBoutique(ctx);
+    const order = await ctx.db.get(args.orderId);
+    if (!order || order.boutiqueId !== boutique._id) {
+      throw new Error("Unauthorized: Order does not belong to your boutique.");
+    }
+    
+    await ctx.db.patch(args.orderId, {
+      status: args.status,
+      updatedAt: Date.now(),
+    });
+    return args.orderId;
   },
 });

@@ -24,6 +24,14 @@ export default function BoutiqueProfile() {
 
   const [phone, setPhone] = useState("");
   const [description, setDescription] = useState("");
+
+  // Editable fields
+  const [boutiqueName, setBoutiqueName] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  const [address, setAddress] = useState("");
+  const [deliveryRadiusKm, setDeliveryRadiusKm] = useState(15);
+  const [latitude, setLatitude] = useState(17.385);
+  const [longitude, setLongitude] = useState(78.487);
   
   // Image states
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -46,6 +54,13 @@ export default function BoutiqueProfile() {
       setCoverPreview(boutique.bannerUrl || null);
       setLogoStorageId(boutique.logoUrl || null);
       setCoverStorageId(boutique.bannerUrl || null);
+
+      setBoutiqueName(boutique.boutiqueName || boutique.name || "");
+      setOwnerName(boutique.ownerName || "");
+      setAddress(boutique.address || "");
+      setDeliveryRadiusKm(boutique.deliveryRadiusKm ?? 15);
+      setLatitude(boutique.latitude ?? 17.385);
+      setLongitude(boutique.longitude ?? 78.487);
     }
   }, [boutique]);
 
@@ -110,6 +125,12 @@ export default function BoutiqueProfile() {
         description,
         logoUrl: finalLogo || undefined,
         bannerUrl: finalCover || undefined,
+        boutiqueName,
+        ownerName,
+        address,
+        latitude,
+        longitude,
+        deliveryRadiusKm,
       });
 
       alert("Profile updated successfully!");
@@ -198,13 +219,62 @@ export default function BoutiqueProfile() {
 
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Boutique Name</label>
+                <input
+                  type="text"
+                  required
+                  value={boutiqueName}
+                  onChange={(e) => setBoutiqueName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Owner Name</label>
+                <input
+                  type="text"
+                  required
+                  value={ownerName}
+                  onChange={(e) => setOwnerName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Public Contact Phone</label>
+                <input
+                  type="tel"
+                  required
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Delivery Radius (Km)</label>
+                <input
+                  type="number"
+                  required
+                  min={1}
+                  value={deliveryRadiusKm}
+                  onChange={(e) => setDeliveryRadiusKm(parseInt(e.target.value) || 15)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+                />
+              </div>
+            </div>
+
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Public Contact Phone</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Physical Registered Address</label>
               <input
-                type="tel"
+                type="text"
                 required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
               />
             </div>
@@ -218,6 +288,25 @@ export default function BoutiqueProfile() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Share your brand story, fabric sourcing focus, and design choices..."
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 resize-none"
+              />
+            </div>
+
+            {/* Map Coordinates display & pin drag */}
+            <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+              <span className="font-bold text-hive-text-muted flex justify-between">
+                <span>Coordinates</span>
+                <span className="font-mono text-[10px] text-hive-amber">
+                  Lat: {latitude.toFixed(6)}, Lng: {longitude.toFixed(6)}
+                </span>
+              </span>
+              <BoutiqueMap 
+                lat={latitude} 
+                lng={longitude} 
+                readOnly={false} 
+                onChange={(lat, lng) => {
+                  setLatitude(lat);
+                  setLongitude(lng);
+                }} 
               />
             </div>
 
@@ -249,12 +338,12 @@ export default function BoutiqueProfile() {
               
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
                 <span className="font-bold text-hive-text-muted">Boutique Name</span>
-                <span className="font-extrabold text-hive-dark">{boutique.boutiqueName}</span>
+                <span className="font-extrabold text-hive-dark">{boutiqueName}</span>
               </div>
 
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
                 <span className="font-bold text-hive-text-muted">Owner Name</span>
-                <span className="font-extrabold text-hive-dark">{boutique.ownerName}</span>
+                <span className="font-extrabold text-hive-dark">{ownerName}</span>
               </div>
 
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
@@ -264,7 +353,7 @@ export default function BoutiqueProfile() {
 
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
                 <span className="font-bold text-hive-text-muted">Delivery Radius</span>
-                <span className="font-extrabold text-hive-dark">{boutique.deliveryRadiusKm} Km</span>
+                <span className="font-extrabold text-hive-dark">{deliveryRadiusKm} Km</span>
               </div>
 
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
@@ -276,18 +365,7 @@ export default function BoutiqueProfile() {
 
               <div className="flex flex-col gap-1 text-left py-2">
                 <span className="font-bold text-hive-text-muted">Physical Registered Address</span>
-                <span className="font-semibold text-slate-700 leading-normal">{boutique.address}</span>
-              </div>
-
-              {/* Map Coordinates display */}
-              <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
-                <span className="font-bold text-hive-text-muted flex justify-between">
-                  <span>Coordinates</span>
-                  <span className="font-mono text-[10px] text-hive-amber">
-                    Lat: {boutique.latitude.toFixed(6)}, Lng: {boutique.longitude.toFixed(6)}
-                  </span>
-                </span>
-                <BoutiqueMap lat={boutique.latitude} lng={boutique.longitude} readOnly={true} />
+                <span className="font-semibold text-slate-700 leading-normal">{address}</span>
               </div>
 
             </div>

@@ -89,7 +89,7 @@ export async function requireBoutiqueOwnership(
 
   const boutique = await ctx.db
     .query("boutiques")
-    .withIndex("by_userId", (q) => q.eq("userId", user._id))
+    .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
     .unique();
 
   if (!boutique || boutique._id !== boutiqueId) {
@@ -118,7 +118,7 @@ export async function getMyBoutique(ctx: AuthCtx) {
 
   const boutique = await ctx.db
     .query("boutiques")
-    .withIndex("by_userId", (q) => q.eq("userId", user._id))
+    .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
     .unique();
 
   if (!boutique) {

@@ -49,6 +49,11 @@ export const createBoutique = mutation({
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
 
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .unique();
+
     const boutiqueId = await ctx.db.insert("boutiques", {
       boutiqueName:     args.boutiqueName,
       ownerName:        args.ownerName,
@@ -62,6 +67,9 @@ export const createBoutique = mutation({
       status:           args.status,
       createdAt:        Date.now(),
       
+      ownerEmail:       args.email,
+      ownerUserId:      user ? user._id : undefined,
+
       // Seed backward-compatibility properties if needed
       name:             args.boutiqueName,
       slug:             args.boutiqueName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
@@ -141,8 +149,9 @@ export const approveBoutique = mutation({
 
     const patches: any = { status: "APPROVED" };
     if (user) {
-      patches.userId = user._id;
-      await ctx.db.patch(user._id, { role: "boutique", updatedAt: Date.now() });
+      patches.userId = user._id; // legacy
+      patches.ownerUserId = user._id;
+      await ctx.db.patch(user._id, { role: "boutique_owner", updatedAt: Date.now() });
     }
 
     await ctx.db.patch(args.id, patches);
@@ -222,6 +231,12 @@ export const updateBoutiqueProfile = mutation({
     description: v.string(),
     logoUrl: v.optional(v.string()),
     bannerUrl: v.optional(v.string()),
+    boutiqueName: v.optional(v.string()),
+    ownerName: v.optional(v.string()),
+    address: v.optional(v.string()),
+    latitude: v.optional(v.number()),
+    longitude: v.optional(v.number()),
+    deliveryRadiusKm: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const boutique = await getMyBoutique(ctx);
@@ -231,6 +246,15 @@ export const updateBoutiqueProfile = mutation({
       logoUrl: args.logoUrl,
       bannerUrl: args.bannerUrl,
       phoneNumber: args.phone, // compatibility field
+      
+      boutiqueName: args.boutiqueName ?? boutique.boutiqueName,
+      ownerName: args.ownerName ?? boutique.ownerName,
+      address: args.address ?? boutique.address,
+      latitude: args.latitude ?? boutique.latitude,
+      longitude: args.longitude ?? boutique.longitude,
+      deliveryRadiusKm: args.deliveryRadiusKm ?? boutique.deliveryRadiusKm,
+      
+      name: args.boutiqueName ?? boutique.name,
     });
     return boutique._id;
   },
@@ -253,5 +277,35 @@ export const getMyBoutiqueDetails = query({
       logoUrl,
       bannerUrl,
     };
+  },
+});
+
+export const getMyBoutiqueSafe = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return { exists: false, error: "Unauthenticated" };
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) return { exists: false, error: "User not found" };
+
+    if (user.role !== "boutique" && user.role !== "boutique_owner") {
+      return { exists: false, error: "Not a boutique user" };
+    }
+
+    const boutique = await ctx.db
+      .query("boutiques")
+      .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
+      .unique();
+
+    if (!boutique) {
+      return { exists: false, error: "Boutique not linked" };
+    }
+
+    return { exists: true, boutique };
   },
 });

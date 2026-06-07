@@ -21,6 +21,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   const { isLoaded, isSignedIn } = useAuth();
   const { user: clerkUser } = useUser();
   const me = useQuery(api.users.getMe);
+  const myBoutiqueSafe = useQuery(api.boutiques.getMyBoutiqueSafe);
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -32,15 +33,31 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
     }
   }, [isLoaded, isSignedIn, router]);
 
-  // Non-boutique redirect (allows boutique, boutique_owner)
+  // Non-boutique redirect (allows boutique, boutique_owner) AND ensures boutique record exists
   useEffect(() => {
-    if (me && me.role !== "boutique" && me.role !== "boutique_owner") {
-      router.push("/boutique/unauthorized");
+    if (me === undefined || myBoutiqueSafe === undefined) return;
+
+    if (me) {
+      if (me.role === "admin") {
+        router.push("/admin");
+        return;
+      }
+      if (me.role === "customer") {
+        window.location.href = "http://localhost:3000/";
+        return;
+      }
     }
-  }, [me, router]);
+
+    if (myBoutiqueSafe && !myBoutiqueSafe.exists) {
+      if (pathname !== "/boutique/unauthorized") {
+        router.push("/boutique/unauthorized");
+      }
+    }
+  }, [me, myBoutiqueSafe, router, pathname]);
+
 
   // User is not synced yet or loading Clerk state
-  if (!isLoaded || me === undefined) {
+  if (!isLoaded || me === undefined || myBoutiqueSafe === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
         <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
@@ -58,7 +75,8 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   }
 
   // Non-boutique signed in
-  if (me && me.role !== "boutique" && me.role !== "boutique_owner" && pathname !== "/boutique/unauthorized") {
+  if ((me && me.role !== "boutique" && me.role !== "boutique_owner" && pathname !== "/boutique/unauthorized") ||
+      (myBoutiqueSafe && !myBoutiqueSafe.exists && pathname !== "/boutique/unauthorized")) {
     return null; // Redirects to unauthorized
   }
 
