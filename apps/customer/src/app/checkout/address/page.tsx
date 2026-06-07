@@ -134,10 +134,13 @@ export default function CheckoutAddressPage() {
 
   const items = useCartStore((s) => s.items);
   const checkoutItems = useCheckoutStore((s) => s.checkoutItems);
-  const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques) ?? [];
+  // Do NOT default to [] — keep undefined so we know when it's still loading
+  const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques);
 
   const isAddressServiceable = (addr: Address) => {
-    if (dbBoutiques.length === 0) return false;
+    // While boutiques are still loading, don't block the user
+    if (!dbBoutiques) return true;
+    if (dbBoutiques.length === 0) return true;
     return dbBoutiques.some((b) => {
       const bLat = b.latitude ?? b.addressDetails?.lat;
       const bLng = b.longitude ?? b.addressDetails?.lng;
@@ -168,7 +171,25 @@ export default function CheckoutAddressPage() {
   const [formError, setFormError] = useState("");
   const [formSaving, setFormSaving] = useState(false);
 
+  // ── CRITICAL FIX: set mounted=true after first render so the guard below passes ──
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // ── useCallback MUST be above ALL early returns (Rules of Hooks) ──
+  const handleReverseGeocode = useCallback(
+    (result: { formattedAddress: string; city: string; state: string; pincode: string }) => {
+      setMapResult({
+        lat: mapLat,
+        lng: mapLng,
+        ...result,
+      });
+    },
+    [mapLat, mapLng]
+  );
+
   if (!mounted || !clerkLoaded) return <AddressSkeleton />;
+
   if (!isSignedIn) {
     router.replace("/sign-in?redirect_url=" + encodeURIComponent("/checkout/address"));
     return <AddressSkeleton />;
@@ -227,22 +248,11 @@ export default function CheckoutAddressPage() {
     setFormError("");
   };
 
-  // ── Map callbacks ─────────────────────────────────────────────────────────
+  // ── Map change handler (not a hook) ──────────────────────────────────────
   const handleMapChange = (lat: number, lng: number) => {
     setMapLat(lat);
     setMapLng(lng);
   };
-
-  const handleReverseGeocode = useCallback(
-    (result: { formattedAddress: string; city: string; state: string; pincode: string }) => {
-      setMapResult({
-        lat: mapLat,
-        lng: mapLng,
-        ...result,
-      });
-    },
-    [mapLat, mapLng]
-  );
 
   // ── Step 2 form submit ────────────────────────────────────────────────────
   const handleSaveAddress = async () => {
