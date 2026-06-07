@@ -117,7 +117,7 @@ export const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ 
           </div>
 
           {/* Grid: 4 columns desktop, 2 columns tablet, 1 column mobile */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {recommendations.map((item) => (
               <div 
                 key={item.id} 

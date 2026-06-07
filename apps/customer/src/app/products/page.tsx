@@ -211,7 +211,7 @@ function ProductsCatalog() {
       )}
 
       {/* Body: sidebar + grid */}
-      <div className="max-w-[1440px] mx-auto px-6 lg:px-8 w-full flex flex-col gap-6 py-6">
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 w-full flex flex-col gap-4 sm:gap-6 py-4 sm:py-6">
         {/* Toolbar */}
         <CatalogToolbar
           activeFilterCount={activeFilterCount}
@@ -234,7 +234,7 @@ function ProductsCatalog() {
           <div className="flex-1 min-w-0 flex flex-col gap-6">
             {paginatedProducts.length > 0 ? (
               <>
-                <div className="relative z-0 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 md:gap-6">
+                <div className="relative z-0 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-5 md:gap-6">
                   {paginatedProducts.map((product, idx) => (
                     <div
                       key={`${sortOption}-${currentPage}-${product.id}`}
