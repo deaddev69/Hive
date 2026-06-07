@@ -40,7 +40,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [me, router]);
 
   // User is not synced yet or loading Clerk state
-  if (!isLoaded || me === undefined) {
+  if (!isLoaded || me === undefined || me === null) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
         <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />

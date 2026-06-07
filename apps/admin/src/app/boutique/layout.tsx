@@ -57,7 +57,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
 
 
   // User is not synced yet or loading Clerk state
-  if (!isLoaded || me === undefined || myBoutiqueSafe === undefined) {
+  if (!isLoaded || me === undefined || me === null || myBoutiqueSafe === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
         <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
