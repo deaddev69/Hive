@@ -1,18 +1,43 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { StatCard, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
-import { Store, CheckCircle, FolderKanban, Image as ImageIcon, ArrowRight, Loader2 } from "lucide-react";
+import { Store, CheckCircle, FolderKanban, Image as ImageIcon, ArrowRight, Loader2, ShieldX } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminDashboardPage() {
+  const { isLoading: convexAuthLoading, isAuthenticated } = useConvexAuth();
   const boutiques = useQuery(api.boutiques.getBoutiques);
   const categories = useQuery(api.categories.getCategories, {});
   const banners = useQuery(api.banners.getBanners);
 
-  if (boutiques === undefined || categories === undefined || banners === undefined) {
+  // Track how long we've been waiting — if Convex auth is ready but queries
+  // still return undefined, it means the query threw a role error (FORBIDDEN).
+  const [waitedLong, setWaitedLong] = useState(false);
+  useEffect(() => {
+    if (convexAuthLoading) return;
+    const t = setTimeout(() => setWaitedLong(true), 6000);
+    return () => clearTimeout(t);
+  }, [convexAuthLoading]);
+
+  const isStillLoading = boutiques === undefined || categories === undefined || banners === undefined;
+
+  if (isStillLoading) {
+    if (waitedLong) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center">
+          <ShieldX className="w-10 h-10 text-red-400" />
+          <p className="text-base font-bold text-slate-700">Access Denied</p>
+          <p className="text-sm text-slate-500 max-w-sm">
+            Your account does not have admin privileges. Make sure your Convex
+            user record has <code className="bg-slate-100 px-1 rounded">role: "admin"</code>.
+          </p>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />

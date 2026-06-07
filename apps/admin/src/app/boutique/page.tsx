@@ -1,15 +1,36 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { StatCard, Card, CardContent, Badge } from "@hive/ui";
-import { Shirt, ClipboardList, TrendingUp, CheckCircle, Package, Loader2 } from "lucide-react";
+import { Shirt, ClipboardList, TrendingUp, CheckCircle, Package, Loader2, ShieldX } from "lucide-react";
 
 export default function BoutiqueDashboard() {
+  const { isLoading: convexAuthLoading } = useConvexAuth();
   const metrics = useQuery(api.products.getDashboardMetrics);
 
+  const [waitedLong, setWaitedLong] = useState(false);
+  useEffect(() => {
+    if (convexAuthLoading) return;
+    const t = setTimeout(() => setWaitedLong(true), 6000);
+    return () => clearTimeout(t);
+  }, [convexAuthLoading]);
+
   if (metrics === undefined) {
+    if (waitedLong) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center">
+          <ShieldX className="w-10 h-10 text-red-400" />
+          <p className="text-base font-bold text-slate-700">Access Denied</p>
+          <p className="text-sm text-slate-500 max-w-sm">
+            Your account does not have boutique privileges, or no boutique is linked to your account.
+            Make sure your Convex user record has <code className="bg-slate-100 px-1 rounded">role: "boutique_owner"</code>.
+          </p>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />

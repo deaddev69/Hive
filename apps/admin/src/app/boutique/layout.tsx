@@ -5,7 +5,7 @@ import { useAuth, SignOutButton, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Layers, ClipboardList, User, LogOut, Menu, X, Loader2 } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Layers, ClipboardList, User, LogOut, Menu, X, Loader2, ShieldX } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@hive/ui";
 
@@ -26,6 +26,8 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  console.log("[BoutiqueLayout] isLoaded:", isLoaded, "isSignedIn:", isSignedIn, "me:", me, "boutique:", myBoutiqueSafe);
+
   // Unauthenticated redirect
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -33,7 +35,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
     }
   }, [isLoaded, isSignedIn, router]);
 
-  // Non-boutique redirect (allows boutique, boutique_owner) AND ensures boutique record exists
+  // Role-based redirect: admin goes to /admin, customer goes to customer app
   useEffect(() => {
     if (me === undefined || myBoutiqueSafe === undefined) return;
 
@@ -55,9 +57,10 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
     }
   }, [me, myBoutiqueSafe, router, pathname]);
 
-
-  // User is not synced yet or loading Clerk state
-  if (!isLoaded || me === undefined || me === null || myBoutiqueSafe === undefined) {
+  // ── Loading guard ─────────────────────────────────────────────────────────
+  // me===undefined → query in-flight → show spinner
+  // me===null      → user not in Convex DB yet → show error (NOT loading)
+  if (!isLoaded || me === undefined || myBoutiqueSafe === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
         <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
@@ -65,6 +68,27 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
           <span className="text-base font-serif font-black text-hive-dark">Hive Boutique Portal</span>
           <span className="text-xs text-hive-text-muted">Loading secure session...</span>
         </div>
+      </div>
+    );
+  }
+
+  if (me === null) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center px-4">
+        <ShieldX className="w-10 h-10 text-red-400" />
+        <span className="text-base font-serif font-black text-hive-dark">Account Not Registered</span>
+        <p className="text-xs text-hive-text-muted max-w-sm">
+          Your Clerk account is not yet linked to a Convex user record.
+          Sign out and sign back in — UserSync will register you automatically.
+          If the problem persists, ensure your Convex user has{" "}
+          <code className="bg-slate-100 px-1 rounded">role: &quot;boutique_owner&quot;</code> and a linked boutique.
+        </p>
+        <button
+          onClick={() => router.push("/sign-in")}
+          className="text-xs underline text-hive-amber mt-2"
+        >
+          Sign in again
+        </button>
       </div>
     );
   }

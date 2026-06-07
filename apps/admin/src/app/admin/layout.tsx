@@ -5,7 +5,7 @@ import { useAuth, SignOutButton, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, ShieldAlert, Loader2, Users } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, Loader2, ShieldX, Users } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@hive/ui";
 
@@ -25,6 +25,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  console.log("[AdminLayout] isLoaded:", isLoaded, "isSignedIn:", isSignedIn, "me:", me);
+
   // Unauthenticated redirect
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -39,8 +41,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [me, router]);
 
-  // User is not synced yet or loading Clerk state
-  if (!isLoaded || me === undefined || me === null) {
+  // ── Loading guard ─────────────────────────────────────────────────────────
+  // me===undefined → Convex query still in-flight → show spinner
+  // me===null      → user not in DB (UserSync hasn't fired yet, or auth issue)
+  //                  → do NOT spin forever, show a clear error
+  if (!isLoaded || me === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
         <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
@@ -48,6 +53,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span className="text-base font-serif font-black text-hive-dark">Hive Admin Control</span>
           <span className="text-xs text-hive-text-muted">Authenticating secure session...</span>
         </div>
+      </div>
+    );
+  }
+
+  if (me === null) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center px-4">
+        <ShieldX className="w-10 h-10 text-red-400" />
+        <span className="text-base font-serif font-black text-hive-dark">Account Not Registered</span>
+        <p className="text-xs text-hive-text-muted max-w-sm">
+          Your Clerk account is not yet linked to a Convex user record.
+          Sign out and sign back in — UserSync will register you automatically.
+          If the problem persists, ensure your Convex user has{" "}
+          <code className="bg-slate-100 px-1 rounded">role: &quot;admin&quot;</code>.
+        </p>
+        <button
+          onClick={() => router.push("/sign-in")}
+          className="text-xs underline text-hive-amber mt-2"
+        >
+          Sign in again
+        </button>
       </div>
     );
   }
