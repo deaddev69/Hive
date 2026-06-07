@@ -245,7 +245,7 @@ export default function SecurePaymentPage() {
         addressId: selectedAddress._id as Id<"addresses">,
         addressSnapshot: {
           label: selectedAddress.label,
-          line1: selectedAddress.line1,
+          line1: selectedAddress.line1 ?? "",
           line2: selectedAddress.line2,
           city: selectedAddress.city,
           state: selectedAddress.state,
@@ -280,7 +280,7 @@ export default function SecurePaymentPage() {
             id: selectedAddress._id,
             name: selectedAddress.label,
             phone: "",
-            addressLine1: selectedAddress.line1,
+            addressLine1: selectedAddress.line1 ?? "",
             addressLine2: selectedAddress.line2,
             city: selectedAddress.city,
             state: selectedAddress.state,
