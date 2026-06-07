@@ -6,6 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { Badge } from "@hive/ui";
 import { ShoppingBag, MapPin, Search, List } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   SignedIn,
   SignedOut,
@@ -18,11 +19,12 @@ export const Navbar: React.FC = () => {
   const { city, setDrawerOpen } = useLocation();
   const { itemsCount, setSidebarOpen } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      alert(`Searching for: ${searchQuery}`);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 

@@ -418,3 +418,77 @@ export const getDashboardMetrics = query({
     };
   },
 });
+
+/**
+ * Public query to search products matching a term and user location range (optional).
+ */
+export const searchProducts = query({
+  args: {
+    searchTerm: v.string(),
+    userLat: v.optional(v.number()),
+    userLng: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const term = args.searchTerm.toLowerCase().trim();
+    if (!term) {
+      return { products: [], totalMatchedCount: 0 };
+    }
+
+    // Fetch active products
+    const products = await ctx.db
+      .query("products")
+      .withIndex("by_active", (q) => q.eq("active", true))
+      .collect();
+
+    // Fetch categories and boutiques for matching
+    const categories = await ctx.db.query("categories").collect();
+    const categoriesMap = new Map(categories.map(c => [c._id, c]));
+
+    const boutiques = await ctx.db.query("boutiques").collect();
+    const boutiquesMap = new Map(boutiques.map(b => [b._id, b]));
+
+    // Match criteria (case-insensitive)
+    let matched = products.filter((p) => {
+      const category = categoriesMap.get(p.categoryId);
+      const boutique = boutiquesMap.get(p.boutiqueId);
+
+      const nameMatch = p.name.toLowerCase().includes(term);
+      const descMatch = p.description.toLowerCase().includes(term);
+      const catMatch = category?.name.toLowerCase().includes(term) || false;
+      const boutiqueMatch = boutique?.boutiqueName.toLowerCase().includes(term) || false;
+
+      // Handle optional tags (array of strings) if present on the record
+      const tags = (p as any).tags;
+      const tagsMatch = Array.isArray(tags) && tags.some((tag: string) => tag.toLowerCase().includes(term));
+
+      return nameMatch || descMatch || catMatch || boutiqueMatch || tagsMatch;
+    });
+
+    const totalMatchedCount = matched.length;
+
+    // Filter by location if coordinates are provided
+    if (args.userLat !== undefined && args.userLng !== undefined) {
+      const deliverableBoutiqueIds = new Set(
+        boutiques
+          .filter((b) => {
+            const bLat = b.latitude;
+            const bLng = b.longitude;
+            if (bLat === undefined || bLng === undefined) return false;
+            const dist = calculateDistanceKm(args.userLat!, args.userLng!, bLat, bLng);
+            return dist <= b.deliveryRadiusKm;
+          })
+          .map((b) => b._id)
+      );
+
+      matched = matched.filter((p) => deliverableBoutiqueIds.has(p.boutiqueId));
+    }
+
+    const enriched = await Promise.all(matched.map(p => enrichProduct(ctx, p)));
+
+    return {
+      products: enriched,
+      totalMatchedCount,
+    };
+  },
+});
+
