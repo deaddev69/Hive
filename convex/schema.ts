@@ -796,10 +796,10 @@ export default defineSchema({
 
   // ─── CATEGORIES ───────────────────────────────────────────────────────────
   categories: defineTable({
-    name:      v.string(),
-    slug:      v.string(),
-    imageUrl:  v.string(),
-    active:    v.boolean(),
+    name:           v.string(),
+    slug:           v.string(),
+    imageStorageId: v.id("_storage"),
+    active:         v.boolean(),
     sortOrder: v.number(),
     createdAt: v.number(),
   })
