@@ -38,8 +38,10 @@ async function enrichProduct(ctx: any, product: any) {
 
   return {
     ...product,
-    imageUrl: imageUrls[0] || "", // Primary main image
-    imageUrls,
+    // Overwrite raw storage IDs with resolved https:// URLs
+    images: imageUrls.filter(Boolean),
+    imageUrl: imageUrls[0] || "", // Primary main image (convenience alias)
+    imageUrls,                     // All images as URLs
     categoryName: category?.name || "Uncategorized",
     boutiqueName: boutique?.boutiqueName || "Unknown Boutique",
     boutique: boutique ? {
