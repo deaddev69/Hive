@@ -3,154 +3,85 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "@hive/ui";
 import { useLocation } from "@/context/LocationContext";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { MapPinOff, Bell, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
-
+import { MapPinOff, ArrowRight } from "lucide-react";
+import { calculateDistanceKm } from "@/lib/distance";
 
 export const UnsupportedArea: React.FC = () => {
-  const { isServiceable, city, stateName, latitude, longitude, setGateOpen } = useLocation();
-  const requestService = useMutation(api.serviceability.requestService);
-  const activeZonesQuery = useQuery(api.serviceability.getActiveZones) ?? [];
+  const { city, latitude, longitude, setGateOpen } = useLocation();
+  const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques) ?? [];
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Check if location is serviceable (i.e. at least one boutique delivers here)
+  const isAddressServiceable = () => {
+    if (latitude === null || longitude === null) return true; // not set or loading coordinates
+    if (dbBoutiques.length === 0) return true; // wait for boutiques to load
+
+    return dbBoutiques.some((b) => {
+      const bLat = b.latitude ?? b.addressDetails?.lat;
+      const bLng = b.longitude ?? b.addressDetails?.lng;
+      if (bLat === undefined || bLng === undefined) return false;
+      const dist = calculateDistanceKm(latitude, longitude, bLat, bLng);
+      return dist <= (b.deliveryRadiusKm ?? 15);
+    });
+  };
+
+  const serviceable = isAddressServiceable();
 
   useEffect(() => {
-    // Open the modal if the user is in an unserviceable area and hasn't dismissed it yet
-    if (city && !isServiceable && !isSubmitted) {
+    if (city && !serviceable) {
       setIsOpen(true);
     } else {
       setIsOpen(false);
     }
-  }, [isServiceable, city, isSubmitted]);
+  }, [serviceable, city]);
 
-  if (!city || isServiceable) return null;
-
-  const handleNotifyMe = async () => {
-    setIsSubmitting(true);
-    setErrorMsg(null);
-    try {
-      const res = await requestService({
-        city: city,
-        state: stateName || "India",
-        latitude: latitude || undefined,
-        longitude: longitude || undefined,
-      });
-
-      if (res.success) {
-        setIsSubmitted(true);
-      } else {
-        // Even if it's already requested, we show success/acknowledgment to the user to feel premium
-        setIsSubmitted(true);
-      }
-    } catch (err: any) {
-      console.error("Failed to request service:", err);
-      setErrorMsg("Something went wrong. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const activeZones = activeZonesQuery.map((z) => z.city);
+  if (!city || serviceable) return null;
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={() => setIsOpen(false)}
-      title="HIVE is not available in your area yet"
+      title="Delivery Not Available"
       className="max-w-md"
     >
       <div className="flex flex-col gap-6 text-center items-center py-3">
-        {isSubmitted ? (
-          /* Success Screen */
-          <div className="flex flex-col items-center gap-4 py-4 animate-in fade-in zoom-in duration-300">
-            <div className="w-16 h-16 rounded-full bg-green-50 dark:bg-green-950/20 flex items-center justify-center text-green-500">
-              <CheckCircle2 className="w-9 h-9" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                You're on the list!
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
-                Thank you for your interest! We have recorded your request for{" "}
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {city}
-                </span>
-                . We will notify you as soon as HIVE launches delivery in your area.
-              </p>
-            </div>
-            <Button
-              variant="primary"
-              className="mt-2 w-full max-w-[200px]"
-              onClick={() => setIsOpen(false)}
-            >
-              Browse Collections
-            </Button>
-          </div>
-        ) : (
-          /* Main Notice Screen */
-          <>
-            <div className="w-14 h-14 rounded-full bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center text-hive-gold animate-pulse">
-              <MapPinOff className="w-7 h-7" />
-            </div>
+        <div className="w-14 h-14 rounded-full bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center text-hive-gold animate-pulse">
+          <MapPinOff className="w-7 h-7" />
+        </div>
 
-            <div className="flex flex-col gap-2">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                HIVE is not available in your area yet
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
-                We currently serve selected locations in Kerala. We’ll be expanding to more cities soon.
-              </p>
-            </div>
+        <div className="flex flex-col gap-2">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+            No boutiques deliver to this area
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
+            The selected location ({city}) is outside the delivery range of our partner boutiques. Please choose a different delivery location.
+          </p>
+        </div>
 
-            {/* List of active cities */}
-            <div className="w-full text-left bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/40">
-              <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5">
-                Active Service Zones
-              </h4>
-              <div className="flex flex-wrap gap-1.5">
-                {activeZones.map((zone) => (
-                  <span
-                    key={zone}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 shadow-sm border border-slate-100 dark:border-slate-700/50"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    {zone}
-                  </span>
-                ))}
-              </div>
-            </div>
+        <div className="w-full flex flex-col gap-2.5 mt-2">
+          <Button
+            variant="primary"
+            onClick={() => {
+              setIsOpen(false);
+              setGateOpen(true);
+            }}
+            className="w-full flex items-center justify-center gap-2 font-extrabold uppercase tracking-wider text-xs py-3"
+          >
+            Change Location
+          </Button>
 
-            {errorMsg && (
-              <p className="text-xs text-red-500 font-medium">{errorMsg}</p>
-            )}
-
-            <div className="w-full flex flex-col gap-2.5 mt-2">
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setIsOpen(false);
-                  setGateOpen(true);
-                }}
-                className="w-full flex items-center justify-center gap-2 font-extrabold uppercase tracking-wider text-xs py-3"
-              >
-                Change Location
-              </Button>
-
-              <Button
-                variant="outline"
-                onClick={() => setIsOpen(false)}
-                className="w-full flex items-center justify-center gap-1.5 font-extrabold uppercase tracking-wider text-xs py-3"
-              >
-                Browse Products
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </>
-        )}
+          <Button
+            variant="outline"
+            onClick={() => setIsOpen(false)}
+            className="w-full flex items-center justify-center gap-1.5 font-extrabold uppercase tracking-wider text-xs py-3"
+          >
+            Browse Products anyway
+            <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </Modal>
   );

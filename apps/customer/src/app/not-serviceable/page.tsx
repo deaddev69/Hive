@@ -3,16 +3,12 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useLocation } from "@/context/LocationContext";
-import { useQuery } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
-import { MapPinOff, ArrowRight, Compass } from "lucide-react";
+import { MapPinOff, ArrowRight } from "lucide-react";
 import { Button } from "@hive/ui";
 
 export default function NotServiceablePage() {
   const router = useRouter();
   const { setGateOpen } = useLocation();
-  const activeZonesQuery = useQuery(api.serviceability.getActiveZones) ?? [];
-  const activeZones = activeZonesQuery.map((z) => z.city);
 
   return (
     <main className="flex flex-col items-center justify-center p-6 min-h-[75vh] bg-gradient-to-tr from-hive-cream/40 via-white to-hive-cream/20 select-none">
@@ -27,33 +23,12 @@ export default function NotServiceablePage() {
         {/* Title and Description */}
         <div className="space-y-3">
           <h1 className="font-serif text-2xl sm:text-3xl font-black text-hive-dark tracking-tight">
-            HIVE is not available in your area yet
+            No products are currently deliverable to your location
           </h1>
           <p className="text-sm text-hive-text-muted leading-relaxed max-w-sm mx-auto font-medium">
-            We currently serve selected locations in Kerala. We’ll be expanding to more cities soon.
+            Hive delivers items within boutique-specific delivery radiuses. Please change your location or browse all available products.
           </p>
         </div>
-
-        {/* Dynamic Service Zones List */}
-        {activeZones.length > 0 && (
-          <div className="w-full text-left bg-hive-cream/20 p-5 rounded-2xl border border-hive-border/40 space-y-3">
-            <h4 className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-widest flex items-center gap-1.5">
-              <Compass className="w-3.5 h-3.5 text-hive-amber" />
-              Active Service Zones
-            </h4>
-            <div className="flex flex-wrap gap-1.5">
-              {activeZones.map((zone) => (
-                <span
-                  key={zone}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-xs font-semibold text-hive-dark shadow-sm border border-hive-border/40"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  {zone}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Button Actions */}
         <div className="w-full flex flex-col sm:flex-row gap-3 mt-3">
@@ -67,11 +42,11 @@ export default function NotServiceablePage() {
 
           <Button
             variant="outline"
-            onClick={() => router.push("/products")}
+            onClick={() => router.push("/products?browse=all")}
             className="flex-1 py-3 px-6 rounded-xl font-extrabold uppercase tracking-wider text-xs border-hive-border/80 hover:bg-slate-50 transition-all duration-300 flex items-center justify-center gap-1.5"
           >
-            <span>Browse Products</span>
-            <ArrowRight className="w-4 h-4 text-hive-text-muted group-hover:translate-x-0.5 transition-transform" />
+            <span>Browse All Products</span>
+            <ArrowRight className="w-4 h-4 text-hive-text-muted transition-transform" />
           </Button>
         </div>
 

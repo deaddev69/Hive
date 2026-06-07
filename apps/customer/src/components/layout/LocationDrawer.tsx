@@ -28,7 +28,6 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
     postcode,
     latitude,
     longitude,
-    isServiceable,
     updateLocationDetails,
   } = useLocation();
 
@@ -171,24 +170,6 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-5 min-h-0">
-
-          {/* Serviceability badge */}
-          {city && (
-            <div
-              className={`flex items-center gap-2.5 px-4 py-3 rounded-2xl border text-xs font-bold ${
-                isServiceable
-                  ? "bg-green-50 border-green-200 text-green-700"
-                  : "bg-red-50 border-red-200 text-red-700"
-              }`}
-            >
-              <MapPin className="w-4 h-4 flex-shrink-0" />
-              <span>
-                {isServiceable
-                  ? "✓ Delivery available in your area"
-                  : "✕ We're not here yet — expanding soon!"}
-              </span>
-            </div>
-          )}
 
           {/* Instruction hint (only before a location is pinned) */}
           {!pendingResult && (

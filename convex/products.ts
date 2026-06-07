@@ -50,6 +50,9 @@ async function enrichProduct(ctx: any, product: any) {
       reviewCount: 25,
       verified: boutique.status === "APPROVED",
       sameDayDelivery: product.sameDayEligible,
+      latitude: boutique.latitude,
+      longitude: boutique.longitude,
+      deliveryRadiusKm: boutique.deliveryRadiusKm,
     } : null,
   };
 }
@@ -256,6 +259,21 @@ export const getProduct = query({
   },
 });
 
+// Helper for Haversine distance
+function calculateDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 /**
  * Public query to fetch products matching filters (for Customer App).
  */
@@ -263,6 +281,8 @@ export const getActiveProducts = query({
   args: {
     categoryId: v.optional(v.id("categories")),
     featuredOnly: v.optional(v.boolean()),
+    userLat: v.optional(v.number()),
+    userLng: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     let query = ctx.db
@@ -278,6 +298,24 @@ export const getActiveProducts = query({
     }
     if (args.featuredOnly) {
       filtered = filtered.filter(p => p.featured === true);
+    }
+
+    if (args.userLat !== undefined && args.userLng !== undefined) {
+      const boutiques = await ctx.db
+        .query("boutiques")
+        .withIndex("by_status", (q) => q.eq("status", "APPROVED"))
+        .collect();
+
+      const deliverableBoutiqueIds = new Set(
+        boutiques
+          .filter((b) => {
+            const dist = calculateDistanceKm(args.userLat!, args.userLng!, b.latitude, b.longitude);
+            return dist <= b.deliveryRadiusKm;
+          })
+          .map((b) => b._id)
+      );
+
+      filtered = filtered.filter(p => deliverableBoutiqueIds.has(p.boutiqueId));
     }
 
     return Promise.all(filtered.map(p => enrichProduct(ctx, p)));

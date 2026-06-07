@@ -13,6 +13,8 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { ProductCardData } from "@/lib/mockProducts";
 import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useLocation } from "@/context/LocationContext";
 import {
   CatalogFilterState,
   DEFAULT_FILTER_STATE,
@@ -87,7 +89,30 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
 }
 
 export default function ProductsPage() {
-  const dbProducts = useQuery(api.products.getActiveProducts, {});
+  return (
+    <React.Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
+        <p className="text-sm text-hive-text-muted font-bold">Loading product directory...</p>
+      </div>
+    }>
+      <ProductsCatalog />
+    </React.Suspense>
+  );
+}
+
+function ProductsCatalog() {
+  const searchParams = useSearchParams();
+  const browseAll = searchParams.get("browse") === "all";
+
+  const { latitude, longitude } = useLocation();
+
+  const dbProducts = useQuery(
+    api.products.getActiveProducts,
+    browseAll
+      ? {}
+      : (latitude !== null && longitude !== null ? { userLat: latitude, userLng: longitude } : {})
+  );
 
   const [filters, setFilters] = useState<CatalogFilterState>(DEFAULT_FILTER_STATE);
   const [sortOption, setSortOption] = useState<ProductSortOption>(DEFAULT_SORT);
@@ -165,6 +190,15 @@ export default function ProductsPage() {
           accentColor="#C9A84C"
         />
       </div>
+
+      {browseAll && (
+        <div className="max-w-[1440px] mx-auto px-6 lg:px-8 w-full mt-4">
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2">
+            <span className="inline-flex items-center justify-center bg-amber-200 text-amber-800 rounded-full w-5 h-5 font-extrabold text-[10px]">!</span>
+            Showing all products — some may not be deliverable to your area.
+          </div>
+        </div>
+      )}
 
       {/* 2. Body: sidebar + grid */}
       <div className="max-w-[1440px] mx-auto px-6 lg:px-8 w-full flex flex-col gap-6 py-6">

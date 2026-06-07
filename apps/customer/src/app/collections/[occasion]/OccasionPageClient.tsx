@@ -17,6 +17,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { ProductCardData } from "@/lib/mockProducts";
 import { CollectionDetails } from "@/lib/mockCollections";
 import { Loader2 } from "lucide-react";
+import { useLocation } from "@/context/LocationContext";
 import {
   CatalogFilterState,
   DEFAULT_FILTER_STATE,
@@ -95,7 +96,11 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
 }
 
 export function OccasionPageClient({ details }: OccasionPageClientProps) {
-  const dbProducts = useQuery(api.products.getActiveProducts, {});
+  const { latitude, longitude } = useLocation();
+  const dbProducts = useQuery(
+    api.products.getActiveProducts,
+    latitude !== null && longitude !== null ? { userLat: latitude, userLng: longitude } : {}
+  );
 
   const [filters, setFilters] = useState<CatalogFilterState>({
     ...DEFAULT_FILTER_STATE,

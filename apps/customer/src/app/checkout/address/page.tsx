@@ -29,6 +29,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
+import { calculateDistanceKm } from "@/lib/distance";
 
 // Dynamically load the map (Leaflet requires browser, SSR disabled)
 const LocationMapPicker = dynamic(
@@ -133,15 +134,17 @@ export default function CheckoutAddressPage() {
 
   const items = useCartStore((s) => s.items);
   const checkoutItems = useCheckoutStore((s) => s.checkoutItems);
-  const { isServiceable: isGlobalServiceable } = useLocation();
-  const activeZones = useQuery(api.serviceability.getActiveZones) ?? [];
-  const requestService = useMutation(api.serviceability.requestService);
+  const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques) ?? [];
 
   const isAddressServiceable = (addr: Address) => {
-    if (!addr.city) return false;
-    return activeZones.some(
-      (z) => z.city.trim().toLowerCase() === addr.city.trim().toLowerCase()
-    );
+    if (dbBoutiques.length === 0) return false;
+    return dbBoutiques.some((b) => {
+      const bLat = b.latitude ?? b.addressDetails?.lat;
+      const bLng = b.longitude ?? b.addressDetails?.lng;
+      if (bLat === undefined || bLng === undefined) return false;
+      const dist = calculateDistanceKm(addr.lat, addr.lng, bLat, bLng);
+      return dist <= (b.deliveryRadiusKm ?? 15);
+    });
   };
 
   const [mounted, setMounted] = useState(false);
@@ -164,14 +167,6 @@ export default function CheckoutAddressPage() {
   const [formIsDefault, setFormIsDefault] = useState(false);
   const [formError, setFormError] = useState("");
   const [formSaving, setFormSaving] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    if (mounted && !isGlobalServiceable) {
-      router.replace("/");
-    }
-  }, [mounted, isGlobalServiceable, router]);
 
   if (!mounted || !clerkLoaded) return <AddressSkeleton />;
   if (!isSignedIn) {
@@ -298,18 +293,7 @@ export default function CheckoutAddressPage() {
     }
   };
 
-  const handleWaitlistSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedAddress) return;
-    setIsSubmittingWaitlist(true);
-    try {
-      await requestService({ city: selectedAddress.city, state: selectedAddress.state });
-      setWaitlistSuccess(true);
-      setTimeout(() => { setWaitlistSuccess(false); setWaitlistEmail(""); }, 3500);
-    } catch { /* silent */ } finally {
-      setIsSubmittingWaitlist(false);
-    }
-  };
+  // Waitlist functionality removed
 
   if (effectiveItems.length === 0) {
     return (
@@ -506,41 +490,12 @@ export default function CheckoutAddressPage() {
                           ✕ Not Available
                         </span>
                         <p className="text-xs font-extrabold text-red-700">
-                          We&apos;re not in this area yet.
+                          Boutiques do not deliver here
                         </p>
                         <p className="text-[10px] text-hive-text-muted font-medium">
-                          Hive is expanding city by city. We&apos;ll let you know when we arrive!
+                          The selected address is outside the delivery radius of our partner boutiques.
                         </p>
                       </div>
-                      <form onSubmit={handleWaitlistSubmit} className="space-y-2 pt-1 border-t border-hive-border/40">
-                        <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-                          Request Launch In Pincode {selectedAddress.pincode}
-                        </span>
-                        {!waitlistSuccess ? (
-                          <div className="flex gap-2">
-                            <input
-                              type="email"
-                              required
-                              placeholder="Your email"
-                              value={waitlistEmail}
-                              onChange={(e) => setWaitlistEmail(e.target.value)}
-                              className="flex-1 h-9 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
-                            />
-                            <button
-                              type="submit"
-                              disabled={isSubmittingWaitlist}
-                              className="h-9 px-4 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 transition-all text-xs font-extrabold uppercase tracking-wider rounded-xl shadow-sm disabled:opacity-50"
-                            >
-                              Notify
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-2 rounded-xl flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                            Added to waitlist! We&apos;ll notify you.
-                          </div>
-                        )}
-                      </form>
                       <Link href="/products" className="text-xs text-center font-extrabold uppercase tracking-widest text-hive-dark hover:text-hive-amber transition-colors block border border-hive-border py-2.5 rounded-xl bg-white">
                         Back To Products
                       </Link>

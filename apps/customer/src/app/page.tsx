@@ -97,7 +97,7 @@ function mapDbBoutique(b: any, products: any[] = []): Boutique {
 }
 
 export default function HomePage() {
-  const { pincode, regionName, isServiceable, setGateOpen } = useLocation();
+  const { pincode, regionName, latitude, longitude, setGateOpen } = useLocation();
   const { addToCart, itemsCount } = useCart();
   const router = useRouter();
 
@@ -107,7 +107,12 @@ export default function HomePage() {
   // Fetch from Convex
   const dbBanners = useQuery(api.banners.getActiveBanners);
   const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
-  const dbProducts = useQuery(api.products.getActiveProducts, {});
+  
+  // Fetch active products with location coordinates when available
+  const dbProducts = useQuery(
+    api.products.getActiveProducts,
+    latitude !== null && longitude !== null ? { userLat: latitude, userLng: longitude } : {}
+  );
   const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques);
 
   // Banner Carousel State
@@ -417,8 +422,8 @@ export default function HomePage() {
 
               <div className="flex items-center justify-between pt-2">
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Serviceability Check</span>
-                  <span className="text-xs text-hive-text-muted">Currently serviced zones locator</span>
+                  <span className="text-sm font-semibold">Location Picker</span>
+                  <span className="text-xs text-hive-text-muted">Select user location</span>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setGateOpen(true)} className="flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-hive-gold" /> Check Loc
@@ -442,15 +447,9 @@ export default function HomePage() {
                   </span>
                   <div className="flex items-center gap-1.5 mt-1">
                     {pincode ? (
-                      isServiceable ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
-                          Serviced: {regionName}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
-                          Unserviceable Zone
-                        </span>
-                      )
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
+                        {regionName}
+                      </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-[10px] text-hive-text-muted font-bold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
                         Pending selection

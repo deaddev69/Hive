@@ -104,12 +104,6 @@ export default function SecurePaymentPage() {
 
   const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
 
-  // Real database serviceability check
-  const checkServiceability = useQuery(
-    api.serviceability.checkServiceability,
-    selectedAddress ? { city: selectedAddress.city } : "skip"
-  );
-
   // Validation redirect filter: block access if previous checkout phases are missing
   // Skip when order is being placed — clearCheckout nullifies state before navigation completes
   useEffect(() => {
@@ -118,11 +112,9 @@ export default function SecurePaymentPage() {
         router.replace("/checkout/address");
       } else if (!selectedDate || !selectedSlot) {
         router.replace("/checkout/delivery");
-      } else if (checkServiceability !== undefined && checkServiceability.isServiceable === false) {
-        router.replace("/");
       }
     }
-  }, [mounted, storedAddressId, selectedDate, selectedSlot, checkServiceability, router]);
+  }, [mounted, storedAddressId, selectedDate, selectedSlot, router]);
 
   if (!mounted || !clerkLoaded) {
     return <PaymentSkeleton />;
