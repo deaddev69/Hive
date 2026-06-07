@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { useLocation } from "@/context/LocationContext";
 import { useCart } from "@/context/CartContext";
 import { Badge } from "@hive/ui";
@@ -38,12 +39,14 @@ export const Navbar: React.FC = () => {
           aria-label="Go to Home"
           className="flex items-center gap-2 hover:opacity-80 active:scale-[0.97] transition-all duration-200 cursor-pointer"
         >
-          <div className="w-8 h-8 rounded-lg bg-hive-gold flex items-center justify-center font-bold text-hive-dark">
-            H
-          </div>
-          <span className="font-serif font-black tracking-tight text-lg text-hive-text hidden sm:inline-block">
-            HIVE
-          </span>
+          <Image
+            src="/logo.jpg"
+            alt="Hive"
+            width={180}
+            height={75}
+            priority
+            className="h-14 w-auto object-contain"
+          />
         </Link>
 
         {/* Location Selector */}
