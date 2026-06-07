@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
-import { Plus, Edit3, Trash2, Power, ArrowLeft, Loader2, ListCollapse } from "lucide-react";
+import { Button, Card, CardContent } from "@hive/ui";
+import { Plus, Edit3, Trash2, Power, ArrowLeft, Loader2, ListCollapse, UploadCloud } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminCategoriesPage() {
@@ -13,15 +13,22 @@ export default function AdminCategoriesPage() {
   const updateCategory = useMutation(api.categories.updateCategory);
   const deleteCategory = useMutation(api.categories.deleteCategory);
   const toggleCategory = useMutation(api.categories.toggleCategory);
+  const generateUploadUrl = useMutation(api.categories.generateUploadUrl);
 
   // Form State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
   const [sortOrder, setSortOrder] = useState(1);
   const [active, setActive] = useState(true);
+  
+  // Image Upload State
+  const [imageStorageId, setImageStorageId] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(false);
 
   // Handle Name Input change to auto-generate Slug
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,11 +45,30 @@ export default function AdminCategoriesPage() {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      alert("Invalid file type. Please use JPG, PNG, or WEBP.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File is too large. Max size is 5MB.");
+      return;
+    }
+
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
   const handleEdit = (category: any) => {
     setEditingId(category._id);
     setName(category.name);
     setSlug(category.slug);
-    setImageUrl(category.imageUrl);
+    setImageStorageId(category.imageStorageId);
+    setPreviewUrl(category.imageUrl); // dynamically resolved URL from backend
+    setSelectedFile(null);
     setSortOrder(category.sortOrder);
     setActive(category.active);
   };
@@ -51,21 +77,51 @@ export default function AdminCategoriesPage() {
     setEditingId(null);
     setName("");
     setSlug("");
-    setImageUrl("");
+    setImageStorageId(null);
+    setPreviewUrl(null);
+    setSelectedFile(null);
     setSortOrder((categories?.length || 0) + 1);
     setActive(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!editingId && !selectedFile) {
+      alert("Category image is required.");
+      return;
+    }
+
     setSubmitting(true);
+    
     try {
+      let finalStorageId = imageStorageId;
+
+      if (selectedFile) {
+        setUploadProgress(true);
+        // Step 1: Get a short-lived upload URL
+        const postUrl = await generateUploadUrl();
+        // Step 2: POST the file to the URL
+        const result = await fetch(postUrl, {
+          method: "POST",
+          headers: { "Content-Type": selectedFile.type },
+          body: selectedFile,
+        });
+        const { storageId } = await result.json();
+        finalStorageId = storageId;
+        setUploadProgress(false);
+      }
+      
+      if (!finalStorageId) {
+        throw new Error("Failed to secure an image storage ID.");
+      }
+
       if (editingId) {
         await updateCategory({
           id: editingId as any,
           name,
           slug,
-          imageUrl,
+          imageStorageId: finalStorageId as any,
           active,
           sortOrder,
         });
@@ -74,7 +130,7 @@ export default function AdminCategoriesPage() {
         await createCategory({
           name,
           slug,
-          imageUrl,
+          imageStorageId: finalStorageId as any,
           active,
           sortOrder,
         });
@@ -83,13 +139,14 @@ export default function AdminCategoriesPage() {
       resetForm();
     } catch (err: any) {
       alert("Failed to save category: " + err.message);
+      setUploadProgress(false);
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this category?")) {
+    if (confirm("Are you sure you want to delete this category? The image will be permanently removed from storage.")) {
       try {
         await deleteCategory({ id: id as any });
       } catch (err: any) {
@@ -127,7 +184,7 @@ export default function AdminCategoriesPage() {
         </Link>
         <div>
           <h1 className="text-3xl font-serif font-black text-hive-dark">Categories Directory</h1>
-          <p className="text-sm text-hive-text-muted">Manage product discovery categories and sort configurations.</p>
+          <p className="text-sm text-hive-text-muted">Manage product discovery categories and secure image assets.</p>
         </div>
       </div>
 
@@ -164,15 +221,34 @@ export default function AdminCategoriesPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Image URL</label>
-            <input
-              type="url"
-              required
-              placeholder="e.g. https://images.unsplash.com/photo-..."
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold focus:border-transparent text-sm bg-hive-cream/10"
-            />
+            <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Category Image</label>
+            <div className={`relative flex flex-col items-center justify-center w-full h-40 border-2 border-dashed ${previewUrl ? 'border-hive-gold/50' : 'border-hive-border/60'} rounded-xl bg-hive-cream/5 hover:bg-hive-cream/20 transition-colors cursor-pointer overflow-hidden`}>
+              <input
+                type="file"
+                accept="image/jpeg, image/png, image/webp"
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              
+              {previewUrl ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold pointer-events-none">
+                    Click to replace image
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2 text-hive-text-muted">
+                  <UploadCloud className="w-8 h-8 text-hive-border" />
+                  <div className="text-sm font-semibold text-center px-4">Click or drag image to upload</div>
+                  <div className="text-[10px] uppercase tracking-wide">JPG, PNG, WEBP (Max 5MB)</div>
+                </div>
+              )}
+            </div>
+            {selectedFile && (
+              <span className="text-xs text-green-600 font-semibold mt-1">Ready to upload: {selectedFile.name}</span>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -201,13 +277,6 @@ export default function AdminCategoriesPage() {
             </div>
           </div>
 
-          {imageUrl && (
-            <div className="relative aspect-video max-w-[200px] rounded-xl overflow-hidden border border-hive-border/60 bg-slate-50 mt-1">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imageUrl} alt="Category preview" className="w-full h-full object-cover" />
-            </div>
-          )}
-
           <div className="flex gap-3 mt-4 pt-4 border-t border-hive-border/60">
             <Button
               type="submit"
@@ -217,7 +286,7 @@ export default function AdminCategoriesPage() {
             >
               {submitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                  <Loader2 className="w-4 h-4 animate-spin" /> {uploadProgress ? "Uploading Image..." : "Saving..."}
                 </>
               ) : editingId ? (
                 "Update Category"
@@ -226,7 +295,7 @@ export default function AdminCategoriesPage() {
               )}
             </Button>
             {editingId && (
-              <Button type="button" variant="outline" onClick={resetForm}>
+              <Button type="button" variant="outline" onClick={resetForm} disabled={submitting}>
                 Cancel
               </Button>
             )}
@@ -241,7 +310,7 @@ export default function AdminCategoriesPage() {
           </div>
 
           {sortedCategories.length === 0 ? (
-            <div className="bg-white border border-hive-border rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-4">
+            <div className="bg-white border border-hive-border rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-4 shadow-sm">
               <div className="w-14 h-14 rounded-full bg-hive-cream/40 flex items-center justify-center border border-hive-border/40 text-hive-text-muted">
                 <ListCollapse className="w-6 h-6" />
               </div>
@@ -253,7 +322,7 @@ export default function AdminCategoriesPage() {
           ) : (
             <div className="flex flex-col gap-3.5">
               {sortedCategories.map((category) => (
-                <Card key={category._id} className={`overflow-hidden border transition-all duration-200 ${category.active ? "border-hive-border bg-white" : "border-hive-border/40 bg-hive-cream/5 opacity-70"}`}>
+                <Card key={category._id} className={`overflow-hidden border transition-all duration-200 ${category.active ? "border-hive-border bg-white shadow-sm" : "border-hive-border/40 bg-hive-cream/5 opacity-70 shadow-none"}`}>
                   <CardContent className="p-4 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                     
                     {/* Category preview info */}
@@ -261,7 +330,11 @@ export default function AdminCategoriesPage() {
                       {/* Image Preview */}
                       <div className="relative w-12 h-12 rounded-xl border border-hive-border/50 overflow-hidden bg-slate-50 flex-shrink-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={category.imageUrl} alt={category.name} className="w-full h-full object-cover" />
+                        {category.imageUrl ? (
+                          <img src={category.imageUrl} alt={category.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-red-400 bg-red-50 text-[9px] font-bold text-center">No Image</div>
+                        )}
                       </div>
                       
                       {/* Meta */}

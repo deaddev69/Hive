@@ -7,18 +7,23 @@ const nextConfig: NextConfig = {
   // Transpile shared workspace packages
   transpilePackages: ["@hive/types", "@hive/ui", "@hive/utils"],
 
-  // Image optimization — allow Cloudinary and Unsplash CDNs
+  // Image optimization — allow Cloudinary, Unsplash, and Convex CDNs
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname:  "res.cloudinary.com",
-        pathname:  "/**",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
       },
       {
         protocol: "https",
-        hostname:  "images.unsplash.com",
-        pathname:  "/**",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.convex.cloud",
+        pathname: "/**",
       },
     ],
   },
@@ -26,23 +31,6 @@ const nextConfig: NextConfig = {
   // Experimental: Server Actions are stable in Next.js 15
   // Enable partial pre-rendering when ready
   experimental: {
-    // ppr: true,  // enable when stable for your deployment
-  },
-
-  // Redirect /admin traffic to the admin console port (3001)
-  async redirects() {
-    return [
-      {
-        source: "/admin",
-        destination: "http://localhost:3001",
-        permanent: false,
-      },
-      {
-        source: "/admin/:path*",
-        destination: "http://localhost:3001/admin/:path*",
-        permanent: false,
-      },
-    ];
   },
 
   // Security headers
@@ -51,10 +39,10 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
-          { key: "X-Frame-Options",        value: "DENY" },
-          { key: "X-Content-Type-Options",  value: "nosniff" },
-          { key: "Referrer-Policy",         value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy",      value: "geolocation=(self)" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "geolocation=(self)" },
         ],
       },
     ];

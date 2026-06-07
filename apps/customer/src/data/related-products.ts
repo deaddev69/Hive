@@ -40,7 +40,10 @@ export function getRelatedProducts(
     }
 
     // 2. Then match same occasion
-    if (p.occasion && currentProduct.occasionTags.includes(p.occasion)) {
+    if (
+      p.occasion &&
+      (currentProduct.occasionTags ?? []).includes(p.occasion)
+    ) {
       score += 50;
     }
 

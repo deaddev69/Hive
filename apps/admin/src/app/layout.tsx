@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider afterSignOutUrl="http://localhost:3000/">
       <html lang="en">
         <body className="antialiased min-h-screen bg-slate-50 text-slate-900">
           <ConvexClientProvider>

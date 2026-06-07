@@ -39,7 +39,7 @@ export async function getAuthenticatedUser(ctx: AuthCtx) {
  */
 export async function requireRole(
   ctx: AuthCtx,
-  role: "customer" | "boutique_owner" | "admin"
+  role: "customer" | "boutique" | "boutique_owner" | "admin"
 ) {
   const user = await getAuthenticatedUser(ctx);
   if (user.role !== role) {
@@ -57,7 +57,7 @@ export async function requireRole(
  */
 export async function requireAnyRole(
   ctx: AuthCtx,
-  ...roles: Array<"customer" | "boutique_owner" | "admin">
+  ...roles: Array<"customer" | "boutique" | "boutique_owner" | "admin">
 ) {
   const user = await getAuthenticatedUser(ctx);
   if (!roles.includes(user.role)) {
@@ -78,22 +78,58 @@ export async function requireBoutiqueOwnership(
   ctx: MutationCtx | QueryCtx,
   boutiqueId: string
 ) {
-  const user = await requireRole(ctx, "boutique_owner");
+  const user = await getAuthenticatedUser(ctx);
+  if (user.role !== "boutique" && user.role !== "boutique_owner") {
+    throw new ConvexError({
+      code: HiveError.FORBIDDEN,
+      required: "boutique",
+      actual: user.role,
+    });
+  }
 
   const boutique = await ctx.db
     .query("boutiques")
-    .withIndex("by_userId", (q) => q.eq("userId", user._id))
+    .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
     .unique();
 
   if (!boutique || boutique._id !== boutiqueId) {
     throw new ConvexError(HiveError.BOUTIQUE_ACCESS_DENIED);
   }
 
-  if (boutique.status === "suspended") {
+  if (boutique.status === "suspended" || boutique.status === "SUSPENDED") {
     throw new ConvexError(HiveError.BOUTIQUE_SUSPENDED);
   }
 
   return { user, boutique };
+}
+
+/**
+ * Resolves the authenticated user's boutique from the boutiques table.
+ * Throws if unauthenticated, not a boutique role, or no boutique record found.
+ */
+export async function getMyBoutique(ctx: AuthCtx) {
+  const user = await getAuthenticatedUser(ctx);
+  if (user.role !== "boutique" && user.role !== "boutique_owner") {
+    throw new ConvexError({
+      code: HiveError.FORBIDDEN,
+      message: "Unauthorized: Not a boutique designer.",
+    });
+  }
+
+  const boutique = await ctx.db
+    .query("boutiques")
+    .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
+    .unique();
+
+  if (!boutique) {
+    throw new ConvexError(HiveError.BOUTIQUE_ACCESS_DENIED);
+  }
+
+  if (boutique.status === "suspended" || boutique.status === "SUSPENDED") {
+    throw new ConvexError(HiveError.BOUTIQUE_SUSPENDED);
+  }
+
+  return boutique;
 }
 
 /**

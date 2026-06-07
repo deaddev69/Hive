@@ -4,7 +4,7 @@
 
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthenticatedUser } from "./lib/auth";
+import { getAuthenticatedUser, getMyBoutique } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 import { validateProductSizeAndStock, normalizeSize } from "./lib/mockInventory";
 
@@ -112,6 +112,8 @@ export const placeOrder = mutation({
         description:      "Main Marketplace Boutique Hub",
         status:           "APPROVED",
         createdAt:        now,
+        ownerEmail:       "marketplace@hive.in",
+        ownerUserId:      user._id,
 
         // Legacy fields for backward compatibility
         userId:           user._id,
@@ -166,71 +168,57 @@ export const placeOrder = mutation({
       const normalized = normalizeSize(item.size);
 
       if (productRow) {
-        // Find a matching variant by product ID and matching size
-        const variants = await ctx.db
-          .query("productVariants")
-          .withIndex("by_productId", (q) => q.eq("productId", productRow._id))
-          .collect();
+        const currentStock = productRow.stockBySize[item.size] ?? 0;
+        const newStock = Math.max(0, currentStock - item.quantity);
 
-        const variantRow = variants.find(
-          (v) => normalizeSize(v.size) === normalized
-        );
+        const stockBySize = { ...productRow.stockBySize };
+        stockBySize[item.size] = newStock;
 
-        if (variantRow) {
-          await ctx.db.insert("orderItems", {
-            orderId,
-            productId:       productRow._id,
-            variantId:       variantRow._id,
-            boutiqueId,
-            productName:     item.name,
-            variantSize:     item.size,
-            imageUrl:        item.imageUrl,
-            sku:             variantRow.sku,
-            priceAtPurchase: item.price,
-            quantity:        item.quantity,
-            subtotal:        item.price * item.quantity,
-          });
-          continue;
-        }
+        await ctx.db.patch(productRow._id, {
+          stockBySize,
+          updatedAt: now,
+        });
+
+        await ctx.db.insert("orderItems", {
+          orderId,
+          productId:       productRow._id,
+          variantId:       productRow._id as any,
+          boutiqueId:      productRow.boutiqueId,
+          productName:     item.name,
+          variantSize:     item.size,
+          imageUrl:        item.imageUrl,
+          sku:             `SKU-${orderNumber}-${productRow.slug}-${item.size}`,
+          priceAtPurchase: item.price,
+          quantity:        item.quantity,
+          subtotal:        item.price * item.quantity,
+        });
+        continue;
       }
 
-      // Fallback: create a placeholder product entry for this order item
+      // Fallback: create a placeholder product entry using the new schema
+      const anyCategory = await ctx.db.query("categories").first();
+
       const placeholderProductId = await ctx.db.insert("products", {
         boutiqueId,
-        name:        item.name,
-        slug:        item.productId,
-        category:    "Fashion",
-        occasionIds: [],
-        priceMin:    item.price,
-        priceMax:    item.price,
-        tags:        [],
-        status:      "approved",
-        isActive:    true,
-        viewCount:   0,
-        orderCount:  1,
-        createdAt:   now,
-        updatedAt:   now,
-      });
-
-      const variantSizeLiteral = (normalized === "Free" || ["XS", "S", "M", "L", "XL", "XXL"].includes(normalized))
-        ? normalized
-        : "Free";
-
-      const placeholderVariantId = await ctx.db.insert("productVariants", {
-        productId:  placeholderProductId,
-        boutiqueId,
-        size:       variantSizeLiteral as "XS" | "S" | "M" | "L" | "XL" | "XXL" | "Free",
-        sku:        `SKU-${orderNumber}-${item.productId}`,
-        price:      item.price,
-        isActive:   true,
-        createdAt:  now,
-        updatedAt:  now,
+        name:             item.name,
+        slug:             `${item.productId}-${Math.floor(1000 + Math.random() * 9000)}`,
+        description:      "System Generated Placeholder Product",
+        categoryId:       anyCategory?._id || (args.addressId as any),
+        price:            item.price,
+        images:           [item.imageUrl],
+        sizes:            [item.size],
+        stockBySize:      { [item.size]: 0 },
+        sameDayEligible:  false,
+        featured:         false,
+        active:           true,
+        createdAt:        now,
+        updatedAt:        now,
       });
 
       await ctx.db.insert("orderItems", {
         orderId,
         productId:       placeholderProductId,
-        variantId:       placeholderVariantId,
+        variantId:       placeholderProductId as any,
         boutiqueId,
         productName:     item.name,
         variantSize:     item.size,
@@ -432,5 +420,72 @@ export const getOrderByNumber = query({
     }));
 
     return { ...order, items: itemsWithBoutiqueName };
+  },
+});
+
+/**
+ * Fetch all orders for the logged-in boutique.
+ */
+export const getBoutiqueOrders = query({
+  args: {},
+  handler: async (ctx) => {
+    const boutique = await getMyBoutique(ctx);
+    const orders = await ctx.db
+      .query("orders")
+      .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", boutique._id))
+      .order("desc")
+      .collect();
+
+    // Enrich with order items
+    return await Promise.all(
+      orders.map(async (order) => {
+        const items = await ctx.db
+          .query("orderItems")
+          .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+          .collect();
+        return {
+          ...order,
+          items,
+        };
+      })
+    );
+  },
+});
+
+export const updateBoutiqueOrderStatus = mutation({
+  args: {
+    orderId: v.id("orders"),
+    status: v.union(
+      v.literal("pending_payment"),
+      v.literal("pending_confirmation"),
+      v.literal("confirmed"),
+      v.literal("packed"),
+      v.literal("pickup_scheduled"),
+      v.literal("picked_up"),
+      v.literal("in_transit"),
+      v.literal("out_for_delivery"),
+      v.literal("delivered"),
+      v.literal("cancelled"),
+      v.literal("claim_submitted"),
+      v.literal("replacement_requested"),
+      v.literal("replacement_approved"),
+      v.literal("replacement_dispatched"),
+      v.literal("replacement_delivered"),
+      v.literal("refund_requested"),
+      v.literal("refunded")
+    ),
+  },
+  handler: async (ctx, args) => {
+    const boutique = await getMyBoutique(ctx);
+    const order = await ctx.db.get(args.orderId);
+    if (!order || order.boutiqueId !== boutique._id) {
+      throw new Error("Unauthorized: Order does not belong to your boutique.");
+    }
+    
+    await ctx.db.patch(args.orderId, {
+      status: args.status,
+      updatedAt: Date.now(),
+    });
+    return args.orderId;
   },
 });

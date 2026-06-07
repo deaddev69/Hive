@@ -5,22 +5,23 @@ import { useAuth, SignOutButton, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, ShieldAlert, Loader2, Users } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Layers, ClipboardList, User, LogOut, Menu, X, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@hive/ui";
 
-const NAV_ITEMS = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Users", href: "/admin/users", icon: Users },
-  { label: "Categories", href: "/admin/categories", icon: FolderKanban },
-  { label: "Banners", href: "/admin/banners", icon: ImageIcon },
-  { label: "Boutiques", href: "/admin/boutiques", icon: Store },
+const BOUTIQUE_NAV_ITEMS = [
+  { label: "Dashboard", href: "/boutique", icon: LayoutDashboard },
+  { label: "Products", href: "/boutique/products", icon: FolderKanban },
+  { label: "Inventory", href: "/boutique/inventory", icon: Layers },
+  { label: "Orders", href: "/boutique/orders", icon: ClipboardList },
+  { label: "Profile", href: "/boutique/profile", icon: User },
 ];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function BoutiqueLayout({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth();
   const { user: clerkUser } = useUser();
   const me = useQuery(api.users.getMe);
+  const myBoutiqueSafe = useQuery(api.boutiques.getMyBoutiqueSafe);
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -32,21 +33,37 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [isLoaded, isSignedIn, router]);
 
-  // Non-admin redirect
+  // Non-boutique redirect (allows boutique, boutique_owner) AND ensures boutique record exists
   useEffect(() => {
-    if (me && me.role !== "admin") {
-      router.push("/admin/unauthorized");
+    if (me === undefined || myBoutiqueSafe === undefined) return;
+
+    if (me) {
+      if (me.role === "admin") {
+        router.push("/admin");
+        return;
+      }
+      if (me.role === "customer") {
+        window.location.href = "http://localhost:3000/";
+        return;
+      }
     }
-  }, [me, router]);
+
+    if (myBoutiqueSafe && !myBoutiqueSafe.exists) {
+      if (pathname !== "/boutique/unauthorized") {
+        router.push("/boutique/unauthorized");
+      }
+    }
+  }, [me, myBoutiqueSafe, router, pathname]);
+
 
   // User is not synced yet or loading Clerk state
-  if (!isLoaded || me === undefined || me === null) {
+  if (!isLoaded || me === undefined || me === null || myBoutiqueSafe === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
         <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
         <div className="flex flex-col gap-1">
-          <span className="text-base font-serif font-black text-hive-dark">Hive Admin Control</span>
-          <span className="text-xs text-hive-text-muted">Authenticating secure session...</span>
+          <span className="text-base font-serif font-black text-hive-dark">Hive Boutique Portal</span>
+          <span className="text-xs text-hive-text-muted">Loading secure session...</span>
         </div>
       </div>
     );
@@ -57,8 +74,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return null; // Hook redirects to sign-in
   }
 
-  // Non-admin signed in
-  if (me && me.role !== "admin" && pathname !== "/admin/unauthorized") {
+  // Non-boutique signed in
+  if ((me && me.role !== "boutique" && me.role !== "boutique_owner" && pathname !== "/boutique/unauthorized") ||
+      (myBoutiqueSafe && !myBoutiqueSafe.exists && pathname !== "/boutique/unauthorized")) {
     return null; // Redirects to unauthorized
   }
 
@@ -72,7 +90,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             H
           </div>
           <span className="font-serif font-black tracking-tight text-sm text-hive-cream">
-            HIVE ADMIN
+            HIVE DESIGNER
           </span>
         </div>
         <button 
@@ -98,13 +116,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               H
             </div>
             <span className="font-serif font-black tracking-tight text-base text-hive-cream">
-              HIVE ADMIN
+              HIVE DESIGNER
             </span>
           </div>
 
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1">
-            {NAV_ITEMS.map((item) => {
+            {BOUTIQUE_NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
               return (
@@ -130,14 +148,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex flex-col gap-4 border-t border-white/5 pt-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-hive-gold flex items-center justify-center text-hive-dark font-bold text-xs uppercase border border-hive-border/30">
-              {clerkUser?.firstName?.charAt(0) || "A"}
+              {clerkUser?.firstName?.charAt(0) || "B"}
             </div>
             <div className="flex flex-col min-w-0 text-left">
               <span className="text-xs font-bold text-white truncate">
-                {clerkUser?.fullName || "Admin User"}
+                {clerkUser?.fullName || "Boutique Owner"}
               </span>
               <span className="text-[10px] text-hive-gold font-semibold tracking-wider uppercase">
-                {me?.role}
+                Boutique Portal
               </span>
             </div>
           </div>

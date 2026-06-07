@@ -109,38 +109,28 @@ export async function validateProductSizeAndStock(
     .unique();
 
   if (productRow) {
-    // Find the variant with the specified size
-    const variants = await db
-      .query("productVariants")
-      .withIndex("by_productId", (q) => q.eq("productId", productRow._id))
-      .collect();
-
-    const matchingVariant = variants.find(
-      (v) => normalizeSize(v.size) === normalized && v.isActive
-    );
-
-    if (!matchingVariant) {
-      const availableSizes = variants.filter(v => v.isActive).map(v => v.size);
+    const validSizes = productRow.sizes.map(normalizeSize);
+    if (!validSizes.includes(normalized)) {
       throw new Error(
-        `Invalid size "${size}" for product. Available sizes: ${availableSizes.join(", ")}`
+        `Invalid size "${size}" for product. Available sizes: ${productRow.sizes.join(", ")}`
       );
     }
 
-    // Check inventory table for stock
-    const inv = await db
-      .query("inventory")
-      .withIndex("by_variantId", (q) => q.eq("variantId", matchingVariant._id))
-      .unique();
+    let stock = 0;
+    if (productRow.stockBySize[size] !== undefined) {
+      stock = productRow.stockBySize[size];
+    } else if (productRow.stockBySize[normalized] !== undefined) {
+      stock = productRow.stockBySize[normalized];
+    }
 
-    if (inv) {
-      if (inv.quantityAvailable === 0) {
-        throw new Error(`Size "${size}" is out of stock.`);
-      }
-      if (inv.quantityAvailable < quantity) {
-        throw new Error(
-          `Requested quantity (${quantity}) exceeds available stock (${inv.quantityAvailable}) for size "${size}".`
-        );
-      }
+    if (stock === 0) {
+      throw new Error(`Size "${size}" is out of stock.`);
+    }
+
+    if (stock < quantity) {
+      throw new Error(
+        `Requested quantity (${quantity}) exceeds available stock (${stock}) for size "${size}".`
+      );
     }
 
     return true;

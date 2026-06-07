@@ -65,7 +65,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
 
   return (
     <div className="w-full flex flex-col gap-6 text-left">
-      
+
       {/* ── SECTION 1: BOUTIQUE DETAILS ── */}
       <div className="flex items-center justify-between border-b border-hive-border/40 pb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
@@ -206,7 +206,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       />
 
       {/* Description space placeholder - clean layout without redundant trust badges */}
-      
+
     </div>
   );
 };

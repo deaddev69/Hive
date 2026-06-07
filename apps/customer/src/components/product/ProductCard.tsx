@@ -10,7 +10,6 @@ import { Heart, ShieldCheck, Play, Truck, X } from "lucide-react";
 import { cn } from "@hive/ui";
 import { useCartStore } from "@/store/cart-store";
 import { useCart } from "@/context/CartContext";
-import { mockProductDetails } from "@/lib/mockProductDetails";
 import { SizeSelectionModal } from "./SizeSelectionModal";
 import { useCheckoutStore } from "@/store/checkout-store";
 
@@ -30,8 +29,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const setCheckoutItems = useCheckoutStore((state) => state.setCheckoutItems);
   const { setSidebarOpen } = useCart();
 
-  const detailInfo = mockProductDetails[product.slug];
-
   const toggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
@@ -44,29 +41,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     e.stopPropagation();
     e.preventDefault();
 
-    if (!detailInfo) {
-      // Fallback
-      addItem({
-        productId: product.id,
-        size: "Free",
-        price: product.price,
-        name: product.name,
-        imageUrl: product.imageUrl,
-        boutiqueName: product.boutiqueName,
-      });
-      setSidebarOpen(true);
-      return;
-    }
+    const sizes = product.sizes || ["Free"];
+    const stockBySize = product.stockBySize || { Free: 5 };
 
     // Get all sizes with stock > 0
-    const availableSizes = detailInfo.sizes.filter(
-      (sz) => (detailInfo.inventory[sz] ?? 0) > 0
+    const availableSizes = sizes.filter(
+      (sz) => (stockBySize[sz] ?? 0) > 0
     );
 
     if (availableSizes.length === 1 && availableSizes[0]) {
       // Auto use that single available size
       addItem({
-        productId: product.id,
+        productId: product.slug,
         size: availableSizes[0],
         price: product.price,
         name: product.name,
@@ -82,7 +68,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
   const handleConfirmSizeSelection = (size: string) => {
     addItem({
-      productId: product.id,
+      productId: product.slug,
       size,
       price: product.price,
       name: product.name,
@@ -96,15 +82,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     e.stopPropagation();
     e.preventDefault();
     
-    if (detailInfo) {
-      const available = detailInfo.sizes.filter(
-        (sz) => (detailInfo.inventory[sz] ?? 0) > 0
-      );
-      if (available.length === 1 && available[0]) {
-        setSelectedSize(available[0]);
-      } else {
-        setSelectedSize("");
-      }
+    const sizes = product.sizes || ["Free"];
+    const stockBySize = product.stockBySize || { Free: 5 };
+    const available = sizes.filter(
+      (sz) => (stockBySize[sz] ?? 0) > 0
+    );
+    if (available.length === 1 && available[0]) {
+      setSelectedSize(available[0]);
     } else {
       setSelectedSize("");
     }
@@ -114,7 +98,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const handleQuickViewAddToCart = () => {
     if (!selectedSize) return;
     addItem({
-      productId: product.id,
+      productId: product.slug,
       size: selectedSize,
       price: product.price,
       name: product.name,
@@ -129,7 +113,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     if (!selectedSize) return;
     setCheckoutItems([
       {
-        productId: product.id,
+        productId: product.slug,
         size: selectedSize,
         quantity: 1,
         price: product.price,
@@ -310,18 +294,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       </div>
 
       {/* Size Selection Modal Overlay */}
-      {detailInfo && (
-        <SizeSelectionModal
-          isOpen={isSizeModalOpen}
-          onClose={() => setIsSizeModalOpen(false)}
-          productName={product.name}
-          price={product.price}
-          imageUrl={product.imageUrl}
-          sizes={detailInfo.sizes}
-          inventory={detailInfo.inventory}
-          onConfirm={handleConfirmSizeSelection}
-        />
-      )}
+      <SizeSelectionModal
+        isOpen={isSizeModalOpen}
+        onClose={() => setIsSizeModalOpen(false)}
+        productName={product.name}
+        price={product.price}
+        imageUrl={product.imageUrl}
+        sizes={product.sizes || ["Free"]}
+        inventory={product.stockBySize || { Free: 5 }}
+        onConfirm={handleConfirmSizeSelection}
+      />
 
       {/* Quick View Modal Overlay */}
       <Modal
@@ -368,8 +350,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                   Select Size
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {detailInfo?.sizes.map((sz) => {
-                    const stock = detailInfo.inventory[sz] ?? 0;
+                  {(product.sizes || ["Free"]).map((sz: string) => {
+                    const stock = (product.stockBySize || {})[sz] ?? 0;
                     const isOutOfStock = stock <= 0;
                     const isSel = selectedSize === sz;
                     return (
