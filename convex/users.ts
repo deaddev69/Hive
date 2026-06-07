@@ -28,37 +28,54 @@ export const syncUser = mutation({
 
     const now = Date.now();
 
+    let targetUserId = existing?._id;
+    let targetUserRole = existing?.role ?? "customer";
+
     if (existing) {
       // Update email/name in case they changed in Clerk
       await ctx.db.patch(existing._id, {
         email:     args.email ?? existing.email,
         updatedAt: now,
       });
-      return existing._id;
+    } else {
+      // Create new user
+      const userId = await ctx.db.insert("users", {
+        clerkId,
+        email:           args.email,
+        role:            "customer",
+        isActive:        true,
+        isPhoneVerified: false,
+        createdAt:       now,
+        updatedAt:       now,
+      });
+      targetUserId = userId;
+
+      // Create default customer profile
+      await ctx.db.insert("customerProfiles", {
+        userId,
+        displayName:          args.name ?? args.email?.split("@")[0] ?? "Customer",
+        hiveScore:            100,
+        totalOrders:          0,
+        totalClaimsSubmitted: 0,
+        updatedAt:            now,
+      });
     }
 
-    // Create new user
-    const userId = await ctx.db.insert("users", {
-      clerkId,
-      email:           args.email,
-      role:            "customer",
-      isActive:        true,
-      isPhoneVerified: false,
-      createdAt:       now,
-      updatedAt:       now,
-    });
+    // Auto link approved boutique owner by email
+    if (args.email && targetUserRole !== "admin") {
+      const email = args.email;
+      const boutique = await ctx.db
+        .query("boutiques")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .unique();
 
-    // Create default customer profile
-    await ctx.db.insert("customerProfiles", {
-      userId,
-      displayName:          args.name ?? args.email?.split("@")[0] ?? "Customer",
-      hiveScore:            100,
-      totalOrders:          0,
-      totalClaimsSubmitted: 0,
-      updatedAt:            now,
-    });
+      if (boutique && boutique.status === "APPROVED" && targetUserId) {
+        await ctx.db.patch(boutique._id, { userId: targetUserId });
+        await ctx.db.patch(targetUserId, { role: "boutique", updatedAt: now });
+      }
+    }
 
-    return userId;
+    return targetUserId;
   },
 });
 

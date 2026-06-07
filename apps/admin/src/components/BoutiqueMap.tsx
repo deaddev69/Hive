@@ -7,10 +7,11 @@ import { Button } from "@hive/ui";
 interface BoutiqueMapProps {
   lat: number;
   lng: number;
-  onChange: (lat: number, lng: number) => void;
+  onChange?: (lat: number, lng: number) => void;
+  readOnly?: boolean;
 }
 
-export default function BoutiqueMap({ lat, lng, onChange }: BoutiqueMapProps) {
+export default function BoutiqueMap({ lat, lng, onChange, readOnly = false }: BoutiqueMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
@@ -75,24 +76,26 @@ export default function BoutiqueMap({ lat, lng, onChange }: BoutiqueMapProps) {
     }).addTo(map);
 
     // Add Marker
-    const marker = L.marker([initialLat, initialLng], { draggable: true }).addTo(map);
+    const marker = L.marker([initialLat, initialLng], { draggable: !readOnly }).addTo(map);
     markerRef.current = marker;
 
-    // Handle marker drag end
-    marker.on("dragend", () => {
-      const position = marker.getLatLng();
-      onChange(position.lat, position.lng);
-    });
+    if (!readOnly && onChange) {
+      // Handle marker drag end
+      marker.on("dragend", () => {
+        const position = marker.getLatLng();
+        onChange?.(position.lat, position.lng);
+      });
 
-    // Handle map click
-    map.on("click", (e: any) => {
-      const { lat: clickLat, lng: clickLng } = e.latlng;
-      marker.setLatLng([clickLat, clickLng]);
-      onChange(clickLat, clickLng);
-    });
+      // Handle map click
+      map.on("click", (e: any) => {
+        const { lat: clickLat, lng: clickLng } = e.latlng;
+        marker.setLatLng([clickLat, clickLng]);
+        onChange?.(clickLat, clickLng);
+      });
 
-    // Set initial callback
-    onChange(initialLat, initialLng);
+      // Set initial callback
+      onChange?.(initialLat, initialLng);
+    }
 
     return () => {
       if (mapRef.current) {
@@ -133,7 +136,7 @@ export default function BoutiqueMap({ lat, lng, onChange }: BoutiqueMapProps) {
         const numLat = parseFloat(searchLat);
         const numLng = parseFloat(searchLng);
 
-        onChange(numLat, numLng);
+        onChange?.(numLat, numLng);
 
         if (mapRef.current && markerRef.current) {
           markerRef.current.setLatLng([numLat, numLng]);
@@ -162,31 +165,33 @@ export default function BoutiqueMap({ lat, lng, onChange }: BoutiqueMapProps) {
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* Search inputs */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <input
-            type="text"
-            placeholder="Search location (e.g. Banjara Hills, Hyderabad)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs border border-hive-border/60 rounded-xl focus:outline-none focus:ring-1.5 focus:ring-hive-gold"
-          />
-          <MapPin className="w-4 h-4 text-hive-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+      {!readOnly && (
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="Search location (e.g. Banjara Hills, Hyderabad)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-xs border border-hive-border/60 rounded-xl focus:outline-none focus:ring-1.5 focus:ring-hive-gold"
+            />
+            <MapPin className="w-4 h-4 text-hive-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+          </div>
+          <Button
+            type="button"
+            onClick={handleSearch}
+            disabled={searching}
+            className="text-xs py-2 px-4 flex items-center gap-1 hover:bg-hive-amber"
+          >
+            {searching ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Search className="w-3.5 h-3.5" />
+            )}
+            <span>Search</span>
+          </Button>
         </div>
-        <Button
-          type="button"
-          onClick={handleSearch}
-          disabled={searching}
-          className="text-xs py-2 px-4 flex items-center gap-1 hover:bg-hive-amber"
-        >
-          {searching ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Search className="w-3.5 h-3.5" />
-          )}
-          <span>Search</span>
-        </Button>
-      </div>
+      )}
 
       {/* Map Element */}
       <div 
@@ -194,9 +199,11 @@ export default function BoutiqueMap({ lat, lng, onChange }: BoutiqueMapProps) {
         className="h-[280px] w-full rounded-2xl border border-hive-border overflow-hidden shadow-inner z-10"
       />
 
-      <span className="text-[10px] text-hive-text-muted leading-tight">
-        💡 Drag the amber pin or tap anywhere on the map grid to adjust coordinates.
-      </span>
+      {!readOnly && (
+        <span className="text-[10px] text-hive-text-muted leading-tight">
+          💡 Drag the amber pin or tap anywhere on the map grid to adjust coordinates.
+        </span>
+      )}
     </div>
   );
 }

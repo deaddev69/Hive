@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle2,
@@ -25,7 +25,7 @@ import { api } from "../../../../../../convex/_generated/api";
 // ─────────────────────────────────────────────────────────────────────────────
 // Redesigned Success Page Route Implementation
 // ─────────────────────────────────────────────────────────────────────────────
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderIdParam = searchParams.get("orderId");
@@ -211,6 +211,14 @@ export default function OrderSuccessPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <Suspense fallback={<OrderSuccessSkeleton />}>
+      <OrderSuccessContent />
+    </Suspense>
   );
 }
 

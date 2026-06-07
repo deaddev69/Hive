@@ -3,7 +3,7 @@
 
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { requireRole } from "./lib/auth";
+import { requireRole, getMyBoutique } from "./lib/auth";
 
 /**
  * Fetch all boutiques.
@@ -130,9 +130,22 @@ export const approveBoutique = mutation({
   args: { id: v.id("boutiques") },
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
-    await ctx.db.patch(args.id, {
-      status: "APPROVED",
-    });
+
+    const boutique = await ctx.db.get(args.id);
+    if (!boutique) throw new Error("Boutique not found");
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", boutique.email))
+      .unique();
+
+    const patches: any = { status: "APPROVED" };
+    if (user) {
+      patches.userId = user._id;
+      await ctx.db.patch(user._id, { role: "boutique", updatedAt: Date.now() });
+    }
+
+    await ctx.db.patch(args.id, patches);
     return args.id;
   },
 });
@@ -164,5 +177,81 @@ export const suspendBoutique = mutation({
       status: "SUSPENDED",
     });
     return args.id;
+  },
+});
+
+/**
+ * Fetch all approved boutiques.
+ * Public query.
+ */
+export const getApprovedBoutiques = query({
+  args: {},
+  handler: async (ctx) => {
+    const boutiques = await ctx.db
+      .query("boutiques")
+      .withIndex("by_status", (q) => q.eq("status", "APPROVED"))
+      .collect();
+
+    return Promise.all(
+      boutiques.map(async (b) => {
+        let logoUrl = b.logoUrl;
+        if (logoUrl && !logoUrl.startsWith("http")) {
+          logoUrl = (await ctx.storage.getUrl(logoUrl)) || logoUrl;
+        }
+        let bannerUrl = b.bannerUrl;
+        if (bannerUrl && !bannerUrl.startsWith("http")) {
+          bannerUrl = (await ctx.storage.getUrl(bannerUrl)) || bannerUrl;
+        }
+        return {
+          ...b,
+          logoUrl,
+          bannerUrl,
+        };
+      })
+    );
+  },
+});
+
+/**
+ * Update boutique details by the owner.
+ * Boutique-only mutation.
+ */
+export const updateBoutiqueProfile = mutation({
+  args: {
+    phone: v.string(),
+    description: v.string(),
+    logoUrl: v.optional(v.string()),
+    bannerUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const boutique = await getMyBoutique(ctx);
+    await ctx.db.patch(boutique._id, {
+      phone: args.phone,
+      description: args.description,
+      logoUrl: args.logoUrl,
+      bannerUrl: args.bannerUrl,
+      phoneNumber: args.phone, // compatibility field
+    });
+    return boutique._id;
+  },
+});
+
+export const getMyBoutiqueDetails = query({
+  args: {},
+  handler: async (ctx) => {
+    const boutique = await getMyBoutique(ctx);
+    let logoUrl = boutique.logoUrl;
+    if (logoUrl && !logoUrl.startsWith("http")) {
+      logoUrl = (await ctx.storage.getUrl(logoUrl)) || logoUrl;
+    }
+    let bannerUrl = boutique.bannerUrl;
+    if (bannerUrl && !bannerUrl.startsWith("http")) {
+      bannerUrl = (await ctx.storage.getUrl(bannerUrl)) || bannerUrl;
+    }
+    return {
+      ...boutique,
+      logoUrl,
+      bannerUrl,
+    };
   },
 });

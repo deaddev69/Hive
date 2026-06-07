@@ -1,6 +1,9 @@
+"use client";
+
 import React from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { mockBoutiques } from "@/lib/mockBoutiques";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
 
 export interface CatalogResultsSummaryProps {
   count: number;
@@ -17,6 +20,8 @@ export const CatalogResultsSummary: React.FC<CatalogResultsSummaryProps> = ({
   boutiques,
   className = "",
 }) => {
+  const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques);
+
   const formatSlug = (slug: string) => {
     return slug
       .split("-")
@@ -59,8 +64,8 @@ export const CatalogResultsSummary: React.FC<CatalogResultsSummaryProps> = ({
     // Boutique phrase
     if (boutiques.length > 0) {
       const boutiqueNames = boutiques.map((id) => {
-        const boutique = mockBoutiques.find((b) => b.id === id);
-        return boutique ? boutique.name : formatSlug(id);
+        const boutique = (dbBoutiques || []).find((b) => b._id === id);
+        return boutique ? boutique.boutiqueName : formatSlug(id);
       });
 
       if (boutiqueNames.length === 1) {

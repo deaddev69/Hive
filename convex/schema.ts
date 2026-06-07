@@ -14,6 +14,7 @@ export default defineSchema({
     phone:           v.optional(v.string()),       // E.164 format e.g. +919876543210
     role:            v.union(
                        v.literal("customer"),
+                       v.literal("boutique"),
                        v.literal("boutique_owner"),
                        v.literal("admin")
                      ),
@@ -117,6 +118,7 @@ export default defineSchema({
     .index("by_slug",      ["slug"])
     .index("by_userId",    ["userId"])
     .index("by_status",    ["status"])
+    .index("by_email",     ["email"])
     .index("by_regionIds", ["regionIds"]),
 
   // ─── BOUTIQUE DOCUMENTS ───────────────────────────────────────────────────
@@ -163,49 +165,26 @@ export default defineSchema({
 
   // ─── PRODUCTS ─────────────────────────────────────────────────────────────
   products: defineTable({
-    boutiqueId:   v.id("boutiques"),
-    name:         v.string(),
-    slug:         v.string(),
-    description:  v.optional(v.string()),
-    category:     v.string(),                       // "Saree" | "Kurti" | "Co-ord" ...
-    occasionIds:  v.array(v.id("occasions")),
-    priceMin:     v.number(),                       // paise (lowest variant)
-    priceMax:     v.number(),                       // paise (highest variant)
-    measurementMatrix: v.optional(v.object({
-      XS:  v.optional(v.object({ bust: v.optional(v.string()), waist: v.optional(v.string()), hip: v.optional(v.string()), length: v.optional(v.string()) })),
-      S:   v.optional(v.object({ bust: v.optional(v.string()), waist: v.optional(v.string()), hip: v.optional(v.string()), length: v.optional(v.string()) })),
-      M:   v.optional(v.object({ bust: v.optional(v.string()), waist: v.optional(v.string()), hip: v.optional(v.string()), length: v.optional(v.string()) })),
-      L:   v.optional(v.object({ bust: v.optional(v.string()), waist: v.optional(v.string()), hip: v.optional(v.string()), length: v.optional(v.string()) })),
-      XL:  v.optional(v.object({ bust: v.optional(v.string()), waist: v.optional(v.string()), hip: v.optional(v.string()), length: v.optional(v.string()) })),
-      XXL: v.optional(v.object({ bust: v.optional(v.string()), waist: v.optional(v.string()), hip: v.optional(v.string()), length: v.optional(v.string()) })),
-      Free:v.optional(v.object({ bust: v.optional(v.string()), waist: v.optional(v.string()), hip: v.optional(v.string()), length: v.optional(v.string()) })),
-    })),
-    careInstructions: v.optional(v.string()),
-    fabricDetails:    v.optional(v.string()),
-    tags:             v.array(v.string()),
-    status:           v.union(
-                        v.literal("draft"),
-                        v.literal("pending_review"),
-                        v.literal("approved"),
-                        v.literal("rejected"),
-                        v.literal("archived")
-                      ),
-    rejectionReason:  v.optional(v.string()),
-    isActive:         v.boolean(),
-    viewCount:        v.number(),
-    orderCount:       v.number(),
-    approvedAt:       v.optional(v.number()),
-    approvedBy:       v.optional(v.id("users")),
+    boutiqueId:       v.id("boutiques"),
+    name:             v.string(),
+    slug:             v.string(),
+    description:      v.string(),
+    categoryId:       v.id("categories"),
+    price:            v.number(),
+    discountPrice:    v.optional(v.number()),
+    images:           v.array(v.string()),
+    sizes:            v.array(v.string()),
+    stockBySize:      v.record(v.string(), v.number()),
+    sameDayEligible:  v.boolean(),
+    featured:         v.boolean(),
+    active:           v.boolean(),
     createdAt:        v.number(),
     updatedAt:        v.number(),
   })
-    .index("by_boutiqueId",        ["boutiqueId"])
-    .index("by_slug",              ["slug"])
-    .index("by_status",            ["status"])
-    .index("by_category",          ["category"])
-    .index("by_occasionIds",       ["occasionIds"])
-    .index("by_boutiqueId_status", ["boutiqueId", "status"])
-    .index("by_isActive_status",   ["isActive", "status"]),
+    .index("by_boutiqueId", ["boutiqueId"])
+    .index("by_categoryId", ["categoryId"])
+    .index("by_active",     ["active"])
+    .index("by_slug",       ["slug"]),
 
   // ─── PRODUCT IMAGES ───────────────────────────────────────────────────────
   productImages: defineTable({
@@ -800,8 +779,8 @@ export default defineSchema({
     slug:           v.string(),
     imageStorageId: v.id("_storage"),
     active:         v.boolean(),
-    sortOrder: v.number(),
-    createdAt: v.number(),
+    sortOrder:      v.number(),
+    createdAt:      v.number(),
   })
     .index("by_active_and_sortOrder", ["active", "sortOrder"]),
 

@@ -1,111 +1,456 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import { useLocation } from "@/context/LocationContext";
 import { useCart } from "@/context/CartContext";
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
-import { MapPin, Sparkles, Plus, ShoppingCart } from "lucide-react";
-import { HeroSection } from "@/components/home/HeroSection";
+import { MapPin, Sparkles, Plus, ShoppingCart, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { OccasionRail } from "@/components/home/OccasionRail";
 import { ProductGrid } from "@/components/product/ProductGrid";
-import { mockProducts } from "@/lib/mockProducts";
 import { BoutiqueSpotlight } from "@/components/boutique/BoutiqueSpotlight";
 import { TrustStrip } from "@/components/trust/TrustStrip";
 import { ExpansionCTA } from "@/components/expansion/ExpansionCTA";
+import Image from "next/image";
+import Link from "next/link";
+import { ProductCardData } from "@/lib/mockProducts";
+import { Boutique } from "@/lib/mockBoutiques";
+
+// Helper to deduce occasion from product tags/description
+function getProductOccasion(product: any): string {
+  const catName = (product.categoryName || "").toLowerCase();
+  const name = (product.name || "").toLowerCase();
+  const desc = (product.description || "").toLowerCase();
+  
+  if (name.includes("wedding") || desc.includes("wedding") || name.includes("lehenga") || catName.includes("lehengas")) {
+    return "wedding";
+  }
+  if (name.includes("festival") || desc.includes("festival") || name.includes("saree") || catName.includes("sarees")) {
+    return "festival";
+  }
+  if (name.includes("co-ord") || name.includes("coord") || catName.includes("coords") || catName.includes("co-ord")) {
+    return "coords";
+  }
+  if (name.includes("kurta") || name.includes("kurti") || catName.includes("kurtis")) {
+    return "ethnic";
+  }
+  if (name.includes("party") || desc.includes("party")) {
+    return "party";
+  }
+  if (name.includes("date") || desc.includes("date") || name.includes("dress") || catName.includes("dresses")) {
+    return "date";
+  }
+  if (name.includes("work") || name.includes("office")) {
+    return "workwear";
+  }
+  return "casual";
+}
+
+// Helper to map DB product to ProductCardData interface
+function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number> } {
+  const hasDiscount = p.discountPrice !== undefined && p.discountPrice < p.price;
+  const price = hasDiscount ? p.discountPrice! : p.price;
+  const compareAtPrice = hasDiscount ? p.price : undefined;
+
+  return {
+    id: p._id,
+    slug: p.slug,
+    name: p.name,
+    boutiqueName: p.boutiqueName || "Unknown Boutique",
+    imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
+    price,
+    compareAtPrice,
+    rating: 4.8, // Fallback rating
+    reviewCount: 12, // Fallback review count
+    occasion: getProductOccasion(p),
+    isVerifiedBoutique: p.boutique?.verified || false,
+    isNewArrival: Date.now() - p.createdAt < 7 * 24 * 60 * 60 * 1000,
+    isTrending: p.featured,
+    isBestSeller: p.featured,
+    sameDayDelivery: p.sameDayEligible,
+    videoAvailable: p.images?.length > 1,
+    favorite: false,
+    sizes: p.sizes || ["Free"],
+    stockBySize: p.stockBySize || { Free: 5 },
+  };
+}
+
+// Helper to map DB boutique to Boutique interface
+function mapDbBoutique(b: any, products: any[] = []): Boutique {
+  const count = products.filter((p) => p.boutiqueId === b._id).length;
+  const fallbackImg = "https://images.unsplash.com/photo-1567401893930-7dbc069b4353?auto=format&fit=crop&w=600&q=80";
+  return {
+    id: b._id,
+    name: b.boutiqueName,
+    tagline: b.description || "Independently owned boutique fashion house",
+    city: b.addressDetails?.city || "Hyderabad",
+    rating: 4.8,
+    reviewCount: 18,
+    specialties: ["Luxury Wear", "Custom Stitching"],
+    verified: b.status === "APPROVED",
+    sameDayDelivery: true,
+    imageUrl: b.logoUrl || b.bannerUrl || fallbackImg,
+    productCount: count > 0 ? count : 12, // display realistic count
+    featured: true,
+  };
+}
 
 export default function HomePage() {
   const { pincode, regionName, isServiceable, setGateOpen } = useLocation();
   const { addToCart, itemsCount } = useCart();
   const router = useRouter();
+
+  // Selected Discovery Filters
   const [selectedOccasion, setSelectedOccasion] = useState("all");
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
+
+  // Fetch from Convex
+  const dbBanners = useQuery(api.banners.getActiveBanners);
+  const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
+  const dbProducts = useQuery(api.products.getActiveProducts, {});
+  const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques);
+
+  // Banner Carousel State
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const bannerTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-play banners
+  useEffect(() => {
+    if (dbBanners && dbBanners.length > 1) {
+      bannerTimerRef.current = setInterval(() => {
+        setCurrentBannerIndex((prev) => (prev + 1) % dbBanners.length);
+      }, 5000);
+    }
+    return () => {
+      if (bannerTimerRef.current) clearInterval(bannerTimerRef.current);
+    };
+  }, [dbBanners]);
+
+  const handlePrevBanner = () => {
+    if (!dbBanners) return;
+    if (bannerTimerRef.current) clearInterval(bannerTimerRef.current);
+    setCurrentBannerIndex((prev) => (prev === 0 ? dbBanners.length - 1 : prev - 1));
+  };
+
+  const handleNextBanner = () => {
+    if (!dbBanners) return;
+    if (bannerTimerRef.current) clearInterval(bannerTimerRef.current);
+    setCurrentBannerIndex((prev) => (prev + 1) % dbBanners.length);
+  };
+
+  // Map & Filter Products
+  const products = (dbProducts || []).map(mapDbProduct);
+  const mappedBoutiques = (dbBoutiques || []).map((b) => mapDbBoutique(b, dbProducts || []));
+
+  const filteredProducts = products.filter((p) => {
+    // Occasion filter (handled on page level instead of internally in ProductGrid)
+    const matchesOccasion = selectedOccasion === "all" || p.occasion === selectedOccasion;
+    
+    // Category filter
+    const originalProd = dbProducts?.find((dp) => dp._id === p.id);
+    const matchesCategory = selectedCategoryId === "all" || (originalProd && originalProd.categoryId === selectedCategoryId);
+
+    return matchesOccasion && matchesCategory;
+  });
 
   const handleOccasionChange = (id: string) => {
-    if (id === "all") {
-      setSelectedOccasion("all");
-    } else {
-      router.push(`/collections/${id}`);
-    }
+    setSelectedOccasion(id);
+  };
+
+  const handleCategorySelect = (id: string) => {
+    setSelectedCategoryId((prev) => (prev === id ? "all" : id));
   };
 
   return (
-    <div className="flex flex-col items-center bg-hive-cream/10 min-h-screen text-hive-text w-full">
-      {/* Phase 4.1: Hero Section */}
-      <HeroSection />
+    <div className="flex flex-col items-center bg-[#FFFDF9]/40 min-h-screen text-hive-text w-full pb-20">
+      
+      {/* ──────────────────────────────────────────────────
+          1. DYNAMIC PROMOTION BANNERS (MEESHO-STYLE HERO)
+          ────────────────────────────────────────────────── */}
+      <section className="w-full relative bg-slate-50 overflow-hidden min-h-[260px] md:min-h-[440px] flex items-center border-b border-hive-border/40">
+        {dbBanners === undefined ? (
+          // Loading skeleton state
+          <div className="absolute inset-0 bg-gradient-to-br from-hive-cream/40 to-slate-100 flex items-center justify-center animate-pulse">
+            <Sparkles className="w-8 h-8 text-hive-amber/30 animate-spin" />
+          </div>
+        ) : dbBanners.length === 0 ? (
+          // Fallback static premium banner
+          <div className="absolute inset-0 bg-gradient-to-r from-[#FFFBF0] via-white to-[#FFFBF0] flex items-center justify-center p-8">
+            <div className="max-w-xl text-center space-y-4">
+              <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-extrabold bg-hive-gold/20 text-hive-amber border border-hive-gold/30 tracking-widest uppercase">
+                Hyperlocal Marketplace
+              </span>
+              <h1 className="text-3xl md:text-5xl font-serif font-black text-hive-dark tracking-tight leading-tight">
+                Curated Boutique Fashion
+              </h1>
+              <p className="text-sm text-hive-text-muted leading-relaxed font-sans max-w-md mx-auto">
+                Discover Delhi-NCR's finest designer boutiques. Experience high-quality handlooms and customized pieces, delivered today.
+              </p>
+              <Button onClick={() => router.push("/products")} variant="primary" className="px-8 py-3.5 rounded-2xl font-bold uppercase tracking-wider text-xs">
+                Explore Catalog
+              </Button>
+            </div>
+          </div>
+        ) : (
+          // Real dynamic sliding carousel
+          <div className="w-full h-full absolute inset-0">
+            {dbBanners.map((banner, index) => {
+              const isActive = index === currentBannerIndex;
+              return (
+                <div
+                  key={banner._id}
+                  className={`absolute inset-0 w-full h-full transition-opacity duration-1000 flex items-center ${
+                    isActive ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                  }`}
+                >
+                  {/* Background image: desktop vs mobile */}
+                  <div className="absolute inset-0 block">
+                    <picture className="w-full h-full object-cover">
+                      <source media="(max-width: 768px)" srcSet={banner.mobileImageUrl} />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={banner.desktopImageUrl}
+                        alt={banner.title}
+                        className="w-full h-full object-cover object-center"
+                      />
+                    </picture>
+                    {/* Visual dark overlay for readability */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent md:from-black/45" />
+                  </div>
 
-      {/* Phase 4.2: Occasion Rail — navigates to /collections/[slug] */}
+                  {/* Foreground Content Card container */}
+                  <div className="max-w-7xl mx-auto w-full px-6 lg:px-8 relative z-20 flex justify-start">
+                    <div className="max-w-lg text-left text-white space-y-4 animate-[bannerFadeIn_0.8s_cubic-bezier(0.25,1,0.5,1)]">
+                      <h2 className="text-3xl md:text-5xl font-serif font-black tracking-tight drop-shadow leading-tight">
+                        {banner.title}
+                      </h2>
+                      <p className="text-sm md:text-base text-slate-100 drop-shadow-sm font-medium leading-relaxed max-w-md">
+                        {banner.subtitle}
+                      </p>
+                      <div className="pt-2">
+                        <Link
+                          href={banner.ctaLink}
+                          className="inline-flex items-center justify-center px-7 py-3.5 rounded-2xl text-xs font-bold uppercase tracking-widest text-hive-dark bg-hive-gold hover:bg-hive-amber shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                        >
+                          {banner.ctaText}
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Slider controls */}
+            {dbBanners.length > 1 && (
+              <>
+                <button
+                  onClick={handlePrevBanner}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/25 hover:bg-white/40 text-white flex items-center justify-center border border-white/20 backdrop-blur-sm z-30 transition-all active:scale-95"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleNextBanner}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/25 hover:bg-white/40 text-white flex items-center justify-center border border-white/20 backdrop-blur-sm z-30 transition-all active:scale-95"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+
+                {/* Indicators dots */}
+                <div className="absolute bottom-4 inset-x-0 flex justify-center gap-1.5 z-30">
+                  {dbBanners.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentBannerIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        idx === currentBannerIndex ? "w-6 bg-hive-gold" : "w-1.5 bg-white/50"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* ──────────────────────────────────────────────────
+          2. CATEGORIES DISCOVERY TRACK (MEESHO-STYLE VISUAL RAILS)
+          ────────────────────────────────────────────────── */}
+      <section className="w-full max-w-7xl mx-auto px-6 lg:px-8 py-10 flex flex-col gap-5">
+        <div className="flex flex-col text-left items-start gap-1">
+          <span className="text-[10px] font-bold text-hive-amber tracking-widest uppercase">
+            POPULAR CATEGORIES
+          </span>
+          <h2 className="text-xl md:text-2xl font-extrabold font-serif text-hive-dark">
+            Shop by Category
+          </h2>
+        </div>
+
+        {dbCategories === undefined ? (
+          // Loading placeholders
+          <div className="flex gap-6 overflow-x-auto py-2 [&::-webkit-scrollbar]:hidden">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="flex flex-col items-center gap-2.5 animate-pulse flex-shrink-0">
+                <div className="w-18 h-18 rounded-full bg-slate-100 border border-slate-200" />
+                <div className="h-3 w-12 bg-slate-100 rounded" />
+              </div>
+            ))}
+          </div>
+        ) : dbCategories.length === 0 ? (
+          <div className="text-left text-xs text-hive-text-muted font-bold py-4">No categories setup.</div>
+        ) : (
+          // Interactive category bubble rail
+          <div className="flex gap-5 md:gap-7 overflow-x-auto w-full py-2 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            
+            {/* Category Bubble: "All" */}
+            <button
+              onClick={() => setSelectedCategoryId("all")}
+              className="flex flex-col items-center gap-3.5 group cursor-pointer flex-shrink-0 select-none"
+            >
+              <div className={`w-18 h-18 md:w-20 md:h-20 rounded-full border flex items-center justify-center transition-all duration-300 relative shadow-sm ${
+                selectedCategoryId === "all"
+                  ? "bg-hive-dark border-hive-dark text-white scale-105 ring-2 ring-hive-gold/45"
+                  : "bg-white border-hive-border/60 hover:border-hive-gold hover:scale-102 text-hive-dark"
+              }`}>
+                <Sparkles className={`w-6 h-6 ${selectedCategoryId === "all" ? "text-hive-gold" : "text-hive-amber"}`} />
+              </div>
+              <span className={`text-[11px] font-bold tracking-wide transition-colors ${
+                selectedCategoryId === "all" ? "text-hive-amber font-extrabold" : "text-hive-text-muted group-hover:text-hive-dark"
+              }`}>
+                All Design
+              </span>
+            </button>
+
+            {/* Dyn Categories Bubbles */}
+            {dbCategories.map((cat) => {
+              const isSelected = selectedCategoryId === cat._id;
+              return (
+                <button
+                  key={cat._id}
+                  onClick={() => handleCategorySelect(cat._id)}
+                  className="flex flex-col items-center gap-3.5 group cursor-pointer flex-shrink-0 select-none"
+                >
+                  <div className={`w-18 h-18 md:w-20 md:h-20 rounded-full border overflow-hidden transition-all duration-300 relative shadow-sm ${
+                    isSelected
+                      ? "border-hive-gold ring-2 ring-hive-gold/45 scale-105"
+                      : "border-hive-border/60 group-hover:border-hive-gold hover:scale-102"
+                  }`}>
+                    {cat.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={cat.imageUrl}
+                        alt={cat.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-100 flex items-center justify-center font-bold text-[9px]">
+                        👗
+                      </div>
+                    )}
+                    {/* Checked overlay if selected */}
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center">
+                        <Check className="w-5 h-5 text-white stroke-[3.5]" />
+                      </div>
+                    )}
+                  </div>
+                  <span className={`text-[11px] font-bold tracking-wide transition-colors ${
+                    isSelected ? "text-hive-amber font-extrabold" : "text-hive-text-muted group-hover:text-hive-dark"
+                  }`}>
+                    {cat.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* ──────────────────────────────────────────────────
+          3. DYNAMIC OCCASION RAIL (VIBE SELECTION)
+          ────────────────────────────────────────────────── */}
       <OccasionRail
         selectedOccasion={selectedOccasion}
         onOccasionChange={handleOccasionChange}
       />
 
-      {/* Phase 4.4: Dynamic Product Grid */}
+      {/* ──────────────────────────────────────────────────
+          4. DYNAMIC PRODUCTS GRID FEED (NO MOCK DATA)
+          ────────────────────────────────────────────────── */}
       <ProductGrid
-        products={mockProducts}
-        selectedOccasion={selectedOccasion}
-        onResetFilter={() => setSelectedOccasion("all")}
+        products={filteredProducts}
+        selectedOccasion="all" // already filtered on page level to respect dual filter
+        onResetFilter={() => {
+          setSelectedOccasion("all");
+          setSelectedCategoryId("all");
+        }}
+        isLoading={dbProducts === undefined}
         viewAllHref="/products"
       />
 
-      {/* Phase 4.5: Boutique Spotlight */}
-      <BoutiqueSpotlight />
+      {/* ──────────────────────────────────────────────────
+          5. BOUTIQUE SPOTLIGHT (DESIGNERS NEAR YOU)
+          ────────────────────────────────────────────────── */}
+      <BoutiqueSpotlight
+        boutiques={mappedBoutiques}
+        isLoading={dbBoutiques === undefined}
+      />
 
-      {/* Phase 4.6: Trust Strip Assurances */}
+      {/* ──────────────────────────────────────────────────
+          6. TRUST STRIP ASSURANCES
+          ────────────────────────────────────────────────── */}
       <TrustStrip />
 
-      {/* Phase 4.7: Expansion CTA Waitlist */}
+      {/* ──────────────────────────────────────────────────
+          7. EXPANSION CTA WAITLIST
+          ────────────────────────────────────────────────── */}
       <ExpansionCTA />
 
-      {/* Shell Inner Container - Testing Controls */}
+      {/* Interactive Testing Control Panel */}
       <div className="max-w-7xl w-full mx-auto px-6 lg:px-8 py-12 flex flex-col gap-8">
-        
-        {/* Live Interaction Playground */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-          {/* Card: State Management Validation */}
           <Card>
             <CardHeader>
               <CardTitle className="font-serif flex items-center gap-2 text-left">
-                <Sparkles className="w-5 h-5 text-hive-gold" /> Shell Triggers
+                <Sparkles className="w-5 h-5 text-hive-gold" /> Convex Reactive Status
               </CardTitle>
               <CardDescription className="text-left">
-                Validate reactive changes across context boundaries
+                Validate realtime updates across network and clerk boundaries
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4 text-left">
-              {/* Cart action trigger */}
               <div className="flex items-center justify-between border-b border-hive-border/40 pb-4">
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Shopping Cart Store</span>
-                  <span className="text-xs text-hive-text-muted">Adds mock products to client bag</span>
+                  <span className="text-sm font-semibold">Live Cart items</span>
+                  <span className="text-xs text-hive-text-muted">Total bag count synced to Context</span>
                 </div>
                 <Button variant="primary" size="sm" onClick={() => addToCart(1)} className="flex items-center gap-1">
-                  <Plus className="w-3.5 h-3.5" /> Add Item
+                  <Plus className="w-3.5 h-3.5" /> Add Mock
                 </Button>
               </div>
 
-              {/* Location action trigger */}
               <div className="flex items-center justify-between pt-2">
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Location Gate Checker</span>
-                  <span className="text-xs text-hive-text-muted">Displays pincode entry prompt</span>
+                  <span className="text-sm font-semibold">Serviceability Check</span>
+                  <span className="text-xs text-hive-text-muted">Currently serviced zones locator</span>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setGateOpen(true)} className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-hive-gold" /> Change Loc
+                  <MapPin className="w-3.5 h-3.5 text-hive-gold" /> Check Loc
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Card: Current Shell States */}
           <div className="flex flex-col gap-6">
-            
-            {/* Location Status Card */}
             <Card className="flex-1">
               <CardContent className="p-6 flex flex-col justify-between h-full gap-4 text-left">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-semibold uppercase tracking-wider text-hive-text-muted">
-                    Location Status
+                    Location status
                   </span>
                   <MapPin className="w-5 h-5 text-hive-gold" />
                 </div>
@@ -134,12 +479,11 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            {/* Cart Status Card */}
             <Card className="flex-1">
               <CardContent className="p-6 flex flex-col justify-between h-full gap-4 text-left">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-semibold uppercase tracking-wider text-hive-text-muted">
-                    Cart Status
+                    Cart Count
                   </span>
                   <ShoppingCart className="w-5 h-5 text-hive-gold" />
                 </div>
@@ -147,37 +491,25 @@ export default function HomePage() {
                   <span className="text-2xl font-extrabold">
                     {itemsCount} {itemsCount === 1 ? "Item" : "Items"}
                   </span>
-                  <span className="text-xs text-hive-text-muted">
-                    Tracks items count across router transitions
-                  </span>
                 </div>
               </CardContent>
             </Card>
-
-            {/* Occasion Status Card */}
-            <Card className="flex-1">
-              <CardContent className="p-6 flex flex-col justify-between h-full gap-4 text-left">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-hive-text-muted">
-                    Selected Occasion
-                  </span>
-                  <Sparkles className="w-5 h-5 text-hive-gold" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-2xl font-extrabold capitalize">
-                    {selectedOccasion}
-                  </span>
-                  <span className="text-xs text-hive-text-muted">
-                    Reactive filter state managed by home page
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
           </div>
         </section>
-
       </div>
+
+      <style>{`
+        @keyframes bannerFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

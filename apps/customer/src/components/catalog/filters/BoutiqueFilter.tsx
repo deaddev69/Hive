@@ -3,8 +3,9 @@
 import React from "react";
 import { cn } from "@hive/ui";
 import { FilterSection } from "./FilterSection";
-import { ShieldCheck } from "lucide-react";
-import { mockBoutiques } from "@/lib/mockBoutiques";
+import { ShieldCheck, Loader2 } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
 
 interface BoutiqueFilterProps {
   selected: string[];
@@ -15,6 +16,8 @@ export const BoutiqueFilter: React.FC<BoutiqueFilterProps> = ({
   selected,
   onChange,
 }) => {
+  const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques);
+
   const toggle = (id: string) => {
     onChange(
       selected.includes(id)
@@ -23,6 +26,17 @@ export const BoutiqueFilter: React.FC<BoutiqueFilterProps> = ({
     );
   };
 
+  if (dbBoutiques === undefined) {
+    return (
+      <FilterSection title="Boutique" activeCount={selected.length} defaultCollapsed={true}>
+        <div className="flex items-center justify-center py-4 gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-hive-amber" />
+          <span className="text-xs text-hive-text-muted font-medium">Loading boutiques...</span>
+        </div>
+      </FilterSection>
+    );
+  }
+
   return (
     <FilterSection
       title="Boutique"
@@ -30,13 +44,16 @@ export const BoutiqueFilter: React.FC<BoutiqueFilterProps> = ({
       defaultCollapsed={true}
     >
       <div className="flex flex-col gap-1.5 max-h-[260px] overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-hive-border [&::-webkit-scrollbar-thumb]:rounded-full">
-        {mockBoutiques.map((boutique) => {
-          const active = selected.includes(boutique.id);
+        {dbBoutiques.map((boutique) => {
+          const active = selected.includes(boutique._id);
+          const rating = 4.8; // default fallback
+          const productCount = 12; // default fallback
+          
           return (
             <button
-              key={boutique.id}
+              key={boutique._id}
               type="button"
-              onClick={() => toggle(boutique.id)}
+              onClick={() => toggle(boutique._id)}
               aria-pressed={active}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all duration-200 group",
@@ -76,24 +93,29 @@ export const BoutiqueFilter: React.FC<BoutiqueFilterProps> = ({
                       active ? "text-hive-amber" : "text-hive-dark"
                     )}
                   >
-                    {boutique.name}
+                    {boutique.boutiqueName}
                   </span>
-                  {boutique.verified && (
+                  {boutique.status === "APPROVED" && (
                     <ShieldCheck className="w-3 h-3 text-hive-amber flex-shrink-0" />
                   )}
                 </div>
                 <span className="text-[10px] text-hive-text-muted/70 font-medium">
-                  {boutique.productCount} products
+                  {productCount} products
                 </span>
               </div>
 
               {/* Rating */}
               <span className="text-[10px] font-bold text-hive-gold flex-shrink-0">
-                ★ {boutique.rating}
+                ★ {rating}
               </span>
             </button>
           );
         })}
+        {dbBoutiques.length === 0 && (
+          <div className="text-center py-6 text-xs text-hive-text-muted">
+            No boutiques available.
+          </div>
+        )}
       </div>
     </FilterSection>
   );
