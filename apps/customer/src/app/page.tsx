@@ -5,13 +5,11 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useLocation } from "@/context/LocationContext";
-import { useCart } from "@/context/CartContext";
-import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
-import { MapPin, Sparkles, Plus, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@hive/ui";
+import { Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { BoutiqueSpotlight } from "@/components/boutique/BoutiqueSpotlight";
 import { TrustStrip } from "@/components/trust/TrustStrip";
-import { ExpansionCTA } from "@/components/expansion/ExpansionCTA";
 import Image from "next/image";
 import Link from "next/link";
 import { ProductCardData } from "@/lib/mockProducts";
@@ -97,8 +95,7 @@ function mapDbBoutique(b: any, products: any[] = []): Boutique {
 }
 
 export default function HomePage() {
-  const { pincode, regionName, latitude, longitude, setGateOpen } = useLocation();
-  const { addToCart, itemsCount } = useCart();
+  const { latitude, longitude } = useLocation();
   const router = useRouter();
 
   // Fetch from Convex
@@ -357,92 +354,6 @@ export default function HomePage() {
           ────────────────────────────────────────────────── */}
       <TrustStrip />
 
-      {/* ──────────────────────────────────────────────────
-          7. EXPANSION CTA WAITLIST
-          ────────────────────────────────────────────────── */}
-      <ExpansionCTA />
-
-      {/* Interactive Testing Control Panel */}
-      <div className="max-w-7xl w-full mx-auto px-6 lg:px-8 py-12 flex flex-col gap-8">
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-serif flex items-center gap-2 text-left">
-                <Sparkles className="w-5 h-5 text-hive-gold" /> Convex Reactive Status
-              </CardTitle>
-              <CardDescription className="text-left">
-                Validate realtime updates across network and clerk boundaries
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4 text-left">
-              <div className="flex items-center justify-between border-b border-hive-border/40 pb-4">
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Live Cart items</span>
-                  <span className="text-xs text-hive-text-muted">Total bag count synced to Context</span>
-                </div>
-                <Button variant="primary" size="sm" onClick={() => addToCart(1)} className="flex items-center gap-1">
-                  <Plus className="w-3.5 h-3.5" /> Add Mock
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Location Picker</span>
-                  <span className="text-xs text-hive-text-muted">Select user location</span>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setGateOpen(true)} className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-hive-gold" /> Check Loc
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex flex-col gap-6">
-            <Card className="flex-1">
-              <CardContent className="p-6 flex flex-col justify-between h-full gap-4 text-left">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-hive-text-muted">
-                    Location status
-                  </span>
-                  <MapPin className="w-5 h-5 text-hive-gold" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-2xl font-extrabold">
-                    {pincode ? pincode : "No Location Set"}
-                  </span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    {pincode ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
-                        {regionName}
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-hive-text-muted font-bold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
-                        Pending selection
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="flex-1">
-              <CardContent className="p-6 flex flex-col justify-between h-full gap-4 text-left">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-hive-text-muted">
-                    Cart Count
-                  </span>
-                  <ShoppingCart className="w-5 h-5 text-hive-gold" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-2xl font-extrabold">
-                    {itemsCount} {itemsCount === 1 ? "Item" : "Items"}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-      </div>
 
       <style>{`
         @keyframes bannerFadeIn {
