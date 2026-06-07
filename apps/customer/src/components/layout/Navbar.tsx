@@ -40,7 +40,7 @@ export const Navbar: React.FC = () => {
           className="flex items-center gap-2 hover:opacity-80 active:scale-[0.97] transition-all duration-200 cursor-pointer"
         >
           <Image
-            src="/logo.jpg"
+            src="/logo.png"
             alt="Hive"
             width={180}
             height={75}
