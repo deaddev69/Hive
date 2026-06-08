@@ -31,8 +31,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <nav className="sticky top-0 z-40 w-full bg-white/80 dark:bg-hive-dark/80 backdrop-blur-md border-b border-hive-border/60">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-16 flex items-center ...">
         {/* Brand / Logo — navigates to Home from anywhere */}
         <Link
           href="/"
@@ -45,7 +44,7 @@ export const Navbar: React.FC = () => {
             width={180}
             height={75}
             priority
-            className="h-14 w-auto object-contain"
+            className="h-14 sm:h-12 w-auto object-contain"
           />
         </Link>
 
