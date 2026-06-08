@@ -15,6 +15,7 @@ build/
 .env.local
 .env.*.local
 .env.production
+.env.example
 
 # Convex generated files
 convex/_generated/
@@ -43,3 +44,10 @@ coverage/
 # Misc
 *.tsbuildinfo
 next-env.d.ts
+
+AGENTS.md
+CLAUDE.md
+HIVE_BACKEND_SPEC.md
+HIVE_CONVEX_DATA_MODEL.md
+HIVE_PRD_V2.2.md
+HIVE_SYSTEM_ARCHITECTURE.md
