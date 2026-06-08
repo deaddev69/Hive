@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
@@ -180,6 +180,20 @@ function OrderDetailDrawer({
     api.adminOrders.getOrderDetails,
     orderId ? { orderId } : "skip"
   );
+  const updateStatus = useMutation(api.adminOrders.updateOrderStatus);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!orderId || !order) return;
+    setUpdatingStatus(true);
+    try {
+      await updateStatus({ orderId, status: newStatus as any });
+    } catch (err: any) {
+      alert("Failed to update status: " + err.message);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   if (!orderId) return null;
 
@@ -220,7 +234,22 @@ function OrderDetailDrawer({
           <div className="flex-1 flex flex-col gap-6 p-6">
             {/* Status Row */}
             <div className="flex items-center gap-3 flex-wrap">
-              <StatusBadge status={order.status} />
+              {/* Inline status updater */}
+              <select
+                value={order.status}
+                disabled={updatingStatus}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                className="px-3 py-1.5 rounded-xl text-[10px] font-bold border border-hive-border bg-white focus:outline-none focus:ring-1 focus:ring-hive-gold cursor-pointer disabled:opacity-60 uppercase tracking-wide"
+              >
+                {[
+                  "pending_payment", "pending_confirmation", "confirmed",
+                  "packed", "pickup_scheduled", "picked_up",
+                  "in_transit", "out_for_delivery", "delivered", "cancelled",
+                ].map((s) => (
+                  <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
+                ))}
+              </select>
+              {updatingStatus && <Loader2 className="w-3.5 h-3.5 animate-spin text-hive-amber" />}
               <PaymentBadge status={order.paymentStatus} />
               <span className="text-[10px] text-hive-text-muted font-medium ml-auto">
                 {new Date(order.createdAt).toLocaleString("en-IN", {

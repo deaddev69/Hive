@@ -72,14 +72,33 @@ export default function OrderDetailPage() {
     );
   }
 
-  // Map Convex status to UI status
+  // Map every Convex status value → one of the 6 UI timeline steps.
+  // Any unmapped status falls back to "placed" (step 1).
   const mapStatus = (s: string): string => {
     const m: Record<string, string> = {
-      pending_payment: "placed", pending_confirmation: "placed",
-      confirmed: "confirmed", pickup_scheduled: "confirmed",
-      picked_up: "picked_up", in_transit: "picked_up",
-      out_for_delivery: "out_for_delivery",
-      delivered: "delivered", cancelled: "cancelled",
+      // Step 1 — Order Placed
+      pending_payment:           "placed",
+      pending_confirmation:      "placed",
+      // Step 2 — Boutique Preparing (confirmed / packed)
+      confirmed:                 "confirmed",
+      packed:                    "confirmed",
+      // Step 3 — Picked Up (en route to customer)
+      pickup_scheduled:          "picked_up",
+      picked_up:                 "picked_up",
+      in_transit:                "picked_up",
+      // Step 4 — Out For Delivery
+      out_for_delivery:          "out_for_delivery",
+      // Step 5 — Delivered (and all post-delivery states)
+      delivered:                 "delivered",
+      claim_submitted:           "delivered",
+      replacement_requested:     "delivered",
+      replacement_approved:      "delivered",
+      replacement_dispatched:    "delivered",
+      replacement_delivered:     "delivered",
+      refund_requested:          "delivered",
+      refunded:                  "delivered",
+      // Cancelled
+      cancelled:                 "cancelled",
     };
     return m[s] ?? "placed";
   };

@@ -1,8 +1,8 @@
 // convex/adminOrders.ts
-// Admin-only order queries for the HIVE Admin panel.
+// Admin-only order queries and mutations for the HIVE Admin panel.
 // All functions require the "admin" role.
 
-import { query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 
@@ -267,5 +267,60 @@ export const getOrderDetails = query({
       items: enrichedItems,
       timeline,
     };
+  },
+});
+
+/**
+ * Admin: Update the status of any order.
+ * Also stamps confirmedAt / deliveredAt / cancelledAt timestamps
+ * so the customer timeline renders accurate dates.
+ */
+export const updateOrderStatus = mutation({
+  args: {
+    orderId: v.id("orders"),
+    status: v.union(
+      v.literal("pending_payment"),
+      v.literal("pending_confirmation"),
+      v.literal("confirmed"),
+      v.literal("packed"),
+      v.literal("pickup_scheduled"),
+      v.literal("picked_up"),
+      v.literal("in_transit"),
+      v.literal("out_for_delivery"),
+      v.literal("delivered"),
+      v.literal("cancelled"),
+      v.literal("claim_submitted"),
+      v.literal("replacement_requested"),
+      v.literal("replacement_approved"),
+      v.literal("replacement_dispatched"),
+      v.literal("replacement_delivered"),
+      v.literal("refund_requested"),
+      v.literal("refunded")
+    ),
+  },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+
+    const order = await ctx.db.get(args.orderId);
+    if (!order) throw new Error("Order not found.");
+
+    const now = Date.now();
+    const patch: Record<string, any> = {
+      status: args.status,
+      updatedAt: now,
+    };
+
+    if (args.status === "confirmed" && !order.confirmedAt) {
+      patch.confirmedAt = now;
+    }
+    if (args.status === "delivered" && !order.deliveredAt) {
+      patch.deliveredAt = now;
+    }
+    if (args.status === "cancelled" && !order.cancelledAt) {
+      patch.cancelledAt = now;
+    }
+
+    await ctx.db.patch(args.orderId, patch);
+    return args.orderId;
   },
 });

@@ -38,18 +38,26 @@ export default function MyOrdersPage() {
   // Sort: newest first (already ordered by Convex desc, but defensive)
   const sortedOrders = [...convexOrders].sort((a, b) => b.createdAt - a.createdAt);
 
-  // Map Convex status to UI status values
+  // Map every Convex status value → one of the 6 UI badge states.
   const mapStatus = (s: string): string => {
     const map: Record<string, string> = {
-      pending_payment:         "placed",
-      pending_confirmation:    "placed",
-      confirmed:               "confirmed",
-      pickup_scheduled:        "confirmed",
-      picked_up:               "picked_up",
-      in_transit:              "picked_up",
-      out_for_delivery:        "out_for_delivery",
-      delivered:               "delivered",
-      cancelled:               "cancelled",
+      pending_payment:        "placed",
+      pending_confirmation:   "placed",
+      confirmed:              "confirmed",
+      packed:                 "confirmed",   // ← packed = boutique still preparing
+      pickup_scheduled:       "picked_up",
+      picked_up:              "picked_up",
+      in_transit:             "picked_up",
+      out_for_delivery:       "out_for_delivery",
+      delivered:              "delivered",
+      claim_submitted:        "delivered",
+      replacement_requested:  "delivered",
+      replacement_approved:   "delivered",
+      replacement_dispatched: "delivered",
+      replacement_delivered:  "delivered",
+      refund_requested:       "delivered",
+      refunded:               "delivered",
+      cancelled:              "cancelled",
     };
     return map[s] ?? "placed";
   };
