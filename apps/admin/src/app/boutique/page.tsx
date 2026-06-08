@@ -117,7 +117,7 @@ export default function BoutiqueDashboard() {
                             ))}
                           </div>
                         </td>
-                        <td className="px-5 py-4 font-bold">₹{(order.total / 100).toLocaleString("en-IN")}</td>
+                        <td className="px-5 py-4 font-bold">₹{order.total.toLocaleString("en-IN")}</td>
                         <td className="px-5 py-4">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
                             order.status === "delivered" ? "bg-green-50 text-green-700 border border-green-200" :

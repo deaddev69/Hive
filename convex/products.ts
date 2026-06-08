@@ -389,11 +389,11 @@ export const getDashboardMetrics = query({
 
     const completedOrders = orders.filter(o => o.status === "delivered").length;
 
-    // Sum revenue from delivered orders (in paise, convert to rupees for display)
+    // Sum revenue from delivered orders (stored in rupees)
     const rawRevenue = orders
       .filter(o => o.status === "delivered" || o.paymentStatus === "paid")
       .reduce((sum, o) => sum + (o.total || 0), 0);
-    const revenue = rawRevenue / 100;
+    const revenue = rawRevenue;
 
     // Get recent 5 orders enriched with details
     const recentOrdersRaw = [...orders]
