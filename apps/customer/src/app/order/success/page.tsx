@@ -21,6 +21,7 @@ import { useOrderStore } from "@/store/order-store";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
+import { useAuth } from "@clerk/nextjs";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Redesigned Success Page Route Implementation
@@ -33,11 +34,38 @@ function OrderSuccessContent() {
   const [showDetails, setShowDetails] = useState(false);
 
   const latestOrder = useOrderStore((state) => state.latestOrder);
+  const { getToken } = useAuth();
 
   const queriedOrder = useQuery(
     api.orders.getOrderByNumber,
     orderIdParam ? { orderNumber: orderIdParam } : "skip"
   );
+
+  // ── Auto-generate invoice PDF (fire-and-forget) ─────────────────────────
+  // Runs once when the Convex order ID becomes available.
+  // The PDF is generated server-side in /api/invoices/generate and stored
+  // in Convex storage so Admin/Boutique panels can access it immediately.
+  useEffect(() => {
+    if (!queriedOrder?._id) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken({ template: "convex" });
+        if (!token || cancelled) return;
+
+        await fetch("/api/invoices/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: queriedOrder._id, token }),
+        });
+      } catch {
+        // Silent fail — customer can still download later
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [queriedOrder?._id]);
 
   useEffect(() => {
     setMounted(true);
@@ -473,7 +501,6 @@ function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
 
   const downloading = resolvedOrder?.convexId ? isDownloading(resolvedOrder.convexId) : false;
 
-  console.log("RESOLVED ORDER", resolvedOrder);
   return (
     <div className="w-full space-y-3">
       <button

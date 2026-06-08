@@ -1,76 +1,58 @@
-import { useConvex, useMutation } from "convex/react";
+/**
+ * useInvoiceDownload
+ *
+ * Simplified hook — PDF generation has been moved to the server-side
+ * API route /api/invoices/generate which runs automatically on order confirmation.
+ *
+ * This hook now only opens/downloads the pre-generated PDF.
+ * If pdfUrl is not yet available (generation still in progress), it shows
+ * a clear user message instead of silently failing or re-generating.
+ */
+import { useConvex } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { generateInvoicePdf } from "@/lib/pdfGenerator";
 import { useState } from "react";
 
 export function useInvoiceDownload() {
   const convex = useConvex();
-  const generateUploadUrl = useMutation(api.invoices.generateUploadUrl);
-  const updateInvoicePdfUrl = useMutation(api.invoices.updateInvoicePdfUrl);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  /**
+   * Open the pre-generated invoice PDF for a given invoice object.
+   * If pdfUrl is missing (rare race condition right after order placement),
+   * inform the user to try again in a moment.
+   */
   const downloadInvoiceData = async (invoice: any) => {
     if (!invoice) return;
 
-    console.log("[INVOICE_DEBUG] Download Triggered", {
-      orderDocumentId: invoice.orderId,
-      displayOrderNumber: invoice.orderNumber,
-      invoiceId: invoice._id,
-      invoiceNumber: invoice.invoiceNumber,
-    });
-    
-    // If PDF has already been generated and uploaded, open it in a new window/tab
     if (invoice.pdfUrl) {
+      // PDF already generated — open it directly
       window.open(invoice.pdfUrl, "_blank");
       return;
     }
 
-    // Generate PDF blob client-side
-    const blob = await generateInvoicePdf(invoice);
-
-    // Trigger instant native file download
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${invoice.invoiceNumber}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    // Upload PDF to Convex storage in the background for permanent persistence
-    try {
-      const uploadUrl = await generateUploadUrl();
-      const response = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/pdf" },
-        body: blob,
-      });
-
-      if (response.ok) {
-        const { storageId } = await response.json();
-        await updateInvoicePdfUrl({
-          invoiceId: invoice._id,
-          storageId,
-        });
-      }
-    } catch (e) {
-      console.warn("Failed background invoice PDF upload:", e);
-    }
+    // pdfUrl not yet set — generation is in progress (triggered by order success page)
+    alert(
+      "Your invoice is being prepared. Please try again in a few seconds."
+    );
   };
 
+  /**
+   * Look up an invoice by Convex order ID and open its PDF.
+   */
   const downloadInvoiceByOrderId = async (orderId: string) => {
     setDownloadingId(orderId);
     try {
-      const invoice = await convex.query(api.invoices.getInvoiceByOrderId, { orderId: orderId as any });
+      const invoice = await convex.query(api.invoices.getInvoiceByOrderId, {
+        orderId: orderId as any,
+      });
       if (!invoice) {
         alert("No invoice available for this order.");
         return;
       }
       await downloadInvoiceData(invoice);
     } catch (err) {
-      console.error("Failed to download invoice:", err);
-      alert("Failed to load invoice information.");
+      console.error("Failed to load invoice:", err);
+      alert("Failed to load invoice. Please try again.");
     } finally {
       setDownloadingId(null);
     }
