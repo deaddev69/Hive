@@ -23,13 +23,11 @@ export default function AdminBoutiquesPage() {
   const boutiques = useQuery(api.boutiques.getBoutiques);
   
   const createBoutique = useMutation(api.boutiques.createBoutique);
-  const updateBoutique = useMutation(api.boutiques.updateBoutique);
   const approveBoutique = useMutation(api.boutiques.approveBoutique);
   const rejectBoutique = useMutation(api.boutiques.rejectBoutique);
   const suspendBoutique = useMutation(api.boutiques.suspendBoutique);
 
   // Form State
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [boutiqueName, setBoutiqueName] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [email, setEmail] = useState("");
@@ -47,22 +45,7 @@ export default function AdminBoutiquesPage() {
   // Search filter for boutique list
   const [searchTerm, setSearchTerm] = useState("");
 
-  const handleEdit = (boutique: any) => {
-    setEditingId(boutique._id);
-    setBoutiqueName(boutique.boutiqueName);
-    setOwnerName(boutique.ownerName);
-    setEmail(boutique.email);
-    setPhone(boutique.phone);
-    setAddress(boutique.address);
-    setLatitude(boutique.latitude);
-    setLongitude(boutique.longitude);
-    setDeliveryRadiusKm(boutique.deliveryRadiusKm);
-    setDescription(boutique.description);
-    setStatus(boutique.status);
-  };
-
   const resetForm = () => {
-    setEditingId(null);
     setBoutiqueName("");
     setOwnerName("");
     setEmail("");
@@ -91,36 +74,19 @@ export default function AdminBoutiquesPage() {
 
     setSubmitting(true);
     try {
-      if (editingId) {
-        await updateBoutique({
-          id: editingId as any,
-          boutiqueName,
-          ownerName,
-          email,
-          phone,
-          address,
-          latitude,
-          longitude,
-          deliveryRadiusKm,
-          description,
-          status,
-        });
-        alert("Boutique profile updated successfully!");
-      } else {
-        await createBoutique({
-          boutiqueName,
-          ownerName,
-          email,
-          phone,
-          address,
-          latitude,
-          longitude,
-          deliveryRadiusKm,
-          description,
-          status,
-        });
-        alert("Boutique created and registered successfully!");
-      }
+      await createBoutique({
+        boutiqueName,
+        ownerName,
+        email,
+        phone,
+        address,
+        latitude,
+        longitude,
+        deliveryRadiusKm,
+        description,
+        status,
+      });
+      alert("Boutique created and registered successfully!");
       resetForm();
     } catch (err: any) {
       alert("Failed to save boutique profile: " + err.message);
@@ -178,7 +144,7 @@ export default function AdminBoutiquesPage() {
         {/* Left Side: Form and Map Picker */}
         <form onSubmit={handleSubmit} className="lg:col-span-5 bg-white border border-hive-border rounded-3xl p-6 shadow-sm flex flex-col gap-5">
           <h2 className="text-lg font-serif font-bold text-hive-dark pb-2 border-b border-hive-border/60">
-            {editingId ? "Edit Boutique Registration" : "Register New Boutique"}
+            Register New Boutique
           </h2>
 
           <div className="flex flex-col gap-1.5">
@@ -307,17 +273,10 @@ export default function AdminBoutiquesPage() {
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" /> Saving...
                 </>
-              ) : editingId ? (
-                "Update Boutique"
               ) : (
                 "Register Boutique"
               )}
             </Button>
-            {editingId && (
-              <Button type="button" variant="outline" onClick={resetForm}>
-                Cancel
-              </Button>
-            )}
           </div>
         </form>
 
@@ -409,14 +368,15 @@ export default function AdminBoutiquesPage() {
 
                       {/* Action buttons */}
                       <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(boutique)}
-                          className="flex items-center gap-1 hover:bg-slate-100 text-xs py-2 px-3 rounded-xl"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" /> Edit Profile
-                        </Button>
+                        <Link href={`/admin/boutiques/${boutique._id}`}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex items-center gap-1 hover:bg-slate-100 text-xs py-2 px-3 rounded-xl"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" /> Edit Profile
+                          </Button>
+                        </Link>
 
                         <div className="flex items-center gap-2">
                           {!isApproved && (
