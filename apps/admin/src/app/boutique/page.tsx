@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { StatCard, Card, CardContent, Badge } from "@hive/ui";
+import { StatCard, Card, CardContent, Badge, cn } from "@hive/ui";
 import { Shirt, ClipboardList, TrendingUp, CheckCircle, Package, Loader2, ShieldX } from "lucide-react";
 
 export default function BoutiqueDashboard() {
@@ -55,18 +55,29 @@ export default function BoutiqueDashboard() {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-        {stats.map((stat) => {
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5">
+        {stats.map((stat, index) => {
           const Icon = stat.icon;
+          const isRevenue = index === 4;
           return (
-            <Card key={stat.label} className="border border-hive-border bg-white shadow-sm overflow-hidden p-5 flex flex-col justify-between min-h-[110px]">
-              <div className="flex justify-between items-start">
-                <span className="text-xs font-bold text-hive-text-muted uppercase tracking-wider">{stat.label}</span>
-                <div className={`p-2 rounded-xl border ${stat.color}`}>
-                  <Icon className="w-4 h-4" />
+            <Card
+              key={stat.label}
+              className={cn(
+                "border border-hive-border bg-white shadow-sm overflow-hidden p-4 sm:p-5 flex flex-col justify-between min-h-[100px] sm:min-h-[110px]",
+                isRevenue ? "col-span-2 md:col-span-1 lg:col-span-1" : ""
+              )}
+            >
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-[10px] sm:text-xs font-bold text-hive-text-muted uppercase tracking-wider leading-tight">
+                  {stat.label}
+                </span>
+                <div className={`p-1.5 sm:p-2 rounded-xl border shrink-0 ${stat.color}`}>
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
               </div>
-              <span className="text-2xl font-extrabold text-hive-dark tracking-tight mt-3">{stat.value}</span>
+              <span className="text-xl sm:text-2xl font-extrabold text-hive-dark tracking-tight mt-2 sm:mt-3">
+                {stat.value}
+              </span>
             </Card>
           );
         })}
