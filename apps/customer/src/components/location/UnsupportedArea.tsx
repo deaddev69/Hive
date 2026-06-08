@@ -5,12 +5,14 @@ import { Modal, Button } from "@hive/ui";
 import { useLocation } from "@/context/LocationContext";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { MapPinOff, ArrowRight } from "lucide-react";
+import { MapPinOff } from "lucide-react";
 import { calculateDistanceKm } from "@/lib/distance";
+import { useRouter } from "next/navigation";
 
 export const UnsupportedArea: React.FC = () => {
-  const { city, latitude, longitude, setGateOpen } = useLocation();
+  const { city, latitude, longitude, setGateOpen, browseAllProducts, setBrowseAllProducts } = useLocation();
   const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques) ?? [];
+  const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
 
@@ -31,14 +33,31 @@ export const UnsupportedArea: React.FC = () => {
   const serviceable = isAddressServiceable();
 
   useEffect(() => {
+    // Never reopen the modal once the user has chosen to browse anyway
+    if (browseAllProducts) {
+      setIsOpen(false);
+      return;
+    }
     if (city && !serviceable) {
       setIsOpen(true);
     } else {
       setIsOpen(false);
     }
-  }, [serviceable, city]);
+  }, [serviceable, city, browseAllProducts]);
 
-  if (!city || serviceable) return null;
+  // Do not render anything if: no city, location is serviceable, or user chose browse-all
+  if (!city || serviceable || browseAllProducts) return null;
+
+  const handleBrowseAnyway = () => {
+    // 1. Persist the bypass flag so the modal won't reopen and the products page
+    //    can read it from context (in addition to the URL param)
+    setBrowseAllProducts(true);
+    // 2. Close the modal immediately
+    setIsOpen(false);
+    // 3. Navigate to the all-products page with the browse=all param so that
+    //    the backend query skips delivery-radius filtering
+    router.push("/products?browse=all");
+  };
 
   return (
     <Modal
@@ -75,11 +94,10 @@ export const UnsupportedArea: React.FC = () => {
 
           <Button
             variant="outline"
-            onClick={() => setIsOpen(false)}
+            onClick={handleBrowseAnyway}
             className="w-full flex items-center justify-center gap-1.5 font-extrabold uppercase tracking-wider text-xs py-3"
           >
-            Browse Products anyway
-            <ArrowRight className="w-4 h-4" />
+            Browse Products Anyway
           </Button>
         </div>
       </div>

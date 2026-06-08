@@ -16,11 +16,14 @@ export interface LocationState {
   country: string | null;
   postcode: string | null;
   isDrawerOpen: boolean;
+  /** When true, delivery-radius filtering is bypassed and ALL products are shown. */
+  browseAllProducts: boolean;
 }
 
 export interface LocationContextType extends LocationState {
   setGateOpen: (open: boolean) => void;
   setDrawerOpen: (open: boolean) => void;
+  setBrowseAllProducts: (v: boolean) => void;
   updateLocationDetails: (data: {
     latitude: number;
     longitude: number;
@@ -51,6 +54,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     country: null,
     postcode: null,
     isDrawerOpen: false,
+    browseAllProducts: false,
   });
 
   const [hasLoadedInit, setHasLoadedInit] = useState(false);
@@ -58,6 +62,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // 1. Load from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem("hive_location");
+    const browseAll = localStorage.getItem("hive_browse_all") === "true";
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -72,6 +77,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           stateName: parsed.state || parsed.stateName || null,
           country: parsed.country || null,
           postcode: parsed.postcode || parsed.pincode || null,
+          browseAllProducts: browseAll,
         }));
         setHasLoadedInit(true);
       } catch (e) {
@@ -79,6 +85,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setHasLoadedInit(true);
       }
     } else {
+      setState((prev) => ({ ...prev, browseAllProducts: browseAll }));
       setHasLoadedInit(true);
     }
   }, []);
@@ -138,6 +145,11 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setState((prev) => ({ ...prev, isDrawerOpen: open }));
   };
 
+  const setBrowseAllProducts = (v: boolean) => {
+    localStorage.setItem("hive_browse_all", v ? "true" : "false");
+    setState((prev) => ({ ...prev, browseAllProducts: v }));
+  };
+
   const updateLocationDetails = async (data: {
     latitude: number;
     longitude: number;
@@ -163,6 +175,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem("hive_customer_pincode", data.postcode);
     localStorage.setItem("hive_customer_region", regionName);
 
+    // Reset browse-all mode when the user explicitly sets a new delivery location
+    localStorage.setItem("hive_browse_all", "false");
     setState((prev) => ({
       ...prev,
       pincode: data.postcode,
@@ -174,6 +188,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       stateName: data.state,
       country: data.country,
       postcode: data.postcode,
+      browseAllProducts: false,
     }));
 
     if (isSignedIn) {
@@ -330,6 +345,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.removeItem("hive_customer_pincode");
     localStorage.removeItem("hive_customer_region");
     localStorage.removeItem("hive_customer_serviceable");
+    localStorage.setItem("hive_browse_all", "false");
 
     setState((prev) => ({
       ...prev,
@@ -342,11 +358,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       stateName: null,
       country: null,
       postcode: null,
+      browseAllProducts: false,
     }));
   };
 
   return (
-    <LocationContext.Provider value={{ ...state, setGateOpen, setDrawerOpen, updateLocationDetails, detectLocation, clearLocation }}>
+    <LocationContext.Provider value={{ ...state, setGateOpen, setDrawerOpen, setBrowseAllProducts, updateLocationDetails, detectLocation, clearLocation }}>
       {children}
     </LocationContext.Provider>
   );

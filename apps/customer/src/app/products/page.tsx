@@ -89,9 +89,13 @@ export default function ProductsPage() {
 
 function ProductsCatalog() {
   const searchParams = useSearchParams();
-  const browseAll = searchParams.get("browse") === "all";
+  const browseAllFromUrl = searchParams.get("browse") === "all";
 
-  const { latitude, longitude } = useLocation();
+  const { latitude, longitude, browseAllProducts } = useLocation();
+
+  // Bypass delivery-radius filtering if user clicked "Browse Products Anyway"
+  // OR if the URL carries ?browse=all
+  const browseAll = browseAllFromUrl || browseAllProducts;
 
   const [filters, setFilters] = useState<CatalogFilterState>(DEFAULT_FILTER_STATE);
   const [sortOption, setSortOption] = useState<ProductSortOption>(DEFAULT_SORT);
