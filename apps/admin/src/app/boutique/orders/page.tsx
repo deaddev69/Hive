@@ -3,9 +3,57 @@
 import React from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
+import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Card, CardContent } from "@hive/ui";
-import { Loader2, ClipboardList, Package, Phone, Calendar, ShieldAlert } from "lucide-react";
+import {
+  Loader2,
+  ClipboardList,
+  Calendar,
+  FileDown,
+  Receipt,
+} from "lucide-react";
 
+// ── Invoice download cell ────────────────────────────────────────────────────
+function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
+  const invoice = useQuery(api.invoices.getInvoiceByOrderId_boutique, { orderId });
+
+  if (invoice === undefined) {
+    return <span className="inline-block w-14 h-4 bg-slate-100 rounded animate-pulse" />;
+  }
+
+  if (!invoice) {
+    return (
+      <span className="text-[9px] text-slate-400 font-medium italic whitespace-nowrap">
+        No invoice
+      </span>
+    );
+  }
+
+  if (!invoice.pdfUrl) {
+    return (
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[9px] text-amber-600 font-medium whitespace-nowrap flex items-center gap-1">
+          <Receipt className="w-3 h-3" />
+          {invoice.invoiceNumber}
+        </span>
+        <span className="text-[8px] text-slate-400 italic">PDF pending</span>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => window.open(invoice.pdfUrl!, "_blank")}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-hive-border bg-white text-[9px] font-bold text-hive-dark hover:bg-hive-cream hover:border-hive-gold transition-colors whitespace-nowrap"
+      title={`Download ${invoice.invoiceNumber}`}
+    >
+      <FileDown className="w-3.5 h-3.5 text-hive-gold" />
+      Invoice
+    </button>
+  );
+}
+
+// ── Boutique Orders Page ──────────────────────────────────────────────────────
 export default function BoutiqueOrders() {
   const orders = useQuery(api.orders.getBoutiqueOrders);
   const updateStatus = useMutation(api.orders.updateBoutiqueOrderStatus);
@@ -37,31 +85,41 @@ export default function BoutiqueOrders() {
                   <th className="px-6 py-4">Customer Details</th>
                   <th className="px-6 py-4">Purchased Items</th>
                   <th className="px-6 py-4">Total Amount</th>
+                  <th className="px-6 py-4">Invoice</th>
                   <th className="px-6 py-4">Order Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-hive-border/30 font-semibold text-hive-dark">
                 {orders.map((order) => (
                   <tr key={order._id} className="hover:bg-slate-50/30 transition-colors">
+                    {/* Order Number */}
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
                         <span className="font-mono font-bold text-sm text-slate-700">{order.orderNumber}</span>
                         <span className="text-[10px] text-hive-text-muted">ID: {order._id}</span>
                       </div>
                     </td>
+
+                    {/* Date */}
                     <td className="px-6 py-4 text-left">
                       <div className="flex items-center gap-1.5 text-slate-700">
                         <Calendar className="w-4 h-4 text-hive-amber flex-shrink-0" />
                         <span>{new Date(order.createdAt).toLocaleDateString()}</span>
                       </div>
                     </td>
+
+                    {/* Customer Details (delivery address as proxy) */}
                     <td className="px-6 py-4 text-left">
                       <div className="flex flex-col gap-1">
                         <span className="font-bold text-hive-dark">{order.deliveryAddress.label || "Customer Address"}</span>
-                        <span className="text-hive-text-muted leading-tight max-w-xs truncate">{order.deliveryAddress.line1}, {order.deliveryAddress.city}</span>
+                        <span className="text-hive-text-muted leading-tight max-w-xs truncate">
+                          {order.deliveryAddress.line1}, {order.deliveryAddress.city}
+                        </span>
                         <span className="text-[10px] font-mono text-slate-500">Pincode: {order.deliveryAddress.pincode}</span>
                       </div>
                     </td>
+
+                    {/* Items */}
                     <td className="px-6 py-4 text-left">
                       <div className="flex flex-col gap-2">
                         {order.items.map((it: any) => (
@@ -82,9 +140,18 @@ export default function BoutiqueOrders() {
                         ))}
                       </div>
                     </td>
+
+                    {/* Total */}
                     <td className="px-6 py-4 font-bold text-sm">
                       <span>₹{order.total.toLocaleString("en-IN")}</span>
                     </td>
+
+                    {/* Invoice — NEW */}
+                    <td className="px-6 py-4">
+                      <BoutiqueInvoiceCell orderId={order._id} />
+                    </td>
+
+                    {/* Status updater */}
                     <td className="px-6 py-4">
                       <select
                         value={order.status}
@@ -92,7 +159,7 @@ export default function BoutiqueOrders() {
                           try {
                             await updateStatus({
                               orderId: order._id,
-                              status: e.target.value as any
+                              status: e.target.value as any,
                             });
                           } catch (err: any) {
                             alert("Failed to update status: " + err.message);
@@ -118,9 +185,10 @@ export default function BoutiqueOrders() {
                     </td>
                   </tr>
                 ))}
+
                 {orders.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-hive-text-muted">
+                    <td colSpan={7} className="px-6 py-12 text-center text-hive-text-muted">
                       <div className="flex flex-col items-center justify-center gap-3">
                         <ClipboardList className="w-8 h-8 text-hive-border" />
                         <span>No orders found for your boutique yet.</span>

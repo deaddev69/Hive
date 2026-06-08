@@ -25,6 +25,8 @@ import {
   Calendar,
   ArrowLeft,
   ChevronRight,
+  FileDown,
+  Receipt,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -68,6 +70,101 @@ function PaymentBadge({ status }: { status: string }) {
     >
       {status}
     </span>
+  );
+}
+
+// ── Admin Invoice Section ─────────────────────────────────────────────────
+function AdminInvoiceSection({ orderId }: { orderId: Id<"orders"> }) {
+  const invoice = useQuery(api.invoices.getInvoiceByOrderId_admin, { orderId });
+
+  if (invoice === undefined) {
+    return (
+      <div className="bg-slate-50 rounded-2xl p-4 border border-hive-border/40 animate-pulse">
+        <div className="h-3 w-1/3 bg-slate-200 rounded mb-2" />
+        <div className="h-3 w-1/2 bg-slate-200 rounded" />
+      </div>
+    );
+  }
+
+  const handleDownload = () => {
+    if (!invoice) return;
+    if (invoice.pdfUrl) {
+      window.open(invoice.pdfUrl, "_blank");
+    }
+  };
+
+  return (
+    <div className="bg-slate-50 rounded-2xl p-4 border border-hive-border/40">
+      <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+        <Receipt className="w-3 h-3" /> Invoice
+      </div>
+
+      {!invoice ? (
+        <p className="text-xs text-hive-text-muted italic">Invoice not generated yet.</p>
+      ) : (
+        <>
+          <div className="flex flex-col gap-1.5 text-xs mb-3">
+            <div className="flex justify-between">
+              <span className="text-slate-400">Invoice No.</span>
+              <span className="font-mono font-bold text-hive-dark select-all">{invoice.invoiceNumber}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Transaction ID</span>
+              <span className="font-mono text-hive-dark select-all">{invoice.transactionId}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Generated</span>
+              <span className="text-hive-dark">
+                {new Date(invoice.generatedAt).toLocaleDateString("en-IN", {
+                  day: "2-digit", month: "short", year: "numeric",
+                })}
+              </span>
+            </div>
+          </div>
+          {invoice.pdfUrl ? (
+            <button
+              onClick={handleDownload}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-hive-dark text-hive-gold text-[10px] font-bold uppercase tracking-wider hover:bg-hive-amber/90 transition-colors"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              Download Invoice
+            </button>
+          ) : (
+            <p className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 font-medium">
+              PDF not yet generated. Customer must download first.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Admin Invoice Table Cell (compact) ────────────────────────────────────
+function AdminInvoiceTableCell({ orderId }: { orderId: Id<"orders"> }) {
+  const invoice = useQuery(api.invoices.getInvoiceByOrderId_admin, { orderId });
+
+  if (invoice === undefined) {
+    return <span className="inline-block w-16 h-4 bg-slate-100 rounded animate-pulse" />;
+  }
+
+  if (!invoice || !invoice.pdfUrl) {
+    return (
+      <span className="text-[9px] text-slate-400 font-medium italic whitespace-nowrap">
+        {!invoice ? "No invoice" : "PDF pending"}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => window.open(invoice.pdfUrl!, "_blank")}
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-hive-border bg-white text-[9px] font-bold text-hive-dark hover:bg-hive-cream hover:border-hive-gold transition-colors whitespace-nowrap"
+      title={invoice.invoiceNumber}
+    >
+      <FileDown className="w-3 h-3 text-hive-gold" />
+      PDF
+    </button>
   );
 }
 
@@ -245,6 +342,9 @@ function OrderDetailDrawer({
                 ))}
               </div>
             </div>
+
+            {/* Invoice */}
+            <AdminInvoiceSection orderId={orderId} />
 
             {/* Price Breakdown */}
             <div className="bg-slate-50 rounded-2xl p-4 border border-hive-border/40">
@@ -533,6 +633,7 @@ export default function AdminOrdersPage() {
                   <th className="px-5 py-4">Amount</th>
                   <th className="px-5 py-4">Status</th>
                   <th className="px-5 py-4">Payment</th>
+                  <th className="px-5 py-4 text-center">Invoice</th>
                   <th className="px-5 py-4 text-center">Actions</th>
                 </tr>
               </thead>
@@ -573,6 +674,9 @@ export default function AdminOrdersPage() {
                       <PaymentBadge status={order.paymentStatus} />
                     </td>
                     <td className="px-5 py-4 text-center">
+                      <AdminInvoiceTableCell orderId={order._id} />
+                    </td>
+                    <td className="px-5 py-4 text-center">
                       <button
                         onClick={() => setSelectedOrderId(order._id)}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-hive-dark text-white text-[10px] font-bold hover:bg-hive-amber transition-colors"
@@ -588,7 +692,7 @@ export default function AdminOrdersPage() {
                 {filtered.length === 0 && (
                   <tr>
                     <td
-                      colSpan={9}
+                      colSpan={10}
                       className="px-5 py-12 text-center text-hive-text-muted"
                     >
                       <div className="flex flex-col items-center gap-3">

@@ -5,12 +5,12 @@ export const Footer: React.FC = () => {
   return (
     <footer className="w-full bg-hive-dark text-hive-cream border-t border-slate-900 py-12 px-4 sm:px-6 lg:px-8 mt-auto">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-        
+
         {/* Brand Information */}
         <div className="flex flex-col items-center md:items-start text-center md:text-left">
           <HiveLogo size="sm" className="mb-3 justify-center md:justify-start" />
           <p className="text-[11px] text-hive-text-muted max-w-xs">
-            Hyperlocal boutique fashion delivered to your doorstep in Kochi in hours. Custom alterations and trial on delivery.
+            Hyperlocal boutique fashion delivered to your doorstep in hours.
           </p>
         </div>
 

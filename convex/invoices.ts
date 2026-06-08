@@ -1,10 +1,10 @@
 // convex/invoices.ts
 // Invoice queries and mutations for the HIVE marketplace application.
-// All access is user-scoped and verified.
+// Access is role-scoped and verified.
 
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthenticatedUser } from "./lib/auth";
+import { getAuthenticatedUser, requireRole, getMyBoutique } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 
 /**
@@ -128,3 +128,47 @@ export const updateInvoicePdfUrl = mutation({
     return { pdfUrl };
   },
 });
+
+/**
+ * Fetch an invoice by Order ID — BOUTIQUE-scoped.
+ * Verifies the authenticated user owns the boutique that fulfilled the order.
+ */
+export const getInvoiceByOrderId_boutique = query({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const boutique = await getMyBoutique(ctx);
+
+    // Verify the order belongs to this boutique
+    const order = await ctx.db.get(args.orderId);
+    if (!order) return null;
+    if (order.boutiqueId !== boutique._id) {
+      throw new Error("Unauthorized: Order does not belong to your boutique.");
+    }
+
+    const invoice = await ctx.db
+      .query("invoices")
+      .withIndex("by_order_id", (q) => q.eq("orderId", args.orderId))
+      .unique();
+
+    return invoice ?? null;
+  },
+});
+
+/**
+ * Fetch an invoice by Order ID — ADMIN-scoped.
+ * Requires the authenticated user to have the "admin" role.
+ */
+export const getInvoiceByOrderId_admin = query({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+
+    const invoice = await ctx.db
+      .query("invoices")
+      .withIndex("by_order_id", (q) => q.eq("orderId", args.orderId))
+      .unique();
+
+    return invoice ?? null;
+  },
+});
+
