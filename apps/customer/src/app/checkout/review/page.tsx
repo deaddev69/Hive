@@ -49,8 +49,6 @@ export default function OrderReviewPage() {
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoSuccessMsg, setPromoSuccessMsg] = useState<string | null>(null);
 
-  const activeZones = useQuery(api.serviceability.getActiveZones);
-
   // Client hydration delay checker
   useEffect(() => {
     setMounted(true);
@@ -70,21 +68,14 @@ export default function OrderReviewPage() {
 
   // Validation redirect filter
   useEffect(() => {
-    if (mounted && activeZones !== undefined) {
+    if (mounted) {
       if (!selectedAddressId) {
         router.replace("/checkout/address");
       } else if (!selectedDate || !selectedSlot) {
         router.replace("/checkout/delivery");
-      } else if (selectedAddress) {
-        const isServiceable = activeZones.some(
-          (zone) => zone.city.trim().toLowerCase() === selectedAddress.city.trim().toLowerCase()
-        );
-        if (!isServiceable) {
-          router.replace("/not-serviceable");
-        }
       }
     }
-  }, [mounted, selectedAddressId, selectedDate, selectedSlot, selectedAddress, activeZones, router]);
+  }, [mounted, selectedAddressId, selectedDate, selectedSlot, router]);
 
   if (!mounted) {
     return <OrderReviewSkeleton />;

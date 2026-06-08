@@ -4,7 +4,7 @@ export const ProductGridSkeleton: React.FC = () => {
   const skeletons = Array.from({ length: 8 });
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 w-full">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 md:gap-8 w-full">
       {skeletons.map((_, idx) => (
         <div
           key={idx}

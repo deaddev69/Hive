@@ -1,14 +1,13 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useQuery, useMutation, useConvex } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useAuth } from "@clerk/nextjs";
 
 export interface LocationState {
   pincode: string | null;
   regionName: string | null;
-  isServiceable: boolean;
   isGateOpen: boolean;
   latitude: number | null;
   longitude: number | null;
@@ -17,8 +16,6 @@ export interface LocationState {
   country: string | null;
   postcode: string | null;
   isDrawerOpen: boolean;
-  serviceableCity: string | null;
-  isCheckingServiceability: boolean;
 }
 
 export interface LocationContextType extends LocationState {
@@ -40,14 +37,12 @@ const LocationContext = createContext<LocationContextType | undefined>(undefined
 
 export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isSignedIn } = useAuth();
-  const convex = useConvex();
   const saveLocation = useMutation(api.userLocations.save);
   const dbLocation = useQuery(api.userLocations.get);
 
   const [state, setState] = useState<LocationState>({
     pincode: null,
     regionName: null,
-    isServiceable: true,
     isGateOpen: false,
     latitude: null,
     longitude: null,
@@ -56,8 +51,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     country: null,
     postcode: null,
     isDrawerOpen: false,
-    serviceableCity: null,
-    isCheckingServiceability: false,
   });
 
   const [hasLoadedInit, setHasLoadedInit] = useState(false);
@@ -72,8 +65,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           ...prev,
           pincode: parsed.postcode || parsed.pincode || null,
           regionName: parsed.regionName || parsed.city || null,
-          isServiceable: parsed.isServiceable !== false,
-          serviceableCity: parsed.serviceableCity || null,
           isGateOpen: false,
           latitude: parsed.latitude || null,
           longitude: parsed.longitude || null,
@@ -81,7 +72,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           stateName: parsed.state || parsed.stateName || null,
           country: parsed.country || null,
           postcode: parsed.postcode || parsed.pincode || null,
-          isCheckingServiceability: false,
         }));
         setHasLoadedInit(true);
       } catch (e) {
@@ -107,18 +97,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const regionName = `${dbLocation.city}, ${dbLocation.state}`;
       
       const checkDbLoc = async () => {
-        let isServ = true;
-        let servCity = dbLocation.city;
-        try {
-          const result = await convex.query(api.serviceability.checkServiceability, {
-            city: dbLocation.city,
-          });
-          isServ = result.isServiceable;
-          servCity = result.isServiceable ? result.city : dbLocation.city;
-        } catch (e) {
-          console.error("Failed to check serviceability of DB location:", e);
-        }
-
         const locationData = {
           latitude: dbLocation.latitude,
           longitude: dbLocation.longitude,
@@ -128,8 +106,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           postcode: dbLocation.postcode,
           pincode: dbLocation.postcode,
           regionName,
-          isServiceable: isServ,
-          serviceableCity: isServ ? servCity : null,
         };
 
         localStorage.setItem("hive_location", JSON.stringify(locationData));
@@ -137,8 +113,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           ...prev,
           pincode: dbLocation.postcode,
           regionName,
-          isServiceable: isServ,
-          serviceableCity: isServ ? servCity : null,
           isGateOpen: false,
           latitude: dbLocation.latitude,
           longitude: dbLocation.longitude,
@@ -154,7 +128,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // No location anywhere, open the onboarding gate
       setState((prev) => ({ ...prev, isGateOpen: true }));
     }
-  }, [dbLocation, hasLoadedInit, state.postcode, convex]);
+  }, [dbLocation, hasLoadedInit, state.postcode]);
 
   const setGateOpen = (open: boolean) => {
     setState((prev) => ({ ...prev, isGateOpen: open }));
@@ -172,19 +146,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     country: string;
     postcode: string;
   }) => {
-    setState((prev) => ({ ...prev, isCheckingServiceability: true }));
-    let isServ = true;
-    let servCity = data.city;
-    try {
-      const result = await convex.query(api.serviceability.checkServiceability, {
-        city: data.city,
-      });
-      isServ = result.isServiceable;
-      servCity = result.isServiceable ? result.city : data.city;
-    } catch (e) {
-      console.error("Failed to check serviceability during update:", e);
-    }
-
     const regionName = `${data.city}, ${data.state}`;
     const locationData = {
       latitude: data.latitude,
@@ -195,22 +156,17 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       postcode: data.postcode,
       pincode: data.postcode,
       regionName,
-      isServiceable: isServ,
-      serviceableCity: isServ ? servCity : null,
     };
 
     console.log('[Geolocation] Saving to localStorage:', locationData);
     localStorage.setItem("hive_location", JSON.stringify(locationData));
     localStorage.setItem("hive_customer_pincode", data.postcode);
     localStorage.setItem("hive_customer_region", regionName);
-    localStorage.setItem("hive_customer_serviceable", isServ ? "true" : "false");
 
     setState((prev) => ({
       ...prev,
       pincode: data.postcode,
       regionName,
-      isServiceable: isServ,
-      serviceableCity: isServ ? servCity : null,
       isGateOpen: false,
       latitude: data.latitude,
       longitude: data.longitude,
@@ -218,7 +174,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       stateName: data.state,
       country: data.country,
       postcode: data.postcode,
-      isCheckingServiceability: false,
     }));
 
     if (isSignedIn) {
@@ -380,9 +335,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...prev,
       pincode: null,
       regionName: null,
-      isServiceable: true,
-      serviceableCity: null,
-      isCheckingServiceability: false,
       isGateOpen: true,
       latitude: null,
       longitude: null,

@@ -44,19 +44,22 @@ export default defineSchema({
 
   // ─── ADDRESSES ────────────────────────────────────────────────────────────
   addresses: defineTable({
-    userId:    v.id("users"),
-    label:     v.string(),                          // "Home" | "Work" | custom
-    line1:     v.string(),
-    line2:     v.optional(v.string()),
-    city:      v.string(),
-    state:     v.string(),
-    pincode:   v.string(),
-    lat:       v.number(),
-    lng:       v.number(),
-    regionId:  v.optional(v.id("regions")),         // resolved at save time; null = not serviceable
-    isDefault: v.boolean(),
-    isDeleted: v.boolean(),                         // soft delete
-    createdAt: v.number(),
+    userId:           v.id("users"),
+    label:            v.string(),                          // "Home" | "Work" | custom
+    line1:            v.optional(v.string()),              // legacy manual entry (optional for new map-based)
+    line2:            v.optional(v.string()),
+    city:             v.string(),
+    state:            v.string(),
+    pincode:          v.string(),
+    lat:              v.number(),
+    lng:              v.number(),
+    formattedAddress: v.optional(v.string()),              // full reverse-geocoded address string
+    houseNumber:      v.optional(v.string()),              // flat/house/door number (user input)
+    landmark:         v.optional(v.string()),              // nearby landmark (user input)
+    regionId:         v.optional(v.id("regions")),         // resolved at save time; null = not serviceable
+    isDefault:        v.boolean(),
+    isDeleted:        v.boolean(),                         // soft delete
+    createdAt:        v.number(),
   })
     .index("by_userId",         ["userId"])
     .index("by_userId_default", ["userId", "isDefault"]),
@@ -335,7 +338,9 @@ export default defineSchema({
   orderItems: defineTable({
     orderId:         v.id("orders"),
     productId:       v.id("products"),
-    variantId:       v.id("productVariants"),
+    // variantId stores the same products._id — this platform uses stockBySize on products
+    // directly and does not use the productVariants table for checkout.
+    variantId:       v.optional(v.id("products")),
     boutiqueId:      v.id("boutiques"),
     // Immutable snapshots at order creation time:
     productName:     v.string(),

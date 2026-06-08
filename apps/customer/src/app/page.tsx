@@ -5,14 +5,11 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useLocation } from "@/context/LocationContext";
-import { useCart } from "@/context/CartContext";
-import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
-import { MapPin, Sparkles, Plus, ShoppingCart, ChevronLeft, ChevronRight, Check } from "lucide-react";
-import { OccasionRail } from "@/components/home/OccasionRail";
+import { Button } from "@hive/ui";
+import { Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { BoutiqueSpotlight } from "@/components/boutique/BoutiqueSpotlight";
 import { TrustStrip } from "@/components/trust/TrustStrip";
-import { ExpansionCTA } from "@/components/expansion/ExpansionCTA";
 import Image from "next/image";
 import Link from "next/link";
 import { ProductCardData } from "@/lib/mockProducts";
@@ -98,18 +95,18 @@ function mapDbBoutique(b: any, products: any[] = []): Boutique {
 }
 
 export default function HomePage() {
-  const { pincode, regionName, isServiceable, setGateOpen } = useLocation();
-  const { addToCart, itemsCount } = useCart();
+  const { latitude, longitude } = useLocation();
   const router = useRouter();
-
-  // Selected Discovery Filters
-  const [selectedOccasion, setSelectedOccasion] = useState("all");
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("all");
 
   // Fetch from Convex
   const dbBanners = useQuery(api.banners.getActiveBanners);
   const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
-  const dbProducts = useQuery(api.products.getActiveProducts, {});
+  
+  // Fetch active products with location coordinates when available
+  const dbProducts = useQuery(
+    api.products.getActiveProducts,
+    latitude !== null && longitude !== null ? { userLat: latitude, userLng: longitude } : {}
+  );
   const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques);
 
   // Banner Carousel State
@@ -140,28 +137,9 @@ export default function HomePage() {
     setCurrentBannerIndex((prev) => (prev + 1) % dbBanners.length);
   };
 
-  // Map & Filter Products
+  // Map products and boutiques
   const products = (dbProducts || []).map(mapDbProduct);
   const mappedBoutiques = (dbBoutiques || []).map((b) => mapDbBoutique(b, dbProducts || []));
-
-  const filteredProducts = products.filter((p) => {
-    // Occasion filter (handled on page level instead of internally in ProductGrid)
-    const matchesOccasion = selectedOccasion === "all" || p.occasion === selectedOccasion;
-    
-    // Category filter
-    const originalProd = dbProducts?.find((dp) => dp._id === p.id);
-    const matchesCategory = selectedCategoryId === "all" || (originalProd && originalProd.categoryId === selectedCategoryId);
-
-    return matchesOccasion && matchesCategory;
-  });
-
-  const handleOccasionChange = (id: string) => {
-    setSelectedOccasion(id);
-  };
-
-  const handleCategorySelect = (id: string) => {
-    setSelectedCategoryId((prev) => (prev === id ? "all" : id));
-  };
 
   return (
     <div className="flex flex-col items-center bg-[#FFFDF9]/40 min-h-screen text-hive-text w-full pb-20">
@@ -280,7 +258,7 @@ export default function HomePage() {
       {/* ──────────────────────────────────────────────────
           2. CATEGORIES DISCOVERY TRACK (MEESHO-STYLE VISUAL RAILS)
           ────────────────────────────────────────────────── */}
-      <section className="w-full max-w-7xl mx-auto px-6 lg:px-8 py-10 flex flex-col gap-5">
+      <section className="w-full max-w-7xl mx-auto px-6 lg:px-8 pt-10 pb-0 flex flex-col gap-5">
         <div className="flex flex-col text-left items-start gap-1">
           <span className="text-[10px] font-bold text-hive-amber tracking-widest uppercase">
             POPULAR CATEGORIES
@@ -304,41 +282,31 @@ export default function HomePage() {
           <div className="text-left text-xs text-hive-text-muted font-bold py-4">No categories setup.</div>
         ) : (
           // Interactive category bubble rail
-          <div className="flex gap-5 md:gap-7 overflow-x-auto w-full py-2 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="flex gap-5 md:gap-7 overflow-x-auto w-full py-2 -mx-6 px-6 sm:mx-0 sm:px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             
             {/* Category Bubble: "All" */}
             <button
-              onClick={() => setSelectedCategoryId("all")}
+              onClick={() => router.push("/products")}
               className="flex flex-col items-center gap-3.5 group cursor-pointer flex-shrink-0 select-none"
             >
-              <div className={`w-18 h-18 md:w-20 md:h-20 rounded-full border flex items-center justify-center transition-all duration-300 relative shadow-sm ${
-                selectedCategoryId === "all"
-                  ? "bg-hive-dark border-hive-dark text-white scale-105 ring-2 ring-hive-gold/45"
-                  : "bg-white border-hive-border/60 hover:border-hive-gold hover:scale-102 text-hive-dark"
-              }`}>
-                <Sparkles className={`w-6 h-6 ${selectedCategoryId === "all" ? "text-hive-gold" : "text-hive-amber"}`} />
+              <div className="w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full border flex items-center justify-center transition-all duration-300 relative shadow-sm bg-white border-hive-border/60 hover:border-hive-gold hover:scale-105 text-hive-dark">
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-hive-amber" />
               </div>
-              <span className={`text-[11px] font-bold tracking-wide transition-colors ${
-                selectedCategoryId === "all" ? "text-hive-amber font-extrabold" : "text-hive-text-muted group-hover:text-hive-dark"
-              }`}>
+              <span className="text-[11px] font-bold tracking-wide transition-colors text-hive-text-muted group-hover:text-hive-dark">
                 All Design
               </span>
             </button>
 
-            {/* Dyn Categories Bubbles */}
+            {/* Dynamic Category Bubbles — navigate to /products?category=slug */}
             {dbCategories.map((cat) => {
-              const isSelected = selectedCategoryId === cat._id;
+              const categorySlug = cat.slug || cat.name.toLowerCase().replace(/\s+/g, "-");
               return (
                 <button
                   key={cat._id}
-                  onClick={() => handleCategorySelect(cat._id)}
+                  onClick={() => router.push(`/products?category=${categorySlug}`)}
                   className="flex flex-col items-center gap-3.5 group cursor-pointer flex-shrink-0 select-none"
                 >
-                  <div className={`w-18 h-18 md:w-20 md:h-20 rounded-full border overflow-hidden transition-all duration-300 relative shadow-sm ${
-                    isSelected
-                      ? "border-hive-gold ring-2 ring-hive-gold/45 scale-105"
-                      : "border-hive-border/60 group-hover:border-hive-gold hover:scale-102"
-                  }`}>
+                  <div className="w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full border overflow-hidden transition-all duration-300 relative shadow-sm border-hive-border/60 group-hover:border-hive-gold hover:scale-105">
                     {cat.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -351,16 +319,8 @@ export default function HomePage() {
                         👗
                       </div>
                     )}
-                    {/* Checked overlay if selected */}
-                    {isSelected && (
-                      <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center">
-                        <Check className="w-5 h-5 text-white stroke-[3.5]" />
-                      </div>
-                    )}
                   </div>
-                  <span className={`text-[11px] font-bold tracking-wide transition-colors ${
-                    isSelected ? "text-hive-amber font-extrabold" : "text-hive-text-muted group-hover:text-hive-dark"
-                  }`}>
+                  <span className="text-[11px] font-bold tracking-wide transition-colors text-hive-text-muted group-hover:text-hive-dark">
                     {cat.name}
                   </span>
                 </button>
@@ -371,23 +331,12 @@ export default function HomePage() {
       </section>
 
       {/* ──────────────────────────────────────────────────
-          3. DYNAMIC OCCASION RAIL (VIBE SELECTION)
-          ────────────────────────────────────────────────── */}
-      <OccasionRail
-        selectedOccasion={selectedOccasion}
-        onOccasionChange={handleOccasionChange}
-      />
-
-      {/* ──────────────────────────────────────────────────
           4. DYNAMIC PRODUCTS GRID FEED (NO MOCK DATA)
           ────────────────────────────────────────────────── */}
       <ProductGrid
-        products={filteredProducts}
-        selectedOccasion="all" // already filtered on page level to respect dual filter
-        onResetFilter={() => {
-          setSelectedOccasion("all");
-          setSelectedCategoryId("all");
-        }}
+        products={products}
+        selectedOccasion="all"
+        onResetFilter={() => {}}
         isLoading={dbProducts === undefined}
         viewAllHref="/products"
       />
@@ -405,98 +354,6 @@ export default function HomePage() {
           ────────────────────────────────────────────────── */}
       <TrustStrip />
 
-      {/* ──────────────────────────────────────────────────
-          7. EXPANSION CTA WAITLIST
-          ────────────────────────────────────────────────── */}
-      <ExpansionCTA />
-
-      {/* Interactive Testing Control Panel */}
-      <div className="max-w-7xl w-full mx-auto px-6 lg:px-8 py-12 flex flex-col gap-8">
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-serif flex items-center gap-2 text-left">
-                <Sparkles className="w-5 h-5 text-hive-gold" /> Convex Reactive Status
-              </CardTitle>
-              <CardDescription className="text-left">
-                Validate realtime updates across network and clerk boundaries
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4 text-left">
-              <div className="flex items-center justify-between border-b border-hive-border/40 pb-4">
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Live Cart items</span>
-                  <span className="text-xs text-hive-text-muted">Total bag count synced to Context</span>
-                </div>
-                <Button variant="primary" size="sm" onClick={() => addToCart(1)} className="flex items-center gap-1">
-                  <Plus className="w-3.5 h-3.5" /> Add Mock
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Serviceability Check</span>
-                  <span className="text-xs text-hive-text-muted">Currently serviced zones locator</span>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => setGateOpen(true)} className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-hive-gold" /> Check Loc
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex flex-col gap-6">
-            <Card className="flex-1">
-              <CardContent className="p-6 flex flex-col justify-between h-full gap-4 text-left">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-hive-text-muted">
-                    Location status
-                  </span>
-                  <MapPin className="w-5 h-5 text-hive-gold" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-2xl font-extrabold">
-                    {pincode ? pincode : "No Location Set"}
-                  </span>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    {pincode ? (
-                      isServiceable ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
-                          Serviced: {regionName}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
-                          Unserviceable Zone
-                        </span>
-                      )
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-hive-text-muted font-bold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
-                        Pending selection
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="flex-1">
-              <CardContent className="p-6 flex flex-col justify-between h-full gap-4 text-left">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-hive-text-muted">
-                    Cart Count
-                  </span>
-                  <ShoppingCart className="w-5 h-5 text-hive-gold" />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-2xl font-extrabold">
-                    {itemsCount} {itemsCount === 1 ? "Item" : "Items"}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-      </div>
 
       <style>{`
         @keyframes bannerFadeIn {

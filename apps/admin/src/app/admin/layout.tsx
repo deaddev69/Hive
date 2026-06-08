@@ -5,12 +5,14 @@ import { useAuth, SignOutButton, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, ShieldAlert, Loader2, Users } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, Loader2, ShieldX, Users, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@hive/ui";
+import { HiveLogo } from "@/components/shared/HiveLogo";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Categories", href: "/admin/categories", icon: FolderKanban },
   { label: "Banners", href: "/admin/banners", icon: ImageIcon },
@@ -24,6 +26,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  console.log("[AdminLayout] isLoaded:", isLoaded, "isSignedIn:", isSignedIn, "me:", me);
 
   // Unauthenticated redirect
   useEffect(() => {
@@ -39,8 +43,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [me, router]);
 
-  // User is not synced yet or loading Clerk state
-  if (!isLoaded || me === undefined || me === null) {
+  // ── Loading guard ─────────────────────────────────────────────────────────
+  // me===undefined → Convex query still in-flight → show spinner
+  // me===null      → user not in DB (UserSync hasn't fired yet, or auth issue)
+  //                  → do NOT spin forever, show a clear error
+  if (!isLoaded || me === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
         <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
@@ -48,6 +55,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <span className="text-base font-serif font-black text-hive-dark">Hive Admin Control</span>
           <span className="text-xs text-hive-text-muted">Authenticating secure session...</span>
         </div>
+      </div>
+    );
+  }
+
+  if (me === null) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center px-4">
+        <ShieldX className="w-10 h-10 text-red-400" />
+        <span className="text-base font-serif font-black text-hive-dark">Account Not Registered</span>
+        <p className="text-xs text-hive-text-muted max-w-sm">
+          Your Clerk account is not yet linked to a Convex user record.
+          Sign out and sign back in — UserSync will register you automatically.
+          If the problem persists, ensure your Convex user has{" "}
+          <code className="bg-slate-100 px-1 rounded">role: &quot;admin&quot;</code>.
+        </p>
+        <button
+          onClick={() => router.push("/sign-in")}
+          className="text-xs underline text-hive-amber mt-2"
+        >
+          Sign in again
+        </button>
       </div>
     );
   }
@@ -67,14 +95,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       
       {/* Mobile Header */}
       <header className="md:hidden h-16 bg-hive-dark text-white border-b border-hive-border/20 flex items-center justify-between px-4 sticky top-0 z-30">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-hive-gold flex items-center justify-center font-bold text-hive-dark text-sm">
-            H
-          </div>
-          <span className="font-serif font-black tracking-tight text-sm text-hive-cream">
-            HIVE ADMIN
-          </span>
-        </div>
+        <HiveLogo roleLabel="ADMIN PANEL" href="/admin" />
         <button 
           onClick={() => setMobileOpen(!mobileOpen)}
           className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors"
@@ -93,14 +114,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex flex-col gap-8">
           
           {/* Header Brand */}
-          <div className="hidden md:flex items-center gap-2.5 pb-4 border-b border-white/5">
-            <div className="w-8 h-8 rounded-lg bg-hive-gold flex items-center justify-center font-bold text-hive-dark text-base">
-              H
-            </div>
-            <span className="font-serif font-black tracking-tight text-base text-hive-cream">
-              HIVE ADMIN
-            </span>
-          </div>
+          <HiveLogo roleLabel="ADMIN PANEL" href="/admin" className="hidden md:flex pb-4 border-b border-white/5 w-full justify-start" />
 
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1">
@@ -145,9 +159,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <SignOutButton redirectUrl="http://localhost:3000/">
             <Button 
               variant="outline" 
-              className="w-full justify-start gap-2 border-white/10 text-white/90 hover:bg-red-500 hover:text-white hover:border-transparent rounded-xl text-xs py-2"
+              className="w-full justify-start gap-2 border-slate-200 bg-white text-slate-900 hover:bg-slate-100 hover:text-slate-900 rounded-xl text-xs py-2 font-medium"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5 text-slate-900" />
               <span>Log out</span>
             </Button>
           </SignOutButton>

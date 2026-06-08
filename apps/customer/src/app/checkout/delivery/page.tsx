@@ -55,7 +55,7 @@ export default function DeliverySlotPage() {
       d.setDate(d.getDate() + i);
 
       let label = "";
-      if (i === 0) label = "Today";
+      if (i === 0) label = "Same Day";
       else if (i === 1) label = "Tomorrow";
       else {
         label = `${daysOfWeek[d.getDay()]}, ${months[d.getMonth()]} ${String(d.getDate()).padStart(2, "0")}`;
@@ -76,14 +76,14 @@ export default function DeliverySlotPage() {
   }
 
   const addresses = (convexAddresses ?? []).map((a: any) => ({
-    id:        a._id,
-    name:      a.label,
-    phone:     "9876543210", // Fallback placeholder since phone is not in addresses schema
+    id: a._id,
+    name: a.label,
+    phone: "9876543210", // Fallback placeholder since phone is not in addresses schema
     addressLine1: a.line1,
     addressLine2: a.line2,
-    city:      a.city,
-    state:     a.state,
-    pincode:   a.pincode,
+    city: a.city,
+    state: a.state,
+    pincode: a.pincode,
     isDefault: a.isDefault,
   }));
 
@@ -168,8 +168,8 @@ export default function DeliverySlotPage() {
                       type="button"
                       onClick={() => handleSelectDate(date.label)}
                       className={`flex-shrink-0 snap-start px-5 py-3 rounded-2xl border text-xs font-bold transition-all duration-300 ${isSelected
-                          ? "bg-hive-dark text-hive-gold border-hive-dark"
-                          : "bg-white border-hive-border/50 text-hive-text hover:border-hive-border"
+                        ? "bg-hive-dark text-hive-gold border-hive-dark"
+                        : "bg-white border-hive-border/50 text-hive-text hover:border-hive-border"
                         }`}
                     >
                       {date.label}
@@ -198,10 +198,10 @@ export default function DeliverySlotPage() {
                       disabled={isFull}
                       onClick={() => handleSelectSlot(slot.name, slot.timeRange)}
                       className={`bg-white border rounded-3xl p-5 shadow-sm text-left flex flex-col justify-between gap-3 relative transition-all duration-300 ${isFull
-                          ? "opacity-45 cursor-not-allowed border-hive-border/30 bg-hive-cream/10"
-                          : isSelected
-                            ? "border-hive-dark ring-1 ring-hive-dark bg-hive-comb/10"
-                            : "border-hive-border/50 hover:border-hive-border"
+                        ? "opacity-45 cursor-not-allowed border-hive-border/30 bg-hive-cream/10"
+                        : isSelected
+                          ? "border-hive-dark ring-1 ring-hive-dark bg-hive-comb/10"
+                          : "border-hive-border/50 hover:border-hive-border"
                         }`}
                     >
                       <div className="flex justify-between items-start w-full">

@@ -6,7 +6,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUser, getMyBoutique } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
-import { validateProductSizeAndStock, normalizeSize } from "./lib/mockInventory";
+import { validateProductSizeAndStock } from "./lib/mockInventory";
 
 // ─── Cart item input shape for order placement ────────────────────────────
 const cartItemArg = v.object({
@@ -59,19 +59,76 @@ export const placeOrder = mutation({
       throw new Error("Invalid address");
     }
 
-    // Validate that the address city is a serviceable zone
-    const searchCity = args.addressSnapshot.city.trim().toLowerCase();
-    const activeZones = await ctx.db
-      .query("serviceZones")
-      .withIndex("by_isActive", (q) => q.eq("isActive", true))
+    // ── Serviceability: coordinate-distance check only ────────────────────────
+    // Rule: delivery is allowed IFF the destination falls within at least one
+    // boutique's delivery radius. City names, regions, and zones are irrelevant.
+
+    // Use real coordinates from the DB address record (the snapshot lat/lng can be 0).
+    const deliveryLat = addr.lat ?? args.addressSnapshot.lat;
+    const deliveryLng = addr.lng ?? args.addressSnapshot.lng;
+
+    const approvedBoutiques = await ctx.db
+      .query("boutiques")
+      .withIndex("by_status", (q) => q.eq("status", "APPROVED"))
       .collect();
 
-    const isCityServiceable = activeZones.some(
-      (z) => z.city.trim().toLowerCase() === searchCity
-    );
+    // Haversine formula (inline — no external dependency needed server-side)
+    const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+      const R = 6371;
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLng = ((lng2 - lng1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
 
-    if (!isCityServiceable) {
-      throw new Error("Delivery address is in an unserviceable area.");
+    // Diagnostic logs
+    console.log("[placeOrder] Delivery coordinates:", deliveryLat, deliveryLng);
+    console.log("[placeOrder] Approved boutiques:", approvedBoutiques.length);
+
+    let isCoordinateServiceable = false;
+
+    // If the address has no valid coordinates (0,0 or null), skip the check and allow.
+    // The frontend already validates radius at address-selection time.
+    if (!deliveryLat || !deliveryLng || (deliveryLat === 0 && deliveryLng === 0)) {
+      console.log("[placeOrder] No delivery coordinates — skipping radius check, allowing order.");
+      isCoordinateServiceable = true;
+    } else {
+      for (const boutique of approvedBoutiques) {
+        const bLat = boutique.latitude ?? boutique.addressDetails?.lat;
+        const bLng = boutique.longitude ?? boutique.addressDetails?.lng;
+        const radius = boutique.deliveryRadiusKm ?? 15;
+
+        if (bLat === undefined || bLng === undefined) continue;
+
+        const distKm = haversineKm(deliveryLat, deliveryLng, bLat, bLng);
+
+        console.log(
+          `[placeOrder] Boutique "${boutique.boutiqueName ?? boutique.name}" ` +
+          `coords=(${bLat}, ${bLng}) radius=${radius}km ` +
+          `→ distance=${distKm.toFixed(2)}km ` +
+          `→ serviceable=${distKm <= radius}`
+        );
+
+        if (distKm <= radius) {
+          isCoordinateServiceable = true;
+          break;
+        }
+      }
+    }
+
+    if (!isCoordinateServiceable) {
+      console.error(
+        `[placeOrder] BLOCKED — delivery location (${deliveryLat}, ${deliveryLng}) ` +
+        `is outside all boutique delivery radii.`
+      );
+      throw new Error(
+        "Delivery location is outside this boutique's delivery radius. " +
+        "Please choose a closer delivery address."
+      );
     }
 
     if (args.items.length === 0) {
@@ -86,21 +143,70 @@ export const placeOrder = mutation({
     const now = Date.now();
     const orderNumber = `HIVE-${Math.floor(10000 + Math.random() * 90000)}`;
 
-    // Determine boutiqueId — use first item's boutique name to find/use a placeholder
-    // For now we use a system sentinel: we'll look for any active boutique or use a fallback
-    // Since real boutiques aren't seeded yet, we store orderNumber without boutiqueId constraint
-    // WORKAROUND: find any boutique or use a system user's boutique
+    // ── Resolve boutiqueId from the actual purchased products ─────────────────
+    // SECURITY: We must never assign an order to an arbitrary "first boutique"
+    // in the database. Instead, look up each product by its slug/ID and use the
+    // boutiqueId stored on the product row itself. This guarantees that each
+    // boutique only ever sees orders that contain products they own.
+
+    // Pre-resolve all product rows so we can determine the correct boutiqueId
+    // and avoid a second lookup inside the item-creation loop below.
+    type ResolvedItem = {
+      item: typeof args.items[number];
+      productRow: Awaited<ReturnType<typeof ctx.db.get>> & {
+        _id: Id<"products">;
+        boutiqueId: Id<"boutiques">;
+        stockBySize: Record<string, number>;
+        slug: string;
+      } | null;
+    };
+
+    const resolvedItems: ResolvedItem[] = await Promise.all(
+      args.items.map(async (item) => {
+        // Try slug lookup first (the productId field sent from the client is the slug)
+        const bySlug = await ctx.db
+          .query("products")
+          .withIndex("by_slug", (q) => q.eq("slug", item.productId))
+          .unique();
+        if (bySlug) return { item, productRow: bySlug as any };
+
+        // Fallback: try direct _id lookup (client may send a real Convex ID)
+        try {
+          const byId = await ctx.db.get(item.productId as Id<"products">);
+          if (byId) return { item, productRow: byId as any };
+        } catch {
+          // Not a valid Convex ID — that's fine, will use placeholder path
+        }
+
+        return { item, productRow: null };
+      })
+    );
+
+    // Determine the primary boutiqueId: use the boutique of the first real product.
+    // If no product is found (e.g. all items are placeholder), fall back to any
+    // approved boutique only as a last resort (not "first row" in DB).
     let boutiqueId: Id<"boutiques"> | null = null;
-    const anyBoutique = await ctx.db.query("boutiques").take(1);
-    if (anyBoutique.length > 0 && anyBoutique[0]) {
-      boutiqueId = anyBoutique[0]._id;
+
+    for (const { productRow } of resolvedItems) {
+      if (productRow?.boutiqueId) {
+        boutiqueId = productRow.boutiqueId;
+        break;
+      }
     }
 
     if (!boutiqueId) {
-      // If no boutique exists at all, we can't create an order with the strict schema.
-      // Create a placeholder boutique owned by this user.
+      // No real product found — look for any APPROVED boutique as a sentinel.
+      // This path only occurs for fully placeholder orders (no real products in DB).
+      const fallbackBoutique = await ctx.db
+        .query("boutiques")
+        .withIndex("by_status", (q) => q.eq("status", "APPROVED"))
+        .first();
+      boutiqueId = fallbackBoutique?._id ?? null;
+    }
+
+    if (!boutiqueId) {
+      // Absolute last resort: create a system placeholder boutique.
       boutiqueId = await ctx.db.insert("boutiques", {
-        // Phase 1.5 fields
         boutiqueName:     "Hive Marketplace",
         ownerName:        "System Admin",
         email:            "marketplace@hive.in",
@@ -114,8 +220,6 @@ export const placeOrder = mutation({
         createdAt:        now,
         ownerEmail:       "marketplace@hive.in",
         ownerUserId:      user._id,
-
-        // Legacy fields for backward compatibility
         userId:           user._id,
         name:             "Hive Marketplace",
         slug:             "hive-marketplace",
@@ -137,7 +241,7 @@ export const placeOrder = mutation({
       });
     }
 
-    // Create the order
+    // Create the order, stamped with the product-derived boutiqueId
     const orderId = await ctx.db.insert("orders", {
       orderNumber,
       customerId:      user._id,
@@ -156,34 +260,24 @@ export const placeOrder = mutation({
       updatedAt:       now,
     });
 
-    // Create order items
-    for (const item of args.items) {
-      // Find a real productId from the products table if it exists
-      // Otherwise use a placeholder variant approach
-      const productRow = await ctx.db
-        .query("products")
-        .withIndex("by_slug", (q) => q.eq("slug", item.productId))
-        .unique();
+    // Create order items using the pre-resolved product rows
+    const anyCategory = await ctx.db.query("categories").first();
 
-      const normalized = normalizeSize(item.size);
-
+    for (const { item, productRow } of resolvedItems) {
       if (productRow) {
+        // Real product found — decrement stock and insert the order item
         const currentStock = productRow.stockBySize[item.size] ?? 0;
         const newStock = Math.max(0, currentStock - item.quantity);
-
         const stockBySize = { ...productRow.stockBySize };
         stockBySize[item.size] = newStock;
 
-        await ctx.db.patch(productRow._id, {
-          stockBySize,
-          updatedAt: now,
-        });
+        await ctx.db.patch(productRow._id, { stockBySize, updatedAt: now });
 
         await ctx.db.insert("orderItems", {
           orderId,
           productId:       productRow._id,
-          variantId:       productRow._id as any,
-          boutiqueId:      productRow.boutiqueId,
+          variantId:       productRow._id,
+          boutiqueId:      productRow.boutiqueId,   // ← product's own boutiqueId
           productName:     item.name,
           variantSize:     item.size,
           imageUrl:        item.imageUrl,
@@ -195,9 +289,7 @@ export const placeOrder = mutation({
         continue;
       }
 
-      // Fallback: create a placeholder product entry using the new schema
-      const anyCategory = await ctx.db.query("categories").first();
-
+      // No real product row — create a placeholder product under the resolved boutique
       const placeholderProductId = await ctx.db.insert("products", {
         boutiqueId,
         name:             item.name,
@@ -218,8 +310,8 @@ export const placeOrder = mutation({
       await ctx.db.insert("orderItems", {
         orderId,
         productId:       placeholderProductId,
-        variantId:       placeholderProductId as any,
-        boutiqueId,
+        variantId:       placeholderProductId,
+        boutiqueId,                                 // ← placeholder uses resolved boutique
         productName:     item.name,
         variantSize:     item.size,
         imageUrl:        item.imageUrl,

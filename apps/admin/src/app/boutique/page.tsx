@@ -1,15 +1,36 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { StatCard, Card, CardContent, Badge } from "@hive/ui";
-import { Shirt, ClipboardList, TrendingUp, CheckCircle, Package, Loader2 } from "lucide-react";
+import { StatCard, Card, CardContent, Badge, cn } from "@hive/ui";
+import { Shirt, ClipboardList, TrendingUp, CheckCircle, Package, Loader2, ShieldX } from "lucide-react";
 
 export default function BoutiqueDashboard() {
+  const { isLoading: convexAuthLoading } = useConvexAuth();
   const metrics = useQuery(api.products.getDashboardMetrics);
 
+  const [waitedLong, setWaitedLong] = useState(false);
+  useEffect(() => {
+    if (convexAuthLoading) return;
+    const t = setTimeout(() => setWaitedLong(true), 6000);
+    return () => clearTimeout(t);
+  }, [convexAuthLoading]);
+
   if (metrics === undefined) {
+    if (waitedLong) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center">
+          <ShieldX className="w-10 h-10 text-red-400" />
+          <p className="text-base font-bold text-slate-700">Access Denied</p>
+          <p className="text-sm text-slate-500 max-w-sm">
+            Your account does not have boutique privileges, or no boutique is linked to your account.
+            Make sure your Convex user record has <code className="bg-slate-100 px-1 rounded">role: "boutique_owner"</code>.
+          </p>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
@@ -34,18 +55,29 @@ export default function BoutiqueDashboard() {
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-        {stats.map((stat) => {
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5">
+        {stats.map((stat, index) => {
           const Icon = stat.icon;
+          const isRevenue = index === 4;
           return (
-            <Card key={stat.label} className="border border-hive-border bg-white shadow-sm overflow-hidden p-5 flex flex-col justify-between min-h-[110px]">
-              <div className="flex justify-between items-start">
-                <span className="text-xs font-bold text-hive-text-muted uppercase tracking-wider">{stat.label}</span>
-                <div className={`p-2 rounded-xl border ${stat.color}`}>
-                  <Icon className="w-4 h-4" />
+            <Card
+              key={stat.label}
+              className={cn(
+                "border border-hive-border bg-white shadow-sm overflow-hidden p-4 sm:p-5 flex flex-col justify-between min-h-[100px] sm:min-h-[110px]",
+                isRevenue ? "col-span-2 md:col-span-1 lg:col-span-1" : ""
+              )}
+            >
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-[10px] sm:text-xs font-bold text-hive-text-muted uppercase tracking-wider leading-tight">
+                  {stat.label}
+                </span>
+                <div className={`p-1.5 sm:p-2 rounded-xl border shrink-0 ${stat.color}`}>
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
               </div>
-              <span className="text-2xl font-extrabold text-hive-dark tracking-tight mt-3">{stat.value}</span>
+              <span className="text-xl sm:text-2xl font-extrabold text-hive-dark tracking-tight mt-2 sm:mt-3">
+                {stat.value}
+              </span>
             </Card>
           );
         })}
@@ -85,7 +117,7 @@ export default function BoutiqueDashboard() {
                             ))}
                           </div>
                         </td>
-                        <td className="px-5 py-4 font-bold">₹{(order.total / 100).toLocaleString("en-IN")}</td>
+                        <td className="px-5 py-4 font-bold">₹{order.total.toLocaleString("en-IN")}</td>
                         <td className="px-5 py-4">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
                             order.status === "delivered" ? "bg-green-50 text-green-700 border border-green-200" :

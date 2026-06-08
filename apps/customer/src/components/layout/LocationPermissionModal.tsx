@@ -1,26 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
-import { Modal, Input, Button } from "@hive/ui";
+import { Modal, Button } from "@hive/ui";
 import { useLocation } from "@/context/LocationContext";
-import { MapPin, Search, Navigation, Loader2, AlertCircle } from "lucide-react";
+import { MapPin, Navigation, Loader2, AlertCircle } from "lucide-react";
 
 export const LocationPermissionModal: React.FC = () => {
-  const { isGateOpen, setGateOpen, detectLocation, updateLocationDetails } = useLocation();
-  const [loadingStep, setLoadingStep] = useState<"idle" | "detecting" | "geocoding" | "searching">("idle");
+  const { isGateOpen, setGateOpen, setDrawerOpen, detectLocation } = useLocation();
+  const [loadingStep, setLoadingStep] = useState<"idle" | "detecting" | "geocoding">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showManual, setShowManual] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const handleAllowLocation = async () => {
     setErrorMessage(null);
     setLoadingStep("detecting");
-    
-    // Simulate transitioning from detecting to geocoding
+
     const detectPromise = detectLocation();
-    
-    // Set a small timeout to show "Finding nearby boutiques..." when reverse geocoding triggers
+
+    // Show "Finding nearby boutiques..." after a short delay
     const timer = setTimeout(() => {
       setLoadingStep("geocoding");
     }, 1200);
@@ -34,66 +30,17 @@ export const LocationPermissionModal: React.FC = () => {
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-
-    setErrorMessage(null);
-    setLoadingStep("searching");
-    setSearchResults([]);
-
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
-          searchQuery
-        )}&format=json&addressdetails=1&countrycodes=in&limit=5`
-      );
-      if (!res.ok) {
-        throw new Error("Failed to fetch locations");
-      }
-      const data = await res.json();
-      setSearchResults(data);
-      if (data.length === 0) {
-        setErrorMessage("No places found for your query. Try a different city or pincode.");
-      }
-    } catch (err) {
-      console.error(err);
-      setErrorMessage("Could not search for locations. Please try again.");
-    } finally {
-      setLoadingStep("idle");
-    }
-  };
-
-  const handleSelectLocation = async (item: any) => {
-    const lat = parseFloat(item.lat);
-    const lon = parseFloat(item.lon);
-    const address = item.address || {};
-    
-    const city = address.city || address.town || address.village || address.suburb || address.county || "Kochi";
-    const state = address.state || "Kerala";
-    const country = address.country || "India";
-    const postcode = address.postcode || "";
-
-    setLoadingStep("geocoding");
-    await updateLocationDetails({
-      latitude: lat,
-      longitude: lon,
-      city,
-      state,
-      country,
-      postcode,
-    });
-    setLoadingStep("idle");
-    setShowManual(false);
-    setSearchQuery("");
-    setSearchResults([]);
+  const handleChooseManually = () => {
+    // Close the gate modal and open the full map drawer
+    setGateOpen(false);
+    setDrawerOpen(true);
   };
 
   return (
     <Modal
       isOpen={isGateOpen}
       onClose={() => setGateOpen(false)}
-      title={showManual ? "Search Location" : "Enable Location Access"}
+      title="Enable Location Access"
       className="max-w-md"
     >
       <div className="flex flex-col gap-5 text-center items-center py-2">
@@ -106,65 +53,7 @@ export const LocationPermissionModal: React.FC = () => {
                 : "Finding nearby boutiques..."}
             </p>
           </div>
-        ) : showManual ? (
-          /* Manual Location Entry View */
-          <div className="w-full flex flex-col gap-4 text-left">
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <div className="flex-grow">
-                <Input
-                  placeholder="Enter city, pincode, or area"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <Button type="submit" variant="primary" className="px-4">
-                <Search className="w-4 h-4" />
-              </Button>
-            </form>
-
-            {errorMessage && (
-              <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 p-3 rounded-lg">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
-
-            {loadingStep === "searching" && (
-              <div className="flex items-center justify-center py-6 gap-2">
-                <Loader2 className="w-5 h-5 text-hive-gold animate-spin" />
-                <span className="text-xs text-hive-text-muted">Searching places...</span>
-              </div>
-            )}
-
-            <div className="flex flex-col max-h-60 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-lg">
-              {searchResults.map((item, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSelectLocation(item)}
-                  className="w-full text-left p-3 hover:bg-slate-50 transition flex items-start gap-2.5 text-xs text-slate-700"
-                >
-                  <MapPin className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                  <span>{item.display_name}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="flex gap-2 mt-2">
-              <Button
-                variant="outline"
-                className="w-full text-xs py-2"
-                onClick={() => {
-                  setShowManual(false);
-                  setErrorMessage(null);
-                }}
-              >
-                Go Back
-              </Button>
-            </div>
-          </div>
         ) : (
-          /* Default Location Request View */
           <>
             <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center text-hive-gold animate-pulse">
               <MapPin className="w-7 h-7" />
@@ -185,7 +74,7 @@ export const LocationPermissionModal: React.FC = () => {
                 <div>
                   <p className="font-semibold">Location access denied.</p>
                   <p className="text-[11px] mt-0.5 text-red-500">
-                    Location access is required for delivery availability.
+                    Please choose your location manually on the map.
                   </p>
                 </div>
               </div>
@@ -203,7 +92,7 @@ export const LocationPermissionModal: React.FC = () => {
 
               <Button
                 variant="outline"
-                onClick={() => setShowManual(true)}
+                onClick={handleChooseManually}
                 className="w-full"
               >
                 Choose Location Manually

@@ -23,20 +23,20 @@ export const StatCard: React.FC<StatCardProps> = ({
   const isPositive = change !== undefined && change >= 0;
 
   return (
-    <Card className={cn("bg-white border-hive-border", className)} {...props}>
-      <CardContent className="p-6 flex flex-col justify-between">
-        <div className="flex justify-between items-start mb-4">
-          <span className="text-xs font-semibold uppercase tracking-wider text-hive-text-muted">
+    <Card className={cn("bg-white border-hive-border h-full flex flex-col", className)} {...props}>
+      <CardContent className="p-4 sm:p-6 flex flex-col justify-between flex-1">
+        <div className="flex justify-between items-start mb-3 sm:mb-4 gap-2">
+          <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-hive-text-muted leading-tight">
             {title}
           </span>
           {icon && (
-            <div className="w-8 h-8 rounded-lg bg-hive-cream border border-hive-border flex items-center justify-center text-hive-gold">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-hive-cream border border-hive-border flex items-center justify-center text-hive-gold shrink-0">
               {icon}
             </div>
           )}
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-3xl font-extrabold tracking-tight text-hive-text">
+          <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-hive-text">
             {value}
           </span>
           {change !== undefined && (

@@ -8,6 +8,7 @@ import { useCartStore } from "@/store/cart-store";
 import { useCart } from "@/context/CartContext";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useLocation } from "@/context/LocationContext";
+import { calculateDistanceKm } from "@/lib/distance";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Subcomponent: AddToCartButton
@@ -238,12 +239,28 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const addItem = useCartStore((state) => state.addItem);
   const setCheckoutItems = useCheckoutStore((state) => state.setCheckoutItems);
   const { setSidebarOpen } = useCart();
-  const { isServiceable } = useLocation();
+  const { latitude, longitude } = useLocation();
 
-  const inventoryCount = selectedSize ? product.inventory[selectedSize] ?? 0 : 0;
+  // ── Single source of truth for stock ──────────────────────────────────────
+  // Convex DB products use `stockBySize`; mock products use `inventory`.
+  const stockMap: Record<string, number> =
+    (product as any).stockBySize ?? product.inventory ?? {};
+
+  console.log("[PurchaseActions] stockMap:", stockMap, "selectedSize:", selectedSize);
+
+  const inventoryCount = selectedSize ? (stockMap[selectedSize] ?? 0) : 0;
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
   const isLowStock = selectedSize ? inventoryCount > 0 && inventoryCount <= 3 : false;
-  const isLocationServiceable = isServiceable;
+
+  const isLocationServiceable = React.useMemo(() => {
+    if (latitude === null || longitude === null) return true;
+    const bLat = (product.boutique as any).latitude;
+    const bLng = (product.boutique as any).longitude;
+    const bRad = (product.boutique as any).deliveryRadiusKm ?? 15;
+    if (bLat === undefined || bLng === undefined) return true;
+    const dist = calculateDistanceKm(latitude, longitude, bLat, bLng);
+    return dist <= bRad;
+  }, [latitude, longitude, product.boutique]);
 
   const triggerToast = (message: string, type: "success" | "info" = "success") => {
     setToast({ message, type });
@@ -269,7 +286,9 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       setLoading(false);
 
       addItem({
-        productId: product.id,
+        // product.slug is the canonical identifier — Convex products have _id + slug
+        // but not .id. The order handler looks up products by slug.
+        productId: product.slug ?? (product as any)._id ?? product.id,
         size: selectedSize,
         price: product.price,
         name: product.name,
@@ -297,7 +316,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
 
     setCheckoutItems([
       {
-        productId: product.id,
+        productId: product.slug ?? (product as any)._id ?? product.id,
         size: selectedSize,
         quantity: 1,
         price: product.price,
@@ -329,7 +348,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         {!isLocationServiceable ? (
           <div className="flex items-center gap-2 text-xs font-bold text-red-700 bg-red-50 px-3.5 py-1.5 rounded-xl border border-red-200 w-full">
             <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-500" />
-            <span>Delivery Not Available: HIVE does not serve your area yet.</span>
+            <span>Delivery unavailable for your selected location.</span>
           </div>
         ) : !selectedSize ? (
           <div className="flex items-center gap-2 text-xs font-bold text-hive-amber bg-hive-gold/10 px-3.5 py-1.5 rounded-xl border border-hive-gold/25 w-full">

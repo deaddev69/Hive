@@ -1,10 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Edit2, Trash2, CheckCircle2, AlertTriangle, MapPin, Sparkles, ChevronRight, X, Phone, User, Landmark, Building, Bell, ShoppingBag } from "lucide-react";
+import {
+  ArrowLeft,
+  Plus,
+  Edit2,
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+  MapPin,
+  ChevronRight,
+  X,
+  ShoppingBag,
+  Navigation,
+  Map,
+  Home,
+  Briefcase,
+  Bookmark,
+} from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useLocation } from "@/context/LocationContext";
 import { useCheckoutStore } from "@/store/checkout-store";
@@ -13,50 +29,93 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useUser } from "@clerk/nextjs";
+import { calculateDistanceKm } from "@/lib/distance";
 
-// Local type alias that mirrors what the UI expects
+// Dynamically load the map (Leaflet requires browser, SSR disabled)
+const LocationMapPicker = dynamic(
+  () => import("@/components/location/LocationMapPicker"),
+  { ssr: false }
+);
+
+// ── Types ──────────────────────────────────────────────────────────────────────
 type Address = {
   _id: Id<"addresses">;
   label: string;
-  line1: string;
+  line1?: string;
   line2?: string;
   city: string;
   state: string;
   pincode: string;
+  lat: number;
+  lng: number;
+  formattedAddress?: string;
+  houseNumber?: string;
+  landmark?: string;
   isDefault: boolean;
 };
 
+type MapResult = {
+  lat: number;
+  lng: number;
+  formattedAddress: string;
+  city: string;
+  state: string;
+  pincode: string;
+};
+
+// ── Address Card Display ───────────────────────────────────────────────────────
+function getDisplayLines(addr: Address): { main: string; sub?: string } {
+  if (addr.formattedAddress) {
+    const house = addr.houseNumber ? `${addr.houseNumber}, ` : "";
+    const landmark = addr.landmark ? ` (Near ${addr.landmark})` : "";
+    return {
+      main: `${house}${addr.formattedAddress}${landmark}`,
+      sub: addr.pincode ? `Pincode: ${addr.pincode}` : undefined,
+    };
+  }
+  // Legacy line1/line2 format
+  const lines = [addr.line1, addr.line2].filter(Boolean).join(", ");
+  return {
+    main: lines || addr.formattedAddress || "—",
+    sub: `${addr.city}, ${addr.state} — ${addr.pincode}`,
+  };
+}
+
+const LABEL_ICONS: Record<string, React.ReactNode> = {
+  home: <Home className="w-3.5 h-3.5" />,
+  work: <Briefcase className="w-3.5 h-3.5" />,
+  other: <Bookmark className="w-3.5 h-3.5" />,
+};
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function CheckoutAddressPage() {
   const router = useRouter();
   const { isLoaded: clerkLoaded, isSignedIn } = useUser();
 
-  // ── Convex data & mutations ──────────────────────────────────────────────
-  // useQuery will return [] when unauthenticated (query returns [] for anon users)
   const convexAddresses = useQuery(api.addresses.list) ?? [];
-  const addAddressMutation    = useMutation(api.addresses.add);
+  const addAddressMutation = useMutation(api.addresses.add);
   const updateAddressMutation = useMutation(api.addresses.update);
   const removeAddressMutation = useMutation(api.addresses.remove);
-  const setDefaultMutation    = useMutation(api.addresses.setDefault);
+  const setDefaultMutation = useMutation(api.addresses.setDefault);
 
-  // Map Convex docs to local type
   const addresses: Address[] = convexAddresses.map((a) => ({
-    _id:       a._id,
-    label:     a.label,
-    line1:     a.line1,
-    line2:     a.line2,
-    city:      a.city,
-    state:     a.state,
-    pincode:   a.pincode,
+    _id: a._id,
+    label: a.label,
+    line1: a.line1,
+    line2: a.line2,
+    city: a.city,
+    state: a.state,
+    pincode: a.pincode,
+    lat: a.lat,
+    lng: a.lng,
+    formattedAddress: a.formattedAddress,
+    houseNumber: a.houseNumber,
+    landmark: a.landmark,
     isDefault: a.isDefault,
   }));
 
-  // Selected address — default to the default one or first
   const [selectedAddressId, setSelectedAddressId] = useState<Id<"addresses"> | null>(null);
-
-  const handleSelectAddress = (id: Id<"addresses">) => {
-    setSelectedAddressId(id);
-    setSelectedAddressIdInCheckout(id);
-  };
+  const setSelectedAddressIdInCheckout = useCheckoutStore((s) => s.setSelectedAddressId);
 
   useEffect(() => {
     if (addresses.length > 0 && !selectedAddressId) {
@@ -68,150 +127,172 @@ export default function CheckoutAddressPage() {
     }
   }, [addresses.length]);
 
-  const items = useCartStore((state) => state.items);
-  const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
-  const setSelectedAddressIdInCheckout = useCheckoutStore((state) => state.setSelectedAddressId);
+  const handleSelectAddress = (id: Id<"addresses">) => {
+    setSelectedAddressId(id);
+    setSelectedAddressIdInCheckout(id);
+  };
 
-  const { isServiceable: isGlobalServiceable, city: currentCity, stateName: currentState } = useLocation();
-  const activeZones = useQuery(api.serviceability.getActiveZones) ?? [];
-  const requestService = useMutation(api.serviceability.requestService);
-  const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
+  const items = useCartStore((s) => s.items);
+  const checkoutItems = useCheckoutStore((s) => s.checkoutItems);
+  // Do NOT default to [] — keep undefined so we know when it's still loading
+  const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques);
 
   const isAddressServiceable = (addr: Address) => {
-    if (!addr.city) return false;
-    return activeZones.some(
-      (zone) => zone.city.trim().toLowerCase() === addr.city.trim().toLowerCase()
-    );
+    // While boutiques are still loading, don't block the user
+    if (!dbBoutiques) return true;
+    if (dbBoutiques.length === 0) return true;
+    return dbBoutiques.some((b) => {
+      const bLat = b.latitude ?? b.addressDetails?.lat;
+      const bLng = b.longitude ?? b.addressDetails?.lng;
+      if (bLat === undefined || bLng === undefined) return false;
+      const dist = calculateDistanceKm(addr.lat, addr.lng, bLat, bLng);
+      return dist <= (b.deliveryRadiusKm ?? 15);
+    });
   };
 
   const [mounted, setMounted] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-
-  // Address form states
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    addressLine1: "",
-    addressLine2: "",
-    landmark: "",
-    city: currentCity || "",
-    state: currentState || "",
-    pincode: "",
-    isDefault: false,
-  });
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  
-  // Waitlist for unserviceable area
+  const [formStep, setFormStep] = useState<1 | 2>(1); // Step 1: Map, Step 2: Details
+  const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
   const [waitlistEmail, setWaitlistEmail] = useState("");
   const [waitlistSuccess, setWaitlistSuccess] = useState(false);
 
+  // Map & geocode state
+  const [mapResult, setMapResult] = useState<MapResult | null>(null);
+  const [mapLat, setMapLat] = useState(10.0261);
+  const [mapLng, setMapLng] = useState(76.3082);
+
+  // Details form state
+  const [formLabel, setFormLabel] = useState("Home");
+  const [formHouseNumber, setFormHouseNumber] = useState("");
+  const [formLandmark, setFormLandmark] = useState("");
+  const [formIsDefault, setFormIsDefault] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [formSaving, setFormSaving] = useState(false);
+
+  // ── CRITICAL FIX: set mounted=true after first render so the guard below passes ──
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (mounted && !isGlobalServiceable) {
-      router.replace("/");
-    }
-  }, [mounted, isGlobalServiceable, router]);
+  // ── useCallback MUST be above ALL early returns (Rules of Hooks) ──
+  const handleReverseGeocode = useCallback(
+    (result: { formattedAddress: string; city: string; state: string; pincode: string }) => {
+      setMapResult({
+        lat: mapLat,
+        lng: mapLng,
+        ...result,
+      });
+    },
+    [mapLat, mapLng]
+  );
 
-  // ── Auth guard ─────────────────────────────────────────────────────────────
-  // Wait for Clerk to initialize before making any decisions
-  if (!mounted || !clerkLoaded) {
-    return <AddressSkeleton />;
-  }
+  if (!mounted || !clerkLoaded) return <AddressSkeleton />;
 
-  // If Clerk is loaded and user is NOT signed in → redirect to sign-in
   if (!isSignedIn) {
     router.replace("/sign-in?redirect_url=" + encodeURIComponent("/checkout/address"));
     return <AddressSkeleton />;
   }
 
-  const selectedAddress = addresses.find((addr) => addr._id === selectedAddressId) || null;
+  const selectedAddress = addresses.find((a) => a._id === selectedAddressId) ?? null;
   const isServiceable = selectedAddress ? isAddressServiceable(selectedAddress) : false;
   const effectiveItems = getEffectiveCheckoutItems(items, checkoutItems);
-  
-  const subtotal = effectiveItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const subtotal = effectiveItems.reduce((t, i) => t + i.price * i.quantity, 0);
   const deliveryFee = subtotal >= 5000 ? 0 : 99;
   const total = subtotal + (isServiceable ? deliveryFee : 0);
 
-  const handleOpenAddForm = () => {
+  // ── Form open/close ───────────────────────────────────────────────────────
+  const openAddForm = () => {
     setEditingAddress(null);
-    setFormData({
-      name: "",
-      phone: "",
-      addressLine1: "",
-      addressLine2: "",
-      landmark: "",
-      city: currentCity || "",
-      state: currentState || "",
-      pincode: "",
-      isDefault: false,
-    });
-    setFormErrors({});
+    setFormStep(1);
+    setMapResult(null);
+    setMapLat(10.0261);
+    setMapLng(76.3082);
+    setFormLabel("Home");
+    setFormHouseNumber("");
+    setFormLandmark("");
+    setFormIsDefault(addresses.length === 0);
+    setFormError("");
     setShowForm(true);
   };
 
-  const handleOpenEditForm = (addr: Address, e: React.MouseEvent) => {
+  const openEditForm = (addr: Address, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingAddress(addr);
-    setFormData({
-      name: addr.label,
-      phone: "",
-      addressLine1: addr.line1,
-      addressLine2: addr.line2 || "",
-      landmark: "",
-      city: addr.city,
-      state: addr.state,
-      pincode: addr.pincode,
-      isDefault: addr.isDefault,
-    });
-    setFormErrors({});
+    setFormStep(addr.formattedAddress ? 2 : 1); // Skip to step 2 if we already have map data
+    if (addr.lat && addr.lng) {
+      setMapLat(addr.lat);
+      setMapLng(addr.lng);
+      setMapResult({
+        lat: addr.lat,
+        lng: addr.lng,
+        formattedAddress: addr.formattedAddress || addr.line1 || "",
+        city: addr.city,
+        state: addr.state,
+        pincode: addr.pincode,
+      });
+    }
+    setFormLabel(addr.label);
+    setFormHouseNumber(addr.houseNumber || "");
+    setFormLandmark(addr.landmark || "");
+    setFormIsDefault(addr.isDefault);
+    setFormError("");
     setShowForm(true);
   };
 
-  const validateForm = () => {
-    const errors: Record<string, string> = {};
-    if (!formData.name.trim()) errors.name = "Full name is required";
-    if (!formData.phone.trim()) {
-      errors.phone = "Phone number is required";
-    } else if (!/^\d{10}$/.test(formData.phone.trim())) {
-      errors.phone = "Phone must be exactly 10 digits";
-    }
-    if (!formData.addressLine1.trim()) errors.addressLine1 = "Address line 1 is required";
-    if (!formData.city.trim()) errors.city = "City is required";
-    if (!formData.state.trim()) errors.state = "State is required";
-    if (!formData.pincode.trim()) {
-      errors.pincode = "Pincode is required";
-    } else if (!/^\d{6}$/.test(formData.pincode.trim())) {
-      errors.pincode = "Pincode must be exactly 6 digits";
-    }
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
+  const closeForm = () => {
+    setShowForm(false);
+    setFormStep(1);
+    setMapResult(null);
+    setFormError("");
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  // ── Map change handler (not a hook) ──────────────────────────────────────
+  const handleMapChange = (lat: number, lng: number) => {
+    setMapLat(lat);
+    setMapLng(lng);
+  };
 
-    const convexPayload = {
-      label:     formData.name,
-      line1:     formData.addressLine1,
-      line2:     formData.addressLine2 || undefined,
-      city:      formData.city,
-      state:     formData.state,
-      pincode:   formData.pincode,
-      isDefault: formData.isDefault,
+  // ── Step 2 form submit ────────────────────────────────────────────────────
+  const handleSaveAddress = async () => {
+    if (!mapResult) {
+      setFormError("Please select a location on the map first.");
+      return;
+    }
+    if (!formLabel.trim()) {
+      setFormError("Please enter an address label (e.g. Home, Work).");
+      return;
+    }
+    setFormError("");
+    setFormSaving(true);
+
+    const payload = {
+      label: formLabel.trim(),
+      city: mapResult.city,
+      state: mapResult.state,
+      pincode: mapResult.pincode,
+      lat: mapResult.lat,
+      lng: mapResult.lng,
+      formattedAddress: mapResult.formattedAddress,
+      houseNumber: formHouseNumber.trim() || undefined,
+      landmark: formLandmark.trim() || undefined,
+      isDefault: formIsDefault,
     };
 
-    if (editingAddress) {
-      await updateAddressMutation({ addressId: editingAddress._id, ...convexPayload });
-    } else {
-      const newId = await addAddressMutation(convexPayload);
-      if (newId) setSelectedAddressId(newId as Id<"addresses">);
+    try {
+      if (editingAddress) {
+        await updateAddressMutation({ addressId: editingAddress._id, ...payload });
+      } else {
+        const newId = await addAddressMutation(payload);
+        if (newId) setSelectedAddressId(newId as Id<"addresses">);
+      }
+      closeForm();
+    } catch (err) {
+      setFormError("Failed to save address. Please try again.");
+    } finally {
+      setFormSaving(false);
     }
-    setShowForm(false);
   };
 
   const handleDelete = async (id: Id<"addresses">, e: React.MouseEvent) => {
@@ -222,28 +303,8 @@ export default function CheckoutAddressPage() {
     }
   };
 
-  const handleWaitlistSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedAddress) return;
-    setIsSubmittingWaitlist(true);
-    try {
-      await requestService({
-        city: selectedAddress.city,
-        state: selectedAddress.state,
-      });
-      setWaitlistSuccess(true);
-      setTimeout(() => {
-        setWaitlistSuccess(false);
-        setWaitlistEmail("");
-      }, 3500);
-    } catch (err) {
-      console.error("Failed to request service:", err);
-    } finally {
-      setIsSubmittingWaitlist(false);
-    }
-  };
+  // Waitlist functionality removed
 
-  // Redirect if cart is empty
   if (effectiveItems.length === 0) {
     return (
       <div className="min-h-screen bg-hive-cream/30 py-20 px-6 flex items-center justify-center">
@@ -254,15 +315,14 @@ export default function CheckoutAddressPage() {
           <div className="space-y-2">
             <h1 className="font-serif text-xl font-bold text-hive-dark">Your bag is empty</h1>
             <p className="text-xs text-hive-text-muted max-w-[280px] mx-auto leading-relaxed">
-              Please add items to your cart before proceeding to shipping configuration.
+              Please add items to your cart before proceeding to shipping.
             </p>
           </div>
           <button
-            type="button"
             onClick={() => router.push("/products")}
             className="px-6 h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest inline-flex items-center gap-2 shadow-sm"
           >
-            <span>Browse Products</span>
+            Browse Products
           </button>
         </div>
       </div>
@@ -272,18 +332,18 @@ export default function CheckoutAddressPage() {
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 select-none">
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
-        
-        {/* Back Link */}
+
+        {/* Back */}
         <button
           type="button"
           onClick={() => router.back()}
-          className="self-start flex items-center gap-2 text-xs font-bold text-hive-text-muted hover:text-hive-dark transition-colors duration-200"
+          className="self-start flex items-center gap-2 text-xs font-bold text-hive-text-muted hover:text-hive-dark transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Bag</span>
+          Back to Bag
         </button>
 
-        {/* Checkout Steps Progress Indicator */}
+        {/* Progress */}
         <div className="w-full bg-white border border-hive-border/40 rounded-3xl p-5 shadow-sm max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-bold text-hive-text-muted">
           <div className="flex items-center gap-2 text-hive-dark">
             <span className="w-5 h-5 rounded-full bg-hive-dark text-hive-gold flex items-center justify-center text-[10px]">1</span>
@@ -301,33 +361,33 @@ export default function CheckoutAddressPage() {
           </div>
         </div>
 
-        <h1 className="font-serif text-2xl sm:text-3xl font-black text-hive-dark text-left mt-4">
+        <h1 className="font-serif text-2xl sm:text-3xl font-black text-hive-dark text-left mt-2">
           Select Delivery Address
         </h1>
 
-        {/* Layout grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left items-start">
-          
-          {/* Left panel: Saved addresses */}
+
+          {/* LEFT: address cards */}
           <div className="lg:col-span-8 space-y-6">
-            
-            {/* Grid of Address cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {addresses.map((addr) => {
                 const isSelected = addr._id === selectedAddressId;
                 const serviceable = isAddressServiceable(addr);
-                
+                const { main, sub } = getDisplayLines(addr);
+                const labelKey = addr.label.toLowerCase();
+                const labelIcon = LABEL_ICONS[labelKey] ?? <MapPin className="w-3.5 h-3.5" />;
+
                 return (
                   <div
                     key={addr._id}
                     onClick={() => handleSelectAddress(addr._id)}
-                    className={`bg-white border rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-4 relative cursor-pointer group transition-all duration-300 ${
+                    className={`bg-white border rounded-3xl p-5 shadow-sm flex flex-col justify-between gap-4 relative cursor-pointer transition-all duration-300 ${
                       isSelected
                         ? "border-hive-dark ring-1 ring-hive-dark"
                         : "border-hive-border/50 hover:border-hive-border"
                     }`}
                   >
-                    {/* Default badge & selector */}
+                    {/* Header */}
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2.5">
                         <input
@@ -335,13 +395,13 @@ export default function CheckoutAddressPage() {
                           name="selected_address"
                           checked={isSelected}
                           onChange={() => handleSelectAddress(addr._id)}
-                          className="w-4.5 h-4.5 accent-hive-dark cursor-pointer"
+                          className="w-4 h-4 accent-hive-dark cursor-pointer"
                         />
-                        <span className="text-xs font-bold text-hive-dark truncate max-w-[140px]">
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-hive-dark">
+                          {labelIcon}
                           {addr.label}
                         </span>
                       </div>
-                      
                       {addr.isDefault && (
                         <span className="text-[9px] font-extrabold uppercase bg-hive-comb text-hive-dark px-2 py-0.5 rounded-lg border border-hive-gold/15">
                           Default
@@ -349,17 +409,14 @@ export default function CheckoutAddressPage() {
                       )}
                     </div>
 
-                    {/* Address details block */}
+                    {/* Address text */}
                     <div className="space-y-1 text-xs text-hive-text leading-relaxed font-medium">
-                      <p>{addr.line1}</p>
-                      {addr.line2 && <p>{addr.line2}</p>}
-                      <p>{addr.city}, {addr.state} - <span className="font-extrabold">{addr.pincode}</span></p>
+                      <p className="line-clamp-3">{main}</p>
+                      {sub && <p className="text-hive-text-muted">{sub}</p>}
                     </div>
 
-                    {/* Action buttons */}
-                    <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1.5 text-[10px] font-extrabold uppercase tracking-wide">
-                      
-                      {/* Serviceability quick indicator tag */}
+                    {/* Footer */}
+                    <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1 text-[10px] font-extrabold uppercase tracking-wide">
                       <div>
                         {serviceable ? (
                           <span className="text-green-700 bg-green-50 px-2 py-0.5 rounded-md border border-green-200/40">
@@ -371,23 +428,22 @@ export default function CheckoutAddressPage() {
                           </span>
                         )}
                       </div>
-
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
-                          onClick={(e) => handleOpenEditForm(addr, e)}
-                          className="flex items-center gap-1 text-hive-text-muted hover:text-hive-dark transition-colors duration-200"
+                          onClick={(e) => openEditForm(addr, e)}
+                          className="flex items-center gap-1 text-hive-text-muted hover:text-hive-dark transition-colors"
                         >
                           <Edit2 className="w-3 h-3" />
-                          <span>Edit</span>
+                          Edit
                         </button>
                         <button
                           type="button"
                           onClick={(e) => handleDelete(addr._id, e)}
-                          className="flex items-center gap-1 text-hive-text-muted hover:text-red-500 transition-colors duration-200"
+                          className="flex items-center gap-1 text-hive-text-muted hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="w-3 h-3" />
-                          <span>Delete</span>
+                          Delete
                         </button>
                       </div>
                     </div>
@@ -395,30 +451,26 @@ export default function CheckoutAddressPage() {
                 );
               })}
 
-              {/* Add address dotted trigger card */}
+              {/* Add new address card */}
               <button
                 type="button"
-                onClick={handleOpenAddForm}
-                className="bg-transparent border-2 border-dashed border-hive-border hover:border-hive-gold rounded-3xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-300 min-h-[160px] group text-hive-text-muted hover:text-hive-dark focus:outline-none"
+                onClick={openAddForm}
+                className="bg-transparent border-2 border-dashed border-hive-border hover:border-hive-gold rounded-3xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 min-h-[160px] group text-hive-text-muted hover:text-hive-dark focus:outline-none"
               >
                 <Plus className="w-6 h-6 stroke-[1.8] group-hover:scale-110 transition-transform duration-300 text-hive-gold" />
-                <span className="text-xs font-bold uppercase tracking-wider">
-                  Add New Address
-                </span>
+                <span className="text-xs font-bold uppercase tracking-wider">Add New Address</span>
               </button>
             </div>
-            
           </div>
 
-          {/* Right panel: Summary card & serviceability check */}
+          {/* RIGHT: summary + serviceability */}
           <div className="lg:col-span-4 space-y-6">
-            
-            {/* 1. Serviceability card */}
+
+            {/* Serviceability */}
             <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
               <h2 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2">
                 Serviceability Status
               </h2>
-
               {selectedAddress ? (
                 <div className="space-y-4">
                   <div className="flex items-start gap-2.5">
@@ -428,21 +480,17 @@ export default function CheckoutAddressPage() {
                         Pincode: {selectedAddress.pincode}
                       </span>
                       <span className="text-hive-text-muted">
-                        Checking hyperlocal courier coverage...
+                        {selectedAddress.city}{selectedAddress.state ? `, ${selectedAddress.state}` : ""}
                       </span>
                     </div>
                   </div>
-
                   {isServiceable ? (
-                    <div className="bg-green-50 border border-green-200 p-3.5 rounded-2xl space-y-2">
+                    <div className="bg-green-50 border border-green-200 p-3.5 rounded-2xl space-y-1">
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[9px] font-extrabold uppercase bg-green-100 text-green-800 border border-green-200">
                         ✓ Serviceable Zone
                       </span>
                       <p className="text-xs font-bold text-green-700 leading-snug">
-                        ✓ Same-Day Delivery Available in this region!
-                      </p>
-                      <p className="text-[10px] text-green-600/80 font-medium">
-                        Alteration try-on delivery service supported.
+                        Same-Day Delivery Available!
                       </p>
                     </div>
                   ) : (
@@ -451,50 +499,14 @@ export default function CheckoutAddressPage() {
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[9px] font-extrabold uppercase bg-red-100 text-red-800 border border-red-200">
                           ✕ Not Available
                         </span>
-                        <p className="text-xs font-extrabold text-red-700 leading-snug">
-                          &quot;We&apos;re not in this area yet.&quot;
+                        <p className="text-xs font-extrabold text-red-700">
+                          Boutiques do not deliver here
                         </p>
                         <p className="text-[10px] text-hive-text-muted font-medium">
-                          Hive handcrafts and alters boutique items locally. We are launching here soon!
+                          The selected address is outside the delivery radius of our partner boutiques.
                         </p>
                       </div>
-
-                      {/* Mock Notify list */}
-                      <form onSubmit={handleWaitlistSubmit} className="space-y-2 pt-1 border-t border-hive-border/40">
-                        <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-                          Request Launch In Pincode {selectedAddress.pincode}
-                        </span>
-                        
-                        {!waitlistSuccess ? (
-                          <div className="flex gap-2">
-                            <input
-                              type="email"
-                              required
-                              placeholder="Enter your email"
-                              value={waitlistEmail}
-                              onChange={(e) => setWaitlistEmail(e.target.value)}
-                              className="flex-1 h-9 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
-                            />
-                            <button
-                              type="submit"
-                              disabled={isSubmittingWaitlist}
-                              className="h-9 px-4 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 transition-all text-xs font-extrabold uppercase tracking-wider rounded-xl shadow-sm disabled:opacity-50"
-                            >
-                              Notify
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-2 rounded-xl flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span>Added to waitlist! We will notify you.</span>
-                          </div>
-                        )}
-                      </form>
-                      
-                      <Link
-                        href="/products"
-                        className="text-xs text-center font-extrabold uppercase tracking-widest text-hive-dark hover:text-hive-amber transition-colors duration-200 block border border-hive-border py-2.5 rounded-xl bg-white"
-                      >
+                      <Link href="/products" className="text-xs text-center font-extrabold uppercase tracking-widest text-hive-dark hover:text-hive-amber transition-colors block border border-hive-border py-2.5 rounded-xl bg-white">
                         Back To Products
                       </Link>
                     </div>
@@ -503,17 +515,16 @@ export default function CheckoutAddressPage() {
               ) : (
                 <div className="text-xs text-hive-text-muted bg-hive-gold/5 border border-hive-gold/15 p-4 rounded-2xl flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-hive-amber flex-shrink-0" />
-                  <span>Please select a delivery address or add a new one.</span>
+                  <span>Please select or add a delivery address.</span>
                 </div>
               )}
             </div>
 
-            {/* 2. Order summary totals review */}
+            {/* Price summary */}
             <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
               <h2 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2">
                 Price Details
               </h2>
-              
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Cart Subtotal</span>
@@ -530,253 +541,243 @@ export default function CheckoutAddressPage() {
                   </span>
                 </div>
               </div>
-
-              {/* Checkout slot selection CTA */}
               <button
                 type="button"
                 disabled={!selectedAddress || !isServiceable}
                 onClick={() => router.push("/checkout/delivery")}
-                className="w-full h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl mt-3 font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-hive-amber"
+                className="w-full h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl mt-3 font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span>Select Delivery Slot</span>
+                Select Delivery Slot
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
-            
           </div>
-          
         </div>
       </div>
 
-      {/* Address Form Popup Modal (Create / Edit) */}
+      {/* ── Address Form Modal ─────────────────────────────────────────────── */}
       {showForm && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-          {/* Modal Backdrop */}
-          <div className="absolute inset-0 bg-hive-dark/50 backdrop-blur-sm" onClick={() => setShowForm(false)} />
-          
-          {/* Modal Surface */}
-          <div className="bg-hive-cream border border-hive-border rounded-3xl w-full max-w-lg p-6 shadow-2xl relative z-10 animate-[scaleUp_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards]">
-            
-            {/* Modal Header */}
-            <div className="flex justify-between items-center border-b border-hive-border/40 pb-3 mb-4 text-left">
-              <h3 className="font-serif text-lg font-bold text-hive-dark">
-                {editingAddress ? "Edit Delivery Address" : "Add Delivery Address"}
-              </h3>
+        <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-hive-dark/50 backdrop-blur-sm" onClick={closeForm} />
+
+          {/* Modal */}
+          <div className="bg-white border border-hive-border rounded-t-3xl sm:rounded-3xl w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto relative z-10 shadow-2xl animate-[scaleUp_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-hive-border/40 px-6 py-4 sticky top-0 bg-white z-10">
+              <div className="flex flex-col">
+                <h3 className="font-serif text-lg font-bold text-hive-dark">
+                  {editingAddress ? "Edit Address" : "Add New Address"}
+                </h3>
+                <p className="text-xs text-hive-text-muted mt-0.5">
+                  {formStep === 1 ? "Step 1 of 2 — Pin your location on the map" : "Step 2 of 2 — Add delivery details"}
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
-                className="p-1 rounded-full hover:bg-hive-border/40 text-hive-text-muted hover:text-hive-dark transition-colors duration-200"
+                onClick={closeForm}
+                className="p-1.5 rounded-full hover:bg-hive-border/40 text-hive-text-muted hover:text-hive-dark transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Form inputs */}
-            <form onSubmit={handleFormSubmit} className="space-y-4 text-left">
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="form-name" className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                    Full Name
-                  </label>
-                  <input
-                    id="form-name"
-                    type="text"
-                    required
-                    placeholder="e.g. Aditi Rao"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className={`h-10 px-3 text-xs border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium ${
-                      formErrors.name ? "border-red-500" : "border-hive-border"
-                    }`}
+            <div className="px-6 py-5 space-y-5">
+              {/* ── STEP 1: Map ────────────────────────────────────────────── */}
+              {formStep === 1 && (
+                <>
+                  <LocationMapPicker
+                    lat={mapLat}
+                    lng={mapLng}
+                    onChange={handleMapChange}
+                    onReverseGeocode={handleReverseGeocode}
+                    showCurrentLocation={true}
+                    height="320px"
                   />
-                  {formErrors.name && <span className="text-[9px] font-bold text-red-600">{formErrors.name}</span>}
-                </div>
 
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="form-phone" className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                    Phone Number
-                  </label>
-                  <input
-                    id="form-phone"
-                    type="tel"
-                    required
-                    placeholder="10-digit mobile phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className={`h-10 px-3 text-xs border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium ${
-                      formErrors.phone ? "border-red-500" : "border-hive-border"
-                    }`}
-                  />
-                  {formErrors.phone && <span className="text-[9px] font-bold text-red-600">{formErrors.phone}</span>}
-                </div>
-              </div>
+                  {/* Address preview */}
+                  {mapResult && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-2xl flex items-start gap-3 text-left">
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-xs space-y-0.5">
+                        <p className="font-extrabold text-green-800">Location confirmed</p>
+                        <p className="text-green-700 leading-relaxed">{mapResult.formattedAddress}</p>
+                        <p className="text-green-600 font-semibold">
+                          {mapResult.city}{mapResult.state ? `, ${mapResult.state}` : ""} — {mapResult.pincode || "Pincode pending"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-              <div className="flex flex-col gap-1">
-                <label htmlFor="form-address1" className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                  Address Line 1
-                </label>
-                <input
-                  id="form-address1"
-                  type="text"
-                  required
-                  placeholder="Flat, House no., Apartment complex"
-                  value={formData.addressLine1}
-                  onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
-                  className={`h-10 px-3 text-xs border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium ${
-                    formErrors.addressLine1 ? "border-red-500" : "border-hive-border"
-                  }`}
-                />
-                {formErrors.addressLine1 && <span className="text-[9px] font-bold text-red-600">{formErrors.addressLine1}</span>}
-              </div>
+                  {!mapResult && (
+                    <div className="p-4 bg-hive-cream/40 border border-hive-border/50 rounded-2xl flex items-center gap-3">
+                      <MapPin className="w-5 h-5 text-hive-amber flex-shrink-0" />
+                      <p className="text-xs text-hive-text-muted font-medium">
+                        Tap the map or use "Use Current Location" to pin your delivery address.
+                      </p>
+                    </div>
+                  )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="form-address2" className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                    Address Line 2 (Optional)
-                  </label>
-                  <input
-                    id="form-address2"
-                    type="text"
-                    placeholder="Street name, Sector, Area"
-                    value={formData.addressLine2}
-                    onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
-                    className="h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="form-landmark" className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                    Landmark (Optional)
-                  </label>
-                  <input
-                    id="form-landmark"
-                    type="text"
-                    placeholder="e.g. Near HDFC Bank"
-                    value={formData.landmark}
-                    onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
-                    className="h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
-                  />
-                </div>
-              </div>
+                  <div className="flex gap-3 pt-2 border-t border-hive-border/40">
+                    <button
+                      type="button"
+                      onClick={closeForm}
+                      className="flex-1 h-11 border border-hive-border hover:bg-hive-dark/5 rounded-xl text-xs font-extrabold uppercase tracking-widest text-hive-text"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!mapResult}
+                      onClick={() => setFormStep(2)}
+                      className="flex-1 h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/90 rounded-xl text-xs font-extrabold uppercase tracking-widest shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      Continue →
+                    </button>
+                  </div>
+                </>
+              )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="form-city" className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                    City
-                  </label>
-                  <input
-                    id="form-city"
-                    type="text"
-                    required
-                    placeholder="e.g. Kochi"
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    className={`h-10 px-3 text-xs border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium ${
-                      formErrors.city ? "border-red-500" : "border-hive-border"
-                    }`}
-                  />
-                  {formErrors.city && <span className="text-[9px] font-bold text-red-600">{formErrors.city}</span>}
-                </div>
+              {/* ── STEP 2: Details ────────────────────────────────────────── */}
+              {formStep === 2 && mapResult && (
+                <>
+                  {/* Location summary chip */}
+                  <div
+                    onClick={() => setFormStep(1)}
+                    className="p-3 bg-hive-cream/60 border border-hive-border/50 rounded-xl flex items-center gap-3 cursor-pointer hover:border-hive-gold transition-colors"
+                  >
+                    <MapPin className="w-4 h-4 text-hive-amber flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-hive-dark truncate">{mapResult.formattedAddress}</p>
+                      <p className="text-[10px] text-hive-text-muted">{mapResult.city}, {mapResult.pincode} · Tap to change</p>
+                    </div>
+                    <Map className="w-4 h-4 text-hive-text-muted flex-shrink-0" />
+                  </div>
 
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="form-state" className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                    State
-                  </label>
-                  <input
-                    id="form-state"
-                    type="text"
-                    required
-                    placeholder="e.g. Kerala"
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    className={`h-10 px-3 text-xs border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium ${
-                      formErrors.state ? "border-red-500" : "border-hive-border"
-                    }`}
-                  />
-                  {formErrors.state && <span className="text-[9px] font-bold text-red-600">{formErrors.state}</span>}
-                </div>
+                  {/* Label */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
+                      Address Label
+                    </label>
+                    <div className="flex gap-2">
+                      {["Home", "Work", "Other"].map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setFormLabel(opt)}
+                          className={`flex-1 h-9 rounded-xl text-xs font-bold border transition-all ${
+                            formLabel === opt
+                              ? "bg-hive-dark text-hive-gold border-hive-dark"
+                              : "bg-white text-hive-text border-hive-border hover:border-hive-gold"
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                    {!["Home", "Work", "Other"].includes(formLabel) && (
+                      <input
+                        type="text"
+                        placeholder="Custom label (e.g. Gym, Relative)"
+                        value={formLabel}
+                        onChange={(e) => setFormLabel(e.target.value)}
+                        className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
+                      />
+                    )}
+                  </div>
 
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="form-pincode" className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                    Pincode
-                  </label>
-                  <input
-                    id="form-pincode"
-                    type="text"
-                    required
-                    placeholder="6-digit pincode"
-                    value={formData.pincode}
-                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                    className={`h-10 px-3 text-xs border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium ${
-                      formErrors.pincode ? "border-red-500" : "border-hive-border"
-                    }`}
-                  />
-                  {formErrors.pincode && <span className="text-[9px] font-bold text-red-600">{formErrors.pincode}</span>}
-                </div>
-              </div>
+                  {/* House Number */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
+                      House / Flat / Door Number <span className="normal-case text-hive-text-muted font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Flat 4B, Door No. 12"
+                      value={formHouseNumber}
+                      onChange={(e) => setFormHouseNumber(e.target.value)}
+                      className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
+                    />
+                  </div>
 
-              {/* Set default toggle */}
-              <div className="flex items-center gap-2 pt-2 select-none text-xs font-semibold text-hive-dark">
-                <input
-                  id="form-default"
-                  type="checkbox"
-                  checked={formData.isDefault}
-                  onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
-                  className="w-4 h-4 accent-hive-dark cursor-pointer"
-                />
-                <label htmlFor="form-default" className="cursor-pointer">
-                  Make this my default delivery address
-                </label>
-              </div>
+                  {/* Landmark */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
+                      Nearby Landmark <span className="normal-case text-hive-text-muted font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Near HDFC Bank, Opp. City Mall"
+                      value={formLandmark}
+                      onChange={(e) => setFormLandmark(e.target.value)}
+                      className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
+                    />
+                  </div>
 
-              {/* Form Actions */}
-              <div className="flex gap-3 pt-4 border-t border-hive-border/40 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowForm(false)}
-                  className="flex-1 h-11 border border-hive-border hover:bg-hive-dark/5 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest text-hive-text"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest shadow-sm"
-                >
-                  Save Address
-                </button>
-              </div>
-            </form>
+                  {/* Default toggle */}
+                  <div className="flex items-center gap-2 select-none text-xs font-semibold text-hive-dark">
+                    <input
+                      id="form-default"
+                      type="checkbox"
+                      checked={formIsDefault}
+                      onChange={(e) => setFormIsDefault(e.target.checked)}
+                      className="w-4 h-4 accent-hive-dark cursor-pointer"
+                    />
+                    <label htmlFor="form-default" className="cursor-pointer">
+                      Make this my default delivery address
+                    </label>
+                  </div>
+
+                  {formError && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                      {formError}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-2 border-t border-hive-border/40">
+                    <button
+                      type="button"
+                      onClick={() => setFormStep(1)}
+                      className="h-11 px-5 border border-hive-border hover:bg-hive-dark/5 rounded-xl text-xs font-extrabold uppercase tracking-widest text-hive-text"
+                    >
+                      ← Back
+                    </button>
+                    <button
+                      type="button"
+                      disabled={formSaving}
+                      onClick={handleSaveAddress}
+                      className="flex-1 h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest shadow-sm disabled:opacity-50"
+                    >
+                      {formSaving ? "Saving..." : "Save Address"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       <style>{`
         @keyframes scaleUp {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
+          from { opacity: 0; transform: scale(0.97) translateY(8px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Loading State: AddressSkeleton
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Skeleton ──────────────────────────────────────────────────────────────────
 function AddressSkeleton() {
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
-        {/* Back Link Skeleton */}
         <div className="h-4 w-24 bg-hive-comb/10 rounded-lg" />
-
-        {/* Progress Bar Skeleton */}
         <div className="h-14 w-full bg-white border border-hive-border/20 rounded-3xl" />
-
-        {/* Header Title Skeleton */}
         <div className="h-8 w-60 bg-hive-comb/15 rounded-xl mt-4" />
-
-        {/* Grid Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="h-[180px] bg-white border border-hive-border/20 rounded-3xl" />

@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ProductCardData } from "@/lib/mockProducts";
 import { Button, Modal } from "@hive/ui";
-import { Heart, ShieldCheck, Play, Truck, X } from "lucide-react";
+import { Heart, ShieldCheck, Play, Truck, ShoppingBag, Eye, X } from "lucide-react";
 import { cn } from "@hive/ui";
 import { useCartStore } from "@/store/cart-store";
 import { useCart } from "@/context/CartContext";
@@ -43,14 +43,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
     const sizes = product.sizes || ["Free"];
     const stockBySize = product.stockBySize || { Free: 5 };
-
-    // Get all sizes with stock > 0
-    const availableSizes = sizes.filter(
-      (sz) => (stockBySize[sz] ?? 0) > 0
-    );
+    const availableSizes = sizes.filter((sz) => (stockBySize[sz] ?? 0) > 0);
 
     if (availableSizes.length === 1 && availableSizes[0]) {
-      // Auto use that single available size
       addItem({
         productId: product.slug,
         size: availableSizes[0],
@@ -61,7 +56,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       });
       setSidebarOpen(true);
     } else {
-      // Trigger modal
       setIsSizeModalOpen(true);
     }
   };
@@ -81,12 +75,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const handleQuickView = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    
+
     const sizes = product.sizes || ["Free"];
     const stockBySize = product.stockBySize || { Free: 5 };
-    const available = sizes.filter(
-      (sz) => (stockBySize[sz] ?? 0) > 0
-    );
+    const available = sizes.filter((sz) => (stockBySize[sz] ?? 0) > 0);
     if (available.length === 1 && available[0]) {
       setSelectedSize(available[0]);
     } else {
@@ -127,84 +119,94 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   const discountPercent = product.compareAtPrice
-    ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
+    ? Math.round(
+        ((product.compareAtPrice - product.price) / product.compareAtPrice) * 100
+      )
     : 0;
 
   return (
-    <div className="relative w-full overflow-hidden bg-white border border-hive-border/60 rounded-[24px] group shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col p-3">
-      
-      {/* 3:4 Aspect Ratio Image Wrapper */}
-      <div className="relative w-full aspect-[3/4] overflow-hidden rounded-2xl bg-hive-cream/20">
-        
-        {/* Product Image */}
+    <div className="relative w-full overflow-hidden bg-white border border-hive-border/60 rounded-2xl sm:rounded-[24px] group shadow-sm hover:shadow-xl hover:-translate-y-0.5 sm:hover:-translate-y-1 transition-all duration-300 flex flex-col p-1.5 sm:p-3">
+
+      {/* ── Image area ── */}
+      <div className="relative w-full aspect-[3/4] overflow-hidden rounded-xl sm:rounded-2xl bg-hive-cream/20">
+
+        {/* Product image link */}
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block w-full h-full z-10">
           <Image
             src={product.imageUrl}
             alt={product.name}
             fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             loading="lazy"
             className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500 pointer-events-none"
           />
         </Link>
- 
-        {/* Top-Left Badges Overlay */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-20">
+
+        {/* Top-left badges — fewer on mobile */}
+        <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 flex flex-col gap-1 z-20">
           {product.isNewArrival && (
-            <span className="bg-[#FFFDF5]/90 border border-hive-border/60 text-hive-amber text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm shadow-sm select-none">
+            <span className="bg-[#FFFDF5]/90 border border-hive-border/60 text-hive-amber text-[8px] sm:text-[9px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm shadow-sm select-none">
               NEW
             </span>
           )}
+          {/* Only show TRENDING on md+ to avoid badge clutter on tiny cards */}
           {product.isTrending && (
-            <span className="bg-hive-gold/90 border border-hive-amber/20 text-hive-dark text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm shadow-sm select-none">
+            <span className="hidden sm:inline-flex bg-hive-gold/90 border border-hive-amber/20 text-hive-dark text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm shadow-sm select-none">
               TRENDING
             </span>
           )}
-          {product.isBestSeller && (
-            <span className="bg-hive-dark/95 text-hive-gold text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm select-none">
+          {product.isBestSeller && !product.isTrending && (
+            <span className="hidden sm:inline-flex bg-hive-dark/95 text-hive-gold text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm select-none">
               BESTSELLER
             </span>
           )}
         </div>
- 
-        {/* Top-Right Favorite Heart Icon */}
+
+        {/* Discount badge on mobile (top-right alongside heart) */}
+        {discountPercent > 0 && (
+          <span className="absolute top-1.5 left-1/2 -translate-x-1/2 sm:hidden z-20 bg-hive-amber text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-full select-none shadow-sm">
+            {discountPercent}% OFF
+          </span>
+        )}
+
+        {/* Wishlist heart — smaller on mobile */}
         <button
           onClick={toggleFavorite}
           aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
           className={cn(
-            "absolute top-3 right-3 w-8.5 h-8.5 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center border border-hive-border/30 text-hive-text-muted hover:text-hive-amber hover:bg-white shadow-sm z-20 transition-all active:scale-90",
+            "absolute top-1.5 right-1.5 sm:top-3 sm:right-3 w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center border border-hive-border/30 text-hive-text-muted hover:text-hive-amber hover:bg-white shadow-sm z-20 transition-all active:scale-90",
             pulse && "scale-110"
           )}
         >
           <Heart
             className={cn(
-              "w-4 h-4 transition-all duration-300",
+              "w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all duration-300",
               isFavorite
                 ? "fill-hive-amber stroke-hive-amber scale-110"
                 : "stroke-current fill-none"
             )}
           />
         </button>
- 
-        {/* Bottom-Left Same Day Delivery Badge */}
+
+        {/* Same-day badge — hidden on very small mobile */}
         {product.sameDayDelivery && (
-          <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm border border-hive-border/40 text-hive-dark text-[10px] font-extrabold px-2.5 py-1 rounded-xl flex items-center gap-1 z-20 shadow-sm select-none">
-            <Truck className="w-3.5 h-3.5 text-hive-amber" />
-            Same Day
+          <div className="absolute bottom-1.5 left-1.5 sm:bottom-3 sm:left-3 hidden xs:flex sm:flex bg-white/90 backdrop-blur-sm border border-hive-border/40 text-hive-dark text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg sm:rounded-xl items-center gap-1 z-20 shadow-sm select-none">
+            <Truck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-hive-amber" />
+            <span className="hidden sm:inline">Same Day</span>
           </div>
         )}
- 
-        {/* Bottom-Right Play Video Overlay */}
+
+        {/* Video button — hidden on mobile */}
         {product.videoAvailable && (
           <button
             aria-label="Play product video"
-            className="absolute bottom-3 right-3 w-8.5 h-8.5 rounded-full bg-hive-dark/65 hover:bg-hive-dark backdrop-blur-sm flex items-center justify-center text-hive-gold border border-hive-gold/20 z-20 transition-colors shadow-sm"
+            className="hidden sm:flex absolute bottom-3 right-3 w-8.5 h-8.5 rounded-full bg-hive-dark/65 hover:bg-hive-dark backdrop-blur-sm items-center justify-center text-hive-gold border border-hive-gold/20 z-20 transition-colors shadow-sm"
           >
             <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
           </button>
         )}
- 
-        {/* Desktop Slide-up Actions Overlay */}
+
+        {/* Desktop hover overlay buttons */}
         <div className="absolute inset-x-3 bottom-3 z-30 md:flex hidden flex-col gap-2 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
           <Button variant="primary" size="sm" className="w-full shadow-md font-bold" onClick={handleAddToCart}>
             Add to Cart
@@ -219,81 +221,86 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </Button>
         </div>
       </div>
- 
-      {/* Card Content Details Section */}
-      <div className="px-1.5 py-3 flex flex-col flex-1 justify-between text-left">
+
+      {/* ── Card content ── */}
+      <div className="px-1 pt-2 pb-1.5 sm:px-1.5 sm:py-3 flex flex-col flex-1 justify-between text-left">
         <div>
-          {/* Boutique Name & Verification */}
+          {/* Boutique name — abbreviated on mobile */}
           <div className="flex items-center gap-1 select-none">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-hive-text-muted">
+            <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-hive-text-muted truncate">
               {product.boutiqueName}
             </span>
             {product.isVerifiedBoutique && (
-              <ShieldCheck className="w-3.5 h-3.5 text-hive-amber" />
+              <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-hive-amber flex-shrink-0" />
             )}
           </div>
- 
-          {/* Product Name */}
+
+          {/* Product name — tighter on mobile */}
           <Link href={`/products/${product.slug}`} className="hover:text-hive-amber transition-colors block">
-            <h3 className="text-sm font-semibold text-hive-dark leading-tight mt-1.5 line-clamp-2 min-h-[40px] tracking-wide">
+            <h3 className="text-xs sm:text-sm font-semibold text-hive-dark leading-tight mt-1 sm:mt-1.5 line-clamp-2 tracking-wide">
               {product.name}
             </h3>
           </Link>
- 
-          {/* Metadata Row: Rating & Occasion */}
-          <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
-            {product.rating && (
-              <div className="flex items-center gap-1 text-[11px] font-sans">
-                <span className="text-hive-amber text-xs">★</span>
-                <span className="font-extrabold text-hive-dark">{product.rating}</span>
-                <span className="text-hive-text-muted">({product.reviewCount})</span>
-              </div>
-            )}
-            
-            {product.occasion && (
-              <span className="inline-block bg-hive-comb/25 text-hive-amber text-[9px] font-extrabold px-2 py-0.5 rounded border border-hive-border/40 uppercase tracking-wider select-none">
-                {product.occasion === "coords" ? "Co-ords" : product.occasion}
-              </span>
-            )}
-          </div>
+
+          {/* Rating row — compact on mobile, hide review count */}
+          {product.rating && (
+            <div className="flex items-center gap-1 mt-1 sm:mt-2">
+              <span className="text-hive-amber text-[10px] sm:text-xs">★</span>
+              <span className="text-[10px] sm:text-[11px] font-extrabold text-hive-dark">{product.rating}</span>
+              <span className="hidden sm:inline text-[10px] text-hive-text-muted">({product.reviewCount})</span>
+              {/* Occasion badge — desktop only to save space */}
+              {product.occasion && (
+                <span className="hidden sm:inline-block ml-auto bg-hive-comb/25 text-hive-amber text-[9px] font-extrabold px-2 py-0.5 rounded border border-hive-border/40 uppercase tracking-wider select-none">
+                  {product.occasion === "coords" ? "Co-ords" : product.occasion}
+                </span>
+              )}
+            </div>
+          )}
         </div>
- 
-        {/* Pricing details */}
-        <div className="mt-3.5 pt-3 border-t border-hive-border/40">
-          <div className="flex items-baseline gap-2.5">
-            <span className="text-base font-extrabold text-hive-dark tracking-tight">
+
+        {/* ── Price row ── */}
+        <div className="mt-1.5 sm:mt-3.5 pt-1.5 sm:pt-3 border-t border-hive-border/40">
+          <div className="flex items-baseline gap-1.5 sm:gap-2.5 flex-wrap">
+            <span className="text-sm sm:text-base font-extrabold text-hive-dark tracking-tight">
               ₹{product.price.toLocaleString("en-IN")}
             </span>
             {product.compareAtPrice && (
               <>
-                <span className="text-xs text-hive-text-muted line-through font-medium">
+                <span className="text-[10px] sm:text-xs text-hive-text-muted line-through font-medium">
                   ₹{product.compareAtPrice.toLocaleString("en-IN")}
                 </span>
-                <span className="text-[11px] font-bold text-hive-amber tracking-wide">
+                {/* discount % — desktop inline, mobile hidden (shown in badge above image) */}
+                <span className="hidden sm:inline text-[11px] font-bold text-hive-amber tracking-wide">
                   ({discountPercent}% OFF)
                 </span>
               </>
             )}
           </div>
         </div>
- 
-        {/* Mobile Persistent Action Buttons */}
-        <div className="flex md:hidden flex-col gap-2 mt-4 w-full">
-          <Button variant="primary" size="sm" className="w-full py-2.5 font-bold" onClick={handleAddToCart}>
-            Add to Cart
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full py-2.5 border border-hive-border/40 bg-white text-hive-text font-bold"
-            onClick={handleQuickView}
+
+        {/* ── Mobile action buttons — compact icon+label row ── */}
+        <div className="flex md:hidden items-center gap-1.5 mt-2 w-full">
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            aria-label="Add to cart"
+            className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-hive-gold text-hive-dark text-[10px] font-extrabold uppercase tracking-wide shadow-sm hover:bg-hive-amber transition-colors active:scale-95"
           >
-            Quick View
-          </Button>
+            <ShoppingBag className="w-3 h-3 flex-shrink-0" strokeWidth={2.5} />
+            <span>Cart</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleQuickView}
+            aria-label="Quick view"
+            className="w-9 h-8 flex items-center justify-center rounded-xl border border-hive-border/60 bg-white text-hive-text-muted hover:text-hive-amber hover:border-hive-gold/50 transition-colors active:scale-95"
+          >
+            <Eye className="w-3.5 h-3.5" strokeWidth={2} />
+          </button>
         </div>
       </div>
 
-      {/* Size Selection Modal Overlay */}
+      {/* Size Selection Modal */}
       <SizeSelectionModal
         isOpen={isSizeModalOpen}
         onClose={() => setIsSizeModalOpen(false)}
@@ -305,7 +312,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         onConfirm={handleConfirmSizeSelection}
       />
 
-      {/* Quick View Modal Overlay */}
+      {/* Quick View Modal */}
       <Modal
         isOpen={isQuickViewOpen}
         onClose={() => setIsQuickViewOpen(false)}
@@ -313,7 +320,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         className="max-w-2xl w-full"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2 text-left select-none">
-          {/* Product Image */}
+          {/* Product image */}
           <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-100">
             <Image
               src={product.imageUrl}
@@ -322,8 +329,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               className="object-cover"
             />
           </div>
-          
-          {/* Product Details Section */}
+
+          {/* Product details */}
           <div className="flex flex-col justify-between h-full">
             <div className="space-y-4">
               <div>
@@ -344,7 +351,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 )}
               </div>
 
-              {/* Size Selector */}
+              {/* Size selector */}
               <div className="space-y-2 pt-2 border-t border-slate-100">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
                   Select Size
@@ -406,7 +413,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
         </div>
       </Modal>
-      
     </div>
   );
 };

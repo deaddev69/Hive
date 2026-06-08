@@ -83,7 +83,7 @@ export default function BoutiqueOrders() {
                       </div>
                     </td>
                     <td className="px-6 py-4 font-bold text-sm">
-                      <span>₹{(order.total / 100).toLocaleString("en-IN")}</span>
+                      <span>₹{order.total.toLocaleString("en-IN")}</span>
                     </td>
                     <td className="px-6 py-4">
                       <select

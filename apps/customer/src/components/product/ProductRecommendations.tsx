@@ -3,6 +3,7 @@ import { ProductCard } from "./ProductCard";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { ProductCardData } from "@/lib/mockProducts";
+import { useLocation } from "@/context/LocationContext";
 
 // Helper to deduce occasion from product tags/description
 function getProductOccasion(product: any): string {
@@ -74,7 +75,11 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   occasion,
   boutiqueName,
 }) => {
-  const dbProducts = useQuery(api.products.getActiveProducts, {});
+  const { latitude, longitude } = useLocation();
+  const dbProducts = useQuery(
+    api.products.getActiveProducts,
+    latitude !== null && longitude !== null ? { userLat: latitude, userLng: longitude } : {}
+  );
 
   const products = React.useMemo(() => {
     return (dbProducts || []).map(mapDbProduct);
@@ -121,7 +126,7 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
       </div>
 
       {/* Grid listing recommendations */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
         {recommendedList.map((product) => (
           <div key={product.id} className="relative z-0">
             <ProductCard product={product} />

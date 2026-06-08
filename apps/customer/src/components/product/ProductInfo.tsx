@@ -51,6 +51,16 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
   const [isDescExpanded, setIsDescExpanded] = useState(false);
   const measurementMatrixRef = useRef<HTMLDivElement>(null);
 
+  // ── Single source of truth for stock ──────────────────────────────────────
+  // Convex-enriched products use `stockBySize`; mock/legacy products use `inventory`.
+  // Always prefer stockBySize from Convex, fall back to inventory for mock data.
+  const stockMap: Record<string, number> =
+    (product as any).stockBySize ?? product.inventory ?? {};
+
+  console.log("[ProductInfo] product.stockBySize:", (product as any).stockBySize);
+  console.log("[ProductInfo] product.inventory:", product.inventory);
+  console.log("[ProductInfo] resolved stockMap:", stockMap);
+
   const discountPercent = product.compareAtPrice
     ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : 0;
@@ -144,7 +154,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       {/* ── SIZE SELECTOR UX (Phase 6.4 Insertion) ── */}
       <SizeSelector
         sizes={product.sizes}
-        inventory={product.inventory}
+        inventory={stockMap}
         selectedSize={selectedSize}
         onSelectSize={setSelectedSize}
         onOpenSizeGuide={() => {

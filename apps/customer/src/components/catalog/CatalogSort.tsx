@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Sparkles,
   ArrowUpFromLine,
   ArrowDownFromLine,
   Star,
   TrendingUp,
-  Truck,
   Check,
   X,
   ChevronDown,
@@ -29,7 +29,6 @@ const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   ArrowDownFromLine,
   Star,
   TrendingUp,
-  Truck,
 };
 
 export interface SortDropdownProps {
@@ -46,8 +45,13 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
   className,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const activeMeta = getSortMeta(value);
   const ActiveIcon = ICON_MAP[activeMeta.icon];
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Disable body scroll when mobile bottom sheet is open
   useEffect(() => {
@@ -126,95 +130,100 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
           <ChevronDown className="w-3.5 h-3.5 text-hive-text-muted" strokeWidth={2.5} />
         </button>
 
-        {/* Bottom Sheet Backdrop */}
-        <div
-          className={cn(
-            "fixed inset-0 z-[999] bg-hive-dark/40 backdrop-blur-sm transition-opacity duration-300",
-            isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-          )}
-          onClick={() => setIsOpen(false)}
-          aria-hidden="true"
-        />
-
-        {/* Bottom Sheet Modal */}
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Sort options"
-          className={cn(
-            "fixed bottom-0 left-0 right-0 z-[1000] flex flex-col",
-            "bg-white rounded-t-[32px] shadow-2xl",
-            "max-h-[85vh] transition-transform duration-400 ease-out",
-            isOpen ? "translate-y-0" : "translate-y-full"
-          )}
-        >
-          {/* Drag Handle */}
-          <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
-            <div className="w-10 h-1 rounded-full bg-hive-border" />
-          </div>
-
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 py-3 border-b border-hive-border/60 flex-shrink-0">
-            <span className="text-sm font-extrabold text-hive-dark">Sort By</span>
-            <button
-              type="button"
+        {mounted && typeof window !== "undefined" && createPortal(
+          <>
+            {/* Bottom Sheet Backdrop */}
+            <div
+              className={cn(
+                "fixed inset-0 z-[999] bg-hive-dark/40 backdrop-blur-sm transition-opacity duration-300",
+                isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+              )}
               onClick={() => setIsOpen(false)}
-              className="p-2 rounded-full hover:bg-hive-cream/60 transition-colors"
-              aria-label="Close sort options"
+              aria-hidden="true"
+            />
+
+            {/* Bottom Sheet Modal */}
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Sort options"
+              className={cn(
+                "fixed bottom-0 left-0 right-0 z-[1000] flex flex-col",
+                "bg-white rounded-t-[32px] shadow-2xl",
+                "max-h-[85vh] transition-transform duration-400 ease-out",
+                isOpen ? "translate-y-0" : "translate-y-full"
+              )}
             >
-              <X className="w-4 h-4 text-hive-dark" strokeWidth={2.5} />
-            </button>
-          </div>
+              {/* Drag Handle */}
+              <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
+                <div className="w-10 h-1 rounded-full bg-hive-border" />
+              </div>
 
-          {/* Options List */}
-          <div className="flex-1 overflow-y-auto py-2 px-3">
-            <div className="flex flex-col gap-1.5">
-              {SORT_OPTIONS.map((opt) => {
-                const Icon = ICON_MAP[opt.icon];
-                const isActive = value === opt.id;
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-3 border-b border-hive-border/60 flex-shrink-0">
+                <span className="text-sm font-extrabold text-hive-dark">Sort By</span>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 rounded-full hover:bg-hive-cream/60 transition-colors"
+                  aria-label="Close sort options"
+                >
+                  <X className="w-4 h-4 text-hive-dark" strokeWidth={2.5} />
+                </button>
+              </div>
 
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => handleSelect(opt.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3.5 px-4 py-3.5 text-left rounded-2xl transition-all duration-200 outline-none",
-                      isActive
-                        ? "bg-hive-gold/12 text-hive-amber"
-                        : "hover:bg-hive-comb/10 text-hive-dark"
-                    )}
-                  >
-                    {/* Icon Box */}
-                    <div
-                      className={cn(
-                        "w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200",
-                        isActive ? "bg-hive-gold/25 text-hive-amber" : "bg-hive-comb/30 text-hive-text-muted"
-                      )}
-                    >
-                      {Icon && <Icon className="w-4 h-4" strokeWidth={2.2} />}
-                    </div>
+              {/* Options List */}
+              <div className="flex-1 overflow-y-auto py-2 px-3">
+                <div className="flex flex-col gap-1.5">
+                  {SORT_OPTIONS.map((opt) => {
+                    const Icon = ICON_MAP[opt.icon];
+                    const isActive = value === opt.id;
 
-                    {/* Text block */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold leading-tight">{opt.label}</div>
-                      <div className="text-[10px] text-hive-text-muted/70 font-medium mt-0.5 leading-tight">
-                        {opt.description}
-                      </div>
-                    </div>
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleSelect(opt.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3.5 px-4 py-3.5 text-left rounded-2xl transition-all duration-200 outline-none",
+                          isActive
+                            ? "bg-hive-gold/12 text-hive-amber"
+                            : "hover:bg-hive-comb/10 text-hive-dark"
+                        )}
+                      >
+                        {/* Icon Box */}
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200",
+                            isActive ? "bg-hive-gold/25 text-hive-amber" : "bg-hive-comb/30 text-hive-text-muted"
+                          )}
+                        >
+                          {Icon && <Icon className="w-4 h-4" strokeWidth={2.2} />}
+                        </div>
 
-                    {/* Checkmark */}
-                    {isActive && (
-                      <div className="flex-shrink-0 w-4 h-4 rounded-full bg-hive-gold flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 text-hive-dark" strokeWidth={3} />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+                        {/* Text block */}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold leading-tight">{opt.label}</div>
+                          <div className="text-[10px] text-hive-text-muted/70 font-medium mt-0.5 leading-tight">
+                            {opt.description}
+                          </div>
+                        </div>
+
+                        {/* Checkmark */}
+                        {isActive && (
+                          <div className="flex-shrink-0 w-4 h-4 rounded-full bg-hive-gold flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 text-hive-dark" strokeWidth={3} />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>,
+          document.body
+        )}
       </div>
     </div>
   );

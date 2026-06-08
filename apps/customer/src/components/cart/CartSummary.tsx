@@ -14,7 +14,6 @@ interface CartSummaryProps {
 export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onClose }) => {
   const router = useRouter();
   const clearCheckoutItems = useCheckoutStore((state) => state.clearCheckoutItems);
-  const { isServiceable } = useLocation();
 
   const deliveryFee = subtotal >= 5000 ? 0 : 99;
   const total = subtotal + deliveryFee;
@@ -22,11 +21,6 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
   const handleCheckout = () => {
     clearCheckoutItems();
     onClose();
-    if (!isServiceable) {
-      router.push("/not-serviceable");
-      return;
-    }
-
     router.push("/checkout/address");
   };
 

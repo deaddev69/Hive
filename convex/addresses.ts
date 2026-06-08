@@ -37,15 +37,18 @@ export const list = query({
  */
 export const add = mutation({
   args: {
-    label:     v.string(),
-    line1:     v.string(),
-    line2:     v.optional(v.string()),
-    city:      v.string(),
-    state:     v.string(),
-    pincode:   v.string(),
-    isDefault: v.boolean(),
-    // phone stored in label or fetched from user profile — not in address schema
-    // keeping a name field separate isn't in schema; label is used as the name
+    label:            v.string(),
+    line1:            v.optional(v.string()),       // legacy field — optional for new map-based addresses
+    line2:            v.optional(v.string()),
+    city:             v.string(),
+    state:            v.string(),
+    pincode:          v.string(),
+    lat:              v.optional(v.number()),       // map coordinates
+    lng:              v.optional(v.number()),
+    formattedAddress: v.optional(v.string()),       // full reverse-geocoded string
+    houseNumber:      v.optional(v.string()),       // user's door/flat number
+    landmark:         v.optional(v.string()),       // nearby landmark
+    isDefault:        v.boolean(),
   },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
@@ -65,18 +68,21 @@ export const add = mutation({
     }
 
     return await ctx.db.insert("addresses", {
-      userId:    user._id,
-      label:     args.label,
-      line1:     args.line1,
-      line2:     args.line2,
-      city:      args.city,
-      state:     args.state,
-      pincode:   args.pincode,
-      lat:       0,   // placeholder — real geocoding out of scope
-      lng:       0,
-      isDefault: args.isDefault,
-      isDeleted: false,
-      createdAt: now,
+      userId:           user._id,
+      label:            args.label,
+      line1:            args.line1,
+      line2:            args.line2,
+      city:             args.city,
+      state:            args.state,
+      pincode:          args.pincode,
+      lat:              args.lat ?? 0,
+      lng:              args.lng ?? 0,
+      formattedAddress: args.formattedAddress,
+      houseNumber:      args.houseNumber,
+      landmark:         args.landmark,
+      isDefault:        args.isDefault,
+      isDeleted:        false,
+      createdAt:        now,
     });
   },
 });
@@ -86,14 +92,19 @@ export const add = mutation({
  */
 export const update = mutation({
   args: {
-    addressId: v.id("addresses"),
-    label:     v.optional(v.string()),
-    line1:     v.optional(v.string()),
-    line2:     v.optional(v.string()),
-    city:      v.optional(v.string()),
-    state:     v.optional(v.string()),
-    pincode:   v.optional(v.string()),
-    isDefault: v.optional(v.boolean()),
+    addressId:        v.id("addresses"),
+    label:            v.optional(v.string()),
+    line1:            v.optional(v.string()),
+    line2:            v.optional(v.string()),
+    city:             v.optional(v.string()),
+    state:            v.optional(v.string()),
+    pincode:          v.optional(v.string()),
+    lat:              v.optional(v.number()),
+    lng:              v.optional(v.number()),
+    formattedAddress: v.optional(v.string()),
+    houseNumber:      v.optional(v.string()),
+    landmark:         v.optional(v.string()),
+    isDefault:        v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);

@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { useLocation } from "@/context/LocationContext";
 import { useCart } from "@/context/CartContext";
 import { Badge } from "@hive/ui";
+import { HiveLogo } from "@/components/shared/HiveLogo";
 import { ShoppingBag, MapPin, Search, List } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   SignedIn,
   SignedOut,
@@ -18,31 +21,20 @@ export const Navbar: React.FC = () => {
   const { city, setDrawerOpen } = useLocation();
   const { itemsCount, setSidebarOpen } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      alert(`Searching for: ${searchQuery}`);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
   return (
     <nav className="sticky top-0 z-40 w-full bg-white/80 dark:bg-hive-dark/80 backdrop-blur-md border-b border-hive-border/60">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 sm:h-16 flex items-center ...">
         {/* Brand / Logo — navigates to Home from anywhere */}
-        <Link
-          href="/"
-          aria-label="Go to Home"
-          className="flex items-center gap-2 hover:opacity-80 active:scale-[0.97] transition-all duration-200 cursor-pointer"
-        >
-          <div className="w-8 h-8 rounded-lg bg-hive-gold flex items-center justify-center font-bold text-hive-dark">
-            H
-          </div>
-          <span className="font-serif font-black tracking-tight text-lg text-hive-text hidden sm:inline-block">
-            HIVE
-          </span>
-        </Link>
+        <HiveLogo />
 
         {/* Location Selector */}
         <button
@@ -99,8 +91,8 @@ export const Navbar: React.FC = () => {
           <SignedIn>
             <div className="flex items-center border-l border-hive-border/50 pl-3">
               <UserButton
-                userProfileUrl="/profile"
-                afterSignOutUrl="http://localhost:3000/"
+                userProfileUrl="/account"
+                afterSignOutUrl="/"
                 appearance={{
                   elements: {
                     avatarBox: "w-8 h-8 rounded-full border border-hive-border/60 hover:scale-[1.03] transition-transform duration-200",

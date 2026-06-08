@@ -17,17 +17,20 @@ import { api } from "../../../../../../convex/_generated/api";
 import { ProductCardData } from "@/lib/mockProducts";
 import { CollectionDetails } from "@/lib/mockCollections";
 import { Loader2 } from "lucide-react";
+import { useLocation } from "@/context/LocationContext";
 import {
   CatalogFilterState,
   DEFAULT_FILTER_STATE,
   countActiveFilters,
-  applyFilters,
+  PRICE_MIN,
+  PRICE_MAX,
 } from "@/lib/catalogFilters";
 import {
   ProductSortOption,
   DEFAULT_SORT,
   applySort,
 } from "@/lib/catalogSort";
+import { Id } from "../../../../../../convex/_generated/dataModel";
 
 interface OccasionPageClientProps {
   details: CollectionDetails;
@@ -40,28 +43,14 @@ function getProductOccasion(product: any): string {
   const catName = (product.categoryName || "").toLowerCase();
   const name = (product.name || "").toLowerCase();
   const desc = (product.description || "").toLowerCase();
-  
-  if (name.includes("wedding") || desc.includes("wedding") || name.includes("lehenga") || catName.includes("lehengas")) {
-    return "wedding";
-  }
-  if (name.includes("festival") || desc.includes("festival") || name.includes("saree") || catName.includes("sarees")) {
-    return "festival";
-  }
-  if (name.includes("co-ord") || name.includes("coord") || catName.includes("coords") || catName.includes("co-ord")) {
-    return "coords";
-  }
-  if (name.includes("kurta") || name.includes("kurti") || catName.includes("kurtis")) {
-    return "ethnic";
-  }
-  if (name.includes("party") || desc.includes("party")) {
-    return "party";
-  }
-  if (name.includes("date") || desc.includes("date") || name.includes("dress") || catName.includes("dresses")) {
-    return "date";
-  }
-  if (name.includes("work") || name.includes("office")) {
-    return "workwear";
-  }
+
+  if (name.includes("wedding") || desc.includes("wedding") || name.includes("lehenga") || catName.includes("lehengas")) return "wedding";
+  if (name.includes("festival") || desc.includes("festival") || name.includes("saree") || catName.includes("sarees")) return "festival";
+  if (name.includes("co-ord") || name.includes("coord") || catName.includes("coords") || catName.includes("co-ord")) return "coords";
+  if (name.includes("kurta") || name.includes("kurti") || catName.includes("kurtis")) return "ethnic";
+  if (name.includes("party") || desc.includes("party")) return "party";
+  if (name.includes("date") || desc.includes("date") || name.includes("dress") || catName.includes("dresses")) return "date";
+  if (name.includes("work") || name.includes("office")) return "workwear";
   return "casual";
 }
 
@@ -79,8 +68,8 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
     price,
     compareAtPrice,
-    rating: 4.8, // Fallback rating
-    reviewCount: 12, // Fallback review count
+    rating: 4.8,
+    reviewCount: 12,
     occasion: getProductOccasion(p),
     isVerifiedBoutique: p.boutique?.verified || false,
     isNewArrival: Date.now() - p.createdAt < 7 * 24 * 60 * 60 * 1000,
@@ -95,29 +84,52 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
 }
 
 export function OccasionPageClient({ details }: OccasionPageClientProps) {
-  const dbProducts = useQuery(api.products.getActiveProducts, {});
+  const { latitude, longitude } = useLocation();
 
-  const [filters, setFilters] = useState<CatalogFilterState>({
-    ...DEFAULT_FILTER_STATE,
-    occasions: [details.label],
-  });
+  const [filters, setFilters] = useState<CatalogFilterState>(DEFAULT_FILTER_STATE);
   const [sortOption, setSortOption] = useState<ProductSortOption>(DEFAULT_SORT);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Fetch DB categories for resolving names
+  const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
+
+  // Build query args — backend does filtering by category/price
+  const queryArgs = useMemo(() => {
+    const args: Record<string, any> = {};
+    if (latitude !== null && longitude !== null) {
+      args.userLat = latitude;
+      args.userLng = longitude;
+    }
+    if (filters.categories.length > 0) {
+      args.categoryIds = filters.categories as Id<"categories">[];
+    }
+    if (filters.minPrice > PRICE_MIN) args.minPrice = filters.minPrice;
+    if (filters.maxPrice < PRICE_MAX) args.maxPrice = filters.maxPrice;
+    return args;
+  }, [latitude, longitude, filters]);
+
+  const dbProducts = useQuery(api.products.getActiveProducts, queryArgs);
+
   const activeCount = countActiveFilters(filters);
 
-  // Map products
-  const products = useMemo(() => {
-    return (dbProducts || []).map(mapDbProduct);
-  }, [dbProducts]);
+  // Resolved category names for toolbar summary pill
+  const selectedCategoryNames = useMemo(() => {
+    if (!dbCategories || filters.categories.length === 0) return [];
+    return filters.categories
+      .map((id) => dbCategories.find((c) => c._id === id)?.name)
+      .filter(Boolean) as string[];
+  }, [dbCategories, filters.categories]);
 
-  // Apply filters and sort to products
-  const filteredProducts = useMemo(
-    () => applyFilters(products, filters),
-    [products, filters]
-  );
-  
+  // Map products
+  const products = useMemo(() => (dbProducts || []).map(mapDbProduct), [dbProducts]);
+
+  // Client-side same-day filter + sort
+  const filteredProducts = useMemo(() => {
+    if (filters.sameDayDelivery) return products.filter((p) => p.sameDayDelivery);
+    return products;
+  }, [products, filters.sameDayDelivery]);
+
   const sortedProducts = useMemo(
     () => applySort(filteredProducts, sortOption),
     [filteredProducts, sortOption]
@@ -128,15 +140,15 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
     setCurrentPage(1);
   }, [filters, sortOption]);
 
-  // Paginated chunk of products
+  // Paginated chunk
   const totalPages = Math.ceil(sortedProducts.length / PAGE_SIZE);
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
     return sortedProducts.slice(start, start + PAGE_SIZE);
   }, [sortedProducts, currentPage]);
 
-  const resetToCollection = () => {
-    setFilters({ ...DEFAULT_FILTER_STATE, occasions: [details.label] });
+  const resetFilters = () => {
+    setFilters(DEFAULT_FILTER_STATE);
     setCurrentPage(1);
   };
 
@@ -172,7 +184,7 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
       {/* 3. Collection Showcase */}
       <CollectionShowcase details={details} />
 
-      {/* 4. Catalog Header (anchors the listing block) */}
+      {/* 4. Catalog Header */}
       <div id="collection-grid" className="scroll-mt-6">
         <CatalogHeader
           title={`${details.title} Collection`}
@@ -183,21 +195,17 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
         />
       </div>
 
-      {/* 5. Sidebar + Grid Area */}
-      <div className="max-w-[1440px] mx-auto px-6 lg:px-12 w-full flex flex-col gap-6 py-6">
-        
-        {/* Catalog Toolbar */}
+      {/* 5. Sidebar + Grid */}
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-12 w-full flex flex-col gap-4 sm:gap-6 py-4 sm:py-6">
         <CatalogToolbar
           activeFilterCount={activeCount}
           resultCount={sortedProducts.length}
           sortOption={sortOption}
           onChangeSort={setSortOption}
           onOpenMobileFilters={() => setDrawerOpen(true)}
-          onClearFilters={resetToCollection}
+          onClearFilters={resetFilters}
           accentColor={details.accentColor}
-          occasions={filters.occasions}
-          categories={filters.categories}
-          boutiques={filters.boutiques}
+          categoryNames={selectedCategoryNames}
         />
 
         <div className="w-full flex gap-8 items-start">
@@ -206,12 +214,11 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
             <CatalogFilters filters={filters} onChange={setFilters} />
           </div>
 
-          {/* Product Listing Main Slot */}
+          {/* Product Listing */}
           <div className="flex-1 min-w-0 flex flex-col gap-6">
             {paginatedProducts.length > 0 ? (
               <>
-                {/* Product Grid */}
-                <div className="relative z-0 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-5 md:gap-6">
+                <div className="relative z-0 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-5 md:gap-6">
                   {paginatedProducts.map((product, idx) => (
                     <div
                       key={`${sortOption}-${currentPage}-${product.id}`}
@@ -223,7 +230,6 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
                   ))}
                 </div>
 
-                {/* Catalog Pagination */}
                 <CatalogPagination
                   currentPage={currentPage}
                   totalPages={totalPages}
@@ -234,9 +240,8 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
                 />
               </>
             ) : (
-              /* Catalog Empty State */
               <CatalogEmptyState
-                onClearFilters={resetToCollection}
+                onClearFilters={resetFilters}
                 accentColor={details.accentColor}
               />
             )}

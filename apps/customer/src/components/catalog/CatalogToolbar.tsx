@@ -1,5 +1,5 @@
 import React from "react";
-import { SlidersHorizontal, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { ProductSortOption } from "@/lib/catalogSort";
 import { SortDropdown } from "./CatalogSort";
 import { CatalogResultsSummary } from "./CatalogResultsSummary";
@@ -13,9 +13,8 @@ export interface CatalogToolbarProps {
   onOpenMobileFilters: () => void;
   onClearFilters?: () => void;
   accentColor?: string;
-  occasions: string[];
-  categories: string[];
-  boutiques: string[];
+  /** Resolved category names for the summary pill */
+  categoryNames?: string[];
 }
 
 export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
@@ -26,19 +25,15 @@ export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
   onOpenMobileFilters,
   onClearFilters,
   accentColor = "#C9A84C",
-  occasions,
-  categories,
-  boutiques,
+  categoryNames = [],
 }) => {
   return (
     <div className="relative z-40 w-full bg-white/60 backdrop-blur-md border border-hive-border/40 rounded-3xl p-3 md:p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-sm">
-      {/* Desktop Layout — Left panel with count and active summary */}
+      {/* Desktop — left: count summary + clear */}
       <div className="hidden md:flex items-center gap-3">
         <CatalogResultsSummary
           count={resultCount}
-          occasions={occasions}
-          categories={categories}
-          boutiques={boutiques}
+          categoryNames={categoryNames}
         />
 
         {activeFilterCount > 0 && onClearFilters && (
@@ -53,12 +48,12 @@ export const CatalogToolbar: React.FC<CatalogToolbarProps> = ({
         )}
       </div>
 
-      {/* Desktop Layout — Right panel with Sort Dropdown */}
+      {/* Desktop — right: sort */}
       <div className="hidden md:block">
         <SortDropdown value={sortOption} onChange={onChangeSort} />
       </div>
 
-      {/* Mobile Layout — Compact Filter & Sort Button row */}
+      {/* Mobile — filter trigger + sort */}
       <div className="flex md:hidden items-center gap-2.5 w-full">
         <div className="flex-1">
           <MobileFilterTrigger
