@@ -1,4 +1,5 @@
 import React from "react";
+import { HiveLogo } from "@/components/shared/HiveLogo";
 
 export const Footer: React.FC = () => {
   return (
@@ -7,12 +8,7 @@ export const Footer: React.FC = () => {
         
         {/* Brand Information */}
         <div className="flex flex-col items-center md:items-start text-center md:text-left">
-          <div className="flex items-center gap-2 mb-2 justify-center md:justify-start">
-            <div className="w-7 h-7 rounded-lg bg-hive-gold flex items-center justify-center font-bold text-hive-dark">
-              H
-            </div>
-            <span className="font-serif font-black tracking-wider text-sm">HIVE BY TAILORBEE</span>
-          </div>
+          <HiveLogo size="sm" className="mb-3 justify-center md:justify-start" />
           <p className="text-[11px] text-hive-text-muted max-w-xs">
             Hyperlocal boutique fashion delivered to your doorstep in Kochi in hours. Custom alterations and trial on delivery.
           </p>

@@ -8,6 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, FolderKanban, Layers, ClipboardList, User, LogOut, Menu, X, Loader2, ShieldX } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@hive/ui";
+import { HiveLogo } from "@/components/shared/HiveLogo";
 
 const BOUTIQUE_NAV_ITEMS = [
   { label: "Dashboard", href: "/boutique", icon: LayoutDashboard },
@@ -109,14 +110,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
       
       {/* Mobile Header */}
       <header className="md:hidden h-16 bg-hive-dark text-white border-b border-hive-border/20 flex items-center justify-between px-4 sticky top-0 z-30">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-hive-gold flex items-center justify-center font-bold text-hive-dark text-sm">
-            H
-          </div>
-          <span className="font-serif font-black tracking-tight text-sm text-hive-cream">
-            HIVE DESIGNER
-          </span>
-        </div>
+        <HiveLogo roleLabel="DESIGNER PANEL" href="/boutique" />
         <button 
           onClick={() => setMobileOpen(!mobileOpen)}
           className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors"
@@ -135,14 +129,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
         <div className="flex flex-col gap-8">
           
           {/* Header Brand */}
-          <div className="hidden md:flex items-center gap-2.5 pb-4 border-b border-white/5">
-            <div className="w-8 h-8 rounded-lg bg-hive-gold flex items-center justify-center font-bold text-hive-dark text-base">
-              H
-            </div>
-            <span className="font-serif font-black tracking-tight text-base text-hive-cream">
-              HIVE DESIGNER
-            </span>
-          </div>
+          <HiveLogo roleLabel="DESIGNER PANEL" href="/boutique" className="hidden md:flex pb-4 border-b border-white/5 w-full justify-start" />
 
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1">
