@@ -5,12 +5,13 @@ import { useAuth, SignOutButton, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, Loader2, ShieldX, Users } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, Loader2, ShieldX, Users, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@hive/ui";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Categories", href: "/admin/categories", icon: FolderKanban },
   { label: "Banners", href: "/admin/banners", icon: ImageIcon },
