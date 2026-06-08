@@ -159,9 +159,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <SignOutButton redirectUrl="http://localhost:3000/">
             <Button 
               variant="outline" 
-              className="w-full justify-start gap-2 border-white/10 text-white/90 hover:bg-red-500 hover:text-white hover:border-transparent rounded-xl text-xs py-2"
+              className="w-full justify-start gap-2 border-slate-200 bg-white text-slate-900 hover:bg-slate-100 hover:text-slate-900 rounded-xl text-xs py-2 font-medium"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5 text-slate-900" />
               <span>Log out</span>
             </Button>
           </SignOutButton>
