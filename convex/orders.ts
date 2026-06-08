@@ -7,6 +7,7 @@ import { v } from "convex/values";
 import { getAuthenticatedUser, getMyBoutique } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 import { validateProductSizeAndStock } from "./lib/mockInventory";
+import { internal } from "./_generated/api";
 
 // ─── Cart item input shape for order placement ────────────────────────────
 const cartItemArg = v.object({
@@ -407,6 +408,12 @@ export const placeOrder = mutation({
       await ctx.db.delete(ci._id);
     }
 
+    // Schedule background email notification to boutique
+    await ctx.scheduler.runAfter(0, internal.emails.sendOrderEmail, {
+      orderId,
+      event: "new_order",
+    });
+
     return { orderId, orderNumber };
   },
 });
@@ -578,6 +585,15 @@ export const updateBoutiqueOrderStatus = mutation({
       status: args.status,
       updatedAt: Date.now(),
     });
+
+    const targetStatuses = ["confirmed", "packed", "out_for_delivery", "delivered"];
+    if (targetStatuses.includes(args.status)) {
+      await ctx.scheduler.runAfter(0, internal.emails.sendOrderEmail, {
+        orderId: args.orderId,
+        event: args.status as "confirmed" | "packed" | "out_for_delivery" | "delivered",
+      });
+    }
+
     return args.orderId;
   },
 });

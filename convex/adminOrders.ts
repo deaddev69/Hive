@@ -5,6 +5,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
+import { internal } from "./_generated/api";
 
 /**
  * Admin Dashboard Metrics
@@ -321,6 +322,15 @@ export const updateOrderStatus = mutation({
     }
 
     await ctx.db.patch(args.orderId, patch);
+
+    const targetStatuses = ["confirmed", "packed", "out_for_delivery", "delivered"];
+    if (targetStatuses.includes(args.status)) {
+      await ctx.scheduler.runAfter(0, internal.emails.sendOrderEmail, {
+        orderId: args.orderId,
+        event: args.status as "confirmed" | "packed" | "out_for_delivery" | "delivered",
+      });
+    }
+
     return args.orderId;
   },
 });
