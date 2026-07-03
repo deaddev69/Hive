@@ -6,13 +6,13 @@ export const setupDummyOrder = internalMutation({
   handler: async (ctx): Promise<any> => {
     // 1. Create a dummy customer
     const customerId = await (ctx.db.insert as any)("users", {
-      name: "TEST DO NOT SHIP",
       email: "test@example.com",
       phone: "9999999999",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      status: "active",
-      role: "customer"
+      role: "customer",
+      isActive: true,
+      isPhoneVerified: false
     });
 
     const boutiqueId = await (ctx.db.insert as any)("boutiques", {
