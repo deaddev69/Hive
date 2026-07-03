@@ -17,9 +17,6 @@ build/
 .env.production
 .env*
 
-# Documentation
-README.md
-
 # Convex generated files
 convex/_generated/
 convex/.convex/
