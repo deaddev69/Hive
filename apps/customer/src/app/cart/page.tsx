@@ -3,9 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ShoppingBag, ArrowRight, Store, Ruler, Truck, RefreshCw, Ticket, Check, AlertCircle, Sparkles } from "lucide-react";
+import { PremiumShoppingBag } from "@/components/shared/PremiumShoppingBag";
+import { ArrowRight, Ticket, Check, AlertCircle, Sparkles, Loader2 } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { CartItemComponent } from "@/components/cart/CartItem";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
+import { useSessionStore } from "@/context/SessionContext";
+import { formatCurrency } from "@hive/utils";
+import { useConvexMutation } from "@/hooks/useConvexMutation";
 
 export default function CartPage() {
   const router = useRouter();
@@ -13,8 +19,58 @@ export default function CartPage() {
   const getCartCount = useCartStore((state) => state.getCartCount);
   const getCartTotal = useCartStore((state) => state.getCartTotal);
 
+  const { token, isAuthenticated } = useSessionStore();
+  const cartData = useQuery(api.cart.getCart, isAuthenticated && token ? { token } : "skip");
+  const hasIssues = cartData?.hasIssues ?? false;
+  const blockingReason = cartData?.blockingReason;
+
+  const [cleaning, setCleaning] = useState(false);
+  const removeInvalidMutation = useConvexMutation(useMutation(api.cart.removeInvalidItems).withOptimisticUpdate((localStore, args) => {
+    if (args.token) {
+      const cart = localStore.getQuery(api.cart.getCart, { token: args.token });
+      if (cart && cart.items) {
+        localStore.setQuery(
+          api.cart.getCart,
+          { token: args.token },
+          {
+            ...cart,
+            items: cart.items.filter((item: any) =>
+              item.status !== "deleted" && item.status !== "inactive" && item.status !== "suspended"
+            ),
+            hasIssues: false,
+            blockingReason: undefined,
+          }
+        );
+      }
+    }
+  }));
+  const removeItemFromZustand = useCartStore((state) => state.removeItem);
+
+  const handleRemoveInvalid = async () => {
+    setCleaning(true);
+    try {
+      if (isAuthenticated && token) {
+        await removeInvalidMutation({ token });
+      }
+      
+      // Clean up local Zustand items too
+      if (cartData && cartData.items) {
+        for (const item of cartData.items) {
+          if (!item.isValid && (item.status === "deleted" || item.status === "inactive" || item.status === "suspended")) {
+            removeItemFromZustand(item.productId, item.size);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCleaning(false);
+    }
+  };
+
   const [mounted, setMounted] = useState(false);
   const [promoInput, setPromoInput] = useState("");
+  const [showPromoInput, setShowPromoInput] = useState(false);
   const [activePromo, setActivePromo] = useState<string | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoSuccessMsg, setPromoSuccessMsg] = useState<string | null>(null);
@@ -33,12 +89,12 @@ export default function CartPage() {
 
   // Promo Code calculations
   let discountAmount = 0;
-  let deliveryFee = subtotal >= 5000 ? 0 : 99;
+  let deliveryFee = subtotal >= 300000 ? 0 : 9900; // in paise
 
   if (activePromo === "WELCOME10") {
     discountAmount = Math.round(subtotal * 0.1); // 10% off items subtotal
   } else if (activePromo === "HIVEFIRST") {
-    discountAmount = Math.min(500, subtotal); // Flat ₹500 off
+    discountAmount = Math.min(50000, subtotal); // Flat ₹500 off (50000 paise)
   } else if (activePromo === "FREESHIP") {
     deliveryFee = 0; // Waive delivery
   }
@@ -85,7 +141,7 @@ export default function CartPage() {
       <div className="min-h-[70vh] bg-hive-cream/30 py-20 px-6 flex items-center justify-center text-left">
         <div className="max-w-md w-full text-center space-y-6 animate-[fadeIn_0.4s_ease-out_forwards]">
           <div className="w-20 h-20 rounded-full bg-hive-comb/40 flex items-center justify-center border border-hive-border/40 mx-auto relative">
-            <ShoppingBag className="w-8 h-8 text-hive-gold stroke-[1.8]" />
+            <PremiumShoppingBag className="w-8 h-8 text-hive-gold" strokeWidth={1.5} />
             <span className="absolute -top-1 -right-1 flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-hive-amber opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-hive-amber"></span>
@@ -93,7 +149,7 @@ export default function CartPage() {
           </div>
 
           <div className="space-y-2">
-            <h1 className="font-serif text-2xl font-bold text-hive-dark">Your shopping bag is empty.</h1>
+            <h1 className="font-serif text-2xl font-bold text-hive-dark">Your Hive Bag is empty.</h1>
             <p className="text-xs text-hive-text-muted max-w-[290px] mx-auto leading-relaxed font-medium">
               Discover unique handcrafted designer apparel and bespoke alteration services near you.
             </p>
@@ -103,14 +159,14 @@ export default function CartPage() {
             <button
               type="button"
               onClick={() => router.push("/products")}
-              className="px-6 h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm"
+              className="px-6 h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg text-xs font-semibold uppercase tracking-[0.2em] flex items-center justify-center gap-1.5 shadow-sm"
             >
               <span>Browse Products</span>
             </button>
             <button
               type="button"
               onClick={() => router.push("/collections")}
-              className="px-6 h-12 border border-hive-dark text-hive-dark hover:bg-hive-dark/5 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest flex items-center justify-center gap-1.5"
+              className="px-6 h-14 bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-lg text-xs font-semibold uppercase tracking-[0.2em] flex items-center justify-center gap-1.5"
             >
               <span>Browse Collections</span>
             </button>
@@ -132,17 +188,17 @@ export default function CartPage() {
       <div className="max-w-6xl mx-auto flex flex-col gap-8 text-left">
         
         {/* Header Title block */}
-        <div className="border-b border-hive-border/40 pb-5">
+        <div className="border-b border-hive-border/40 pb-5 space-y-1.5">
           <div className="flex items-baseline gap-3">
-            <h1 className="font-serif text-2xl sm:text-3xl font-black text-hive-dark">
-              Shopping Bag
+            <h1 className="font-serif text-2xl sm:text-3xl text-hive-dark tracking-tight leading-none">
+              Hive Bag
             </h1>
-            <span className="text-sm text-hive-text-muted font-bold">
+            <span className="text-sm text-hive-text-muted font-bold leading-none">
               ({itemsCount} {itemsCount === 1 ? "Item" : "Items"})
             </span>
           </div>
-          <p className="text-xs text-hive-text-muted mt-1 leading-relaxed">
-            Review your boutique selections and try-on configurations before checkout.
+          <p className="text-xs text-hive-text-muted font-medium mt-1 leading-relaxed">
+            Review your items and sizing before checkout.
           </p>
         </div>
 
@@ -178,7 +234,7 @@ export default function CartPage() {
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Subtotal</span>
-                  <span>₹{subtotal.toLocaleString("en-IN")}</span>
+                  <span>{formatCurrency(subtotal)}</span>
                 </div>
                 
                 {/* Discount display */}
@@ -188,152 +244,123 @@ export default function CartPage() {
                       <Ticket className="w-3.5 h-3.5 text-green-600" />
                       <span>Coupon Discount</span>
                     </span>
-                    <span>-₹{discountAmount.toLocaleString("en-IN")}</span>
+                    <span>-{formatCurrency(discountAmount)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-                  <span>Boutique Delivery</span>
-                  <span>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</span>
+                  <span>Delivery</span>
+                  <span>{deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}</span>
                 </div>
                 
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Estimated Tax</span>
-                  <span>₹{taxAmount}</span>
+                  <span>{formatCurrency(taxAmount)}</span>
+                </div>
+
+                {/* Promo Code section integrated inline */}
+                <div className="pt-2">
+                  {!activePromo ? (
+                    !showPromoInput ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowPromoInput(true)}
+                        className="text-xs font-bold text-hive-gold hover:text-hive-dark transition-colors tracking-wide underline decoration-dotted underline-offset-4 focus:outline-none"
+                      >
+                        Have a promo code?
+                      </button>
+                    ) : (
+                      <form onSubmit={handleApplyPromo} className="flex gap-2 mt-1 animate-[fadeIn_0.2s_ease-out]">
+                        <input
+                          type="text"
+                          placeholder="e.g. WELCOME10"
+                          value={promoInput}
+                          onChange={(e) => setPromoInput(e.target.value)}
+                          className="flex-1 h-8 px-2.5 text-xs border border-hive-border rounded-lg focus:outline-none focus:border-hive-amber bg-white font-semibold placeholder:opacity-50 uppercase"
+                        />
+                        <button
+                          type="submit"
+                          className="h-8 px-3 rounded-lg bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all text-[10px] font-bold uppercase tracking-[0.15em] shadow-sm focus:outline-none"
+                        >
+                          Apply
+                        </button>
+                      </form>
+                    )
+                  ) : (
+                    <div className="flex items-center justify-between bg-green-50 border border-green-200 px-3 py-1.5 rounded-xl mt-1">
+                      <div className="flex flex-col text-left">
+                        <span className="text-[10px] font-extrabold text-green-800 flex items-center gap-1 uppercase">
+                          <Check className="w-3 h-3 stroke-[2.5]" />
+                          {activePromo}
+                        </span>
+                        {activePromo === "WELCOME10" && <span className="text-[8px] text-green-700 font-medium">10% Off Applied</span>}
+                        {activePromo === "HIVEFIRST" && <span className="text-[8px] text-green-700 font-medium">₹500 Off Applied</span>}
+                        {activePromo === "FREESHIP" && <span className="text-[8px] text-green-700 font-medium">Free Delivery Applied</span>}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemovePromo}
+                        className="text-[9px] font-extrabold uppercase tracking-wide text-red-500 hover:text-red-700 bg-transparent hover:bg-red-50/50 px-1.5 py-0.5 rounded transition-all"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Promo Feedback status */}
+                  {promoError && (
+                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-red-600 mt-1.5 bg-red-50/50 border border-red-200/50 px-2 py-1 rounded-lg">
+                      <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                      <span>{promoError}</span>
+                    </div>
+                  )}
+                  {promoSuccessMsg && (
+                    <div className="flex items-center gap-1.5 text-[9px] font-bold text-green-700 mt-1.5 bg-green-50/20 border border-green-100/50 px-2 py-1 rounded-lg">
+                      <span>{promoSuccessMsg}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1.5">
                   <span className="text-sm font-extrabold text-hive-dark">Order Total</span>
                   <span className="text-base font-extrabold text-hive-dark">
-                    ₹{total.toLocaleString("en-IN")}
+                    {formatCurrency(total)}
                   </span>
                 </div>
               </div>
 
-              {/* 2. Promo Code Input form */}
-              <div className="border-t border-hive-border/40 pt-4 mt-1">
-                <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider block mb-2">
-                  Promo / Coupon Code
-                </span>
-                
-                {!activePromo ? (
-                  <form onSubmit={handleApplyPromo} className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="e.g. WELCOME10"
-                      value={promoInput}
-                      onChange={(e) => setPromoInput(e.target.value)}
-                      className="flex-1 h-9 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium placeholder:opacity-50 uppercase"
-                    />
-                    <button
-                      type="submit"
-                      className="h-9 px-4 rounded-xl bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all text-xs font-extrabold uppercase tracking-wider shadow-sm"
-                    >
-                      Apply
-                    </button>
-                  </form>
-                ) : (
-                  <div className="flex items-center justify-between bg-green-50 border border-green-200 px-3 py-2 rounded-xl">
-                    <div className="flex flex-col text-left">
-                      <span className="text-xs font-extrabold text-green-800 flex items-center gap-1 uppercase">
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                        {activePromo}
-                      </span>
-                      {activePromo === "WELCOME10" && <span className="text-[9px] text-green-700 font-medium">10% Off Applied</span>}
-                      {activePromo === "HIVEFIRST" && <span className="text-[9px] text-green-700 font-medium">₹500 Off Applied</span>}
-                      {activePromo === "FREESHIP" && <span className="text-[9px] text-green-700 font-medium">Free Delivery Applied</span>}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleRemovePromo}
-                      className="text-[10px] font-extrabold uppercase tracking-wide text-red-500 hover:text-red-700 bg-transparent hover:bg-red-50/50 px-2 py-1 rounded-lg transition-all"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-
-                {/* Promo Feedback status */}
-                {promoError && (
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-red-600 mt-2 bg-red-50 border border-red-200/50 px-2.5 py-1 rounded-xl">
-                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span>{promoError}</span>
-                  </div>
-                )}
-                {promoSuccessMsg && (
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-green-700 mt-2">
-                    <span>{promoSuccessMsg}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Estimated Delivery Speed banner */}
-              {subtotal < 5000 && (
-                <div className="flex items-center gap-2 text-[10px] font-bold text-hive-text-muted bg-hive-gold/5 border border-hive-gold/15 p-2 rounded-xl mt-1 text-left">
-                  <Truck className="w-4 h-4 text-hive-amber flex-shrink-0" />
-                  <span>Add ₹{(5000 - subtotal).toLocaleString("en-IN")} more for Free Delivery!</span>
-                </div>
-              )}
-
               {/* Checkout CTA */}
               <button
                 type="button"
+                disabled={hasIssues}
                 onClick={() => router.push("/checkout/address")}
-                className="w-full h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl mt-3 font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-hive-amber"
+                className="w-full h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:bg-hive-border/40 disabled:text-hive-text-muted/50 disabled:cursor-not-allowed"
               >
-                <span>Proceed to Checkout</span>
-                <ArrowRight className="w-4 h-4 stroke-[2.2]" />
+                <span>Secure Checkout →</span>
               </button>
+
+              {hasIssues && blockingReason && (
+                <div className="flex flex-col gap-2 mt-4 text-left p-3.5 bg-red-50 border border-red-200/60 rounded-2xl animate-fade">
+                  <div className="flex items-center gap-2 text-xs font-bold text-red-700">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{blockingReason}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveInvalid}
+                    disabled={cleaning}
+                    className="w-full h-9 bg-white border border-red-200 hover:bg-red-50/50 text-red-700 font-extrabold uppercase tracking-wider text-[10px] rounded-xl flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]"
+                  >
+                    {cleaning ? (
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-red-700 border-t-transparent animate-spin" />
+                    ) : (
+                      <span>Remove unavailable items</span>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* 3. Small Mini Trust Strip */}
-            <div className="bg-white border border-hive-border/40 rounded-3xl p-5 shadow-sm space-y-3.5 text-left">
-              <span className="text-[10px] font-extrabold text-hive-amber uppercase tracking-wider block">
-                Hive Assurances
-              </span>
-              
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-hive-comb/30 flex items-center justify-center border border-hive-border/40 text-hive-dark flex-shrink-0">
-                    <Store className="w-3.5 h-3.5 text-hive-gold" />
-                  </div>
-                  <div className="text-[10px]">
-                    <span className="font-extrabold text-hive-dark block">Verified Boutiques</span>
-                    <span className="text-hive-text-muted">100% authentic designer apparel.</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-hive-comb/30 flex items-center justify-center border border-hive-border/40 text-hive-dark flex-shrink-0">
-                    <Ruler className="w-3.5 h-3.5 text-hive-gold" />
-                  </div>
-                  <div className="text-[10px]">
-                    <span className="font-extrabold text-hive-dark block">Real Measurements</span>
-                    <span className="text-hive-text-muted">Detailed size matrix for every design.</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-hive-comb/30 flex items-center justify-center border border-hive-border/40 text-hive-dark flex-shrink-0">
-                    <Truck className="w-3.5 h-3.5 text-hive-gold" />
-                  </div>
-                  <div className="text-[10px]">
-                    <span className="font-extrabold text-hive-dark block">Same-Day Delivery</span>
-                    <span className="text-hive-text-muted">Hyperlocal shipping inside service zones.</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-hive-comb/30 flex items-center justify-center border border-hive-border/40 text-hive-dark flex-shrink-0">
-                    <RefreshCw className="w-3.5 h-3.5 text-hive-gold" />
-                  </div>
-                  <div className="text-[10px]">
-                    <span className="font-extrabold text-hive-dark block">48-Hour Replacement</span>
-                    <span className="text-hive-text-muted">Easy boutique replacements supported.</span>
-                  </div>
-                </div>
-              </div>
-            </div>
             
           </div>
           

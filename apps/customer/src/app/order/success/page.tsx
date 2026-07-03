@@ -21,7 +21,7 @@ import { useOrderStore } from "@/store/order-store";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { useAuth } from "@clerk/nextjs";
+import { useSessionStore } from "@/context/SessionContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Redesigned Success Page Route Implementation
@@ -34,7 +34,7 @@ function OrderSuccessContent() {
   const [showDetails, setShowDetails] = useState(false);
 
   const latestOrder = useOrderStore((state) => state.latestOrder);
-  const { getToken } = useAuth();
+  const { token } = useSessionStore();
 
   const queriedOrder = useQuery(
     api.orders.getOrderByNumber,
@@ -51,7 +51,6 @@ function OrderSuccessContent() {
     let cancelled = false;
     (async () => {
       try {
-        const token = await getToken({ template: "convex" });
         if (!token || cancelled) return;
 
         await fetch("/api/invoices/generate", {
@@ -65,7 +64,7 @@ function OrderSuccessContent() {
     })();
 
     return () => { cancelled = true; };
-  }, [queriedOrder?._id]);
+  }, [queriedOrder?._id, token]);
 
   useEffect(() => {
     setMounted(true);
@@ -97,6 +96,7 @@ function OrderSuccessContent() {
           quantity: item.quantity,
           imageUrl: item.imageUrl,
           boutiqueName: item.boutiqueName || "Hive Marketplace",
+          boutiqueId: item.boutiqueId || queriedOrder.boutiqueId || "",
         })),
         subtotal: queriedOrder.subtotal,
         discount: queriedOrder.discount || 0,
@@ -200,6 +200,24 @@ function OrderSuccessContent() {
               window={slotWindow}
             />
 
+            {/* Boutique Partner Card */}
+            <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3 flex items-start gap-4 text-left animate-[scaleUp_0.4s_ease-out]">
+              <div className="w-10 h-10 rounded-xl bg-hive-comb/35 border border-hive-gold/20 flex items-center justify-center text-hive-gold font-serif text-lg font-bold flex-shrink-0 select-none">
+                {(resolvedOrder.items[0]?.boutiqueName || "B").charAt(0).toUpperCase()}
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] font-black text-hive-text-muted uppercase tracking-wider block">
+                  Fulfilled by
+                </span>
+                <h4 className="text-sm font-black text-hive-dark leading-tight">
+                  {resolvedOrder.items[0]?.boutiqueName || "Boutique Partner"}
+                </h4>
+                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200/20">
+                  ✓ Verified Hive Partner
+                </span>
+              </div>
+            </div>
+
             <NextStepsSection />
 
             {/* Post-Purchase guarantees strip */}
@@ -261,10 +279,13 @@ function OrderSuccessHero({ orderId }: { orderId: string }) {
         <Sparkle className="w-4 h-4 text-hive-gold absolute -top-1 -right-1 animate-pulse" />
       </div>
 
-      <div className="space-y-1">
-        <h1 className="font-serif text-3xl font-black text-hive-dark">Order Confirmed</h1>
-        <p className="text-xs text-hive-text-muted max-w-md">
-          Your boutique order has been successfully placed.
+      <div className="space-y-1.5">
+        <h1 className="font-serif text-3xl font-black text-hive-dark">✓ Order Confirmed</h1>
+        <p className="text-xs text-hive-text-muted max-w-md font-semibold">
+          Your Hive Partner is reviewing your order.
+        </p>
+        <p className="text-[11px] text-hive-text-muted max-w-md">
+          You'll receive confirmation shortly.
         </p>
       </div>
 
@@ -272,10 +293,6 @@ function OrderSuccessHero({ orderId }: { orderId: string }) {
         <span className="font-bold text-hive-text-muted">Order ID:</span>
         <span className="font-extrabold text-hive-dark select-all">{orderId}</span>
       </div>
-
-      <p className="text-[10px] text-green-700 bg-green-50 px-3 py-1 rounded-lg border border-green-200/20 font-semibold max-w-lg leading-relaxed">
-        Your boutique partner has been notified and will begin preparing your order shortly.
-      </p>
     </div>
   );
 }
@@ -334,9 +351,9 @@ function DeliveryConfirmationCard({
 // ─────────────────────────────────────────────────────────────────────────────
 function NextStepsSection() {
   const steps = [
-    { label: "Order Placed", desc: "Successfully scheduled", active: true },
-    { label: "Boutique Confirmation", desc: "Awaiting designer approval", active: false },
-    { label: "Pickup Scheduled", desc: "Fits coordinator dispatch", active: false },
+    { label: "Payment Received", desc: "✓ Payment succeeds via Razorpay", active: true },
+    { label: "Partner Confirmation", desc: "Awaiting boutique acceptance", active: false },
+    { label: "Preparing Order", desc: "Boutique hand-crafting & prep", active: false },
     { label: "Out For Delivery", desc: "Doorstep fitting trials", active: false },
     { label: "Delivered", desc: "Alterations finalized", active: false }
   ];
@@ -500,6 +517,8 @@ function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
   };
 
   const downloading = resolvedOrder?.convexId ? isDownloading(resolvedOrder.convexId) : false;
+  const boutiqueId = resolvedOrder?.items?.[0]?.boutiqueId || "";
+  const exploreUrl = boutiqueId ? `/products?boutiqueId=${boutiqueId}` : "/products";
 
   return (
     <div className="w-full space-y-3">
@@ -529,7 +548,7 @@ function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
 
       <button
         type="button"
-        onClick={() => router.push("/products")}
+        onClick={() => router.push(exploreUrl)}
         className="w-full h-12 border border-hive-border text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-1.5"
       >
         <span>Continue Shopping</span>
@@ -543,7 +562,7 @@ function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function PostPurchaseInfo() {
   const badges = [
-    { title: "48-Hour Replacement Policy", desc: "Try on and swap sizes easily at your door.", icon: RotateCcw },
+    { title: "3-Day Return & Refund Policy", desc: "Raise return requests within 3 days for approved refunds.", icon: RotateCcw },
     { title: "Same-Day Delivery Support", desc: "Hyperlocal couriers handle custom adjustments.", icon: ShieldCheck },
     { title: "Verified Boutique Protection", desc: "Designers construct and ship matching standards.", icon: Award }
   ];

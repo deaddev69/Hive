@@ -2,20 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
+import { SignOutButton } from "@clerk/nextjs";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent } from "@hive/ui";
-import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud } from "lucide-react";
-import dynamic from "next/dynamic";
+import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut } from "lucide-react";
 
-const BoutiqueMap = dynamic(() => import("../../../components/BoutiqueMap"), {
-  ssr: false,
-  loading: () => (
-    <div className="h-[250px] w-full rounded-2xl bg-hive-cream/30 border border-hive-border flex items-center justify-center gap-2">
-      <Loader2 className="w-5 h-5 animate-spin text-hive-amber" />
-      <span className="text-xs text-hive-text-muted font-bold">Loading map view...</span>
-    </div>
-  ),
-});
 
 export default function BoutiqueProfile() {
   const boutique = useQuery(api.boutiques.getMyBoutiqueDetails);
@@ -50,10 +41,13 @@ export default function BoutiqueProfile() {
     if (boutique) {
       setPhone(boutique.phone || boutique.phoneNumber || "");
       setDescription(boutique.description || "");
-      setLogoPreview(boutique.logoUrl || null);
-      setCoverPreview(boutique.bannerUrl || null);
-      setLogoStorageId(boutique.logoUrl || null);
-      setCoverStorageId(boutique.bannerUrl || null);
+      const resolvedLogo = typeof boutique.logoUrl === "string" ? boutique.logoUrl : (boutique.logoUrl as any)?.objectKey || null;
+      const resolvedBanner = typeof boutique.bannerUrl === "string" ? boutique.bannerUrl : (boutique.bannerUrl as any)?.objectKey || null;
+
+      setLogoPreview(resolvedLogo);
+      setCoverPreview(resolvedBanner);
+      setLogoStorageId(resolvedLogo);
+      setCoverStorageId(resolvedBanner);
 
       setBoutiqueName(boutique.boutiqueName || boutique.name || "");
       setOwnerName(boutique.ownerName || "");
@@ -99,6 +93,10 @@ export default function BoutiqueProfile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!boutique) {
+      alert("Error: Boutique profile is not loaded yet.");
+      return;
+    }
     setSaving(true);
     setUploadMsg("Saving your updates...");
 
@@ -120,11 +118,43 @@ export default function BoutiqueProfile() {
         setCoverFile(null);
       }
 
+      const logoPayload = finalLogo ? {
+        assetId: finalLogo,
+        ownerType: "boutique",
+        ownerId: boutique._id,
+        storageProvider: "cloudflare-r2",
+        bucket: "hive-media",
+        objectKey: `logo_${boutique._id}.png`,
+        status: "ready" as const,
+        displayOrder: 1,
+        width: 200,
+        height: 200,
+        size: 0,
+        mime: "image/png",
+        uploadedAt: Date.now()
+      } : undefined;
+
+      const bannerPayload = finalCover ? {
+        assetId: finalCover,
+        ownerType: "boutique",
+        ownerId: boutique._id,
+        storageProvider: "cloudflare-r2",
+        bucket: "hive-media",
+        objectKey: `banner_${boutique._id}.png`,
+        status: "ready" as const,
+        displayOrder: 1,
+        width: 800,
+        height: 400,
+        size: 0,
+        mime: "image/png",
+        uploadedAt: Date.now()
+      } : undefined;
+
       await updateBoutiqueProfile({
         phone,
         description,
-        logoUrl: finalLogo || undefined,
-        bannerUrl: finalCover || undefined,
+        logoUrl: logoPayload,
+        bannerUrl: bannerPayload,
         boutiqueName,
         ownerName,
         address,
@@ -299,15 +329,9 @@ export default function BoutiqueProfile() {
                   Lat: {latitude.toFixed(6)}, Lng: {longitude.toFixed(6)}
                 </span>
               </span>
-              <BoutiqueMap 
-                lat={latitude} 
-                lng={longitude} 
-                readOnly={false} 
-                onChange={(lat, lng) => {
-                  setLatitude(lat);
-                  setLongitude(lng);
-                }} 
-              />
+              <div className="bg-amber-50 border border-amber-200/60 p-4 rounded-xl text-xs text-amber-800 font-medium leading-relaxed">
+                Once map coordinates are set through admin, they are locked. To change your store location, you must contact admin and send a support mail to <a href="mailto:myhive.in@gmail.com" className="font-bold underline">myhive.in@gmail.com</a>.
+              </div>
             </div>
 
             <Button
@@ -370,6 +394,19 @@ export default function BoutiqueProfile() {
 
             </div>
           </Card>
+
+          {/* Mobile-only Logout */}
+          <div className="md:hidden mt-4">
+            <SignOutButton redirectUrl="http://localhost:3000/">
+              <Button 
+                variant="outline" 
+                className="w-full justify-center gap-2 border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-xl py-3 font-bold"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Log out</span>
+              </Button>
+            </SignOutButton>
+          </div>
         </div>
 
       </div>

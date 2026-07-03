@@ -10,17 +10,17 @@ export const mockOrders: Order[] = [
         productId: "emerald-hand-painted-anarkali-kurti",
         size: "M",
         quantity: 1,
-        price: 3500,
+        price: 350000,
         name: "Emerald Hand-Painted Anarkali Kurti",
         imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800",
         boutiqueName: "Aura By Deepa"
       }
     ],
-    subtotal: 3500,
+    subtotal: 350000,
     discount: 0,
-    deliveryFee: 99,
+    deliveryFee: 9900,
     codFee: 0,
-    total: 3599,
+    total: 359900,
     paymentMethod: "upi",
     address: {
       id: "addr_1",
@@ -44,7 +44,7 @@ export const mockOrders: Order[] = [
         productId: "emerald-hand-painted-anarkali-kurti",
         size: "L",
         quantity: 1,
-        price: 3500,
+        price: 350000,
         name: "Emerald Hand-Painted Anarkali Kurti",
         imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800",
         boutiqueName: "Aura By Deepa"
@@ -53,17 +53,17 @@ export const mockOrders: Order[] = [
         productId: "varanasi-silk-katan-saree",
         size: "One Size",
         quantity: 1,
-        price: 8500,
+        price: 850000,
         name: "Varanasi Silk Katan Saree",
         imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800",
         boutiqueName: "Kashi Weaves"
       }
     ],
-    subtotal: 12000,
-    discount: 1200,
+    subtotal: 1200000,
+    discount: 120000,
     deliveryFee: 0,
-    codFee: 49,
-    total: 10849,
+    codFee: 4900,
+    total: 1084900,
     paymentMethod: "cod",
     address: {
       id: "addr_2",
@@ -81,23 +81,23 @@ export const mockOrders: Order[] = [
   {
     id: "HIVE-304918",
     status: "picked_up",
-    createdAt: "2026-06-05T15:20:00.000Z",
+    createdAt: "2026-05-28T14:00:00.000Z", // aligned with others
     items: [
       {
         productId: "crimson-rose-embroidered-lehenga",
         size: "S",
         quantity: 1,
-        price: 18500,
+        price: 1850000,
         name: "Crimson Rose Embroidered Lehenga",
         imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800",
         boutiqueName: "Royal Heritage"
       }
     ],
-    subtotal: 18500,
-    discount: 1850,
+    subtotal: 1850000,
+    discount: 185000,
     deliveryFee: 0,
     codFee: 0,
-    total: 16650,
+    total: 1665000,
     paymentMethod: "card",
     address: {
       id: "addr_1",
@@ -121,17 +121,17 @@ export const mockOrders: Order[] = [
         productId: "varanasi-silk-katan-saree",
         size: "One Size",
         quantity: 1,
-        price: 8500,
+        price: 850000,
         name: "Varanasi Silk Katan Saree",
         imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800",
         boutiqueName: "Kashi Weaves"
       }
     ],
-    subtotal: 8500,
-    discount: 500,
+    subtotal: 850000,
+    discount: 50000,
     deliveryFee: 0,
     codFee: 0,
-    total: 8000,
+    total: 800000,
     paymentMethod: "netbanking",
     address: {
       id: "addr_3",
@@ -155,17 +155,17 @@ export const mockOrders: Order[] = [
         productId: "emerald-hand-painted-anarkali-kurti",
         size: "XL",
         quantity: 1,
-        price: 3500,
+        price: 350000,
         name: "Emerald Hand-Painted Anarkali Kurti",
         imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800",
         boutiqueName: "Aura By Deepa"
       }
     ],
-    subtotal: 3500,
-    discount: 350,
-    deliveryFee: 99,
+    subtotal: 350000,
+    discount: 35000,
+    deliveryFee: 9900,
     codFee: 0,
-    total: 3249,
+    total: 324900,
     paymentMethod: "upi",
     address: {
       id: "addr_2",

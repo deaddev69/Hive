@@ -41,7 +41,7 @@ function getProductOccasion(product: any): string {
 }
 
 // Helper to map DB product to ProductCardData interface
-function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number> } {
+function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number>; boutiqueId?: string; boutique?: any } {
   const hasDiscount = p.discountPrice !== undefined && p.discountPrice < p.price;
   const price = hasDiscount ? p.discountPrice! : p.price;
   const compareAtPrice = hasDiscount ? p.price : undefined;
@@ -51,6 +51,8 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     slug: p.slug,
     name: p.name,
     boutiqueName: p.boutiqueName || "Unknown Boutique",
+    boutiqueId: p.boutiqueId,
+    boutique: p.boutique,
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
     price,
     compareAtPrice,
@@ -66,6 +68,10 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     favorite: false,
     sizes: p.sizes || ["Free"],
     stockBySize: p.stockBySize || { Free: 5 },
+    estimatedDistanceKm: p.estimatedDistanceKm,
+    estimatedDurationMin: p.estimatedDurationMin,
+    estimatedEtaMinutes: p.estimatedEtaMinutes,
+    hiveScore: p.hiveScore,
   };
 }
 
@@ -86,7 +92,10 @@ export const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ 
   }, [dbProducts]);
 
   const recommendations = React.useMemo(() => {
-    return getRelatedProducts(product, products);
+    const btqName = (product as any).boutiqueName || product.boutique?.name;
+    return products
+      .filter((p) => p.boutiqueName === btqName && p.slug !== product.slug)
+      .slice(0, 4);
   }, [product, products]);
 
   if (dbProducts === undefined) {
@@ -103,21 +112,21 @@ export const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ 
           {/* Header */}
           <div className="flex flex-col gap-1 mb-8">
             <span className="text-[10px] font-extrabold text-hive-amber uppercase tracking-[0.25em] select-none">
-              HANDPICKED FOR YOU
+              PICKED FOR YOU
             </span>
             <h2 
               id="related-products-title" 
               className="text-xl md:text-2xl font-serif font-extrabold text-hive-dark"
             >
-              You May Also Like
+              You might also like
             </h2>
             <p className="text-xs text-hive-text-muted font-medium">
-              Handpicked boutique styles similar to this product
+              More styles you may love
             </p>
           </div>
 
           {/* Grid: 4 columns desktop, 2 columns tablet, 1 column mobile */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
             {recommendations.map((item) => (
               <div 
                 key={item.id} 

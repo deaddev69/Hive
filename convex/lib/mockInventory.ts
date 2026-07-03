@@ -5,7 +5,9 @@
 import { GenericDatabaseWriter, GenericDatabaseReader } from "convex/server";
 import { DataModel } from "../_generated/dataModel";
 
-export const MOCK_INVENTORY: Record<string, { sizes: string[]; inventory: Record<string, number> }> = {
+// P1-3 FIX: Mock products are ONLY available when ENABLE_DEBUG_TOOLS is explicitly "true".
+// In production, this is an empty object — no mock product IDs will ever match.
+const _MOCK_DATA: Record<string, { sizes: string[]; inventory: Record<string, number> }> = {
   "varanasi-silk-katan-saree": {
     sizes: ["FS", "Free"],
     inventory: { FS: 5, Free: 5 },
@@ -39,6 +41,9 @@ export const MOCK_INVENTORY: Record<string, { sizes: string[]; inventory: Record
     inventory: { S: 14, M: 12, L: 0, XL: 8 },
   },
 };
+
+export const MOCK_INVENTORY: Record<string, { sizes: string[]; inventory: Record<string, number> }> =
+  process.env.ENABLE_DEBUG_TOOLS === "true" ? _MOCK_DATA : {};
 
 /**
  * Standardizes size names. Specifically maps "FS" to "Free".
@@ -103,12 +108,23 @@ export async function validateProductSizeAndStock(
   }
 
   // 2. Try to query database catalog tables
-  const productRow = await db
+  let productRow = await db
     .query("products")
     .withIndex("by_slug", (q) => q.eq("slug", productId))
     .unique();
 
+  if (!productRow) {
+    try {
+      productRow = (await db.get(productId as any)) as any;
+    } catch {
+      // Ignore
+    }
+  }
+
   if (productRow) {
+    if (productRow.adminHidden === true) {
+      throw new Error("The item is temporarily unavailable for purchase.");
+    }
     const validSizes = productRow.sizes.map(normalizeSize);
     if (!validSizes.includes(normalized)) {
       throw new Error(
@@ -136,7 +152,6 @@ export async function validateProductSizeAndStock(
     return true;
   }
 
-  // Fallback: if product slug/id is not found in either mock inventory or products table,
-  // we default to allowing it so we don't block dynamic checkout or tests.
-  return true;
+  // Fallback: if product slug/id is not found in either mock inventory or products table, raise error
+  throw new Error(`The product with slug/ID "${productId}" is no longer available.`);
 }

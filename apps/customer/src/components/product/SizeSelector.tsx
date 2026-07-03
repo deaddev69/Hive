@@ -1,50 +1,6 @@
 "use client";
-
 import React from "react";
-import { Ruler, AlertCircle, CheckCircle, HelpCircle } from "lucide-react";
 import { cn } from "@hive/ui";
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Subcomponent: InventoryIndicator
-// ─────────────────────────────────────────────────────────────────────────────
-export interface InventoryIndicatorProps {
-  stock: number;
-  selectedSize: string;
-  className?: string;
-}
-
-export const InventoryIndicator: React.FC<InventoryIndicatorProps> = ({
-  stock,
-  selectedSize,
-  className = "",
-}) => {
-  if (!selectedSize) return null;
-
-  if (stock === 0) {
-    return (
-      <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-red-50 border border-red-200 text-red-600 animate-fade-in", className)}>
-        <AlertCircle className="w-3.5 h-3.5" />
-        Out of Stock
-      </span>
-    );
-  }
-
-  if (stock > 0 && stock <= 3) {
-    return (
-      <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-amber-50 border border-amber-200 text-amber-700 animate-pulse", className)}>
-        <AlertCircle className="w-3.5 h-3.5 fill-current text-amber-500" />
-        Low Stock (Only {stock} left)
-      </span>
-    );
-  }
-
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-green-50 border border-green-200 text-green-700 animate-fade-in", className)}>
-      <CheckCircle className="w-3.5 h-3.5" />
-      In Stock
-    </span>
-  );
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Subcomponent: SizeChip
@@ -70,23 +26,15 @@ export const SizeChip: React.FC<SizeChipProps> = ({
       disabled={isOutOfStock}
       onClick={onClick}
       className={cn(
-        "h-12 min-w-[3.25rem] px-4 rounded-xl text-xs font-extrabold border flex flex-col items-center justify-center transition-all duration-200 relative outline-none focus-visible:ring-2 focus-visible:ring-hive-amber focus-visible:ring-offset-2",
+        "h-12 w-14 border text-xs font-bold uppercase transition-all duration-200 relative outline-none flex items-center justify-center select-none rounded-xl",
         isSelected
-          ? "bg-hive-gold border-hive-gold text-hive-dark shadow-md shadow-hive-gold/25 scale-[1.03]"
+          ? "bg-stone-900 border-stone-900 text-white"
           : isOutOfStock
-          ? "border-hive-border/30 bg-hive-cream/5 text-hive-text-muted/40 cursor-not-allowed"
-          : "bg-white border-hive-border/60 hover:border-hive-amber/50 hover:bg-hive-comb/10 text-hive-dark"
+          ? "border-stone-200 bg-stone-50/50 text-stone-300 cursor-not-allowed line-through"
+          : "bg-white border-stone-200 hover:border-stone-950 hover:border-2 text-stone-850"
       )}
     >
-      <span className={cn(isOutOfStock && "line-through opacity-45")}>{size}</span>
-      {isOutOfStock && (
-        <span className="text-[7px] text-hive-text-muted/50 font-medium scale-90 -mt-0.5 leading-none">
-          sold out
-        </span>
-      )}
-      {!isOutOfStock && stock > 0 && stock <= 3 && (
-        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-500" />
-      )}
+      <span>{size}</span>
     </button>
   );
 };
@@ -100,6 +48,8 @@ export interface SizeSelectorProps {
   selectedSize: string;
   onSelectSize: (size: string) => void;
   onOpenSizeGuide: () => void;
+  fitNote?: string;
+  hasMeasurements?: boolean;
 }
 
 export const SizeSelector: React.FC<SizeSelectorProps> = ({
@@ -108,29 +58,32 @@ export const SizeSelector: React.FC<SizeSelectorProps> = ({
   selectedSize,
   onSelectSize,
   onOpenSizeGuide,
+  fitNote,
+  hasMeasurements = true,
 }) => {
   const currentStock = selectedSize ? inventory[selectedSize] ?? 0 : 0;
 
   return (
-    <div className="w-full flex flex-col gap-3.5 py-4 border-t border-b border-hive-border/40">
+    <div id="size-selector-section" className="w-full flex flex-col gap-3 py-3 scroll-mt-20 text-left">
       
-      {/* Header Label + Measurement link */}
+      {/* Header Label */}
       <div className="flex items-center justify-between">
-        <span className="text-xs font-extrabold uppercase tracking-wider text-hive-dark">
-          Select Size
+        <span className="text-xs font-bold uppercase tracking-wider text-stone-900">
+          Choose Size
         </span>
-        <button
-          type="button"
-          onClick={onOpenSizeGuide}
-          className="inline-flex items-center gap-1.5 text-xs font-extrabold text-hive-amber hover:text-hive-gold transition-colors"
-        >
-          <Ruler className="w-3.5 h-3.5" />
-          View Measurement Guide
-        </button>
+        {hasMeasurements && (
+          <button
+            type="button"
+            onClick={onOpenSizeGuide}
+            className="text-[11px] font-semibold text-stone-500 hover:text-stone-900 underline underline-offset-2 transition-colors cursor-pointer"
+          >
+            View measurements →
+          </button>
+        )}
       </div>
 
       {/* Sizing Chips list */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap mt-1">
         {sizes.map((size) => (
           <SizeChip
             key={size}
@@ -142,23 +95,16 @@ export const SizeSelector: React.FC<SizeSelectorProps> = ({
         ))}
       </div>
 
-      {/* Sizing Feedback summary + Inventory status indicator */}
-      <div className="flex items-center justify-between min-h-[28px] mt-1 flex-wrap gap-2">
-        <div className="text-xs font-semibold text-hive-dark">
-          {selectedSize ? (
-            <span>
-              Selected Size: <span className="font-extrabold text-hive-amber bg-hive-gold/10 px-2 py-0.5 rounded-md border border-hive-gold/20">{selectedSize}</span>
-            </span>
-          ) : (
-            <span className="text-hive-text-muted/80 italic flex items-center gap-1">
-              <HelpCircle className="w-3.5 h-3.5 text-hive-gold" />
-              Please select a size
-            </span>
-          )}
-        </div>
-
-        {/* Inventory Indicator badge */}
-        <InventoryIndicator stock={currentStock} selectedSize={selectedSize} />
+      {/* Sizing Feedback summary / Fit Note - under sizing chips */}
+      <div className="flex flex-col gap-1 mt-1 text-left select-none">
+        <span className="text-[11px] text-stone-500 font-medium leading-normal">
+          {fitNote || "Standard sizing"}
+        </span>
+        {selectedSize && currentStock > 0 && currentStock <= 3 && (
+          <span className="text-[11px] font-bold text-amber-700 leading-normal animate-pulse">
+            Low Stock: Only {currentStock} left
+          </span>
+        )}
       </div>
 
     </div>
@@ -170,17 +116,17 @@ export const SizeSelector: React.FC<SizeSelectorProps> = ({
 // ─────────────────────────────────────────────────────────────────────────────
 export const SizeSelectorSkeleton: React.FC = () => {
   return (
-    <div className="w-full flex flex-col gap-3.5 py-4 border-t border-b border-hive-border/40 animate-pulse">
+    <div className="w-full flex flex-col gap-3 py-3 animate-pulse">
       <div className="flex justify-between items-center">
-        <div className="h-3 w-1/4 bg-hive-comb/15 rounded" />
-        <div className="h-3 w-1/3 bg-hive-comb/10 rounded" />
+        <div className="h-3 w-1/4 bg-stone-200 rounded" />
+        <div className="h-3 w-1/3 bg-stone-150 rounded" />
       </div>
       <div className="flex gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-12 w-12 rounded-xl bg-hive-comb/15" />
+          <div key={i} className="h-12 w-12 bg-stone-100 rounded" />
         ))}
       </div>
-      <div className="h-3.5 w-1/3 bg-hive-comb/10 rounded" />
+      <div className="h-3.5 w-1/3 bg-stone-100 rounded" />
     </div>
   );
 };

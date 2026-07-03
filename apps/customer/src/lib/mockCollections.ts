@@ -73,7 +73,7 @@ export const collectionDetails: Record<string, CollectionDetails> = {
       "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1600&q=80",
     stats: { productCount: 34, boutiqueCount: 5, sameDayEligible: 22, averageRating: 4.8 },
     featuredBoutiques: [
-      { id: "boutique_1", name: "Le Petit Atelier", imageUrl: "https://images.unsplash.com/photo-1567401893930-7dbc069b4353?auto=format&fit=crop&w=300&q=80", verified: true },
+      { id: "boutique_1", name: "Le Petit Studio", imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=300&q=80", verified: true },
       { id: "boutique_3", name: "House of Aarna", imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=300&q=80", verified: true },
       { id: "boutique_5", name: "The Saree Edit", imageUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=300&q=80", verified: true },
     ],
@@ -161,7 +161,7 @@ export const collectionDetails: Record<string, CollectionDetails> = {
       "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1600&q=80",
     stats: { productCount: 22, boutiqueCount: 4, sameDayEligible: 14, averageRating: 4.8 },
     featuredBoutiques: [
-      { id: "boutique_1", name: "Le Petit Atelier", imageUrl: "https://images.unsplash.com/photo-1567401893930-7dbc069b4353?auto=format&fit=crop&w=300&q=80", verified: true },
+      { id: "boutique_1", name: "Le Petit Studio", imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=300&q=80", verified: true },
       { id: "boutique_3", name: "House of Aarna", imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=300&q=80", verified: true },
     ],
     featuredProducts: [
@@ -218,7 +218,7 @@ export const collectionDetails: Record<string, CollectionDetails> = {
       "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=1600&q=80",
     stats: { productCount: 17, boutiqueCount: 3, sameDayEligible: 10, averageRating: 4.8 },
     featuredBoutiques: [
-      { id: "boutique_1", name: "Le Petit Atelier", imageUrl: "https://images.unsplash.com/photo-1567401893930-7dbc069b4353?auto=format&fit=crop&w=300&q=80", verified: true },
+      { id: "boutique_1", name: "Le Petit Studio", imageUrl: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=300&q=80", verified: true },
       { id: "boutique_5", name: "The Saree Edit", imageUrl: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=300&q=80", verified: true },
     ],
     featuredProducts: [

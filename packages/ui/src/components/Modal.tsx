@@ -7,9 +7,10 @@ import { X } from "lucide-react";
 export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title?: string;
+  title?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  hideHeader?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -18,6 +19,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   className,
+  hideHeader = false,
 }) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -69,24 +71,30 @@ export const Modal: React.FC<ModalProps> = ({
       ref={dialogRef}
       onClick={handleBackdropClick}
       className={cn(
-        "backdrop:bg-black/50 backdrop:backdrop-blur-sm rounded-3xl border border-hive-border bg-white text-hive-text shadow-2xl p-0 outline-none w-full max-w-lg overflow-hidden",
+        "backdrop:bg-black/50 backdrop:backdrop-blur-sm bg-white text-hive-text shadow-2xl p-0 outline-none w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[85vh] rounded-none sm:rounded-3xl border-none sm:border border-hive-border overflow-hidden",
         className
       )}
     >
-      <div className="flex flex-col max-h-[85vh]">
+      <div className="flex flex-col h-full sm:max-h-[85vh]">
         {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-hive-border/60">
-          <h2 className="text-lg font-bold text-hive-text">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-hive-cream transition-colors text-hive-text-muted hover:text-hive-text"
-            aria-label="Close modal"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        {!hideHeader && (
+          <div className="flex justify-between items-center px-4 py-3 sm:px-6 sm:py-4 border-b border-hive-border/60">
+            {typeof title === "string" ? (
+              <h2 className="text-base sm:text-lg font-bold text-hive-text">{title}</h2>
+            ) : (
+              title
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full hover:bg-hive-cream transition-colors text-hive-text-muted hover:text-hive-text"
+              aria-label="Close modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1">{children}</div>
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">{children}</div>
       </div>
     </dialog>
   );

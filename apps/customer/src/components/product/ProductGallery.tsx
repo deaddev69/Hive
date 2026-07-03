@@ -1,13 +1,14 @@
-"use client";
-
 import React, { useState, useRef, useEffect } from "react";
-import { Play, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Play, Image as ImageIcon, Sparkles, Heart, Share2 } from "lucide-react";
 import { cn } from "@hive/ui";
+import { useWishlistStore } from "@/store/wishlist-store";
+import { ProductDetail } from "@/lib/mockProductDetails";
 
 export interface ProductGalleryProps {
   images: string[];
   videoUrl?: string;
   productName: string;
+  product?: ProductDetail;
 }
 
 type MediaItem = 
@@ -18,11 +19,100 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
   images = [],
   videoUrl,
   productName,
+  product,
 }) => {
   const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
   const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({});
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const mainImageRef = useRef<HTMLDivElement>(null);
+
+  const [hydrated, setHydrated] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const { toggleItem, hasItem } = useWishlistStore();
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  const isWishlisted = hydrated && product ? hasItem(product.slug) : false;
+
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!product) return;
+    toggleItem({
+      id: (product as any)._id ?? product.id,
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      compareAtPrice: product.compareAtPrice,
+      imageUrl: images[0] || "",
+      boutiqueName: product.boutique.name,
+      rating: product.rating,
+      reviewCount: product.reviewCount,
+      sizes: product.sizes,
+      stockBySize: (product as any).stockBySize ?? product.inventory,
+    });
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (typeof window === "undefined") return;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: productName,
+          text: `Check out ${productName} on Hive!`,
+          url: window.location.href,
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        setToast("Link copied to clipboard");
+        setTimeout(() => setToast(null), 2000);
+      }
+    } catch (error) {
+      console.error("Error sharing:", error);
+    }
+  };
+
+  const renderActionButtons = (isDesktop: boolean) => {
+    if (!product) return null;
+    return (
+      <div className={cn("absolute z-20 flex gap-2.5", isDesktop ? "top-6 right-6" : "top-4 right-4")}>
+        {/* Share Button */}
+        <button
+          type="button"
+          onClick={handleShare}
+          aria-label="Share product"
+          className="w-10 h-10 rounded-full flex items-center justify-center bg-white/75 border border-white/45 text-stone-900 hover:bg-white backdrop-blur-md transition-all active:scale-95 shadow-md cursor-pointer"
+        >
+          <Share2 className="w-4.5 h-4.5 stroke-[1.8]" />
+        </button>
+
+        {/* Heart Button */}
+        <button
+          type="button"
+          onClick={toggleFavorite}
+          aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all active:scale-95 shadow-md cursor-pointer",
+            isWishlisted
+              ? "bg-[#C9A84C] border border-[#C9A84C] text-stone-900"
+              : "bg-white/75 border border-white/45 text-stone-900 hover:bg-white"
+          )}
+        >
+          <Heart
+            className={cn(
+              "w-4.5 h-4.5 transition-all duration-300",
+              isWishlisted ? "fill-stone-900 stroke-stone-900" : "stroke-current fill-none"
+            )}
+          />
+        </button>
+      </div>
+    );
+  };
 
   // Parse images and videoUrl into a unified media list
   const mediaList: MediaItem[] = React.useMemo(() => {
@@ -130,10 +220,22 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
     );
   }
 
-  const activeIndex = selectedMedia?.type === "image" ? selectedMedia.index : mediaList.length - 1;
+  const activeIndex = selectedMedia
+    ? mediaList.findIndex(
+        (m) =>
+          (m.type === "image" && selectedMedia.type === "image" && m.index === selectedMedia.index) ||
+          (m.type === "video" && selectedMedia.type === "video")
+      )
+    : 0;
 
   return (
     <div className="w-full flex flex-col md:flex-row gap-6">
+      {/* Toast Notification element */}
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[99999] bg-[#1c1917]/95 border border-stone-850/50 text-white rounded-full px-5 py-3 shadow-2xl flex items-center">
+          <span className="text-xs font-semibold tracking-wide">{toast}</span>
+        </div>
+      )}
       
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* Desktop Layout: Left Thumbnail Rail                                */}
@@ -189,6 +291,8 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
         >
+          {/* Action Buttons overlay */}
+          {renderActionButtons(true)}
           {selectedMedia?.type === "image" ? (
             <img
               src={selectedMedia.url}
@@ -217,6 +321,9 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
       {/* Mobile Layout: Swipeable horizontal gallery                         */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       <div className="block md:hidden w-full relative">
+        {/* Action Buttons overlay */}
+        {renderActionButtons(false)}
+
         {/* Swipe container */}
         <div
           ref={mobileScrollRef}
@@ -238,10 +345,10 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
               ) : (
                 <div className="w-full h-full bg-black relative">
                   <video
-                    src={item.url}
-                    controls
-                    playsInline
-                    className="w-full h-full object-cover"
+                     src={item.url}
+                     controls
+                     playsInline
+                     className="w-full h-full object-cover"
                   />
                 </div>
               )}
@@ -249,10 +356,12 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
           ))}
         </div>
 
-        {/* Swipe Indicator Badge overlay */}
-        <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 text-white text-[10px] font-extrabold tracking-widest z-10">
-          {activeIndex + 1} / {mediaList.length}
-        </div>
+        {/* Mobile Swipe counter capsule (bottom-right) */}
+        {mediaList.length > 1 && (
+          <div className="absolute bottom-4 right-4 z-10 bg-white/75 border border-white/45 text-stone-900 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider select-none pointer-events-none backdrop-blur-md shadow-sm">
+            {activeIndex + 1} / {mediaList.length}
+          </div>
+        )}
 
         {/* Thumbnail Strip Below (Mobile Only) */}
         {mediaList.length > 1 && (

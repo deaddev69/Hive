@@ -11,7 +11,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        "hive-gold": "#F5A623",
+        "hive-gold": "#d4af37",
         "hive-amber": "#E8890C",
         "hive-dark": "#1A1200",
         "hive-cream": "#FFFDF5",
@@ -39,8 +39,8 @@ const config: Config = {
         }
       },
       fontFamily: {
-        serif: ["var(--font-playfair-display)", "Playfair Display", "Georgia", "serif"],
-        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+        serif: ["var(--font-manrope)", "Manrope", "Georgia", "serif"],
+        sans: ["var(--font-manrope)", "Manrope", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "monospace"],
       },
     },

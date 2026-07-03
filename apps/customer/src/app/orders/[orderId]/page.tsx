@@ -18,11 +18,17 @@ import {
   Ticket,
   AlertTriangle,
   CheckCircle2,
+  Phone,
+  User,
+  Truck,
+  ExternalLink,
 } from "lucide-react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
+import { useSessionStore } from "@/context/SessionContext";
+import { formatCurrency } from "@hive/utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /orders/[orderId] — Order Tracking & Details Page
@@ -32,9 +38,11 @@ export default function OrderDetailPage() {
   const params = useParams();
   const orderId = params.orderId as string;
   const [mounted, setMounted] = useState(false);
+  const { token } = useSessionStore();
 
   const order = useQuery(api.orders.getOrderById, {
     orderId: orderId as Id<"orders">,
+    token: token || undefined,
   });
 
   useEffect(() => {
@@ -172,6 +180,7 @@ export default function OrderDetailPage() {
           {/* Left: Timeline + Items */}
           <div className="md:col-span-7 space-y-6">
             <TrackingTimeline status={uiStatus} />
+            {order.driverDetails && <DriverTrackingCard driverDetails={order.driverDetails} />}
             <OrderItemsList items={order.items} />
           </div>
 
@@ -204,6 +213,11 @@ export default function OrderDetailPage() {
             <InvoiceInformationCard orderId={order._id} />
 
             <ContextualActionsConvex status={uiStatus} orderId={order._id} cancelReason={order.cancelReason} />
+
+            {/* Fit Feedback Card — shown only for delivered orders */}
+            {uiStatus === "delivered" && (
+              <FitFeedbackCard orderId={order._id} items={order.items} />
+            )}
           </div>
         </div>
 
@@ -329,10 +343,10 @@ function OrderItemsList({ items }: { items: any[] }) {
               </div>
               <div className="text-right">
                 <span className="text-xs font-extrabold text-hive-dark block">
-                  ₹{((item.priceAtPurchase ?? item.price) * item.quantity).toLocaleString("en-IN")}
+                  {formatCurrency((item.priceAtPurchase ?? item.price) * item.quantity)}
                 </span>
                 <span className="text-[9px] text-hive-text-muted mt-0.5 block">
-                  ₹{(item.priceAtPurchase ?? item.price).toLocaleString("en-IN")} × {item.quantity}
+                  {formatCurrency(item.priceAtPurchase ?? item.price)} × {item.quantity}
                 </span>
               </div>
             </div>
@@ -429,7 +443,7 @@ function BillingCard({
       <div className="space-y-2 text-xs font-semibold text-hive-text-muted">
         <div className="flex justify-between items-center">
           <span>Subtotal</span>
-          <span className="text-hive-dark">₹{subtotal.toLocaleString("en-IN")}</span>
+          <span className="text-hive-dark">{formatCurrency(subtotal)}</span>
         </div>
 
         {discount > 0 && (
@@ -438,26 +452,26 @@ function BillingCard({
               <Ticket className="w-3.5 h-3.5 text-green-600" />
               Applied Discount
             </span>
-            <span>-₹{discount.toLocaleString("en-IN")}</span>
+            <span>-{formatCurrency(discount)}</span>
           </div>
         )}
 
         <div className="flex justify-between items-center">
           <span>Delivery Fee</span>
-          <span className="text-hive-dark">{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</span>
+          <span className="text-hive-dark">{deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}</span>
         </div>
 
         {codFee > 0 && (
           <div className="flex justify-between items-center text-hive-amber bg-amber-50/40 px-2 py-1 rounded-lg border border-hive-gold/10">
             <span>COD Surcharge</span>
-            <span>+₹{codFee}</span>
+            <span>+{formatCurrency(codFee)}</span>
           </div>
         )}
 
         <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1">
           <span className="text-sm font-extrabold text-hive-dark">Amount Paid</span>
           <span className="text-sm font-extrabold text-hive-dark">
-            ₹{total.toLocaleString("en-IN")}
+            {formatCurrency(total)}
           </span>
         </div>
 
@@ -503,9 +517,9 @@ function ContextualActionsConvex({
     return (
       <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3.5">
         <div className="space-y-1">
-          <h4 className="text-xs font-extrabold text-hive-dark">Have sizing issues or quality concerns?</h4>
+          <h4 className="text-xs font-extrabold text-hive-dark">Have quality concerns or incorrect item received?</h4>
           <p className="text-[10px] text-hive-text-muted leading-relaxed">
-            Our 48-Hour Replacement policy covers you. Request modifications or an exchange.
+            Our 3-Day Return & Refund Policy covers you. Report issues or initiate returns easily.
           </p>
         </div>
         <Link
@@ -546,6 +560,126 @@ function OrderStatusBadge({ status }: { status: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Component: FitFeedbackCard — post-delivery sizing feedback
+// ─────────────────────────────────────────────────────────────────────────────
+function FitFeedbackCard({ orderId, items }: { orderId: Id<"orders">; items: any[] }) {
+  const existingFeedback = useQuery(api.fitFeedback.getFitFeedbackForOrder, { orderId });
+  const submitFeedback = useMutation(api.fitFeedback.submitFitFeedback);
+  const [submittedMap, setSubmittedMap] = React.useState<Record<string, string>>({});
+  const [submitting, setSubmitting] = React.useState<string | null>(null);
+
+  // Build a map of already-submitted feedback
+  const feedbackByItem = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    if (existingFeedback) {
+      for (const f of existingFeedback) {
+        map[f.orderItemId] = f.fitResponse;
+      }
+    }
+    return { ...map, ...submittedMap };
+  }, [existingFeedback, submittedMap]);
+
+  const allAnswered = items.every((item: any) => !!feedbackByItem[item._id]);
+
+  const handleSubmit = async (orderItemId: string, fitResponse: "too_small" | "perfect_fit" | "too_large") => {
+    if (submitting) return;
+    setSubmitting(orderItemId);
+    try {
+      await submitFeedback({
+        orderId,
+        orderItemId: orderItemId as any,
+        fitResponse,
+      });
+      setSubmittedMap(prev => ({ ...prev, [orderItemId]: fitResponse }));
+    } catch (err) {
+      console.error("Failed to submit fit feedback:", err);
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
+  const fitOptions = [
+    { value: "too_small" as const, label: "Too Small", icon: "🔻" },
+    { value: "perfect_fit" as const, label: "Perfect", icon: "✅" },
+    { value: "too_large" as const, label: "Too Large", icon: "🔺" },
+  ];
+
+  const responseLabels: Record<string, { label: string; icon: string }> = {
+    too_small:   { label: "Too Small", icon: "🔻" },
+    perfect_fit: { label: "Perfect Fit", icon: "✅" },
+    too_large:   { label: "Too Large", icon: "🔺" },
+  };
+
+  if (allAnswered) {
+    return (
+      <div className="bg-emerald-50/60 border border-emerald-200/50 rounded-3xl p-5 shadow-sm space-y-2">
+        <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-extrabold uppercase tracking-wider">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          <span>Fit Feedback Submitted</span>
+        </div>
+        <p className="text-[10px] text-emerald-600/80 font-medium">
+          Thanks! Your feedback helps other buyers choose the right size.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-hive-border/50 rounded-3xl p-5 shadow-sm space-y-4">
+      <div className="space-y-1">
+        <h4 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider">How Did the Size Fit?</h4>
+        <p className="text-[10px] text-hive-text-muted leading-relaxed">
+          Quick 1-tap feedback helps future buyers.
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {items.map((item: any) => {
+          const answered = feedbackByItem[item._id];
+          const isSubmitting = submitting === item._id;
+
+          return (
+            <div key={item._id} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-hive-dark truncate max-w-[180px]">
+                  {item.productName ?? item.name}
+                </span>
+                <span className="text-[9px] font-extrabold text-hive-dark bg-hive-comb px-1.5 py-0.5 rounded-md border border-hive-gold/15">
+                  {item.variantSize ?? item.size}
+                </span>
+              </div>
+
+              {answered ? (
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/50">
+                  <span>{responseLabels[answered]?.icon}</span>
+                  <span>{responseLabels[answered]?.label}</span>
+                  <CheckCircle2 className="w-3 h-3 ml-auto" />
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  {fitOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => handleSubmit(item._id, opt.value)}
+                      className="flex-1 flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border border-hive-border/60 bg-white text-hive-dark hover:border-hive-amber hover:bg-hive-cream/30 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="text-sm">{opt.icon}</span>
+                      <span className="text-[9px] font-extrabold uppercase tracking-wider">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Loading Skeleton
 // ─────────────────────────────────────────────────────────────────────────────
 function OrderDetailSkeleton() {
@@ -573,7 +707,8 @@ function OrderDetailSkeleton() {
 // Component: InvoiceInformationCard
 // ─────────────────────────────────────────────────────────────────────────────
 function InvoiceInformationCard({ orderId }: { orderId: string }) {
-  const invoice = useQuery(api.invoices.getInvoiceByOrderId, { orderId: orderId as any });
+  const { token } = useSessionStore();
+  const invoice = useQuery(api.invoices.getInvoiceByOrderId, { orderId: orderId as any, token: token || undefined });
   const { downloadInvoiceData, isDownloading } = useInvoiceDownload();
 
   if (invoice === undefined) {
@@ -637,6 +772,62 @@ function InvoiceInformationCard({ orderId }: { orderId: string }) {
           <span>Download Invoice</span>
         )}
       </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component: DriverTrackingCard
+// ─────────────────────────────────────────────────────────────────────────────
+function DriverTrackingCard({ driverDetails }: { driverDetails: any }) {
+  return (
+    <div className="bg-white border border-hive-border/60 rounded-3xl p-6 shadow-sm space-y-4 hover:border-hive-gold/30 transition-all duration-300 relative overflow-hidden group">
+      {/* Decorative subtle background gradient */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-hive-gold/5 rounded-full blur-3xl group-hover:bg-hive-gold/8 transition-all duration-300" />
+      
+      <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2.5 flex items-center gap-2">
+        <Truck className="w-4 h-4 text-hive-gold animate-bounce" />
+        <span>Delivery Partner Assigned</span>
+      </h3>
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-hive-cream flex items-center justify-center border border-hive-border/30">
+            <User className="w-5 h-5 text-hive-dark" />
+          </div>
+          <div>
+            <p className="text-sm font-extrabold text-hive-dark">{driverDetails.name || "Delivery Associate"}</p>
+            <p className="text-[10px] text-hive-text-muted font-mono">{driverDetails.vehiclePlate || "Vehicle details pending"}</p>
+          </div>
+        </div>
+
+        <div className="flex gap-2 w-full sm:w-auto">
+          {driverDetails.phone && (
+            <a
+              href={`tel:${driverDetails.phone}`}
+              className="flex-1 sm:flex-initial h-10 px-4 border border-hive-border hover:border-hive-dark hover:bg-hive-cream/30 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 text-hive-dark"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              <span>Call Driver</span>
+            </a>
+          )}
+          {driverDetails.liveTrackingUrl && (
+            <a
+              href={driverDetails.liveTrackingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 sm:flex-initial h-10 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              <span>Track Live</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
+        </div>
+      </div>
+      
+      <p className="text-[10px] text-hive-text-muted/70 font-medium">
+        Delivery powered by <span className="font-bold text-hive-dark uppercase">{driverDetails.provider || "Courier Partner"}</span>
+      </p>
     </div>
   );
 }

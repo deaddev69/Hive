@@ -2,9 +2,9 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Truck } from "lucide-react";
 import { useCheckoutStore } from "@/store/checkout-store";
-import { useLocation } from "@/context/LocationContext";
+import { useCartStore } from "@/store/cart-store";
+import { formatCurrency } from "@hive/utils";
 
 interface CartSummaryProps {
   subtotal: number;
@@ -14,8 +14,9 @@ interface CartSummaryProps {
 export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onClose }) => {
   const router = useRouter();
   const clearCheckoutItems = useCheckoutStore((state) => state.clearCheckoutItems);
+  const items = useCartStore((state) => state.items);
 
-  const deliveryFee = subtotal >= 5000 ? 0 : 99;
+  const deliveryFee = subtotal >= 300000 ? 0 : 9900; // in paise
   const total = subtotal + deliveryFee;
 
   const handleCheckout = () => {
@@ -24,48 +25,73 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
     router.push("/checkout/address");
   };
 
-  return (
-    <div className="border-t border-hive-border/60 bg-white p-6 shadow-[0_-8px_24px_rgba(0,0,0,0.02)] sticky bottom-0">
-      {/* Free Delivery Goal */}
-      {subtotal < 5000 ? (
-        <div className="flex items-center gap-2.5 text-[10px] font-bold text-hive-text-muted bg-hive-gold/5 border border-hive-gold/15 p-2.5 rounded-xl mb-4 text-left">
-          <Truck className="w-4 h-4 text-hive-amber flex-shrink-0" />
-          <span>Add ₹{(5000 - subtotal).toLocaleString("en-IN")} more for Free Delivery today!</span>
-        </div>
-      ) : (
-        <div className="flex items-center gap-2.5 text-[10px] font-bold text-green-700 bg-green-50 border border-green-200 p-2.5 rounded-xl mb-4 text-left">
-          <Truck className="w-4 h-4 text-green-500 flex-shrink-0" />
-          <span>Congratulations! Your order qualifies for Free Delivery today.</span>
-        </div>
-      )}
+  // Dynamically resolve boutique name and ID for hyperlocal delivery status and continue shopping redirection
+  const uniqueBoutiques = Array.from(new Set(items.map((item) => item.boutiqueName).filter(Boolean)));
+  const deliveryText =
+    uniqueBoutiques.length === 1
+      ? `Delivered today from ${uniqueBoutiques[0]}`
+      : "Same-day delivery available in Kochi";
 
-      {/* Pricing Table */}
-      <div className="space-y-2.5">
-        <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-          <span>Subtotal</span>
-          <span>₹{subtotal.toLocaleString("en-IN")}</span>
-        </div>
-        <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-          <span>Delivery Fee</span>
-          <span>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</span>
-        </div>
-        <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1.5">
-          <span className="text-sm font-extrabold text-hive-dark">Estimated Total</span>
-          <span className="text-base font-extrabold text-hive-dark">
-            ₹{total.toLocaleString("en-IN")}
-          </span>
-        </div>
+  const firstItem = items[0];
+  const continueShoppingUrl = firstItem?.boutiqueId
+    ? `/products?boutiqueId=${firstItem.boutiqueId}`
+    : "/products";
+
+  return (
+    <div className="border-t border-stone-100 bg-white px-5 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sticky bottom-0 z-10 select-none">
+      {/* Subtotal */}
+      <div className="flex justify-between items-center text-xs text-stone-500 font-normal">
+        <span>Subtotal</span>
+        <span className="text-stone-900 font-medium">{formatCurrency(subtotal)}</span>
       </div>
 
-      {/* Actions */}
-      <button
-        type="button"
-        onClick={handleCheckout}
-        className="w-full h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl mt-5 font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-hive-amber focus:ring-offset-2"
-      >
-        <span>Proceed To Checkout</span>
-        <ArrowRight className="w-4 h-4 stroke-[2.2]" />
-      </button>
+      {/* Delivery Fee */}
+      <div className="flex justify-between items-center text-xs text-stone-500 font-normal mt-2">
+        <span>Delivery Fee</span>
+        <span className="text-stone-900 font-medium font-semibold">
+          {deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}
+        </span>
+      </div>
+
+      {/* Divider */}
+      <hr className="border-stone-100 my-4" />
+
+      {/* Estimated Total */}
+      <div className="flex justify-between items-center">
+        <span className="text-xs font-semibold text-stone-900">Estimated Total</span>
+        <span className="text-sm font-bold text-stone-900">
+          {formatCurrency(total)}
+        </span>
+      </div>
+
+      {/* Dynamic Delivery Status (one line, no SaaS trust checklist) */}
+      <div className="mt-3.5 text-center">
+        <span className="text-[11px] text-stone-500 font-normal block leading-normal">
+          {deliveryText}
+        </span>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="mt-5 flex flex-col gap-2.5">
+        <button
+          type="button"
+          onClick={handleCheckout}
+          className="w-full h-11 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-full font-medium text-xs tracking-wider flex items-center justify-center gap-1 shadow-sm focus:outline-none"
+        >
+          Secure Checkout &rarr;
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            router.push(continueShoppingUrl);
+          }}
+          className="w-full text-center text-xs text-stone-500 hover:text-stone-950 font-normal py-1.5 transition-colors focus:outline-none"
+        >
+          Continue Shopping
+        </button>
+      </div>
     </div>
   );
 };

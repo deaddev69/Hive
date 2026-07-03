@@ -106,26 +106,15 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 text-slate-800">
+    <div className="min-h-[100dvh] flex flex-col md:flex-row bg-slate-50 text-slate-800">
       
       {/* Mobile Header */}
-      <header className="md:hidden h-16 bg-hive-dark text-white border-b border-hive-border/20 flex items-center justify-between px-4 sticky top-0 z-30">
+      <header className="md:hidden h-16 bg-hive-dark text-white border-b border-hive-border/20 flex items-center justify-center px-4 sticky top-0 z-30">
         <HiveLogo roleLabel="DESIGNER PANEL" href="/boutique" />
-        <button 
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-1.5 rounded-lg hover:bg-white/10 text-white transition-colors"
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
       </header>
 
-      {/* Sidebar Navigation */}
-      <aside className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-hive-dark text-slate-300 border-r border-hive-border/10 flex flex-col justify-between p-6 transition-transform duration-300 transform
-        md:translate-x-0 md:static md:h-screen md:sticky md:top-0
-        ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
-      `}>
+      {/* Desktop Sidebar Navigation */}
+      <aside className="hidden md:flex flex-col justify-between fixed inset-y-0 left-0 z-40 w-64 bg-hive-dark text-slate-300 border-r border-hive-border/10 p-6 md:static md:h-screen md:sticky md:top-0">
         <div className="flex flex-col gap-8">
           
           {/* Header Brand */}
@@ -140,7 +129,6 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
                 <Link 
                   key={item.href} 
                   href={item.href}
-                  onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-3 px-4.5 py-3 rounded-xl text-sm font-semibold transition-all duration-150 ${
                     isActive 
                       ? "bg-hive-gold text-hive-dark font-bold shadow-md shadow-hive-gold/15" 
@@ -183,20 +171,34 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
         </div>
       </aside>
 
-      {/* Backdrop overlay for mobile sidebar */}
-      {mobileOpen && (
-        <div 
-          onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 bg-black/45 z-30 md:hidden animate-fade-in"
-        />
-      )}
-
       {/* Page Content Slot */}
-      <main className="flex-1 overflow-x-hidden md:h-screen md:overflow-y-auto">
-        <div className="p-6 md:p-10 max-w-7xl mx-auto w-full">
+      <main className="flex-1 overflow-x-hidden md:h-screen md:overflow-y-auto pb-20 md:pb-0">
+        <div className="p-4 md:p-10 max-w-7xl mx-auto w-full">
           {children}
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation Footer */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-white border-t border-slate-200 z-50 flex items-center justify-around px-2 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] pb-safe">
+        {BOUTIQUE_NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+          return (
+            <Link 
+              key={item.href} 
+              href={item.href}
+              className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 ${
+                isActive 
+                  ? "text-hive-amber" 
+                  : "text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              <Icon className={`w-5 h-5 ${isActive ? "fill-hive-amber/10" : ""}`} />
+              <span className="text-[10px] font-semibold">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

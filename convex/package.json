@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "convex dev",
-    "deploy": "convex deploy",
+    "dev": "cd .. && npx convex dev",
+    "deploy": "cd .. && npx convex deploy",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

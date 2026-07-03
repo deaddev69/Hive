@@ -18,4 +18,11 @@ export interface ProductCardData {
   favorite?: boolean;
   sizes?: string[];
   stockBySize?: Record<string, number>;
+  description?: string;
+  images?: string[];
+  estimatedDistanceKm?: number;
+  estimatedDurationMin?: number;
+  estimatedEtaMinutes?: number;
+  hiveScore?: number;
 }
+

@@ -61,11 +61,11 @@ export const HeroSection: React.FC = () => {
           <div className="lg:col-span-7 flex flex-col text-left items-start gap-6 lg:pr-8">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-hive-amber bg-hive-comb/40 border border-hive-border/50 uppercase tracking-widest">
               <span className="w-1.5 h-1.5 rounded-full bg-hive-amber animate-pulse" />
-              HYPERLOCAL BOUTIQUE MARKETPLACE
+              KERALA'S HYPERLOCAL FASHION MARKETPLACE
             </span>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold font-serif text-hive-dark tracking-tight leading-[1.15]">
-              Boutique Fashion.
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-serif text-hive-dark tracking-tight leading-[1.15]">
+              Hyperlocal Fashion.
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-hive-amber to-hive-gold">
                 Delivered Today.
@@ -81,15 +81,20 @@ export const HeroSection: React.FC = () => {
                 href="/collections"
                 className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl text-sm font-bold uppercase tracking-widest text-hive-dark bg-hive-gold hover:bg-hive-amber shadow-md shadow-hive-gold/25 hover:shadow-lg hover:shadow-hive-gold/35 hover:-translate-y-0.5 transition-all duration-300 group w-full sm:w-auto"
               >
-                Explore Collections
+                Discover Style Boards
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </Link>
-              <Link
-                href="/collections"
-                className="inline-flex items-center justify-center px-7 py-3.5 rounded-2xl text-sm font-bold text-hive-text border border-hive-border/60 bg-white hover:bg-hive-cream/35 transition-all duration-300 w-full sm:w-auto"
-              >
-                Become a Boutique Partner
-              </Link>
+              <div className="flex flex-col gap-1 w-full sm:w-auto">
+                <Link
+                  href="/become-seller"
+                  className="inline-flex items-center justify-center px-7 py-3.5 rounded-2xl text-sm font-bold text-hive-text border border-hive-border/60 bg-white hover:bg-hive-cream/35 transition-all duration-300 w-full sm:w-auto"
+                >
+                  Sell on Hive
+                </Link>
+                <span className="text-[10px] text-hive-text-muted text-center sm:text-left mt-1">
+                  Reach nearby customers and deliver fashion in hours, not days.
+                </span>
+              </div>
             </div>
           </div>
 
@@ -103,7 +108,7 @@ export const HeroSection: React.FC = () => {
                 <div className="flex justify-between items-center pb-4 border-b border-hive-border/40">
                   <div className="flex flex-col">
                     <span className="text-xs uppercase tracking-wider text-hive-text-muted font-bold">Featured Partner</span>
-                    <span className="text-lg font-serif font-bold text-hive-dark mt-0.5">Le Petit Atelier</span>
+                    <span className="text-lg font-serif font-bold text-hive-dark mt-0.5">Le Petit Studio</span>
                   </div>
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-200">
                     <ShieldCheck className="w-3.5 h-3.5" /> Verified
@@ -151,7 +156,7 @@ export const HeroSection: React.FC = () => {
                   {stat.icon}
                 </div>
                 <div className="flex flex-col text-left">
-                  <span className="text-2xl md:text-3xl font-serif font-extrabold text-hive-dark group-hover:text-hive-amber transition-colors duration-300">
+                  <span className="text-2xl md:text-3xl font-serif font-bold text-hive-dark group-hover:text-hive-amber transition-colors duration-300">
                     {stat.value}
                   </span>
                   <span className="text-xs font-bold uppercase tracking-wider text-hive-text-muted mt-0.5">

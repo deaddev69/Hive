@@ -250,7 +250,7 @@ export const getNewOrderBoutiqueTemplate = (data: EmailTemplateInput) => {
     </table>
     
     <div class="btn-container">
-      <a href="https://hivebytailorbee.com/boutique/orders" class="btn" style="background-color: #1f2937; color: #ffffff !important;">Go to Dashboard</a>
+      <a href="https://hivebytailorbee.com/seller/orders" class="btn" style="background-color: #1f2937; color: #ffffff !important;">Go to Dashboard</a>
     </div>
   `;
 

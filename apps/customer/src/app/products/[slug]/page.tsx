@@ -6,6 +6,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { ProductDetailPageClient } from "./ProductDetailPageClient";
 import { Loader2 } from "lucide-react";
+import { cleanProductTitle } from "@/components/product/ProductCard";
 
 export default function ProductDetailPage() {
   const params = useParams() as { slug: string };
@@ -14,7 +15,7 @@ export default function ProductDetailPage() {
   // Update document title dynamically
   useEffect(() => {
     if (product) {
-      document.title = `${product.name} — Hive by TailorBee`;
+      document.title = `${cleanProductTitle(product.name)} — Hive by TailorBee`;
     }
   }, [product]);
 

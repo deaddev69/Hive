@@ -90,7 +90,7 @@ export default function BoutiqueOrders() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-hive-border/30 font-semibold text-hive-dark">
-                {orders.map((order) => (
+                {orders.map((order: any) => (
                   <tr key={order._id} className="hover:bg-slate-50/30 transition-colors">
                     {/* Order Number */}
                     <td className="px-6 py-4">

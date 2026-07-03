@@ -10,7 +10,8 @@ import {
 } from "@/lib/catalogFilters";
 import { CategoryFilter } from "./filters/CategoryFilter";
 import { PriceRangeFilter } from "./filters/PriceRangeFilter";
-import { DeliveryFilter } from "./filters/DeliveryFilter";
+import { NewArrivalsFilter } from "./filters/NewArrivalsFilter";
+import { OccasionFilter } from "./filters/OccasionFilter";
 
 export interface CatalogFiltersProps {
   filters: CatalogFilterState;
@@ -68,9 +69,14 @@ export const CatalogFilters: React.FC<CatalogFiltersProps> = ({
 
       {/* Filter sections — Delivery → Price → Category */}
       <div className="flex flex-col px-5 divide-y divide-hive-border/40">
-        <DeliveryFilter
-          sameDayDelivery={filters.sameDayDelivery}
-          onChange={(v) => patch({ sameDayDelivery: v })}
+        <NewArrivalsFilter
+          newArrivals={filters.newArrivals}
+          onChange={(v) => patch({ newArrivals: v })}
+        />
+
+        <OccasionFilter
+          selected={filters.occasions}
+          onChange={(v) => patch({ occasions: v })}
         />
 
         <PriceRangeFilter
@@ -97,12 +103,21 @@ export const CatalogFilters: React.FC<CatalogFiltersProps> = ({
               }
             />
           ))}
-          {filters.sameDayDelivery && (
+          {filters.newArrivals && (
             <ActiveTag
-              label="Same Day"
-              onRemove={() => patch({ sameDayDelivery: false })}
+              label="New Finds"
+              onRemove={() => patch({ newArrivals: false })}
             />
           )}
+          {filters.occasions.map((occ) => (
+            <ActiveTag
+              key={`occ-${occ}`}
+              label={occ}
+              onRemove={() =>
+                patch({ occasions: filters.occasions.filter((o) => o !== occ) })
+              }
+            />
+          ))}
         </div>
       )}
     </aside>

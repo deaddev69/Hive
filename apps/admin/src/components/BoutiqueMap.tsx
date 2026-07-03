@@ -1,209 +1,338 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Search, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@hive/ui";
+import { GoogleMap, useJsApiLoader, Marker, Autocomplete } from "@react-google-maps/api";
+import { browserLocationCache } from "@hive/utils";
+import { useAction } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+
+interface PlaceDetails {
+  name: string;
+  address: string;
+  area: string;
+  city: string;
+  state: string;
+  pincode: string;
+  lat: number;
+  lng: number;
+  eLoc?: string;
+}
 
 interface BoutiqueMapProps {
   lat: number;
   lng: number;
   onChange?: (lat: number, lng: number) => void;
+  onSelectPlace?: (place: PlaceDetails) => void;
   readOnly?: boolean;
 }
 
-export default function BoutiqueMap({ lat, lng, onChange, readOnly = false }: BoutiqueMapProps) {
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ["places"];
+
+export default function BoutiqueMap({ lat, lng, onChange, onSelectPlace, readOnly = false }: BoutiqueMapProps) {
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY || "",
+    libraries,
+  });
+
+  const [activeMapTab, setActiveMapTab] = useState<"search" | "gps" | "manual">("search");
   
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searching, setSearching] = useState(false);
-  const [leafletLoaded, setLeafletLoaded] = useState(false);
+  // GPS state
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+  
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load Leaflet assets dynamically from CDN
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  const reverseGeocode = useAction(api.location.reverseGeocode);
 
-    // Check if already loaded
-    if ((window as any).L) {
-      setLeafletLoaded(true);
-      return;
-    }
+  const initialLat = lat || 10.0159; // Default Kakkanad, Ernakulam
+  const initialLng = lng || 76.3419;
 
-    // Load CSS
-    const link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-    document.head.appendChild(link);
+  const handleMapInteraction = useCallback(
+    async (clickLat: number, clickLng: number) => {
+      onChange?.(clickLat, clickLng);
 
-    // Load JS
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    script.async = true;
-    script.onload = () => {
-      setLeafletLoaded(true);
-    };
-    document.body.appendChild(script);
-
-    return () => {
-      // Clean up script/style links if desired (or leave cached)
-    };
-  }, []);
-
-  // Initialize Map
-  useEffect(() => {
-    if (!leafletLoaded || !mapContainerRef.current) return;
-    const L = (window as any).L;
-    if (!L) return;
-
-    // Destroy existing map if any
-    if (mapRef.current) {
-      mapRef.current.remove();
-      mapRef.current = null;
-    }
-
-    // Create map
-    const initialLat = lat || 17.385044; // Default Hyderabad coordinates
-    const initialLng = lng || 78.486671;
-
-    const map = L.map(mapContainerRef.current).setView([initialLat, initialLng], 13);
-    mapRef.current = map;
-
-    // Add Tile Layer
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(map);
-
-    // Add Marker
-    const marker = L.marker([initialLat, initialLng], { draggable: !readOnly }).addTo(map);
-    markerRef.current = marker;
-
-    if (!readOnly && onChange) {
-      // Handle marker drag end
-      marker.on("dragend", () => {
-        const position = marker.getLatLng();
-        onChange?.(position.lat, position.lng);
-      });
-
-      // Handle map click
-      map.on("click", (e: any) => {
-        const { lat: clickLat, lng: clickLng } = e.latlng;
-        marker.setLatLng([clickLat, clickLng]);
-        onChange?.(clickLat, clickLng);
-      });
-
-      // Set initial callback
-      onChange?.(initialLat, initialLng);
-    }
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, [leafletLoaded]);
-
-  // Update marker if lat/lng changes externally
-  useEffect(() => {
-    if (mapRef.current && markerRef.current) {
-      const currentPos = markerRef.current.getLatLng();
-      if (currentPos.lat !== lat || currentPos.lng !== lng) {
-        markerRef.current.setLatLng([lat, lng]);
-        mapRef.current.panTo([lat, lng]);
-      }
-    }
-  }, [lat, lng]);
-
-  // Nominatim Search handler
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-
-    setSearching(true);
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          searchQuery
-        )}&limit=1`
-      );
-      if (!res.ok) throw new Error("Search geocode failed");
-      const data = await res.json();
-      
-      if (data && data.length > 0) {
-        const { lat: searchLat, lon: searchLng } = data[0];
-        const numLat = parseFloat(searchLat);
-        const numLng = parseFloat(searchLng);
-
-        onChange?.(numLat, numLng);
-
-        if (mapRef.current && markerRef.current) {
-          markerRef.current.setLatLng([numLat, numLng]);
-          mapRef.current.setView([numLat, numLng], 15);
+      if (onSelectPlace) {
+        // 1. Check local cache
+        const cached = browserLocationCache.get(clickLat, clickLng);
+        if (cached) {
+          onSelectPlace({
+            name: cached.area || "Boutique Location",
+            address: cached.address || "",
+            area: cached.area || "",
+            city: cached.city || "Kochi",
+            state: cached.state || "Kerala",
+            pincode: cached.pincode || "",
+            lat: clickLat,
+            lng: clickLng,
+            eLoc: cached.placeId,
+          });
+          return;
         }
-      } else {
-        alert("Location not found. Please try a more specific search query.");
+
+        // 2. Fetch from backend (which now uses Convex Action securely)
+        try {
+          const data = await reverseGeocode({ lat: clickLat, lng: clickLng });
+            
+          browserLocationCache.set(clickLat, clickLng, {
+            placeId: data.eLoc,
+            address: data.formattedAddress,
+            area: data.locality,
+            city: data.city,
+            state: data.state,
+            pincode: data.pincode,
+            lat: clickLat,
+            lng: clickLng
+          });
+
+          onSelectPlace({
+            name: data.locality || "Boutique Location",
+            address: data.formattedAddress || "",
+            area: data.locality || "",
+            city: data.city || "Kochi",
+            state: data.state || "Kerala",
+            pincode: data.pincode || "",
+            lat: clickLat,
+            lng: clickLng,
+            eLoc: data.eLoc,
+          });
+        } catch (err) {
+          console.error("Reverse geocoding interaction error in BoutiqueMap:", err);
+        }
       }
-    } catch (err) {
-      console.error(err);
-      alert("Geocoding failed. Please verify network or enter manual pins.");
-    } finally {
-      setSearching(false);
+    },
+    [onChange, onSelectPlace]
+  );
+
+  const handleDragEnd = (e: google.maps.MapMouseEvent) => {
+    if (readOnly || !e.latLng) return;
+    const newLat = e.latLng.lat();
+    const newLng = e.latLng.lng();
+    
+    // Update parent coordinates instantly so marker moves
+    if (onChange) onChange(newLat, newLng);
+
+    // Debounce the reverse geocoding API call by 400ms to save costs
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      handleMapInteraction(newLat, newLng);
+    }, 400);
+  };
+
+  const handlePlaceChanged = () => {
+    if (autocompleteRef.current !== null) {
+      const place = autocompleteRef.current.getPlace();
+      if (place && place.geometry && place.geometry.location) {
+        const searchLat = place.geometry.location.lat();
+        const searchLng = place.geometry.location.lng();
+        
+        onChange?.(searchLat, searchLng);
+        mapRef.current?.panTo({ lat: searchLat, lng: searchLng });
+
+        if (onSelectPlace) {
+          let locality = "";
+          let city = "";
+          let state = "";
+          let pincode = "";
+
+          for (const component of place.address_components || []) {
+            if (component.types.includes("locality") || component.types.includes("sublocality")) {
+              locality = locality || component.long_name;
+              city = city || component.long_name;
+            }
+            if (component.types.includes("administrative_area_level_1")) {
+              state = component.long_name;
+            }
+            if (component.types.includes("postal_code")) {
+              pincode = component.long_name;
+            }
+          }
+
+          onSelectPlace({
+            name: place.name || locality || "Selected Location",
+            address: place.formatted_address || "",
+            area: locality || place.name || "",
+            city: city || "Kochi",
+            state: state || "Kerala",
+            pincode: pincode || "",
+            lat: searchLat,
+            lng: searchLng,
+            eLoc: place.place_id,
+          });
+        }
+      }
     }
   };
 
-  if (!leafletLoaded) {
+  const handleUseCurrentLocation = () => {
+    setGeoError(null);
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoError("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setGeoLoading(true);
+
+    const successCallback = async (position: GeolocationPosition) => {
+      const { latitude, longitude } = position.coords;
+      onChange?.(latitude, longitude);
+      mapRef.current?.panTo({ lat: latitude, lng: longitude });
+      await handleMapInteraction(latitude, longitude);
+      setGeoLoading(false);
+    };
+
+    const errorCallback = (error: GeolocationPositionError) => {
+      setGeoLoading(false);
+      if (error.code === 1) {
+        setGeoError("Location permission denied.");
+      } else {
+        setGeoError("Failed to retrieve location details.");
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(successCallback, errorCallback, { enableHighAccuracy: true, timeout: 10000 });
+  };
+
+  if (loadError) {
     return (
-      <div className="h-[250px] w-full rounded-2xl bg-hive-cream/30 border border-hive-border flex items-center justify-center gap-2">
+      <div className="h-[300px] w-full bg-slate-50 border border-dashed border-red-200 rounded-xl flex flex-col items-center justify-center gap-2 text-center p-4">
+        <span className="text-sm font-bold text-red-500">Map unavailable (Script failed to load)</span>
+        <span className="text-xs text-slate-500">Please enter your address manually or check your network connection.</span>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="h-[300px] w-full bg-slate-50 border border-dashed border-slate-200 rounded-xl flex items-center justify-center gap-2">
         <Loader2 className="w-5 h-5 animate-spin text-hive-amber" />
-        <span className="text-xs text-hive-text-muted font-bold">Loading interactive map...</span>
+        <span className="text-sm font-bold text-slate-500">Loading Google Maps...</span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3 w-full">
-      {/* Search inputs */}
+    <div className="flex flex-col gap-4 w-full">
+      {/* Input Selection Mode Tabs */}
       {!readOnly && (
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder="Search location (e.g. Banjara Hills, Hyderabad)"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs border border-hive-border/60 rounded-xl focus:outline-none focus:ring-1.5 focus:ring-hive-gold"
-            />
-            <MapPin className="w-4 h-4 text-hive-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-          </div>
-          <Button
+        <div className="flex border border-slate-200 rounded-xl p-0.5 bg-slate-50 gap-0.5 text-xs font-bold shadow-sm">
+          <button
             type="button"
-            onClick={handleSearch}
-            disabled={searching}
-            className="text-xs py-2 px-4 flex items-center gap-1 hover:bg-hive-amber"
+            onClick={() => setActiveMapTab("search")}
+            className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${
+              activeMapTab === "search"
+                ? "bg-white text-slate-900 shadow-sm border border-slate-200/50"
+                : "text-slate-500 hover:text-slate-900"
+            }`}
           >
-            {searching ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Search className="w-3.5 h-3.5" />
-            )}
-            <span>Search</span>
-          </Button>
+            Search Location
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMapTab("gps")}
+            className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${
+              activeMapTab === "gps"
+                ? "bg-white text-slate-900 shadow-sm border border-slate-200/50"
+                : "text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            Detect GPS
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMapTab("manual")}
+            className={`flex-1 py-1.5 rounded-lg transition-all cursor-pointer ${
+              activeMapTab === "manual"
+                ? "bg-white text-slate-900 shadow-sm border border-slate-200/50"
+                : "text-slate-500 hover:text-slate-900"
+            }`}
+          >
+            Manual Pin
+          </button>
         </div>
       )}
 
-      {/* Map Element */}
-      <div 
-        ref={mapContainerRef} 
-        className="h-[280px] w-full rounded-2xl border border-hive-border overflow-hidden shadow-inner z-10"
-      />
-
-      {!readOnly && (
-        <span className="text-[10px] text-hive-text-muted leading-tight">
-          💡 Drag the amber pin or tap anywhere on the map grid to adjust coordinates.
-        </span>
+      {!readOnly && activeMapTab === "search" && (
+        <div className="relative flex flex-col gap-2">
+          <Autocomplete
+            onLoad={(autocomplete) => {
+              autocompleteRef.current = autocomplete;
+              // Bias search results to India/Kerala if possible
+              autocomplete.setComponentRestrictions({ country: "in" });
+            }}
+            onPlaceChanged={handlePlaceChanged}
+            options={{ fields: ["address_components", "geometry", "icon", "name", "formatted_address", "place_id"] }}
+          >
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="Search boutique address..."
+                className="w-full px-4 py-2 pl-10 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-hive-amber/30 text-slate-900"
+              />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            </div>
+          </Autocomplete>
+        </div>
       )}
+
+      {!readOnly && activeMapTab === "gps" && (
+        <div className="flex flex-col gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl items-center text-center">
+          <p className="text-xs text-slate-500">Center the map on your exact coordinates using the browser location.</p>
+          <Button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            disabled={geoLoading}
+            className="flex items-center gap-2 text-xs py-1.5 cursor-pointer"
+          >
+            {geoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+            {geoLoading ? "Detecting Coordinates..." : "Center on My Location"}
+          </Button>
+          {geoError && <p className="text-[10px] font-bold text-red-600 mt-1">⚠️ {geoError}</p>}
+        </div>
+      )}
+
+      {!readOnly && activeMapTab === "manual" && (
+        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-left">
+          <h4 className="text-xs font-bold text-slate-900">Draggable Pin Drop Active</h4>
+          <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
+            Drag the pin to place your boutique location on the map.
+          </p>
+        </div>
+      )}
+
+      <div className="w-full rounded-xl border border-slate-200 overflow-hidden shadow-inner">
+        <GoogleMap
+          mapContainerStyle={{ width: "100%", height: "300px" }}
+          center={{ lat: initialLat, lng: initialLng }}
+          zoom={15}
+          onLoad={(map) => { mapRef.current = map as any; }}
+          options={{
+            disableDefaultUI: false,
+            zoomControl: true,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: true,
+          }}
+        >
+          <Marker
+            position={{ lat: initialLat, lng: initialLng }}
+            draggable={!readOnly}
+            onDragEnd={handleDragEnd}
+            icon={{
+              path: "M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z",
+              fillColor: "#F5A623",
+              fillOpacity: 1,
+              strokeColor: "#ffffff",
+              strokeWeight: 2,
+              scale: 1,
+            }}
+          />
+        </GoogleMap>
+      </div>
     </div>
   );
 }

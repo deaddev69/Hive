@@ -10,7 +10,7 @@ import Link from "next/link";
 
 export default function AdminDashboardPage() {
   const { isLoading: convexAuthLoading, isAuthenticated } = useConvexAuth();
-  const boutiques = useQuery(api.boutiques.getBoutiques);
+  const boutiques = useQuery(api.boutiques.getBoutiques, { excludeTestData: true });
   const categories = useQuery(api.categories.getCategories, {});
   const banners = useQuery(api.banners.getBanners);
   const orderMetrics = useQuery(api.adminOrders.getAdminDashboardMetrics);

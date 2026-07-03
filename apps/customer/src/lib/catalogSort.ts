@@ -7,13 +7,12 @@
 import { ProductCardData } from "./mockProducts";
 
 export type ProductSortOption =
-  | "newest"
   | "priceAsc"
   | "priceDesc"
-  | "rating"
-  | "trending";
+  | "trending"
+  | "nearby";
 
-export const DEFAULT_SORT: ProductSortOption = "newest";
+export const DEFAULT_SORT: ProductSortOption = "trending";
 
 export interface SortOptionMeta {
   id: ProductSortOption;
@@ -25,39 +24,32 @@ export interface SortOptionMeta {
 
 export const SORT_OPTIONS: SortOptionMeta[] = [
   {
-    id: "newest",
-    label: "Newest Arrivals",
-    shortLabel: "Newest",
-    description: "Recently added boutique pieces first",
-    icon: "Sparkles",
-  },
-  {
-    id: "priceAsc",
-    label: "Price: Low → High",
-    shortLabel: "Price ↑",
-    description: "Affordable pieces first",
-    icon: "ArrowUpFromLine",
-  },
-  {
-    id: "priceDesc",
-    label: "Price: High → Low",
-    shortLabel: "Price ↓",
-    description: "Premium pieces first",
-    icon: "ArrowDownFromLine",
-  },
-  {
-    id: "rating",
-    label: "Best Rated",
-    shortLabel: "Top Rated",
-    description: "Highest customer ratings first",
-    icon: "Star",
-  },
-  {
     id: "trending",
     label: "Trending",
     shortLabel: "Trending",
     description: "Most popular right now",
     icon: "TrendingUp",
+  },
+  {
+    id: "nearby",
+    label: "Nearby & Fastest Delivery",
+    shortLabel: "Nearby",
+    description: "Nearest designers first",
+    icon: "MapPin",
+  },
+  {
+    id: "priceAsc",
+    label: "Price: Low to High",
+    shortLabel: "Price: Low to High",
+    description: "Affordable pieces first",
+    icon: "ArrowUpFromLine",
+  },
+  {
+    id: "priceDesc",
+    label: "Price: High to Low",
+    shortLabel: "Price: High to Low",
+    description: "Premium pieces first",
+    icon: "ArrowDownFromLine",
   },
 ];
 
@@ -72,24 +64,47 @@ export function applySort(
   const sorted = [...products]; // avoid mutating original
 
   switch (sortOption) {
-    case "newest":
-      // isNewArrival products first, then isTrending, else natural order
-      return sorted.sort((a, b) => {
-        const aScore = (a.isNewArrival ? 2 : 0) + (a.isTrending ? 1 : 0);
-        const bScore = (b.isNewArrival ? 2 : 0) + (b.isTrending ? 1 : 0);
-        return bScore - aScore;
-      });
-
     case "priceAsc":
       return sorted.sort((a, b) => a.price - b.price);
 
     case "priceDesc":
       return sorted.sort((a, b) => b.price - a.price);
 
-    case "rating":
-      return sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+    case "nearby":
+      return sorted.sort((a, b) => {
+        const aDist = (a as any).estimatedDistanceKm ?? 9999;
+        const bDist = (b as any).estimatedDistanceKm ?? 9999;
+        if (aDist !== bDist) {
+          return aDist - bDist;
+        }
+        const aScore = (a as any).hiveScore ?? 0;
+        const bScore = (b as any).hiveScore ?? 0;
+        return bScore - aScore;
+      });
 
     case "trending":
+    default:
+      if (products.length < 50) {
+        return sorted.sort((a, b) => {
+          // Launch Curation Sorting Optimization: Prioritize new arrivals and curated/staff picks
+          const aNew = a.isNewArrival ? 1 : 0;
+          const bNew = b.isNewArrival ? 1 : 0;
+          if (aNew !== bNew) {
+            return bNew - aNew;
+          }
+
+          const aCurated = (a.isTrending ? 1 : 0) + (a.isBestSeller ? 1 : 0);
+          const bCurated = (b.isTrending ? 1 : 0) + (b.isBestSeller ? 1 : 0);
+          if (aCurated !== bCurated) {
+            return bCurated - aCurated;
+          }
+
+          // Stable fallback
+          const aScore = a.hiveScore ?? 0;
+          const bScore = b.hiveScore ?? 0;
+          return bScore - aScore;
+        });
+      }
       return sorted.sort((a, b) => {
         const aScore =
           (a.isTrending ? 3 : 0) +
@@ -101,9 +116,6 @@ export function applySort(
           (b.reviewCount ?? 0) / 100;
         return bScore - aScore;
       });
-
-    default:
-      return sorted;
   }
 }
 

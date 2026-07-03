@@ -14,7 +14,7 @@ import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { ProductCardData } from "@/lib/mockProducts";
 import { Loader2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useLocation } from "@/context/LocationContext";
 import {
   CatalogFilterState,
@@ -47,7 +47,7 @@ function getProductOccasion(product: any): string {
 }
 
 // Map DB product → ProductCardData
-function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number> } {
+function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number>; boutiqueId?: string; boutique?: any } {
   const hasDiscount = p.discountPrice !== undefined && p.discountPrice < p.price;
   const price = hasDiscount ? p.discountPrice! : p.price;
   const compareAtPrice = hasDiscount ? p.price : undefined;
@@ -56,6 +56,8 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     slug: p.slug,
     name: p.name,
     boutiqueName: p.boutiqueName || "Unknown Boutique",
+    boutiqueId: p.boutiqueId,
+    boutique: p.boutique,
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
     price,
     compareAtPrice,
@@ -71,6 +73,10 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     favorite: false,
     sizes: p.sizes || ["Free"],
     stockBySize: p.stockBySize || { Free: 5 },
+    estimatedDistanceKm: p.estimatedDistanceKm,
+    estimatedDurationMin: p.estimatedDurationMin,
+    estimatedEtaMinutes: p.estimatedEtaMinutes,
+    hiveScore: p.hiveScore,
   };
 }
 
@@ -90,8 +96,10 @@ export default function ProductsPage() {
 function ProductsCatalog() {
   const searchParams = useSearchParams();
   const browseAllFromUrl = searchParams.get("browse") === "all";
+  const boutiqueIdFromUrl = searchParams.get("boutiqueId");
 
   const { latitude, longitude, browseAllProducts } = useLocation();
+  const router = useRouter();
 
   // Bypass delivery-radius filtering if user clicked "Browse Products Anyway"
   // OR if the URL carries ?browse=all
@@ -107,6 +115,14 @@ function ProductsCatalog() {
   // Fetch DB categories for resolving names in the toolbar summary
   const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
 
+  // Fetch DB approved boutiques to resolve boutiqueName when boutiqueId is in query params
+  const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques) ?? [];
+
+  const activeBoutique = useMemo(() => {
+    if (!boutiqueIdFromUrl) return null;
+    return dbBoutiques.find((b) => b._id === boutiqueIdFromUrl);
+  }, [dbBoutiques, boutiqueIdFromUrl]);
+
   // When URL ?category=slug changes and categories load, pre-select the matching category
   useEffect(() => {
     if (!dbCategories) return;
@@ -115,8 +131,14 @@ function ProductsCatalog() {
       setFilters((prev) => ({ ...prev, categories: [] }));
       return;
     }
+    const canonicalSlug = categorySlugFromUrl === "women" ? "womens-ethnic" : 
+                          categorySlugFromUrl === "bags" ? "handbags" : 
+                          categorySlugFromUrl;
     const match = dbCategories.find(
-      (c) => c.slug === categorySlugFromUrl || c.name.toLowerCase().replace(/\s+/g, "-") === categorySlugFromUrl
+      (c) => c.slug === canonicalSlug || 
+             c.name.toLowerCase().replace(/\s+/g, "-") === canonicalSlug ||
+             c.slug === categorySlugFromUrl ||
+             c.name.toLowerCase().replace(/\s+/g, "-") === categorySlugFromUrl
     );
     if (match) {
       setFilters((prev) => ({ ...prev, categories: [match._id] }));
@@ -148,8 +170,11 @@ function ProductsCatalog() {
     if (filters.maxPrice < PRICE_MAX) {
       args.maxPrice = filters.maxPrice;
     }
+    if (boutiqueIdFromUrl) {
+      args.boutiqueId = boutiqueIdFromUrl as Id<"boutiques">;
+    }
     return args;
-  }, [browseAll, latitude, longitude, filters]);
+  }, [browseAll, latitude, longitude, filters, boutiqueIdFromUrl]);
 
   const dbProducts = useQuery(api.products.getActiveProducts, queryArgs);
 
@@ -158,13 +183,17 @@ function ProductsCatalog() {
   // Map + sort — no client-side category/price filtering (done by backend)
   const products = useMemo(() => (dbProducts || []).map(mapDbProduct), [dbProducts]);
 
-  // Client-side same-day filter (lightweight, not worth a backend trip)
+  // Client-side new arrivals and occasion filters
   const filteredProducts = useMemo(() => {
-    if (filters.sameDayDelivery) {
-      return products.filter((p) => p.sameDayDelivery);
+    let result = products;
+    if (filters.newArrivals) {
+      result = result.filter((p) => p.isNewArrival);
     }
-    return products;
-  }, [products, filters.sameDayDelivery]);
+    if (filters.occasions.length > 0) {
+      result = result.filter((p) => p.occasion !== undefined && filters.occasions.includes(p.occasion));
+    }
+    return result;
+  }, [products, filters.newArrivals, filters.occasions]);
 
   const sortedProducts = useMemo(
     () => applySort(filteredProducts, sortOption),
@@ -175,6 +204,15 @@ function ProductsCatalog() {
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, sortOption]);
+
+  // Automatically select 'nearby' sort option when user location is available
+  useEffect(() => {
+    if (latitude !== null && longitude !== null) {
+      setSortOption("nearby");
+    } else {
+      setSortOption("trending");
+    }
+  }, [latitude, longitude]);
 
   // Pagination
   const totalPages = Math.ceil(sortedProducts.length / PAGE_SIZE);
@@ -216,12 +254,34 @@ function ProductsCatalog() {
         </div>
         <CatalogHeader
           title="All Products"
-          description="Every piece, every occasion — handpicked from verified boutiques near you."
+          description="Every piece, every occasion — handpicked from verified local designers near you."
           resultCount={sortedProducts.length}
           activeFilterCount={activeFilterCount}
           accentColor="#C9A84C"
         />
       </div>
+
+      {/* Designer exclusive collections banner */}
+      {boutiqueIdFromUrl && (
+        <div className="max-w-[1440px] mx-auto px-6 lg:px-8 w-full mt-4">
+          <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3.5 rounded-2xl text-xs font-semibold flex items-center justify-between gap-2 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center justify-center bg-amber-200 text-amber-800 rounded-full w-5 h-5 font-extrabold text-[10px]">✓</span>
+              <span>Showing exclusive collections from <strong className="font-extrabold">{activeBoutique?.boutiqueName || "Designer"}</strong></span>
+            </div>
+            <button
+              onClick={() => {
+                const params = new URLSearchParams(window.location.search);
+                params.delete("boutiqueId");
+                router.push(`${window.location.pathname}?${params.toString()}`);
+              }}
+              className="text-hive-amber hover:text-hive-gold font-extrabold transition-colors uppercase tracking-wider text-[10px]"
+            >
+              [Clear Filter]
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Browse-all banner */}
       {browseAll && (
@@ -257,7 +317,7 @@ function ProductsCatalog() {
           <div className="flex-1 min-w-0 flex flex-col gap-6">
             {paginatedProducts.length > 0 ? (
               <>
-                <div className="relative z-0 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-5 md:gap-6">
+                <div className="relative z-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
                   {paginatedProducts.map((product, idx) => (
                     <div
                       key={`${sortOption}-${currentPage}-${product.id}`}

@@ -15,10 +15,22 @@ build/
 .env.local
 .env.*.local
 .env.production
-.env.example
+.env*
+
+# Documentation
+README.md
 
 # Convex generated files
 convex/_generated/
+convex/.convex/
+.convex/
+
+# Vercel
+.vercel/
+
+# Database files
+*.sqlite
+*.db
 
 # Debug
 npm-debug.log*

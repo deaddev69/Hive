@@ -6,15 +6,24 @@
 // 1. Create a JWT Template named "convex" in Clerk Dashboard → JWT Templates
 //    (use the default settings — Convex knows the template name)
 // 2. Set CLERK_JWT_ISSUER_DOMAIN in Convex Dashboard → Settings → Environment Variables
-//    Value: https://helpful-walrus-13.clerk.accounts.dev
+//    Value: <your Clerk JWT Issuer Domain from Clerk Dashboard>
 
 export default {
   providers: [
     {
-      // Clerk instance issuer URL — matches Clerk Dashboard domain
-      // Convex fetches {domain}/.well-known/openid-configuration to validate JWTs
-      domain:        process.env.CLERK_JWT_ISSUER_DOMAIN ?? "https://helpful-walrus-13.clerk.accounts.dev",
+      domain: (() => {
+        const domain = process.env.CLERK_JWT_ISSUER_DOMAIN;
+        if (!domain) {
+          throw new Error(
+            "CLERK_JWT_ISSUER_DOMAIN is not set. " +
+            "Add it in Convex Dashboard → Settings → Environment Variables. " +
+            "Find the value in Clerk Dashboard → JWT Templates → convex."
+          );
+        }
+        return domain;
+      })(),
       applicationID: "convex",
     },
   ],
 };
+

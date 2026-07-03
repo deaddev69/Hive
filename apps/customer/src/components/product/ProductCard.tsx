@@ -1,121 +1,122 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { ProductCardData } from "@/lib/mockProducts";
-import { Button, Modal } from "@hive/ui";
-import { Heart, ShieldCheck, Play, Truck, ShoppingBag, Eye, X } from "lucide-react";
+import { Heart, Eye } from "lucide-react";
 import { cn } from "@hive/ui";
-import { useCartStore } from "@/store/cart-store";
-import { useCart } from "@/context/CartContext";
-import { SizeSelectionModal } from "./SizeSelectionModal";
-import { useCheckoutStore } from "@/store/checkout-store";
+import { useWishlistStore } from "@/store/wishlist-store";
+import { QuickViewModal } from "./QuickViewModal";
+import { useLocation } from "@/context/LocationContext";
+import { calculateDistanceKm } from "@/lib/distance";
+import { useSessionStore } from "@/context/SessionContext";
+import { useRouter } from "next/navigation";
 
 export interface ProductCardProps {
   product: ProductCardData;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const router = useRouter();
-  const [isFavorite, setIsFavorite] = useState(product.favorite || false);
-  const [pulse, setPulse] = useState(false);
-  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-  const [isSizeModalOpen, setIsSizeModalOpen] = useState(false);
-  const [selectedSize, setSelectedSize] = useState("");
+// Clean database/AI suffixes from product titles
+export function cleanProductTitle(name: string): string {
+  if (!name) return "";
+  return name
+    .replace(/\s*-\s*[A-Za-z0-9\s]+#\d+$/, "") // removes " - Kochi #6", " - Palarivattom #72", etc.
+    .replace(/\s*#\d+$/, "") // removes " #18", etc.
+    .replace(/\s*\(Out of Stock\)$/i, "") // removes "(Out of Stock)"
+    .trim();
+}
 
-  const addItem = useCartStore((state) => state.addItem);
-  const setCheckoutItems = useCheckoutStore((state) => state.setCheckoutItems);
-  const { setSidebarOpen } = useCart();
+export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const { toggleItem, hasItem } = useWishlistStore();
+  const [hydrated, setHydrated] = useState(false);
+  const [pulse, setPulse] = useState(false);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const { isAuthenticated } = useSessionStore();
+  const router = useRouter();
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  const { latitude: userLat, longitude: userLng, city } = useLocation();
+  const boutique = (product as any).boutique;
+
+  const isFavorite = hydrated ? hasItem(product.slug) : false;
+
+  // Guard clause to protect empty state and avoid placeholder images in production
+  const isInvalid = !product.imageUrl || 
+                    product.imageUrl.trim() === "" || 
+                    product.imageUrl.includes("placeholder") ||
+                    (product as any).active === false || 
+                    ((product as any).approvalStatus && (product as any).approvalStatus !== "approved");
+
+  const deliveryBadge = React.useMemo(() => {
+    if (userLat === null || userLng === null) return null;
+    const bLat = boutique?.latitude ?? boutique?.addressDetails?.lat;
+    const bLng = boutique?.longitude ?? boutique?.addressDetails?.lng;
+    const bRad = boutique?.deliveryRadiusKm ?? 15;
+
+    if (bLat === undefined || bLng === undefined) {
+      const deliversToCity = boutique?.city ? city && boutique.city.toLowerCase() === city.toLowerCase() : true;
+      return {
+        label: deliversToCity ? `✓ Delivers to ${city}` : "✗ Outside your area",
+        isServiceable: deliversToCity
+      };
+    }
+
+    const dist = calculateDistanceKm(userLat, userLng, bLat, bLng);
+    const isServiceable = dist <= bRad;
+    return {
+      label: isServiceable ? `✓ ${dist.toFixed(1)} km away` : "✗ Outside your area",
+      isServiceable
+    };
+  }, [userLat, userLng, boutique, city]);
+
+  // Clean logistics metadata single line (plain text, no badges, no icons, fashion-oriented)
+  const logisticsText = React.useMemo(() => {
+    if (isInvalid) return null;
+    const isSameDay = product.sameDayDelivery || product.sameDayDelivery === undefined;
+    if (isSameDay) {
+      const currentHour = new Date().getHours();
+      return (currentHour >= 8 && currentHour < 20) ? "Delivers Today" : "Delivers Tomorrow";
+    }
+    return "Express Delivery";
+  }, [product, isInvalid]);
+
+  if (isInvalid) {
+    return null;
+  }
 
   const toggleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    setIsFavorite(!isFavorite);
+    if (!isAuthenticated) {
+      setShowAuthPrompt(true);
+      return;
+    }
+    toggleItem({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      compareAtPrice: product.compareAtPrice,
+      imageUrl: product.imageUrl,
+      boutiqueName: product.boutiqueName,
+      rating: product.rating,
+      reviewCount: product.reviewCount,
+      sizes: product.sizes,
+      stockBySize: product.stockBySize,
+    });
     setPulse(true);
     setTimeout(() => setPulse(false), 300);
   };
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleQuickViewOpen = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-
-    const sizes = product.sizes || ["Free"];
-    const stockBySize = product.stockBySize || { Free: 5 };
-    const availableSizes = sizes.filter((sz) => (stockBySize[sz] ?? 0) > 0);
-
-    if (availableSizes.length === 1 && availableSizes[0]) {
-      addItem({
-        productId: product.slug,
-        size: availableSizes[0],
-        price: product.price,
-        name: product.name,
-        imageUrl: product.imageUrl,
-        boutiqueName: product.boutiqueName,
-      });
-      setSidebarOpen(true);
-    } else {
-      setIsSizeModalOpen(true);
-    }
-  };
-
-  const handleConfirmSizeSelection = (size: string) => {
-    addItem({
-      productId: product.slug,
-      size,
-      price: product.price,
-      name: product.name,
-      imageUrl: product.imageUrl,
-      boutiqueName: product.boutiqueName,
-    });
-    setSidebarOpen(true);
-  };
-
-  const handleQuickView = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-
-    const sizes = product.sizes || ["Free"];
-    const stockBySize = product.stockBySize || { Free: 5 };
-    const available = sizes.filter((sz) => (stockBySize[sz] ?? 0) > 0);
-    if (available.length === 1 && available[0]) {
-      setSelectedSize(available[0]);
-    } else {
-      setSelectedSize("");
-    }
-    setIsQuickViewOpen(true);
-  };
-
-  const handleQuickViewAddToCart = () => {
-    if (!selectedSize) return;
-    addItem({
-      productId: product.slug,
-      size: selectedSize,
-      price: product.price,
-      name: product.name,
-      imageUrl: product.imageUrl,
-      boutiqueName: product.boutiqueName,
-    });
-    setIsQuickViewOpen(false);
-    setSidebarOpen(true);
-  };
-
-  const handleQuickViewBuyNow = () => {
-    if (!selectedSize) return;
-    setCheckoutItems([
-      {
-        productId: product.slug,
-        size: selectedSize,
-        quantity: 1,
-        price: product.price,
-        name: product.name,
-        imageUrl: product.imageUrl,
-        boutiqueName: product.boutiqueName,
-      },
-    ]);
-    setIsQuickViewOpen(false);
-    router.push("/checkout/address");
+    setQuickViewOpen(true);
   };
 
   const discountPercent = product.compareAtPrice
@@ -124,295 +125,197 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       )
     : 0;
 
+  // Derive collection/category label (standardized merchandising)
+  const collectionLabel = useMemoLabel(product.occasion);
+
+  const isSoldOut = hydrated && product.stockBySize && Object.values(product.stockBySize).reduce((sum, val) => sum + (val || 0), 0) <= 0;
+
   return (
-    <div className="relative w-full overflow-hidden bg-white border border-hive-border/60 rounded-2xl sm:rounded-[24px] group shadow-sm hover:shadow-xl hover:-translate-y-0.5 sm:hover:-translate-y-1 transition-all duration-300 flex flex-col p-1.5 sm:p-3">
-
-      {/* ── Image area ── */}
-      <div className="relative w-full aspect-[3/4] overflow-hidden rounded-xl sm:rounded-2xl bg-hive-cream/20">
-
+    <div className="relative w-full flex flex-col group select-none bg-white rounded-xl border border-black/[0.06] overflow-hidden transition-all duration-300">
+      
+      {/* ── Image area (4:5 Aspect Ratio, reduced height) ── */}
+      <div className="relative w-full aspect-[4/5] overflow-hidden bg-stone-50 rounded-t-xl transform translate-z-0" style={{ aspectRatio: "4/5" }}>
+        
+        {isSoldOut && (
+          <div className="absolute top-2.5 left-2.5 bg-black/80 backdrop-blur-md text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 rounded-sm z-20 pointer-events-none">
+            Sold Out
+          </div>
+        )}
+        
         {/* Product image link */}
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block w-full h-full z-10">
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            loading="lazy"
-            className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500 pointer-events-none"
-          />
+          {product.imageUrl ? (
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+              loading="lazy"
+              className="object-cover w-full h-full pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-200 ease-out"
+              style={{ objectFit: "cover" }}
+            />
+          ) : (
+            <div className="absolute inset-0 bg-stone-100 flex flex-col items-center justify-center text-stone-600 p-4">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-stone-400">No Image</span>
+            </div>
+          )}
         </Link>
 
-        {/* Top-left badges — fewer on mobile */}
-        <div className="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 flex flex-col gap-1 z-20">
-          {product.isNewArrival && (
-            <span className="bg-[#FFFDF5]/90 border border-hive-border/60 text-hive-amber text-[8px] sm:text-[9px] font-extrabold px-1.5 sm:px-2 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm shadow-sm select-none">
-              NEW
-            </span>
-          )}
-          {/* Only show TRENDING on md+ to avoid badge clutter on tiny cards */}
-          {product.isTrending && (
-            <span className="hidden sm:inline-flex bg-hive-gold/90 border border-hive-amber/20 text-hive-dark text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm shadow-sm select-none">
-              TRENDING
-            </span>
-          )}
-          {product.isBestSeller && !product.isTrending && (
-            <span className="hidden sm:inline-flex bg-hive-dark/95 text-hive-gold text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm select-none">
-              BESTSELLER
-            </span>
-          )}
-        </div>
-
-        {/* Discount badge on mobile (top-right alongside heart) */}
-        {discountPercent > 0 && (
-          <span className="absolute top-1.5 left-1/2 -translate-x-1/2 sm:hidden z-20 bg-hive-amber text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-full select-none shadow-sm">
-            {discountPercent}% OFF
-          </span>
-        )}
-
-        {/* Wishlist heart — smaller on mobile */}
+        {/* Wishlist heart overlay */}
         <button
           onClick={toggleFavorite}
           aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
           className={cn(
-            "absolute top-1.5 right-1.5 sm:top-3 sm:right-3 w-7 h-7 sm:w-8.5 sm:h-8.5 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center border border-hive-border/30 text-hive-text-muted hover:text-hive-amber hover:bg-white shadow-sm z-20 transition-all active:scale-90",
+            "absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/70 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300",
             pulse && "scale-110"
           )}
         >
           <Heart
             className={cn(
-              "w-3.5 h-3.5 sm:w-4 sm:h-4 transition-all duration-300",
+              "w-4 h-4 transition-all duration-300",
               isFavorite
-                ? "fill-hive-amber stroke-hive-amber scale-110"
+                ? "fill-hive-gold stroke-hive-gold scale-110"
                 : "stroke-current fill-none"
             )}
           />
         </button>
 
-        {/* Same-day badge — hidden on very small mobile */}
-        {product.sameDayDelivery && (
-          <div className="absolute bottom-1.5 left-1.5 sm:bottom-3 sm:left-3 hidden xs:flex sm:flex bg-white/90 backdrop-blur-sm border border-hive-border/40 text-hive-dark text-[9px] sm:text-[10px] font-extrabold px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-lg sm:rounded-xl items-center gap-1 z-20 shadow-sm select-none">
-            <Truck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-hive-amber" />
-            <span className="hidden sm:inline">Same Day</span>
-          </div>
-        )}
+        {/* Quick View Button overlay (Desktop) */}
+        <button
+          onClick={handleQuickViewOpen}
+          className="absolute bottom-0 left-0 right-0 bg-white text-hive-dark text-[10px] font-extrabold tracking-widest uppercase py-3.5 border-t border-hive-border/20 rounded-none z-20 transition-all duration-300 translate-y-full group-hover:translate-y-0 active:bg-slate-100 hover:bg-hive-dark hover:text-white hover:border-t-hive-dark hidden md:flex items-center justify-center gap-2 select-none"
+        >
+          <Eye className="w-3.5 h-3.5 stroke-[2]" />
+          <span>Quick Look</span>
+        </button>
 
-        {/* Video button — hidden on mobile */}
-        {product.videoAvailable && (
-          <button
-            aria-label="Play product video"
-            className="hidden sm:flex absolute bottom-3 right-3 w-8.5 h-8.5 rounded-full bg-hive-dark/65 hover:bg-hive-dark backdrop-blur-sm items-center justify-center text-hive-gold border border-hive-gold/20 z-20 transition-colors shadow-sm"
-          >
-            <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-          </button>
-        )}
-
-        {/* Desktop hover overlay buttons */}
-        <div className="absolute inset-x-3 bottom-3 z-30 md:flex hidden flex-col gap-2 translate-y-6 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-          <Button variant="primary" size="sm" className="w-full shadow-md font-bold" onClick={handleAddToCart}>
-            Add to Cart
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="w-full bg-white/95 border border-hive-border/40 backdrop-blur-sm text-hive-text font-bold"
-            onClick={handleQuickView}
-          >
-            Quick View
-          </Button>
-        </div>
+        {/* Mobile Quick Look Button overlay */}
+        <button
+          onClick={handleQuickViewOpen}
+          aria-label="Quick look"
+          className="absolute top-[46px] right-2.5 w-8 h-8 rounded-full bg-white/70 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 md:hidden z-20 active:scale-90 shadow-sm hover:bg-white"
+        >
+          <Eye className="w-4 h-4 text-hive-dark stroke-[2]" />
+        </button>
       </div>
 
-      {/* ── Card content ── */}
-      <div className="px-1 pt-2 pb-1.5 sm:px-1.5 sm:py-3 flex flex-col flex-1 justify-between text-left">
-        <div>
-          {/* Boutique name — abbreviated on mobile */}
-          <div className="flex items-center gap-1 select-none">
-            <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-widest text-hive-text-muted truncate">
-              {product.boutiqueName}
-            </span>
-            {product.isVerifiedBoutique && (
-              <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-hive-amber flex-shrink-0" />
-            )}
-          </div>
+      {/* ── Card content (Compressed) ── */}
+      <div className="p-3 flex flex-col text-left flex-1 justify-between gap-2 bg-white">
+        <div className="flex flex-col gap-1">
+          {/* Logistics / Delivery Badge (First thing seen after photo) */}
+          {(logisticsText === "Delivers Today" || logisticsText === "Delivers Tomorrow") && (
+            <div className={cn(
+              "inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full w-fit mb-1.5",
+              "bg-amber-50 text-amber-800 border border-amber-200/30"
+            )}>
+              <span className="w-1 h-1 rounded-full bg-current animate-pulse" />
+              {logisticsText}
+            </div>
+          )}
 
-          {/* Product name — tighter on mobile */}
-          <Link href={`/products/${product.slug}`} className="hover:text-hive-amber transition-colors block">
-            <h3 className="text-xs sm:text-sm font-semibold text-hive-dark leading-tight mt-1 sm:mt-1.5 line-clamp-2 tracking-wide">
-              {product.name}
+          {/* Category / Collection Tag */}
+          <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-amber-700 leading-none mb-1">
+            {collectionLabel}
+          </span>
+
+          {/* Product name */}
+          <Link href={`/products/${product.slug}`} className="hover:text-stone-600 transition-colors block">
+            <h3 className="text-sm md:text-base font-normal leading-snug text-stone-900 line-clamp-2">
+              {cleanProductTitle(product.name)}
             </h3>
           </Link>
 
-          {/* Rating row — compact on mobile, hide review count */}
-          {product.rating && (
-            <div className="flex items-center gap-1 mt-1 sm:mt-2">
-              <span className="text-hive-amber text-[10px] sm:text-xs">★</span>
-              <span className="text-[10px] sm:text-[11px] font-extrabold text-hive-dark">{product.rating}</span>
-              <span className="hidden sm:inline text-[10px] text-hive-text-muted">({product.reviewCount})</span>
-              {/* Occasion badge — desktop only to save space */}
-              {product.occasion && (
-                <span className="hidden sm:inline-block ml-auto bg-hive-comb/25 text-hive-amber text-[9px] font-extrabold px-2 py-0.5 rounded border border-hive-border/40 uppercase tracking-wider select-none">
-                  {product.occasion === "coords" ? "Co-ords" : product.occasion}
-                </span>
-              )}
-            </div>
-          )}
+          {/* Merchant attribution (Single line, "from Kochi Threads") */}
+          <div className="text-[12px] text-stone-500 font-normal leading-none mt-0.5">
+            from {product.boutiqueName || boutique?.name || boutique?.boutiqueName || "Hive Boutique"}
+          </div>
         </div>
 
-        {/* ── Price row ── */}
-        <div className="mt-1.5 sm:mt-3.5 pt-1.5 sm:pt-3 border-t border-hive-border/40">
-          <div className="flex items-baseline gap-1.5 sm:gap-2.5 flex-wrap">
-            <span className="text-sm sm:text-base font-extrabold text-hive-dark tracking-tight">
-              ₹{product.price.toLocaleString("en-IN")}
-            </span>
-            {product.compareAtPrice && (
+        <div className="flex flex-col gap-1 pt-2 border-t border-stone-50">
+          {/* Price (Own row, breathing room) */}
+          <div className="text-base md:text-lg font-medium text-stone-900 leading-none flex items-center flex-wrap gap-1">
+            <span>₹{product.price.toLocaleString("en-IN")}</span>
+            {product.compareAtPrice && product.compareAtPrice > product.price && (
               <>
-                <span className="text-[10px] sm:text-xs text-hive-text-muted line-through font-medium">
+                <span className="text-xs text-stone-400 line-through font-normal ml-1" style={{ textDecoration: "line-through" }}>
                   ₹{product.compareAtPrice.toLocaleString("en-IN")}
                 </span>
-                {/* discount % — desktop inline, mobile hidden (shown in badge above image) */}
-                <span className="hidden sm:inline text-[11px] font-bold text-hive-amber tracking-wide">
-                  ({discountPercent}% OFF)
+                <span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-105">
+                  Save ₹{(product.compareAtPrice - product.price).toLocaleString("en-IN")}
                 </span>
               </>
             )}
           </div>
         </div>
-
-        {/* ── Mobile action buttons — compact icon+label row ── */}
-        <div className="flex md:hidden items-center gap-1.5 mt-2 w-full">
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            aria-label="Add to cart"
-            className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-hive-gold text-hive-dark text-[10px] font-extrabold uppercase tracking-wide shadow-sm hover:bg-hive-amber transition-colors active:scale-95"
-          >
-            <ShoppingBag className="w-3 h-3 flex-shrink-0" strokeWidth={2.5} />
-            <span>Cart</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleQuickView}
-            aria-label="Quick view"
-            className="w-9 h-8 flex items-center justify-center rounded-xl border border-hive-border/60 bg-white text-hive-text-muted hover:text-hive-amber hover:border-hive-gold/50 transition-colors active:scale-95"
-          >
-            <Eye className="w-3.5 h-3.5" strokeWidth={2} />
-          </button>
-        </div>
       </div>
+      {quickViewOpen && (
+        <QuickViewModal
+          isOpen={quickViewOpen}
+          onClose={() => setQuickViewOpen(false)}
+          productSlug={product.slug}
+        />
+      )}
 
-      {/* Size Selection Modal */}
-      <SizeSelectionModal
-        isOpen={isSizeModalOpen}
-        onClose={() => setIsSizeModalOpen(false)}
-        productName={product.name}
-        price={product.price}
-        imageUrl={product.imageUrl}
-        sizes={product.sizes || ["Free"]}
-        inventory={product.stockBySize || { Free: 5 }}
-        onConfirm={handleConfirmSizeSelection}
-      />
-
-      {/* Quick View Modal */}
-      <Modal
-        isOpen={isQuickViewOpen}
-        onClose={() => setIsQuickViewOpen(false)}
-        title="Quick View"
-        className="max-w-2xl w-full"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2 text-left select-none">
-          {/* Product image */}
-          <div className="relative aspect-[3/4] w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-100">
-            <Image
-              src={product.imageUrl}
-              alt={product.name}
-              fill
-              className="object-cover"
-            />
-          </div>
-
-          {/* Product details */}
-          <div className="flex flex-col justify-between h-full">
-            <div className="space-y-4">
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-hive-amber">
-                  {product.boutiqueName}
-                </span>
-                <h3 className="text-base font-bold text-hive-dark mt-1 leading-snug">
-                  {product.name}
-                </h3>
-              </div>
-
-              <div className="text-base font-extrabold text-hive-dark">
-                ₹{product.price.toLocaleString("en-IN")}
-                {product.compareAtPrice && (
-                  <span className="text-xs text-hive-text-muted line-through font-medium ml-2.5">
-                    ₹{product.compareAtPrice.toLocaleString("en-IN")}
-                  </span>
-                )}
-              </div>
-
-              {/* Size selector */}
-              <div className="space-y-2 pt-2 border-t border-slate-100">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
-                  Select Size
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {(product.sizes || ["Free"]).map((sz: string) => {
-                    const stock = (product.stockBySize || {})[sz] ?? 0;
-                    const isOutOfStock = stock <= 0;
-                    const isSel = selectedSize === sz;
-                    return (
-                      <button
-                        key={sz}
-                        type="button"
-                        disabled={isOutOfStock}
-                        onClick={() => setSelectedSize(sz)}
-                        className={cn(
-                          "min-w-[40px] h-10 px-2 rounded-xl border text-xs font-bold transition-all duration-200 select-none relative",
-                          isOutOfStock
-                            ? "border-slate-100 bg-slate-50 text-slate-300 opacity-60 cursor-not-allowed line-through"
-                            : isSel
-                            ? "border-hive-dark bg-hive-dark text-white"
-                            : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 active:scale-95"
-                        )}
-                      >
-                        {sz}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+      {/* Auth Gate Bottom Sheet Modal */}
+      {showAuthPrompt && (
+        <div 
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-[2px] transition-all duration-300"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            setShowAuthPrompt(false);
+          }}
+        >
+          <div 
+            className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-t-[28px] p-6 pb-8 flex flex-col items-center gap-4 text-center border-t border-hive-border/30 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+          >
+            <div className="w-12 h-1 bg-stone-200 dark:bg-stone-800 rounded-full mb-1" />
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-full text-hive-amber">
+              <Heart className="w-6 h-6 fill-current" />
             </div>
-
-            {/* CTAs */}
-            <div className="space-y-3 mt-6 pt-4 border-t border-slate-100">
-              <Button
-                variant="primary"
-                className="w-full font-bold uppercase tracking-wider py-3"
-                disabled={!selectedSize}
-                onClick={handleQuickViewAddToCart}
+            <h3 className="text-lg font-serif font-black text-hive-dark dark:text-white uppercase tracking-wide">Sign in to save to wishlist</h3>
+            <p className="text-xs text-stone-500 dark:text-stone-400 max-w-xs leading-relaxed font-medium">
+              Create an account or sign in to save your favorite designer items and get notified about price drops and inventory updates.
+            </p>
+            <div className="flex flex-col gap-2.5 w-full pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAuthPrompt(false);
+                  router.push(`/sign-in?redirect_url=${encodeURIComponent(window.location.pathname)}`);
+                }}
+                className="w-full py-3 bg-[#111111] hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md active:scale-[0.98]"
               >
-                Add to Bag
-              </Button>
-              <Button
-                variant="secondary"
-                className="w-full font-bold uppercase tracking-wider py-3 border border-hive-border/40 text-hive-text bg-white"
-                disabled={!selectedSize}
-                onClick={handleQuickViewBuyNow}
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAuthPrompt(false)}
+                className="w-full py-3 bg-stone-50 hover:bg-stone-100 dark:bg-neutral-800 border border-stone-200 dark:border-neutral-700 text-stone-600 dark:text-stone-300 font-bold text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer"
               >
-                Buy Now
-              </Button>
-              <Link
-                href={`/products/${product.slug}`}
-                onClick={() => setIsQuickViewOpen(false)}
-                className="block text-center text-xs font-bold text-hive-text hover:text-hive-amber transition-colors border border-slate-200 py-3 rounded-xl bg-white active:scale-[0.98]"
-              >
-                View Full Details
-              </Link>
+                Cancel
+              </button>
             </div>
           </div>
         </div>
-      </Modal>
+      )}
     </div>
   );
 };
+
+// Helper hook or function to map category names cleanly
+function useMemoLabel(occasion?: string) {
+  if (!occasion) return "General Wear";
+  if (occasion === "coords") return "Co-ords Edit";
+  if (occasion === "wedding") return "Wedding Season";
+  if (occasion === "festival") return "Festive Collection";
+  if (occasion === "ethnic") return "Ethnic Staples";
+  if (occasion === "party") return "Evening Party";
+  if (occasion === "date") return "Date Night Edit";
+  if (occasion === "workwear") return "Office Staples";
+  return `${occasion.charAt(0).toUpperCase()}${occasion.slice(1)} Wear`;
+}

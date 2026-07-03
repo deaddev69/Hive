@@ -1,69 +1,52 @@
 "use client";
-
-import React, { useState, useRef } from "react";
-import { ShieldCheck, Star, Truck, Award, Sparkles } from "lucide-react";
+import React, { useState } from "react";
+import { Scissors, Compass, Ruler, FileText } from "lucide-react";
 import { cn } from "@hive/ui";
+import { PRODUCT_SPEC_KEYS } from "@hive/types";
 import { ProductDetail } from "@/lib/mockProductDetails";
-import { SizeSelector, SizeSelectorSkeleton } from "./SizeSelector";
-import { MeasurementMatrix, MeasurementMatrixSkeleton } from "./MeasurementMatrix";
-import { ProductTrustStrip, PurchaseConfidenceCard, TrustStripSkeleton } from "./ProductTrustStrip";
-import { PurchaseActions, PurchaseActionsSkeleton } from "./PurchaseActions";
+import { SizeSelector } from "./SizeSelector";
+import { PurchaseActions } from "./PurchaseActions";
+import { useRouter } from "next/navigation";
+import { cleanProductTitle } from "./ProductCard";
 
 export interface ProductInfoProps {
   product: ProductDetail;
+  selectedSize: string;
+  setSelectedSize: (size: string) => void;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Subcomponent: DeliveryPromiseCard (Section 7)
-// ─────────────────────────────────────────────────────────────────────────────
-const DeliveryPromiseCard: React.FC<{ sameDay: boolean; city: string }> = ({
-  sameDay,
-  city,
+export const ProductInfo: React.FC<ProductInfoProps> = ({ 
+  product, 
+  selectedSize, 
+  setSelectedSize 
 }) => {
-  return (
-    <div className="w-full bg-[#FFFDF5] border border-hive-gold/30 rounded-2xl p-4 text-left flex gap-3.5 shadow-sm">
-      <div className="w-10 h-10 rounded-xl bg-hive-gold/10 border border-hive-gold/30 flex items-center justify-center text-hive-amber flex-shrink-0">
-        <Truck className="w-5 h-5" strokeWidth={2} />
-      </div>
-      <div className="flex-1 text-xs">
-        <div className="flex items-center justify-between flex-wrap gap-1">
-          <span className="font-extrabold uppercase tracking-wider text-hive-dark">
-            {sameDay ? "Delivered Today" : "Express Delivery"}
-          </span>
-          {sameDay && (
-            <span className="text-[9px] font-extrabold uppercase bg-hive-amber text-white px-2 py-0.5 rounded-full tracking-wide">
-              Same Day Eligible
-            </span>
-          )}
-        </div>
-        <p className="text-hive-text-muted mt-1 leading-relaxed font-medium">
-          {sameDay
-            ? `Order by 3:00 PM for delivery by 7:00 PM inside the ${city} delivery zone.`
-            : `Delivered to your doorstep inside the ${city} zone in 24–48 hours.`}
-        </p>
-      </div>
-    </div>
-  );
-};
-
-export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
-  const [selectedSize, setSelectedSize] = useState<string>("");
-  const [isDescExpanded, setIsDescExpanded] = useState(false);
-  const measurementMatrixRef = useRef<HTMLDivElement>(null);
+  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+  const router = useRouter();
 
   // ── Single source of truth for stock ──────────────────────────────────────
-  // Convex-enriched products use `stockBySize`; mock/legacy products use `inventory`.
-  // Always prefer stockBySize from Convex, fall back to inventory for mock data.
   const stockMap: Record<string, number> =
     (product as any).stockBySize ?? product.inventory ?? {};
-
-  console.log("[ProductInfo] product.stockBySize:", (product as any).stockBySize);
-  console.log("[ProductInfo] product.inventory:", product.inventory);
-  console.log("[ProductInfo] resolved stockMap:", stockMap);
 
   const discountPercent = product.compareAtPrice
     ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : 0;
+
+  // Fit recommendation & silhouette from product
+  const fitRecommendation = (product as any).fitRecommendation as "runs_small" | "true_to_size" | "runs_large" | undefined;
+  const silhouette = (product as any).silhouette as "slim_fit" | "regular_fit" | "relaxed_fit" | "oversized" | undefined;
+
+  const fitBadgeConfig = {
+    runs_small:   { icon: "🔻", label: "Runs Small", advice: "Consider ordering one size up.", color: "text-amber-700 bg-amber-50 border-amber-200/60" },
+    true_to_size: { icon: "✅", label: "True to Size", advice: "Fits as expected for standard sizing.", color: "text-emerald-700 bg-emerald-50 border-emerald-200/60" },
+    runs_large:   { icon: "🔺", label: "Runs Large", advice: "Consider ordering one size down.", color: "text-blue-700 bg-blue-50 border-blue-200/60" },
+  };
+
+  const silhouetteConfig = {
+    slim_fit:     "Slim Fit — tailored outline, cut close to the body",
+    regular_fit:  "Regular Fit — standard drape, classic silhouette",
+    relaxed_fit:  "Relaxed Fit — extra room, comfortable cut",
+    oversized:    "Oversized Cut — intentionally loose and baggy",
+  };
 
   // Occasion tags formatter helper
   const formatTag = (tag: string) => {
@@ -73,149 +56,280 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
       .join(" ");
   };
 
-  return (
-    <div className="w-full flex flex-col gap-6 text-left">
+  const hasDescription = product.description && product.description.trim() !== "";
 
-      {/* ── SECTION 1: BOUTIQUE DETAILS ── */}
-      <div className="flex items-center justify-between border-b border-hive-border/40 pb-3 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-hive-amber">
-            {product.boutique.name}
+  const productDetails = (product as any).details || {};
+  const renderedSpecs = Object.entries(PRODUCT_SPEC_KEYS)
+    .map(([key, label]) => {
+      const val = productDetails[key]?.trim();
+      return { label, value: val };
+    })
+    .filter(item => !!item.value);
+
+  const hasDetails = renderedSpecs.length > 0;
+
+  // Prepare spec list items dynamically using tailoring-focused icons (Fabric, Craft, Fit Notes)
+  const specItems = [
+    { key: "fabric", label: "Fabric", value: (product as any).material, icon: Scissors },
+    { key: "origin", label: "Craft", value: (product as any).origin, icon: Compass },
+  ].filter(item => !!item.value);
+
+  return (
+    <div className="w-full flex flex-col gap-5 text-left">
+      
+      {/* ── SECTION 1: HERO (wrapped in pdp-hero-section for IntersectionObserver) ── */}
+      <div id="pdp-hero-section" className="space-y-1 select-none">
+        {/* Occasion / Category label */}
+        {product.occasionTags && product.occasionTags.length > 0 && product.occasionTags[0] && (
+          <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-700 leading-none">
+            {formatTag(product.occasionTags[0])}
+          </div>
+        )}
+        
+        {/* Product Title */}
+        <h1 className="text-lg md:text-xl font-serif font-semibold text-stone-900 tracking-tight leading-none pt-0.5">
+          {cleanProductTitle(product.name)}
+        </h1>
+
+        {/* Pricing */}
+        <div className="flex items-baseline gap-2.5 pt-0.5 leading-none">
+          <span className="text-base md:text-lg font-bold text-stone-900">
+            ₹{product.price.toLocaleString("en-IN")}
           </span>
-          {product.boutique.verified && (
-            <span className="inline-flex items-center gap-0.5 bg-hive-gold/10 border border-hive-gold/30 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold text-hive-amber uppercase tracking-wider">
-              <ShieldCheck className="w-3 h-3" strokeWidth={2.5} />
-              VERIFIED
-            </span>
+          {product.compareAtPrice && (
+            <>
+              <span className="text-xs text-stone-400 line-through font-normal">
+                ₹{product.compareAtPrice.toLocaleString("en-IN")}
+              </span>
+              <span className="text-[9px] font-bold text-amber-800 tracking-wider">
+                ({discountPercent}% OFF)
+              </span>
+            </>
           )}
         </div>
-        <button
-          type="button"
-          className="text-[10px] font-bold text-hive-text-muted hover:text-hive-amber transition-colors uppercase tracking-widest underline decoration-dotted underline-offset-4"
-        >
-          View Boutique Details
-        </button>
-      </div>
 
-      {/* ── SECTION 2: PRODUCT NAME ── */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-serif font-extrabold text-hive-dark tracking-tight leading-tight line-clamp-2">
-          {product.name}
-        </h1>
-      </div>
-
-      {/* ── SECTION 3: RATING (CLICKABLE PLACEHOLDER ONLY) ── */}
-      {product.rating && (
-        <button
-          type="button"
-          className="flex items-center gap-2 self-start hover:opacity-80 transition-opacity"
-        >
-          <div className="flex items-center gap-1 bg-hive-cream/35 border border-hive-border/50 px-2.5 py-1 rounded-xl text-xs font-bold text-hive-dark">
-            <Star className="w-3.5 h-3.5 fill-hive-amber text-hive-amber" />
-            <span>{product.rating.toFixed(1)}</span>
-          </div>
-          <span className="text-[11px] text-hive-text-muted hover:underline font-semibold mt-0.5">
-            ({product.reviewCount} Reviews)
+        {/* Brand attribution */}
+        <div className="text-xs text-stone-600 font-medium leading-none pt-0.5">
+          from <span 
+            className="font-bold underline cursor-pointer hover:text-stone-950"
+            onClick={() => router.push(`/products?boutiqueId=${product.boutique.id}`)}
+          >
+            {product.boutique.name}
           </span>
-        </button>
-      )}
+        </div>
 
-      {/* ── SECTION 5: OCCASION TAGS ── */}
-      {product.occasionTags && product.occasionTags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {product.occasionTags.map((tag) => (
-            <span
-              key={tag}
-              className="bg-white border border-hive-border text-hive-dark text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm select-none"
-            >
-              {formatTag(tag)}
-            </span>
-          ))}
+        {/* Fulfillment line */}
+        <div className="text-xs text-stone-500 font-medium pt-0.5 leading-none">
+          Fulfilled by a Verified Hive Partner
+        </div>
+      </div>
+
+      {/* ── Structured Product Specs Grid (Fabric, Origin, Care, Fit) ── */}
+      {specItems.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 mt-1 select-none">
+          {specItems.map((item, idx) => {
+            const isLastOdd = specItems.length % 2 !== 0 && idx === specItems.length - 1;
+            const Icon = item.icon;
+            return (
+              <div 
+                key={item.key} 
+                className={cn(
+                  "border border-[#EAE1D4] rounded-xl p-3.5 bg-[#FAF8F5]/50 flex items-start gap-2.5",
+                  isLastOdd && "col-span-2"
+                )}
+              >
+                <Icon className="w-4 h-4 text-amber-700 stroke-[1.5] mt-0.5 shrink-0" />
+                <div className="flex flex-col min-w-0 text-left">
+                  <span className="text-[9px] font-bold tracking-wider text-stone-400 uppercase leading-none mb-1.5">{item.label}</span>
+                  <span className="text-xs font-semibold text-stone-850 leading-normal">
+                    {item.value}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* ── SECTION 4: PRICING ── */}
-      <div className="flex items-baseline gap-3.5 border-b border-hive-border/40 pb-5">
-        <span className="text-2xl font-extrabold text-hive-dark tracking-tight">
-          ₹{product.price.toLocaleString("en-IN")}
-        </span>
-        {product.compareAtPrice && (
-          <>
-            <span className="text-sm text-hive-text-muted line-through font-medium">
-              ₹{product.compareAtPrice.toLocaleString("en-IN")}
-            </span>
-            <span className="bg-hive-gold/15 text-hive-amber border border-hive-gold/30 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-              {discountPercent}% OFF
-            </span>
-          </>
-        )}
-      </div>
-
-      {/* ── SIZE SELECTOR UX (Phase 6.4 Insertion) ── */}
-      <SizeSelector
-        sizes={product.sizes}
-        inventory={stockMap}
-        selectedSize={selectedSize}
-        onSelectSize={setSelectedSize}
-        onOpenSizeGuide={() => {
-          measurementMatrixRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-        }}
-      />
-
-      {/* ── MEASUREMENT MATRIX & FIT GUIDANCE (Phase 6.5 Insertion) ── */}
-      <div ref={measurementMatrixRef} className="scroll-mt-6">
-        <MeasurementMatrix
-          productName={product.name}
-          measurementMatrix={product.measurementMatrix}
+      {/* ── SECTION 2: SIZE SELECTION ── */}
+      <div className="border-t border-stone-100 pt-2">
+        <SizeSelector
+          sizes={product.sizes}
+          inventory={stockMap}
           selectedSize={selectedSize}
+          onSelectSize={setSelectedSize}
+          hasMeasurements={false}
+          onOpenSizeGuide={() => {}}
           fitNote={product.fitNote}
         />
       </div>
 
-      {/* ── TRUST LAYER (Phase 6.6 Insertion) ── */}
-      <div className="flex flex-col gap-4 border-b border-hive-border/40 pb-5">
-        <ProductTrustStrip
-          videoUrl={product.videoUrl}
-          sameDayEligible={product.sameDayEligible}
-        />
-        <PurchaseConfidenceCard />
-      </div>
-
-      {/* ── SECTION 6: CLAMPABLE DESCRIPTION ── */}
-      <div className="space-y-2">
-        <div
-          className={cn(
-            "text-sm text-hive-text-muted leading-relaxed font-medium transition-all duration-300",
-            !isDescExpanded && "line-clamp-3"
+      {/* ── SECTION 2.5: FIT BADGE & SILHOUETTE INDICATOR ── */}
+      {(fitRecommendation || silhouette) && (
+        <div className="flex flex-col gap-2 select-none">
+          {fitRecommendation && (
+            <div className={cn(
+              "flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border",
+              fitBadgeConfig[fitRecommendation].color
+            )}>
+              <span className="text-sm">{fitBadgeConfig[fitRecommendation].icon}</span>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider leading-none mb-0.5">{fitBadgeConfig[fitRecommendation].label}</span>
+                <span className="text-[11px] font-medium leading-tight opacity-80">{fitBadgeConfig[fitRecommendation].advice}</span>
+              </div>
+            </div>
           )}
-        >
-          {product.description}
+          {silhouette && (
+            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-stone-200/60 bg-stone-50/50 text-stone-600">
+              <span className="text-xs">📐</span>
+              <span className="text-[11px] font-medium">{silhouetteConfig[silhouette]}</span>
+            </div>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={() => setIsDescExpanded(!isDescExpanded)}
-          className="text-xs font-extrabold text-hive-amber hover:text-hive-gold transition-colors uppercase tracking-widest"
-        >
-          {isDescExpanded ? "Read Less" : "Read More"}
-        </button>
+      )}
+
+      {/* ── SECTION 4: PURCHASE ACTIONS ── */}
+      <div className="border-t border-stone-100 pt-2">
+        <PurchaseActions
+          product={product}
+          selectedSize={selectedSize}
+          onOpenSizeGuide={() => {}}
+        />
       </div>
 
-      {/* ── SECTION 7: DELIVERY PROMISE CARD ── */}
-      <DeliveryPromiseCard
-        sameDay={product.sameDayEligible}
-        city={product.boutique.city}
-      />
+      {/* ── SECTION 5: TRUST REASSURANCE ── */}
+      <div className="border-t border-stone-100 pt-4 mt-3 py-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase select-none">
+        <span>Easy exchanges</span>
+        <span className="text-stone-300">•</span>
+        <span>{product.sameDayEligible ? "Same-Day Delivery" : "Express Delivery"}</span>
+        <span className="text-stone-300">•</span>
+        <span>Secure checkout</span>
+      </div>
 
-      {/* ── PURCHASE ACTIONS (Phase 6.7 Integration) ── */}
-      <PurchaseActions
-        product={product}
-        selectedSize={selectedSize}
-        onOpenSizeGuide={() => {
-          measurementMatrixRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-        }}
-      />
+      {/* ── SECTION 6: PRODUCT STORY ── */}
+      {hasDescription && (
+        <div className="border-t border-stone-100 pt-4 mt-3 space-y-2">
+          <h3 className="text-[10px] font-bold uppercase tracking-[0.12em] text-stone-400 mb-1">
+            Why you'll love it
+          </h3>
+          <p className="text-sm text-stone-600 leading-relaxed font-medium">
+            {(product as any).story ?? product.description}
+          </p>
+        </div>
+      )}
 
-      {/* Description space placeholder - clean layout without redundant trust badges */}
+      {/* ── SECTION 6.5: ACCORDIONS (Product Details, Wash & Care, Delivery & Returns) ── */}
+      <div className="border-t border-stone-100 pt-2.5 mt-2 space-y-1">
+        {/* Product Details (Specifications) Accordion */}
+        {hasDetails && (
+          <div className="border-b border-stone-100/60 pb-2.5">
+            <button
+              type="button"
+              onClick={() => setOpenAccordion(openAccordion === "details" ? null : "details")}
+              className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900 focus:outline-none"
+            >
+              <span className="flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-amber-700/80" />
+                <span>Product Details</span>
+              </span>
+              <span className="text-stone-400 text-xs font-normal">
+                {openAccordion === "details" ? "−" : "+"}
+              </span>
+            </button>
+            {openAccordion === "details" && (
+              <div className="grid grid-cols-2 gap-x-8 gap-y-3.5 pt-1.5 pb-2 text-left animate-fade-in">
+                {renderedSpecs.map((item, idx) => (
+                  <div key={idx} className="space-y-0.5">
+                    <span className="text-[9px] font-extrabold text-[#78716C] uppercase tracking-wider block">
+                      {item.label}
+                    </span>
+                    <span className="text-xs font-semibold text-[#1C1917] block leading-tight">
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Wash & Care Accordion */}
+        {(product as any).care && (
+          <div className="border-b border-stone-100/60 pb-2.5">
+            <button
+              type="button"
+              onClick={() => setOpenAccordion(openAccordion === "care" ? null : "care")}
+              className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900 focus:outline-none"
+            >
+              <span>Wash & Care</span>
+              <span className="text-stone-400 text-xs font-normal">
+                {openAccordion === "care" ? "−" : "+"}
+              </span>
+            </button>
+            {openAccordion === "care" && (
+              <p className="text-xs text-stone-600 leading-relaxed font-medium pt-1 animate-fade-in text-left">
+                {(product as any).care}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Delivery & Returns Accordion */}
+        <div className="border-b border-stone-100/10 pb-1">
+          <button
+            type="button"
+            onClick={() => setOpenAccordion(openAccordion === "returns" ? null : "returns")}
+            className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900 focus:outline-none"
+          >
+            <span>Delivery & Returns</span>
+            <span className="text-stone-400 text-xs font-normal">
+              {openAccordion === "returns" ? "−" : "+"}
+            </span>
+          </button>
+          {openAccordion === "returns" && (
+            <div className="text-xs text-stone-600 leading-relaxed font-medium pt-1 space-y-2 text-left animate-fade-in">
+              <p>
+                • <strong>3-Day Return Window</strong>: Return requests must be initiated within 3 days from delivery.
+              </p>
+              <p>
+                • <strong>No Change-of-Mind</strong>: Returns are eligible for physically damaged, defective, or wrong items only.
+              </p>
+              <p>
+                • <strong>Unboxing Video Required</strong>: An uninterrupted unboxing video is required as supporting evidence for claims of damage or defects.
+              </p>
+              <p>
+                • <strong>Refund Timeline</strong>: Once approved, refunds are credited back to your original payment method within 5–7 business days.
+              </p>
+              <p>
+                Read our full{" "}
+                <a href="/return-policy" className="underline font-bold text-stone-850 hover:text-stone-950">
+                  Return and Refund Policy
+                </a>.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── SECTION 7: MERCHANT ── */}
+      <div className="border-t border-stone-200/80 pt-5 mt-4 select-none">
+        <div className="flex justify-between items-start">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em] block">
+              Hive Partner
+            </span>
+            <h4 className="text-sm font-bold text-stone-900 leading-tight">
+              {product.boutique.name}
+            </h4>
+            <span className="text-[11px] text-stone-500 font-medium block">
+              Independent fashion partner in {product.boutique.city || "Kochi"}
+            </span>
+            <span className="text-[10px] text-emerald-600 font-semibold block">
+              Verified by Hive
+            </span>
+          </div>
+        </div>
+      </div>
 
     </div>
   );
@@ -227,51 +341,15 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ product }) => {
 export const ProductInfoSkeleton: React.FC = () => {
   return (
     <div className="w-full flex flex-col gap-6 animate-pulse text-left p-2">
-      {/* Boutique header skeleton */}
-      <div className="flex items-center justify-between border-b border-hive-border/40 pb-3">
-        <div className="h-3 w-1/3 bg-hive-comb/15 rounded" />
-        <div className="h-2 w-1/4 bg-hive-comb/10 rounded" />
-      </div>
-
-      {/* Product name skeleton */}
       <div className="space-y-2">
-        <div className="h-6 w-full bg-hive-comb/20 rounded" />
-        <div className="h-6 w-3/4 bg-hive-comb/20 rounded" />
+        <div className="h-4 w-1/4 bg-stone-200 rounded" />
+        <div className="h-6 w-full bg-stone-200 rounded" />
+        <div className="h-6 w-1/2 bg-stone-200 rounded" />
       </div>
-
-      {/* Rating skeleton */}
-      <div className="h-4 w-1/3 bg-hive-comb/10 rounded" />
-
-      {/* Occasion tags skeletons */}
-      <div className="flex gap-2">
-        <div className="h-6 w-16 bg-hive-comb/10 rounded-full" />
-        <div className="h-6 w-20 bg-hive-comb/10 rounded-full" />
-      </div>
-
-      {/* Pricing skeleton */}
-      <div className="h-8 w-1/2 bg-hive-comb/15 rounded border-b border-hive-border/40 pb-5" />
-
-      {/* Size Selector skeleton */}
-      <SizeSelectorSkeleton />
-
-      {/* Measurement Matrix skeleton */}
-      <MeasurementMatrixSkeleton />
-
-      {/* Trust Strip & Confidence Card skeleton */}
-      <TrustStripSkeleton />
-
-      {/* Description lines skeletons */}
-      <div className="space-y-2">
-        <div className="h-3.5 w-full bg-hive-comb/10 rounded" />
-        <div className="h-3.5 w-full bg-hive-comb/10 rounded" />
-        <div className="h-3.5 w-2/3 bg-hive-comb/10 rounded" />
-      </div>
-
-      {/* DeliveryPromiseCard skeleton */}
-      <div className="h-20 w-full bg-hive-comb/10 rounded-2xl border border-hive-border/20" />
-
-      {/* Purchase Actions skeleton */}
-      <PurchaseActionsSkeleton />
+      <div className="h-4 w-1/3 bg-stone-150 rounded" />
+      <div className="h-10 w-full bg-stone-100 rounded-xl" />
+      <div className="h-24 w-full bg-stone-100 rounded-2xl" />
+      <div className="h-20 w-full bg-stone-50 rounded-2xl" />
     </div>
   );
 };

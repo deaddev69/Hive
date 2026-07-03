@@ -4,28 +4,50 @@ import React from "react";
 import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
 import { Navbar } from "./Navbar";
+import { CheckoutHeader } from "./CheckoutHeader";
 import { Footer } from "./Footer";
 import { LocationPermissionModal } from "./LocationPermissionModal";
 import { LocationDrawer } from "./LocationDrawer";
 import { UnsupportedArea } from "../location/UnsupportedArea";
 import { CartDrawer } from "@/components/cart/CartDrawer";
-import { UserSync } from "@/components/auth/UserSync";
+import { FirstVisitAuthModal } from "../auth/FirstVisitAuthModal";
+import { MobileBottomNav } from "./MobileBottomNav";
+
+import { usePathname } from "next/navigation";
 
 export const CustomerLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isSidebarOpen, setSidebarOpen } = useCart();
   const { isDrawerOpen, setDrawerOpen } = useLocation();
+  const pathname = usePathname();
+
+  // Detect product detail pages: /products/[slug] (where slug is not empty and not 'page')
+  const isPdp = pathname ? /^\/products\/[^/]+$/.test(pathname) && pathname !== "/products" : false;
+
+  const isCheckoutPage = pathname?.startsWith("/checkout") ?? false;
+  const backHref = pathname === "/checkout/review" ? "/checkout/address" : "/cart";
+  const subline = pathname === "/checkout/review" ? "Step 2 of 2 • Review & Pay" : "Step 1 of 2 • Delivery Address";
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Invisible user sync — keeps Convex users table in sync with Clerk */}
-      <UserSync />
+      {/* Dynamic first-visit prompt for guests */}
+      <FirstVisitAuthModal />
 
-      <Navbar />
+      {isCheckoutPage ? (
+        <CheckoutHeader backHref={backHref} subline={subline} />
+      ) : (
+        <Navbar />
+      )}
       
       {/* Root Layout Main */}
       <main className="flex-grow w-full flex flex-col">{children}</main>
       
-      <Footer />
+      {/* Hide footer completely on mobile views across the entire site */}
+      <div className="hidden md:block">
+        <Footer />
+      </div>
+
+      {/* Sticky bottom nav for mobile */}
+      <MobileBottomNav />
 
       {/* Global location overlays */}
       <LocationPermissionModal />

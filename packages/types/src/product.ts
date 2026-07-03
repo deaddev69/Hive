@@ -27,6 +27,8 @@ export interface Product {
   approvedBy?:        string;
   createdAt:          number;
   updatedAt:          number;
+  lastVerifiedAt?:    number;
+  verifiedBy?:        string;
 }
 
 export interface ProductImage {
@@ -106,3 +108,27 @@ export interface ProductCard {
   boutiqueSlug: string;
   occasionIds: string[];
 }
+
+export const PRODUCT_SPEC_KEYS = {
+  color: "Colour",
+  fabricContent: "Fabric Composition",
+  neckType: "Neck Type",
+  closure: "Closure Type",
+  sleeve: "Sleeve Type",
+  fit: "Silhouette / Fit Type",
+  ethnicity: "Ethnicity",
+  ornamentation: "Surface Embellishments",
+  colorDetails: "Colour Details",
+  fabricType: "Weave/Knit Type",
+  shape: "Garment Shape",
+  slitDetail: "Slit Detail",
+  hemline: "Hemline Type",
+  length: "Garment Length",
+  pattern: "Pattern / Print",
+  fabricDetail: "Fabric Detail",
+  sleeveStyling: "Sleeve Styling",
+  fabricFamily: "Fabric Family"
+} as const;
+
+export type ProductSpecKey = keyof typeof PRODUCT_SPEC_KEYS;
+

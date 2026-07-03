@@ -42,6 +42,9 @@ export default function EditBoutiquePage() {
   const [deliveryRadiusKm, setDeliveryRadiusKm] = useState(10);
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("PENDING");
+  const [city, setCity] = useState("Kochi");
+  const [state, setState] = useState("Kerala");
+  const [pincode, setPincode] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   // Prepopulate form when boutique query completes
@@ -58,12 +61,22 @@ export default function EditBoutiquePage() {
       setDeliveryRadiusKm(boutique.deliveryRadiusKm);
       setDescription(boutique.description);
       setStatus(boutique.status);
+      setCity(boutique.city || "Kochi");
+      setState(boutique.state || "Kerala");
+      setPincode(boutique.pincode || "");
     }
   }, [boutique]);
 
   const handleCoordinatesChange = (lat: number, lng: number) => {
     setLatitude(lat);
     setLongitude(lng);
+  };
+
+  const handleSelectPlace = (place: any) => {
+    setAddress(place.address || "");
+    setCity(place.city || "Kochi");
+    setState(place.state || "Kerala");
+    setPincode(place.pincode || "");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,6 +109,9 @@ export default function EditBoutiquePage() {
         email,
         phone,
         address,
+        city,
+        state,
+        pincode,
         latitude,
         longitude,
         deliveryRadiusKm,
@@ -252,7 +268,41 @@ export default function EditBoutiquePage() {
               lat={latitude} 
               lng={longitude} 
               onChange={handleCoordinatesChange} 
+              onSelectPlace={handleSelectPlace}
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">City</label>
+              <input
+                type="text"
+                required
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">State</label>
+              <input
+                type="text"
+                required
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Pincode</label>
+              <input
+                type="text"
+                required
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
+              />
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5 md:max-w-xs">

@@ -4,17 +4,15 @@ const nextConfig: NextConfig = {
   // Enable React strict mode for development quality
   reactStrictMode: true,
 
+  devIndicators: false,
+
   // Transpile shared workspace packages
   transpilePackages: ["@hive/types", "@hive/ui", "@hive/utils"],
 
-  // Image optimization — allow Cloudinary, Unsplash, and Convex CDNs
+  // Image optimization — allow Unsplash and Convex CDNs
   images: {
+    unoptimized: true,
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-        pathname: "/**",
-      },
       {
         protocol: "https",
         hostname: "images.unsplash.com",

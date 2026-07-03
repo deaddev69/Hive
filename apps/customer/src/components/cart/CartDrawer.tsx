@@ -65,22 +65,22 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
         `}
       >
         {/* Header */}
-        <div className="flex justify-between items-center px-6 py-5 border-b border-hive-border/60 bg-white rounded-t-[30px] sm:rounded-t-none">
-          <div className="flex items-center gap-2">
-            <h2 className="font-serif text-lg font-bold text-hive-dark">Shopping Bag</h2>
+        <div className="flex justify-between items-center px-6 py-5 border-b border-stone-100 bg-white rounded-t-[30px] sm:rounded-t-none">
+          <div className="flex flex-col text-left select-none">
+            <h2 className="font-serif text-lg font-semibold text-stone-900 leading-snug">Hive Bag</h2>
             {count > 0 && (
-              <span className="text-[10px] bg-hive-dark text-hive-gold font-extrabold px-2 py-0.5 rounded-full">
-                {count} {count === 1 ? "Item" : "Items"}
+              <span className="text-[11px] text-stone-500 font-normal mt-0.5">
+                {count} {count === 1 ? "curated piece" : "curated pieces"}
               </span>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-hive-cream transition-colors text-hive-text-muted hover:text-hive-dark outline-none focus-visible:ring-2 focus-visible:ring-hive-amber"
+            className="p-1.5 rounded-full hover:bg-stone-50 transition-colors text-stone-400 hover:text-stone-700 outline-none"
             aria-label="Close cart drawer"
           >
-            <X className="w-5 h-5 stroke-[2.2]" />
+            <X className="w-5 h-5 stroke-[2]" />
           </button>
         </div>
 

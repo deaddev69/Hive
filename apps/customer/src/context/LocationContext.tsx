@@ -1,13 +1,15 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
+import { useQuery, useMutation, useAction, useConvex } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { useAuth } from "@clerk/nextjs";
+import { useSessionStore } from "./SessionContext";
+import { calculateDistanceKm } from "../lib/distance";
 
 export interface LocationState {
   pincode: string | null;
   regionName: string | null;
+  locality: string | null;
   isGateOpen: boolean;
   latitude: number | null;
   longitude: number | null;
@@ -21,12 +23,15 @@ export interface LocationState {
 }
 
 export interface LocationContextType extends LocationState {
+  isServiceable: boolean;
+  serviceableBoutiqueCount: number;
   setGateOpen: (open: boolean) => void;
   setDrawerOpen: (open: boolean) => void;
   setBrowseAllProducts: (v: boolean) => void;
   updateLocationDetails: (data: {
     latitude: number;
     longitude: number;
+    locality?: string;
     city: string;
     state: string;
     country: string;
@@ -34,18 +39,24 @@ export interface LocationContextType extends LocationState {
   }) => Promise<void>;
   detectLocation: () => Promise<{ success: boolean; error?: string }>;
   clearLocation: () => void;
+  geocodePincode: (pincode: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
 export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isSignedIn } = useAuth();
+  const { isAuthenticated, token } = useSessionStore();
+  const convex = useConvex();
   const saveLocation = useMutation(api.userLocations.save);
-  const dbLocation = useQuery(api.userLocations.get);
+  const requestService = useMutation(api.serviceability.requestService);
+  const dbLocation = useQuery(api.userLocations.get, { token: token || undefined });
+  const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques) ?? [];
+  const resolveRoadDistances = useAction(api.routing.resolveRoadDistancesAction);
 
   const [state, setState] = useState<LocationState>({
     pincode: null,
     regionName: null,
+    locality: null,
     isGateOpen: false,
     latitude: null,
     longitude: null,
@@ -59,6 +70,28 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const [hasLoadedInit, setHasLoadedInit] = useState(false);
 
+  const serviceableBoutiques = useMemo(() => {
+    if (state.latitude === null || state.longitude === null) return [];
+    if (dbBoutiques.length === 0) return [];
+
+    return dbBoutiques.filter((b) => {
+      const bLat = b.latitude ?? b.addressDetails?.lat;
+      const bLng = b.longitude ?? b.addressDetails?.lng;
+      if (bLat === undefined || bLng === undefined) return false;
+      const dist = calculateDistanceKm(state.latitude!, state.longitude!, bLat, bLng);
+      return dist <= (b.deliveryRadiusKm ?? 15);
+    });
+  }, [state.latitude, state.longitude, dbBoutiques]);
+
+  const isLocationServiceable = useMemo(() => {
+    if (state.latitude === null || state.longitude === null) return true;
+    return serviceableBoutiques.length > 0;
+  }, [state.latitude, state.longitude, serviceableBoutiques]);
+
+  const serviceableBoutiqueCount = useMemo(() => {
+    return serviceableBoutiques.length;
+  }, [serviceableBoutiques]);
+
   // 1. Load from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem("hive_location");
@@ -69,7 +102,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setState((prev) => ({
           ...prev,
           pincode: parsed.postcode || parsed.pincode || null,
-          regionName: parsed.regionName || parsed.city || null,
+          regionName: parsed.regionName || parsed.locality || parsed.city || null,
+          locality: parsed.locality || null,
           isGateOpen: false,
           latitude: parsed.latitude || null,
           longitude: parsed.longitude || null,
@@ -101,12 +135,14 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (dbLocation === undefined) return;
 
     if (dbLocation) {
-      const regionName = `${dbLocation.city}, ${dbLocation.state}`;
+      const dbLocality = (dbLocation as any).locality || "";
+      const regionName = dbLocality || dbLocation.city;
       
       const checkDbLoc = async () => {
         const locationData = {
           latitude: dbLocation.latitude,
           longitude: dbLocation.longitude,
+          locality: dbLocality,
           city: dbLocation.city,
           state: dbLocation.state,
           country: dbLocation.country,
@@ -120,6 +156,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           ...prev,
           pincode: dbLocation.postcode,
           regionName,
+          locality: dbLocality || null,
           isGateOpen: false,
           latitude: dbLocation.latitude,
           longitude: dbLocation.longitude,
@@ -133,35 +170,56 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       checkDbLoc();
     } else {
       // No location anywhere, open the onboarding gate
-      setState((prev) => ({ ...prev, isGateOpen: true }));
+      if (!state.isGateOpen) {
+        setState((prev) => ({ ...prev, isGateOpen: true }));
+      }
     }
   }, [dbLocation, hasLoadedInit, state.postcode]);
 
-  const setGateOpen = (open: boolean) => {
+  // Trigger background road routing when coordinates change
+  useEffect(() => {
+    if (state.latitude !== null && state.longitude !== null) {
+      resolveRoadDistances({
+        userLat: state.latitude,
+        userLng: state.longitude,
+      }).catch((err) => {
+        const errMsg = err?.message || String(err);
+        if (errMsg.includes("Connection lost") || errMsg.includes("closed")) {
+          console.warn("Background road distance resolution interrupted by connection drop.");
+        } else {
+          console.error("Failed to resolve road distances in background:", err);
+        }
+      });
+    }
+  }, [state.latitude, state.longitude, resolveRoadDistances]);
+
+  const setGateOpen = useCallback((open: boolean) => {
     setState((prev) => ({ ...prev, isGateOpen: open }));
-  };
+  }, []);
 
-  const setDrawerOpen = (open: boolean) => {
+  const setDrawerOpen = useCallback((open: boolean) => {
     setState((prev) => ({ ...prev, isDrawerOpen: open }));
-  };
+  }, []);
 
-  const setBrowseAllProducts = (v: boolean) => {
+  const setBrowseAllProducts = useCallback((v: boolean) => {
     localStorage.setItem("hive_browse_all", v ? "true" : "false");
     setState((prev) => ({ ...prev, browseAllProducts: v }));
-  };
+  }, []);
 
-  const updateLocationDetails = async (data: {
+  const updateLocationDetails = useCallback(async (data: {
     latitude: number;
     longitude: number;
+    locality?: string;
     city: string;
     state: string;
     country: string;
     postcode: string;
   }) => {
-    const regionName = `${data.city}, ${data.state}`;
+    const regionName = data.locality || data.city;
     const locationData = {
       latitude: data.latitude,
       longitude: data.longitude,
+      locality: data.locality || "",
       city: data.city,
       state: data.state,
       country: data.country,
@@ -181,6 +239,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...prev,
       pincode: data.postcode,
       regionName,
+      locality: data.locality || null,
       isGateOpen: false,
       latitude: data.latitude,
       longitude: data.longitude,
@@ -191,23 +250,48 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       browseAllProducts: false,
     }));
 
-    if (isSignedIn) {
+    // Log unserviceable location searches for analytics
+    const isServiceableLoc = dbBoutiques.some((b) => {
+      const bLat = b.latitude ?? b.addressDetails?.lat;
+      const bLng = b.longitude ?? b.addressDetails?.lng;
+      if (bLat === undefined || bLng === undefined) return false;
+      const dist = calculateDistanceKm(data.latitude, data.longitude, bLat, bLng);
+      return dist <= (b.deliveryRadiusKm ?? 15);
+    });
+
+    if (!isServiceableLoc) {
+      try {
+        await requestService({
+          city: data.city,
+          state: data.state,
+          latitude: data.latitude,
+          longitude: data.longitude,
+        });
+        console.log('[Analytics] Logged unserviceable location demand:', data.city);
+      } catch (err) {
+        console.error("Failed to log unserviceable location demand:", err);
+      }
+    }
+
+    if (isAuthenticated) {
       try {
         await saveLocation({
           latitude: data.latitude,
           longitude: data.longitude,
+          locality: data.locality || "",
           city: data.city,
           state: data.state,
           country: data.country,
           postcode: data.postcode,
+          token: token || undefined,
         });
       } catch (err) {
         console.error("Failed to save location to Convex:", err);
       }
     }
-  };
+  }, [isAuthenticated, saveLocation, requestService, dbBoutiques]);
 
-  const detectLocation = async (): Promise<{ success: boolean; error?: string }> => {
+  const detectLocation = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
         resolve({ success: false, error: "Geolocation is not supported by your browser." });
@@ -237,25 +321,25 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }));
 
           try {
-            console.log('[Geolocation] Fetching Nominatim reverse geocoding for:', { latitude, longitude });
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-            );
+            console.log('[Geolocation] Fetching reverse geocoding for:', { latitude, longitude });
+            const url = `/api/location/reverse?lat=${latitude}&lng=${longitude}`;
+            const res = await fetch(url);
             if (!res.ok) {
-              throw new Error("Failed to contact reverse geocoding service.");
+              throw new Error("Failed to contact geocoding service.");
             }
             const data = await res.json();
-            console.log('[Geolocation] Nominatim Response:', data);
+            console.log('[Geolocation] Mappls Response:', data);
 
-            const address = data.address || {};
-            const city = address.city || address.town || address.village || address.suburb || "Kochi";
-            const state = address.state || "Kerala";
-            const country = address.country || "India";
-            const postcode = address.postcode || "";
+            const locality = data.locality || "";
+            const city = data.city || "Kochi";
+            const state = data.state || "Kerala";
+            const country = data.country || "India";
+            const postcode = data.pincode || "";
 
             await updateLocationDetails({
               latitude,
               longitude,
+              locality,
               city,
               state,
               country,
@@ -288,21 +372,20 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 }));
 
                 try {
-                  console.log('[Geolocation] Fetching Nominatim reverse geocoding (fallback) for:', { latitude, longitude });
-                  const res = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-                  );
+                  console.log('[Geolocation] Fetching reverse geocoding (fallback) for:', { latitude, longitude });
+                  const url = `/api/location/reverse?lat=${latitude}&lng=${longitude}`;
+                  const res = await fetch(url);
                   if (!res.ok) throw new Error("Failed to reverse geocode");
                   const data = await res.json();
-                  console.log('[Geolocation] Nominatim Response (fallback):', data);
+                  console.log('[Geolocation] Mappls Response (fallback):', data);
 
-                  const address = data.address || {};
-                  const city = address.city || address.town || address.village || address.suburb || "Kochi";
-                  const state = address.state || "Kerala";
-                  const country = address.country || "India";
-                  const postcode = address.postcode || "";
+                  const locality = data.locality || "";
+                  const city = data.city || "Kochi";
+                  const state = data.state || "Kerala";
+                  const country = data.country || "India";
+                  const postcode = data.pincode || "";
 
-                  await updateLocationDetails({ latitude, longitude, city, state, country, postcode });
+                  await updateLocationDetails({ latitude, longitude, locality, city, state, country, postcode });
                   resolve({ success: true });
                 } catch (err) {
                   console.error("Fallback reverse geocoding error:", err);
@@ -338,9 +421,34 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         options
       );
     });
-  };
+  }, [updateLocationDetails]);
 
-  const clearLocation = () => {
+  const geocodePincode = useCallback(async (pincode: string): Promise<{ success: boolean; error?: string }> => {
+    if (!/^\d{6}$/.test(pincode)) {
+      return { success: false, error: "Please enter a valid 6-digit pincode." };
+    }
+    try {
+      const record = await convex.query(api.serviceablePincodes.getByPincode, { pincode });
+      if (record) {
+        await updateLocationDetails({
+          latitude: record.lat,
+          longitude: record.lng,
+          city: record.city,
+          state: record.state,
+          country: "India",
+          postcode: record.pincode,
+        });
+        return { success: true };
+      } else {
+        return { success: false, error: "We do not deliver to this pincode yet. We currently support selected areas in Kochi." };
+      }
+    } catch (e) {
+      console.error("Pincode geocode error:", e);
+      return { success: false, error: "Failed to look up pincode. Please try again." };
+    }
+  }, [convex, updateLocationDetails]);
+
+  const clearLocation = useCallback(() => {
     localStorage.removeItem("hive_location");
     localStorage.removeItem("hive_customer_pincode");
     localStorage.removeItem("hive_customer_region");
@@ -351,6 +459,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       ...prev,
       pincode: null,
       regionName: null,
+      locality: null,
       isGateOpen: true,
       latitude: null,
       longitude: null,
@@ -360,10 +469,34 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       postcode: null,
       browseAllProducts: false,
     }));
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({
+    ...state,
+    isServiceable: isLocationServiceable,
+    serviceableBoutiqueCount,
+    setGateOpen,
+    setDrawerOpen,
+    setBrowseAllProducts,
+    updateLocationDetails,
+    detectLocation,
+    clearLocation,
+    geocodePincode
+  }), [
+    state,
+    isLocationServiceable,
+    serviceableBoutiqueCount,
+    setGateOpen,
+    setDrawerOpen,
+    setBrowseAllProducts,
+    updateLocationDetails,
+    detectLocation,
+    clearLocation,
+    geocodePincode
+  ]);
 
   return (
-    <LocationContext.Provider value={{ ...state, setGateOpen, setDrawerOpen, setBrowseAllProducts, updateLocationDetails, detectLocation, clearLocation }}>
+    <LocationContext.Provider value={contextValue}>
       {children}
     </LocationContext.Provider>
   );

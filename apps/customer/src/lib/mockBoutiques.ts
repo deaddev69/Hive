@@ -11,4 +11,10 @@ export interface Boutique {
   imageUrl: string;
   productCount: number;
   featured: boolean;
+  distanceText?: string | null;
+  etaText?: string | null;
+  isNearby?: boolean;
+  distance?: number | null;
+  etaMinutes?: number | null;
 }
+

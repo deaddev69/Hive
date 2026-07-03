@@ -14,3 +14,4 @@ export * from "./components/Tabs";
 export * from "./components/DataTable";
 export * from "./components/LoadingState";
 export * from "./components/EmptyState";
+export * from "./components/Toaster";

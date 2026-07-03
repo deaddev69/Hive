@@ -104,7 +104,7 @@ export const ProductMeasurements: React.FC<ProductMeasurementsProps> = ({
             <div>
               <span className="font-extrabold text-hive-dark">Hive Fit Guarantee</span>
               <p className="text-hive-text-muted mt-0.5 leading-relaxed font-medium">
-                We guarantee these tape dimensions are 100% accurate. If the received dress does not match these measurements, you qualify for our 48-Hour Replacements policy.
+                We guarantee these tape dimensions are 100% accurate. If the received dress does not match these measurements, you qualify for our 3-Day Return & Refund Policy.
               </p>
             </div>
           </div>

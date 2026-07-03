@@ -504,9 +504,9 @@ function PostPurchaseActions({ order }: { order: Order }) {
     return (
       <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3.5 text-left">
         <div className="space-y-1">
-          <h4 className="text-xs font-extrabold text-hive-dark">Have sizing issues or flaws?</h4>
+          <h4 className="text-xs font-extrabold text-hive-dark">Have quality concerns or incorrect item received?</h4>
           <p className="text-[10px] text-hive-text-muted leading-relaxed">
-            Our 48-Hour Replacement policy protects you. Request modifications or exchange sizes.
+            Our 3-Day Return & Refund Policy protects you. Report issues or initiate returns easily.
           </p>
         </div>
 
@@ -594,3 +594,4 @@ function OrderStatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+

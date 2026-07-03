@@ -55,7 +55,7 @@ function getProductOccasion(product: any): string {
 }
 
 // Helper to map DB product to ProductCardData interface
-function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number> } {
+function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number>; boutiqueId?: string; boutique?: any } {
   const hasDiscount = p.discountPrice !== undefined && p.discountPrice < p.price;
   const price = hasDiscount ? p.discountPrice! : p.price;
   const compareAtPrice = hasDiscount ? p.price : undefined;
@@ -65,6 +65,8 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     slug: p.slug,
     name: p.name,
     boutiqueName: p.boutiqueName || "Unknown Boutique",
+    boutiqueId: p.boutiqueId,
+    boutique: p.boutique,
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
     price,
     compareAtPrice,
@@ -80,6 +82,10 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     favorite: false,
     sizes: p.sizes || ["Free"],
     stockBySize: p.stockBySize || { Free: 5 },
+    estimatedDistanceKm: p.estimatedDistanceKm,
+    estimatedDurationMin: p.estimatedDurationMin,
+    estimatedEtaMinutes: p.estimatedEtaMinutes,
+    hiveScore: p.hiveScore,
   };
 }
 
@@ -124,11 +130,17 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
   // Map products
   const products = useMemo(() => (dbProducts || []).map(mapDbProduct), [dbProducts]);
 
-  // Client-side same-day filter + sort
+  // Client-side new arrivals and occasion filters
   const filteredProducts = useMemo(() => {
-    if (filters.sameDayDelivery) return products.filter((p) => p.sameDayDelivery);
-    return products;
-  }, [products, filters.sameDayDelivery]);
+    let result = products;
+    if (filters.newArrivals) {
+      result = result.filter((p) => p.isNewArrival);
+    }
+    if (filters.occasions.length > 0) {
+      result = result.filter((p) => p.occasion !== undefined && filters.occasions.includes(p.occasion));
+    }
+    return result;
+  }, [products, filters.newArrivals, filters.occasions]);
 
   const sortedProducts = useMemo(
     () => applySort(filteredProducts, sortOption),
@@ -139,6 +151,15 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, sortOption]);
+
+  // Automatically select 'nearby' sort option when user location is available
+  useEffect(() => {
+    if (latitude !== null && longitude !== null) {
+      setSortOption("nearby");
+    } else {
+      setSortOption("trending");
+    }
+  }, [latitude, longitude]);
 
   // Paginated chunk
   const totalPages = Math.ceil(sortedProducts.length / PAGE_SIZE);
@@ -218,7 +239,7 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
           <div className="flex-1 min-w-0 flex flex-col gap-6">
             {paginatedProducts.length > 0 ? (
               <>
-                <div className="relative z-0 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-5 md:gap-6">
+                <div className="relative z-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
                   {paginatedProducts.map((product, idx) => (
                     <div
                       key={`${sortOption}-${currentPage}-${product.id}`}

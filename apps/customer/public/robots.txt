@@ -1,0 +1,13 @@
+# Hive by TailorBee — robots.txt
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /sign-in/
+Disallow: /sign-up/
+Disallow: /checkout/
+Disallow: /account/
+Disallow: /order/
+
+# Sitemap
+# Sitemap: https://yourdomain.com/sitemap.xml

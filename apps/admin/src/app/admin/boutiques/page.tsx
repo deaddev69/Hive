@@ -20,7 +20,7 @@ const BoutiqueMap = dynamic(() => import("../../../components/BoutiqueMap"), {
 });
 
 export default function AdminBoutiquesPage() {
-  const boutiques = useQuery(api.boutiques.getBoutiques);
+  const boutiques = useQuery(api.boutiques.getBoutiques, { excludeTestData: true });
   
   const createBoutique = useMutation(api.boutiques.createBoutique);
   const approveBoutique = useMutation(api.boutiques.approveBoutique);
@@ -35,9 +35,14 @@ export default function AdminBoutiquesPage() {
   const [address, setAddress] = useState("");
   
   // Coordinates (latitude and longitude) are mandatory
-  const [latitude, setLatitude] = useState<number>(17.385044);
-  const [longitude, setLongitude] = useState<number>(78.486671);
+  const [latitude, setLatitude] = useState<number>(9.9816);
+  const [longitude, setLongitude] = useState<number>(76.2999);
   const [deliveryRadiusKm, setDeliveryRadiusKm] = useState(10);
+  // Address Components (Required by backend createBoutique mutation)
+  const [city, setCity] = useState("Ernakulam");
+  const [state, setState] = useState("Kerala");
+  const [pincode, setPincode] = useState("682011");
+
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("PENDING");
   const [submitting, setSubmitting] = useState(false);
@@ -51,8 +56,11 @@ export default function AdminBoutiquesPage() {
     setEmail("");
     setPhone("");
     setAddress("");
-    setLatitude(17.385044);
-    setLongitude(78.486671);
+    setCity("Ernakulam");
+    setState("Kerala");
+    setPincode("682011");
+    setLatitude(9.9816);
+    setLongitude(76.2999);
     setDeliveryRadiusKm(10);
     setDescription("");
     setStatus("PENDING");
@@ -61,6 +69,13 @@ export default function AdminBoutiquesPage() {
   const handleCoordinatesChange = (lat: number, lng: number) => {
     setLatitude(lat);
     setLongitude(lng);
+  };
+
+  const handleSelectPlace = (place: any) => {
+    setAddress(place.address || "");
+    setCity(place.city || "Ernakulam");
+    setState(place.state || "Kerala");
+    setPincode(place.pincode || "");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,6 +95,9 @@ export default function AdminBoutiquesPage() {
         email,
         phone,
         address,
+        city,
+        state,
+        pincode,
         latitude,
         longitude,
         deliveryRadiusKm,
@@ -102,7 +120,7 @@ export default function AdminBoutiquesPage() {
       } else if (action === "REJECT") {
         await rejectBoutique({ id: id as any });
       } else if (action === "SUSPEND") {
-        await suspendBoutique({ id: id as any });
+        await suspendBoutique({ id: id as any, suspensionReason: "Suspended by Admin operator" });
       }
     } catch (err: any) {
       alert(`Failed to set boutique status to ${action}: ` + err.message);
@@ -134,8 +152,8 @@ export default function AdminBoutiquesPage() {
           <ArrowLeft className="w-5 h-5 text-slate-700" />
         </Link>
         <div>
-          <h1 className="text-3xl font-serif font-black text-hive-dark">Boutiques Registry</h1>
-          <p className="text-sm text-hive-text-muted">Register boutique designers, confirm locations on OSM map, and manage approvals.</p>
+          <h1 className="text-3xl font-serif font-black text-hive-dark">Hyperlocal Fashion Marketplace</h1>
+          <p className="text-sm text-hive-text-muted">Register partners, confirm locations on OSM map, and manage approvals.</p>
         </div>
       </div>
 
@@ -144,11 +162,11 @@ export default function AdminBoutiquesPage() {
         {/* Left Side: Form and Map Picker */}
         <form onSubmit={handleSubmit} className="lg:col-span-5 bg-white border border-hive-border rounded-3xl p-6 shadow-sm flex flex-col gap-5">
           <h2 className="text-lg font-serif font-bold text-hive-dark pb-2 border-b border-hive-border/60">
-            Register New Boutique
+            Register New Partner
           </h2>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Boutique Name</label>
+            <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Partner Name</label>
             <input
               type="text"
               required
@@ -214,7 +232,7 @@ export default function AdminBoutiquesPage() {
             <input
               type="text"
               required
-              placeholder="e.g. Flat 302, Road 12, Banjara Hills, Hyderabad"
+              placeholder="e.g. MG Road, Ernakulam, Kerala"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
@@ -224,7 +242,7 @@ export default function AdminBoutiquesPage() {
           {/* Map Geolocation coordinate entry */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted flex items-center justify-between">
-              <span>Boutique Location Coordinates</span>
+              <span>Partner Location Coordinates</span>
               <span className="text-[10px] text-hive-amber font-extrabold font-mono">
                 Lat: {latitude.toFixed(6)}, Lng: {longitude.toFixed(6)}
               </span>
@@ -233,7 +251,41 @@ export default function AdminBoutiquesPage() {
               lat={latitude} 
               lng={longitude} 
               onChange={handleCoordinatesChange} 
+              onSelectPlace={handleSelectPlace}
             />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-hive-text-muted">City</label>
+              <input
+                type="text"
+                required
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-xs bg-hive-cream/10"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-hive-text-muted">State</label>
+              <input
+                type="text"
+                required
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-xs bg-hive-cream/10"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-hive-text-muted">Pincode</label>
+              <input
+                type="text"
+                required
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-xs bg-hive-cream/10"
+              />
+            </div>
           </div>
 
           <div className="flex flex-col gap-1.5">

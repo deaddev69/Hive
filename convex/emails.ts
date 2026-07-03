@@ -73,11 +73,27 @@ export const sendOrderEmail = internalAction({
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
       console.warn("[sendOrderEmail] RESEND_API_KEY is not defined in environment variables. Email dispatch skipped.");
+      
+      const recipient = args.event === "new_order"
+        ? (boutique?.email || boutique?.ownerEmail || "no-recipient")
+        : (invoice?.customerEmail || user?.email || "no-recipient");
+
+      const logId = await ctx.runMutation(internal.whatsapp.createLog, {
+        channel: "email",
+        template: args.event,
+        recipient,
+        status: "failed",
+      });
+      await ctx.runMutation(internal.whatsapp.updateLog, {
+        id: logId,
+        status: "failed",
+        response: "RESEND_API_KEY is not defined in environment variables.",
+      });
       return;
     }
 
-    // Default Resend sandbox sender
-    const fromEmail = "Hive Marketplace <onboarding@resend.dev>";
+    // Production: set RESEND_FROM_EMAIL=Hive Marketplace <orders@hive.in> on the Convex dashboard
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "Hive Marketplace <onboarding@resend.dev>";
 
     // Fallbacks
     const customerName = invoice?.customerName || user?.email || "Hive Customer";
@@ -88,7 +104,7 @@ export const sendOrderEmail = internalAction({
       ? `${order.deliveryAddress.line1}, ${order.deliveryAddress.line2 ? order.deliveryAddress.line2 + ", " : ""}${order.deliveryAddress.city}, ${order.deliveryAddress.state} - ${order.deliveryAddress.pincode}`
       : "Not provided";
 
-    const items = orderItems.map((item) => ({
+    const items = orderItems.map((item: any) => ({
       productName: item.productName,
       size: item.variantSize,
       quantity: item.quantity,
@@ -153,14 +169,14 @@ export const sendOrderEmail = internalAction({
         if (custEmail) {
           const customerSubject = `Your Hive Order ${order.orderNumber} has been Delivered!`;
           const customerHtml = getOrderDeliveredCustomerTemplate(templateData);
-          await sendViaResend(apiKey, fromEmail, custEmail, customerSubject, customerHtml);
+          await sendViaResend(ctx, apiKey, fromEmail, custEmail, customerSubject, customerHtml, "delivered_customer");
         }
 
         const boutEmail = boutique?.email || boutique?.ownerEmail;
         if (boutEmail) {
           const boutiqueSubject = `Hive Order ${order.orderNumber} Delivered`;
           const boutiqueHtml = getOrderDeliveredBoutiqueTemplate(templateData);
-          await sendViaResend(apiKey, fromEmail, boutEmail, boutiqueSubject, boutiqueHtml);
+          await sendViaResend(ctx, apiKey, fromEmail, boutEmail, boutiqueSubject, boutiqueHtml, "delivered_boutique");
         }
 
         return; // Handled directly
@@ -172,12 +188,58 @@ export const sendOrderEmail = internalAction({
     }
 
     for (const email of toEmails) {
-      await sendViaResend(apiKey, fromEmail, email, subject, html);
+      await sendViaResend(ctx, apiKey, fromEmail, email, subject, html, args.event);
     }
   },
 });
 
-async function sendViaResend(apiKey: string, from: string, to: string, subject: string, html: string) {
+export const sendNotificationEmail = internalAction({
+  args: {
+    to: v.string(),
+    subject: v.string(),
+    html: v.string(),
+    templateName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const templateName = args.templateName ?? "generic_notification";
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.warn("[sendNotificationEmail] RESEND_API_KEY is not defined. Email dispatch skipped.");
+      const logId = await ctx.runMutation(internal.whatsapp.createLog, {
+        channel: "email",
+        template: templateName,
+        recipient: args.to,
+        status: "failed",
+      });
+      await ctx.runMutation(internal.whatsapp.updateLog, {
+        id: logId,
+        status: "failed",
+        response: "RESEND_API_KEY is not defined in environment variables.",
+      });
+      return;
+    }
+    const fromEmail = "Hive Marketplace <onboarding@resend.dev>";
+    await sendViaResend(ctx, apiKey, fromEmail, args.to, args.subject, args.html, templateName);
+  },
+});
+
+async function sendViaResend(
+  ctx: any,
+  apiKey: string,
+  from: string,
+  to: string,
+  subject: string,
+  html: string,
+  templateName: string
+) {
+  // Create pending log entry
+  const logId = await ctx.runMutation(internal.whatsapp.createLog, {
+    channel: "email",
+    template: templateName,
+    recipient: to,
+    status: "pending",
+  });
+
   console.log(`[sendOrderEmail] Sending email to: ${to} (Subject: ${subject})`);
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -197,11 +259,26 @@ async function sendViaResend(apiKey: string, from: string, to: string, subject: 
     if (!res.ok) {
       const errText = await res.text();
       console.error(`[sendOrderEmail] Resend API error for ${to}: ${res.status} - ${errText}`);
+      await ctx.runMutation(internal.whatsapp.updateLog, {
+        id: logId,
+        status: "failed",
+        response: `Resend Status ${res.status}: ${errText}`,
+      });
     } else {
       const responseData = await res.json();
       console.log(`[sendOrderEmail] Email sent successfully to ${to}. Resend ID: ${responseData.id}`);
+      await ctx.runMutation(internal.whatsapp.updateLog, {
+        id: logId,
+        status: "sent",
+        response: JSON.stringify(responseData),
+      });
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error(`[sendOrderEmail] Network error when sending email to ${to}:`, err);
+    await ctx.runMutation(internal.whatsapp.updateLog, {
+      id: logId,
+      status: "failed",
+      response: err.message || String(err),
+    });
   }
 }

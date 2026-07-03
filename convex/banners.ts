@@ -4,6 +4,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
+import { validateUploadedFile } from "./lib/uploads";
 
 /**
  * Fetch all active banners sorted by sortOrder.
@@ -50,6 +51,16 @@ export const createBanner = mutation({
   },
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
+
+    const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
+    const maxImageBytes = 5 * 1024 * 1024; // 5MB
+
+    if (args.desktopImageStorageId) {
+      await validateUploadedFile(ctx, args.desktopImageStorageId, undefined, allowedImageMimes, maxImageBytes);
+    }
+    if (args.mobileImageStorageId) {
+      await validateUploadedFile(ctx, args.mobileImageStorageId, undefined, allowedImageMimes, maxImageBytes);
+    }
 
     let desktopUrl = args.desktopImageUrl || "";
     if (args.desktopImageStorageId) {
@@ -102,6 +113,16 @@ export const updateBanner = mutation({
   },
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
+
+    const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
+    const maxImageBytes = 5 * 1024 * 1024; // 5MB
+
+    if (args.desktopImageStorageId) {
+      await validateUploadedFile(ctx, args.desktopImageStorageId, undefined, allowedImageMimes, maxImageBytes);
+    }
+    if (args.mobileImageStorageId) {
+      await validateUploadedFile(ctx, args.mobileImageStorageId, undefined, allowedImageMimes, maxImageBytes);
+    }
 
     // Fetch existing first to fallback on images
     const existing = await ctx.db.get("banners", args.id);

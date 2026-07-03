@@ -14,11 +14,12 @@
     "@hive/types": "*",
     "@hive/ui": "*",
     "@hive/utils": "*",
+    "@react-google-maps/api": "^2.20.8",
     "convex": "^1.17.4",
+    "lucide-react": "^0.475.0",
     "next": "^15.2.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "lucide-react": "^0.475.0"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.10",

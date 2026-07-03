@@ -1,4 +1,5 @@
 import React from "react";
+import { useLocation } from "@/context/LocationContext";
 
 export interface CatalogHeaderProps {
   title: string;
@@ -15,6 +16,7 @@ export const CatalogHeader: React.FC<CatalogHeaderProps> = ({
   activeFilterCount,
   accentColor = "#C9A84C", // fallback to Hive Gold
 }) => {
+  const { isServiceable } = useLocation();
   return (
     <div className="w-full bg-white border-b border-hive-border/40 py-8 lg:py-12 relative overflow-hidden">
       {/* Premium subtle background glow */}
@@ -51,13 +53,19 @@ export const CatalogHeader: React.FC<CatalogHeaderProps> = ({
 
         {/* Counts summary block */}
         <div className="flex items-center gap-4 flex-wrap text-xs font-semibold text-hive-dark border-t md:border-t-0 pt-4 md:pt-0 border-hive-border/40">
-          <div className="flex items-center gap-2 bg-hive-cream/30 border border-hive-border/40 px-3.5 py-1.5 rounded-xl">
-            <span className="text-hive-text-muted font-medium">Total:</span>
-            <span className="font-extrabold text-sm">{resultCount}</span>
-            <span className="text-hive-text-muted font-medium">
-              {resultCount === 1 ? "Product" : "Products"}
+          {resultCount > 0 ? (
+            <div className="flex items-center gap-2 bg-hive-cream/30 border border-hive-border/40 px-3.5 py-1.5 rounded-xl">
+              <span className="text-hive-text-muted font-medium">Total:</span>
+              <span className="font-extrabold text-sm">{resultCount}</span>
+              <span className="text-hive-text-muted font-medium">
+                {resultCount === 1 ? "Product" : "Products"}
+              </span>
+            </div>
+          ) : (
+            <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-50/50 border border-amber-200/30 px-3 py-1.5 rounded-xl">
+              {isServiceable ? "Coming to Your Area" : "Launching Soon"}
             </span>
-          </div>
+          )}
 
           {activeFilterCount > 0 && (
             <div 

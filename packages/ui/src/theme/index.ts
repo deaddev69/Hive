@@ -11,7 +11,7 @@ export const HIVE_THEME = {
     comb: "#FFF3CC",
   },
   fonts: {
-    display: "Playfair Display, Georgia, serif",
+    display: "Instrument Serif, Georgia, serif",
     sans: "Inter, system-ui, sans-serif",
   },
 } as const;

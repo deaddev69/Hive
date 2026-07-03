@@ -1,86 +1,221 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, ShoppingBag, MapPin, Calendar, Clock, Sparkles, CreditCard, Phone, Ticket, AlertCircle, RefreshCw, Ruler, Store, Truck, ChevronRight } from "lucide-react";
+import { PremiumShoppingBag } from "@/components/shared/PremiumShoppingBag";
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  Clock,
+  Phone,
+  Ticket,
+  AlertCircle,
+  ChevronRight,
+  ShieldCheck,
+  Loader2
+} from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
-import { useQuery } from "convex/react";
+import { useOrderStore } from "@/store/order-store";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
+import { useConvexMutation } from "@/hooks/useConvexMutation";
 import { getEffectiveCheckoutItems } from "@/lib/getEffectiveCheckoutItems";
+import { useSessionStore } from "@/context/SessionContext";
+import { Id } from "../../../../../../convex/_generated/dataModel";
+import { formatCurrency } from "@hive/utils";
+
+// ── Razorpay Script Loader ──────────────────────────────────────────────────
+function loadScript(src: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") {
+      resolve(false);
+      return;
+    }
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
+// ── Analytics Event Tracker ────────────────────────────────────────────────
+function trackCheckoutEvent(
+  event: "checkout_started" | "checkout_abandoned" | "payment_failed" | "payment_success",
+  metadata?: Record<string, any>
+) {
+  console.log(`[Analytics] Track Event: ${event}`, metadata);
+  if (typeof window === "undefined") return;
+
+  const customEvent = new CustomEvent("hive_analytics", { detail: { event, metadata } });
+  window.dispatchEvent(customEvent);
+
+  if ((window as any).gtag) {
+    (window as any).gtag("event", event, metadata);
+  }
+  if ((window as any).fbq) {
+    (window as any).fbq("trackCustom", event, metadata);
+  }
+}
 
 export default function OrderReviewPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading: sessionLoading, token, user } = useSessionStore();
 
-  // Zustand state stores
+  // Zustand stores
   const storedAddressId = useCheckoutStore((state) => state.selectedAddressId);
-  const convexAddresses = useQuery(api.addresses.list) ?? [];
+  const selectedDate = useCheckoutStore((state) => state.selectedDate);
+  const selectedSlot = useCheckoutStore((state) => state.selectedSlot);
+  const appliedPromo = useCheckoutStore((state) => state.appliedPromo);
+  const discountAmount = useCheckoutStore((state) => state.discountAmount);
+  const deliveryInstructions = useCheckoutStore((state) => state.deliveryInstructions);
+  const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
 
+  const setDeliverySelection = useCheckoutStore((state) => state.setDeliverySelection);
+  const setAppliedPromo = useCheckoutStore((state) => state.setAppliedPromo);
+  const setDeliveryInstructions = useCheckoutStore((state) => state.setDeliveryInstructions);
+  const clearCheckout = useCheckoutStore((state) => state.clearCheckout);
+
+  const items = useCartStore((state) => state.items);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const placeOrder = useOrderStore((state) => state.placeOrder);
+  const latestOrder = useOrderStore((state) => state.latestOrder);
+
+  // Convex
+  const convexAddresses = useQuery(api.addresses.list, { token: token || undefined }) ?? [];
+  const cartData = useQuery(api.cart.getCart, { token: token || undefined });
+  const currentUser = user;
+  const createCheckoutSession = useAction(api.payments.createCheckoutSession);
+  const verifyPaymentAndPlaceOrder = useConvexMutation(api.payments.verifyPaymentAndPlaceOrder);
+  const clearCartMutation = useMutation(api.cart.clearCart).withOptimisticUpdate((localStore, args) => {
+    const tokenQueryArg = { token: token || undefined };
+    const cart = localStore.getQuery(api.cart.getCart, tokenQueryArg);
+    if (cart) {
+      localStore.setQuery(
+        api.cart.getCart,
+        tokenQueryArg,
+        {
+          items: [],
+          hasIssues: false,
+          blockingReason: undefined,
+        }
+      );
+    }
+  });
+
+  // States
+  const [mounted, setMounted] = useState(false);
+  const [isPriceExpanded, setIsPriceExpanded] = useState(false);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoSuccessMsg, setPromoSuccessMsg] = useState<string | null>(null);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [scriptLoadError, setScriptLoadError] = useState(false);
+
+  const isOrderPlacing = useRef(false);
+
+  // Map Convex Address structure to display attributes
   const addresses = convexAddresses.map((a) => ({
     id: a._id,
     name: a.label,
-    phone: "9876543210", // Fallback placeholder since phone is not in addresses schema
-    addressLine1: a.line1,
-    addressLine2: a.line2,
+    phone: a.phone || "—",
+    addressLine1: a.formattedAddress || a.line1 || "",
+    addressLine2: a.line2 || a.landmark || "",
     city: a.city,
     state: a.state,
     pincode: a.pincode,
     isDefault: a.isDefault,
+    lat: a.lat,
+    lng: a.lng,
   }));
 
-  const selectedAddressId = storedAddressId || (addresses.find(a => a.isDefault)?.id || addresses[0]?.id || null);
+  const selectedAddressId = storedAddressId || (addresses.find((a) => a.isDefault)?.id || addresses[0]?.id || null);
+  const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
 
-  const items = useCartStore((state) => state.items);
-  const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
+  const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
+  const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const boutiqueId = orderItems?.[0]?.boutiqueId;
 
-  const selectedDate = useCheckoutStore((state) => state.selectedDate);
-  const selectedSlot = useCheckoutStore((state) => state.selectedSlot);
-  const selectedSlotWindow = useCheckoutStore((state) => state.selectedSlotWindow);
-  const appliedPromo = useCheckoutStore((state) => state.appliedPromo);
-  const discountAmount = useCheckoutStore((state) => state.discountAmount);
-  const deliveryInstructions = useCheckoutStore((state) => state.deliveryInstructions);
+  // Delivery Quote Query
+  const skipQuote = !selectedAddress || selectedAddress.lat === undefined || selectedAddress.lng === undefined || !boutiqueId;
+  const deliveryQuote = useQuery(
+    api.routing.getDeliveryQuote,
+    !skipQuote
+      ? {
+          userLat: Number(selectedAddress.lat),
+          userLng: Number(selectedAddress.lng),
+          boutiqueId: boutiqueId as any,
+          subtotal: subtotal,
+        }
+      : "skip"
+  );
 
-  const setAppliedPromo = useCheckoutStore((state) => state.setAppliedPromo);
-  const setDeliveryInstructions = useCheckoutStore((state) => state.setDeliveryInstructions);
+  const isQuoteLoading = !skipQuote && deliveryQuote === undefined;
 
-  const [mounted, setMounted] = useState(false);
-  const [promoInput, setPromoInput] = useState("");
-  const [promoError, setPromoError] = useState<string | null>(null);
-  const [promoSuccessMsg, setPromoSuccessMsg] = useState<string | null>(null);
+  console.log("[Checkout Review Debug]", {
+    selectedAddressId,
+    selectedAddress,
+    boutiqueId,
+    subtotal,
+    deliveryQuote,
+    isQuoteLoading,
+    cartDataItemsCount: cartData?.items?.length,
+    orderItemsCount: orderItems?.length,
+  });
 
-  // Client hydration delay checker
+  // Hydration checker
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
-  const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
-  const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  // Bypass delivery preference screen and default slot values
+  useEffect(() => {
+    if (mounted) {
+      setDeliverySelection("Same Day", "Same-Day", "Same-Day Delivery");
+    }
+  }, [mounted, setDeliverySelection]);
 
-  // Dynamic pricing calculations
-  let deliveryFee = subtotal >= 5000 ? 0 : 99;
+  // Auth & Address guard
+  useEffect(() => {
+    if (mounted && !sessionLoading) {
+      if (!isAuthenticated) {
+        router.replace("/sign-in?redirect_url=" + encodeURIComponent("/checkout/review"));
+      } else if (!storedAddressId && convexAddresses.length > 0) {
+        // Wait till addresses load before deciding to redirect
+        const defaultId = convexAddresses.find((a) => a.isDefault)?._id || convexAddresses[0]?._id;
+        if (!defaultId) {
+          router.replace("/checkout/address");
+        }
+      }
+    }
+  }, [mounted, sessionLoading, isAuthenticated, storedAddressId, convexAddresses, router]);
+
+  if (!mounted || sessionLoading) {
+    return <OrderReviewSkeleton />;
+  }
+
+  if (!isAuthenticated) {
+    return <OrderReviewSkeleton />;
+  }
+
+  let deliveryFee = (deliveryQuote && deliveryQuote.serviceable && typeof deliveryQuote.customerPaidFee === "number")
+    ? deliveryQuote.customerPaidFee
+    : 9900;
   if (appliedPromo === "FREESHIP") {
     deliveryFee = 0;
   }
   const taxAmount = 0;
   const total = Math.max(0, subtotal - discountAmount + deliveryFee + taxAmount);
 
-  // Validation redirect filter
-  useEffect(() => {
-    if (mounted) {
-      if (!selectedAddressId) {
-        router.replace("/checkout/address");
-      } else if (!selectedDate || !selectedSlot) {
-        router.replace("/checkout/delivery");
-      }
-    }
-  }, [mounted, selectedAddressId, selectedDate, selectedSlot, router]);
-
-  if (!mounted) {
-    return <OrderReviewSkeleton />;
-  }
-
+  // Promo handling
   const handleApplyPromo = (e: React.FormEvent) => {
     e.preventDefault();
     setPromoError(null);
@@ -95,7 +230,7 @@ export default function OrderReviewPage() {
       setPromoSuccessMsg("WELCOME10 applied: 10% off discount saved.");
       setPromoInput("");
     } else if (code === "HIVEFIRST") {
-      const discount = Math.min(500, subtotal);
+      const discount = Math.min(50000, subtotal);
       setAppliedPromo("HIVEFIRST", discount);
       setPromoSuccessMsg("HIVEFIRST applied: Flat ₹500 discount saved.");
       setPromoInput("");
@@ -114,63 +249,361 @@ export default function OrderReviewPage() {
     setPromoError(null);
   };
 
-  if (orderItems.length === 0 || !selectedAddress || !selectedDate || !selectedSlot) {
+  // Payment Handler
+  const handlePay = async () => {
+    if (isPlacingOrder || isOrderPlacing.current) return;
+    if (!selectedAddress) {
+      alert("Please select a delivery address first.");
+      return;
+    }
+
+    setPaymentError(null);
+    isOrderPlacing.current = true;
+    setIsPlacingOrder(true);
+
+    trackCheckoutEvent("checkout_started", {
+      subtotal,
+      deliveryFee,
+      total,
+      itemCount: orderItems.length,
+    });
+
+    // Sync cart details using cartData to resolve real product IDs
+    const convexCartMap = new Map(
+      (cartData?.items ?? []).map((ci: any) => [`${ci.productId}|${ci.size}`, ci])
+    );
+
+    const snapshotItems = orderItems.map((item) => {
+      const convexMatch =
+        convexCartMap.get(`${item.productId}|${item.size}`) ??
+        (cartData?.items ?? []).find((ci: any) => ci.name === item.name && ci.size === item.size);
+
+      const resolvedProductId = item.productId || convexMatch?.productId || "";
+
+      return {
+        productId: resolvedProductId,
+        name: item.name,
+        price: item.price / 100, // backend expects rupees
+        imageUrl: item.imageUrl || "",
+        boutiqueName: item.boutiqueName,
+        size: item.size,
+        quantity: item.quantity,
+      };
+    });
+
+    const invalid = snapshotItems.filter((i) => !i.productId);
+    if (invalid.length > 0) {
+      alert(`Cannot place order: ${invalid.length} item(s) are missing a product ID. Please try again.`);
+      setIsPlacingOrder(false);
+      isOrderPlacing.current = false;
+      return;
+    }
+
+    try {
+      // 1. Create Checkout Session (Backend expects all values in rupees)
+      const sessionResult = await createCheckoutSession({
+        addressId: selectedAddress.id as Id<"addresses">,
+        deliveryDate: "Same Day",
+        deliverySlot: "Same-Day",
+        paymentMethod: "online",
+        items: snapshotItems,
+        subtotal: subtotal / 100,
+        deliveryFee: deliveryFee / 100,
+        discount: discountAmount / 100,
+        total: total / 100,
+        promoCode: appliedPromo || undefined,
+        token: token || undefined,
+      });
+
+      const { checkoutSessionId, razorpayOrderId } = sessionResult;
+
+      // 2. Handle Mock Order Simulation (offline mode)
+      if (razorpayOrderId.startsWith("order_mock_")) {
+        const verifyResult = await verifyPaymentAndPlaceOrder({
+          checkoutSessionId,
+          razorpayPaymentId: `pay_mock_${Math.random().toString(36).substring(2, 12).toUpperCase()}`,
+          razorpaySignature: "mock_signature",
+          token: token || undefined,
+        });
+
+        if (verifyResult) {
+          placeOrder({
+            id: verifyResult.orderNumber,
+            convexId: verifyResult.orderId,
+            items: orderItems,
+            subtotal,
+            discount: discountAmount,
+            deliveryFee,
+            codFee: 0,
+            total,
+            paymentMethod: "online",
+            address: {
+              id: selectedAddress.id,
+              name: selectedAddress.name,
+              phone: selectedAddress.phone || "",
+              addressLine1: selectedAddress.addressLine1 ?? "",
+              addressLine2: selectedAddress.addressLine2,
+              city: selectedAddress.city,
+              state: selectedAddress.state,
+              pincode: selectedAddress.pincode,
+              isDefault: selectedAddress.isDefault,
+            },
+            deliveryDate: "Same Day",
+            deliverySlot: "Same-Day",
+          });
+        }
+
+        const isBuyNow = checkoutItems.length > 0;
+        trackCheckoutEvent("payment_success", {
+          total,
+          orderNumber: verifyResult.orderNumber,
+          razorpayOrderId,
+          isMock: true,
+        });
+        router.push(`/order/success?orderId=${verifyResult.orderNumber}`);
+
+        setTimeout(() => {
+          if (!isBuyNow) {
+            clearCartMutation({}).catch(console.error);
+            clearCart();
+          }
+          clearCheckout();
+          setIsPlacingOrder(false);
+        }, 500);
+        return;
+      }
+
+      // 3. Real Payment Mode: load Razorpay
+      setScriptLoadError(false);
+      const scriptLoaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+      if (!scriptLoaded) {
+        setScriptLoadError(true);
+        setIsPlacingOrder(false);
+        isOrderPlacing.current = false;
+        return;
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: Math.round(total),
+        currency: "INR",
+        name: "Hive",
+        description: "Secure Checkout",
+        image: "/logo.png",
+        order_id: razorpayOrderId,
+        handler: async function (response: any) {
+          try {
+            setIsPlacingOrder(true);
+            const verifyResult = await verifyPaymentAndPlaceOrder({
+              checkoutSessionId,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              token: token || undefined,
+            });
+
+            if (verifyResult) {
+              placeOrder({
+                id: verifyResult.orderNumber,
+                convexId: verifyResult.orderId,
+                items: orderItems,
+                subtotal,
+                discount: discountAmount,
+                deliveryFee,
+                codFee: 0,
+                total,
+                paymentMethod: "online",
+                address: {
+                  id: selectedAddress.id,
+                  name: selectedAddress.name,
+                  phone: selectedAddress.phone || "",
+                  addressLine1: selectedAddress.addressLine1 ?? "",
+                  addressLine2: selectedAddress.addressLine2,
+                  city: selectedAddress.city,
+                  state: selectedAddress.state,
+                  pincode: selectedAddress.pincode,
+                  isDefault: selectedAddress.isDefault,
+                },
+                deliveryDate: "Same Day",
+                deliverySlot: "Same-Day",
+              });
+            }
+
+            const isBuyNow = checkoutItems.length > 0;
+            trackCheckoutEvent("payment_success", {
+              total,
+              orderNumber: verifyResult.orderNumber,
+              razorpayOrderId,
+            });
+            router.push(`/order/success?orderId=${verifyResult.orderNumber}`);
+
+            setTimeout(() => {
+              if (!isBuyNow) {
+                clearCartMutation({}).catch(console.error);
+                clearCart();
+              }
+              clearCheckout();
+              setIsPlacingOrder(false);
+            }, 500);
+          } catch (err) {
+            console.error("Signature verification failed:", err);
+            alert("Signature verification failed. Please try again or contact support.");
+            setIsPlacingOrder(false);
+            isOrderPlacing.current = false;
+          }
+        },
+        prefill: {
+          name: (currentUser as any)?.name || currentUser?.email?.split("@")[0] || "Hive Customer",
+          email: currentUser?.email || "",
+          contact: selectedAddress?.phone || currentUser?.phone || "",
+        },
+        theme: {
+          color: "#E2B93B",
+        },
+        modal: {
+          ondismiss: function () {
+            setIsPlacingOrder(false);
+            isOrderPlacing.current = false;
+            setPaymentError("Payment cancelled. Your items are still reserved for a few minutes.");
+            trackCheckoutEvent("checkout_abandoned", {
+              total,
+              razorpayOrderId,
+            });
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        alert("Payment failed: " + response.error.description);
+        setIsPlacingOrder(false);
+        isOrderPlacing.current = false;
+        trackCheckoutEvent("payment_failed", {
+          total,
+          error: response.error.description,
+          razorpayOrderId,
+        });
+      });
+      rzp.open();
+    } catch (err: any) {
+      console.error("Order session failed:", err);
+      alert(err.message || "Failed to initiate transaction. Please try again.");
+      setIsPlacingOrder(false);
+      isOrderPlacing.current = false;
+    }
+  };
+
+  if (orderItems.length === 0) {
+    const lastBoutiqueId = latestOrder?.items?.[0]?.boutiqueId;
+    const exploreUrl = lastBoutiqueId ? `/products?boutiqueId=${lastBoutiqueId}` : "/products";
+    return (
+      <div className="min-h-screen bg-hive-cream/30 py-20 px-6 flex items-center justify-center text-left animate-[scaleUp_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+        <div className="max-w-md w-full bg-white border border-hive-border rounded-3xl p-8 shadow-sm space-y-6 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-hive-comb/40 flex items-center justify-center border border-hive-border/40">
+            <PremiumShoppingBag className="w-6 h-6 text-hive-gold" strokeWidth={1.5} />
+          </div>
+          <div className="space-y-2 text-center">
+            <h1 className="font-serif text-xl font-bold text-hive-dark">Your Hive Bag is empty</h1>
+            <p className="text-xs text-hive-text-muted max-w-[280px] mx-auto leading-relaxed">
+              Please add items to your Hive Bag before proceeding to checkout.
+            </p>
+          </div>
+          <button
+            onClick={() => router.push(exploreUrl)}
+            className="w-full h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm focus:outline-none"
+          >
+            Continue Shopping
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!selectedAddress) {
     return <OrderReviewSkeleton />;
   }
 
   return (
-    <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
-      <div className="max-w-6xl mx-auto flex flex-col gap-6">
+    <div className="min-h-screen bg-hive-cream/30 py-6 sm:py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
+      <div className="max-w-6xl mx-auto flex flex-col gap-5 sm:gap-6 pb-24 sm:pb-0">
 
-        {/* Back Link */}
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="self-start flex items-center gap-2 text-xs font-bold text-hive-text-muted hover:text-hive-dark transition-colors duration-200"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Slot Selection</span>
-        </button>
-
-        {/* Progress Tracker Progress Indicator */}
-        <div className="w-full bg-white border border-hive-border/40 rounded-3xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-bold text-hive-text-muted max-w-4xl mx-auto">
-          <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px]">✓</span>
-            <span>Delivery Address</span>
-          </div>
-          <div className="w-8 h-px bg-hive-border/60 hidden sm:block flex-1 mx-4" />
-          <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-green-500 text-white flex items-center justify-center text-[10px]">✓</span>
-            <span>Delivery Speed & Slot</span>
-          </div>
-          <div className="w-8 h-px bg-hive-border/60 hidden sm:block flex-1 mx-4" />
-          <div className="flex items-center gap-2 text-hive-dark">
-            <span className="w-5 h-5 rounded-full bg-hive-dark text-hive-gold flex items-center justify-center text-[10px]">3</span>
-            <span>Order Review</span>
-          </div>
-          <div className="w-8 h-px bg-hive-border/60 hidden sm:block flex-1 mx-4" />
-          <div className="flex items-center gap-2 opacity-50">
-            <span className="w-5 h-5 rounded-full bg-hive-border text-hive-text flex items-center justify-center text-[10px]">4</span>
-            <span>Secure Payment</span>
-          </div>
+        {/* Contextual Header */}
+        <div className="flex flex-col gap-1 border-b border-hive-border/10 pb-4">
+          <span className="text-[10px] font-extrabold tracking-[0.2em] text-hive-gold uppercase">
+            Step 2 of 2
+          </span>
+          <h1 className="font-serif text-2xl sm:text-3xl text-hive-dark tracking-tight leading-none">
+            Review & Pay
+          </h1>
+          <p className="text-xs text-hive-text-muted font-medium mt-0.5">
+            Review your order details and complete your secure payment.
+          </p>
         </div>
 
-        <h1 className="font-serif text-2xl sm:text-3xl font-black text-hive-dark mt-4">
-          Order Review & Summary
-        </h1>
+        {paymentError && (
+          <div className="p-4 bg-amber-50 border border-amber-200/50 rounded-lg flex items-start gap-2.5 text-xs text-amber-800 font-semibold animate-[fadeIn_0.2s_ease-out]">
+            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="font-bold text-amber-900">Payment Cancelled</p>
+              <p className="text-amber-700/90 font-medium">Your items are still in your bag for a few minutes.</p>
+            </div>
+          </div>
+        )}
 
         {/* Responsive Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mt-2 pb-16 sm:pb-0">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start mt-2">
 
-          {/* Left Panel: Summaries & Items table */}
+          {/* Left Panel: Summaries & Items */}
           <div className="lg:col-span-8 space-y-6">
 
-            {/* 1. Address summary review */}
-            <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3.5">
+            {/* 1. Items list review */}
+            <div className="bg-white border border-hive-border/50 rounded-2xl p-5 shadow-sm space-y-4">
+              <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2 flex items-center gap-2">
+                <PremiumShoppingBag className="w-4 h-4 text-hive-gold" strokeWidth={1.6} />
+                <span>Items in Hive Bag</span>
+              </h3>
+
+              <div className="divide-y divide-hive-border/30 flex flex-col">
+                {orderItems.map((item) => (
+                  <div key={`${item.productId}-${item.size}`} className="flex gap-4 py-4 first:pt-0 last:pb-0">
+                    <div className="relative w-14 h-18 rounded-lg overflow-hidden bg-hive-cream/30 border border-hive-border/20 flex-shrink-0">
+                      {item.imageUrl ? (
+                        <Image src={item.imageUrl} alt={item.name} fill sizes="56px" className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-hive-comb/25" />
+                      )}
+                    </div>
+
+                    <div className="flex-1 flex flex-col sm:flex-row justify-between sm:items-start text-left gap-2">
+                      <div>
+                        <h4 className="text-xs font-bold text-hive-dark mt-0.5 line-clamp-1">{item.name}</h4>
+                        <span className="text-[10px] text-hive-text-muted font-medium mt-0.5 block">
+                          by {item.boutiqueName || "Designer Partner"}
+                        </span>
+                        <span className="inline-flex items-center text-[9px] font-extrabold text-hive-dark bg-hive-comb px-2 py-0.5 rounded-lg mt-1.5 border border-hive-gold/15">
+                          Size: {item.size}
+                        </span>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-xs font-extrabold text-hive-dark block">
+                          {formatCurrency(item.price * item.quantity)}
+                        </span>
+                        <div className="text-[10px] text-stone-500 font-medium leading-none mt-1">
+                          {formatCurrency(item.price)} x {item.quantity}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Address summary review */}
+            <div className="bg-white border border-hive-border/50 rounded-2xl p-5 shadow-sm space-y-3">
               <div className="flex items-center justify-between border-b border-hive-border/40 pb-2">
                 <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-hive-gold" />
-                  <span>Shipping Address</span>
+                  <span>Delivery Address</span>
                 </h3>
                 <button
                   type="button"
@@ -180,92 +613,21 @@ export default function OrderReviewPage() {
                   Edit
                 </button>
               </div>
-              <div className="text-xs font-medium text-hive-text leading-relaxed">
+              <div className="text-xs font-semibold text-hive-text leading-relaxed">
                 <p className="font-extrabold text-hive-dark">{selectedAddress.name}</p>
-                <p className="mt-0.5">{selectedAddress.addressLine1}</p>
-                {selectedAddress.addressLine2 && <p>{selectedAddress.addressLine2}</p>}
-                <p>{selectedAddress.city}, {selectedAddress.state} - <span className="font-extrabold">{selectedAddress.pincode}</span></p>
-                <p className="text-hive-text-muted mt-2.5 flex items-center gap-1.5 font-bold">
+                <p className="mt-0.5 text-hive-text-muted font-normal">{selectedAddress.addressLine1}</p>
+                {selectedAddress.addressLine2 && <p className="text-hive-text-muted font-normal">{selectedAddress.addressLine2}</p>}
+                <p className="text-hive-text-muted font-normal">{selectedAddress.city}, {selectedAddress.state} - <span className="font-extrabold">{selectedAddress.pincode}</span></p>
+                <p className="text-hive-text-muted mt-2 flex items-center gap-1.5 font-bold">
                   <Phone className="w-3.5 h-3.5 opacity-60" />
                   <span>{selectedAddress.phone}</span>
                 </p>
               </div>
             </div>
 
-            {/* 2. Slot selection review */}
-            <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3.5">
-              <div className="flex items-center justify-between border-b border-hive-border/40 pb-2">
-                <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-hive-gold" />
-                  <span>Delivery Speed Schedule</span>
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => router.push("/checkout/delivery")}
-                  className="text-[10px] font-bold text-hive-amber uppercase tracking-wider hover:text-hive-dark transition-colors"
-                >
-                  Edit
-                </button>
-              </div>
-              <div className="text-xs font-medium text-hive-text space-y-1.5">
-                <p className="text-hive-dark font-extrabold flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-hive-gold" />
-                  <span>Date: {selectedDate}</span>
-                </p>
-                <p className="text-hive-text-muted font-bold ml-5.5">
-                  Window: {selectedSlotWindow || selectedSlot}
-                </p>
-                <p className="text-[10px] text-green-700 bg-green-50 border border-green-200/50 px-2.5 py-1 rounded-xl inline-block ml-5.5 font-semibold">
-                  Hyperlocal Fit-Agent Included: Try-on and minor alterations supported at the door.
-                </p>
-              </div>
-            </div>
 
-            {/* 3. Items list review */}
-            <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-4">
-              <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2 flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-hive-gold" />
-                <span>Items in Shopping bag</span>
-              </h3>
-
-              <div className="divide-y divide-hive-border/30 flex flex-col">
-                {orderItems.map((item) => (
-                  <div key={`${item.productId}-${item.size}`} className="flex gap-4 py-4.5 first:pt-0 last:pb-0">
-                    <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-hive-cream/30 border border-hive-border/20 flex-shrink-0">
-                      {item.imageUrl ? (
-                        <Image src={item.imageUrl} alt={item.name} fill sizes="64px" className="object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-hive-comb/25" />
-                      )}
-                    </div>
-
-                    <div className="flex-1 flex flex-col sm:flex-row justify-between sm:items-start text-left gap-2">
-                      <div>
-                        <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-                          {item.boutiqueName}
-                        </span>
-                        <h4 className="text-xs font-bold text-hive-dark mt-0.5 line-clamp-1">{item.name}</h4>
-                        <span className="inline-flex items-center text-[9px] font-extrabold text-hive-dark bg-hive-comb px-2 py-0.5 rounded-lg mt-1 border border-hive-gold/15">
-                          Size: {item.size}
-                        </span>
-                      </div>
-
-                      <div className="text-right">
-                        <span className="text-xs font-extrabold text-hive-dark block">
-                          ₹{(item.price * item.quantity).toLocaleString("en-IN")}
-                        </span>
-                        <span className="text-[10px] text-hive-text-muted mt-0.5 block">
-                          ₹{item.price.toLocaleString("en-IN")} x {item.quantity}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 4. Delivery Instructions Order Notes input */}
-            <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3">
+            {/* 4. Courier Instructions (Order Notes) */}
+            <div className="bg-white border border-hive-border/50 rounded-2xl p-5 shadow-sm space-y-3">
               <label htmlFor="notes" className="text-xs font-extrabold text-hive-dark uppercase tracking-wider flex items-center gap-2">
                 <span>Courier Instructions (Order Notes)</span>
               </label>
@@ -275,13 +637,15 @@ export default function OrderReviewPage() {
                 placeholder="e.g. Leave with building security gate, call before arrival, or ring bell."
                 value={deliveryInstructions}
                 onChange={(e) => setDeliveryInstructions(e.target.value)}
-                className="w-full p-4.5 text-xs border border-hive-border/50 rounded-2xl focus:outline-none focus:border-hive-amber bg-white font-medium placeholder:opacity-50"
+                className="w-full p-4 text-xs border border-hive-border/50 rounded-xl focus:outline-none focus:border-hive-amber bg-white font-semibold placeholder:opacity-50"
               />
             </div>
+
+
           </div>
 
-          {/* Right Panel: Pricing calculations & trust banners */}
-          <div className="lg:col-span-4 space-y-6">
+          {/* Right Panel: Pricing calculations & Checkout */}
+          <div className="lg:col-span-4 space-y-6 hidden lg:block">
 
             {/* 1. Summary pricing totals card */}
             <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
@@ -291,33 +655,33 @@ export default function OrderReviewPage() {
 
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-                  <span>Items Subtotal</span>
-                  <span>₹{subtotal.toLocaleString("en-IN")}</span>
+                  <span>Cart Subtotal</span>
+                  <span>{formatCurrency(subtotal)}</span>
                 </div>
 
                 {/* Promo discounts details */}
                 {discountAmount > 0 && (
-                  <div className="flex justify-between items-center text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded-lg border border-green-200/20">
+                  <div className="flex justify-between items-center text-xs font-semibold text-green-700 bg-green-50/50 px-2 py-1 rounded-lg border border-green-200/20 animate-fade">
                     <span className="flex items-center gap-1.5">
-                      <Ticket className="w-3.5 h-3.5 text-green-600 animate-pulse" />
-                      <span>Applied Coupon</span>
+                      <Ticket className="w-3.5 h-3.5 text-green-600" />
+                      <span>Coupon Discount</span>
                     </span>
-                    <span>-₹{discountAmount.toLocaleString("en-IN")}</span>
+                    <span>-{formatCurrency(discountAmount)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-                  <span>Delivery Speed Fee</span>
-                  <span>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</span>
+                  <span>Boutique Delivery</span>
+                  <span>{deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Estimated Tax</span>
-                  <span>₹{taxAmount}</span>
+                  <span>{formatCurrency(taxAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1.5">
-                  <span className="text-sm font-extrabold text-hive-dark">Payable Amount</span>
+                  <span className="text-sm font-extrabold text-hive-dark">Order Total</span>
                   <span className="text-base font-extrabold text-hive-dark">
-                    ₹{total.toLocaleString("en-IN")}
+                    {formatCurrency(total)}
                   </span>
                 </div>
               </div>
@@ -339,7 +703,7 @@ export default function OrderReviewPage() {
                     />
                     <button
                       type="submit"
-                      className="h-9 px-4 rounded-xl bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all text-xs font-extrabold uppercase shadow-sm"
+                      className="h-9 px-4 rounded-lg bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all text-xs font-bold uppercase tracking-[0.15em] shadow-sm focus:outline-none"
                     >
                       Apply
                     </button>
@@ -375,64 +739,40 @@ export default function OrderReviewPage() {
                 )}
               </div>
 
+              {scriptLoadError && (
+                <div className="p-3 bg-red-50 border border-red-200/50 rounded-xl flex items-center justify-between text-xs text-red-700 font-semibold mt-3 animate-[fadeIn_0.2s_ease-out]">
+                  <span className="flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                    <span>Unable to load payment gateway.</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setScriptLoadError(false);
+                      handlePay();
+                    }}
+                    className="text-[10px] font-black uppercase text-[#1C1917] hover:text-[#1C1917]/80 underline focus:outline-none"
+                  >
+                    Retry Payment
+                  </button>
+                </div>
+              )}
+
               {/* Proceed to Payment CTA */}
               <button
                 type="button"
-                onClick={() => router.push("/checkout/payment")}
-                className="w-full h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl mt-3 font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-hive-amber hidden sm:flex"
+                disabled={isPlacingOrder || isQuoteLoading}
+                onClick={handlePay}
+                className="w-full h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span>Continue To Payment</span>
-                <ChevronRight className="w-4 h-4" />
+                {isPlacingOrder ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-hive-dark" />
+                ) : (
+                  <span>Pay Now →</span>
+                )}
               </button>
-            </div>
 
-            {/* 2. Mini Trust Strip list */}
-            <div className="bg-white border border-hive-border/40 rounded-3xl p-5 shadow-sm space-y-3.5 text-left">
-              <span className="text-[10px] font-extrabold text-hive-amber uppercase tracking-wider block">
-                Hive Assurances
-              </span>
 
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-hive-comb/30 flex items-center justify-center border border-hive-border/40 text-hive-dark flex-shrink-0">
-                    <Store className="w-3.5 h-3.5 text-hive-gold" />
-                  </div>
-                  <div className="text-[10px]">
-                    <span className="font-extrabold text-hive-dark block">Verified Boutiques</span>
-                    <span className="text-hive-text-muted">Directly hand-woven and dispatched.</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-hive-comb/30 flex items-center justify-center border border-hive-border/40 text-hive-dark flex-shrink-0">
-                    <Ruler className="w-3.5 h-3.5 text-hive-gold" />
-                  </div>
-                  <div className="text-[10px]">
-                    <span className="font-extrabold text-hive-dark block">Measurement Transparency</span>
-                    <span className="text-hive-text-muted">Exact tape dimensions specified for size chips.</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-hive-comb/30 flex items-center justify-center border border-hive-border/40 text-hive-dark flex-shrink-0">
-                    <Truck className="w-3.5 h-3.5 text-hive-gold" />
-                  </div>
-                  <div className="text-[10px]">
-                    <span className="font-extrabold text-hive-dark block">Same-Day Delivery Support</span>
-                    <span className="text-hive-text-muted">Fittings and alterations agents at door.</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-hive-comb/30 flex items-center justify-center border border-hive-border/40 text-hive-dark flex-shrink-0">
-                    <RefreshCw className="w-3.5 h-3.5 text-hive-gold" />
-                  </div>
-                  <div className="text-[10px]">
-                    <span className="font-extrabold text-hive-dark block">48-Hour Replacement Policy</span>
-                    <span className="text-hive-text-muted">Easy exchange and fits protection.</span>
-                  </div>
-                </div>
-              </div>
             </div>
 
           </div>
@@ -440,47 +780,124 @@ export default function OrderReviewPage() {
         </div>
       </div>
 
-      {/* 3. Sticky Bottom CTA Bar (Mobile Viewports Only) */}
-      <div className="fixed bottom-0 left-0 right-0 z-[999] bg-white/95 backdrop-blur-md border-t border-hive-border/40 p-4 flex items-center justify-between gap-4 shadow-2xl sm:hidden">
-        <div className="flex flex-col text-left">
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-hive-text-muted">
-            Total Payable
-          </span>
-          <span className="text-base font-extrabold text-hive-dark">
-            ₹{total.toLocaleString("en-IN")}
-          </span>
-        </div>
+      {/* Sticky Bottom Summary (Mobile Only) */}
+      <div className="fixed bottom-0 left-0 right-0 z-[999] bg-white border-t border-hive-border/30 shadow-[0_-8px_30px_rgb(0,0,0,0.06)] lg:hidden">
+        {isPriceExpanded && (
+          <div className="px-5 py-4 border-b border-hive-border/20 bg-neutral-50/50 space-y-2.5 text-xs animate-[fadeIn_0.2s_ease-out]">
+            <div className="flex justify-between items-center text-hive-text-muted">
+              <span>Cart Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between items-center text-green-700">
+                <span>Discount</span>
+                <span>-{formatCurrency(discountAmount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center text-hive-text-muted">
+              <span>Boutique Delivery</span>
+              <span>{deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}</span>
+            </div>
 
-        <button
-          type="button"
-          onClick={() => router.push("/checkout/payment")}
-          className="flex-1 max-w-[200px] h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 shadow-sm"
-        >
-          <span>Pay Now</span>
-          <ChevronRight className="w-4 h-4" />
-        </button>
+            {/* Coupon Widget inside Mobile Sticky Drawer */}
+            <div className="border-t border-hive-border/20 pt-3 mt-1">
+              <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider block mb-1.5">
+                Have a Coupon?
+              </span>
+              {!appliedPromo ? (
+                <form onSubmit={handleApplyPromo} className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="WELCOME10"
+                    value={promoInput}
+                    onChange={(e) => setPromoInput(e.target.value)}
+                    className="flex-1 h-8 px-3 text-xs border border-hive-border rounded-lg bg-white uppercase placeholder:opacity-50"
+                  />
+                  <button
+                    type="submit"
+                    className="h-8 px-3 rounded-lg bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 text-xs font-bold uppercase tracking-[0.15em] focus:outline-none"
+                  >
+                    Apply
+                  </button>
+                </form>
+              ) : (
+                <div className="flex items-center justify-between bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg">
+                  <span className="text-xs font-bold text-green-800 uppercase">{appliedPromo}</span>
+                  <button
+                    type="button"
+                    onClick={handleRemovePromo}
+                    className="text-[10px] font-bold text-red-500"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+
+
+
+          </div>
+        )}
+
+        {scriptLoadError && (
+          <div className="px-5 py-3.5 bg-red-50 border-b border-hive-border/20 flex items-center justify-between text-xs text-red-700 font-semibold animate-[fadeIn_0.2s_ease-out]">
+            <span className="flex items-center gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+              <span>Unable to load payment gateway.</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setScriptLoadError(false);
+                handlePay();
+              }}
+              className="text-[10px] font-black uppercase text-[#1C1917] hover:text-[#1C1917]/80 underline focus:outline-none"
+            >
+              Retry Payment
+            </button>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between px-5 py-4 gap-4">
+          <button
+            type="button"
+            onClick={() => setIsPriceExpanded(!isPriceExpanded)}
+            className="flex flex-col text-left focus:outline-none"
+          >
+            <span className="text-[9px] font-bold uppercase tracking-wider text-hive-text-muted flex items-center gap-1">
+              Total Payable {isPriceExpanded ? "↓" : "↑"}
+            </span>
+            <span className="text-base font-black text-hive-dark">
+              {formatCurrency(total)}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            disabled={isPlacingOrder || isQuoteLoading}
+            onClick={handlePay}
+            className="flex-1 max-w-[200px] h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-1.5 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isPlacingOrder ? (
+              <Loader2 className="w-4 h-4 animate-spin text-hive-dark" />
+            ) : (
+              <span>Pay Now →</span>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Loading State: OrderReviewSkeleton
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Skeleton Loader ─────────────────────────────────────────────────────────
 function OrderReviewSkeleton() {
   return (
     <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
-        {/* Back Link Skeleton */}
         <div className="h-4 w-24 bg-hive-comb/10 rounded-lg" />
-
-        {/* Progress Bar Skeleton */}
         <div className="h-14 w-full bg-white border border-hive-border/20 rounded-3xl" />
-
-        {/* Title Skeleton */}
         <div className="h-8 w-60 bg-hive-comb/15 rounded-xl mt-4" />
-
-        {/* Grid Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 space-y-6">
             <div className="h-[140px] bg-white border border-hive-border/20 rounded-3xl" />

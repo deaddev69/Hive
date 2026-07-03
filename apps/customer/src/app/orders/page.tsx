@@ -1,22 +1,31 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Image from "next/image";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ShoppingBag,
   ChevronRight,
   Calendar,
+  Clock,
   ArrowRight,
   Package,
-  Inbox,
-  Clock,
-  MapPin,
+  Loader2,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
+import { useSessionStore } from "@/context/SessionContext";
+import { formatCurrency } from "@hive/utils";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function toTitleCase(str?: string): string {
+  if (!str) return "";
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /orders — My Orders Page
@@ -24,8 +33,9 @@ import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 export default function MyOrdersPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const { token } = useSessionStore();
 
-  const convexOrders = useQuery(api.orders.listMyOrders);
+  const convexOrders = useQuery(api.orders.listMyOrders, { token: token || undefined });
 
   useEffect(() => {
     setMounted(true);
@@ -35,8 +45,14 @@ export default function MyOrdersPage() {
     return <OrdersSkeleton />;
   }
 
-  // Sort: newest first (already ordered by Convex desc, but defensive)
+  // Sort: newest first
   const sortedOrders = [...convexOrders].sort((a, b) => b.createdAt - a.createdAt);
+
+  const activeOrdersCount = sortedOrders.filter((o) =>
+    ["pending_payment", "pending_confirmation", "confirmed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery"].includes(o.status)
+  ).length;
+
+  const deliveredOrdersCount = sortedOrders.filter((o) => o.status === "delivered").length;
 
   // Map every Convex status value → one of the 6 UI badge states.
   const mapStatus = (s: string): string => {
@@ -44,7 +60,7 @@ export default function MyOrdersPage() {
       pending_payment:        "placed",
       pending_confirmation:   "placed",
       confirmed:              "confirmed",
-      packed:                 "confirmed",   // ← packed = boutique still preparing
+      packed:                 "confirmed",
       pickup_scheduled:       "picked_up",
       picked_up:              "picked_up",
       in_transit:             "picked_up",
@@ -62,62 +78,45 @@ export default function MyOrdersPage() {
     return map[s] ?? "placed";
   };
 
-
   return (
-    <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
-      <div className="max-w-4xl mx-auto flex flex-col gap-6">
+    <div className="min-h-screen bg-[#FAF8F4] py-12 px-4 sm:px-6 lg:px-8 select-none text-left antialiased">
+      <div className="max-w-4xl mx-auto flex flex-col gap-8">
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-hive-border/40 pb-5">
-          <div className="space-y-1">
-            <h1 className="font-serif text-2xl sm:text-3xl font-black text-hive-dark">
+        <div className="space-y-2 pb-6 border-b border-[#1c1917]/[0.08]">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[#D97706]">
+            Your Purchases
+          </span>
+          <div className="flex justify-between items-baseline">
+            <h1 className="text-3xl font-serif font-light text-[#1C1917] tracking-tight">
               My Orders
             </h1>
-            <p className="text-xs text-hive-text-muted">
-              Track active deliveries, view purchase history, and manage your boutique orders.
-            </p>
+            <Link
+              href="/products"
+              className="text-xs font-bold text-[#1C1917] hover:text-[#D97706] transition-colors"
+            >
+              Browse Products →
+            </Link>
           </div>
-          <Link
-            href="/products"
-            className="text-[10px] font-extrabold uppercase tracking-widest text-hive-amber hover:text-hive-dark transition-colors flex items-center gap-1"
-          >
-            <span>Shop More</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
         </div>
 
-        {/* Stats Row */}
+        {/* Editorial Stats Row */}
         {sortedOrders.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: "Total Orders", value: sortedOrders.length },
-              {
-                label: "Active",
-                value: sortedOrders.filter((o) =>
-                  ["pending_payment", "pending_confirmation", "confirmed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery"].includes(o.status)
-                ).length,
-              },
-              {
-                label: "Delivered",
-                value: sortedOrders.filter((o) => o.status === "delivered").length,
-              },
-              {
-                label: "Cancelled",
-                value: sortedOrders.filter((o) => o.status === "cancelled").length,
-              },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="bg-white border border-hive-border/40 rounded-2xl p-4 text-left shadow-sm"
-              >
-                <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-                  {stat.label}
-                </span>
-                <span className="text-xl font-black text-hive-dark block mt-1">
-                  {stat.value}
-                </span>
-              </div>
-            ))}
+          <div className="flex flex-wrap gap-x-8 gap-y-3 py-2 border-b border-[#1c1917]/[0.08] -mt-2">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-serif font-light text-[#1C1917]">{sortedOrders.length}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Total Orders</span>
+            </div>
+            <span className="text-stone-300 hidden sm:inline">•</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-serif font-light text-[#1C1917]">{activeOrdersCount}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Active</span>
+            </div>
+            <span className="text-stone-300 hidden sm:inline">•</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-serif font-light text-[#1C1917]">{deliveredOrdersCount}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Delivered</span>
+            </div>
           </div>
         )}
 
@@ -125,7 +124,7 @@ export default function MyOrdersPage() {
         {sortedOrders.length === 0 ? (
           <EmptyOrdersState onRedirect={() => router.push("/products")} />
         ) : (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             {sortedOrders.map((order) => (
               <OrderCard key={order._id} order={order} mapStatus={mapStatus} />
             ))}
@@ -138,7 +137,7 @@ export default function MyOrdersPage() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Component: OrderCard — uses Convex order shape
+// Component: OrderCard
 // ─────────────────────────────────────────────────────────────────────────────
 type ConvexOrder = NonNullable<ReturnType<typeof useQuery<typeof api.orders.listMyOrders>>>[number];
 
@@ -146,7 +145,7 @@ function OrderCard({ order, mapStatus }: { order: ConvexOrder; mapStatus: (s: st
   const { downloadInvoiceByOrderId, isDownloading } = useInvoiceDownload();
   const downloading = isDownloading(order._id);
   const firstItem = order.items[0];
-  const itemsCount = order.items.reduce((acc, item) => acc + item.quantity, 0);
+  const itemsCount = order.items.reduce((acc: number, item: any) => acc + item.quantity, 0);
   const uiStatus = mapStatus(order.status);
   const isActive = ["placed", "confirmed", "picked_up", "out_for_delivery"].includes(uiStatus);
 
@@ -162,29 +161,24 @@ function OrderCard({ order, mapStatus }: { order: ConvexOrder; mapStatus: (s: st
     }
   };
 
-  // Extract delivery slot from notes field ("Payment: upi | Slot: 2026-06-07 10:00 AM")
   const deliverySlot = order.notes?.split("Slot: ")[1] ?? "";
 
   return (
-    <Link
-      href={`/orders/${order._id}`}
-      className="group bg-white border border-hive-border/50 rounded-3xl p-5 shadow-sm hover:shadow-md hover:border-hive-border transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-5 text-left block"
+    <div
+      className="bg-white border border-[#1c1917]/[0.08] rounded-xl p-6 shadow-sm hover:border-[#1c1917]/20 transition-all duration-300 text-left flex flex-col md:flex-row md:items-center justify-between gap-6"
     >
       <div className="flex gap-4 flex-1">
-
         {/* Product thumbnail */}
-        <div className="relative w-20 h-24 rounded-2xl overflow-hidden bg-hive-cream/30 border border-hive-border/20 flex-shrink-0">
+        <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-[#FAF8F4] border border-[#1c1917]/[0.08] flex-shrink-0">
           {firstItem?.imageUrl ? (
-            <Image
+            <img
               src={firstItem.imageUrl}
               alt={firstItem.productName}
-              fill
-              sizes="80px"
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
+              className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-hive-comb/30 flex items-center justify-center">
-              <Package className="w-6 h-6 text-hive-gold" />
+            <div className="w-full h-full bg-[#FAF8F4] flex items-center justify-center">
+              <Package className="w-6 h-6 text-[#D97706]" />
             </div>
           )}
           {isActive && (
@@ -192,39 +186,40 @@ function OrderCard({ order, mapStatus }: { order: ConvexOrder; mapStatus: (s: st
           )}
         </div>
 
-        {/* Order info */}
-        <div className="flex flex-col justify-between py-0.5 flex-1 min-w-0">
+        {/* Order details */}
+        <div className="flex flex-col justify-between py-1 flex-1 min-w-0">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-extrabold text-hive-dark select-all font-mono">
+              <span className="text-[10px] font-mono font-bold text-[#1C1917] tracking-wider select-all">
                 {order.orderNumber}
               </span>
               <OrderStatusBadge status={uiStatus} />
             </div>
 
-            <div className="space-y-0.5">
-              <p className="text-[11px] font-bold text-hive-dark truncate">
-                {firstItem?.productName}
-                {itemsCount > 1 && (
-                  <span className="text-hive-text-muted font-medium"> +{itemsCount - 1} more</span>
-                )}
-              </p>
-              {firstItem && (
-                <span className="inline-flex items-center text-[9px] font-extrabold text-hive-dark bg-hive-comb px-1.5 py-0.5 rounded-lg border border-hive-gold/15 mt-1">
+            <h4 className="text-sm font-serif font-light text-[#1C1917] truncate leading-snug">
+              {firstItem?.productName || "Boutique Order"}
+              {itemsCount > 1 && (
+                <span className="text-xs text-[#78716C] font-sans font-medium"> +{itemsCount - 1} more items</span>
+              )}
+            </h4>
+
+            {firstItem && (
+              <div className="pt-0.5">
+                <span className="text-[9px] font-bold text-[#78716C] bg-[#FAF8F4] border border-[#1c1917]/[0.06] px-2 py-0.5 rounded">
                   Size: {firstItem.variantSize || "Free"}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
-            <span className="text-[10px] text-hive-text-muted flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-hive-gold" />
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-[#78716C] font-medium">
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5 text-[#D97706]" />
               {formatDate(order.createdAt)}
             </span>
             {deliverySlot && (
-              <span className="text-[10px] text-hive-text-muted flex items-center gap-1">
-                <Clock className="w-3 h-3 text-hive-gold" />
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-[#D97706]" />
                 {deliverySlot}
               </span>
             )}
@@ -232,42 +227,38 @@ function OrderCard({ order, mapStatus }: { order: ConvexOrder; mapStatus: (s: st
         </div>
       </div>
 
-      {/* Right: amount + CTA */}
-      <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-3 pt-3 border-t border-hive-border/20 md:border-t-0 md:pt-0 md:flex-shrink-0">
-        <div className="text-right">
-          <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-            Total Paid
-          </span>
-          <span className="text-sm font-extrabold text-hive-dark">
-            ₹{order.total.toLocaleString("en-IN")}
+      {/* Right: Paid & CTAs */}
+      <div className="flex flex-col md:items-end gap-4 border-t border-[#1c1917]/[0.06] md:border-t-0 pt-4 md:pt-0">
+        <div className="text-left md:text-right">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-[#78716C] block">Total Paid</span>
+          <span className="text-base font-serif font-medium text-[#1C1917]">
+            {formatCurrency(order.total)}
           </span>
         </div>
 
-        <div className="flex items-center gap-2 mt-1 sm:mt-0">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            type="button"
+            onClick={() => downloadInvoiceByOrderId(order._id)}
             disabled={downloading}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              downloadInvoiceByOrderId(order._id);
-            }}
-            className="h-9 px-3.5 border border-hive-border text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[9px] flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+            className="h-9 px-4 border border-[#1c1917]/[0.08] hover:border-[#1c1917]/35 text-[#78716C] hover:text-[#1C1917] bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
           >
             {downloading ? (
-              <span className="w-3.5 h-3.5 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#78716C]" />
             ) : (
-              <span>Download Invoice</span>
+              "Invoice"
             )}
           </button>
 
-          <span className="h-9 px-4 bg-hive-dark text-hive-gold group-hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[9px] flex items-center justify-center gap-1.5 shadow-sm flex-shrink-0">
-            <span>Track Order</span>
-            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-          </span>
+          <Link
+            href={`/orders/${order._id}`}
+            className="h-9 px-4 bg-[#1C1917] text-[#FAF8F4] hover:bg-[#1C1917]/90 active:scale-[0.98] transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm"
+          >
+            <span>Track</span>
+            <ChevronRight className="w-3.5 h-3.5 text-[#F5A623]" />
+          </Link>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -276,19 +267,19 @@ function OrderCard({ order, mapStatus }: { order: ConvexOrder; mapStatus: (s: st
 // ─────────────────────────────────────────────────────────────────────────────
 function OrderStatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
-    placed: { label: "Order Placed", className: "text-blue-700 bg-blue-50 border-blue-200/50" },
-    confirmed: { label: "Confirmed", className: "text-indigo-700 bg-indigo-50 border-indigo-200/50" },
-    picked_up: { label: "Picked Up", className: "text-purple-700 bg-purple-50 border-purple-200/50" },
-    out_for_delivery: { label: "Out For Delivery", className: "text-amber-700 bg-amber-50 border-amber-200/50" },
-    delivered: { label: "Delivered", className: "text-green-700 bg-green-50 border-green-200/50" },
-    cancelled: { label: "Cancelled", className: "text-red-700 bg-red-50 border-red-200/50" },
+    placed: { label: "Placed", className: "text-amber-700 bg-amber-50/40 border-amber-200/30" },
+    confirmed: { label: "Confirmed", className: "text-[#4D7C0F] bg-green-50/40 border-green-200/30" },
+    picked_up: { label: "Picked Up", className: "text-[#4D7C0F] bg-green-50/40 border-green-200/30" },
+    out_for_delivery: { label: "Out For Delivery", className: "text-[#D97706] bg-amber-50/40 border-amber-200/30" },
+    delivered: { label: "Delivered", className: "text-[#4D7C0F] bg-green-50/40 border-green-200/30" },
+    cancelled: { label: "Cancelled", className: "text-red-700 bg-red-50/40 border-red-200/30" },
   };
   const { label, className } = map[status] ?? {
     label: "Processing",
-    className: "text-hive-text-muted bg-hive-cream border-hive-border/50",
+    className: "text-[#78716C] bg-stone-50 border-stone-200/50",
   };
   return (
-    <span className={`text-[9px] font-extrabold border px-2 py-0.5 rounded-lg uppercase tracking-wider inline-block ${className}`}>
+    <span className={`text-[9px] font-bold border px-2 py-0.5 rounded uppercase tracking-wider inline-block ${className}`}>
       {label}
     </span>
   );
@@ -299,23 +290,20 @@ function OrderStatusBadge({ status }: { status: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function EmptyOrdersState({ onRedirect }: { onRedirect: () => void }) {
   return (
-    <div className="py-20 text-center space-y-6 max-w-sm mx-auto flex flex-col items-center">
-      <div className="w-16 h-16 rounded-full bg-hive-comb/30 border border-hive-border flex items-center justify-center">
-        <Inbox className="w-8 h-8 text-hive-gold" />
-      </div>
-      <div className="space-y-2">
-        <h2 className="font-serif text-xl font-bold text-hive-dark">No orders yet</h2>
-        <p className="text-xs text-hive-text-muted leading-relaxed max-w-[280px] mx-auto">
-          Start exploring boutique fashion and book your first doorstep try-on delivery.
+    <div className="py-20 text-center space-y-6 max-w-sm mx-auto flex flex-col items-center animate-fadeIn">
+      <div className="space-y-4">
+        <h2 className="font-serif text-2xl font-light text-[#1C1917]">You haven't placed any orders yet</h2>
+        <p className="text-xs text-[#78716C] leading-relaxed max-w-[280px] mx-auto font-medium">
+          Your curation journey is waiting. Explore unique, hand-crafted pieces from India's finest independent local designers.
         </p>
       </div>
       <button
         type="button"
         onClick={onRedirect}
-        className="w-full h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 shadow-sm"
+        className="h-12 px-8 bg-[#1C1917] text-[#FAF8F4] hover:bg-[#1c1917]/90 active:scale-[0.98] transition-all rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm cursor-pointer mt-4"
       >
-        <span>Browse Products</span>
-        <ArrowRight className="w-4 h-4" />
+        <span>Shop Now</span>
+        <ArrowRight className="w-4 h-4 text-[#F5A623]" />
       </button>
     </div>
   );
@@ -326,21 +314,22 @@ function EmptyOrdersState({ onRedirect }: { onRedirect: () => void }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function OrdersSkeleton() {
   return (
-    <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
+    <div className="min-h-screen bg-[#FAF8F4] py-12 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
       <div className="max-w-4xl mx-auto flex flex-col gap-6">
-        <div className="h-8 w-40 bg-hive-comb/15 rounded-xl" />
-        <div className="h-4 w-72 bg-hive-comb/10 rounded-lg -mt-3" />
-        <div className="grid grid-cols-4 gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-16 bg-white border border-hive-border/20 rounded-2xl" />
+        <div className="h-8 w-40 bg-[#1c1917]/[0.05] rounded-lg" />
+        <div className="h-4 w-72 bg-[#1c1917]/[0.05] rounded -mt-3" />
+        <div className="flex gap-6 py-4 border-b border-[#1c1917]/[0.08]">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-6 w-24 bg-[#1c1917]/[0.05] rounded" />
           ))}
         </div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white border border-hive-border/20 rounded-3xl p-5 h-32" />
+            <div key={i} className="bg-white border border-[#1c1917]/[0.08] rounded-xl h-32" />
           ))}
         </div>
       </div>
     </div>
   );
 }
+

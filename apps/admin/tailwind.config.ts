@@ -11,14 +11,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        "hive-gold": "#F5A623",
-        "hive-amber": "#E8890C",
-        "hive-dark": "#1A1200",
-        "hive-cream": "#FFFDF5",
+        "hive-gold": "#C59A5B",
+        "hive-amber": "#B88A44",
+        "hive-dark": "#23201D",
+        "hive-cream": "#FAF7F2",
         "hive-white": "#FFFFFF",
-        "hive-text": "#2C1E00",
-        "hive-text-muted": "#8C7A5A",
-        "hive-border": "#F0E4C8",
+        "hive-text": "#23201D",
+        "hive-text-muted": "#7E766C",
+        "hive-border": "#EAE5DB",
         "hive-comb": "#FFF3CC",
         brand: {
           50:  "#fcf6f0",
@@ -34,12 +34,13 @@ const config: Config = {
           950: "#34150d",
         },
         neutral: {
-          950: "#0b0c10",
+          950: "#23201D",
         }
       },
       fontFamily: {
-        serif: ["var(--font-playfair-display)", "Playfair Display", "Georgia", "serif"],
-        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+        serif: ["var(--font-playfair)", "Georgia", "serif"],
+        sans: ["var(--font-manrope)", "Manrope", "system-ui", "sans-serif"],
+        inter: ["var(--font-inter)", "sans-serif"],
         mono: ["var(--font-geist-mono)", "monospace"],
       },
     },

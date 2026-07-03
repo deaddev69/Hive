@@ -2,14 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  devIndicators: false,
   transpilePackages: ["@hive/types", "@hive/ui", "@hive/utils"],
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "res.cloudinary.com",
-        pathname: "/**",
-      },
       {
         protocol: "https",
         hostname: "images.unsplash.com",

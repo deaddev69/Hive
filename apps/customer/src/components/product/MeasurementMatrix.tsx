@@ -123,39 +123,39 @@ export const MeasurementLegend: React.FC = () => {
   const [isLegendOpen, setIsLegendOpen] = useState(false);
 
   return (
-    <div className="border border-hive-border/40 rounded-2xl overflow-hidden bg-white text-left">
+    <div className="border border-stone-200/80 rounded-2xl overflow-hidden bg-white text-left">
       <button
         type="button"
         onClick={() => setIsLegendOpen(!isLegendOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 text-xs font-extrabold text-hive-dark hover:bg-hive-cream/10 transition-all outline-none"
+        className="w-full flex items-center justify-between px-4 py-3 text-xs font-bold text-stone-850 hover:bg-stone-50/50 transition-all outline-none"
       >
         <span className="flex items-center gap-2 uppercase tracking-wider">
-          <Ruler className="w-4 h-4 text-hive-amber" />
+          <Ruler className="w-4 h-4 text-stone-400" />
           How We Measure (Inches Guide)
         </span>
         {isLegendOpen ? (
-          <ChevronUp className="w-4 h-4 text-hive-text-muted" />
+          <ChevronUp className="w-4 h-4 text-stone-450" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-hive-text-muted" />
+          <ChevronDown className="w-4 h-4 text-stone-455" />
         )}
       </button>
 
       {isLegendOpen && (
-        <div className="px-4 pb-4 pt-1.5 text-xs text-hive-text-muted space-y-3 leading-relaxed border-t border-hive-border/30 bg-[#FFFDF7]/40 font-medium animate-fade-in">
+        <div className="px-4 pb-4 pt-1.5 text-xs text-stone-500 space-y-3 leading-relaxed border-t border-stone-200/60 bg-stone-50/10 font-medium animate-fade-in">
           <div>
-            <strong className="text-hive-dark font-extrabold">1. Chest:</strong> Measured flat from armpit seam to armpit seam, then doubled.
+            <strong className="text-stone-900 font-bold">1. Chest:</strong> Measured flat from armpit seam to armpit seam, then doubled.
           </div>
           <div>
-            <strong className="text-hive-dark font-extrabold">2. Waist:</strong> Measured across the narrowest point of the waistband, then doubled.
+            <strong className="text-stone-900 font-bold">2. Waist:</strong> Measured across the narrowest point of the waistband, then doubled.
           </div>
           <div>
-            <strong className="text-hive-dark font-extrabold">3. Hip:</strong> Measured across the widest part of the lower garment, then doubled.
+            <strong className="text-stone-900 font-bold">3. Hip:</strong> Measured across the widest part of the lower garment, then doubled.
           </div>
           <div>
-            <strong className="text-hive-dark font-extrabold">4. Length:</strong> Measured vertically from the highest shoulder seam down to the hem.
+            <strong className="text-stone-900 font-bold">4. Length:</strong> Measured vertically from the highest shoulder seam down to the hem.
           </div>
-          <div className="text-[10px] text-hive-amber border-t border-hive-gold/20 pt-2 font-bold italic flex items-center gap-1">
-            <HelpCircle className="w-3.5 h-3.5 flex-shrink-0" />
+          <div className="text-[10px] text-stone-500 border-t border-stone-200/60 pt-2 font-bold italic flex items-center gap-1.5">
+            <HelpCircle className="w-3.5 h-3.5 flex-shrink-0 text-stone-400" />
             Measurements are physical tape dimensions of the item flat-laid, not body sizes.
           </div>
         </div>
@@ -164,15 +164,74 @@ export const MeasurementLegend: React.FC = () => {
   );
 };
 
+// Helper to generate a universal sizing chart based on categories and sizing parameters
+export function getUniversalSizeChart(sizes: string[] = [], productName: string = ""): MeasurementRow[] {
+  const nameLower = productName.toLowerCase();
+  
+  // If it's a saree or only has Free Size / FS
+  if (sizes.includes("Free") || sizes.includes("FS") || nameLower.includes("saree") || nameLower.includes("kasavu")) {
+    const s = sizes.includes("FS") ? "FS" : "Free";
+    return [
+      {
+        size: s,
+        chest: "N/A",
+        waist: "N/A",
+        shoulder: "N/A",
+        length: "5.5 meters",
+        hip: "N/A",
+        fitType: "Draped",
+        stretch: "None",
+      }
+    ];
+  }
+
+  // Otherwise, it's apparel (Kurti, Lehenga, Salwar Set, etc.)
+  const standardMap: Record<string, Omit<MeasurementRow, "size">> = {
+    "XS": { chest: "32\"", waist: "26\"", shoulder: "13.5\"", length: "42\"", hip: "36\"", fitType: "Regular", stretch: "Low" },
+    "S": { chest: "34\"", waist: "28\"", shoulder: "14\"", length: "43\"", hip: "38\"", fitType: "Regular", stretch: "Low" },
+    "M": { chest: "36\"", waist: "30\"", shoulder: "14.5\"", length: "44\"", hip: "40\"", fitType: "Regular", stretch: "Low" },
+    "L": { chest: "38\"", waist: "32\"", shoulder: "15\"", length: "45\"", hip: "42\"", fitType: "Regular", stretch: "Low" },
+    "XL": { chest: "40\"", waist: "34\"", shoulder: "15.5\"", length: "45\"", hip: "44\"", fitType: "Regular", stretch: "Low" },
+    "XXL": { chest: "42\"", waist: "36\"", shoulder: "16\"", length: "46\"", hip: "46\"", fitType: "Regular", stretch: "Low" },
+    "3XL": { chest: "44\"", waist: "38\"", shoulder: "16.5\"", length: "46\"", hip: "48\"", fitType: "Regular", stretch: "Low" },
+  };
+
+  const matrix: MeasurementRow[] = [];
+  const activeSizes = sizes.length > 0 ? sizes : ["S", "M", "L", "XL"];
+  
+  for (const sz of activeSizes) {
+    const upperSz = sz.toUpperCase();
+    if (standardMap[upperSz]) {
+      matrix.push({
+        size: sz,
+        ...standardMap[upperSz],
+      });
+    } else {
+      matrix.push({
+        size: sz,
+        chest: "36\"",
+        waist: "30\"",
+        shoulder: "14.5\"",
+        length: "44\"",
+        hip: "40\"",
+        fitType: "Regular",
+        stretch: "Low",
+      });
+    }
+  }
+
+  return matrix;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Subcomponent: MeasurementTable
 // ─────────────────────────────────────────────────────────────────────────────
 interface MeasurementTableProps {
   matrix: MeasurementRow[];
   selectedSize: string;
+  isFallback: boolean;
 }
-
-export const MeasurementTable: React.FC<MeasurementTableProps> = ({ matrix, selectedSize }) => {
+export const MeasurementTable: React.FC<MeasurementTableProps> = ({ matrix, selectedSize, isFallback }) => {
   const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -191,24 +250,57 @@ export const MeasurementTable: React.FC<MeasurementTableProps> = ({ matrix, sele
 
   return (
     <div className="w-full text-left">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-extrabold uppercase tracking-wider text-hive-text-muted">
-          Actual Garment Dimensions
-        </span>
-        {selectedSize && (
-          <span className="text-[9px] font-extrabold bg-hive-gold/15 text-hive-amber border border-hive-gold/20 px-2 py-0.5 rounded-md animate-pulse">
-            Active Size: {selectedSize}
-          </span>
-        )}
-      </div>
+      {isFallback ? (
+        <div className="bg-stone-50 border border-stone-200/60 rounded-xl p-3.5 mb-3 text-left">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-stone-850">
+              <Info className="w-3.5 h-3.5 text-stone-500 flex-shrink-0" />
+              <span className="text-[10px] font-extrabold uppercase tracking-wider">
+                Standard Size Reference
+              </span>
+            </div>
+            {selectedSize ? (
+              <span className="text-[9px] font-bold text-stone-600 bg-stone-100/80 px-2 py-0.5 rounded border border-stone-200/50">
+                Active Size: {selectedSize}
+              </span>
+            ) : (
+              <span className="text-[9px] font-bold text-stone-500 bg-stone-100/80 px-2 py-0.5 rounded border border-stone-200/50">
+                Standard Fit
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] text-stone-500 mt-2 leading-relaxed font-medium">
+            Partner measurements unavailable. Showing standard size reference.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-stone-50 border border-stone-200/60 rounded-xl p-3.5 mb-3 text-left">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-stone-850">
+              <Info className="w-3.5 h-3.5 text-stone-500 flex-shrink-0" />
+              <span className="text-[10px] font-extrabold uppercase tracking-wider">
+                Garment Measurements
+              </span>
+            </div>
+            {selectedSize && (
+              <span className="text-[9px] font-bold text-stone-600 bg-stone-100/80 px-2 py-0.5 rounded border border-stone-200/50">
+                Active Size: {selectedSize}
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] text-stone-500 mt-2 leading-relaxed font-medium">
+            Garment measurements provided by the partner.
+          </p>
+        </div>
+      )}
 
       <div
         ref={containerRef}
-        className="w-full border border-hive-border/40 rounded-2xl overflow-x-auto scrollbar-thin scrollbar-thumb-hive-gold/30 hover:scrollbar-thumb-hive-gold/60"
+        className="w-full border border-stone-200/80 rounded-2xl overflow-x-auto scrollbar-thin scrollbar-thumb-stone-300 hover:scrollbar-thumb-stone-400"
       >
         <table className="min-w-[500px] w-full text-left border-collapse text-xs table-fixed">
           <thead>
-            <tr className="bg-hive-cream/40 border-b border-hive-border/40 text-[9px] font-extrabold text-hive-dark uppercase tracking-wider sticky top-0 z-10 backdrop-blur-md">
+            <tr className="bg-stone-50/50 border-b border-stone-200/80 text-[9px] font-bold text-stone-500 uppercase tracking-wider sticky top-0 z-10 backdrop-blur-md">
               <th className="px-3.5 py-3 w-[70px]">Size</th>
               <th className="px-3.5 py-3">Chest</th>
               <th className="px-3.5 py-3">Waist</th>
@@ -218,7 +310,7 @@ export const MeasurementTable: React.FC<MeasurementTableProps> = ({ matrix, sele
               <th className="px-3.5 py-3">Stretch</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-hive-border/30 font-semibold text-hive-dark">
+          <tbody className="divide-y divide-stone-100 font-semibold text-stone-850">
             {matrix.map((row, idx) => {
               const isSelected = row.size === selectedSize;
               // Fallbacks in case columns are missing
@@ -233,28 +325,28 @@ export const MeasurementTable: React.FC<MeasurementTableProps> = ({ matrix, sele
                     rowRefs.current[row.size] = el;
                   }}
                   className={cn(
-                    "transition-all duration-300",
+                    "transition-all duration-200",
                     isSelected
-                      ? "bg-hive-gold/15 border-l-2 border-l-hive-amber scale-[1.005]"
+                      ? "bg-stone-100/70 border-l-2 border-l-stone-900 scale-[1.002]"
                       : idx % 2 === 1
-                      ? "bg-hive-cream/5"
+                      ? "bg-stone-50/20"
                       : "bg-white"
                   )}
                 >
                   <td
                     className={cn(
-                      "px-3.5 py-3.5 font-extrabold w-[70px] transition-colors",
-                      isSelected ? "text-hive-amber bg-hive-gold/10" : "text-hive-dark"
+                      "px-3.5 py-3 font-bold w-[70px] transition-colors",
+                      isSelected ? "text-stone-900 bg-stone-100/30" : "text-stone-850"
                     )}
                   >
                     {row.size}
                   </td>
-                  <td className="px-3.5 py-3.5">{row.chest}</td>
-                  <td className="px-3.5 py-3.5">{row.waist}</td>
-                  <td className="px-3.5 py-3.5">{hipVal}</td>
-                  <td className="px-3.5 py-3.5">{row.length}</td>
-                  <td className="px-3.5 py-3.5 text-hive-text-muted/90">{fitTypeVal}</td>
-                  <td className="px-3.5 py-3.5 text-hive-text-muted/90">{stretchVal}</td>
+                  <td className="px-3.5 py-3">{row.chest}</td>
+                  <td className="px-3.5 py-3">{row.waist}</td>
+                  <td className="px-3.5 py-3">{hipVal}</td>
+                  <td className="px-3.5 py-3">{row.length}</td>
+                  <td className="px-3.5 py-3 text-stone-500 font-medium">{fitTypeVal}</td>
+                  <td className="px-3.5 py-3 text-stone-500 font-medium">{stretchVal}</td>
                 </tr>
               );
             })}
@@ -270,36 +362,56 @@ export const MeasurementTable: React.FC<MeasurementTableProps> = ({ matrix, sele
 // ─────────────────────────────────────────────────────────────────────────────
 export interface MeasurementMatrixProps {
   productName: string;
-  measurementMatrix: MeasurementRow[];
+  measurementMatrix?: MeasurementRow[];
+  sizes?: string[];
   selectedSize: string;
-  fitNote: string;
+  fitNote?: string;
   className?: string;
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
 }
 
 export const MeasurementMatrix: React.FC<MeasurementMatrixProps> = ({
   productName,
   measurementMatrix = [],
+  sizes = [],
   selectedSize,
-  fitNote,
+  fitNote = "Standard sizing. Fits true to size.",
   className = "",
+  isOpen: controlledIsOpen,
+  setIsOpen: controlledSetIsOpen,
 }) => {
-  if (measurementMatrix.length === 0) return null;
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+  const setIsOpen = controlledSetIsOpen !== undefined ? controlledSetIsOpen : setInternalIsOpen;
+
+  const isFallback = !measurementMatrix || measurementMatrix.length === 0;
+
+  // Only render when open
+  if (!isOpen) return null;
+
+  const activeMatrix = measurementMatrix;
 
   return (
-    <div className={cn("w-full flex flex-col gap-5 py-4 border-b border-hive-border/40", className)}>
-      
-      {/* Table Section */}
-      <MeasurementTable matrix={measurementMatrix} selectedSize={selectedSize} />
+    <div className={cn("w-full flex flex-col text-left py-2", className)}>
+      <div className="w-full flex flex-col gap-4 animate-fade-in pt-2">
+        {/* Table Section */}
+        <MeasurementTable matrix={activeMatrix} selectedSize={selectedSize} isFallback={isFallback} />
 
-      {/* Legend Guide Accordion */}
-      <MeasurementLegend />
+        {/* Legend Guide Accordion */}
+        <MeasurementLegend />
 
-      {/* Size Confidence Card & Fit Guidance Panel */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <SizeConfidenceCard productName={productName} />
-        <FitGuidance fitNote={fitNote} />
+        {/* Bottom Close Button */}
+        <div className="flex justify-end pt-1">
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em] text-stone-500 hover:text-stone-900 transition-colors cursor-pointer"
+          >
+            Hide Measurements ↑
+          </button>
+        </div>
       </div>
-
     </div>
   );
 };

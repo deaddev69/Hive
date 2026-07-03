@@ -10,14 +10,25 @@ export function formatINR(
   paise: number,
   options: { showDecimal?: boolean } = {}
 ): string {
+  const showDec = options.showDecimal ?? true;
   const rupees = paise / 100;
-  return new Intl.NumberFormat("en-IN", {
-    style:                 "currency",
-    currency:              "INR",
-    minimumFractionDigits: options.showDecimal ? 2 : 0,
-    maximumFractionDigits: options.showDecimal ? 2 : 0,
-  }).format(rupees);
+  return `₹${rupees.toLocaleString('en-IN', {
+    minimumFractionDigits: showDec ? 2 : 2,
+    maximumFractionDigits: showDec ? 2 : 2,
+  })}`;
 }
+
+/**
+ * Convert paise (integer) to formatted currency string (rupees)
+ * @example formatCurrency(177600) → "₹1,776.00"
+ */
+export function formatCurrency(
+  paise: number,
+  options: { showDecimal?: boolean } = {}
+): string {
+  return formatINR(paise, options);
+}
+
 
 /**
  * Convert INR rupees to paise

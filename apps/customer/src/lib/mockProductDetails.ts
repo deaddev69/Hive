@@ -26,6 +26,10 @@ export interface BoutiqueMeta {
   reviewCount: number;
   verified: boolean;
   sameDayDelivery: boolean;
+  latitude?: number;
+  longitude?: number;
+  deliveryRadiusKm?: number;
+  trustTier?: string;
 }
 
 export interface ProductDetail {

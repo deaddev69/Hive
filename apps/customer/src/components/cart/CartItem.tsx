@@ -2,8 +2,12 @@
 
 import React from "react";
 import Image from "next/image";
-import { Trash2, Plus, Minus } from "lucide-react";
+import Link from "next/link";
+import { Trash2 } from "lucide-react";
 import { CartItem, useCartStore } from "@/store/cart-store";
+import { cleanProductTitle } from "../product/ProductCard";
+import { useCart } from "@/context/CartContext";
+import { formatCurrency } from "@hive/utils";
 
 interface CartItemProps {
   item: CartItem;
@@ -12,70 +16,87 @@ interface CartItemProps {
 export const CartItemComponent: React.FC<CartItemProps> = ({ item }) => {
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const removeItem = useCartStore((state) => state.removeItem);
+  const { setSidebarOpen } = useCart();
 
   return (
-    <div className="flex gap-4 bg-white p-4.5 rounded-2xl border border-hive-border/40 shadow-sm relative group overflow-hidden">
+    <div className="flex gap-4 bg-white p-4 rounded-xl border border-stone-100 relative group overflow-hidden">
       {/* Product Image */}
-      <div className="relative w-20 h-24 rounded-xl overflow-hidden bg-hive-cream/30 border border-hive-border/20 flex-shrink-0">
+      <Link
+        href={`/products/${item.productId}`}
+        onClick={() => setSidebarOpen(false)}
+        className="relative w-[72px] h-24 rounded-lg overflow-hidden bg-stone-50 border border-stone-100 flex-shrink-0 cursor-pointer block"
+      >
         {item.imageUrl ? (
           <Image
             src={item.imageUrl}
             alt={item.name}
             fill
-            sizes="80px"
+            sizes="72px"
             className="object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-hive-comb/20 flex items-center justify-center text-xs font-bold text-hive-text-muted">
+          <div className="w-full h-full bg-stone-100 flex items-center justify-center text-[10px] font-medium text-stone-400">
             No Image
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Info details */}
-      <div className="flex-1 flex flex-col justify-between text-left pr-4">
-        <div>
-          {/* Boutique Name */}
-          <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-            {item.boutiqueName}
-          </span>
-          {/* Product Name */}
-          <h3 className="text-xs font-bold text-hive-dark mt-0.5 leading-snug line-clamp-2 pr-2">
-            {item.name}
+      <div className="flex-1 flex flex-col justify-between text-left pr-4 select-none">
+        <Link
+          href={`/products/${item.productId}`}
+          onClick={() => setSidebarOpen(false)}
+          className="cursor-pointer block"
+        >
+          {/* Product Name (Product First) */}
+          <h3 className="text-xs font-semibold text-stone-900 leading-snug line-clamp-2 pr-2 hover:text-hive-amber transition-colors">
+            {cleanProductTitle(item.name)}
           </h3>
-          {/* Selected Size Badge */}
-          <span className="inline-flex items-center text-[10px] font-extrabold text-hive-dark bg-hive-comb px-2 py-0.5 rounded-lg mt-1.5 border border-hive-gold/20">
-            Size: {item.size}
+
+          {/* Boutique Name & Verified badge (Boutique Second) */}
+          <div className="text-[10px] text-stone-500 font-normal mt-1.5 flex flex-col gap-0.5">
+            <div>
+              <span className="text-stone-400">Sold by</span>{" "}
+              <span className="font-semibold text-stone-750">{item.boutiqueName}</span>
+            </div>
+            <span className="text-[9px] text-stone-400 uppercase tracking-wider font-medium">
+              Verified Partner
+            </span>
+          </div>
+
+          {/* Selected Size */}
+          <span className="text-[10px] text-stone-500 mt-2 block">
+            Size {item.size}
           </span>
-        </div>
+        </Link>
 
         {/* Bottom details: Price & Quantity */}
-        <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center justify-between mt-2.5">
           {/* Price */}
-          <span className="text-sm font-extrabold text-hive-dark">
-            ₹{item.price.toLocaleString("en-IN")}
+          <span className="text-xs font-bold text-stone-900">
+            {formatCurrency(item.price)}
           </span>
 
-          {/* Quantity selector */}
-          <div className="flex items-center gap-2 border border-hive-border/60 bg-hive-cream/30 rounded-xl px-2 py-1 select-none">
+          {/* Quantity selector (subtle inline controls, no pill background/borders) */}
+          <div className="flex items-center gap-4.5 select-none pr-1">
             <button
               type="button"
               onClick={() => updateQuantity(item.productId, item.size, item.quantity - 1)}
-              className="w-5 h-5 rounded-md flex items-center justify-center text-hive-dark hover:bg-hive-border/45 transition-colors focus:outline-none"
+              className="text-stone-400 hover:text-stone-800 transition-colors text-sm font-light px-1 focus:outline-none"
               aria-label="Decrease quantity"
             >
-              <Minus className="w-3.5 h-3.5" />
+              −
             </button>
-            <span className="text-xs font-extrabold text-hive-dark min-w-[16px] text-center">
+            <span className="text-xs font-medium text-stone-900 min-w-[10px] text-center">
               {item.quantity}
             </span>
             <button
               type="button"
               onClick={() => updateQuantity(item.productId, item.size, item.quantity + 1)}
-              className="w-5 h-5 rounded-md flex items-center justify-center text-hive-dark hover:bg-hive-border/45 transition-colors focus:outline-none"
+              className="text-stone-400 hover:text-stone-800 transition-colors text-sm font-light px-1 focus:outline-none"
               aria-label="Increase quantity"
             >
-              <Plus className="w-3.5 h-3.5" />
+              +
             </button>
           </div>
         </div>
@@ -85,10 +106,10 @@ export const CartItemComponent: React.FC<CartItemProps> = ({ item }) => {
       <button
         type="button"
         onClick={() => removeItem(item.productId, item.size)}
-        className="absolute top-3.5 right-3.5 p-1.5 rounded-full text-hive-text-muted/60 hover:text-red-500 hover:bg-red-50 transition-all focus:outline-none"
+        className="absolute top-3 right-3 p-1 rounded-full text-stone-300 hover:text-red-500 transition-colors focus:outline-none"
         aria-label="Remove item"
       >
-        <Trash2 className="w-4 h-4" />
+        <Trash2 className="w-3.5 h-3.5" />
       </button>
     </div>
   );

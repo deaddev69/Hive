@@ -6,6 +6,7 @@ interface HiveLogoProps {
   href?: string;
   className?: string;
   size?: "sm" | "md";
+  noLink?: boolean;
 }
 
 const sizeClasses = {
@@ -13,12 +14,9 @@ const sizeClasses = {
   md: "h-14 sm:h-12",
 };
 
-export function HiveLogo({ roleLabel, href = "/", className = "", size = "md" }: HiveLogoProps) {
-  return (
-    <Link
-      href={href}
-      className={`flex items-center gap-3 hover:opacity-85 active:scale-[0.98] transition-all duration-200 cursor-pointer ${className}`}
-    >
+export function HiveLogo({ roleLabel, href = "/", className = "", size = "md", noLink = false }: HiveLogoProps) {
+  const content = (
+    <>
       <Image
         src="/logo.png"
         alt="Hive"
@@ -34,6 +32,23 @@ export function HiveLogo({ roleLabel, href = "/", className = "", size = "md" }:
           </span>
         </div>
       )}
+    </>
+  );
+
+  if (noLink) {
+    return (
+      <div className={`flex items-center gap-3 ${className}`}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-3 hover:opacity-85 active:scale-[0.98] transition-all duration-200 cursor-pointer ${className}`}
+    >
+      {content}
     </Link>
   );
 }

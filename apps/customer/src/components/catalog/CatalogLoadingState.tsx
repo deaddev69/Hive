@@ -30,15 +30,7 @@ const SkeletonCard: React.FC<SkeletonCardProps> = ({ delay = 0 }) => (
           <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_0.2s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
         </div>
       </div>
-      {/* Rating + badge row */}
-      <div className="flex items-center justify-between">
-        <div className="h-2.5 w-16 rounded-full bg-hive-comb/30 relative overflow-hidden">
-          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_0.25s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-        </div>
-        <div className="h-2.5 w-12 rounded-full bg-hive-comb/20 relative overflow-hidden">
-          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_0.3s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-        </div>
-      </div>
+
       {/* Price row */}
       <div className="pt-2 border-t border-hive-border/30">
         <div className="h-4 w-1/3 rounded-full bg-hive-comb/35 relative overflow-hidden">

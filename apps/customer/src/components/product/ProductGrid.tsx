@@ -1,10 +1,22 @@
-import React, { useMemo } from "react";
+"use client";
+
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import { ProductCardData } from "@/lib/mockProducts";
 import { ProductCard } from "./ProductCard";
 import { ProductGridSkeleton } from "./ProductGridSkeleton";
 import { Button } from "@hive/ui";
 import { AlertCircle, ArrowRight } from "lucide-react";
+import { useLocation } from "@/context/LocationContext";
+import { useMutation } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
+
+const NEARBY_LIVE_LOCATIONS = [
+  { name: "Edappally", latitude: 10.0261, longitude: 76.3088, postcode: "682024", locality: "Edappally", city: "Ernakulam", state: "Kerala", country: "India" },
+  { name: "Kakkanad", latitude: 10.0159, longitude: 76.3419, postcode: "682030", locality: "Kakkanad", city: "Ernakulam", state: "Kerala", country: "India" },
+  { name: "Kaloor", latitude: 9.9986, longitude: 76.2999, postcode: "682017", locality: "Kaloor", city: "Ernakulam", state: "Kerala", country: "India" },
+  { name: "Vytilla", latitude: 9.9704, longitude: 76.3197, postcode: "682019", locality: "Vytilla", city: "Ernakulam", state: "Kerala", country: "India" }
+];
 
 export interface ProductGridProps {
   products: ProductCardData[];
@@ -16,15 +28,15 @@ export interface ProductGridProps {
 }
 
 const occasionLabels: Record<string, string> = {
-  all: "All Collections",
-  wedding: "Wedding Guest Collection",
-  festival: "Festival Collection",
-  workwear: "Work Wear Collection",
-  party: "Party Night Collection",
-  casual: "Casual Day Collection",
-  date: "Date Night Collection",
-  ethnic: "Ethnic Collection",
-  coords: "Co-ords Collection",
+  all: "All Style Boards",
+  wedding: "Wedding Guest Style Board",
+  festival: "Festival Style Board",
+  workwear: "Work Wear Style Board",
+  party: "Party Night Style Board",
+  casual: "Casual Day Style Board",
+  date: "Date Night Style Board",
+  ethnic: "Ethnic Style Board",
+  coords: "Co-ords Style Board",
 };
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
@@ -34,13 +46,66 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   isLoading = false,
   viewAllHref,
 }) => {
-  // Memoized product filtering
-  const filteredProducts = useMemo(() => {
-    if (selectedOccasion === "all") {
-      return products;
+  const { isServiceable, locality, city, stateName, latitude, longitude, updateLocationDetails } = useLocation();
+  const requestService = useMutation(api.serviceability.requestService);
+  const [requestState, setRequestState] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  const handleRequestHive = async () => {
+    setRequestState("loading");
+    try {
+      const activeLocality = locality || city || "your area";
+      const activeState = stateName || "Kerala";
+      const res = await requestService({
+        city: activeLocality,
+        state: activeState,
+        latitude: latitude || undefined,
+        longitude: longitude || undefined,
+      });
+      if (res.success || res.reason === "Already requested") {
+        setRequestState("success");
+      } else {
+        setRequestState("error");
+      }
+    } catch (err) {
+      console.error("Failed to request Hive:", err);
+      setRequestState("error");
     }
-    return products.filter((p) => p.occasion === selectedOccasion);
-  }, [products, selectedOccasion]);
+  };
+  const [priceFilter, setPriceFilter] = useState<"all" | "under1000" | "under2500" | "above2500" | "above5000">("all");
+  const [deliveryFilter, setDeliveryFilter] = useState<"all" | "today">("all");
+  const [sortOption, setSortOption] = useState<"featured" | "priceAsc" | "priceDesc" | "ratingDesc">("featured");
+
+  // Memoized product filtering and sorting
+  const filteredProducts = useMemo(() => {
+    let result = products;
+
+    if (selectedOccasion !== "all") {
+      result = result.filter((p) => p.occasion === selectedOccasion);
+    }
+
+    if (priceFilter === "under1000") {
+      result = result.filter((p) => p.price <= 100000);
+    } else if (priceFilter === "under2500") {
+      result = result.filter((p) => p.price <= 250000);
+    } else if (priceFilter === "above2500") {
+      result = result.filter((p) => p.price > 250000);
+    }
+
+    if (deliveryFilter === "today") {
+      result = result.filter((p) => p.sameDayDelivery);
+    }
+
+    result = [...result];
+    if (sortOption === "priceAsc") {
+      result.sort((a, b) => a.price - b.price);
+    } else if (sortOption === "priceDesc") {
+      result.sort((a, b) => b.price - a.price);
+    } else if (sortOption === "ratingDesc") {
+      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    }
+
+    return result;
+  }, [products, selectedOccasion, priceFilter, deliveryFilter, sortOption]);
 
   const collectionTitle = occasionLabels[selectedOccasion] || "Boutique Collection";
 
@@ -79,13 +144,19 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 
       {/* Grid Header */}
       <div className="flex justify-between items-baseline border-b border-hive-border/40 pb-4">
-        <h2 className="text-xl md:text-2xl font-extrabold font-serif text-hive-dark transition-all duration-300">
+        <h2 className="text-xl md:text-2xl font-extrabold font-sans text-hive-dark transition-all duration-300">
           {collectionTitle}
         </h2>
         <div className="flex items-center gap-4">
-          <span className="text-xs md:text-sm font-semibold text-hive-text-muted">
-            {filteredProducts.length} {filteredProducts.length === 1 ? "Product" : "Products"}
-          </span>
+          {filteredProducts.length > 0 ? (
+            <span className="text-xs md:text-sm font-semibold text-hive-text-muted">
+              {filteredProducts.length} {filteredProducts.length === 1 ? "Product" : "Products"}
+            </span>
+          ) : (
+            <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-50/50 border border-amber-200/30 px-2.5 py-1 rounded-lg">
+              {isServiceable ? "Coming to Your Area" : "Launching Soon"}
+            </span>
+          )}
           {viewAllHref && (
             <Link
               href={viewAllHref}
@@ -98,9 +169,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         </div>
       </div>
 
+
+
       {/* Product Grid / Empty State Handler */}
       {filteredProducts.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 md:gap-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
           {filteredProducts.map((product, index) => (
             <div
               key={`${selectedOccasion}-${product.id}`}
@@ -113,27 +186,135 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         </div>
       ) : (
         /* Elegant Empty State */
-        <div className="flex flex-col items-center justify-center py-20 px-6 border border-dashed border-hive-border/60 rounded-[32px] bg-hive-cream/5 text-center max-w-2xl mx-auto w-full animate-card-entrance">
-          <div className="p-4 rounded-full bg-hive-comb/20 border border-hive-border/40 text-hive-amber mb-4">
-            <AlertCircle className="w-8 h-8" />
+        !isServiceable ? (
+          <div className="flex flex-col items-center justify-center py-16 px-6 sm:px-12 border border-dashed border-amber-200 rounded-[32px] bg-amber-50/10 text-center max-w-2xl mx-auto w-full animate-card-entrance shadow-sm">
+            <span className="text-2xl mb-3 select-none">📍</span>
+            <h3 className="text-xl md:text-2xl font-serif font-semibold text-hive-dark">
+              Launching Soon in {locality || city || "your area"}
+            </h3>
+            <p className="text-sm text-hive-text-muted mt-2 max-w-md leading-relaxed">
+              We're currently onboarding boutiques, brands and fashion partners for your area.
+            </p>
+
+            <div className="mt-6 flex flex-col items-center gap-3 w-full max-w-sm">
+              <button
+                onClick={handleRequestHive}
+                disabled={requestState === "loading" || requestState === "success"}
+                className={`w-full py-3.5 px-6 rounded-xl font-extrabold uppercase tracking-widest text-xs transition-all duration-300 shadow-sm border ${
+                  requestState === "success"
+                    ? "bg-green-50 text-green-800 border-green-200 cursor-default"
+                    : requestState === "loading"
+                    ? "bg-amber-100 text-amber-800 border-amber-200 cursor-wait"
+                    : "bg-hive-dark text-hive-gold border-hive-dark hover:bg-hive-dark/95 active:scale-[0.98] cursor-pointer"
+                }`}
+              >
+                {requestState === "success"
+                  ? `✓ Requested for ${locality || city || "your area"}`
+                  : requestState === "loading"
+                  ? "Submitting request..."
+                  : requestState === "error"
+                  ? "Retry Request Hive in My Area"
+                  : "Request Hive in My Area"}
+              </button>
+              <button
+                onClick={() => {
+                  const target = document.getElementById("nearby-live-regions");
+                  if (target) {
+                    target.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
+                className="text-xs text-hive-amber hover:text-hive-gold font-extrabold uppercase tracking-wider transition-colors pt-1 cursor-pointer"
+              >
+                Discover Nearby Style Boards
+              </button>
+            </div>
+
+            {/* Coverage Map Status Block */}
+            <div id="nearby-live-regions" className="mt-10 pt-8 border-t border-hive-border/60 w-full select-none">
+              <h4 className="text-xs font-black uppercase tracking-widest text-[#111827] mb-4">
+                Hive Coverage Status
+              </h4>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-left max-w-md mx-auto mb-6 bg-white border border-slate-100 p-5 rounded-2xl shadow-sm">
+                <div>
+                  <span className="text-[10px] font-extrabold text-green-600 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    Currently Serving
+                  </span>
+                  <ul className="space-y-1.5 text-xs text-slate-600 font-semibold">
+                    <li className="flex items-center gap-1.5">✓ Edappally</li>
+                    <li className="flex items-center gap-1.5">✓ Kakkanad</li>
+                    <li className="flex items-center gap-1.5">✓ Kaloor</li>
+                    <li className="flex items-center gap-1.5">✓ Vytilla</li>
+                  </ul>
+                </div>
+                <div className="border-t sm:border-t-0 sm:border-l border-slate-100 pt-4 sm:pt-0 sm:pl-6">
+                  <span className="text-[10px] font-extrabold text-amber-700/80 uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    Launching Soon
+                  </span>
+                  <ul className="space-y-1.5 text-xs text-slate-500 font-medium">
+                    <li className="flex items-center gap-1.5">• Puthenvelikkara</li>
+                    <li className="flex items-center gap-1.5">• Angamaly</li>
+                    <li className="flex items-center gap-1.5">• Perumbavoor</li>
+                  </ul>
+                </div>
+              </div>
+
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-3">
+                Switch to a Live Region
+              </span>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {NEARBY_LIVE_LOCATIONS.map((loc) => (
+                  <button
+                    key={loc.name}
+                    onClick={() => updateLocationDetails({
+                      latitude: loc.latitude,
+                      longitude: loc.longitude,
+                      locality: loc.locality,
+                      city: loc.city,
+                      state: loc.state,
+                      country: loc.country,
+                      postcode: loc.postcode
+                    })}
+                    className="px-3.5 py-1.5 rounded-xl border border-slate-200 hover:border-hive-gold hover:bg-hive-comb/10 text-xs font-bold text-hive-dark transition-all duration-200 shadow-sm cursor-pointer active:scale-95"
+                  >
+                    {loc.name}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <h3 className="text-xl font-bold font-serif text-hive-dark">
-            No products found
-          </h3>
-          <p className="text-sm text-hive-text-muted mt-2 max-w-sm leading-relaxed">
-            We're onboarding more boutiques for this occasion. Check back soon for hand-curated designs from local boutiques.
-          </p>
-          {onResetFilter && (
-            <Button
-              variant="primary"
-              onClick={onResetFilter}
-              className="mt-6 flex items-center gap-1.5"
-            >
-              View All Collections
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 px-6 border border-dashed border-hive-border/60 rounded-[32px] bg-hive-cream/5 text-center max-w-2xl mx-auto w-full animate-card-entrance shadow-sm">
+            <div className="p-4 rounded-full bg-hive-comb/20 border border-hive-border/40 text-hive-amber mb-4">
+              <AlertCircle className="w-8 h-8 animate-pulse" />
+            </div>
+            <h3 className="text-xl font-bold font-serif text-hive-dark">
+              Style Boards arriving soon
+            </h3>
+            <p className="text-sm text-hive-text-muted mt-2 max-w-md leading-relaxed">
+              Our buyers are curating premium styles for this category. We are onboarding more fashion partners near {locality || city || "you"}.
+            </p>
+            {onResetFilter ? (
+              <Button
+                variant="primary"
+                onClick={onResetFilter}
+                className="mt-6 flex items-center gap-1.5"
+              >
+                Discover Other Style Boards
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            ) : (
+              <Link href="/products?browse=all" className="mt-6">
+                <Button variant="primary" className="flex items-center gap-1.5">
+                  Discover Nearby Style Boards
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            )}
+          </div>
+        )
       )}
     </div>
   );

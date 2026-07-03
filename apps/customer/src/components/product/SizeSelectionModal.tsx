@@ -54,12 +54,18 @@ export const SizeSelectionModal: React.FC<SizeSelectionModalProps> = ({
         {/* Product Summary Row */}
         <div className="flex gap-4 items-center w-full text-left bg-slate-50 dark:bg-slate-900/40 p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/40">
           <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
-            <Image
-              src={imageUrl}
-              alt={productName}
-              fill
-              className="object-cover"
-            />
+            {imageUrl ? (
+              <Image
+                src={imageUrl}
+                alt={productName}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-100 text-[10px] text-slate-400 font-extrabold uppercase select-none">
+                No Image
+              </div>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">

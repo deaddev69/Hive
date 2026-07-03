@@ -22,7 +22,7 @@ export const CatalogLayout: React.FC<CatalogLayoutProps> = ({
     <div className="w-full min-h-screen bg-hive-cream/10 flex flex-col">
       {/* Breadcrumb — only shown when crumbs exist */}
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <div className="w-full border-b border-hive-border/50 bg-white/60 backdrop-blur-sm">
+        <div className="w-full border-b border-hive-border/50 bg-white/60 backdrop-blur-sm hidden md:block">
           <nav
             aria-label="Breadcrumb"
             className="max-w-[1440px] mx-auto px-6 lg:px-8 h-11 flex items-center"

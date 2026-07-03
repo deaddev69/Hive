@@ -19,9 +19,10 @@ import { api } from "../../../../../convex/_generated/api";
 export function UserSync() {
   const { user, isLoaded, isSignedIn } = useUser();
   const syncUser = useMutation(api.users.syncUser);
+  const fallbackEnabled = process.env.NEXT_PUBLIC_ENABLE_USERSYNC_FALLBACK !== "false";
 
   useEffect(() => {
-    console.log("[UserSync] isLoaded:", isLoaded, "isSignedIn:", isSignedIn, "clerkId:", user?.id);
+    if (!fallbackEnabled) return;
 
     if (!isLoaded) return;
     if (!isSignedIn || !user) return;
@@ -32,15 +33,12 @@ export function UserSync() {
       email: user.primaryEmailAddress?.emailAddress,
       name:  user.fullName ?? user.firstName ?? undefined,
     })
-      .then((result) => {
-        console.log("[UserSync] SYNC SUCCESS — userId:", result);
-      })
       .catch((error) => {
         console.error("[UserSync] SYNC FAILED:", error);
       });
 
-  // Only re-run when the Clerk user identity changes
-  }, [isLoaded, isSignedIn, user?.id]);
+  // Only re-run when the Clerk user identity changes or feature flag changes
+  }, [isLoaded, isSignedIn, user?.id, fallbackEnabled]);
 
   return null;
 }

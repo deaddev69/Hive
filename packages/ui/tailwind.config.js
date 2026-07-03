@@ -14,7 +14,7 @@ module.exports = {
         "hive-comb": "#FFF3CC",
       },
       fontFamily: {
-        serif: ["Playfair Display", "Georgia", "serif"],
+        serif: ["Manrope", "system-ui", "sans-serif"],
         sans: ["Inter", "system-ui", "sans-serif"],
       },
     },

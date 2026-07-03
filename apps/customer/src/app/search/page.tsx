@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useLocation } from "@/context/LocationContext";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -42,7 +42,7 @@ function getProductOccasion(product: any): string {
 }
 
 // Helper to map DB product to ProductCardData interface
-function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number> } {
+function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number>; boutiqueId?: string; boutique?: any } {
   const hasDiscount = p.discountPrice !== undefined && p.discountPrice < p.price;
   const price = hasDiscount ? p.discountPrice! : p.price;
   const compareAtPrice = hasDiscount ? p.price : undefined;
@@ -52,6 +52,8 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     slug: p.slug,
     name: p.name,
     boutiqueName: p.boutiqueName || "Unknown Boutique",
+    boutiqueId: p.boutiqueId,
+    boutique: p.boutique,
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
     price,
     compareAtPrice,
@@ -67,6 +69,10 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     favorite: false,
     sizes: p.sizes || ["Free"],
     stockBySize: p.stockBySize || { Free: 5 },
+    estimatedDistanceKm: p.estimatedDistanceKm,
+    estimatedDurationMin: p.estimatedDurationMin,
+    estimatedEtaMinutes: p.estimatedEtaMinutes,
+    hiveScore: p.hiveScore,
   };
 }
 
@@ -117,17 +123,33 @@ function SearchContent() {
     return () => clearTimeout(handler);
   }, [searchTerm, q, router]);
 
-  // Run Convex query
-  const searchResult = useQuery(
-    api.products.searchProducts,
-    q
-      ? {
-          searchTerm: q,
-          userLat: browseAnyway ? undefined : (latitude ?? undefined),
-          userLng: browseAnyway ? undefined : (longitude ?? undefined),
-        }
-      : "skip"
-  );
+  const searchProductsAction = useAction(api.products.searchProducts);
+  const [searchResult, setSearchResult] = useState<{ products: any[]; totalMatchedCount: number } | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    if (!q) {
+      setSearchResult(null);
+      return;
+    }
+
+    setIsSearching(true);
+    searchProductsAction({
+      searchTerm: q,
+      userLat: browseAnyway ? undefined : (latitude ?? undefined),
+      userLng: browseAnyway ? undefined : (longitude ?? undefined),
+    })
+      .then((res) => {
+        setSearchResult(res);
+      })
+      .catch((err) => {
+        console.error("Search failed:", err);
+        setSearchResult({ products: [], totalMatchedCount: 0 });
+      })
+      .finally(() => {
+        setIsSearching(false);
+      });
+  }, [q, browseAnyway, latitude, longitude, searchProductsAction]);
 
   const products = useMemo(() => {
     if (!searchResult) return [];
@@ -171,7 +193,7 @@ function SearchContent() {
               {q ? `Search Results for "${q}"` : "Search Products"}
             </h1>
             <p className="text-xs text-hive-text-muted font-medium max-w-md">
-              Find premium handlooms, sarees, kurtis, and designer wear from verified local boutiques.
+              Find premium handlooms, sarees, kurtis, and designer wear from verified local designers and brands.
             </p>
           </div>
 
@@ -179,7 +201,7 @@ function SearchContent() {
           <div className="w-full max-w-xl relative">
             <input
               type="text"
-              placeholder="Search products, descriptions, categories or boutiques..."
+              placeholder="Search products, descriptions, categories or brands..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full h-12 pl-12 pr-12 rounded-2xl bg-white border border-hive-border/60 shadow-sm focus:outline-none focus:ring-2 focus:ring-hive-gold/50 focus:border-hive-gold text-sm font-semibold text-hive-text placeholder-hive-text-muted transition-all duration-200"
@@ -211,7 +233,7 @@ function SearchContent() {
               Type to start searching
             </h3>
             <p className="text-xs text-hive-text-muted mt-2 leading-relaxed">
-              Search for terms like "saree", "silk", "kurta", or name of designer boutiques near you.
+              Search for terms like "saree", "silk", "kurta", or name of designer labels near you.
             </p>
             <Button
               variant="primary"
@@ -221,7 +243,7 @@ function SearchContent() {
               Go to Home Page
             </Button>
           </div>
-        ) : searchResult === undefined ? (
+        ) : (isSearching || (q && !searchResult)) ? (
           // Loading Skeletons
           <div className="flex flex-col gap-6">
             <div className="flex justify-between items-baseline border-b border-hive-border/40 pb-4">
@@ -256,7 +278,7 @@ function SearchContent() {
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center justify-center bg-amber-200 text-amber-800 rounded-full w-5 h-5 font-extrabold text-[10px]">!</span>
                   <span>
-                    We found {searchResult.totalMatchedCount} matches, but {hiddenCount} products are outside your boutique delivery radius.
+                    We found {searchResult?.totalMatchedCount || 0} matches, but {hiddenCount} products are outside your partner delivery radius.
                   </span>
                 </div>
                 <button
@@ -287,7 +309,7 @@ function SearchContent() {
             )}
 
             {/* Search Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 md:gap-8 animate-in fade-in duration-300">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 animate-in fade-in duration-300">
               {products.map((product, index) => (
                 <div
                   key={product.id}

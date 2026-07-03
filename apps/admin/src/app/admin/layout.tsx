@@ -5,18 +5,46 @@ import { useAuth, SignOutButton, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, Loader2, ShieldX, Users, ShoppingBag } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, Loader2, ShieldX, Users, ShoppingBag, Activity, ShieldAlert, Package, DollarSign, Landmark, CreditCard, Truck, Send } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@hive/ui";
 import { HiveLogo } from "@/components/shared/HiveLogo";
 
-const NAV_ITEMS = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
-  { label: "Users", href: "/admin/users", icon: Users },
-  { label: "Categories", href: "/admin/categories", icon: FolderKanban },
-  { label: "Banners", href: "/admin/banners", icon: ImageIcon },
-  { label: "Boutiques", href: "/admin/boutiques", icon: Store },
+const NAV_GROUPS = [
+  {
+    title: "OVERVIEW",
+    items: [
+      { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+      { label: "Observability", href: "/admin/observability", icon: Activity },
+    ]
+  },
+  {
+    title: "OPERATIONS",
+    items: [
+      { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
+      { label: "Claims", href: "/admin/claims", icon: ShieldAlert },
+      { label: "Products", href: "/admin/products", icon: Package },
+      { label: "Finance", href: "/admin/finance", icon: DollarSign },
+      { label: "Settlements", href: "/admin/settlements", icon: Landmark },
+      { label: "Payouts", href: "/admin/payouts", icon: CreditCard },
+      { label: "Logistics", href: "/admin/logistics", icon: Truck },
+      { label: "Dispatch Board", href: "/admin/logistics/dispatch", icon: Send },
+    ]
+  },
+  {
+    title: "MERCHANTS",
+    items: [
+      { label: "Partners", href: "/admin/boutiques", icon: Store },
+    ]
+  },
+  {
+    title: "PLATFORM",
+    items: [
+      { label: "Users", href: "/admin/users", icon: Users },
+      { label: "Categories", href: "/admin/categories", icon: FolderKanban },
+      { label: "Banners", href: "/admin/banners", icon: ImageIcon },
+    ]
+  }
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -107,41 +135,47 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Sidebar Navigation */}
       <aside className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-hive-dark text-slate-300 border-r border-hive-border/10 flex flex-col justify-between p-6 transition-transform duration-300 transform
+        fixed inset-y-0 left-0 z-40 w-64 bg-hive-dark text-slate-300 border-r border-hive-border/10 flex flex-col p-6 transition-transform duration-300 transform
         md:translate-x-0 md:static md:h-screen md:sticky md:top-0
         ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
-        <div className="flex flex-col gap-8">
-          
-          {/* Header Brand */}
-          <HiveLogo roleLabel="ADMIN PANEL" href="/admin" className="hidden md:flex pb-4 border-b border-white/5 w-full justify-start" />
+        {/* Header Brand */}
+        <HiveLogo roleLabel="ADMIN PANEL" href="/admin" className="hidden md:flex pb-4 border-b border-white/5 w-full justify-start shrink-0" />
 
-          {/* Navigation Links */}
-          <nav className="flex flex-col gap-1">
-            {NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-              return (
-                <Link 
-                  key={item.href} 
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 px-4.5 py-3 rounded-xl text-sm font-semibold transition-all duration-150 ${
-                    isActive 
-                      ? "bg-hive-gold text-hive-dark font-bold shadow-md shadow-hive-gold/15" 
-                      : "hover:bg-white/5 hover:text-white"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
+        {/* Scrollable Navigation Area */}
+        <div className="flex-1 overflow-y-auto py-6 pr-2 -mr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+          <nav className="flex flex-col gap-6">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.title} className="flex flex-col gap-2">
+                <span className="px-4 text-[10px] font-extrabold uppercase tracking-widest text-slate-500">{group.title}</span>
+                <div className="flex flex-col gap-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+                    return (
+                      <Link 
+                        key={item.href} 
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 ${
+                          isActive 
+                            ? "bg-hive-gold text-hive-dark font-bold shadow-md shadow-hive-gold/15" 
+                            : "hover:bg-white/5 hover:text-white text-slate-300"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
         </div>
 
         {/* Footer User Info & Logout */}
-        <div className="flex flex-col gap-4 border-t border-white/5 pt-4">
+        <div className="flex flex-col gap-4 border-t border-white/5 pt-4 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-hive-gold flex items-center justify-center text-hive-dark font-bold text-xs uppercase border border-hive-border/30">
               {clerkUser?.firstName?.charAt(0) || "A"}

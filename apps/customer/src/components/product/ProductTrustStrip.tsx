@@ -97,14 +97,14 @@ export const ProductTrustStrip: React.FC<ProductTrustStripProps> = ({
     },
     {
       icon: RefreshCw,
-      title: "48-Hour Replacement",
-      description: "Replacement requests accepted within 48 hours of delivery with continuous unboxing video proof.",
+      title: "3-Day Returns",
+      description: "Return requests accepted within 3 days of delivery according to our Platform Return and Refund Policy.",
       show: true,
     },
     {
       icon: ShieldCheck,
-      title: "Verified Boutique",
-      description: "This boutique has been reviewed and approved by Hive.",
+      title: "Verified Partner",
+      description: "This designer or label has been reviewed and approved by Hive.",
       show: true,
     },
     {
@@ -134,7 +134,7 @@ export const ProductTrustStrip: React.FC<ProductTrustStripProps> = ({
 // ─────────────────────────────────────────────────────────────────────────────
 export const PurchaseConfidenceCard: React.FC<{ className?: string }> = ({ className = "" }) => {
   const guaranteeItems = [
-    "Verified Boutique Partner",
+    "Verified Fashion Partner",
     "Authentic Product Listing",
     "Measurement Transparency",
     "Replacement Protection",
@@ -181,7 +181,7 @@ export const PurchaseConfidenceCard: React.FC<{ className?: string }> = ({ class
 
       {/* Reassurance text */}
       <p className="text-[10px] text-hive-text-muted mt-3.5 leading-relaxed font-semibold border-t border-hive-border/30 pt-3 relative z-10">
-        Shop with absolute confidence. Every order qualifies for our 100% fit accuracy guarantee and verified boutique shipment checks.
+        Shop with absolute confidence. Every order qualifies for our 100% fit accuracy guarantee and verified partner shipment checks.
       </p>
     </div>
   );

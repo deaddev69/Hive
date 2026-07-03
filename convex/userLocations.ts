@@ -3,20 +3,15 @@
 
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getAuthenticatedUser, getCurrentUserOrNull } from "./lib/auth";
 
 /**
  * Retrieve the current logged-in user's saved location.
  */
 export const get = query({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUserOrNull(ctx, args.token);
     if (!user) return null;
 
     return await ctx.db
@@ -33,21 +28,15 @@ export const save = mutation({
   args: {
     latitude:  v.number(),
     longitude: v.number(),
+    locality:  v.optional(v.string()),
     city:      v.string(),
     state:     v.string(),
     country:   v.string(),
     postcode:  v.string(),
+    token:     v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthenticated");
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
-      .unique();
-    if (!user) throw new Error("User record not found");
-
+    const user = await getAuthenticatedUser(ctx, args.token);
     const existing = await ctx.db
       .query("userLocations")
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
@@ -59,6 +48,7 @@ export const save = mutation({
       await ctx.db.patch(existing._id, {
         latitude:  args.latitude,
         longitude: args.longitude,
+        locality:  args.locality || "",
         city:      args.city,
         state:     args.state,
         country:   args.country,
@@ -71,6 +61,7 @@ export const save = mutation({
         userId:    user._id,
         latitude:  args.latitude,
         longitude: args.longitude,
+        locality:  args.locality || "",
         city:      args.city,
         state:     args.state,
         country:   args.country,

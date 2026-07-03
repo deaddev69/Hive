@@ -5,10 +5,11 @@ export interface CartItem {
   productId: string;
   size: string;
   quantity: number;
-  price: number;
+  price: number; // in paise
   name: string;
   imageUrl: string;
   boutiqueName: string;
+  boutiqueId?: string;
 }
 
 export interface CartState {
@@ -17,7 +18,7 @@ export interface CartState {
   removeItem: (productId: string, size: string) => void;
   updateQuantity: (productId: string, size: string, quantity: number) => void;
   clearCart: () => void;
-  getCartTotal: () => number;
+  getCartTotal: () => number; // returns total in paise
   getCartCount: () => number;
 }
 
