@@ -167,7 +167,7 @@ export default function BoutiqueProfile() {
         deliveryRadiusKm,
         storeStatus,
         isAcceptingOrders,
-        pauseReason: (!isAcceptingOrders || storeStatus === "closed") ? pauseReason : undefined,
+        pauseReason: (!isAcceptingOrders || storeStatus === "closed") ? (pauseReason as any) : undefined,
         closedUntil: (!isAcceptingOrders || storeStatus === "closed") && closedUntilStr 
                        ? new Date(closedUntilStr).getTime() 
                        : undefined,
