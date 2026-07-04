@@ -14,6 +14,7 @@ import { internal } from "./_generated/api";
 import { checkRateLimit } from "./lib/rateLimit";
 import { getPublicUrl } from "./media/api";
 import { ImageAsset } from "./schema";
+import { triggerNotification } from "./lib/notifications";
 
 // Helper to generate unique slugs with robust regex formatting
 function generateSlug(name: string): string {
@@ -104,6 +105,7 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
         boutique: boutique ? {
           id: boutique._id,
           name: boutique.boutiqueName,
+          slug: boutique.slug,
           city: boutique.addressDetails?.city || "Kochi",
           rating: 4.8,
           reviewCount: 25,
@@ -118,6 +120,7 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
           isAcceptingOrders: statusRes ? statusRes.isAcceptingOrders : false,
           storeMessage: boutique.storeMessage,
           pauseReason: boutique.pauseReason,
+          closedUntil: boutique.closedUntil,
           prepTimeMinutes: boutique.prepTimeMinutes,
           weeklyClosedDays: boutique.weeklyClosedDays,
           holidayDates: boutique.holidayDates,
@@ -492,6 +495,17 @@ export const createProduct = mutation({
     }
 
     await updateBoutiqueProductCount(ctx, boutique._id);
+
+    // Trigger ops Slack alert if product is pending approval
+    if (approvalStatus === "pending") {
+      const superadmin = await ctx.db.query("users").withIndex("by_role", q => q.eq("role", "admin")).first();
+      if (superadmin) {
+        await triggerNotification(ctx, superadmin._id, "slack", "product_pending_approval", "product", productId, JSON.stringify({
+          productName: args.name,
+          boutiqueName: boutique.name
+        }));
+      }
+    }
 
     return productId;
   },

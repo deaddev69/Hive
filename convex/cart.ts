@@ -175,8 +175,10 @@ export const getCart = query({
           ? boutiqueMap.get(productRow.boutiqueId.toString()) ?? null
           : null;
         const check = await checkCartItemStatus(ctx, item, prefetchedBoutique);
+        const boutiqueId = productRow ? productRow.boutiqueId : prefetchedBoutique?._id;
         return {
           ...item,
+          boutiqueId,
           isValid: check.isValid,
           status:  check.status,
         };

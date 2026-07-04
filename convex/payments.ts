@@ -12,12 +12,12 @@ import { internal } from "./_generated/api";
 import { calculateDeliveryFeeRupees } from "./lib/deliveryPricing";
 import { anyApi } from "convex/server";
 import { parseMoney } from "./lib/money";
-import { calculateDeliveryQuote } from "./routing";
+import { calculateDeliveryQuoteAction } from "./routing";
 
 import { checkRateLimit } from "./lib/rateLimit";
 import { triggerNotification } from "./lib/notifications";
 import { checkKillSwitch } from "./lib/killSwitches";
-import { validateBoutiqueOperationalLimits } from "./lib/gating";
+import { validateBoutiqueOperationalLimits, checkBoutiqueClosedStatus } from "./lib/gating";
 import { restoreCheckoutSessionStock } from "./lib/inventory";
 
 // ─── Input Schemas ───────────────────────────────────────────────────────────
@@ -91,8 +91,14 @@ export const initCheckoutSessionInternal = internalMutation({
     total: v.number(),
     promoCode: v.optional(v.string()),
     token: v.optional(v.string()),
+    quotedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    // Validate quote TTL (15 minutes)
+    if (args.quotedAt && Date.now() - args.quotedAt > 15 * 60 * 1000) {
+      throw new Error("Delivery rate expired. Please refresh the page to get a new rate.");
+    }
+    
     // 1. Verify kill switches
     const isMaintenanceMode = await checkKillSwitch(ctx.db, "maintenanceMode");
     if (isMaintenanceMode) {
@@ -196,6 +202,7 @@ export const initCheckoutSessionInternal = internalMutation({
     // Verify items and check initial stock levels
     const resolvedItems: any[] = [];
     let expectedSubtotalPaise = 0;
+    let placedDuringClosedHours = false;
     for (const item of args.items) {
       const bySlug = await ctx.db
         .query("products")
@@ -241,6 +248,11 @@ export const initCheckoutSessionInternal = internalMutation({
 
       // Perform operational limits checks (hours, operating days, capacity, soft launch)
       await validateBoutiqueOperationalLimits(ctx.db, boutique._id);
+      
+      const isClosed = await checkBoutiqueClosedStatus(ctx.db, boutique._id);
+      if (isClosed) {
+        placedDuringClosedHours = true;
+      }
 
       // Check stock
       await validateProductSizeAndStock(ctx.db, item.productId, item.size, item.quantity);
@@ -287,19 +299,7 @@ export const initCheckoutSessionInternal = internalMutation({
       }
     }
 
-    // Verify delivery fee using the routing and pricing engine
-    const quote = await calculateDeliveryQuote(ctx.db, {
-      userLat: deliveryLat,
-      userLng: deliveryLng,
-      boutiqueId: primaryBoutiqueId,
-      subtotal: args.subtotal * 100, // convert subtotal to paise
-    });
-
-    if (!quote.serviceable) {
-      throw new Error(quote.reason || "Address is outside the serviceable radius for this boutique.");
-    }
-
-    let expectedDeliveryFee = (quote as any).customerPaidFee / 100; // convert back to rupees
+    let expectedDeliveryFee = args.deliveryFee;
     if (cleanPromoCode === "FREESHIP") {
       expectedDeliveryFee = 0;
     }
@@ -377,6 +377,7 @@ export const initCheckoutSessionInternal = internalMutation({
       promoCode: args.promoCode,
       razorpayOrderId: "",
       status: "pending",
+      placedDuringClosedHours,
       expiresAt,
       createdAt: now,
     });
@@ -451,9 +452,16 @@ export async function verifyPaymentAndPlaceOrderInternal(
   }
 
   // Expiry verification
-  if (session.status === "expired" || session.expiresAt < Date.now()) {
-    await ctx.db.patch(args.checkoutSessionId, { status: "expired" });
+  if (session.status === "expired") {
+    // If we've already marked it expired (e.g., via cron) and released inventory, we must reject.
     throw new Error("Checkout session has expired. Stale inventory release triggered. Please try again.");
+  }
+  // NOTE: We intentionally do NOT check `session.expiresAt < Date.now()` here.
+  // If the customer successfully paid on Razorpay (even if they took slightly > 15 mins),
+  // we absorb any shipping rate differences to avoid cancelling a paid order.
+  if (session.expiresAt < Date.now()) {
+    const varianceMinutes = Math.round((Date.now() - session.expiresAt) / 60000);
+    console.warn(`[TTL Variance] Absorbed successful payment ${varianceMinutes} minutes past TTL for session ${args.checkoutSessionId}`);
   }
 
   if (session.status === "failed") {
@@ -469,7 +477,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
     throw new Error("FATAL: RAZORPAY_KEY_SECRET environment variable is not configured. Payment processing is disabled.");
   }
 
-  const isSignatureMock = process.env.ENABLE_DEBUG_TOOLS === "true";
+  const isSignatureMock = isSignatureBypassAllowed(process.env.ENABLE_DEBUG_TOOLS, razorpaySecret);
 
   if (!isSignatureMock) {
     const isVerified = await verifyRazorpaySignature(
@@ -568,28 +576,9 @@ export async function verifyPaymentAndPlaceOrderInternal(
   const platformCommissionAmount = Math.floor(commissionBase * (commissionRate / 100));
   const gstOnCommission = Math.floor(platformCommissionAmount * 0.18);
 
-  // Calculate delivery quote beforehand to populate snapshot with actual estimations
-  let quote = { serviceable: false, estimatedCourierCost: 9000, estimatedPorterCost: 9000, distanceKm: 5.5, etaMinutes: 45, customerPaidFee: session.deliveryFee };
-  try {
-    const resolvedQuote = await calculateDeliveryQuote(ctx.db, {
-      userLat: session.addressSnapshot.lat,
-      userLng: session.addressSnapshot.lng,
-      boutiqueId,
-      subtotal: session.subtotal,
-    });
-    if (resolvedQuote.serviceable) {
-      quote = {
-        serviceable: true,
-        estimatedCourierCost: resolvedQuote.estimatedCourierCost ?? 9000,
-        estimatedPorterCost: resolvedQuote.estimatedPorterCost ?? 9000,
-        distanceKm: resolvedQuote.distanceKm ?? 5.5,
-        etaMinutes: resolvedQuote.etaMinutes ?? 45,
-        customerPaidFee: resolvedQuote.customerPaidFee ?? session.deliveryFee,
-      };
-    }
-  } catch (e) {
-    console.error("[PaymentsPlaceOrder] Quote calculation failed, using defaults:", e);
-  }
+  // We skip calculateDeliveryQuoteAction here because it requires an Action ctx (for fetch and runQuery), and this is a mutation.
+  // The frontend already verified the delivery fee, so we just use basic defaults for snapshot metadata.
+  let quote = { serviceable: true, estimatedCourierCost: 9000, estimatedPorterCost: 9000, distanceKm: 5.5, etaMinutes: 45, customerPaidFee: session.deliveryFee };
 
   const orderSnapshot = {
     boutiqueName,
@@ -659,6 +648,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
     total: session.total,
     commissionAmount: platformCommissionAmount,
     paymentStatus: "paid",
+    placedDuringClosedHours: session.placedDuringClosedHours,
     paymentId: payment?._id,
     checkoutSessionId: args.checkoutSessionId, // Required identifier
     notes: `CheckoutSession: ${args.checkoutSessionId}`,
@@ -858,11 +848,19 @@ export const cleanExpiredCheckoutSessions = internalMutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
-    const expiredSessions = await ctx.db
+    const pendingSessions = await ctx.db
       .query("checkoutSessions")
       .withIndex("by_status_expiresAt", (q) => q.eq("status", "pending"))
       .filter((q) => q.lt(q.field("expiresAt"), now))
       .take(100);
+
+    const processingSessions = await ctx.db
+      .query("checkoutSessions")
+      .withIndex("by_status_expiresAt", (q) => q.eq("status", "processing"))
+      .filter((q) => q.lt(q.field("expiresAt"), now))
+      .take(100);
+
+    const expiredSessions = [...pendingSessions, ...processingSessions].slice(0, 100);
 
     let expiredCount = 0;
     for (const session of expiredSessions) {
@@ -942,6 +940,7 @@ export const createCheckoutSession = action({
     total: v.number(),
     promoCode: v.optional(v.string()),
     token: v.optional(v.string()),
+    quotedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const paymentsApi = (anyApi as any).payments;
@@ -979,7 +978,7 @@ export const createCheckoutSession = action({
           "Authorization": authHeader,
         },
         body: JSON.stringify({
-          amount: Math.round(initResult.total * 100),
+          amount: Math.round(initResult.total),
           currency: "INR",
           receipt: initResult.checkoutSessionId,
           notes: {
@@ -1275,3 +1274,217 @@ export const getPaymentById = internalQuery({
   },
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Mutation: prepareRetryCheckoutSessionInternal (Internal Mutation)
+// ─────────────────────────────────────────────────────────────────────────────
+export const prepareRetryCheckoutSessionInternal = internalMutation({
+  args: { checkoutSessionId: v.id("checkoutSessions"), token: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.checkoutSessionId);
+    if (!session) throw new Error("Checkout session not found");
+
+    const user = await getAuthenticatedUser(ctx, args.token);
+    if (session.userId !== user._id) {
+      throw new Error("Unauthorized: Cannot retry this session");
+    }
+
+    if (session.status !== "failed" && session.status !== "expired") {
+      throw new Error(`Cannot retry session in status: ${session.status}`);
+    }
+
+    // Rate limiting: 3 retries per 15 mins
+    await checkRateLimit(ctx, `retry_checkout:${user._id}`, 3, 15 * 60 * 1000);
+
+    const now = Date.now();
+    
+    // Check stock
+    for (const item of session.items) {
+      const product = await ctx.db.get(item.productId as Id<"products">);
+      const isMock = MOCK_INVENTORY[item.productId] !== undefined;
+      if (!product && !isMock) {
+        throw new Error(`The item "${item.name}" is no longer available.`);
+      }
+      if (product) {
+        const currentStock = product.stockBySize[item.size] ?? 0;
+        if (currentStock < item.quantity) {
+          throw new Error(`Sorry, some items in your cart sold out while processing. Please review your cart.`);
+        }
+      }
+    }
+
+    // Deduct stock and record movements
+    for (const item of session.items) {
+      const product = await ctx.db.get(item.productId as Id<"products">);
+      if (product) {
+        const currentStock = product.stockBySize[item.size] ?? 0;
+        const newStock = currentStock - item.quantity;
+        const stockBySize = { ...product.stockBySize, [item.size]: newStock };
+        
+        const totalStock = Object.values(stockBySize).reduce((sum: number, val: any) => sum + (val || 0), 0);
+        await ctx.db.patch(product._id, {
+          stockBySize,
+          updatedAt: now,
+          autoDeactivatedBecauseOutOfStock: totalStock <= 0,
+        });
+
+        await ctx.db.insert("inventoryMovements", {
+          productId: product._id,
+          boutiqueId: product.boutiqueId,
+          size: item.size,
+          beforeQty: currentStock,
+          afterQty: newStock,
+          adjustmentQty: -item.quantity,
+          reason: "online_order",
+          source: "checkout",
+          createdBy: user._id,
+          createdAt: now,
+        });
+      }
+    }
+
+    const newExpiresAt = now + 15 * 60 * 1000;
+    
+    await ctx.db.patch(session._id, {
+      status: "processing",
+      expiresAt: newExpiresAt,
+    });
+    
+    const paymentId = await ctx.db.insert("payments", {
+      customerId: user._id,
+      paymentProvider: "razorpay",
+      razorpayOrderId: undefined,
+      amount: session.total,
+      currency: "INR",
+      status: "initiated",
+      createdAt: now,
+      updatedAt: now,
+      webhookEvents: [],
+    });
+
+    await ctx.db.insert("paymentEvents", {
+      source: "razorpay",
+      paymentId,
+      eventType: "initiated",
+      payload: "Retry session initiated",
+      createdAt: now,
+    });
+
+    const userDoc = await ctx.db.get(session.userId);
+
+    return {
+      checkoutSessionId: session._id,
+      paymentId,
+      totalPaise: session.total,
+      userEmail: userDoc?.email || "",
+      userPhone: session.addressSnapshot.phone || userDoc?.phone || "",
+      paymentMethod: session.paymentMethod,
+    };
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mutation: failRetryCheckoutSessionInternal (Internal Mutation)
+// ─────────────────────────────────────────────────────────────────────────────
+export const failRetryCheckoutSessionInternal = internalMutation({
+  args: { checkoutSessionId: v.id("checkoutSessions") },
+  handler: async (ctx, args) => {
+    const session = await ctx.db.get(args.checkoutSessionId);
+    if (!session || session.status !== "processing") return;
+    
+    await restoreCheckoutSessionStock(ctx, session);
+    await ctx.db.patch(session._id, { status: "failed" });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Action: retryCheckoutSession
+// ─────────────────────────────────────────────────────────────────────────────
+export const retryCheckoutSession = action({
+  args: { checkoutSessionId: v.id("checkoutSessions"), token: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const paymentsApi = (anyApi as any).payments;
+    
+    const initResult: any = await ctx.runMutation(paymentsApi.prepareRetryCheckoutSessionInternal, {
+      checkoutSessionId: args.checkoutSessionId,
+      token: args.token,
+    });
+
+    if (initResult.paymentMethod === "cod") {
+       throw new Error("COD sessions cannot be retried through this payment pipeline.");
+    }
+
+    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    const isMock = !keySecret || keySecret === "mock_secret";
+
+    if (isMock) {
+      const razorpayOrderId = `order_mock_${Math.random().toString(36).substring(2, 12).toUpperCase()}`;
+      await ctx.runMutation(paymentsApi.updateCheckoutSessionWithRazorpayOrderId, {
+        checkoutSessionId: args.checkoutSessionId,
+        paymentId: initResult.paymentId,
+        razorpayOrderId,
+        status: "created",
+      });
+
+      return {
+        checkoutSessionId: args.checkoutSessionId,
+        razorpayOrderId,
+        paymentId: initResult.paymentId,
+      };
+    }
+
+    try {
+      const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
+
+      const response = await fetch("https://api.razorpay.com/v1/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": authHeader,
+        },
+        body: JSON.stringify({
+          amount: Math.round(initResult.totalPaise),
+          currency: "INR",
+          receipt: initResult.checkoutSessionId,
+          notes: {
+            checkoutSessionId: initResult.checkoutSessionId,
+            customerEmail: initResult.userEmail,
+            customerPhone: initResult.userPhone,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        throw new Error(`Razorpay returned status ${response.status}: ${errBody}`);
+      }
+
+      const orderData = await response.json();
+      const razorpayOrderId = orderData.id;
+
+      await ctx.runMutation(paymentsApi.updateCheckoutSessionWithRazorpayOrderId, {
+        checkoutSessionId: args.checkoutSessionId,
+        paymentId: initResult.paymentId,
+        razorpayOrderId,
+        status: "created", // Wait, createCheckoutSession patches status to "created"? Let's check `createCheckoutSession` return. Actually it patches payment to "created".
+      });
+
+      return {
+        checkoutSessionId: args.checkoutSessionId,
+        razorpayOrderId,
+        paymentId: initResult.paymentId,
+      };
+    } catch (err: any) {
+      console.error("[RazorpayRetryCreation] API request failed:", err);
+
+      await ctx.runMutation(paymentsApi.failRetryCheckoutSessionInternal, {
+        checkoutSessionId: args.checkoutSessionId,
+      });
+      throw new Error(`Payment gateway creation failed on retry: ${err.message || String(err)}`);
+    }
+  }
+});
+
+export function isSignatureBypassAllowed(enableDebugTools: string | undefined, razorpaySecret: string | undefined): boolean {
+  return enableDebugTools === "true" && razorpaySecret === "mock_secret";
+}

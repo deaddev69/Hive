@@ -23,6 +23,7 @@ export const getBoutiques = query({
     await requireRole(ctx, "admin");
     const exclude = args.excludeTestData ?? true;
     let list = await ctx.db.query("boutiques").collect();
+    list = list.filter(b => b.status !== "DELETED");
     if (exclude) {
       list = list.filter(b => 
         !b.boutiqueName.startsWith("Chaos Test Boutique") && 
@@ -635,6 +636,38 @@ export const suspendBoutique = mutation({
 });
 
 /**
+ * Soft delete a boutique.
+ * Admin-only mutation.
+ */
+export const softDeleteBoutique = mutation({
+  args: { 
+    id: v.id("boutiques"),
+  },
+  handler: async (ctx, args) => {
+    const adminUser = await requireRole(ctx, "admin");
+    const now = Date.now();
+    await ctx.db.patch(args.id, {
+      status: "DELETED",
+    });
+
+    // Write audit logs
+    await ctx.db.insert("auditLogs", {
+      actorRole: "admin",
+      actorId: adminUser._id,
+      action: "boutique.deleted",
+      entityType: "boutiques",
+      entityId: args.id,
+      metadata: JSON.stringify({
+        reason: "Admin soft delete",
+      }),
+      createdAt: now,
+    });
+
+    return args.id;
+  },
+});
+
+/**
  * Activate/unsuspend a boutique.
  * Admin-only mutation.
  */
@@ -742,6 +775,54 @@ export const getApprovedBoutiques = query({
 });
 
 /**
+ * Fetch a single boutique's public profile by slug.
+ * This is an unauthenticated query explicitly designed for the public storefront page.
+ * It strictly picks only safe fields to prevent data leaks (no emails, commissions, or internal notes).
+ */
+export const getBoutiquePublicProfile = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    let boutique = await ctx.db
+      .query("boutiques")
+      .filter((q) => q.eq(q.field("slug"), args.slug))
+      .first();
+
+    if (!boutique) {
+      try {
+        boutique = await ctx.db.get(args.slug as any);
+      } catch (e) {
+        boutique = null;
+      }
+    }
+
+    if (!boutique || boutique.status !== "APPROVED") {
+      return null;
+    }
+
+    let logoUrl = boutique.logoUrl ? getPublicUrl(boutique.logoUrl, "thumbnail") : undefined;
+    let bannerUrl = boutique.bannerUrl ? getPublicUrl(boutique.bannerUrl, "original") : undefined;
+    const merchantTier = await resolveBoutiqueMerchantTier(ctx, boutique);
+
+    // Strictly pick public fields
+    return {
+      _id: boutique._id,
+      boutiqueName: boutique.boutiqueName,
+      description: boutique.description,
+      logoUrl,
+      bannerUrl,
+      city: boutique.city,
+      state: boutique.state,
+      deliveryRadiusKm: boutique.deliveryRadiusKm,
+      isAcceptingOrders: boutique.isAcceptingOrders,
+      merchantTier,
+      trustTier: merchantTier,
+      storeCategory: boutique.storeCategory,
+      createdAt: boutique.createdAt,
+    };
+  }
+});
+
+/**
  * Update boutique details by the owner.
  * Boutique-only mutation.
  */
@@ -799,6 +880,22 @@ export const updateBoutiqueProfile = mutation({
                           v.literal("custom_design")
                         )
                       ),
+    storeStatus:      v.optional(v.union(v.literal("open"), v.literal("busy"), v.literal("closed"))),
+    isAcceptingOrders: v.optional(v.boolean()),
+    pauseReason:      v.optional(
+                        v.union(
+                          v.literal("vacation"),
+                          v.literal("festival"),
+                          v.literal("restocking"),
+                          v.literal("personal"),
+                          v.literal("wedding"),
+                          v.literal("renovation"),
+                          v.literal("emergency"),
+                          v.literal("capacity"),
+                          v.literal("other")
+                        )
+                      ),
+    closedUntil:      v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const boutique = await getMyBoutique(ctx);
@@ -872,6 +969,11 @@ export const updateBoutiqueProfile = mutation({
       area: args.area ?? boutique.area,
       searchKeywords: args.searchKeywords ?? boutique.searchKeywords,
       serviceType: args.serviceType ?? boutique.serviceType,
+      
+      storeStatus: args.storeStatus ?? boutique.storeStatus,
+      isAcceptingOrders: args.isAcceptingOrders ?? boutique.isAcceptingOrders,
+      pauseReason: args.pauseReason ?? boutique.pauseReason,
+      closedUntil: args.closedUntil !== undefined ? args.closedUntil : boutique.closedUntil,
       
       name: args.boutiqueName ?? boutique.name,
       gstNumber: args.gstNumber ?? boutique.gstNumber,
@@ -1192,6 +1294,17 @@ export const applyBoutique = mutation({
       });
     }
 
+    // Trigger ops Slack alert for new boutique application
+    const superadmin = await ctx.db.query("users").withIndex("by_role", q => q.eq("role", "admin")).first();
+    if (superadmin) {
+      await triggerNotification(ctx, superadmin._id, "slack", "boutique_application_submitted", "boutique", applicationId, JSON.stringify({
+        boutiqueName: args.boutiqueName,
+        ownerName: args.ownerName,
+        phone: normalizedPhone,
+        city: args.city
+      }));
+    }
+
     return applicationId;
   },
 });
@@ -1272,6 +1385,15 @@ export const uploadBoutiqueDocument = mutation({
       action: "uploaded",
       createdAt: now,
     });
+
+    // Trigger ops Slack alert for document upload
+    const superadmin = await ctx.db.query("users").withIndex("by_role", q => q.eq("role", "admin")).first();
+    if (superadmin) {
+      await triggerNotification(ctx, superadmin._id, "slack", "boutique_document_uploaded", "boutique", boutique._id, JSON.stringify({
+        boutiqueName: boutique.name,
+        documentType: args.type,
+      }));
+    }
 
     return docId;
   },
@@ -1421,7 +1543,7 @@ export async function determineOnboardingStatus(ctx: any, boutique: any): Promis
   }
 
   // 1. Logo
-  const hasLogo = !!boutique.logoUrl && boutique.logoUrl.trim().length > 0;
+  const hasLogo = !!boutique.logoUrl && (typeof boutique.logoUrl === "string" ? boutique.logoUrl.trim().length > 0 : true);
   
   // 2. Address Details
   const hasAddress = !!boutique.address && boutique.address.trim().length > 0 &&

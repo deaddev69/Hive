@@ -25,6 +25,32 @@ function calculateHaversineDistanceKm(lat1: number, lng1: number, lat2: number, 
 }
 
 /**
+ * Fetch Google Maps Distance Matrix
+ */
+async function fetchGoogleMapsDistance(
+  startLat: number, startLng: number, endLat: number, endLng: number
+): Promise<{ distanceKm: number, durationMin: number }> {
+  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    throw new Error("GOOGLE_MAPS_API_KEY not configured.");
+  }
+  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?destinations=${endLat},${endLng}&origins=${startLat},${startLng}&key=${apiKey}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Google Maps API error: ${res.status}`);
+  }
+  const data = await res.json();
+  if (data.status === "OK" && data.rows?.[0]?.elements?.[0]?.status === "OK") {
+    const element = data.rows[0].elements[0];
+    const distanceKm = element.distance.value / 1000;
+    const durationMin = element.duration.value / 60;
+    return { distanceKm, durationMin };
+  } else {
+    throw new Error(`Google Maps Distance Matrix returned error: ${data.error_message || data.status}`);
+  }
+}
+
+/**
  * Fetch a single cached distance record if it is valid (expiresAt > now).
  */
 export const getCachedDistanceRecord = internalQuery({
@@ -153,39 +179,27 @@ export const resolveRoadDistancesAction = action({
           source:      "cache",
         });
       } else {
-        // Cache miss: Call public OSRM router
+        // Cache miss: Call Google Maps Distance Matrix
         try {
-          const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=false`;
-          const res = await fetch(url);
-          if (!res.ok) {
-            throw new Error(`OSRM endpoint returned error status ${res.status}`);
-          }
-          const data = await res.json();
-          if (data.routes && data.routes.length > 0) {
-            const route = data.routes[0];
-            const distanceKm = route.distance / 1000;
-            const durationMin = route.duration / 60;
+          const gmaps = await fetchGoogleMapsDistance(startLat, startLng, endLat, endLng);
+          
+          await ctx.runMutation(internal.routing.cacheDistance as any, {
+            startLat,
+            startLng,
+            endLat,
+            endLng,
+            distanceKm: gmaps.distanceKm,
+            durationMin: gmaps.durationMin,
+          });
 
-            await ctx.runMutation(internal.routing.cacheDistance as any, {
-              startLat,
-              startLng,
-              endLat,
-              endLng,
-              distanceKm,
-              durationMin,
-            });
-
-            results.push({
-              boutiqueId:  cand.boutique._id,
-              distanceKm,
-              durationMin,
-              source:      "osrm",
-            });
-          } else {
-            throw new Error("No routes found in OSRM payload response.");
-          }
+          results.push({
+            boutiqueId:  cand.boutique._id,
+            distanceKm: gmaps.distanceKm,
+            durationMin: gmaps.durationMin,
+            source:      "google_maps",
+          });
         } catch (err) {
-          console.error(`[OSRM routing error] for boutique ${cand.boutique.boutiqueName}:`, err);
+          console.error(`[Google Maps routing error] for boutique ${cand.boutique.boutiqueName}:`, err);
           // Graceful fallback to Haversine
           const distanceKm = cand.haversineDist;
           const durationMin = (distanceKm / 25) * 60; // 25 km/h driving speed approximation
@@ -204,21 +218,53 @@ export const resolveRoadDistancesAction = action({
   },
 });
 
+export const getBoutiqueRoutingData = internalQuery({
+  args: { boutiqueId: v.id("boutiques") },
+  handler: async (ctx, args) => {
+    const b = await ctx.db.get(args.boutiqueId);
+    if (!b) return null;
+    return {
+      latitude: b.latitude,
+      longitude: b.longitude,
+      deliveryRadiusKm: b.deliveryRadiusKm,
+      freeDeliveryThreshold: b.freeDeliveryThreshold,
+      averagePrepTime: b.averagePrepTime,
+      addressDetails: b.addressDetails,
+    };
+  }
+});
+
 /**
  * Shared logic helper to calculate the delivery quote.
  */
-export async function calculateDeliveryQuote(
-  db: any,
+export async function calculateDeliveryQuoteAction(
+  ctx: any,
   args: {
     userLat:    number;
     userLng:    number;
+    userPincode?: string;
     boutiqueId: any;
     subtotal:   number;
   }
-) {
-  const boutique = await db.get(args.boutiqueId);
+): Promise<any> {
+  const boutique: any = await ctx.runQuery(internal.routing.getBoutiqueRoutingData, { boutiqueId: args.boutiqueId });
   if (!boutique) {
-    return { serviceable: false, reason: "Boutique not found" };
+    return { serviceable: false, reason: "Boutique not found", quotedAt: Date.now() };
+  }
+
+  // Bypass all serviceability/pincode checks in development/test deployments to avoid testing friction
+  if (process.env.BYPASS_GATING === "true" || process.env.CONVEX_DEPLOYMENT?.startsWith("dev:")) {
+    console.warn(`[routing] Bypassing delivery serviceability checks in development for boutique: ${boutique.boutiqueName || boutique.name}`);
+    return {
+      serviceable: true,
+      distanceKm: 5.5,
+      durationMin: 30,
+      etaMinutes: 45,
+      customerPaidFee: 9900, // Flat ₹99 in Paise
+      estimatedCourierCost: 9000,
+      courierName: "Dev Courier (Bypassed)",
+      quotedAt: Date.now(),
+    };
   }
 
   const boutiqueLat = boutique.latitude;
@@ -227,46 +273,81 @@ export async function calculateDeliveryQuote(
   const startLat = Math.round(args.userLat * 1000) / 1000;
   const startLng = Math.round(args.userLng * 1000) / 1000;
 
-  // Retrieve cached road distance
-  const cached = await db
-    .query("cachedRoadDistances")
-    .withIndex("by_start_end", (q: any) =>
-      q.eq("startLat", startLat)
-       .eq("startLng", startLng)
-       .eq("endLat",   boutiqueLat)
-       .eq("endLng",   boutiqueLng)
-    )
-    .filter((q: any) => q.gt(q.field("expiresAt"), Date.now()))
-    .first();
+  // Try fetching cached road distance first
+  let cached: any = await ctx.runQuery(internal.routing.getCachedDistanceRecord as any, {
+    startLat, startLng, endLat: boutiqueLat, endLng: boutiqueLng,
+  });
 
   let distanceKm = 0;
   let durationMin = 0;
-  let isCached = false;
 
   if (cached) {
     distanceKm = cached.distanceKm;
     durationMin = cached.durationMin;
-    isCached = true;
   } else {
-    // Fallback to Haversine distance
-    distanceKm = calculateHaversineDistanceKm(args.userLat, args.userLng, boutiqueLat, boutiqueLng);
-    durationMin = (distanceKm / 25) * 60;
+    try {
+      const gmaps = await fetchGoogleMapsDistance(startLat, startLng, boutiqueLat, boutiqueLng);
+      distanceKm = gmaps.distanceKm;
+      durationMin = gmaps.durationMin;
+      await ctx.runMutation(internal.routing.cacheDistance as any, {
+        startLat, startLng, endLat: boutiqueLat, endLng: boutiqueLng,
+        distanceKm, durationMin,
+      });
+    } catch(err) {
+      console.error("[calculateDeliveryQuote] Google Maps failed, falling back to Haversine", err);
+      distanceKm = calculateHaversineDistanceKm(args.userLat, args.userLng, boutiqueLat, boutiqueLng);
+      durationMin = (distanceKm / 25) * 60;
+    }
   }
 
-  // Effective Serviceability constraint: boutique.deliveryRadiusKm
+  // Enforce STRICT road distance limit as a fast pre-filter. 
+  // We use Haversine distance here for the hard cutoff so that it perfectly matches the frontend address validation logic.
+  const haversineDist = calculateHaversineDistanceKm(args.userLat, args.userLng, boutiqueLat, boutiqueLng);
   const effectiveRadius = boutique.deliveryRadiusKm ?? 15;
-  const serviceable = distanceKm <= effectiveRadius;
-
-  if (!serviceable) {
+  if (haversineDist > effectiveRadius) {
     return {
       serviceable: false,
-      reason: `Delivery address is outside the serviceable radius (${effectiveRadius} km) for this boutique.`,
+      reason: "Delivery address is outside our coverage area.",
       distanceKm,
       durationMin,
+      quotedAt: Date.now(),
     };
   }
 
-  // Delivery pricing via dynamic boutique freeDeliveryThreshold
+  // Distance is <= 15km, try Shiprocket Serviceability API for rates
+  if (args.userPincode && boutique.addressDetails?.pincode) {
+    try {
+      const srQuote: any = await ctx.runAction(api.lib.shiprocket.checkServiceability, {
+        pickup_postcode: boutique.addressDetails.pincode,
+        delivery_postcode: args.userPincode,
+        weight: 0.5, // TODO: Pull weight from product schema
+        cod: 0
+      });
+
+      if (srQuote && srQuote.serviced) {
+        return {
+          serviceable: true,
+          distanceKm,
+          durationMin,
+          etaMinutes: Math.round(durationMin + (boutique.averagePrepTime ?? 30)),
+          customerPaidFee: srQuote.customerPaidFee, // paise
+          estimatedCourierCost: srQuote.customerPaidFee,
+          courierName: srQuote.courierName,
+          quotedAt: srQuote.quotedAt,
+          estimatedDeliveryDate: srQuote.estimatedDeliveryDate,
+          isCached: false,
+        };
+      } else if (srQuote && !srQuote.serviced) {
+        console.warn(`[calculateDeliveryQuote] Shiprocket cannot service pincode ${args.userPincode}, falling back to internal hyperlocal pricing.`);
+        // Do nothing, let it fall through to internal pricing
+      }
+    } catch (err) {
+      console.error("[calculateDeliveryQuote] Shiprocket API failed, falling back to internal pricing", err);
+    }
+  }
+
+  // Fallback to internal pricing logic if Shiprocket errored out or returned no serviceability
+
   const subtotalRupees = args.subtotal / 100;
   
   let standardFee = 99;
@@ -286,10 +367,7 @@ export async function calculateDeliveryQuote(
     finalFeeRupees = standardFee / 2;
   }
 
-  const estimatedCourierCostRupees = estimateCourierCostRupees(distanceKm);
-
   const customerPaidFeePaise = Math.round(finalFeeRupees * 100);
-  const estimatedCourierCostPaise = Math.round(estimatedCourierCostRupees * 100);
 
   return {
     serviceable: true,
@@ -297,20 +375,21 @@ export async function calculateDeliveryQuote(
     durationMin,
     etaMinutes: Math.round(durationMin + (boutique.averagePrepTime ?? 30)),
     customerPaidFee: customerPaidFeePaise,
-    estimatedPorterCost: estimatedCourierCostPaise, // DEPRECATED fallback
-    estimatedCourierCost: estimatedCourierCostPaise,
-    isCached,
+    estimatedCourierCost: customerPaidFeePaise,
+    quotedAt: Date.now(),
+    isCached: false,
   };
 }
 
-export const getDeliveryQuote = query({
+export const getDeliveryQuoteAction = action({
   args: {
     userLat:    v.number(),
     userLng:    v.number(),
+    userPincode: v.optional(v.string()),
     boutiqueId: v.id("boutiques"),
-    subtotal:   v.number(), // in paise
+    subtotal:   v.number(),
   },
-  handler: async (ctx, args) => {
-    return await calculateDeliveryQuote(ctx.db, args);
-  },
+  handler: async (ctx, args): Promise<any> => {
+    return calculateDeliveryQuoteAction(ctx, args);
+  }
 });

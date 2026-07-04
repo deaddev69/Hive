@@ -386,6 +386,7 @@ export default defineSchema({
     images:           v.array(v.union(v.string(), ImageAsset)),
     sizes:            v.array(v.string()),
     stockBySize:      v.record(v.string(), v.number()),
+    weightKg:         v.optional(v.number()),
     sameDayEligible:  v.boolean(),
     featured:         v.boolean(),
     active:           v.boolean(),
@@ -695,6 +696,7 @@ export default defineSchema({
     prepTimeDurationMinutes: v.optional(v.number()),
     inventoryConfirmedAt: v.optional(v.number()),
     acceptanceTimeoutAt:  v.optional(v.number()),
+    placedDuringClosedHours: v.optional(v.boolean()),
     createdAt:            v.number(),
     updatedAt:            v.number(),
   })
@@ -759,6 +761,7 @@ export default defineSchema({
     provider:           v.string(),                 // "delhivery" | "shiprocket"
     awbNumber:          v.string(),
     providerShipmentId: v.optional(v.string()),
+    retryCount:         v.optional(v.number()),
     status:             v.union(
                           v.literal("created"),
                           v.literal("booking_requested"),
@@ -929,6 +932,7 @@ export default defineSchema({
                        v.literal("failed")
                      ),
     expiresAt:       v.number(),
+    placedDuringClosedHours: v.optional(v.boolean()),
     createdAt:       v.number(),
   })
     .index("by_userId", ["userId"])
@@ -1121,7 +1125,10 @@ export default defineSchema({
     channel:   v.union(
                  v.literal("whatsapp"),
                  v.literal("email"),
-                 v.literal("in_app")
+                 v.literal("in_app"),
+                 v.literal("slack"),
+                 v.literal("sms"),
+                 v.literal("push")
                ),
     title:     v.string(),
     body:      v.string(),
@@ -1668,7 +1675,7 @@ export default defineSchema({
 
   notificationEvents: defineTable({
     userId:      v.id("users"),
-    channel:     v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp"), v.literal("push")),
+    channel:     v.union(v.literal("email"), v.literal("sms"), v.literal("whatsapp"), v.literal("push"), v.literal("in_app"), v.literal("slack")),
     template:    v.string(),
     status:      v.union(v.literal("queued"), v.literal("sent"), v.literal("failed")),
     entityType:  v.string(),
@@ -1682,7 +1689,7 @@ export default defineSchema({
     .index("by_entity_template", ["entityType", "entityId", "template"]),
 
   notificationLogs: defineTable({
-    channel: v.union(v.literal("email"), v.literal("whatsapp")),
+    channel: v.union(v.literal("email"), v.literal("whatsapp"), v.literal("sms"), v.literal("push"), v.literal("in_app"), v.literal("slack")),
     template: v.string(),
     recipient: v.string(),
     status: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed")),

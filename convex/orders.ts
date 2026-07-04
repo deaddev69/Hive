@@ -2,16 +2,16 @@
 // Order placement, list, and detail queries for the HIVE customer app.
 // All operations are auth-gated with ownership checks.
 
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query, internalMutation, action } from "./_generated/server";
 import { triggerNotification } from "./lib/notifications";
 import { v, ConvexError } from "convex/values";
 import { getAuthenticatedUser, getMyBoutique, getCurrentUserOrNull } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 import { incrementBoutiqueOrderCount, decrementBoutiqueOrderCount } from "./lib/boutiqueCounters";
 import { validateProductSizeAndStock, MOCK_INVENTORY } from "./lib/mockInventory";
-import { internal } from "./_generated/api";
+import { internal, api } from "./_generated/api";
 import { checkRateLimit } from "./lib/rateLimit";
-import { calculateDeliveryQuote } from "./routing";
+import { calculateDeliveryQuoteAction } from "./routing";
 import { parseMoney, formatMoney } from "./lib/money";
 import { checkKillSwitch } from "./lib/killSwitches";
 import { validateBoutiqueOperationalLimits } from "./lib/gating";
@@ -329,7 +329,7 @@ export const placeOrder = mutation({
     }
 
     // Verify delivery fee using the routing and pricing engine
-    const quote = await calculateDeliveryQuote(ctx.db, {
+    const quote = await calculateDeliveryQuoteAction(ctx.db, {
       userLat: deliveryLat,
       userLng: deliveryLng,
       boutiqueId: primaryBoutiqueId,
@@ -682,6 +682,21 @@ export const placeOrder = mutation({
       event: "new_order",
     });
 
+    await triggerNotification(
+      ctx,
+      user._id,
+      "slack",
+      "new_order_ops",
+      "order",
+      orderId,
+      JSON.stringify({
+        orderNumber,
+        boutiqueName,
+        total: args.total,
+        itemsCount: args.items.length,
+      })
+    );
+
     return { orderId, orderNumber };
   },
 });
@@ -830,23 +845,48 @@ export const getBoutiqueOrders = query({
 
     if (orders.length === 0) return [];
 
-    // Batch load order items and invoices
-    const [itemsList, invoicesList] = await Promise.all([
+    // Batch load order items, invoices, and shipments
+    const [itemsList, invoicesList, shipmentsList] = await Promise.all([
       Promise.all(orders.map((o) => ctx.db.query("orderItems").withIndex("by_orderId", (q) => q.eq("orderId", o._id)).collect())),
-      Promise.all(orders.map((o) => ctx.db.query("invoices").withIndex("by_order_id", (q) => q.eq("orderId", o._id)).unique()))
+      Promise.all(orders.map((o) => ctx.db.query("invoices").withIndex("by_order_id", (q) => q.eq("orderId", o._id)).unique())),
+      Promise.all(orders.map((o) => o.shipmentId ? ctx.db.get(o.shipmentId) : null))
     ]);
 
     return orders.map((order, i) => {
       const items = itemsList[i] || [];
       const invoice = invoicesList[i];
+      const shipment = shipmentsList[i];
       return {
         ...order,
         items,
         invoiceNumber: invoice?.invoiceNumber || null,
         invoicePdfUrl: invoice?.pdfUrl || null,
+        shipmentStatus: shipment?.status || null,
       };
     });
   },
+});
+
+export const retryBoutiqueOrderDispatch = action({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args): Promise<any> => {
+    const order = await ctx.runQuery(api.orders.getOrderById, { orderId: args.orderId });
+    if (!order || !order.shipmentId) {
+      throw new Error("Order or shipment not found.");
+    }
+    const boutique = await ctx.runQuery(api.boutiques.getMyBoutiqueDetails);
+    if (!boutique || boutique._id !== order.boutiqueId) {
+      throw new Error("Unauthorized");
+    }
+    
+    // Call the shiprocket dispatch action
+    const result = await ctx.runAction(internal.lib.shiprocket.dispatchOrder, {
+      orderId: args.orderId,
+      shipmentId: order.shipmentId,
+    });
+    
+    return result;
+  }
 });
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -1149,9 +1189,43 @@ export const updateBoutiqueOrderStatus = mutation({
       await handleOrderStatusChangeLedgerUpdates(ctx, updatedOrder, args.status, now);
     }
 
-    // TODO: wire Shiprocket booking here
+    // Wire Shiprocket booking here
     if (args.status === "packed") {
-      // Intentionally empty: automatic courier dispatch is triggered in downstream provider action.
+      const customer = await ctx.db.get(order.customerId);
+      const shipmentId = await ctx.db.insert("shipments", {
+        orderId: args.orderId,
+        provider: "shiprocket",
+        status: "created",
+        awbNumber: "",
+        trackingUrl: "",
+        rawWebhookEvents: [],
+        pickupAddress: {
+          name: boutique?.boutiqueName || "Boutique",
+          line1: boutique?.address || "",
+          city: boutique?.addressDetails?.city || "",
+          state: boutique?.addressDetails?.state || "",
+          pincode: boutique?.addressDetails?.pincode || "",
+          phone: boutique?.phone || "",
+        },
+        deliveryAddress: {
+          name: (order.deliveryAddress as any)?.name || customer?.email || "Customer",
+          line1: order.deliveryAddress?.line1 || (order.deliveryAddress as any)?.formattedAddress || "",
+          line2: order.deliveryAddress?.line2 || (order.deliveryAddress as any)?.houseNumber || "",
+          city: (order.deliveryAddress as any)?.city || "",
+          state: (order.deliveryAddress as any)?.state || "",
+          pincode: (order.deliveryAddress as any)?.pincode || "",
+          phone: order.deliveryAddress?.phone || customer?.phone || "",
+        },
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      await ctx.db.patch(args.orderId, { shipmentId });
+
+      await ctx.scheduler.runAfter(0, internal.lib.shiprocket.dispatchOrder, {
+        orderId: args.orderId,
+        shipmentId: shipmentId,
+      });
     }
 
     const targetStatuses = ["confirmed", "packed", "out_for_delivery", "delivered"];
