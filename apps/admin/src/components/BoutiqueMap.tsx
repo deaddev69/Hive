@@ -61,7 +61,7 @@ export default function BoutiqueMap({ lat, lng, onChange, onSelectPlace, readOnl
         const cached = browserLocationCache.get(clickLat, clickLng);
         if (cached) {
           onSelectPlace({
-            name: cached.area || "Boutique Location",
+            name: cached.area || "Shop Location",
             address: cached.address || "",
             area: cached.area || "",
             city: cached.city || "Kochi",
@@ -90,7 +90,7 @@ export default function BoutiqueMap({ lat, lng, onChange, onSelectPlace, readOnl
           });
 
           onSelectPlace({
-            name: data.locality || "Boutique Location",
+            name: data.locality || "Shop Location",
             address: data.formattedAddress || "",
             area: data.locality || "",
             city: data.city || "Kochi",
@@ -270,7 +270,7 @@ export default function BoutiqueMap({ lat, lng, onChange, onSelectPlace, readOnl
             <div className="relative w-full">
               <input
                 type="text"
-                placeholder="Search boutique address..."
+                placeholder="Search shop address..."
                 className="w-full px-4 py-2 pl-10 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-hive-amber/30 text-slate-900"
               />
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -299,7 +299,7 @@ export default function BoutiqueMap({ lat, lng, onChange, onSelectPlace, readOnl
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-left">
           <h4 className="text-xs font-bold text-slate-900">Draggable Pin Drop Active</h4>
           <p className="text-[10px] text-slate-500 mt-1 leading-relaxed">
-            Drag the pin to place your boutique location on the map.
+            Drag the pin to place your shop location on the map.
           </p>
         </div>
       )}

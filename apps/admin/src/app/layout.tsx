@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { UserSync } from "@/components/auth/UserSync";
 import { Manrope } from "next/font/google";
+import { Toaster } from "@hive/ui";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -27,6 +28,7 @@ export default function RootLayout({
           <ConvexClientProvider>
             <UserSync />
             {children}
+            <Toaster />
           </ConvexClientProvider>
         </body>
       </html>

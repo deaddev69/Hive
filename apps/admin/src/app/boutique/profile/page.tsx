@@ -1,17 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { SignOutButton } from "@clerk/nextjs";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent } from "@hive/ui";
 import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut } from "lucide-react";
-
+import { toast } from "@hive/utils";
 
 export default function BoutiqueProfile() {
   const boutique = useQuery(api.boutiques.getMyBoutiqueDetails);
   const updateBoutiqueProfile = useMutation(api.boutiques.updateBoutiqueProfile);
-  const generateUploadUrl = useMutation(api.products.generateBoutiqueUploadUrl);
+  const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
+  const commitUpload = useAction(api.media.api.commitUpload);
 
   const [phone, setPhone] = useState("");
   const [description, setDescription] = useState("");
@@ -23,6 +24,12 @@ export default function BoutiqueProfile() {
   const [deliveryRadiusKm, setDeliveryRadiusKm] = useState(15);
   const [latitude, setLatitude] = useState(17.385);
   const [longitude, setLongitude] = useState(78.487);
+  
+  // Store status
+  const [storeStatus, setStoreStatus] = useState<"open" | "busy" | "closed">("open");
+  const [isAcceptingOrders, setIsAcceptingOrders] = useState(true);
+  const [pauseReason, setPauseReason] = useState<string>("other");
+  const [closedUntilStr, setClosedUntilStr] = useState<string>("");
   
   // Image states
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -55,6 +62,16 @@ export default function BoutiqueProfile() {
       setDeliveryRadiusKm(boutique.deliveryRadiusKm ?? 15);
       setLatitude(boutique.latitude ?? 17.385);
       setLongitude(boutique.longitude ?? 78.487);
+      
+      setStoreStatus(boutique.storeStatus as any || "open");
+      setIsAcceptingOrders(boutique.isAcceptingOrders ?? true);
+      setPauseReason(boutique.pauseReason || "other");
+      if (boutique.closedUntil) {
+        const date = new Date(boutique.closedUntil);
+        setClosedUntilStr(date.toISOString().split("T")[0]);
+      } else {
+        setClosedUntilStr("");
+      }
     }
   }, [boutique]);
 
@@ -80,75 +97,50 @@ export default function BoutiqueProfile() {
     setCoverPreview(URL.createObjectURL(file));
   };
 
-  const uploadFileToConvex = async (file: File): Promise<string> => {
-    const postUrl = await generateUploadUrl();
-    const result = await fetch(postUrl, {
-      method: "POST",
+  const uploadFileToR2 = async (file: File, context: string) => {
+    const { presignedUrl, sessionId } = await generateUploadUrl({
+      mimeType: file.type,
+      fileSize: file.size,
+      ownerType: "boutique",
+      ownerId: boutique!._id,
+      context,
+    });
+
+    const result = await fetch(presignedUrl, {
+      method: "PUT",
       headers: { "Content-Type": file.type },
       body: file,
     });
-    const { storageId } = await result.json();
-    return storageId;
+
+    if (!result.ok) throw new Error("Failed to upload file to R2");
+
+    return await commitUpload({ sessionId });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!boutique) {
-      alert("Error: Boutique profile is not loaded yet.");
+      toast.error("Error: Boutique profile is not loaded yet.");
       return;
     }
     setSaving(true);
     setUploadMsg("Saving your updates...");
 
     try {
-      let finalLogo = logoStorageId;
-      let finalCover = coverStorageId;
+      let logoPayload = undefined;
+      let bannerPayload = undefined;
 
       if (logoFile) {
         setUploadMsg("Uploading Boutique Logo...");
-        finalLogo = await uploadFileToConvex(logoFile);
-        setLogoStorageId(finalLogo);
+        logoPayload = await uploadFileToR2(logoFile, "boutique_logo");
         setLogoFile(null);
       }
 
       if (coverFile) {
         setUploadMsg("Uploading Cover Banner...");
-        finalCover = await uploadFileToConvex(coverFile);
-        setCoverStorageId(finalCover);
+        bannerPayload = await uploadFileToR2(coverFile, "boutique_banner");
         setCoverFile(null);
       }
-
-      const logoPayload = finalLogo ? {
-        assetId: finalLogo,
-        ownerType: "boutique",
-        ownerId: boutique._id,
-        storageProvider: "cloudflare-r2",
-        bucket: "hive-media",
-        objectKey: `logo_${boutique._id}.png`,
-        status: "ready" as const,
-        displayOrder: 1,
-        width: 200,
-        height: 200,
-        size: 0,
-        mime: "image/png",
-        uploadedAt: Date.now()
-      } : undefined;
-
-      const bannerPayload = finalCover ? {
-        assetId: finalCover,
-        ownerType: "boutique",
-        ownerId: boutique._id,
-        storageProvider: "cloudflare-r2",
-        bucket: "hive-media",
-        objectKey: `banner_${boutique._id}.png`,
-        status: "ready" as const,
-        displayOrder: 1,
-        width: 800,
-        height: 400,
-        size: 0,
-        mime: "image/png",
-        uploadedAt: Date.now()
-      } : undefined;
 
       await updateBoutiqueProfile({
         phone,
@@ -161,11 +153,17 @@ export default function BoutiqueProfile() {
         latitude,
         longitude,
         deliveryRadiusKm,
+        storeStatus,
+        isAcceptingOrders,
+        pauseReason: (!isAcceptingOrders || storeStatus === "closed") ? pauseReason : undefined,
+        closedUntil: (!isAcceptingOrders || storeStatus === "closed") && closedUntilStr 
+                       ? new Date(closedUntilStr).getTime() 
+                       : undefined,
       });
 
-      alert("Profile updated successfully!");
+      toast.success("Profile updated successfully!");
     } catch (err: any) {
-      alert("Failed to save profile: " + err.message);
+      toast.error("Failed to save profile: " + err.message);
     } finally {
       setSaving(false);
       setUploadMsg("");
@@ -185,7 +183,7 @@ export default function BoutiqueProfile() {
     <div className="flex flex-col gap-8 text-left">
       <div>
         <h1 className="text-3xl font-serif font-black text-hive-dark">Profile</h1>
-        <p className="text-sm text-hive-text-muted">Manage your designer boutique details, logo representation, and service parameters.</p>
+        <p className="text-sm text-hive-text-muted">Manage your shop profile details, logo representation, and delivery parameters.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -251,7 +249,7 @@ export default function BoutiqueProfile() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Boutique Name</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Shop Name</label>
                 <input
                   type="text"
                   required
@@ -292,10 +290,73 @@ export default function BoutiqueProfile() {
                   required
                   min={1}
                   value={deliveryRadiusKm}
-                  onChange={(e) => setDeliveryRadiusKm(parseInt(e.target.value) || 15)}
+                  onChange={(e) => setDeliveryRadiusKm(parseInt(e.target.value) || 1)}
                   className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
                 />
               </div>
+            </div>
+            
+            <div className="pt-4 mt-2 border-t border-hive-border/60">
+              <h4 className="text-sm font-semibold text-hive-dark mb-3">Store Operational Status</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-hive-dark">Store Status</label>
+                  <select 
+                    value={storeStatus} 
+                    onChange={(e: any) => setStoreStatus(e.target.value)}
+                    className="w-full h-11 px-3 border border-hive-border bg-hive-light rounded-xl text-sm"
+                  >
+                    <option value="open">Open (Normal Operations)</option>
+                    <option value="busy">Busy (High Volume)</option>
+                    <option value="closed">Closed / Paused</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-hive-dark">Accepting New Orders?</label>
+                  <select 
+                    value={isAcceptingOrders ? "true" : "false"} 
+                    onChange={(e: any) => setIsAcceptingOrders(e.target.value === "true")}
+                    className="w-full h-11 px-3 border border-hive-border bg-hive-light rounded-xl text-sm"
+                  >
+                    <option value="true">Yes, accepting orders</option>
+                    <option value="false">No, temporarily paused</option>
+                  </select>
+                </div>
+              </div>
+              
+              {(!isAcceptingOrders || storeStatus === "closed") && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-hive-dark">Reason for pausing</label>
+                    <select 
+                      value={pauseReason} 
+                      onChange={(e: any) => setPauseReason(e.target.value)}
+                      className="w-full h-11 px-3 border border-hive-border bg-hive-light rounded-xl text-sm"
+                    >
+                      <option value="vacation">On Vacation</option>
+                      <option value="capacity">At Capacity</option>
+                      <option value="festival">Festival Holiday</option>
+                      <option value="restocking">Restocking Inventory</option>
+                      <option value="renovation">Store Renovation</option>
+                      <option value="personal">Personal Reason</option>
+                      <option value="emergency">Emergency</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <p className="text-xs text-hive-text-muted mt-1">This will be shown to customers when they view your products.</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-hive-dark">Reopen Date (Optional)</label>
+                    <input 
+                      type="date"
+                      value={closedUntilStr}
+                      onChange={(e) => setClosedUntilStr(e.target.value)}
+                      min={new Date().toISOString().split("T")[0]}
+                      className="w-full h-11 px-3 border border-hive-border bg-hive-light rounded-xl text-sm"
+                    />
+                    <p className="text-xs text-hive-text-muted mt-1">We'll show customers when you'll be back.</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -310,7 +371,7 @@ export default function BoutiqueProfile() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Boutique Description</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Shop Description</label>
               <textarea
                 required
                 rows={4}
@@ -361,7 +422,7 @@ export default function BoutiqueProfile() {
             <div className="flex flex-col gap-4 text-xs">
               
               <div className="flex justify-between items-center py-2 border-b border-slate-100">
-                <span className="font-bold text-hive-text-muted">Boutique Name</span>
+                <span className="font-bold text-hive-text-muted">Shop Name</span>
                 <span className="font-extrabold text-hive-dark">{boutiqueName}</span>
               </div>
 

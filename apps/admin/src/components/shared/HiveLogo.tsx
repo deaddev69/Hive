@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 interface HiveLogoProps {
-  roleLabel?: "ADMIN PANEL" | "DESIGNER PANEL" | "Boutique Portal" | "SELLER CENTER" | string;
+  roleLabel?: "ADMIN PANEL" | "DESIGNER PANEL" | "Seller Portal" | "SELLER CENTER" | string;
   href?: string;
   className?: string;
   size?: "sm" | "md";
@@ -14,7 +14,7 @@ const sizeClasses = {
 };
 
 export function HiveLogo({ roleLabel, href = "/", className = "", size = "md" }: HiveLogoProps) {
-  const displayLabel = roleLabel === "DESIGNER PANEL" ? "Boutique Portal" : roleLabel;
+  const displayLabel = roleLabel === "DESIGNER PANEL" ? "Seller Portal" : roleLabel;
 
   return (
     <Link

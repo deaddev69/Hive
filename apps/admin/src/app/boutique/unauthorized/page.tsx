@@ -20,7 +20,7 @@ export default function BoutiqueUnauthorizedPage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-serif font-black text-hive-dark">Access Denied</h1>
           <p className="text-sm text-hive-text-muted">
-            Only accounts with the <strong>BOUTIQUE</strong> role are permitted to view the designer portal.
+            Only accounts with the <strong>Seller</strong> role are permitted to view the Seller Portal.
           </p>
         </div>
 

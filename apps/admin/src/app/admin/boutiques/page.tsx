@@ -26,6 +26,7 @@ export default function AdminBoutiquesPage() {
   const approveBoutique = useMutation(api.boutiques.approveBoutique);
   const rejectBoutique = useMutation(api.boutiques.rejectBoutique);
   const suspendBoutique = useMutation(api.boutiques.suspendBoutique);
+  const softDeleteBoutique = useMutation(api.boutiques.softDeleteBoutique);
 
   // Form State
   const [boutiqueName, setBoutiqueName] = useState("");
@@ -113,7 +114,7 @@ export default function AdminBoutiquesPage() {
     }
   };
 
-  const handleStatusChange = async (id: string, action: "APPROVE" | "REJECT" | "SUSPEND") => {
+  const handleStatusChange = async (id: string, action: "APPROVE" | "REJECT" | "SUSPEND" | "DELETE") => {
     try {
       if (action === "APPROVE") {
         await approveBoutique({ id: id as any });
@@ -121,6 +122,10 @@ export default function AdminBoutiquesPage() {
         await rejectBoutique({ id: id as any });
       } else if (action === "SUSPEND") {
         await suspendBoutique({ id: id as any, suspensionReason: "Suspended by Admin operator" });
+      } else if (action === "DELETE") {
+        if (window.confirm("Are you sure you want to delete this boutique? Its data will remain in the DB as a backup, but it will disappear from this panel.")) {
+          await softDeleteBoutique({ id: id as any });
+        }
       }
     } catch (err: any) {
       alert(`Failed to set boutique status to ${action}: ` + err.message);
@@ -461,6 +466,14 @@ export default function AdminBoutiquesPage() {
                               Suspend
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleStatusChange(boutique._id, "DELETE")}
+                            className="bg-red-50 border-red-200 text-red-700 hover:bg-red-600 hover:text-white text-xs py-2 px-3 rounded-xl font-bold ml-auto"
+                          >
+                            Delete
+                          </Button>
                         </div>
                       </div>
 

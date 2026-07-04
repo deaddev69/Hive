@@ -84,7 +84,7 @@ export default function AdminProductsPage() {
     }
   }, []);
 
-  const boutiques = useQuery(api.boutiques.getBoutiques, {});
+  const boutiques = useQuery(api.boutiques.getBoutiques, { excludeTestData });
   const products = useQuery(api.adminProducts.getAdminProducts, {
     searchTerm: debouncedSearch || undefined,
     boutiqueId: selectedBoutique === "all" ? undefined : selectedBoutique as any,
@@ -324,8 +324,8 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Filter Toolbar */}
-      <Card className="border border-hive-border bg-white shadow-sm rounded-2xl">
-        <CardContent className="p-4 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
+      <Card className="border border-hive-border bg-white shadow-sm rounded-2xl relative z-30 !overflow-visible">
+        <CardContent className="p-4 flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between !overflow-visible">
           {/* Search Input */}
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-hive-text-muted" />
@@ -456,10 +456,8 @@ export default function AdminProductsPage() {
           { key: "pending_approval", label: "Pending Approval ⏳" },
           { key: "needs_review", label: "Needs Review ⚠️" },
           { key: "active", label: "Active/Live" },
-          { key: "inactive", label: "Inactive/Draft" },
           { key: "out_of_stock", label: "Out of Stock" },
-          { key: "recently_created", label: "Recently Added (7d)" },
-          { key: "moderated", label: "Moderated/Hidden" }
+          { key: "recently_created", label: "Recently Added (7d)" }
         ].map((tab) => (
           <button
             key={tab.key}
@@ -488,7 +486,6 @@ export default function AdminProductsPage() {
                   <th className="px-6 py-4">Boutique & Trust</th>
                   <th className="px-6 py-4">Quality Score</th>
                   <th className="px-6 py-4">Stock Risk</th>
-                  <th className="px-6 py-4">Performance (30d)</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
@@ -589,36 +586,14 @@ export default function AdminProductsPage() {
                         </div>
                       </td>
 
-                      {/* Performance (Stacked) */}
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1 font-semibold text-slate-700 text-xs">
-                          {prod.statsPending ? (
-                            <span className="text-slate-400 italic text-[10px] flex items-center gap-1">
-                              <Loader2 className="w-2.5 h-2.5 animate-spin" /> Calculating...
-                            </span>
-                          ) : (
-                            <>
-                              <span className="text-[11px] font-bold text-slate-800">Delivered: {formatCurrency(prod.salesRevenue)}</span>
-                              <span>Orders: {prod.orderCount}</span>
-                              <span className={cn("text-[10px] font-medium", prod.claimCount > 0 ? "text-red-600 font-bold bg-red-50 px-1.5 py-0.5 rounded border border-red-100 self-start mt-0.5" : "text-slate-400")}>
-                                Claims: {prod.approvedClaimCount} / {prod.claimCount}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </td>
-
                       {/* Status */}
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1.5 items-start">
-                          <span className={cn(
-                            "inline-flex px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider border",
-                            prod.active 
-                              ? "bg-[#C59A5B]/10 text-[#C59A5B] border-[#C59A5B]/20" 
-                              : "bg-[#FAF7F2] text-[#8E867C] border-[#EAE3D5]"
-                          )}>
-                            {prod.active ? "Active" : "Inactive/Draft"}
-                          </span>
+                          {prod.active && (
+                            <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider border bg-[#C59A5B]/10 text-[#C59A5B] border-[#C59A5B]/20">
+                              Active
+                            </span>
+                          )}
 
                           {prod.active && prod.approvalStatus === "pending" && (
                             <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-amber-50 text-amber-700 border border-amber-200 tracking-wider">
@@ -636,17 +611,6 @@ export default function AdminProductsPage() {
                                   &quot;{prod.approvalNotes}&quot;
                                 </span>
                               )}
-                            </div>
-                          )}
-
-                          {isModerated && (
-                            <div className="flex flex-col gap-0.5 mt-0.5 text-[9px] text-red-650 font-medium">
-                              <span className="inline-flex items-center gap-1 font-bold bg-red-50 text-red-800 border border-red-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                <Ban className="w-2.5 h-2.5" /> Moderated ({prod.moderationCategory})
-                              </span>
-                              <span className="text-[10px] italic font-semibold text-red-600 mt-0.5 truncate max-w-[120px]" title={prod.adminHiddenReason}>
-                                &quot;{prod.adminHiddenReason}&quot;
-                              </span>
                             </div>
                           )}
                         </div>

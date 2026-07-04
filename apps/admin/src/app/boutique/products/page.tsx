@@ -217,7 +217,7 @@ export default function BoutiqueProducts() {
         <div className="flex flex-col gap-2">
           <h1 className="text-4xl leading-none font-serif font-bold text-[#232B2B]">Products</h1>
           <p className="text-[13px] font-medium text-slate-500 max-w-sm leading-relaxed">
-            Manage your boutique product listings, inventory, and cross-sell catalog.
+            Manage your product listings, stock levels, and catalog.
           </p>
         </div>
 

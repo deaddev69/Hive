@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Modal } from "@hive/ui";
 import { Upload, X, ArrowRight, ArrowLeft, Check, ImageIcon, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { toast } from "@hive/utils";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "FREE"];
 const MATERIAL_OPTIONS = ["Cotton", "Silk", "Linen", "Polyester", "Blend", "Crepe", "Georgette", "Chiffon"];
@@ -253,9 +254,10 @@ export default function CreateProductModal({
         setFeatured(productToEdit.featured || false);
         setActive(productToEdit.active !== false);
 
-        setImages(productToEdit.images || []);
-        const previews = (productToEdit.images || []).map((imgId: string, idx: number) => ({
-          url: productToEdit.imageUrls?.[idx] || imgId,
+        const rawStorageIds = productToEdit.imageStorageIds || [];
+        setImages(rawStorageIds);
+        const previews = rawStorageIds.map((imgId: string, idx: number) => ({
+          url: productToEdit.images?.[idx] || imgId,
           storageId: imgId
         }));
         setLocalPreviews(previews);
@@ -334,15 +336,15 @@ export default function CreateProductModal({
     // Step 1 Validation
     if (step === 1) {
       if (!price) {
-        alert("Please enter a price for your product.");
+        toast.error("Please enter a price for your product.");
         return;
       }
       if (discountPrice && parseFloat(discountPrice) >= parseFloat(price)) {
-        alert("Discount price must be less than the regular price.");
+        toast.error("Discount price must be less than the regular price.");
         return;
       }
       if (localPreviews.length < 3) {
-        alert("Please upload at least 3 high-resolution images for your product.");
+        toast.error("Please upload at least 3 high-resolution images for your product.");
         return;
       }
     }
@@ -364,7 +366,7 @@ export default function CreateProductModal({
     if (step === 3) {
       // Just basic check for at least one core detail
       if (!specs.color) {
-        alert("Please provide at least a color for the product.");
+        toast.error("Please provide at least a color for the product.");
         return;
       }
     }
@@ -375,15 +377,15 @@ export default function CreateProductModal({
     }
 
     if (!name || !price || !categoryId) {
-      alert("Please fill required fields (Name, Price, Category).");
+      toast.error("Please fill required fields (Name, Price, Category).");
       return;
     }
     if (selectedSizes.length === 0) {
-      alert("Please select at least one size.");
+      toast.error("Please select at least one size.");
       return;
     }
     if (localPreviews.length < 3) {
-      alert("Please upload at least 3 high-resolution images for your product.");
+      toast.error("Please upload at least 3 high-resolution images for your product.");
       return;
     }
 
@@ -432,14 +434,14 @@ export default function CreateProductModal({
 
       if (productToEdit?._id) {
         await updateProduct({ id: productToEdit._id as any, ...payload });
-        alert("Product updated successfully!");
+        toast.success("Product updated successfully!");
       } else {
         await createProduct(payload);
-        alert("Product created successfully!");
+        toast.success("Product created successfully!");
       }
       onClose();
     } catch (err: any) {
-      alert("Failed to save product: " + err.message);
+      toast.error("Failed to save product: " + err.message);
     } finally {
       setSubmitting(false);
       setUploadingImages(false);

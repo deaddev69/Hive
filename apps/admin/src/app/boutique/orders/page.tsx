@@ -57,6 +57,8 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
 export default function BoutiqueOrders() {
   const orders = useQuery(api.orders.getBoutiqueOrders);
   const updateStatus = useMutation(api.orders.updateBoutiqueOrderStatus);
+  const retryDispatch = useMutation(api.orders.retryBoutiqueOrderDispatch);
+  const [retryingOrderId, setRetryingOrderId] = React.useState<string | null>(null);
 
   if (orders === undefined) {
     return (
@@ -182,6 +184,27 @@ export default function BoutiqueOrders() {
                         <option value="delivered">Delivered</option>
                         <option value="cancelled">Cancelled</option>
                       </select>
+                      
+                      {order.shipmentStatus === "booking_failed" && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm("Retry dispatching this order to Shiprocket?")) return;
+                            setRetryingOrderId(order._id);
+                            try {
+                              await retryDispatch({ orderId: order._id });
+                              alert("Dispatch retried successfully!");
+                            } catch (err: any) {
+                              alert("Dispatch failed again: " + err.message);
+                            } finally {
+                              setRetryingOrderId(null);
+                            }
+                          }}
+                          disabled={retryingOrderId === order._id}
+                          className="mt-2 block w-full px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded hover:bg-red-200 transition disabled:opacity-50"
+                        >
+                          {retryingOrderId === order._id ? "Retrying..." : "Retry Booking"}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
