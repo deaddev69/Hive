@@ -47,7 +47,7 @@ async function checkCartItemStatus(
   ctx: any,
   item: any,
   prefetchedBoutique?: any
-): Promise<{ isValid: boolean; status: "available" | "deleted" | "inactive" | "suspended" | "out_of_stock" | "quantity_exceeded" }> {
+): Promise<{ isValid: boolean; status: "available" | "deleted" | "inactive" | "suspended" | "out_of_stock" | "quantity_exceeded"; availableStock?: number }> {
   // 1. Resolve product by slug or ID
   const bySlug = await ctx.db
     .query("products")
