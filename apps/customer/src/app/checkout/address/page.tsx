@@ -36,7 +36,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useSessionStore } from "@/context/SessionContext";
 import { calculateDistanceKm } from "@/lib/distance";
-import { formatCurrency } from "@hive/utils";
+import { formatRupees } from "@hive/utils";
 
 // Dynamically load the map (Leaflet requires browser, SSR disabled)
 const LocationMapPicker = dynamic(
@@ -261,14 +261,15 @@ export default function CheckoutAddressPage() {
 
   const selectedAddress = addresses.find((a) => a._id === selectedAddressId) ?? null;
   const isServiceable = selectedAddress ? isAddressServiceable(selectedAddress) : false;
-  const effectiveItems = getEffectiveCheckoutItems(items, checkoutItems);
-  const subtotal = effectiveItems.reduce((t, i) => t + i.price * i.quantity, 0);
-  const deliveryFee = subtotal >= 300000 ? 0 : 9900; // paise
+  const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
+  const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const deliveryFee = subtotal >= 3000 ? 0 : 99; // rupees
+  const tax = 0;
   const total = subtotal + (isServiceable ? deliveryFee : 0);
 
-  const totalQuantity = effectiveItems.reduce((sum, item) => sum + item.quantity, 0);
+  const totalQuantity = orderItems.reduce((sum, item) => sum + item.quantity, 0);
   const uniqueBoutiqueNames = Array.from(
-    new Set(effectiveItems.map((item) => item.boutiqueName).filter(Boolean))
+    new Set(orderItems.map((item) => item.boutiqueName).filter(Boolean))
   );
   const boutiqueText =
     uniqueBoutiqueNames.length === 1
@@ -452,7 +453,7 @@ export default function CheckoutAddressPage() {
 
   // Waitlist functionality removed
 
-  if (effectiveItems.length === 0) {
+  if (orderItems.length === 0) {
     const lastBoutiqueId = latestOrder?.items?.[0]?.boutiqueId;
     const exploreUrl = lastBoutiqueId ? `/products?boutiqueId=${lastBoutiqueId}` : "/products";
     return (
@@ -508,7 +509,7 @@ export default function CheckoutAddressPage() {
             </div>
             <div className="min-w-0 space-y-0.5">
               <p className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider">
-                {totalQuantity} ITEMS • {formatCurrency(subtotal)}
+                {totalQuantity} ITEMS • {formatRupees(subtotal)}
               </p>
               <h2 className="text-xs font-bold text-hive-dark truncate">
                 {effectiveItems[0]?.name}
@@ -664,16 +665,16 @@ export default function CheckoutAddressPage() {
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Cart Subtotal</span>
-                  <span>{formatCurrency(subtotal)}</span>
+                  <span>{formatRupees(subtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Boutique Delivery</span>
-                  <span>{isServiceable ? (deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)) : "₹0.00"}</span>
+                  <span>{isServiceable ? (deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)) : "₹0.00"}</span>
                 </div>
                 <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1.5">
                   <span className="text-sm font-extrabold text-hive-dark">Estimated Total</span>
                   <span className="text-base font-extrabold text-hive-dark">
-                    {formatCurrency(total)}
+                    {formatRupees(total)}
                   </span>
                 </div>
               </div>
@@ -697,17 +698,17 @@ export default function CheckoutAddressPage() {
           <div className="px-5 py-4 border-b border-hive-border/20 bg-neutral-50/50 space-y-2.5 text-xs animate-[fadeIn_0.2s_ease-out]">
             <div className="flex justify-between items-center text-hive-text-muted">
               <span>Cart Subtotal</span>
-              <span>{formatCurrency(subtotal)}</span>
+              <span>{formatRupees(subtotal)}</span>
             </div>
             {discountAmount > 0 && (
               <div className="flex justify-between items-center text-green-700">
                 <span>Discount</span>
-                <span>-{formatCurrency(discountAmount)}</span>
+                <span>-{formatRupees(discountAmount)}</span>
               </div>
             )}
             <div className="flex justify-between items-center text-hive-text-muted">
               <span>Boutique Delivery</span>
-              <span>{isServiceable ? (deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)) : "₹0.00"}</span>
+              <span>{isServiceable ? (deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)) : "₹0.00"}</span>
             </div>
           </div>
         )}
@@ -722,7 +723,7 @@ export default function CheckoutAddressPage() {
               {totalQuantity} {totalQuantity === 1 ? "item" : "items"} {isPriceExpanded ? "↓" : "↑"}
             </span>
             <span className="text-base font-black text-hive-dark">
-              {formatCurrency(total)}
+              {formatRupees(total)}
             </span>
           </button>
 
