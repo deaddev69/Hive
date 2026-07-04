@@ -96,6 +96,7 @@ export const initCheckoutSessionInternal = internalMutation({
     promoCode: v.optional(v.string()),
     token: v.optional(v.string()),
     quoteId: v.optional(v.string()),
+    quotedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     let storedQuote = null;
