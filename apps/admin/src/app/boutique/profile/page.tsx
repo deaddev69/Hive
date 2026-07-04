@@ -75,7 +75,7 @@ export default function BoutiqueProfile() {
       setPauseReason(boutique.pauseReason || "other");
       if (boutique.closedUntil) {
         const date = new Date(boutique.closedUntil);
-        setClosedUntilStr(date.toISOString().split("T")[0]);
+        setClosedUntilStr(date.toISOString().split("T")[0] || "");
       } else {
         setClosedUntilStr("");
       }
