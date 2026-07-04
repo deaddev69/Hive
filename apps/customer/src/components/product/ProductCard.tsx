@@ -236,7 +236,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
           <div className="text-[12px] text-stone-500 font-normal leading-none mt-0.5 relative z-20">
             from{" "}
             <Link 
-              href={`/shop/${boutique?.slug || product.boutiqueId}`}
+              href={`/shop/${boutique?.slug || (product as any).boutiqueId || (product as any).boutique?.id || ""}`}
               className="hover:text-stone-900 hover:underline transition-colors cursor-pointer"
             >
               {product.boutiqueName || boutique?.name || boutique?.boutiqueName || "Hive Boutique"}
@@ -253,8 +253,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
                 <span className="text-xs text-stone-400 line-through font-normal ml-1" style={{ textDecoration: "line-through" }}>
                   ₹{product.compareAtPrice.toLocaleString("en-IN")}
                 </span>
-                <span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-105">
-                  Save ₹{(product.compareAtPrice - product.price).toLocaleString("en-IN")}
+                <span className="text-[9px] font-bold text-[#7A6030] bg-[#FAF7F0] border border-[#EAE4D9]/80 px-1.5 py-0.5 rounded-md">
+                  Save ₹{Math.round(product.compareAtPrice - product.price).toLocaleString("en-IN")}
                 </span>
               </>
             )}

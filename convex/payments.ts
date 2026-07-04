@@ -19,6 +19,7 @@ import { triggerNotification } from "./lib/notifications";
 import { checkKillSwitch } from "./lib/killSwitches";
 import { validateBoutiqueOperationalLimits, checkBoutiqueClosedStatus } from "./lib/gating";
 import { restoreCheckoutSessionStock } from "./lib/inventory";
+import { getBoutiqueStatus } from "./shared/boutiqueStatus";
 
 // ─── Input Schemas ───────────────────────────────────────────────────────────
 const cartItemArg = v.object({
@@ -29,6 +30,9 @@ const cartItemArg = v.object({
   boutiqueName: v.string(),
   size: v.string(),
   quantity: v.number(),
+  boutiqueId: v.optional(v.string()),
+  isPreorder: v.optional(v.boolean()),
+  scheduledProcessingDate: v.optional(v.string()),
 });
 
 // Constant-time hex string comparison to prevent timing attacks
@@ -91,11 +95,26 @@ export const initCheckoutSessionInternal = internalMutation({
     total: v.number(),
     promoCode: v.optional(v.string()),
     token: v.optional(v.string()),
-    quotedAt: v.optional(v.number()),
+    quoteId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Validate quote TTL (15 minutes)
-    if (args.quotedAt && Date.now() - args.quotedAt > 15 * 60 * 1000) {
+    let storedQuote = null;
+    if (args.quoteId) {
+      storedQuote = await ctx.db.query("checkoutQuotes")
+        .withIndex("by_checkoutSessionId", (q) => q.eq("checkoutSessionId", args.quoteId as string))
+        .first();
+    }
+    
+    if (storedQuote) {
+      const diff = Math.abs(args.deliveryFee - storedQuote.deliveryFee);
+      if (diff > 1) {
+        throw new Error("Delivery fee mismatch. Please refresh and try again.");
+      }
+      if (Date.now() > storedQuote.expiresAt) {
+        throw new Error("Delivery quote expired. Please refresh checkout.");
+      }
+    } else if (args.quotedAt && Date.now() - args.quotedAt > 15 * 60 * 1000) {
+      // Legacy TTL check for backward compatibility if quoteId isn't provided
       throw new Error("Delivery rate expired. Please refresh the page to get a new rate.");
     }
     
@@ -203,6 +222,7 @@ export const initCheckoutSessionInternal = internalMutation({
     const resolvedItems: any[] = [];
     let expectedSubtotalPaise = 0;
     let placedDuringClosedHours = false;
+    let scheduledProcessingDate: string | undefined = undefined;
     for (const item of args.items) {
       const bySlug = await ctx.db
         .query("products")
@@ -249,9 +269,14 @@ export const initCheckoutSessionInternal = internalMutation({
       // Perform operational limits checks (hours, operating days, capacity, soft launch)
       await validateBoutiqueOperationalLimits(ctx.db, boutique._id);
       
-      const isClosed = await checkBoutiqueClosedStatus(ctx.db, boutique._id);
-      if (isClosed) {
+      const bStatus = getBoutiqueStatus(boutique, Date.now());
+      if (bStatus.type !== "OPEN" || item.isPreorder) {
         placedDuringClosedHours = true;
+        if (bStatus.type === "CLOSED_TODAY" || bStatus.type === "CLOSED_EXTENDED") {
+          scheduledProcessingDate = bStatus.nextOperatingDay;
+        } else if (item.scheduledProcessingDate) {
+          scheduledProcessingDate = item.scheduledProcessingDate;
+        }
       }
 
       // Check stock
@@ -261,6 +286,7 @@ export const initCheckoutSessionInternal = internalMutation({
       const activePricePaise = productRow
         ? Math.round((productRow.discountPrice ?? productRow.price) * 100)
         : Math.round(item.price * 100);
+        
       expectedSubtotalPaise += activePricePaise * item.quantity;
 
       resolvedItems.push({
@@ -274,6 +300,7 @@ export const initCheckoutSessionInternal = internalMutation({
     // Verify subtotal in integer Paise
     const clientSubtotalPaise = Math.round(args.subtotal * 100);
     if (clientSubtotalPaise !== expectedSubtotalPaise) {
+      console.error(`[TAMPERING_CHECK] Mismatch detected. clientSubtotalPaise: ${clientSubtotalPaise}, expectedSubtotalPaise: ${expectedSubtotalPaise}, client args.subtotal: ${args.subtotal}`);
       throw new Error(`Security Exception: Cart subtotal mismatch. Price tampering detected.`);
     }
 
@@ -378,6 +405,7 @@ export const initCheckoutSessionInternal = internalMutation({
       razorpayOrderId: "",
       status: "pending",
       placedDuringClosedHours,
+      scheduledProcessingDate,
       expiresAt,
       createdAt: now,
     });
@@ -941,6 +969,7 @@ export const createCheckoutSession = action({
     promoCode: v.optional(v.string()),
     token: v.optional(v.string()),
     quotedAt: v.optional(v.number()),
+    quoteId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const paymentsApi = (anyApi as any).payments;
@@ -978,7 +1007,7 @@ export const createCheckoutSession = action({
           "Authorization": authHeader,
         },
         body: JSON.stringify({
-          amount: Math.round(initResult.total),
+          amount: Math.round(initResult.total * 100),
           currency: "INR",
           receipt: initResult.checkoutSessionId,
           notes: {

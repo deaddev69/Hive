@@ -104,9 +104,16 @@ export default function BoutiqueOrders() {
 
                     {/* Date */}
                     <td className="px-6 py-4 text-left">
-                      <div className="flex items-center gap-1.5 text-slate-700">
-                        <Calendar className="w-4 h-4 text-hive-amber flex-shrink-0" />
-                        <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                      <div className="flex flex-col gap-1.5 text-slate-700">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4 text-hive-amber flex-shrink-0" />
+                          <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        {order.scheduledProcessingDate && (
+                          <div className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full w-fit whitespace-nowrap">
+                            Pre-order — process on {new Date(`${order.scheduledProcessingDate}T00:00:00+05:30`).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' })}
+                          </div>
+                        )}
                       </div>
                     </td>
 

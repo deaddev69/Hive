@@ -29,6 +29,20 @@ export function formatCurrency(
   return formatINR(paise, options);
 }
 
+/**
+ * Convert rupees (float/int) to formatted currency string
+ * @example formatRupees(1776) → "₹1,776.00"
+ */
+export function formatRupees(
+  rupees: number,
+  options: { showDecimal?: boolean } = {}
+): string {
+  const showDec = options.showDecimal ?? true;
+  return `₹${rupees.toLocaleString('en-IN', {
+    minimumFractionDigits: showDec ? 2 : 2,
+    maximumFractionDigits: showDec ? 2 : 2,
+  })}`;
+}
 
 /**
  * Convert INR rupees to paise

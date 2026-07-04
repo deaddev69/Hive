@@ -3,11 +3,11 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus, Minus } from "lucide-react";
 import { CartItem, useCartStore } from "@/store/cart-store";
 import { cleanProductTitle } from "../product/ProductCard";
 import { useCart } from "@/context/CartContext";
-import { formatCurrency } from "@hive/utils";
+import { formatRupees } from "@hive/utils";
 
 interface CartItemProps {
   item: CartItem;
@@ -64,17 +64,24 @@ export const CartItemComponent: React.FC<CartItemProps> = ({ item }) => {
             </span>
           </div>
 
-          {/* Selected Size */}
-          <span className="text-[10px] text-stone-500 mt-2 block">
-            Size {item.size}
-          </span>
+          {/* Selected Size & Preorder Badge */}
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-[10px] text-stone-500 block">
+              Size {item.size}
+            </span>
+            {item.isPreorder && item.scheduledProcessingDate && (
+              <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                Pre-order
+              </span>
+            )}
+          </div>
         </Link>
 
         {/* Bottom details: Price & Quantity */}
         <div className="flex items-center justify-between mt-2.5">
           {/* Price */}
           <span className="text-xs font-bold text-stone-900">
-            {formatCurrency(item.price)}
+            {formatRupees(item.price)}
           </span>
 
           {/* Quantity selector (subtle inline controls, no pill background/borders) */}
@@ -85,7 +92,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({ item }) => {
               className="text-stone-400 hover:text-stone-800 transition-colors text-sm font-light px-1 focus:outline-none"
               aria-label="Decrease quantity"
             >
-              −
+              <Minus className="w-3.5 h-3.5" />
             </button>
             <span className="text-xs font-medium text-stone-900 min-w-[10px] text-center">
               {item.quantity}
@@ -93,10 +100,11 @@ export const CartItemComponent: React.FC<CartItemProps> = ({ item }) => {
             <button
               type="button"
               onClick={() => updateQuantity(item.productId, item.size, item.quantity + 1)}
-              className="text-stone-400 hover:text-stone-800 transition-colors text-sm font-light px-1 focus:outline-none"
+              disabled={item.quantity >= (item.availableStock ?? 1)}
+              className="text-stone-400 hover:text-stone-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-light px-1 focus:outline-none"
               aria-label="Increase quantity"
             >
-              +
+              <Plus className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

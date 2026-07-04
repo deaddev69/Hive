@@ -697,6 +697,7 @@ export default defineSchema({
     inventoryConfirmedAt: v.optional(v.number()),
     acceptanceTimeoutAt:  v.optional(v.number()),
     placedDuringClosedHours: v.optional(v.boolean()),
+    scheduledProcessingDate: v.optional(v.string()),
     createdAt:            v.number(),
     updatedAt:            v.number(),
   })
@@ -933,11 +934,19 @@ export default defineSchema({
                      ),
     expiresAt:       v.number(),
     placedDuringClosedHours: v.optional(v.boolean()),
+    scheduledProcessingDate: v.optional(v.string()),
     createdAt:       v.number(),
   })
     .index("by_userId", ["userId"])
     .index("by_razorpayOrderId", ["razorpayOrderId"])
     .index("by_status_expiresAt", ["status", "expiresAt"]),
+
+  checkoutQuotes: defineTable({
+    checkoutSessionId: v.string(), 
+    deliveryFee: v.number(),
+    quotedAt: v.number(),
+    expiresAt: v.number(),
+  }).index("by_checkoutSessionId", ["checkoutSessionId"]),
 
   paymentEvents: defineTable({
     source:      v.literal("razorpay"),

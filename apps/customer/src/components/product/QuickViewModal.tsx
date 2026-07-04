@@ -15,6 +15,7 @@ import { useSessionStore } from "@/context/SessionContext";
 import { calculateDistanceKm } from "@/lib/distance";
 import { inrToPaise, toast } from "@hive/utils";
 import { mapDbProduct } from "@/lib/mapDbProduct";
+import { getBoutiqueStatus } from "../../../../../convex/shared/boutiqueStatus";
 import {
   ShieldCheck,
   ShoppingBag,
@@ -25,6 +26,19 @@ import {
 } from "lucide-react";
 import { cn } from "@hive/ui";
 import { cleanProductTitle } from "./ProductCard";
+
+function formatNextDayLabel(dateStr: string): string {
+  try {
+    const parts = dateStr.split("-").map(Number);
+    const year = parts[0] || 2026;
+    const month = parts[1] || 1;
+    const day = parts[2] || 1;
+    const d = new Date(year, month - 1, day);
+    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  } catch {
+    return dateStr;
+  }
+}
 
 interface QuickViewModalProps {
   isOpen: boolean;
@@ -129,11 +143,11 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchEndY.current = null;
-    touchStartY.current = e.targetTouches[0].clientY;
+    touchStartY.current = e.targetTouches[0]?.clientY ?? 0;
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    touchEndY.current = e.targetTouches[0].clientY;
+    touchEndY.current = e.targetTouches[0]?.clientY ?? 0;
   };
 
   const onTouchEnd = () => {
@@ -210,9 +224,11 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     return dist <= bRad;
   })();
 
-  const resolvedStatus = product.boutique?.storeStatus || "open";
-  const isAcceptingOrders = product.boutique?.isAcceptingOrders !== false;
-  const isStoreOffline = resolvedStatus === "closed" || resolvedStatus === "temporarily_unavailable" || !isAcceptingOrders;
+  const boutiqueStatus = product.boutique
+    ? getBoutiqueStatus(product.boutique, Date.now())
+    : { type: "OPEN" as const };
+  const isStoreOffline = boutiqueStatus.type === "PAUSED";
+  const isPreorderMode = boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED";
 
   const handleClearAndContinue = async () => {
     setCrossBoutiqueModalOpen(false);
@@ -238,11 +254,14 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     addItem({
       productId: product.slug,
       size: selectedSize,
-      price: inrToPaise(product.price),
+      price: product.price,
       name: product.name,
       imageUrl: product.imageUrl,
       boutiqueName: product.boutiqueName,
-      boutiqueId: product.boutiqueId
+      boutiqueId: product.boutiqueId,
+      availableStock: currentStock,
+      isPreorder: isPreorderMode,
+      scheduledProcessingDate: isPreorderMode ? (boutiqueStatus as any).nextOperatingDay : undefined,
     });
     setSidebarOpen(true);
     onClose();
@@ -300,11 +319,14 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
       addItem({
         productId: product.slug,
         size: selectedSize,
-        price: inrToPaise(product.price),
+        price: product.price,
         name: product.name,
         imageUrl: product.imageUrl,
         boutiqueName: product.boutiqueName,
-        boutiqueId: product.boutiqueId
+        boutiqueId: product.boutiqueId,
+        availableStock: currentStock,
+        isPreorder: isPreorderMode,
+        scheduledProcessingDate: isPreorderMode ? (boutiqueStatus as any).nextOperatingDay : undefined,
       });
       setAdding(false);
       toast.success("Added to Bag!");
@@ -416,7 +438,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
           {/* Dots Indicator */}
           {images.length > 1 && (
             <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10">
-              {images.map((_, idx) => (
+              {images.map((_: any, idx: number) => (
                 <div 
                   key={idx} 
                   className={cn(
@@ -464,7 +486,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               
               <div className="flex flex-wrap gap-2">
                 {product.sizes && product.sizes.length > 0 ? (
-                  product.sizes.map((size) => {
+                  product.sizes.map((size: string) => {
                     const stock = stockMap[size] ?? 0;
                     const isAvail = stock > 0;
                     const isSel = selectedSize === size;
@@ -531,11 +553,25 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                       ? "Unavailable in your area"
                       : isOutOfStock
                       ? "Sold Out"
+                      : isPreorderMode
+                      ? (boutiqueStatus.type === "CLOSED_TODAY"
+                        ? "Book for Tomorrow"
+                        : `Book for ${formatNextDayLabel((boutiqueStatus as any).nextOperatingDay)}`)
                       : "Add to Bag"}
                   </span>
                 </>
               )}
             </button>
+            {isPreorderMode && (
+              <p className="mt-2 text-[10px] text-stone-500 text-center font-medium leading-normal max-w-[280px] mx-auto">
+                ⓘ Boutique is currently closed. Order will be processed when they open at{" "}
+                {(boutiqueStatus as any).openingTime} on{" "}
+                {boutiqueStatus.type === "CLOSED_TODAY"
+                  ? "tomorrow"
+                  : formatNextDayLabel((boutiqueStatus as any).nextOperatingDay)}
+                .
+              </p>
+            )}
             <button
               onClick={() => {
                 onClose();

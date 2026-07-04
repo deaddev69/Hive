@@ -15,6 +15,7 @@ import { calculateDeliveryQuoteAction } from "./routing";
 import { parseMoney, formatMoney } from "./lib/money";
 import { checkKillSwitch } from "./lib/killSwitches";
 import { validateBoutiqueOperationalLimits } from "./lib/gating";
+import { getBoutiqueStatus } from "./shared/boutiqueStatus";
 
 // ─── Cart item input shape for order placement ────────────────────────────
 const cartItemArg = v.object({
@@ -25,6 +26,8 @@ const cartItemArg = v.object({
   boutiqueName:v.string(),
   size:        v.string(),
   quantity:    v.number(),
+  isPreorder:  v.optional(v.boolean()),
+  scheduledProcessingDate: v.optional(v.string()),
 });
 
 // ─── Address snapshot shape (immutable at order time) ─────────────────────
@@ -363,6 +366,10 @@ export const placeOrder = mutation({
     const boutique: any = await ctx.db.get(primaryBoutiqueId);
     const boutiqueName = boutique ? (boutique.boutiqueName || boutique.name || "Unknown Boutique") : "Unknown Boutique";
 
+    const bStatus = boutique ? getBoutiqueStatus(boutique, now) : { type: "OPEN" as const };
+    const placedDuringClosedHours = bStatus.type !== "OPEN";
+    const scheduledProcessingDate = (bStatus.type === "CLOSED_TODAY" || bStatus.type === "CLOSED_EXTENDED") ? bStatus.nextOperatingDay : undefined;
+
     const subtotalPaise = parseMoney(args.subtotal);
     const deliveryFeePaise = parseMoney(args.deliveryFee);
     const discountPaise = parseMoney(args.discount);
@@ -453,6 +460,8 @@ export const placeOrder = mutation({
       reservationId:   args.reservationId, // Required identifier
       notes:           `Payment: ${args.paymentMethod} | Slot: ${args.deliveryDate} ${args.deliverySlot}`,
       orderSnapshot,
+      placedDuringClosedHours,
+      scheduledProcessingDate,
       createdAt:       now,
       updatedAt:       now,
     });

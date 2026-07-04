@@ -25,7 +25,7 @@ import { useConvexMutation } from "@/hooks/useConvexMutation";
 import { getEffectiveCheckoutItems } from "@/lib/getEffectiveCheckoutItems";
 import { useSessionStore } from "@/context/SessionContext";
 import { Id } from "../../../../../../convex/_generated/dataModel";
-import { formatCurrency } from "@hive/utils";
+import { formatRupees } from "@hive/utils";
 
 // ── Razorpay Script Loader ──────────────────────────────────────────────────
 function loadScript(src: string): Promise<boolean> {
@@ -112,6 +112,33 @@ export default function OrderReviewPage() {
 
   // States
   const [mounted, setMounted] = useState(false);
+  const [stockSyncedMessage, setStockSyncedMessage] = useState<string | null>(null);
+  
+  const updateAvailableStock = useCartStore((state) => state.updateAvailableStock);
+
+  useEffect(() => {
+    if (cartData && cartData.items && !checkoutItems) {
+      let changed = false;
+      cartData.items.forEach((backendItem: any) => {
+        const localItem = items.find(
+          (i) => i.productId === backendItem.productId && i.size === backendItem.size
+        );
+        if (localItem && backendItem.availableStock !== undefined) {
+          if (localItem.quantity > backendItem.availableStock) {
+            updateAvailableStock(localItem.productId, localItem.size, backendItem.availableStock);
+            changed = true;
+          } else if (localItem.availableStock !== backendItem.availableStock) {
+            updateAvailableStock(localItem.productId, localItem.size, backendItem.availableStock);
+          }
+        }
+      });
+      if (changed) {
+        setStockSyncedMessage("Some items in your bag have been updated due to stock changes.");
+        setTimeout(() => setStockSyncedMessage(null), 10000);
+      }
+    }
+  }, [cartData, items, checkoutItems, updateAvailableStock]);
+
   const [isPriceExpanded, setIsPriceExpanded] = useState(false);
   const [promoInput, setPromoInput] = useState("");
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -157,6 +184,8 @@ export default function OrderReviewPage() {
   const getDeliveryQuoteAction = useAction(api.routing.getDeliveryQuoteAction);
   const [deliveryQuote, setDeliveryQuote] = useState<any>(null);
   const [isQuoteLoading, setIsQuoteLoading] = useState(false);
+  
+  const [quoteId] = useState(() => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)));
 
   useEffect(() => {
     let active = true;
@@ -172,6 +201,7 @@ export default function OrderReviewPage() {
       userPincode: selectedAddress.pincode,
       boutiqueId: boutiqueId as any,
       subtotal: subtotal,
+      quoteId,
     }).then((quote) => {
       if (active) {
         setDeliveryQuote(quote);
@@ -185,7 +215,8 @@ export default function OrderReviewPage() {
     });
 
     return () => { active = false; };
-  }, [selectedAddress?.id, selectedAddress?.lat, selectedAddress?.lng, selectedAddress?.pincode, boutiqueId, subtotal, skipQuote, getDeliveryQuoteAction]);
+  }, [selectedAddress?.id, selectedAddress?.lat, selectedAddress?.lng, selectedAddress?.pincode, boutiqueId, subtotal, skipQuote, getDeliveryQuoteAction, quoteId]);
+
 
   console.log("[Checkout Review Debug]", {
     selectedAddressId,
@@ -234,8 +265,8 @@ export default function OrderReviewPage() {
   }
 
   let deliveryFee = (deliveryQuote && deliveryQuote.serviceable && typeof deliveryQuote.customerPaidFee === "number")
-    ? deliveryQuote.customerPaidFee
-    : 9900;
+    ? deliveryQuote.customerPaidFee / 100
+    : 99;
   if (appliedPromo === "FREESHIP") {
     deliveryFee = 0;
   }
@@ -321,7 +352,7 @@ export default function OrderReviewPage() {
       return {
         productId: resolvedProductId,
         name: item.name,
-        price: item.price / 100, // backend expects rupees
+        price: item.price, // already in rupees
         imageUrl: item.imageUrl || "",
         boutiqueName: item.boutiqueName,
         size: item.size,
@@ -345,13 +376,13 @@ export default function OrderReviewPage() {
         deliverySlot: "Same-Day",
         paymentMethod: "online",
         items: snapshotItems,
-        subtotal: subtotal / 100,
-        deliveryFee: deliveryFee / 100,
-        discount: discountAmount / 100,
-        total: total / 100,
+        subtotal: subtotal,
+        deliveryFee: deliveryFee,
+        discount: discountAmount,
+        total: total,
         promoCode: appliedPromo || undefined,
         token: token || undefined,
-        quotedAt: deliveryQuote.quotedAt,
+        quoteId,
       });
 
       const { checkoutSessionId, razorpayOrderId } = sessionResult;
@@ -424,11 +455,11 @@ export default function OrderReviewPage() {
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: Math.round(total),
+        amount: Math.round(total * 100),
         currency: "INR",
         name: "Hive",
         description: "Secure Checkout",
-        image: "/logo.png",
+        image: "https://ui-avatars.com/api/?name=Hive&background=000&color=fff&rounded=true&size=128",
         order_id: razorpayOrderId,
         handler: async function (response: any) {
           try {
@@ -578,6 +609,17 @@ export default function OrderReviewPage() {
           </p>
         </div>
 
+        {stockSyncedMessage && (
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl animate-in slide-in-from-top-2">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-sm text-amber-800 font-medium leading-relaxed">
+                {stockSyncedMessage}
+              </p>
+            </div>
+          </div>
+        )}
+
         {paymentError && (
           <div className="p-4 bg-amber-50 border border-amber-200/50 rounded-lg flex items-start gap-2.5 text-xs text-amber-800 font-semibold animate-[fadeIn_0.2s_ease-out]">
             <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -625,10 +667,10 @@ export default function OrderReviewPage() {
 
                       <div className="text-right">
                         <span className="text-xs font-extrabold text-hive-dark block">
-                          {formatCurrency(item.price * item.quantity)}
+                          {formatRupees(item.price * item.quantity)}
                         </span>
                         <div className="text-[10px] text-stone-500 font-medium leading-none mt-1">
-                          {formatCurrency(item.price)} x {item.quantity}
+                          {formatRupees(item.price)} x {item.quantity}
                         </div>
                       </div>
                     </div>
@@ -695,7 +737,7 @@ export default function OrderReviewPage() {
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Cart Subtotal</span>
-                  <span>{formatCurrency(subtotal)}</span>
+                  <span>{formatRupees(subtotal)}</span>
                 </div>
 
                 {/* Promo discounts details */}
@@ -705,22 +747,22 @@ export default function OrderReviewPage() {
                       <Ticket className="w-3.5 h-3.5 text-green-600" />
                       <span>Coupon Discount</span>
                     </span>
-                    <span>-{formatCurrency(discountAmount)}</span>
+                    <span>-{formatRupees(discountAmount)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Boutique Delivery</span>
-                  <span>{deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}</span>
+                  <span>{deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Estimated Tax</span>
-                  <span>{formatCurrency(taxAmount)}</span>
+                  <span>{formatRupees(taxAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1.5">
                   <span className="text-sm font-extrabold text-hive-dark">Order Total</span>
                   <span className="text-base font-extrabold text-hive-dark">
-                    {formatCurrency(total)}
+                    {formatRupees(total)}
                   </span>
                 </div>
               </div>
@@ -825,17 +867,17 @@ export default function OrderReviewPage() {
           <div className="px-5 py-4 border-b border-hive-border/20 bg-neutral-50/50 space-y-2.5 text-xs animate-[fadeIn_0.2s_ease-out]">
             <div className="flex justify-between items-center text-hive-text-muted">
               <span>Cart Subtotal</span>
-              <span>{formatCurrency(subtotal)}</span>
+              <span>{formatRupees(subtotal)}</span>
             </div>
             {discountAmount > 0 && (
               <div className="flex justify-between items-center text-green-700">
                 <span>Discount</span>
-                <span>-{formatCurrency(discountAmount)}</span>
+                <span>-{formatRupees(discountAmount)}</span>
               </div>
             )}
             <div className="flex justify-between items-center text-hive-text-muted">
               <span>Boutique Delivery</span>
-              <span>{deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}</span>
+              <span>{deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)}</span>
             </div>
 
             {/* Coupon Widget inside Mobile Sticky Drawer */}
@@ -907,7 +949,7 @@ export default function OrderReviewPage() {
               Total Payable {isPriceExpanded ? "↓" : "↑"}
             </span>
             <span className="text-base font-black text-hive-dark">
-              {formatCurrency(total)}
+              {formatRupees(total)}
             </span>
           </button>
 

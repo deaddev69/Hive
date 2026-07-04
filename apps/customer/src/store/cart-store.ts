@@ -5,11 +5,15 @@ export interface CartItem {
   productId: string;
   size: string;
   quantity: number;
-  price: number; // in paise
+  availableStock?: number;
+  price: number; // in rupees
   name: string;
   imageUrl: string;
   boutiqueName: string;
   boutiqueId?: string;
+  isPreorder?: boolean;
+  preorderType?: string;
+  scheduledProcessingDate?: string;
 }
 
 export interface CartState {
@@ -17,8 +21,9 @@ export interface CartState {
   addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
   removeItem: (productId: string, size: string) => void;
   updateQuantity: (productId: string, size: string, quantity: number) => void;
+  updateAvailableStock: (productId: string, size: string, stock: number) => void;
   clearCart: () => void;
-  getCartTotal: () => number; // returns total in paise
+  getCartTotal: () => number; // returns total in rupees
   getCartCount: () => number;
 }
 
@@ -36,7 +41,7 @@ export const useCartStore = create<CartState>()(
             return {
               items: state.items.map((item) =>
                 item.productId === newItem.productId && item.size === newItem.size
-                  ? { ...item, quantity: item.quantity + quantity }
+                  ? { ...item, quantity: Math.min(item.quantity + quantity, item.availableStock ?? newItem.availableStock ?? 1), availableStock: newItem.availableStock ?? item.availableStock }
                   : item
               ),
             };
@@ -46,7 +51,7 @@ export const useCartStore = create<CartState>()(
               ...state.items,
               {
                 ...newItem,
-                quantity,
+                quantity: Math.min(quantity, newItem.availableStock ?? 1),
               },
             ],
           };
@@ -69,13 +74,25 @@ export const useCartStore = create<CartState>()(
             };
           }
           return {
-            items: state.items.map((item) =>
-              item.productId === productId && item.size === size
-                ? { ...item, quantity }
-                : item
-            ),
+            items: state.items.map((item) => {
+              if (item.productId === productId && item.size === size) {
+                return { ...item, quantity: Math.min(quantity, item.availableStock ?? 1) };
+              }
+              return item;
+            }),
           };
         });
+      },
+      updateAvailableStock: (productId, size, stock) => {
+        set((state) => ({
+          items: state.items.map((item) => {
+            if (item.productId === productId && item.size === size) {
+              const newQuantity = Math.min(item.quantity, stock);
+              return { ...item, availableStock: stock, quantity: newQuantity };
+            }
+            return item;
+          }),
+        }));
       },
       clearCart: () => {
         set({ items: [] });

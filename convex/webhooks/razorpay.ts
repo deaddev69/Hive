@@ -417,6 +417,7 @@ export const processPaymentCaptured = internalMutation({
       commissionAmount: platformCommissionAmount,
       paymentStatus:   "paid",
       placedDuringClosedHours: session.placedDuringClosedHours,
+      scheduledProcessingDate: session.scheduledProcessingDate,
       paymentId:       payment._id,
       checkoutSessionId: session._id, // Required identifier
       notes:           `CheckoutSession: ${session._id}`,

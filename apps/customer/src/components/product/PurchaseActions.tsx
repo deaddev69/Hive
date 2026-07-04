@@ -17,6 +17,20 @@ import { Modal } from "@hive/ui";
 import { useSessionStore } from "@/context/SessionContext";
 import { inrToPaise } from "@hive/utils";
 
+function formatNextDayLabel(dateStr: string): string {
+  try {
+    const parts = dateStr.split("-").map(Number);
+    const year = parts[0] || 2026;
+    const month = parts[1] || 1;
+    const day = parts[2] || 1;
+    const d = new Date(year, month - 1, day);
+    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  } catch {
+    return dateStr;
+  }
+}
+import { getBoutiqueStatus } from "../../../../../convex/shared/boutiqueStatus";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Subcomponent: AddToCartButton
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,6 +41,9 @@ interface AddToCartButtonProps {
   className?: string;
   isServiceable?: boolean;
   variant?: "default" | "unified";
+  isPreorder?: boolean;
+  preorderType?: "CLOSED_TODAY" | "CLOSED_EXTENDED";
+  nextDayLabel?: string;
 }
 
 export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
@@ -36,6 +53,9 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
   className = "",
   isServiceable = true,
   variant = "default",
+  isPreorder = false,
+  preorderType,
+  nextDayLabel = "",
 }) => {
   const isUnified = variant === "unified";
   const isDisabled = disabled || !isServiceable;
@@ -79,7 +99,9 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
             "transition-colors duration-300",
             !isDisabled && "group-hover:text-hive-gold"
           )}>
-            Add to Bag
+            {isPreorder
+              ? (preorderType === "CLOSED_TODAY" ? "Book for Tomorrow" : `Book for ${nextDayLabel}`)
+              : "Add to Bag"}
           </span>
         </>
       )}
@@ -96,6 +118,9 @@ interface BuyNowButtonProps {
   className?: string;
   isServiceable?: boolean;
   variant?: "default" | "unified";
+  isPreorder?: boolean;
+  preorderType?: "CLOSED_TODAY" | "CLOSED_EXTENDED";
+  nextDayLabel?: string;
 }
 
 export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
@@ -104,6 +129,9 @@ export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
   className = "",
   isServiceable = true,
   variant = "default",
+  isPreorder = false,
+  preorderType,
+  nextDayLabel = "",
 }) => {
   const isUnified = variant === "unified";
   const isDisabled = disabled || !isServiceable;
@@ -134,7 +162,11 @@ export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
       )}
     >
       <span className="transition-colors duration-300">
-        {isServiceable ? "Buy Now" : "Unavailable"}
+        {!isServiceable
+          ? "Unavailable"
+          : isPreorder
+          ? "Pre-Order"
+          : "Buy Now"}
       </span>
       {isServiceable && (
         <ArrowRight className={cn(
@@ -163,6 +195,9 @@ interface StickyMobilePurchaseBarProps {
   className?: string;
   isServiceable?: boolean;
   resolvedStatus?: string;
+  isPreorder?: boolean;
+  preorderType?: "CLOSED_TODAY" | "CLOSED_EXTENDED";
+  nextDayLabel?: string;
 }
 
 export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = ({
@@ -177,6 +212,9 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
   className = "",
   isServiceable = true,
   resolvedStatus = "open",
+  isPreorder = false,
+  preorderType,
+  nextDayLabel = "",
 }) => {
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
   const isOffline = resolvedStatus === "closed" || resolvedStatus === "temporarily_unavailable";
@@ -252,6 +290,9 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
               onClick={onAddToCart}
               isServiceable={isServiceable}
               className="h-full text-[11px] tracking-wider"
+              isPreorder={isPreorder}
+              preorderType={preorderType}
+              nextDayLabel={nextDayLabel}
             />
             <BuyNowButton
               variant="unified"
@@ -259,6 +300,9 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
               onClick={onBuyNow}
               isServiceable={isServiceable}
               className="h-full text-[11px] tracking-wider"
+              isPreorder={isPreorder}
+              preorderType={preorderType}
+              nextDayLabel={nextDayLabel}
             />
           </div>
         )}
@@ -380,9 +424,16 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
     return dist <= bRad;
   }, [latitude, longitude, product.boutique]);
 
-  const resolvedStatus = (product.boutique as any).storeStatus || "open";
-  const isAcceptingOrders = (product.boutique as any).isAcceptingOrders !== false;
-  const isStoreOffline = resolvedStatus === "closed" || resolvedStatus === "temporarily_unavailable" || !isAcceptingOrders;
+  const boutiqueStatus = product.boutique
+    ? getBoutiqueStatus(product.boutique as any, Date.now())
+    : { type: "OPEN" as const };
+  const isStoreOffline = boutiqueStatus.type === "PAUSED";
+  const isPreorderMode = boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED";
+  const resolvedStatus = boutiqueStatus.type === "PAUSED"
+    ? (boutiqueStatus.reason === "vacation" ? ("closed" as const) : ("temporarily_unavailable" as const))
+    : (product.boutique as any).storeStatus === "busy"
+    ? ("busy" as const)
+    : ("open" as const);
 
   const triggerToast = (message: string, type: "success" | "info" = "success") => {
     setToast({ message, type });
@@ -418,11 +469,13 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
     addItem({
       productId: product.slug ?? (product as any)._id ?? product.id,
       size: selectedSize,
-      price: inrToPaise(product.price),
+      price: product.price,
       name: product.name,
       imageUrl: product.images[0] || "",
       boutiqueName: product.boutique.name,
       boutiqueId: product.boutique.id,
+      isPreorder: isPreorderMode,
+      scheduledProcessingDate: isPreorderMode ? (boutiqueStatus as any).nextOperatingDay : undefined,
     });
     setSidebarOpen(true);
     triggerToast(`Added ${cleanProductTitle(product.name)} (Size ${selectedSize}) to your bag!`);
@@ -493,11 +546,14 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       addItem({
         productId: product.slug ?? (product as any)._id ?? product.id,
         size: selectedSize,
-        price: inrToPaise(product.price),
+        price: product.price,
         name: product.name,
         imageUrl: product.images[0] || "",
         boutiqueName: product.boutique.name,
         boutiqueId: product.boutique.id,
+        availableStock: inventoryCount,
+        isPreorder: isPreorderMode,
+        scheduledProcessingDate: isPreorderMode ? (boutiqueStatus as any).nextOperatingDay : undefined,
       });
 
       setSidebarOpen(true);
@@ -534,11 +590,13 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         productId: product.slug ?? (product as any)._id ?? product.id,
         size: selectedSize,
         quantity: 1,
-        price: inrToPaise(product.price),
+        price: product.price,
         name: product.name,
         imageUrl: product.images[0] || "",
         boutiqueName: product.boutique.name,
         boutiqueId: product.boutique.id ?? (product as any).boutiqueId,
+        isPreorder: isPreorderMode,
+        scheduledProcessingDate: isPreorderMode ? (boutiqueStatus as any).nextOperatingDay : undefined,
       },
     ]);
 
@@ -560,6 +618,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
     resolvedStatus === "closed" ||
     resolvedStatus === "temporarily_unavailable" ||
     resolvedStatus === "busy" ||
+    isPreorderMode ||
     (!isStoreOffline && (!isLocationServiceable || !selectedSize || isOutOfStock || isLowStock));
 
   return (
@@ -568,7 +627,21 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       {/* 1. Validation Alerts & Feedback */}
       {showAlert && (
         <div className="flex flex-col gap-2 w-full">
-          {resolvedStatus === "closed" ? (
+          {isPreorderMode ? (
+            <div className="flex flex-col gap-1 text-xs font-bold text-amber-700 bg-amber-50 px-3.5 py-2.5 rounded-xl border border-amber-200 w-full">
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 flex-shrink-0 text-amber-500" />
+                <span>Pre-Order Active: {product.boutique.name || "This boutique"} is currently offline.</span>
+              </div>
+              <p className="text-[10px] text-amber-600 font-medium pl-6 leading-normal">
+                You can book now to secure your items. Your order will be prepared when they open at {(boutiqueStatus as any).openingTime} on{" "}
+                {boutiqueStatus.type === "CLOSED_TODAY"
+                  ? "tomorrow"
+                  : formatNextDayLabel((boutiqueStatus as any).nextOperatingDay)}
+                .
+              </p>
+            </div>
+          ) : resolvedStatus === "closed" ? (
             <div className="flex flex-col gap-1 text-xs font-bold text-red-700 bg-red-50 px-3.5 py-2.5 rounded-xl border border-red-200 w-full">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-500" />
@@ -685,12 +758,18 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             loading={loading}
             onClick={handleAddToCart}
             isServiceable={isLocationServiceable}
+            isPreorder={isPreorderMode}
+            preorderType={(boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED") ? boutiqueStatus.type : undefined}
+            nextDayLabel={boutiqueStatus.type === "CLOSED_EXTENDED" ? formatNextDayLabel((boutiqueStatus as any).nextOperatingDay) : ""}
           />
           <BuyNowButton 
             variant="unified"
             disabled={!selectedSize} 
             onClick={handleBuyNow} 
-            isServiceable={isLocationServiceable} 
+            isServiceable={isLocationServiceable}
+            isPreorder={isPreorderMode}
+            preorderType={(boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED") ? boutiqueStatus.type : undefined}
+            nextDayLabel={boutiqueStatus.type === "CLOSED_EXTENDED" ? formatNextDayLabel((boutiqueStatus as any).nextOperatingDay) : ""}
           />
         </div>
       )}
@@ -731,6 +810,9 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
           loading={loading}
           isServiceable={isLocationServiceable && !isStoreOffline}
           resolvedStatus={resolvedStatus}
+          isPreorder={isPreorderMode}
+          preorderType={(boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED") ? boutiqueStatus.type : undefined}
+          nextDayLabel={boutiqueStatus.type === "CLOSED_EXTENDED" ? formatNextDayLabel((boutiqueStatus as any).nextOperatingDay) : ""}
         />
       )}
 

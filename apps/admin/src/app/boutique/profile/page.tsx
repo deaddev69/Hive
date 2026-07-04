@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { SignOutButton } from "@clerk/nextjs";
 import { api } from "../../../../../../convex/_generated/api";
-import { Button, Card, CardContent } from "@hive/ui";
+import { Button, Card, CardContent, cn } from "@hive/ui";
 import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut } from "lucide-react";
 import { toast } from "@hive/utils";
 
@@ -30,6 +30,13 @@ export default function BoutiqueProfile() {
   const [isAcceptingOrders, setIsAcceptingOrders] = useState(true);
   const [pauseReason, setPauseReason] = useState<string>("other");
   const [closedUntilStr, setClosedUntilStr] = useState<string>("");
+
+  // Operating Hours and Holidays
+  const [openingTime, setOpeningTime] = useState("09:00");
+  const [closingTime, setClosingTime] = useState("21:00");
+  const [weeklyClosedDays, setWeeklyClosedDays] = useState<number[]>([]);
+  const [holidayDates, setHolidayDates] = useState<string[]>([]);
+  const [newHoliday, setNewHoliday] = useState("");
   
   // Image states
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -72,6 +79,11 @@ export default function BoutiqueProfile() {
       } else {
         setClosedUntilStr("");
       }
+
+      setOpeningTime(boutique.openingTime || "09:00");
+      setClosingTime(boutique.closingTime || "21:00");
+      setWeeklyClosedDays(boutique.weeklyClosedDays || []);
+      setHolidayDates(boutique.holidayDates || []);
     }
   }, [boutique]);
 
@@ -159,6 +171,10 @@ export default function BoutiqueProfile() {
         closedUntil: (!isAcceptingOrders || storeStatus === "closed") && closedUntilStr 
                        ? new Date(closedUntilStr).getTime() 
                        : undefined,
+        openingTime,
+        closingTime,
+        weeklyClosedDays,
+        holidayDates,
       });
 
       toast.success("Profile updated successfully!");
@@ -414,6 +430,133 @@ export default function BoutiqueProfile() {
 
         {/* Right Side: Read-only Settings (5 cols) */}
         <div className="lg:col-span-5 flex flex-col gap-6">
+          {/* Card: Operational Hours & Holidays */}
+          <Card className="border border-hive-border bg-white rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+            <div>
+              <h3 className="text-lg font-serif font-bold text-hive-dark">
+                Operations & Holidays
+              </h3>
+              <p className="text-xs text-hive-text-muted mt-0.5">Configure store timings, weekly days off, and holiday periods.</p>
+            </div>
+
+            {/* Timings */}
+            <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-100">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Opening Time</label>
+                <input
+                  type="time"
+                  value={openingTime}
+                  onChange={(e) => setOpeningTime(e.target.value)}
+                  className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Closing Time</label>
+                <input
+                  type="time"
+                  value={closingTime}
+                  onChange={(e) => setClosingTime(e.target.value)}
+                  className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Weekly Days Off */}
+            <div className="flex flex-col gap-2 pb-4 border-b border-slate-100">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Weekly Days Off</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 0, label: "Sun" },
+                  { value: 1, label: "Mon" },
+                  { value: 2, label: "Tue" },
+                  { value: 3, label: "Wed" },
+                  { value: 4, label: "Thu" },
+                  { value: 5, label: "Fri" },
+                  { value: 6, label: "Sat" }
+                ].map((day) => {
+                  const isClosed = weeklyClosedDays.includes(day.value);
+                  return (
+                    <button
+                      key={day.value}
+                      type="button"
+                      onClick={() => {
+                        if (isClosed) {
+                          setWeeklyClosedDays(weeklyClosedDays.filter((d) => d !== day.value));
+                        } else {
+                          setWeeklyClosedDays([...weeklyClosedDays, day.value]);
+                        }
+                      }}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
+                        isClosed
+                          ? "bg-amber-50 border-amber-200 text-amber-700 font-bold"
+                          : "bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100"
+                      )}
+                    >
+                      {day.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Holiday Manager */}
+            <div className="flex flex-col gap-3">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Manage Holidays</label>
+              
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={newHoliday}
+                  min={new Date().toISOString().split("T")[0]}
+                  onChange={(e) => setNewHoliday(e.target.value)}
+                  className="flex-1 h-10 px-3 border border-hive-border rounded-xl text-sm"
+                />
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (!newHoliday) return;
+                    if (holidayDates.includes(newHoliday)) {
+                      toast.error("Holiday date already added.");
+                      return;
+                    }
+                    setHolidayDates([...holidayDates, newHoliday]);
+                    setNewHoliday("");
+                  }}
+                  className="h-10 text-xs px-4"
+                >
+                  Add
+                </Button>
+              </div>
+
+              {/* Holiday List */}
+              <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto mt-1 pr-1">
+                {holidayDates.length === 0 ? (
+                  <p className="text-xs text-stone-400 italic">No holidays configured.</p>
+                ) : (
+                  holidayDates
+                    .sort()
+                    .map((date) => (
+                      <div key={date} className="flex justify-between items-center bg-stone-50 border border-stone-200/60 rounded-lg px-3 py-1.5">
+                        <span className="text-xs font-semibold text-stone-700">
+                          {new Date(date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHolidayDates(holidayDates.filter((d) => d !== date));
+                          }}
+                          className="text-stone-400 hover:text-red-600 text-xs font-bold transition-all px-1.5 py-0.5"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))
+                )}
+              </div>
+            </div>
+          </Card>
+
           <Card className="border border-hive-border bg-white rounded-3xl p-6 shadow-sm flex flex-col gap-5">
             <h3 className="text-lg font-serif font-bold text-hive-dark pb-2 border-b border-hive-border/60">
               Registration Meta

@@ -900,6 +900,33 @@ export const updateBoutiqueProfile = mutation({
   handler: async (ctx, args) => {
     const boutique = await getMyBoutique(ctx);
 
+    if (args.holidayDates) {
+      const oldHolidays = boutique.holidayDates || [];
+      const newHolidays = args.holidayDates.filter((h) => !oldHolidays.includes(h));
+
+      if (newHolidays.length > 0) {
+        const pendingOrders = await ctx.db
+          .query("orders")
+          .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", boutique._id))
+          .filter((q) =>
+            q.and(
+              q.neq(q.field("status"), "delivered"),
+              q.neq(q.field("status"), "cancelled"),
+              q.neq(q.field("status"), "returned")
+            )
+          )
+          .collect();
+
+        for (const order of pendingOrders) {
+          if (order.scheduledProcessingDate && newHolidays.includes(order.scheduledProcessingDate)) {
+            throw new ConvexError(
+              `Cannot set holiday on ${order.scheduledProcessingDate}. You have active pending pre-orders scheduled for delivery on this day.`
+            );
+          }
+        }
+      }
+    }
+
     const normalizedPhone = normalizePhoneNumber(args.phone);
     const normalizedNotificationPhone = args.notificationPhone
       ? normalizePhoneNumber(args.notificationPhone)
