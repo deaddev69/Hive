@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Card, CardContent } from "@hive/ui";
@@ -57,7 +57,7 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
 export default function BoutiqueOrders() {
   const orders = useQuery(api.orders.getBoutiqueOrders);
   const updateStatus = useMutation(api.orders.updateBoutiqueOrderStatus);
-  const retryDispatch = useMutation(api.orders.retryBoutiqueOrderDispatch);
+  const retryDispatch = useAction(api.orders.retryBoutiqueOrderDispatch);
   const [retryingOrderId, setRetryingOrderId] = React.useState<string | null>(null);
 
   if (orders === undefined) {
