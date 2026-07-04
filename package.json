@@ -8,6 +8,8 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
+    "test": "npx tsx convex/tests/signatureTest.ts",
+    "prebuild": "npm run test",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "dev:customer": "turbo run dev --filter=@hive/customer",

@@ -3,7 +3,7 @@
 
 import { mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { calculateDeliveryQuote } from "../routing";
+import { calculateDeliveryQuoteAction } from "../routing";
 import { api } from "../_generated/api";
 
 export const runHyperlocalTests = mutation({
@@ -113,7 +113,7 @@ export const runHyperlocalTests = mutation({
     });
 
     // Run the pricing engine with slightly offset coordinates (9.98943, 76.31512)
-    const quote = await calculateDeliveryQuote(ctx.db, {
+    const quote = await calculateDeliveryQuoteAction(ctx.db, {
       userLat: 9.98943,
       userLng: 76.31512,
       boutiqueId: testBoutiqueId,
@@ -155,7 +155,7 @@ export const runHyperlocalTests = mutation({
     });
 
     // Run the pricing engine with the coordinates that map to the expired record
-    const expiredQuote = await calculateDeliveryQuote(ctx.db, {
+    const expiredQuote = await calculateDeliveryQuoteAction(ctx.db, {
       userLat: 9.9001,
       userLng: 76.3001,
       boutiqueId: testBoutiqueId,
@@ -180,7 +180,7 @@ export const runHyperlocalTests = mutation({
 
     // Cart subtotal = ₹2800 (280000 paise).
     // Thresholds: ₹2500+ = Free delivery -> ₹0
-    const freeQuote = await calculateDeliveryQuote(ctx.db, {
+    const freeQuote = await calculateDeliveryQuoteAction(ctx.db, {
       userLat: 9.98943,
       userLng: 76.31512,
       boutiqueId: testBoutiqueId,
