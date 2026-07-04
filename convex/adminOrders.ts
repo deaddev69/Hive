@@ -737,9 +737,46 @@ export const updateOrderStatus = mutation({
       await markOrderFinanciallyDelivered(ctx, args.orderId, now);
     }
 
-    // TODO: wire Shiprocket booking here
     if (args.status === "packed") {
-      // Intentionally empty: automatic courier dispatch is triggered in downstream provider action.
+      // 1. Create a shipment record first
+      const boutique = await ctx.db.get(order.boutiqueId);
+      const customer = await ctx.db.get(order.customerId);
+
+      const shipmentId = await ctx.db.insert("shipments", {
+        orderId: args.orderId,
+        provider: "shiprocket",
+        status: "created",
+        awbNumber: "",
+        trackingUrl: "",
+        rawWebhookEvents: [],
+        pickupAddress: {
+          name: boutique?.boutiqueName || "Boutique",
+          line1: boutique?.address || "",
+          city: boutique?.addressDetails?.city || "",
+          state: boutique?.addressDetails?.state || "",
+          pincode: boutique?.addressDetails?.pincode || "",
+          phone: boutique?.phone || "",
+        },
+        deliveryAddress: {
+          name: (order.deliveryAddress as any)?.name || customer?.email || "Customer",
+          line1: order.deliveryAddress?.line1 || (order.deliveryAddress as any)?.formattedAddress || "",
+          line2: order.deliveryAddress?.line2 || (order.deliveryAddress as any)?.houseNumber || "",
+          city: (order.deliveryAddress as any)?.city || "",
+          state: (order.deliveryAddress as any)?.state || "",
+          pincode: (order.deliveryAddress as any)?.pincode || "",
+          phone: order.deliveryAddress?.phone || customer?.phone || "",
+        },
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      await ctx.db.patch(args.orderId, { shipmentId });
+
+      // 2. Schedule dispatch action to hit Shiprocket Rate & Book API
+      await ctx.scheduler.runAfter(0, internal.lib.shiprocket.dispatchOrder, {
+        orderId: args.orderId,
+        shipmentId: shipmentId,
+      });
     }
 
     const targetStatuses = ["confirmed", "packed", "out_for_delivery", "delivered"];

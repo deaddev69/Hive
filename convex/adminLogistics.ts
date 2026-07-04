@@ -6,6 +6,7 @@ import { requireRole } from "./lib/auth";
 import { logSystemAlert } from "./lib/alerts";
 import { assertHyperlocalTransitionPrerequisites } from "./orders";
 import { markOrderFinanciallyDelivered } from "./adminFinance";
+import { triggerNotification } from "./lib/notifications";
 
 // Provider configuration registry
 export const LOGISTICS_PROVIDERS = {
@@ -618,6 +619,12 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
 
     // State machine check
     const fromStatus = shipment.status;
+    
+    // Idempotency: skip if already in this status
+    if (fromStatus === args.status) {
+      return { success: true, message: "Idempotent request ignored" };
+    }
+
     const validTransitions = VALID_SHIPMENT_TRANSITIONS[fromStatus];
     if (!validTransitions || !validTransitions.includes(args.status)) {
       await logSystemAlert(ctx, "shipment.transition_failed", `State machine violation: Cannot transition shipment status from '${fromStatus}' to '${args.status}' on AWB ${args.awbNumber}`, "critical", { shipmentId: shipment._id, status: args.status });
@@ -729,6 +736,18 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
     patchData.lastWebhookAt = now;
 
     await ctx.db.patch(shipment._id, patchData);
+
+    // Trigger ops Slack alerts for exceptions
+    if (args.status === "failed" || args.status === "rto_initiated") {
+      const superadmin = await ctx.db.query("users").withIndex("by_role", q => q.eq("role", "admin")).first();
+      if (superadmin && order) {
+        await triggerNotification(ctx, superadmin._id, "slack", `shipment_${args.status}`, "order", order._id, JSON.stringify({
+          awbNumber: args.awbNumber,
+          exceptionType: args.exceptionType || "N/A",
+          remarks: args.remarks || "No remarks provided"
+        }));
+      }
+    }
 
     // Write audit log
     await ctx.db.insert("auditLogs", {

@@ -7,7 +7,7 @@ import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
 import { validateProductSizeAndStock, MOCK_INVENTORY } from "../lib/mockInventory";
 import { triggerNotification } from "../lib/notifications";
-import { calculateDeliveryQuote } from "../routing";
+import { calculateDeliveryQuoteAction } from "../routing";
 import { incrementBoutiqueOrderCount } from "../lib/boutiqueCounters";
 import { restoreCheckoutSessionStock } from "../lib/inventory";
 
@@ -283,7 +283,7 @@ export const processPaymentCaptured = internalMutation({
     });
 
     // Resolve boutiqueId from session items
-    let boutiqueId = undefined;
+    let boutiqueId: Id<"boutiques"> | undefined = undefined;
     for (const item of session.items) {
       const product = await ctx.db
         .query("products")
@@ -331,7 +331,7 @@ export const processPaymentCaptured = internalMutation({
     // Calculate delivery quote beforehand to populate snapshot with actual estimations
     let quote = { serviceable: false, estimatedCourierCost: 9000, estimatedPorterCost: 9000, distanceKm: 5.5, etaMinutes: 45, customerPaidFee: session.deliveryFee };
     try {
-      const resolvedQuote = await calculateDeliveryQuote(ctx.db, {
+      const resolvedQuote = await calculateDeliveryQuoteAction(ctx.db, {
         userLat: session.addressSnapshot.lat,
         userLng: session.addressSnapshot.lng,
         boutiqueId,
@@ -416,6 +416,7 @@ export const processPaymentCaptured = internalMutation({
       total:           session.total,
       commissionAmount: platformCommissionAmount,
       paymentStatus:   "paid",
+      placedDuringClosedHours: session.placedDuringClosedHours,
       paymentId:       payment._id,
       checkoutSessionId: session._id, // Required identifier
       notes:           `CheckoutSession: ${session._id}`,
@@ -496,6 +497,16 @@ export const processPaymentCaptured = internalMutation({
       orderNumber,
       amount: payment.amount,
     }));
+
+    // Trigger ops Slack alert for new order
+    const superadmin = await ctx.db.query("users").withIndex("by_role", q => q.eq("role", "admin")).first();
+    if (superadmin) {
+      await triggerNotification(ctx, superadmin._id, "slack", "order_confirmed", "order", orderId, JSON.stringify({
+        orderNumber,
+        amount: payment.amount,
+        boutiqueId: boutiqueId
+      }));
+    }
 
     // Clear user's cart
     const cartItemsToDelete = await ctx.db

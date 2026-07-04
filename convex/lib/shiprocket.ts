@@ -2,6 +2,7 @@ import { action, internalMutation, internalQuery } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { v } from "convex/values";
 import { Id } from "../_generated/dataModel";
+import { triggerNotification } from "./notifications";
 
 const SHIPROCKET_BASE_URL = "https://apiv2.shiprocket.in/v1/external";
 
@@ -116,7 +117,8 @@ export const dispatchOrder = action({
     const token = await ctx.runAction(internal.lib.shiprocket.getValidTokenAction);
 
     // 1. Create Order in Shiprocket
-    const orderPayload = {
+    try {
+      const orderPayload = {
       order_id: order.orderNumber,
       order_date: new Date(order.createdAt).toISOString().split('T')[0],
       pickup_location: "Primary", // Usually configured in Shiprocket dashboard
@@ -200,7 +202,72 @@ export const dispatchOrder = action({
     });
 
     return { awbNumber, shiprocketOrderId };
+    } catch (err: any) {
+      console.error("[dispatchOrder] Failed to dispatch order to Shiprocket:", err);
+      await ctx.runMutation(internal.lib.shiprocket.markShipmentBookingFailed, {
+        shipmentId: args.shipmentId,
+        error: err.message || String(err),
+      });
+      throw err;
+    }
   }
+});
+
+export const markShipmentBookingFailed = internalMutation({
+  args: { shipmentId: v.id("shipments"), error: v.string() },
+  handler: async (ctx, args) => {
+    const shipment = await ctx.db.get(args.shipmentId);
+    if (!shipment) return;
+
+    const newRetryCount = (shipment.retryCount || 0) + 1;
+    await ctx.db.patch(args.shipmentId, {
+      status: "booking_failed",
+      exceptionType: "other",
+      retryCount: newRetryCount,
+    });
+    
+    // Notify Ops Team
+    if (shipment) {
+      const order = await ctx.db
+        .query("orders")
+        .filter((q) => q.eq(q.field("shipmentId"), args.shipmentId))
+        .first();
+        
+      if (order) {
+        const boutique = await ctx.db.get(order.boutiqueId);
+        const customer = await ctx.db.get(order.customerId);
+
+        // Find superadmin to alert (or use a dedicated ops group)
+        const superadmin = await ctx.db
+          .query("users")
+          .withIndex("by_role", (q) => q.eq("role", "admin"))
+          .first();
+          
+        if (superadmin) {
+          const payload = {
+            orderNumber: order.orderNumber,
+            orderId: order._id,
+            boutiqueName: boutique?.boutiqueName || "Unknown Boutique",
+            customerName: customer?.email || "Customer",
+            error: args.error,
+            adminLink: `${process.env.NEXT_PUBLIC_ADMIN_URL || "https://admin.hive.com"}/admin/orders?orderId=${order._id}`
+          };
+
+          const templateName = newRetryCount > 3 ? "booking_failed_escalated" : "booking_failed_ops_alert";
+          const finalPayload = {
+            ...payload,
+            retryCount: newRetryCount,
+            isEscalated: newRetryCount > 3
+          };
+
+          // Send in-app, email, and slack alert
+          await triggerNotification(ctx, superadmin._id, "in_app", templateName, "order", order._id, JSON.stringify(finalPayload));
+          await triggerNotification(ctx, superadmin._id, "email", templateName, "order", order._id, JSON.stringify(finalPayload));
+          await triggerNotification(ctx, superadmin._id, "slack", templateName, "order", order._id, JSON.stringify(finalPayload));
+        }
+      }
+    }
+  },
 });
 
 export const cancelShipment = action({
@@ -239,3 +306,48 @@ export const cancelShipment = action({
     throw new Error(`Failed to cancel shipment after ${MAX_RETRIES} attempts. Last error: ${lastError?.message}`);
   }
 });
+
+export const checkServiceability = action({
+  args: {
+    pickup_postcode: v.string(),
+    delivery_postcode: v.string(),
+    weight: v.number(),
+    cod: v.number(),
+  },
+  handler: async (ctx, args): Promise<{ customerPaidFee: number; estimatedDeliveryDate: string; courierName: string; quotedAt: number; serviced: boolean; reason?: string }> => {
+    try {
+      const token = await ctx.runAction(internal.lib.shiprocket.getValidTokenAction);
+      const url = `${SHIPROCKET_BASE_URL}/courier/serviceability/?pickup_postcode=${args.pickup_postcode}&delivery_postcode=${args.delivery_postcode}&weight=${args.weight}&cod=${args.cod}`;
+      
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        console.error(`Shiprocket serviceability error: ${await res.text()}`);
+        return { serviced: false, reason: "Shiprocket API Error", customerPaidFee: 0, estimatedDeliveryDate: "", courierName: "", quotedAt: Date.now() };
+      }
+
+      const data = await res.json();
+      
+      if (data.status === 200 && data.data && data.data.available_courier_companies && data.data.available_courier_companies.length > 0) {
+        // Use the first recommended courier
+        const recommendedCourier = data.data.available_courier_companies[0];
+        return {
+          serviced: true,
+          customerPaidFee: Math.round(recommendedCourier.rate * 100), // convert to paise
+          estimatedDeliveryDate: recommendedCourier.etd || "",
+          courierName: recommendedCourier.courier_name || "Standard Courier",
+          quotedAt: Date.now(),
+        };
+      } else {
+        return { serviced: false, reason: "unserviceable", customerPaidFee: 0, estimatedDeliveryDate: "", courierName: "", quotedAt: Date.now() };
+      }
+    } catch (err: any) {
+      console.error("checkServiceability exception:", err);
+      return { serviced: false, reason: "error", customerPaidFee: 0, estimatedDeliveryDate: "", courierName: "", quotedAt: Date.now() };
+    }
+  }
+});
+
