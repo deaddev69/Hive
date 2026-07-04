@@ -111,14 +111,14 @@ async function checkCartItemStatus(
   }
 
   if (stock === 0) {
-    return { isValid: false, status: "out_of_stock" };
+    return { isValid: false, status: "out_of_stock", availableStock: stock };
   }
 
   if (item.quantity > stock) {
-    return { isValid: false, status: "quantity_exceeded" };
+    return { isValid: false, status: "quantity_exceeded", availableStock: stock };
   }
 
-  return { isValid: true, status: "available" };
+  return { isValid: true, status: "available", availableStock: stock };
 }
 
 /**
@@ -181,6 +181,7 @@ export const getCart = query({
           boutiqueId,
           isValid: check.isValid,
           status:  check.status,
+          availableStock: check.availableStock,
         };
       })
     );

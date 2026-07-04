@@ -76,6 +76,34 @@ export const getCachedDistanceRecord = internalQuery({
 });
 
 /**
+ * Write a delivery quote to the checkoutQuotes table.
+ */
+export const storeQuote = internalMutation({
+  args: {
+    quoteId: v.string(),
+    deliveryFee: v.number(),
+    quotedAt: v.number(),
+    expiresAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Delete any existing quote for this ID
+    const existing = await ctx.db
+      .query("checkoutQuotes")
+      .withIndex("by_checkoutSessionId", (q) => q.eq("checkoutSessionId", args.quoteId))
+      .first();
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+    await ctx.db.insert("checkoutQuotes", {
+      checkoutSessionId: args.quoteId,
+      deliveryFee: args.deliveryFee,
+      quotedAt: args.quotedAt,
+      expiresAt: args.expiresAt,
+    });
+  }
+});
+
+/**
  * Write or update a road distance record in the cache table with a 7-day TTL.
  */
 export const cacheDistance = internalMutation({
@@ -348,7 +376,7 @@ export async function calculateDeliveryQuoteAction(
 
   // Fallback to internal pricing logic if Shiprocket errored out or returned no serviceability
 
-  const subtotalRupees = args.subtotal / 100;
+  const subtotalRupees = args.subtotal; // args.subtotal is now passed in rupees
   
   let standardFee = 99;
   if (distanceKm <= 3) {
@@ -388,8 +416,19 @@ export const getDeliveryQuoteAction = action({
     userPincode: v.optional(v.string()),
     boutiqueId: v.id("boutiques"),
     subtotal:   v.number(),
+    quoteId:    v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<any> => {
-    return calculateDeliveryQuoteAction(ctx, args);
+    const result = await calculateDeliveryQuoteAction(ctx, args);
+    
+    if (args.quoteId && result && result.serviceable) {
+      await ctx.runMutation(internal.routing.storeQuote, {
+        quoteId: args.quoteId,
+        deliveryFee: result.customerPaidFee,
+        quotedAt: result.quotedAt,
+        expiresAt: result.quotedAt + 15 * 60 * 1000, // 15 mins expiry
+      });
+    }
+    return result;
   }
 });

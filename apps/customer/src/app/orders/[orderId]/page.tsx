@@ -243,7 +243,7 @@ function TrackingTimeline({ status }: { status: string }) {
   // Find current active step index based on statuses array
   let currentIdx = -1;
   for (let i = steps.length - 1; i >= 0; i--) {
-    if (steps[i].statuses?.includes(status)) {
+    if (steps[i]?.statuses?.includes(status)) {
       currentIdx = i;
       break;
     }

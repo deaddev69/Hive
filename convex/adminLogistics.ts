@@ -706,7 +706,7 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
       } else if (args.status === "delivered") {
         orderPatch.status = "delivered";
         orderPatch.deliveredAt = now;
-        orderPatch.claimWindowExpiresAt = now + 48 * 3600 * 1000;
+        orderPatch.claimWindowExpiresAt = now + 72 * 3600 * 1000;
       } else if (args.status === "returned" || args.status === "cancelled") {
         orderPatch.status = "cancelled";
         orderPatch.cancelledAt = now;

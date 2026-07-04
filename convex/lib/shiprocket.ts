@@ -29,6 +29,16 @@ export const saveToken = internalMutation({
   },
 });
 
+export const clearToken = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const oldTokens = await ctx.db.query("shiprocketTokens").collect();
+    for (const t of oldTokens) {
+      await ctx.db.delete(t._id);
+    }
+  },
+});
+
 export const getValidTokenAction = action({
   args: {},
   handler: async (ctx): Promise<string> => {
@@ -49,11 +59,16 @@ export const getValidTokenAction = action({
       throw new Error("Missing SHIPROCKET_EMAIL or SHIPROCKET_PASSWORD environment variables");
     }
 
-    const response = await fetch(`${SHIPROCKET_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    let response;
+    try {
+      response = await fetch(`${SHIPROCKET_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch (err: any) {
+      throw new Error(`Shiprocket token fetch failed: ${err.message}. Check network connectivity.`);
+    }
 
     if (!response.ok) {
       throw new Error(`Shiprocket login failed: ${await response.text()}`);
@@ -72,6 +87,33 @@ export const getValidTokenAction = action({
     return token;
   },
 });
+
+async function fetchShiprocketAPI(ctx: any, url: string, options: RequestInit): Promise<Response> {
+  let token = await ctx.runAction(internal.lib.shiprocket.getValidTokenAction);
+  
+  const headers = new Headers(options.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+  
+  let res = await fetch(url, { ...options, headers });
+  
+  if (res.status === 401) {
+    // Invalidate cached token
+    await ctx.runMutation(internal.lib.shiprocket.clearToken);
+    
+    // Fetch a new one
+    token = await ctx.runAction(internal.lib.shiprocket.getValidTokenAction);
+    headers.set("Authorization", `Bearer ${token}`);
+    
+    // Retry exactly once
+    res = await fetch(url, { ...options, headers });
+    
+    if (res.status === 401) {
+      throw new Error("Shiprocket authentication failed. Contact support.");
+    }
+  }
+  
+  return res;
+}
 
 export const getOrderDetails = internalQuery({
   args: { orderId: v.id("orders") },
@@ -122,6 +164,8 @@ export const dispatchOrder = action({
       order_id: order.orderNumber,
       order_date: new Date(order.createdAt).toISOString().split('T')[0],
       pickup_location: "Primary", // Usually configured in Shiprocket dashboard
+      // TODO: Verify "Primary" pickup location is configured 
+      // in Shiprocket dashboard before launch.
       billing_customer_name: order.snapshot.deliveryAddress.name,
       billing_last_name: "",
       billing_address: order.snapshot.deliveryAddress.line1,
@@ -147,9 +191,9 @@ export const dispatchOrder = action({
       weight: 0.5,
     };
 
-    const createRes = await fetch(`${SHIPROCKET_BASE_URL}/orders/create/ad-hoc`, {
+    const createRes = await fetchShiprocketAPI(ctx, `${SHIPROCKET_BASE_URL}/orders/create/ad-hoc`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(orderPayload),
     });
 
@@ -166,9 +210,9 @@ export const dispatchOrder = action({
     }
 
     // 2. Generate AWB
-    const awbRes = await fetch(`${SHIPROCKET_BASE_URL}/courier/generate/awb`, {
+    const awbRes = await fetchShiprocketAPI(ctx, `${SHIPROCKET_BASE_URL}/courier/generate/awb`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ shipment_id: shipmentIdSR, courier_id: "" }), // Auto-assign courier
     });
 
@@ -184,9 +228,9 @@ export const dispatchOrder = action({
     }
 
     // 3. Request Pickup
-    const pickupRes = await fetch(`${SHIPROCKET_BASE_URL}/courier/generate/pickup`, {
+    const pickupRes = await fetchShiprocketAPI(ctx, `${SHIPROCKET_BASE_URL}/courier/generate/pickup`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ shipment_id: [shipmentIdSR] }), 
     });
 
@@ -273,8 +317,6 @@ export const markShipmentBookingFailed = internalMutation({
 export const cancelShipment = action({
   args: { awbNumbers: v.array(v.string()) },
   handler: async (ctx, args): Promise<any> => {
-    const token = await ctx.runAction(internal.lib.shiprocket.getValidTokenAction);
-    
     const MAX_RETRIES = 3;
     const RETRY_DELAY_MS = 5000;
     
@@ -282,9 +324,9 @@ export const cancelShipment = action({
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const cancelRes = await fetch(`${SHIPROCKET_BASE_URL}/orders/cancel/awb`, {
+        const cancelRes = await fetchShiprocketAPI(ctx, `${SHIPROCKET_BASE_URL}/orders/cancel/awb`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ awbs: args.awbNumbers }),
         });
 
@@ -316,12 +358,11 @@ export const checkServiceability = action({
   },
   handler: async (ctx, args): Promise<{ customerPaidFee: number; estimatedDeliveryDate: string; courierName: string; quotedAt: number; serviced: boolean; reason?: string }> => {
     try {
-      const token = await ctx.runAction(internal.lib.shiprocket.getValidTokenAction);
       const url = `${SHIPROCKET_BASE_URL}/courier/serviceability/?pickup_postcode=${args.pickup_postcode}&delivery_postcode=${args.delivery_postcode}&weight=${args.weight}&cod=${args.cod}`;
       
-      const res = await fetch(url, {
+      const res = await fetchShiprocketAPI(ctx, url, {
         method: "GET",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
       });
 
       if (!res.ok) {
@@ -351,3 +392,67 @@ export const checkServiceability = action({
   }
 });
 
+export const getStuckShipments = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const threeDaysAgo = now - 72 * 3600 * 1000;
+    const fiveDaysAgo = now - 5 * 24 * 3600 * 1000;
+    
+    const allShipments = await ctx.db.query("shipments").collect();
+    const stuck = allShipments.filter(s => 
+      (s.status === "in_transit" || s.status === "out_for_delivery") &&
+      s.updatedAt < threeDaysAgo
+    );
+    
+    return stuck.map(s => ({
+      _id: s._id,
+      awbNumber: s.awbNumber,
+      updatedAt: s.updatedAt,
+      isOverFiveDays: s.updatedAt < fiveDaysAgo
+    }));
+  }
+});
+
+export const reconcileStuckShipments = action({
+  args: {},
+  handler: async (ctx) => {
+    const stuckShipments = await ctx.runQuery(internal.lib.shiprocket.getStuckShipments);
+    if (stuckShipments.length === 0) return;
+    
+    for (const shipment of stuckShipments) {
+      if (shipment.isOverFiveDays) {
+        console.warn(`[Reconciliation] Shipment ${shipment.awbNumber} has been stuck for over 5 days.`);
+      }
+      
+      try {
+        const url = `${SHIPROCKET_BASE_URL}/courier/track/awb/${shipment.awbNumber}`;
+        const res = await fetchShiprocketAPI(ctx, url, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+        
+        if (!res.ok) {
+          console.error(`[Reconciliation] Failed to track AWB ${shipment.awbNumber}: ${await res.text()}`);
+          continue;
+        }
+        
+        const data = await res.json();
+        const trackingData = data.tracking_data;
+        if (trackingData && trackingData.shipment_status !== 0) {
+          const rawStatus = trackingData.shipment_status === 7 ? "delivered" 
+            : trackingData.shipment_track?.[0]?.current_status;
+            
+          if (rawStatus && rawStatus.toLowerCase().includes("delivered")) {
+            await ctx.runMutation(internal.adminLogistics.processLogisticsStatusUpdateInternal, {
+              awbNumber: shipment.awbNumber,
+              status: "delivered",
+            });
+          }
+        }
+      } catch (err: any) {
+        console.error(`[Reconciliation] Error tracking AWB ${shipment.awbNumber}:`, err);
+      }
+    }
+  }
+});

@@ -189,7 +189,7 @@ function OrderSuccessContent() {
         {/* Success Hero */}
         <OrderSuccessHero 
           orderId={resolvedOrder.id} 
-          placedDuringClosedHours={resolvedOrder.placedDuringClosedHours} 
+          placedDuringClosedHours={(resolvedOrder as any).placedDuringClosedHours} 
         />
 
         {/* Desktop grid layout: 2 columns */}

@@ -10,7 +10,7 @@ import { CartItemComponent } from "@/components/cart/CartItem";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
-import { formatCurrency } from "@hive/utils";
+import { formatRupees } from "@hive/utils";
 import { useConvexMutation } from "@/hooks/useConvexMutation";
 
 export default function CartPage() {
@@ -68,6 +68,35 @@ export default function CartPage() {
     }
   };
 
+  const updateAvailableStock = useCartStore((state) => state.updateAvailableStock);
+  const [stockSyncedMessage, setStockSyncedMessage] = useState<string | null>(null);
+
+  // Sync cart quantities with live backend stock
+  useEffect(() => {
+    if (cartData && cartData.items) {
+      let changed = false;
+      cartData.items.forEach((backendItem) => {
+        const localItem = items.find(
+          (i) => i.productId === backendItem.productId && i.size === backendItem.size
+        );
+        if (localItem && backendItem.availableStock !== undefined) {
+          if (localItem.quantity > backendItem.availableStock) {
+            updateAvailableStock(localItem.productId, localItem.size, backendItem.availableStock);
+            changed = true;
+          } else if (localItem.availableStock !== backendItem.availableStock) {
+            // Update availableStock silently to keep it fresh
+            updateAvailableStock(localItem.productId, localItem.size, backendItem.availableStock);
+          }
+        }
+      });
+      if (changed) {
+        setStockSyncedMessage("Some items in your bag have been updated due to stock changes.");
+        // Clear message after 10 seconds
+        setTimeout(() => setStockSyncedMessage(null), 10000);
+      }
+    }
+  }, [cartData, items, updateAvailableStock]);
+
   const [mounted, setMounted] = useState(false);
   const [promoInput, setPromoInput] = useState("");
   const [showPromoInput, setShowPromoInput] = useState(false);
@@ -89,12 +118,12 @@ export default function CartPage() {
 
   // Promo Code calculations
   let discountAmount = 0;
-  let deliveryFee = subtotal >= 300000 ? 0 : 9900; // in paise
+  let deliveryFee = subtotal >= 3000 ? 0 : 99; // in rupees
 
   if (activePromo === "WELCOME10") {
     discountAmount = Math.round(subtotal * 0.1); // 10% off items subtotal
   } else if (activePromo === "HIVEFIRST") {
-    discountAmount = Math.min(50000, subtotal); // Flat ₹500 off (50000 paise)
+    discountAmount = Math.min(500, subtotal); // Flat ₹500 off
   } else if (activePromo === "FREESHIP") {
     deliveryFee = 0; // Waive delivery
   }
@@ -234,7 +263,7 @@ export default function CartPage() {
               <div className="space-y-2.5">
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Subtotal</span>
-                  <span>{formatCurrency(subtotal)}</span>
+                  <span>{formatRupees(subtotal)}</span>
                 </div>
                 
                 {/* Discount display */}
@@ -244,18 +273,18 @@ export default function CartPage() {
                       <Ticket className="w-3.5 h-3.5 text-green-600" />
                       <span>Coupon Discount</span>
                     </span>
-                    <span>-{formatCurrency(discountAmount)}</span>
+                    <span>-{formatRupees(discountAmount)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Delivery</span>
-                  <span>{deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}</span>
+                  <span>{deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)}</span>
                 </div>
                 
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
                   <span>Estimated Tax</span>
-                  <span>{formatCurrency(taxAmount)}</span>
+                  <span>{formatRupees(taxAmount)}</span>
                 </div>
 
                 {/* Promo Code section integrated inline */}
@@ -324,7 +353,7 @@ export default function CartPage() {
                 <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1.5">
                   <span className="text-sm font-extrabold text-hive-dark">Order Total</span>
                   <span className="text-base font-extrabold text-hive-dark">
-                    {formatCurrency(total)}
+                    {formatRupees(total)}
                   </span>
                 </div>
               </div>

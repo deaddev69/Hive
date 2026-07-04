@@ -84,7 +84,7 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   boutiqueName,
 }) => {
   const { isServiceable, locality, city } = useLocation();
-  const dbProducts = useQuery(api.products.getProducts, isServiceable 
+  const dbProducts = useQuery(api.products.getActiveProducts, isServiceable 
     ? { 
         serviceableLocality: locality || undefined,
         serviceableCity: city || undefined,
@@ -102,7 +102,7 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
     if (!products.length) return [];
     const filtered = products
       .filter(
-        (p) =>
+        (p: any) =>
           p.id !== currentProductId &&
           (p.occasion === occasion || p.boutiqueName === boutiqueName)
       )
@@ -112,9 +112,9 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
     if (filtered.length < 4) {
       const backfill = products
         .filter(
-          (p) =>
+          (p: any) =>
             p.id !== currentProductId &&
-            !filtered.some((r) => r.id === p.id)
+            !filtered.some((r: any) => r.id === p.id)
         )
         .slice(0, 4 - filtered.length);
       filtered.push(...backfill);
@@ -139,7 +139,7 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
 
       {/* Grid listing recommendations */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-        {recommendedList.map((product) => (
+        {recommendedList.map((product: any) => (
           <div key={product.id} className="relative z-0">
             <ProductCard 
               product={product} 

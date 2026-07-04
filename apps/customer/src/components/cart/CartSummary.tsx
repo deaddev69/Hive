@@ -4,7 +4,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useCartStore } from "@/store/cart-store";
-import { formatCurrency } from "@hive/utils";
+import { formatRupees } from "@hive/utils";
 
 interface CartSummaryProps {
   subtotal: number;
@@ -16,7 +16,7 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
   const clearCheckoutItems = useCheckoutStore((state) => state.clearCheckoutItems);
   const items = useCartStore((state) => state.items);
 
-  const deliveryFee = subtotal >= 300000 ? 0 : 9900; // in paise
+  const deliveryFee = subtotal >= 3000 ? 0 : 99; // in rupees
   const total = subtotal + deliveryFee;
 
   const handleCheckout = () => {
@@ -42,14 +42,14 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
       {/* Subtotal */}
       <div className="flex justify-between items-center text-xs text-stone-500 font-normal">
         <span>Subtotal</span>
-        <span className="text-stone-900 font-medium">{formatCurrency(subtotal)}</span>
+        <span className="text-stone-900 font-medium">{formatRupees(subtotal)}</span>
       </div>
 
       {/* Delivery Fee */}
       <div className="flex justify-between items-center text-xs text-stone-500 font-normal mt-2">
         <span>Delivery Fee</span>
         <span className="text-stone-900 font-medium font-semibold">
-          {deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}
+          {deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)}
         </span>
       </div>
 
@@ -60,7 +60,7 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
       <div className="flex justify-between items-center">
         <span className="text-xs font-semibold text-stone-900">Estimated Total</span>
         <span className="text-sm font-bold text-stone-900">
-          {formatCurrency(total)}
+          {formatRupees(total)}
         </span>
       </div>
 
