@@ -644,38 +644,34 @@ export default function HomePage() {
                 </button>
               )}
 
-              <div className="overflow-hidden w-full relative -mx-6 px-6 sm:mx-0 sm:px-0">
-                
-                
-                <div
-                  ref={categoryScrollRef}
-                  className="flex gap-6 pb-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8"
-                  onMouseEnter={() => setIsCategoryHovered(true)}
-                  onMouseLeave={() => setIsCategoryHovered(false)}
-                  onTouchStart={() => setIsCategoryHovered(true)}
-                  onTouchEnd={() => setIsCategoryHovered(false)}
-                >
-                  {homepageSubcategories.map((subcat) => (
-                    <button
-                      key={subcat._id}
-                      onClick={() => router.push(`/products?category=${subcat.slug}`)}
-                      className="flex flex-col items-center gap-3 w-24 sm:w-28 flex-shrink-0 group cursor-pointer"
-                    >
-                      <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border border-hive-border/40 bg-slate-50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-md">
-                        <Image
-                          src={subcat.homepageImageUrl || subcat.imageUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80"}
-                          alt={subcat.name}
-                          fill
-                          sizes="96px"
-                          className="object-cover pointer-events-none"
-                        />
-                      </div>
-                      <span className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white text-center leading-tight truncate w-full">
-                        {subcat.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+              <div
+                ref={categoryScrollRef}
+                className="flex gap-6 pb-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start -mx-6 px-6 sm:mx-0 sm:px-0 pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8"
+                onMouseEnter={() => setIsCategoryHovered(true)}
+                onMouseLeave={() => setIsCategoryHovered(false)}
+                onTouchStart={() => setIsCategoryHovered(true)}
+                onTouchEnd={() => setIsCategoryHovered(false)}
+              >
+                {homepageSubcategories.map((subcat) => (
+                  <button
+                    key={subcat._id}
+                    onClick={() => router.push(`/products?category=${subcat.slug}`)}
+                    className="flex flex-col items-center gap-3 w-24 sm:w-28 flex-shrink-0 group cursor-pointer"
+                  >
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border border-hive-border/40 bg-slate-50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-md">
+                      <Image
+                        src={subcat.homepageImageUrl || subcat.imageUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80"}
+                        alt={subcat.name}
+                        fill
+                        sizes="96px"
+                        className="object-cover pointer-events-none"
+                      />
+                    </div>
+                    <span className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white text-center leading-tight truncate w-full">
+                      {subcat.name}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -706,28 +702,6 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── 4.5 FEATURED BOUTIQUES SPOTLIGHT ── */}
-      {mappedBoutiques.length > 0 && (
-        <section className="w-full bg-[#FAF6F0] border-t border-b border-hive-border/20 py-10">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
-                SPOTLIGHT
-              </span>
-              <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
-                Shop from Kochi's Finest
-              </h2>
-            </div>
-            <div className="flex gap-6 overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">
-              {mappedBoutiques.map((boutique) => (
-                <div key={boutique.id} className="w-[200px] sm:w-[250px] flex-shrink-0 snap-start">
-                  <BoutiqueCard boutique={boutique as any} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ── 5. NEW ARRIVALS (Sorted by creationTime desc, take 8) ── */}
       {newArrivalsProducts.length > 0 && (

@@ -7,14 +7,15 @@ import { ProductCardData } from "@/lib/mockProducts";
 import { Heart, Eye } from "lucide-react";
 import { cn } from "@hive/ui";
 import { useWishlistStore } from "@/store/wishlist-store";
-import { QuickViewModal } from "./QuickViewModal";
 import { useLocation } from "@/context/LocationContext";
+import { QuickViewModal } from "./QuickViewModal";
 import { calculateDistanceKm } from "@/lib/distance";
 import { useSessionStore } from "@/context/SessionContext";
 import { useRouter } from "next/navigation";
 
 export interface ProductCardProps {
   product: ProductCardData;
+  onQuickView?: (slug: string) => void;
 }
 
 // Clean database/AI suffixes from product titles
@@ -27,11 +28,11 @@ export function cleanProductTitle(name: string): string {
     .trim();
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
   const { toggleItem, hasItem } = useWishlistStore();
   const [hydrated, setHydrated] = useState(false);
   const [pulse, setPulse] = useState(false);
-  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const [localQuickViewOpen, setLocalQuickViewOpen] = useState(false);
   const { isAuthenticated } = useSessionStore();
   const router = useRouter();
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
@@ -114,9 +115,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   const handleQuickViewOpen = (e: React.MouseEvent) => {
+    console.log("Quick Look clicked for product slug:", product.slug);
     e.stopPropagation();
     e.preventDefault();
-    setQuickViewOpen(true);
+    if (onQuickView) {
+      console.log("Calling parent onQuickView handler...");
+      onQuickView(product.slug);
+    } else {
+      console.log("No parent handler, falling back to local QuickViewModal state...");
+      setLocalQuickViewOpen(true);
+    }
   };
 
   const discountPercent = product.compareAtPrice
@@ -218,16 +226,21 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             {collectionLabel}
           </span>
 
-          {/* Product name */}
           <Link href={`/products/${product.slug}`} className="hover:text-stone-600 transition-colors block">
-            <h3 className="text-sm md:text-base font-normal leading-snug text-stone-900 line-clamp-2">
+            <h3 className="text-sm md:text-base font-normal leading-snug text-stone-900 line-clamp-2 break-words">
               {cleanProductTitle(product.name)}
             </h3>
           </Link>
 
-          {/* Merchant attribution (Single line, "from Kochi Threads") */}
-          <div className="text-[12px] text-stone-500 font-normal leading-none mt-0.5">
-            from {product.boutiqueName || boutique?.name || boutique?.boutiqueName || "Hive Boutique"}
+          {/* Merchant attribution */}
+          <div className="text-[12px] text-stone-500 font-normal leading-none mt-0.5 relative z-20">
+            from{" "}
+            <Link 
+              href={`/shop/${boutique?.slug || product.boutiqueId}`}
+              className="hover:text-stone-900 hover:underline transition-colors cursor-pointer"
+            >
+              {product.boutiqueName || boutique?.name || boutique?.boutiqueName || "Hive Boutique"}
+            </Link>
           </div>
         </div>
 
@@ -248,10 +261,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
         </div>
       </div>
-      {quickViewOpen && (
+
+      {localQuickViewOpen && (
         <QuickViewModal
-          isOpen={quickViewOpen}
-          onClose={() => setQuickViewOpen(false)}
+          isOpen={localQuickViewOpen}
+          onClose={() => setLocalQuickViewOpen(false)}
           productSlug={product.slug}
         />
       )}

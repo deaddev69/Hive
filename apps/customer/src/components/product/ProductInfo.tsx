@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Scissors, Compass, Ruler, FileText } from "lucide-react";
+import { Scissors, Compass, Ruler, FileText, Shirt } from "lucide-react";
 import { cn } from "@hive/ui";
 import { PRODUCT_SPEC_KEYS } from "@hive/types";
 import { ProductDetail } from "@/lib/mockProductDetails";
@@ -36,9 +36,9 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
   const silhouette = (product as any).silhouette as "slim_fit" | "regular_fit" | "relaxed_fit" | "oversized" | undefined;
 
   const fitBadgeConfig = {
-    runs_small:   { icon: "🔻", label: "Runs Small", advice: "Consider ordering one size up.", color: "text-amber-700 bg-amber-50 border-amber-200/60" },
-    true_to_size: { icon: "✅", label: "True to Size", advice: "Fits as expected for standard sizing.", color: "text-emerald-700 bg-emerald-50 border-emerald-200/60" },
-    runs_large:   { icon: "🔺", label: "Runs Large", advice: "Consider ordering one size down.", color: "text-blue-700 bg-blue-50 border-blue-200/60" },
+    runs_small:   { label: "Runs Small", advice: "Consider ordering one size up." },
+    true_to_size: { label: "True to Size", advice: "Fits as expected for standard sizing." },
+    runs_large:   { label: "Runs Large", advice: "Consider ordering one size down." },
   };
 
   const silhouetteConfig = {
@@ -112,7 +112,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
         <div className="text-xs text-stone-600 font-medium leading-none pt-0.5">
           from <span 
             className="font-bold underline cursor-pointer hover:text-stone-950"
-            onClick={() => router.push(`/products?boutiqueId=${product.boutique.id}`)}
+            onClick={() => router.push(`/shop/${product.boutique.slug || product.boutique.id}`)}
           >
             {product.boutique.name}
           </span>
@@ -168,21 +168,18 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       {(fitRecommendation || silhouette) && (
         <div className="flex flex-col gap-2 select-none">
           {fitRecommendation && (
-            <div className={cn(
-              "flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border",
-              fitBadgeConfig[fitRecommendation].color
-            )}>
-              <span className="text-sm">{fitBadgeConfig[fitRecommendation].icon}</span>
+            <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-stone-200/80 bg-stone-50/60 text-stone-700">
+              <Ruler className="w-4 h-4 text-stone-500 flex-shrink-0" />
               <div className="flex flex-col">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider leading-none mb-0.5">{fitBadgeConfig[fitRecommendation].label}</span>
-                <span className="text-[11px] font-medium leading-tight opacity-80">{fitBadgeConfig[fitRecommendation].advice}</span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider leading-none mb-1 text-stone-800">{fitBadgeConfig[fitRecommendation].label}</span>
+                <span className="text-[11px] font-medium leading-tight text-stone-500">{fitBadgeConfig[fitRecommendation].advice}</span>
               </div>
             </div>
           )}
           {silhouette && (
-            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-stone-200/60 bg-stone-50/50 text-stone-600">
-              <span className="text-xs">📐</span>
-              <span className="text-[11px] font-medium">{silhouetteConfig[silhouette]}</span>
+            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/60 bg-stone-50/40 text-stone-600">
+              <Shirt className="w-4 h-4 text-stone-400 flex-shrink-0" />
+              <span className="text-[11px] font-medium leading-tight">{silhouetteConfig[silhouette]}</span>
             </div>
           )}
         </div>
@@ -220,36 +217,27 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
 
       {/* ── SECTION 6.5: ACCORDIONS (Product Details, Wash & Care, Delivery & Returns) ── */}
       <div className="border-t border-stone-100 pt-2.5 mt-2 space-y-1">
-        {/* Product Details (Specifications) Accordion */}
+        {/* Product Details (Specifications) Area */}
         {hasDetails && (
-          <div className="border-b border-stone-100/60 pb-2.5">
-            <button
-              type="button"
-              onClick={() => setOpenAccordion(openAccordion === "details" ? null : "details")}
-              className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900 focus:outline-none"
-            >
+          <div className="border-b border-stone-100/60 pb-3">
+            <div className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900">
               <span className="flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-amber-700/80" />
                 <span>Product Details</span>
               </span>
-              <span className="text-stone-400 text-xs font-normal">
-                {openAccordion === "details" ? "−" : "+"}
-              </span>
-            </button>
-            {openAccordion === "details" && (
-              <div className="grid grid-cols-2 gap-x-8 gap-y-3.5 pt-1.5 pb-2 text-left animate-fade-in">
-                {renderedSpecs.map((item, idx) => (
-                  <div key={idx} className="space-y-0.5">
-                    <span className="text-[9px] font-extrabold text-[#78716C] uppercase tracking-wider block">
-                      {item.label}
-                    </span>
-                    <span className="text-xs font-semibold text-[#1C1917] block leading-tight">
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            </div>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-3.5 pt-1.5 pb-1 text-left">
+              {renderedSpecs.map((item, idx) => (
+                <div key={idx} className="space-y-0.5">
+                  <span className="text-[9px] font-extrabold text-[#78716C] uppercase tracking-wider block">
+                    {item.label}
+                  </span>
+                  <span className="text-xs font-semibold text-[#1C1917] block leading-tight">
+                    {item.value}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

@@ -142,23 +142,50 @@ export default function OrderReviewPage() {
 
   const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
   const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  const boutiqueId = orderItems?.[0]?.boutiqueId;
+  
+  let boutiqueId = orderItems?.[0]?.boutiqueId;
+  if (!boutiqueId && cartData?.items) {
+    const firstItem = orderItems?.[0];
+    if (firstItem) {
+      const match = cartData.items.find((ci: any) => ci.productId === firstItem.productId);
+      if (match) boutiqueId = match.boutiqueId;
+    }
+  }
 
   // Delivery Quote Query
   const skipQuote = !selectedAddress || selectedAddress.lat === undefined || selectedAddress.lng === undefined || !boutiqueId;
-  const deliveryQuote = useQuery(
-    api.routing.getDeliveryQuote,
-    !skipQuote
-      ? {
-          userLat: Number(selectedAddress.lat),
-          userLng: Number(selectedAddress.lng),
-          boutiqueId: boutiqueId as any,
-          subtotal: subtotal,
-        }
-      : "skip"
-  );
+  const getDeliveryQuoteAction = useAction(api.routing.getDeliveryQuoteAction);
+  const [deliveryQuote, setDeliveryQuote] = useState<any>(null);
+  const [isQuoteLoading, setIsQuoteLoading] = useState(false);
 
-  const isQuoteLoading = !skipQuote && deliveryQuote === undefined;
+  useEffect(() => {
+    let active = true;
+    if (skipQuote) {
+      setDeliveryQuote(null);
+      return;
+    }
+    
+    setIsQuoteLoading(true);
+    getDeliveryQuoteAction({
+      userLat: Number(selectedAddress.lat),
+      userLng: Number(selectedAddress.lng),
+      userPincode: selectedAddress.pincode,
+      boutiqueId: boutiqueId as any,
+      subtotal: subtotal,
+    }).then((quote) => {
+      if (active) {
+        setDeliveryQuote(quote);
+        setIsQuoteLoading(false);
+      }
+    }).catch((err) => {
+      if (active) {
+        console.error("Failed to fetch quote", err);
+        setIsQuoteLoading(false);
+      }
+    });
+
+    return () => { active = false; };
+  }, [selectedAddress?.id, selectedAddress?.lat, selectedAddress?.lng, selectedAddress?.pincode, boutiqueId, subtotal, skipQuote, getDeliveryQuoteAction]);
 
   console.log("[Checkout Review Debug]", {
     selectedAddressId,
@@ -258,6 +285,17 @@ export default function OrderReviewPage() {
     }
 
     setPaymentError(null);
+
+    if (!deliveryQuote?.serviceable) {
+      alert("We don't deliver to this pincode yet. Please select a different address.");
+      return;
+    }
+    
+    if (deliveryQuote.quotedAt && Date.now() - deliveryQuote.quotedAt > 15 * 60 * 1000) {
+      alert("Delivery rate expired (valid for 15 mins). Please refresh the page to get a new rate.");
+      return;
+    }
+
     isOrderPlacing.current = true;
     setIsPlacingOrder(true);
 
@@ -313,6 +351,7 @@ export default function OrderReviewPage() {
         total: total / 100,
         promoCode: appliedPromo || undefined,
         token: token || undefined,
+        quotedAt: deliveryQuote.quotedAt,
       });
 
       const { checkoutSessionId, razorpayOrderId } = sessionResult;

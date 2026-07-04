@@ -4,6 +4,8 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { ProductCardData } from "@/lib/mockProducts";
 import { useLocation } from "@/context/LocationContext";
+import { QuickViewModal } from "./QuickViewModal";
+import { useState } from "react";
 
 // Helper to deduce occasion from product tags/description
 function getProductOccasion(product: any): string {
@@ -81,11 +83,15 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   occasion,
   boutiqueName,
 }) => {
-  const { latitude, longitude } = useLocation();
-  const dbProducts = useQuery(
-    api.products.getActiveProducts,
-    latitude !== null && longitude !== null ? { userLat: latitude, userLng: longitude } : {}
+  const { isServiceable, locality, city } = useLocation();
+  const dbProducts = useQuery(api.products.getProducts, isServiceable 
+    ? { 
+        serviceableLocality: locality || undefined,
+        serviceableCity: city || undefined,
+      } 
+    : {}
   );
+  const [quickViewModal, setQuickViewModal] = useState<{ open: boolean, productId: string | null }>({ open: false, productId: null });
 
   const products = React.useMemo(() => {
     return (dbProducts || []).map(mapDbProduct);
@@ -135,10 +141,21 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
         {recommendedList.map((product) => (
           <div key={product.id} className="relative z-0">
-            <ProductCard product={product} />
+            <ProductCard 
+              product={product} 
+              onQuickView={(id) => setQuickViewModal({ open: true, productId: id })} 
+            />
           </div>
         ))}
       </div>
+
+      {quickViewModal.open && quickViewModal.productId && (
+        <QuickViewModal
+          isOpen={quickViewModal.open}
+          onClose={() => setQuickViewModal({ open: false, productId: null })}
+          productSlug={quickViewModal.productId}
+        />
+      )}
     </div>
   );
 };

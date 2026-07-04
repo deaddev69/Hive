@@ -81,7 +81,7 @@ export const HeroSection: React.FC = () => {
                 href="/collections"
                 className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-2xl text-sm font-bold uppercase tracking-widest text-hive-dark bg-hive-gold hover:bg-hive-amber shadow-md shadow-hive-gold/25 hover:shadow-lg hover:shadow-hive-gold/35 hover:-translate-y-0.5 transition-all duration-300 group w-full sm:w-auto"
               >
-                Discover Style Boards
+                Discover Curated Edits
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <div className="flex flex-col gap-1 w-full sm:w-auto">

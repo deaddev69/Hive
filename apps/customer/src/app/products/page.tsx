@@ -9,6 +9,7 @@ import { CatalogToolbar } from "@/components/catalog/CatalogToolbar";
 import { CatalogPagination } from "@/components/catalog/CatalogPagination";
 import { CatalogEmptyState } from "@/components/catalog/CatalogEmptyState";
 import { ProductCard } from "@/components/product/ProductCard";
+import { QuickViewModal } from "@/components/product/QuickViewModal";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -109,6 +110,7 @@ function ProductsCatalog() {
   const [sortOption, setSortOption] = useState<ProductSortOption>(DEFAULT_SORT);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [quickViewModal, setQuickViewModal] = useState<{ open: boolean, productId: string | null }>({ open: false, productId: null });
 
   const categorySlugFromUrl = searchParams.get("category");
 
@@ -253,8 +255,8 @@ function ProductsCatalog() {
           </svg>
         </div>
         <CatalogHeader
-          title="All Products"
-          description="Every piece, every occasion — handpicked from verified local designers near you."
+          title={activeBoutique ? `Collections from ${activeBoutique.boutiqueName}` : "All Products"}
+          description={activeBoutique ? "Exclusive pieces from this verified local designer." : "Every piece, every occasion — handpicked from verified local designers near you."}
           resultCount={sortedProducts.length}
           activeFilterCount={activeFilterCount}
           accentColor="#C9A84C"
@@ -324,7 +326,10 @@ function ProductsCatalog() {
                       className="relative z-0 animate-[cardIn_0.45s_cubic-bezier(0.215,0.61,0.355,1)_forwards] opacity-0"
                       style={{ animationDelay: `${idx * 40}ms` }}
                     >
-                      <ProductCard product={product} />
+                      <ProductCard 
+                        product={product} 
+                        onQuickView={(id) => setQuickViewModal({ open: true, productId: id })} 
+                      />
                     </div>
                   ))}
                 </div>
@@ -356,13 +361,20 @@ function ProductsCatalog() {
         }
       `}</style>
 
-      {/* Mobile filter drawer */}
       <MobileFilterDrawer
         filters={filters}
         onChange={setFilters}
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
       />
+
+      {quickViewModal.open && quickViewModal.productId && (
+        <QuickViewModal
+          isOpen={quickViewModal.open}
+          onClose={() => setQuickViewModal({ open: false, productId: null })}
+          productSlug={quickViewModal.productId}
+        />
+      )}
     </CatalogLayout>
   );
 }

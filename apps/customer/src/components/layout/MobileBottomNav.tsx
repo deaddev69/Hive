@@ -65,9 +65,7 @@ export const MobileBottomNav: React.FC = () => {
                 : "text-hive-text-muted dark:text-neutral-400 hover:text-hive-dark"
             }`}
           >
-            <div className={`relative px-4 py-1 rounded-full transition-all duration-250 flex items-center justify-center ${
-              isActive ? "bg-amber-500/10 dark:bg-amber-400/15" : ""
-            }`}>
+            <div className="relative px-4 py-1 rounded-full transition-all duration-250 flex items-center justify-center">
               <Icon 
                 className={`w-5 h-5 transition-transform duration-200 ${isActive ? "scale-105" : ""}`} 
                 strokeWidth={isActive ? 2.5 : 2} 

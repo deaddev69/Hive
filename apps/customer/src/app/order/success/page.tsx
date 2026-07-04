@@ -120,6 +120,7 @@ function OrderSuccessContent() {
         deliverySlotWindow: undefined,
         createdAt: new Date(queriedOrder.createdAt).toISOString(),
         status: queriedOrder.status,
+        placedDuringClosedHours: queriedOrder.placedDuringClosedHours || false,
       };
     }
     return latestOrder;
@@ -186,7 +187,10 @@ function OrderSuccessContent() {
       <div className="max-w-[900px] mx-auto flex flex-col gap-6 animate-[scaleUp_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards]">
 
         {/* Success Hero */}
-        <OrderSuccessHero orderId={resolvedOrder.id} />
+        <OrderSuccessHero 
+          orderId={resolvedOrder.id} 
+          placedDuringClosedHours={resolvedOrder.placedDuringClosedHours} 
+        />
 
         {/* Desktop grid layout: 2 columns */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
@@ -271,7 +275,13 @@ export default function OrderSuccessPage() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Component: OrderSuccessHero
 // ─────────────────────────────────────────────────────────────────────────────
-function OrderSuccessHero({ orderId }: { orderId: string }) {
+function OrderSuccessHero({ 
+  orderId, 
+  placedDuringClosedHours 
+}: { 
+  orderId: string; 
+  placedDuringClosedHours?: boolean; 
+}) {
   return (
     <div className="w-full bg-white border border-hive-border rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col items-center text-center space-y-4">
       <div className="relative w-16 h-16 bg-green-50 border border-green-200 rounded-full flex items-center justify-center text-green-500 shadow-sm">
@@ -288,6 +298,17 @@ function OrderSuccessHero({ orderId }: { orderId: string }) {
           You'll receive confirmation shortly.
         </p>
       </div>
+
+      {placedDuringClosedHours && (
+        <div className="w-full max-w-md py-3 px-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col gap-1 text-center text-xs animate-[scaleUp_0.4s_ease-out]">
+          <span className="font-extrabold text-amber-800 flex items-center justify-center gap-1">
+            ⚠️ Order Placed During Closed Hours
+          </span>
+          <span className="font-medium text-amber-700">
+            This boutique is currently closed. Your order has been successfully placed and payment received, and it will be processed when the boutique opens for its next working hours.
+          </span>
+        </div>
+      )}
 
       <div className="py-2.5 px-4 bg-hive-cream/40 border border-hive-border/60 rounded-xl inline-flex items-center gap-1.5 text-xs">
         <span className="font-bold text-hive-text-muted">Order ID:</span>

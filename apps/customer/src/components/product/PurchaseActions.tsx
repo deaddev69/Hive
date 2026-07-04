@@ -370,6 +370,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const isLowStock = selectedSize ? inventoryCount > 0 && inventoryCount <= 3 : false;
 
   const isLocationServiceable = React.useMemo(() => {
+    if (process.env.NODE_ENV === "development") return true;
     if (latitude === null || longitude === null) return true;
     const bLat = (product.boutique as any).latitude;
     const bLng = (product.boutique as any).longitude;
@@ -533,10 +534,11 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         productId: product.slug ?? (product as any)._id ?? product.id,
         size: selectedSize,
         quantity: 1,
-        price: product.price,
+        price: inrToPaise(product.price),
         name: product.name,
         imageUrl: product.images[0] || "",
         boutiqueName: product.boutique.name,
+        boutiqueId: product.boutique.id ?? (product as any).boutiqueId,
       },
     ]);
 
@@ -612,11 +614,6 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
                 <div className="flex items-center gap-2 text-xs font-bold text-red-600 bg-red-50 px-3.5 py-1.5 rounded-xl border border-red-200 w-full">
                   <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                   <span>Out of Stock: The requested size is currently unavailable.</span>
-                </div>
-              ) : isLowStock ? (
-                <div className="flex items-center gap-2 text-xs font-bold text-amber-700 bg-amber-50 px-3.5 py-1.5 rounded-xl border border-amber-200 animate-pulse w-full">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500 fill-current" />
-                  <span>Hurry! Only {inventoryCount} left in stock for size {selectedSize}.</span>
                 </div>
               ) : null}
             </>

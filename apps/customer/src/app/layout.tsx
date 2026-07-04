@@ -61,6 +61,7 @@ export default function RootLayout({
             <CustomerLayout>
               {children}
             </CustomerLayout>
+            <div id="modal-root" />
           </ConvexClientProvider>
         </body>
       </html>

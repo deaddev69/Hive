@@ -212,7 +212,7 @@ export default function OrderDetailPage() {
 
             <InvoiceInformationCard orderId={order._id} />
 
-            <ContextualActionsConvex status={uiStatus} orderId={order._id} cancelReason={order.cancelReason} />
+            <ContextualActionsConvex status={uiStatus} orderId={order._id} cancelReason={order.cancelReason} deliveredAt={order.deliveredAt} />
 
             {/* Fit Feedback Card — shown only for delivered orders */}
             {uiStatus === "delivered" && (
@@ -231,15 +231,26 @@ export default function OrderDetailPage() {
 // ─────────────────────────────────────────────────────────────────────────────
 function TrackingTimeline({ status }: { status: string }) {
   const steps = [
-    { key: "placed", label: "Order Confirmed", desc: "Your order has been successfully placed" },
-    { key: "confirmed", label: "Boutique Preparing", desc: "Designer is crafting your garment" },
-    { key: "picked_up", label: "Picked Up", desc: "Fits coordinator is en route to you" },
-    { key: "out_for_delivery", label: "Out For Delivery", desc: "Arriving at your doorstep" },
-    { key: "delivered", label: "Delivered", desc: "Order completed — enjoy your outfit!" },
+    { key: "confirmed", label: "Order Confirmed", desc: "Your order has been successfully placed", statuses: ["placed", "pending_confirmation", "confirmed"] },
+    { key: "packed", label: "Packing", desc: "Boutique is packing your order", statuses: ["packed", "pickup_scheduled"] },
+    { key: "picked_up", label: "Dispatched", desc: "Order handed over to courier", statuses: ["picked_up"] },
+    { key: "in_transit", label: "In Transit", desc: "Arriving at your doorstep", statuses: ["in_transit", "out_for_delivery"] },
+    { key: "delivered", label: "Delivered", desc: "Order completed — enjoy your outfit!", statuses: ["delivered", "claim_submitted", "refund_requested", "refunded"] },
   ];
 
-  const isCancelled = status === "cancelled";
-  const currentIdx = steps.findIndex((s) => s.key === status);
+  const isCancelled = status === "cancelled" || status === "booking_failed";
+  
+  // Find current active step index based on statuses array
+  let currentIdx = -1;
+  for (let i = steps.length - 1; i >= 0; i--) {
+    if (steps[i].statuses?.includes(status)) {
+      currentIdx = i;
+      break;
+    }
+  }
+  
+  // If we couldn't match a status and it's not cancelled, default to the first step
+  if (currentIdx === -1 && !isCancelled) currentIdx = 0;
 
   return (
     <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-5 text-left">
@@ -494,10 +505,12 @@ function ContextualActionsConvex({
   status,
   orderId,
   cancelReason,
+  deliveredAt,
 }: {
   status: string;
   orderId: Id<"orders">;
   cancelReason?: string;
+  deliveredAt?: number | null;
 }) {
   if (status === "cancelled") {
     return (
@@ -514,21 +527,33 @@ function ContextualActionsConvex({
   }
 
   if (status === "delivered") {
+    const isWithinWindow = deliveredAt ? (Date.now() - deliveredAt) <= 3 * 24 * 60 * 60 * 1000 : true; // Default true if no timestamp
+    if (!isWithinWindow) return null;
+
     return (
       <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3.5">
         <div className="space-y-1">
-          <h4 className="text-xs font-extrabold text-hive-dark">Have quality concerns or incorrect item received?</h4>
+          <h4 className="text-xs font-extrabold text-hive-dark">Have quality concerns or need a different size?</h4>
           <p className="text-[10px] text-hive-text-muted leading-relaxed">
-            Our 3-Day Return & Refund Policy covers you. Report issues or initiate returns easily.
+            Our 3-Day Return & Refund Policy covers you. Report issues or initiate exchanges easily.
           </p>
         </div>
-        <Link
-          href={`/claims/new?orderId=${orderId}`}
-          className="w-full h-11 border border-hive-amber text-hive-amber hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm"
-        >
-          <span>Report An Issue</span>
-          <HelpCircle className="w-3.5 h-3.5" />
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Link
+            href={`/claims/new?orderId=${orderId}&type=issue`}
+            className="flex-1 h-11 border border-red-200 text-red-600 hover:bg-red-50 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm"
+          >
+            <span>Report Issue</span>
+            <HelpCircle className="w-3.5 h-3.5" />
+          </Link>
+          <Link
+            href={`/claims/new?orderId=${orderId}&type=exchange`}
+            className="flex-1 h-11 border border-hive-amber text-hive-amber hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm"
+          >
+            <span>Exchange</span>
+            <Ticket className="w-3.5 h-3.5" />
+          </Link>
+        </div>
       </div>
     );
   }

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Modal } from "@hive/ui";
@@ -12,7 +13,8 @@ import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
 import { useSessionStore } from "@/context/SessionContext";
 import { calculateDistanceKm } from "@/lib/distance";
-import { inrToPaise } from "@hive/utils";
+import { inrToPaise, toast } from "@hive/utils";
+import { mapDbProduct } from "@/lib/mapDbProduct";
 import {
   ShieldCheck,
   ShoppingBag,
@@ -36,17 +38,20 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   productSlug
 }) => {
   const router = useRouter();
-  const product = useQuery(api.products.getProduct, { slug: productSlug });
+  const rawProduct = useQuery(api.products.getProduct, { slug: productSlug });
   const { latitude, longitude, city } = useLocation();
   const addItem = useCartStore((state) => state.addItem);
-  const items = useCartStore((state) => state.items);
   const { setSidebarOpen } = useCart();
 
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [adding, setAdding] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const [crossBoutiqueModalOpen, setCrossBoutiqueModalOpen] = useState(false);
+  
+  // Touch event state for mobile swipe down
+  const touchStartY = useRef<number | null>(null);
+  const touchEndY = useRef<number | null>(null);
+  const SWIPE_THRESHOLD = 50;
 
   const clearCartMutation = useMutation(api.cart.clearCart).withOptimisticUpdate((localStore, args) => {
     const tokenQueryArg = { token: token || undefined };
@@ -63,33 +68,38 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
       );
     }
   });
-  const { token, isAuthenticated } = useSessionStore();
   
+  const { token, isAuthenticated } = useSessionStore();
   const logFunnelEvent = useMutation(api.analytics.logFunnelEvent);
+
+  const product = useMemo(() => {
+    if (!rawProduct) return rawProduct;
+    return mapDbProduct(rawProduct);
+  }, [rawProduct]);
 
   // Track when cross-boutique modal is shown
   useEffect(() => {
     if (crossBoutiqueModalOpen && product) {
       logFunnelEvent({
         eventType: "cross_boutique_modal_shown",
-        productId: (product.slug ?? product._id) as any,
+        productId: product.slug as any,
         boutiqueId: product.boutiqueId as any,
       }).catch(err => console.error("Failed to log analytics:", err));
     }
   }, [crossBoutiqueModalOpen, product, logFunnelEvent]);
 
-  // Reset local state when modal opens/closes or product changes
+  // Reset local state when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setSelectedSize("");
       setActiveImageIdx(0);
       setAdding(false);
-      setToast(null);
       setCrossBoutiqueModalOpen(false);
     }
   }, [isOpen, productSlug]);
 
-  // Handle keyboard Escape close
+  // Handle keyboard Escape close and Focus Trapping
+  const modalRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
@@ -112,27 +122,67 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchEndY.current = null;
+    touchStartY.current = e.targetTouches[0].clientY;
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEndY.current = e.targetTouches[0].clientY;
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStartY.current || !touchEndY.current) return;
+    const distance = touchEndY.current - touchStartY.current;
+    if (distance > SWIPE_THRESHOLD) {
+      onClose();
+    }
+  };
+
+  console.log("QuickViewModal render called: ", { isOpen, productSlug, mounted, product });
+
+  if (!isOpen || !mounted) {
+    console.log("QuickViewModal returning null because !isOpen or !mounted", { isOpen, mounted });
+    return null;
+  }
+
+  const modalRoot = document.getElementById("modal-root") || document.body;
+  console.log("QuickViewModal modalRoot:", modalRoot);
+  if (!modalRoot) return null;
 
   if (product === undefined) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center overflow-hidden">
+    return createPortal(
+      <div 
+        className="fixed inset-0 z-50 flex items-end md:items-center justify-center overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
-        <div className="bg-white shadow-2xl flex flex-col w-full border border-stone-100 z-10 h-full max-h-[40vh] md:h-auto md:max-w-md md:rounded-[24px] rounded-t-[24px] overflow-hidden justify-center items-center p-10">
+        <div className="bg-white shadow-2xl flex flex-col w-full border border-stone-100 z-10 h-full max-h-[40vh] md:h-auto md:max-w-md md:rounded-[24px] rounded-t-[24px] overflow-hidden justify-center items-center p-10 relative">
           <Loader2 className="w-8 h-8 animate-spin text-stone-850" />
           <span className="text-xs text-stone-500 font-medium tracking-wide mt-3">
             Retrieving product...
           </span>
         </div>
-      </div>
+      </div>,
+      modalRoot
     );
   }
 
-  if (product === null) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center overflow-hidden">
+  if (product === null || (rawProduct as any)?.isUnavailable) {
+    return createPortal(
+      <div 
+        className="fixed inset-0 z-50 flex items-end md:items-center justify-center overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
-        <div className="bg-white shadow-2xl flex flex-col w-full border border-stone-100 z-10 h-full max-h-[40vh] md:h-auto md:max-w-md md:rounded-[24px] rounded-t-[24px] overflow-hidden items-center justify-center p-10 text-center gap-3">
+        <div className="bg-white shadow-2xl flex flex-col w-full border border-stone-100 z-10 h-full max-h-[40vh] md:h-auto md:max-w-md md:rounded-[24px] rounded-t-[24px] overflow-hidden items-center justify-center p-10 text-center gap-3 relative">
           <span className="text-lg font-serif font-semibold text-stone-900">Unavailable</span>
           <p className="text-xs text-stone-500 max-w-xs">
             This item is no longer available in our collection.
@@ -141,16 +191,15 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             Close
           </button>
         </div>
-      </div>
+      </div>,
+      modalRoot
     );
   }
 
-  const isUnavailable = (product as any).isUnavailable ?? false;
   const stockMap: Record<string, number> = product.stockBySize ?? {};
   const currentStock = selectedSize ? (stockMap[selectedSize] ?? 0) : 0;
   const isOutOfStock = selectedSize ? currentStock === 0 : false;
 
-  // Calculate local delivery serviceability matching details page
   const isLocationServiceable = (() => {
     if (latitude === null || longitude === null) return true;
     const bLat = product.boutique?.latitude;
@@ -171,15 +220,13 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     // Log replacement event
     logFunnelEvent({
       eventType: "cross_boutique_replace_selected",
-      productId: (product.slug ?? product._id) as any,
+      productId: product.slug as any,
       boutiqueId: product.boutiqueId as any,
     }).catch(err => console.error("Failed to log analytics:", err));
     
-    // 1. Clear Zustand cart
     const clearCartZustand = useCartStore.getState().clearCart;
     clearCartZustand();
     
-    // 2. Clear backend cart if logged in
     if (isAuthenticated && token) {
       try {
         await clearCartMutation({ token });
@@ -188,13 +235,12 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
       }
     }
     
-    // 3. Add new item
     addItem({
-      productId: product.slug ?? product._id,
+      productId: product.slug,
       size: selectedSize,
-      price: inrToPaise(product.discountPrice && product.discountPrice < product.price ? product.discountPrice : product.price),
+      price: inrToPaise(product.price),
       name: product.name,
-      imageUrl: product.images[0] || product.imageUrl || "",
+      imageUrl: product.imageUrl,
       boutiqueName: product.boutiqueName,
       boutiqueId: product.boutiqueId
     });
@@ -203,10 +249,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   };
 
   const handleSaveToWishlist = () => {
-    // Log wishlist save event
     logFunnelEvent({
       eventType: "cross_boutique_wishlist_selected",
-      productId: (product.slug ?? product._id) as any,
+      productId: product.slug as any,
       boutiqueId: product.boutiqueId as any,
     }).catch(err => console.error("Failed to log analytics:", err));
 
@@ -216,39 +261,33 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     if (product.slug) {
       if (!hasItem(product.slug)) {
         toggleItem({
-          id: product._id,
+          id: product.id,
           slug: product.slug,
           name: product.name,
-          price: product.discountPrice && product.discountPrice < product.price ? product.discountPrice : product.price,
-          imageUrl: product.images?.[0] || product.imageUrl || "",
+          price: product.price,
+          imageUrl: product.imageUrl,
           boutiqueName: product.boutiqueName,
         });
       }
       setCrossBoutiqueModalOpen(false);
-      setToast("Saved to Wishlist!");
-      setTimeout(() => setToast(null), 3000);
+      toast.success("Saved to Wishlist!");
     }
   };
 
   const handleAddToCart = () => {
-    if (isUnavailable) return;
     if (isStoreOffline) {
-      setToast("This boutique is currently closed or not accepting orders.");
-      setTimeout(() => setToast(null), 3000);
+      toast.error("This boutique is currently closed or not accepting orders.");
       return;
     }
     if (!selectedSize) {
-      setToast("Please select a size first");
-      setTimeout(() => setToast(null), 3000);
+      toast.error("Please select a size first");
       return;
     }
     if (!isLocationServiceable) {
-      setToast("Currently unavailable at your location");
-      setTimeout(() => setToast(null), 3000);
+      toast.error("Currently unavailable at your location");
       return;
     }
 
-    // Check cross-boutique mismatch
     const currentCartItems = useCartStore.getState().items;
     const firstItem = currentCartItems[0];
     if (firstItem && firstItem.boutiqueName !== product.boutiqueName) {
@@ -259,27 +298,33 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     setAdding(true);
     setTimeout(() => {
       addItem({
-        productId: product.slug ?? product._id,
+        productId: product.slug,
         size: selectedSize,
-        price: inrToPaise(product.discountPrice && product.discountPrice < product.price ? product.discountPrice : product.price),
+        price: inrToPaise(product.price),
         name: product.name,
-        imageUrl: product.images[0] || product.imageUrl || "",
+        imageUrl: product.imageUrl,
         boutiqueName: product.boutiqueName,
         boutiqueId: product.boutiqueId
       });
       setAdding(false);
+      toast.success("Added to Bag!");
       setSidebarOpen(true);
       onClose();
     }, 600);
   };
 
-  const images = product.images || [product.imageUrl].filter(Boolean);
-  const discountPercent = product.discountPrice
-    ? Math.round(((product.price - product.discountPrice) / product.price) * 100)
+  const images = rawProduct?.images?.length ? rawProduct.images : (product.imageUrl ? [product.imageUrl] : []);
+  const discountPercent = product.compareAtPrice && product.compareAtPrice > product.price
+    ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
     : 0;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center overflow-hidden">
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center overflow-hidden"
+      role="dialog"
+      aria-modal="true"
+      ref={modalRef}
+    >
       {/* Backdrop overlay */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-[2px] transition-opacity duration-300"
@@ -288,309 +333,201 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
       {/* Drawer / Modal Container */}
       <div
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
         className={cn(
-          "bg-white shadow-2xl flex flex-col transition-all duration-300 w-full border border-stone-100 z-10",
-          // Mobile: bottom aligned, takes full width, capped height (70vh)
-          "h-full max-h-[70vh] rounded-t-[24px] overflow-hidden",
-          // Desktop: centered, fixed width, automatic height
-          "md:h-auto md:max-w-md md:max-h-[85vh] md:rounded-[24px]"
+          "bg-white shadow-2xl flex flex-col transition-all duration-300 w-full z-10 relative overflow-hidden",
+          // Mobile: bottom aligned, takes full width, capped height
+          "h-auto max-h-[85vh] rounded-t-[24px]",
+          // Desktop: centered lightbox 50/50 split
+          "md:flex-row md:max-w-4xl md:max-h-[80vh] md:rounded-3xl md:aspect-[2/1]"
         )}
       >
-        {/* Header - No title, handle and close only */}
-        <div className="flex items-center justify-end px-5 py-3 flex-shrink-0 relative">
-          {/* Drag Handle for Mobile aesthetics */}
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-stone-200 md:hidden" />
+        {/* Mobile Drag Handle */}
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-stone-200 md:hidden z-20" />
+        
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 md:top-4 md:right-4 z-20 p-2 rounded-full bg-white/70 backdrop-blur-sm border border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-white transition-colors"
+          aria-label="Close Quick View"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {/* ── LEFT SIDE (Desktop) / TOP (Mobile): IMAGE CAROUSEL ── */}
+        <div className="w-full md:w-1/2 h-[35vh] md:h-full relative bg-stone-50 flex-shrink-0 group">
+          <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-none" style={{ scrollBehavior: 'smooth' }}>
+            {images.length > 0 ? (
+              images.map((img: string, idx: number) => (
+                <div key={idx} className="w-full h-full flex-shrink-0 snap-center relative">
+                  <Image
+                    src={img}
+                    alt={`${product.name} - View ${idx + 1}`}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                    priority={idx === 0}
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-stone-400">
+                No Image Available
+              </div>
+            )}
+          </div>
           
-          <button
-            onClick={onClose}
-            className="p-1 rounded-full hover:bg-stone-50 transition-colors text-stone-400 hover:text-stone-700"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {/* Carousel Controls (Desktop Only) */}
+          {images.length > 1 && (
+            <div className="hidden md:flex absolute inset-0 items-center justify-between px-4 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1));
+                  const container = e.currentTarget.parentElement?.previousElementSibling;
+                  if (container) {
+                    const newScrollLeft = (activeImageIdx > 0 ? activeImageIdx - 1 : images.length - 1) * container.clientWidth;
+                    container.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
+                  }
+                }}
+                className="pointer-events-auto p-2 rounded-full bg-white/80 backdrop-blur shadow-sm hover:bg-white text-stone-700"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0));
+                  const container = e.currentTarget.parentElement?.previousElementSibling;
+                  if (container) {
+                    const newScrollLeft = (activeImageIdx < images.length - 1 ? activeImageIdx + 1 : 0) * container.clientWidth;
+                    container.scrollTo({ left: newScrollLeft, behavior: 'smooth' });
+                  }
+                }}
+                className="pointer-events-auto p-2 rounded-full bg-white/80 backdrop-blur shadow-sm hover:bg-white text-stone-700"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
+          {/* Dots Indicator */}
+          {images.length > 1 && (
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5 z-10">
+              {images.map((_, idx) => (
+                <div 
+                  key={idx} 
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-all",
+                    activeImageIdx === idx ? "bg-white w-3" : "bg-white/50"
+                  )}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto px-5 pb-5 pt-0 md:px-6 md:pb-6 scrollbar-none select-none">
-          
-          {/* ── MOBILE ONLY PREMIUM BOTTOM SHEET LAYOUT ── */}
-          <div className="flex flex-col gap-4 md:hidden">
-            {/* Top split row: Image on left, details on right */}
-            <div className="flex gap-4 items-start">
-              {/* Product Thumbnail */}
-              <div className="relative h-[110px] w-[82px] rounded-2xl overflow-hidden bg-stone-50 border border-stone-150/60 flex-shrink-0">
-                {images.length > 0 ? (
-                  <Image
-                    src={images[activeImageIdx]}
-                    alt={product.name}
-                    fill
-                    sizes="82px"
-                    className="object-cover"
-                    priority
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-stone-50 flex items-center justify-center text-stone-400 text-[10px]">
-                    No Image
-                  </div>
-                )}
-              </div>
-
-              {/* Product Meta */}
-              <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5 text-left h-[110px]">
-                <div className="space-y-0.5">
-                  <h3 className="text-sm font-serif font-semibold text-stone-900 leading-snug truncate">
-                    {cleanProductTitle(product.name)}
-                  </h3>
-                  <div className="text-[11px] text-stone-500 font-normal">
-                    by {product.boutiqueName}
-                  </div>
-                </div>
-
-                {/* Price & Serviceability */}
-                <div className="flex flex-col gap-0.5 mt-1">
-                  {discountPercent > 0 ? (
-                    <div className="flex items-baseline gap-1.5 flex-wrap">
-                      <span className="text-sm font-bold text-stone-900">
-                        ₹{(product.discountPrice ?? product.price).toLocaleString("en-IN")}
-                      </span>
-                      <span className="text-[10px] text-stone-400 line-through">
-                        ₹{product.price.toLocaleString("en-IN")}
-                      </span>
-                      <span className="text-[8px] font-semibold text-amber-700 bg-amber-50 px-1 py-0.5 rounded">
-                        {discountPercent}% OFF
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-sm font-bold text-stone-900">
-                      ₹{product.price.toLocaleString("en-IN")}
-                    </span>
-                  )}
-                  {isLocationServiceable && !isStoreOffline && (() => {
-                    const currentHour = new Date().getHours();
-                    const deliveryDayText = (currentHour >= 8 && currentHour < 20) ? "today" : "tomorrow";
-                    return (
-                      <p className="text-[9px] text-stone-500 font-normal">
-                        Delivers {deliveryDayText} in {city || "Kochi"}
-                      </p>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-
-            {/* Sizing Block (Directly visible, no scrolling needed) */}
-            <div className="space-y-2 mt-2 text-left">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block text-center">
-                Select Size
+        {/* ── RIGHT SIDE (Desktop) / BOTTOM (Mobile): DETAILS ── */}
+        <div className="w-full md:w-1/2 flex flex-col max-h-[50vh] md:max-h-full">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-6 scrollbar-none flex flex-col">
+            <div className="space-y-1 mb-4">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700">
+                {product.boutiqueName}
               </span>
-              <div className="flex flex-wrap justify-center gap-1.5">
-                {product.sizes?.map((sz: string) => {
-                  const stock = stockMap[sz] ?? 0;
-                  const isSzOut = stock <= 0 || isUnavailable;
-                  const isSzSelected = selectedSize === sz;
-
-                  return (
-                    <button
-                      key={sz}
-                      type="button"
-                      disabled={isSzOut}
-                      onClick={() => setSelectedSize(sz)}
-                      className={cn(
-                        "h-10 px-4 rounded border text-xs font-normal tracking-wide transition-all duration-150 relative flex items-center justify-center min-w-[42px]",
-                        isSzOut
-                          ? "border-stone-100 bg-stone-50/50 text-stone-300 opacity-50 cursor-not-allowed line-through"
-                          : isSzSelected
-                          ? "border-stone-950 bg-stone-950 text-white font-medium"
-                          : "border-stone-200 bg-white text-stone-700 hover:border-stone-400 hover:text-stone-900 active:scale-95"
-                      )}
-                    >
-                      {sz}
-                    </button>
-                  );
-                })}
-              </div>
+              <h2 className="text-xl md:text-2xl font-serif font-semibold text-stone-900 leading-tight">
+                {cleanProductTitle(product.name)}
+              </h2>
             </div>
-          </div>
 
-          {/* ── DESKTOP ONLY STANDARD LAYOUT ── */}
-          <div className="hidden md:flex flex-col gap-3.5">
-            
-            {/* Image Gallery (centered, reduced height) */}
-            <div className="relative h-[200px] w-full max-w-[180px] mx-auto rounded-xl overflow-hidden bg-stone-50 border border-stone-100 group/gallery flex-shrink-0">
-              {images.length > 0 ? (
-                <Image
-                  src={images[activeImageIdx]}
-                  alt={product.name}
-                  fill
-                  sizes="200px"
-                  className="object-cover"
-                  priority
-                />
-              ) : (
-                <div className="absolute inset-0 bg-stone-50 flex items-center justify-center text-stone-400 text-xs">
-                  No Image
-                </div>
-              )}
-
-              {/* Slider arrows */}
-              {images.length > 1 && (
+            <div className="flex flex-wrap items-baseline gap-2 mb-6">
+              <span className="text-xl font-bold text-stone-900">
+                ₹{product.price.toLocaleString("en-IN")}
+              </span>
+              {product.compareAtPrice && product.compareAtPrice > product.price && (
                 <>
-                  <button
-                    onClick={() => setActiveImageIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-stone-700 border border-stone-200/50 flex items-center justify-center backdrop-blur-sm transition-all shadow-sm active:scale-90 opacity-0 group-hover/gallery:opacity-100 z-10"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setActiveImageIdx((prev) => (prev + 1) % images.length)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-stone-700 border border-stone-200/50 flex items-center justify-center backdrop-blur-sm transition-all shadow-sm active:scale-90 opacity-0 group-hover/gallery:opacity-100 z-10"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+                  <span className="text-sm text-stone-400 line-through">
+                    ₹{product.compareAtPrice.toLocaleString("en-IN")}
+                  </span>
+                  <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 px-2 py-1 rounded-full border border-amber-200/50">
+                    {discountPercent}% OFF
+                  </span>
                 </>
               )}
             </div>
 
-            {/* Thumbnails row */}
-            {images.length > 1 && (
-              <div className="flex gap-1.5 justify-center overflow-x-auto pb-0.5 scrollbar-none flex-shrink-0">
-                {images.map((img: string, idx: number) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImageIdx(idx)}
-                    className={cn(
-                      "relative w-9 aspect-[3/4] rounded border transition-all flex-shrink-0 bg-stone-50",
-                      idx === activeImageIdx ? "border-stone-850 ring-1 ring-stone-850" : "border-transparent hover:border-stone-200"
-                    )}
-                  >
-                    <Image
-                      src={img}
-                      alt={`Thumbnail ${idx + 1}`}
-                      fill
-                      sizes="36px"
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-stone-900 uppercase tracking-wider">Select Size</span>
               </div>
-            )}
-
-            {/* Merchandising Details & Decisions */}
-            <div className="flex flex-col gap-2.5 text-center">
               
-              {/* Product Info Block */}
-              <div className="space-y-0.5">
-                <h3 className="text-base md:text-lg font-serif font-semibold text-stone-900 leading-snug">
-                  {cleanProductTitle(product.name)}
-                </h3>
-                
-                {/* Brand Name & Verified status */}
-                <div className="text-xs text-stone-500 font-normal flex items-center justify-center gap-1.5">
-                  <span>by {product.boutiqueName}</span>
-                  {product.boutique?.verified && (
-                    <span className="text-[10px] text-stone-400 font-medium lowercase italic">Verified</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Price & Delivery block */}
-              <div className="flex flex-col items-center gap-0.5 select-none">
-                {discountPercent > 0 ? (
-                  <div className="flex items-baseline justify-center gap-2">
-                    <span className="text-lg font-bold text-stone-900">
-                      ₹{(product.discountPrice ?? product.price).toLocaleString("en-IN")}
-                    </span>
-                    <span className="text-xs text-stone-400 line-through">
-                      ₹{product.price.toLocaleString("en-IN")}
-                    </span>
-                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1 py-0.5 rounded">
-                      {discountPercent}% OFF
-                    </span>
-                  </div>
-                ) : (
-                  <span className="text-lg font-bold text-stone-900">
-                    ₹{product.price.toLocaleString("en-IN")}
-                  </span>
-                )}
-                {isLocationServiceable && !isStoreOffline && (() => {
-                  const currentHour = new Date().getHours();
-                  const deliveryDayText = (currentHour >= 8 && currentHour < 20) ? "today" : "tomorrow";
-                  return (
-                    <p className="text-[11px] text-stone-500 font-normal">
-                      Delivers {deliveryDayText} in {city || "Kochi"}
-                    </p>
-                  );
-                })()}
-              </div>
-
-              {/* Size Selection */}
-              <div className="space-y-1.5 text-left">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-400 block text-center">
-                  Select Size
-                </span>
-                
-                <div className="flex flex-wrap justify-center gap-1.5">
-                  {product.sizes?.map((sz: string) => {
-                    const stock = stockMap[sz] ?? 0;
-                    const isSzOut = stock <= 0 || isUnavailable;
-                    const isSzSelected = selectedSize === sz;
-
+              <div className="flex flex-wrap gap-2">
+                {product.sizes && product.sizes.length > 0 ? (
+                  product.sizes.map((size) => {
+                    const stock = stockMap[size] ?? 0;
+                    const isAvail = stock > 0;
+                    const isSel = selectedSize === size;
                     return (
                       <button
-                        key={sz}
-                        type="button"
-                        disabled={isSzOut}
-                        onClick={() => setSelectedSize(sz)}
+                        key={size}
+                        onClick={() => isAvail && setSelectedSize(size)}
+                        disabled={!isAvail}
                         className={cn(
-                          "h-10 px-4 rounded border text-xs font-normal tracking-wide transition-all duration-150 relative flex items-center justify-center min-w-[40px]",
-                          isSzOut
-                            ? "border-stone-100 bg-stone-50/50 text-stone-300 opacity-50 cursor-not-allowed line-through"
-                            : isSzSelected
-                            ? "border-stone-950 bg-stone-950 text-white font-medium"
-                            : "border-stone-200 bg-white text-stone-700 hover:border-stone-400 hover:text-stone-900 active:scale-95"
+                          "min-w-[3rem] h-10 px-3 flex items-center justify-center border rounded-md text-sm font-medium transition-all duration-200 select-none",
+                          isSel
+                            ? "border-stone-900 bg-stone-900 text-white shadow-md"
+                            : isAvail
+                            ? "border-stone-200 bg-white text-stone-700 hover:border-stone-400 active:bg-stone-50"
+                            : "border-stone-100 bg-stone-50 text-stone-300 cursor-not-allowed opacity-50 relative overflow-hidden"
                         )}
                       >
-                        {sz}
+                        {size}
+                        {!isAvail && (
+                          <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+                            <div className="w-[140%] h-px bg-stone-300 transform -rotate-45" />
+                          </div>
+                        )}
                       </button>
                     );
-                  })}
-                </div>
+                  })
+                ) : (
+                  <span className="text-sm text-stone-500">Free Size (One Size Fits All)</span>
+                )}
               </div>
             </div>
 
+            {/* Optional Description Snippet */}
+            {(rawProduct as any)?.description && (
+              <div className="mt-auto pt-6 pb-2 text-sm text-stone-600 line-clamp-3 leading-relaxed">
+                {(rawProduct as any).description}
+              </div>
+            )}
           </div>
 
-        </div>
-
-        {/* Sticky Footer (Actions only, price moved to top) */}
-        <div className="border-t border-stone-100 px-5 py-4 bg-white flex-shrink-0 z-10">
-          {toast && (
-            <div className="text-[11px] font-medium text-red-650 bg-red-50/50 py-1.5 px-3 rounded-lg border border-red-100 text-center mb-3 animate-fade">
-              {toast}
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2.5">
+          {/* Sticky Footer CTA */}
+          <div className="p-4 md:p-6 bg-white border-t border-stone-100 flex-shrink-0">
             <button
-              type="button"
-              disabled={adding || isOutOfStock || !isLocationServiceable || isUnavailable || isStoreOffline}
               onClick={handleAddToCart}
+              disabled={isStoreOffline || adding || isOutOfStock || (!isLocationServiceable && latitude !== null)}
               className={cn(
-                "h-11 w-full rounded-full flex items-center justify-center gap-1.5 font-medium text-xs tracking-wider uppercase transition-all duration-150 select-none shadow-sm",
-                (isOutOfStock || !isLocationServiceable || isUnavailable || isStoreOffline)
-                  ? "bg-stone-100 text-stone-450 border border-stone-200/50 cursor-not-allowed shadow-none"
-                  : "bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98]"
+                "w-full h-12 flex items-center justify-center gap-2 rounded-xl text-sm font-bold tracking-wider uppercase transition-all shadow-sm",
+                adding
+                  ? "bg-stone-100 text-stone-400 cursor-not-allowed"
+                  : isStoreOffline || isOutOfStock || (!isLocationServiceable && latitude !== null)
+                  ? "bg-stone-100 text-stone-400 cursor-not-allowed"
+                  : "bg-[#111111] hover:bg-black text-white hover:shadow-md active:scale-[0.98]"
               )}
             >
               {adding ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  <ShoppingBag className="w-3.5 h-3.5 stroke-[2]" />
+                  <ShoppingBag className="w-4 h-4" />
                   <span>
                     {isStoreOffline
                       ? "Boutique Closed"
-                      : !isLocationServiceable
+                      : (!isLocationServiceable && latitude !== null)
                       ? "Unavailable in your area"
                       : isOutOfStock
                       ? "Sold Out"
@@ -599,20 +536,17 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 </>
               )}
             </button>
-
             <button
               onClick={() => {
                 onClose();
                 router.push(`/products/${product.slug}`);
               }}
-              className="text-xs text-stone-500 hover:text-stone-900 font-medium tracking-wide flex items-center justify-center gap-1 py-1 transition-all select-none"
+              className="w-full mt-3 text-xs text-stone-500 hover:text-stone-900 font-medium tracking-wide flex items-center justify-center transition-all"
             >
-              <span>View Full Details</span>
-              <span>→</span>
+              View Full Details →
             </button>
           </div>
         </div>
-
       </div>
 
       {/* Boutique Mismatch Warning Modal */}
@@ -621,7 +555,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         onClose={() => {
           logFunnelEvent({
             eventType: "cross_boutique_dismissed",
-            productId: (product.slug ?? product._id) as any,
+            productId: product.slug as any,
             boutiqueId: product.boutiqueId as any,
           }).catch(err => console.error("Failed to log analytics:", err));
           setCrossBoutiqueModalOpen(false);
@@ -645,128 +579,24 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
           <span className="text-[11px] text-stone-400 font-medium block mb-5">
             Delivered directly by each Hive partner
           </span>
-
           <hr className="border-stone-100 mb-5" />
-
-          {/* Visual Comparison: Current Order vs Selected Item */}
-          <div className="space-y-4 mb-5">
-            {/* Current Order */}
-            <div className="bg-stone-50/60 border border-stone-100 p-3.5 rounded-xl flex items-center gap-3">
-              <div className="relative w-10 h-13 rounded overflow-hidden bg-stone-100 border border-stone-200/50 flex-shrink-0">
-                {items[0]?.imageUrl ? (
-                  <img
-                    src={items[0].imageUrl}
-                    alt={items[0].name}
-                    className="object-cover w-full h-full"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[8px] text-stone-400">
-                    No Image
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400 block mb-0.5">
-                  Current Order
-                </span>
-                <span className="text-xs font-semibold text-stone-850 block truncate">
-                  {items[0]?.boutiqueName}
-                </span>
-                <div className="flex items-baseline justify-between mt-1">
-                  <span className="text-[10px] text-stone-500 font-normal">
-                    {items.reduce((acc, curr) => acc + (curr.quantity || 1), 0)} {items.reduce((acc, curr) => acc + (curr.quantity || 1), 0) === 1 ? "item" : "items"}
-                  </span>
-                  <span className="text-xs sm:text-sm font-bold text-stone-900">
-                    ₹{items.reduce((acc, curr) => acc + curr.price * (curr.quantity || 1), 0).toLocaleString("en-IN")}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Arrow/Indicator */}
-            <div className="flex justify-center -my-2.5 relative z-10">
-              <div className="w-6 h-6 rounded-full bg-white border border-stone-200 flex items-center justify-center text-stone-400 text-xs font-light">
-                ↓
-              </div>
-            </div>
-
-            {/* Selected Item */}
-            <div className="bg-stone-50/60 border border-stone-100 p-3.5 rounded-xl flex items-center gap-3">
-              <div className="relative w-10 h-13 rounded overflow-hidden bg-stone-100 border border-stone-200/50 flex-shrink-0">
-                {(product.images?.[0] || product.imageUrl) ? (
-                  <img
-                    src={product.images?.[0] || product.imageUrl}
-                    alt={product.name}
-                    className="object-cover w-full h-full"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[8px] text-stone-400">
-                    No Image
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400 block mb-0.5">
-                  New Selection
-                </span>
-                <span className="text-xs font-semibold text-stone-850 block truncate">
-                  {cleanProductTitle(product.name)}
-                </span>
-                <div className="flex items-baseline justify-between mt-1">
-                  <span className="text-[10px] text-stone-500 font-normal block truncate">
-                    {product.boutiqueName}
-                  </span>
-                  <span className="text-xs sm:text-sm font-bold text-stone-900">
-                    ₹{(product.discountPrice && product.discountPrice < product.price ? product.discountPrice : product.price).toLocaleString("en-IN")}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <hr className="border-stone-100 mb-5" />
-
-          {/* Helper Text for Wishlist */}
-          <p className="text-[10px] text-stone-400 text-center font-normal mb-3 px-2">
-            Not ready to switch? Save this item to continue shopping from your current partner.
-          </p>
-
-          {/* Action buttons */}
-          <div className="flex flex-col w-full mt-1">
+          <div className="flex flex-col gap-2 w-full">
             <button
               onClick={handleClearAndContinue}
-              className="h-11 w-full bg-stone-900 text-white hover:bg-stone-950 active:scale-[0.98] transition-all rounded-full text-xs sm:text-sm font-semibold shadow-sm flex items-center justify-center gap-1.5"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-stone-900 hover:bg-stone-950 active:scale-95 transition-all text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-sm"
             >
-              <span>Shop From This Partner</span>
-              <span>→</span>
+              Clear Cart & Add This
             </button>
-            <span className="text-[10px] text-stone-400 font-normal mt-1.5 text-center block">
-              Your current bag will be replaced.
-            </span>
-            
             <button
               onClick={handleSaveToWishlist}
-              className="h-11 w-full bg-stone-100/80 text-stone-850 hover:bg-stone-200 active:scale-[0.98] transition-all rounded-full text-xs sm:text-sm font-semibold mt-3.5 flex items-center justify-center"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-white hover:bg-stone-50 active:bg-stone-100 active:scale-95 transition-all border border-stone-200 text-stone-700 rounded-xl text-xs font-bold uppercase tracking-widest shadow-sm"
             >
-              Save For Later
-            </button>
-            
-            <button
-              onClick={() => {
-                logFunnelEvent({
-                  eventType: "cross_boutique_dismissed",
-                  productId: (product.slug ?? product._id) as any,
-                  boutiqueId: product.boutiqueId as any,
-                }).catch(err => console.error("Failed to log analytics:", err));
-                setCrossBoutiqueModalOpen(false);
-              }}
-              className="w-full text-center text-xs text-stone-600 hover:text-stone-900 font-semibold py-2 transition-colors focus:outline-none mt-2"
-            >
-              Keep Browsing
+              Save to Wishlist
             </button>
           </div>
         </div>
       </Modal>
-    </div>
+    </div>,
+    modalRoot
   );
 };

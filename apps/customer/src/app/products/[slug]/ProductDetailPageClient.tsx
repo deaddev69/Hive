@@ -9,11 +9,22 @@ import { ProductDetail } from "@/lib/mockProductDetails";
 import { RelatedProductsSection } from "@/components/product/RelatedProductsSection";
 import { cleanProductTitle } from "@/components/product/ProductCard";
 
+import { mapDbProduct } from "@/lib/mapDbProduct";
+
 interface ProductDetailPageClientProps {
   product: ProductDetail;
 }
 
-export function ProductDetailPageClient({ product }: ProductDetailPageClientProps) {
+export function ProductDetailPageClient({ product: rawProduct }: ProductDetailPageClientProps) {
+  const product = React.useMemo(() => {
+    const mapped = mapDbProduct(rawProduct);
+    return {
+      ...rawProduct,
+      price: mapped.price,
+      compareAtPrice: mapped.compareAtPrice,
+    };
+  }, [rawProduct]);
+
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [showStickyBar, setShowStickyBar] = useState(false);
 
@@ -44,6 +55,14 @@ export function ProductDetailPageClient({ product }: ProductDetailPageClientProp
   }, [product]);
 
   if ((product as any).isUnavailable) {
+    const boutiqueAny = product.boutique as any;
+    const isPaused = boutiqueAny && (!boutiqueAny.isAcceptingOrders || boutiqueAny.storeStatus === "closed");
+    let reopenText = "";
+    if (isPaused && boutiqueAny?.closedUntil) {
+      const date = new Date(boutiqueAny.closedUntil);
+      reopenText = `until ${date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
+    }
+
     return (
       <CatalogLayout
         breadcrumbs={[
@@ -53,21 +72,47 @@ export function ProductDetailPageClient({ product }: ProductDetailPageClientProp
       >
         <div className="max-w-[1440px] mx-auto px-6 lg:px-12 w-full py-12 space-y-12 select-none">
           <div className="bg-white border border-hive-border/40 rounded-3xl p-8 md:p-12 text-center max-w-2xl mx-auto space-y-6 shadow-sm">
-            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto border border-red-100">
-              <span className="text-2xl font-bold">!</span>
-            </div>
-            <div className="space-y-2">
-              <h1 className="font-serif text-2xl md:text-3xl font-black text-hive-dark">
-                Product No Longer Available
-              </h1>
-              <p className="text-sm text-hive-text-muted leading-relaxed font-medium">
-                The product "{product.name}" is temporarily unavailable because the boutique is not currently active or the item is inactive.
-              </p>
-            </div>
-            <div className="pt-2">
+            {isPaused ? (
+              <>
+                <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto border border-amber-100">
+                  <span className="text-2xl font-bold">🔒</span>
+                </div>
+                <div className="space-y-2">
+                  <h1 className="font-serif text-2xl md:text-3xl font-black text-hive-dark">
+                    Boutique on Vacation
+                  </h1>
+                  <p className="text-sm text-hive-text-muted leading-relaxed font-medium">
+                    This boutique is taking a short break {reopenText}.<br/>
+                    Save to wishlist and we'll remind you when they're back.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto border border-red-100">
+                  <span className="text-2xl font-bold">!</span>
+                </div>
+                <div className="space-y-2">
+                  <h1 className="font-serif text-2xl md:text-3xl font-black text-hive-dark">
+                    Product Unavailable
+                  </h1>
+                  <p className="text-sm text-hive-text-muted leading-relaxed font-medium">
+                    The product "{product.name}" is no longer available.
+                  </p>
+                </div>
+              </>
+            )}
+            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+              {isPaused && (
+                <button
+                  className="w-full sm:w-auto inline-flex px-6 h-12 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest items-center justify-center shadow-sm"
+                >
+                  Save to Wishlist
+                </button>
+              )}
               <Link
                 href="/products"
-                className="inline-flex px-6 h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest items-center justify-center shadow-sm"
+                className="w-full sm:w-auto inline-flex px-6 h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest items-center justify-center shadow-sm"
               >
                 Continue Shopping
               </Link>

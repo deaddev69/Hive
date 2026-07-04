@@ -6,9 +6,9 @@ import { mockCollections } from "@/lib/mockCollections";
 import { ArrowRight, Grid2x2, LayoutGrid } from "lucide-react";
 
 export const metadata = {
-  title: "Style Boards — Hive by TailorBee",
+  title: "Curated Edits — Hive by TailorBee",
   description:
-    "Browse curated boutique fashion style boards for every occasion — weddings, festivals, workwear, and more. Delivered same-day in Kochi.",
+    "Browse curated boutique fashion edits for every occasion — weddings, festivals, workwear, and more. Delivered same-day in Kochi.",
 };
 
 export default function CollectionsPage() {
@@ -44,7 +44,7 @@ export default function CollectionsPage() {
         <div className="max-w-[1440px] mx-auto px-6 lg:px-8 w-full flex flex-col gap-4">
           <span className="inline-flex items-center gap-2 self-start px-3 py-1 rounded-full text-[10px] font-extrabold text-hive-amber bg-hive-gold/10 border border-hive-gold/25 uppercase tracking-[0.2em]">
             <span className="w-1.5 h-1.5 rounded-full bg-hive-gold animate-pulse" />
-            BOUTIQUE STYLE BOARDS
+            BOUTIQUE CURATED EDITS
           </span>
 
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
@@ -57,7 +57,7 @@ export default function CollectionsPage() {
                 </span>
               </h1>
               <p className="text-base text-hive-text-muted max-w-lg leading-relaxed">
-                Eight hand-picked style boards from verified local boutiques.
+                Eight hand-picked fashion edits from verified local boutiques.
                 Each piece tells a story of craft, culture, and care.
               </p>
             </div>
@@ -76,7 +76,7 @@ export default function CollectionsPage() {
             <div className="flex items-center gap-2">
               <LayoutGrid className="w-4 h-4 text-hive-gold" />
               <span className="text-xs font-bold text-hive-dark">
-                {mockCollections.length} Style Boards
+                {mockCollections.length} Curated Edits
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export default function CollectionsPage() {
           <div className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
               <span className="text-xs font-extrabold text-hive-amber uppercase tracking-widest">
-                Featured Style Boards
+                Featured Edits
               </span>
               <div className="flex-1 h-px bg-hive-border/50" />
             </div>
@@ -112,7 +112,7 @@ export default function CollectionsPage() {
         <div className="flex flex-col gap-5">
           <div className="flex items-center gap-3">
             <span className="text-xs font-extrabold text-hive-amber uppercase tracking-widest">
-              All Style Boards
+              All Curated Edits
             </span>
             <div className="flex-1 h-px bg-hive-border/50" />
           </div>

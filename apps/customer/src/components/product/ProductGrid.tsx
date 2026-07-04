@@ -10,6 +10,7 @@ import { AlertCircle, ArrowRight } from "lucide-react";
 import { useLocation } from "@/context/LocationContext";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
+import { QuickViewModal } from "./QuickViewModal";
 
 const NEARBY_LIVE_LOCATIONS = [
   { name: "Edappally", latitude: 10.0261, longitude: 76.3088, postcode: "682024", locality: "Edappally", city: "Ernakulam", state: "Kerala", country: "India" },
@@ -28,15 +29,15 @@ export interface ProductGridProps {
 }
 
 const occasionLabels: Record<string, string> = {
-  all: "All Style Boards",
-  wedding: "Wedding Guest Style Board",
-  festival: "Festival Style Board",
-  workwear: "Work Wear Style Board",
-  party: "Party Night Style Board",
-  casual: "Casual Day Style Board",
-  date: "Date Night Style Board",
-  ethnic: "Ethnic Style Board",
-  coords: "Co-ords Style Board",
+  all: "All Collections",
+  wedding: "Wedding Guest Edit",
+  festival: "Festive Edit",
+  workwear: "Workwear Edit",
+  party: "Party Night Edit",
+  casual: "Casual Day Edit",
+  date: "Date Night Edit",
+  ethnic: "Ethnic Edit",
+  coords: "Co-ords Edit",
 };
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
@@ -49,6 +50,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   const { isServiceable, locality, city, stateName, latitude, longitude, updateLocationDetails } = useLocation();
   const requestService = useMutation(api.serviceability.requestService);
   const [requestState, setRequestState] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [quickViewModal, setQuickViewModal] = useState<{ open: boolean, productId: string | null }>({ open: false, productId: null });
 
   const handleRequestHive = async () => {
     setRequestState("loading");
@@ -180,7 +182,10 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               className="animate-card-entrance"
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              <ProductCard product={product} />
+              <ProductCard 
+                product={product} 
+                onQuickView={(id) => setQuickViewModal({ open: true, productId: id })} 
+              />
             </div>
           ))}
         </div>
@@ -291,7 +296,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               <AlertCircle className="w-8 h-8 animate-pulse" />
             </div>
             <h3 className="text-xl font-bold font-serif text-hive-dark">
-              Style Boards arriving soon
+              Collections arriving soon
             </h3>
             <p className="text-sm text-hive-text-muted mt-2 max-w-md leading-relaxed">
               Our buyers are curating premium styles for this category. We are onboarding more fashion partners near {locality || city || "you"}.
@@ -302,19 +307,27 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                 onClick={onResetFilter}
                 className="mt-6 flex items-center gap-1.5"
               >
-                Discover Other Style Boards
+                Discover Other Collections
                 <ArrowRight className="w-4 h-4" />
               </Button>
             ) : (
               <Link href="/products?browse=all" className="mt-6">
                 <Button variant="primary" className="flex items-center gap-1.5">
-                  Discover Nearby Style Boards
+                  Discover Nearby Collections
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
             )}
           </div>
         )
+      )}
+      
+      {quickViewModal.open && quickViewModal.productId && (
+        <QuickViewModal
+          isOpen={quickViewModal.open}
+          onClose={() => setQuickViewModal({ open: false, productId: null })}
+          productSlug={quickViewModal.productId}
+        />
       )}
     </div>
   );

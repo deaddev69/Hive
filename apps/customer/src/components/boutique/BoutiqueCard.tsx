@@ -24,14 +24,20 @@ export const BoutiqueCard: React.FC<BoutiqueCardProps> = ({
     >
       {/* ── Image area — same 4:5 ratio as product cards ── */}
       <div className="relative w-full aspect-[4/5] overflow-hidden rounded-xl bg-stone-50">
-        <Image
-          src={boutique.imageUrl}
-          alt={boutique.name}
-          fill
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-cover transform group-hover:scale-[1.02] transition-transform duration-500 ease-out pointer-events-none"
-          priority={false}
-        />
+        {typeof boutique.imageUrl === "string" && boutique.imageUrl.trim().length > 0 ? (
+          <Image
+            src={boutique.imageUrl}
+            alt={boutique.name}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover transform group-hover:scale-[1.02] transition-transform duration-500 ease-out pointer-events-none"
+            priority={false}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-stone-100 flex flex-col items-center justify-center text-stone-600 p-4">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-stone-400">No Image</span>
+          </div>
+        )}
 
         {/* Same-day badge — bottom-left overlay (looks like an editorial apparel label) */}
         {boutique.sameDayDelivery && (() => {
