@@ -1114,3 +1114,25 @@ export const countAllDocuments = query({
   }
 });
 
+export const fixProductPrices = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const products = await ctx.db.query("products").collect();
+    let updatedCount = 0;
+    for (const p of products) {
+      const boutique = await ctx.db.get(p.boutiqueId);
+      if (boutique && (boutique.boutiqueName.includes("Athul") || boutique.isSandbox || p.price < 50000)) {
+        if (p.price < 50000) {
+          const newPrice = Math.round(p.price * 100);
+          const newDiscountPrice = p.discountPrice ? Math.round(p.discountPrice * 100) : undefined;
+          await ctx.db.patch(p._id, {
+            price: newPrice,
+            discountPrice: newDiscountPrice,
+          });
+          updatedCount++;
+        }
+      }
+    }
+    return { success: true, updatedCount };
+  }
+});

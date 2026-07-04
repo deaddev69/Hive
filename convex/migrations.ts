@@ -138,5 +138,54 @@ export const backfillListingApprovalFields = mutation({
     }
 
     return { success: true, boutiqueCount, productCount };
-  },
+  }
+});
+
+/**
+ * Migration to backfill the slug field for all approved boutiques that lack one.
+ * Uses a basic slugify function based on the boutiqueName.
+ */
+export const backfillBoutiqueSlugs = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity !== null) {
+      await requireRole(ctx, "admin");
+    }
+
+    const boutiques = await ctx.db.query("boutiques").collect();
+    let backfilledCount = 0;
+
+    for (const b of boutiques) {
+      if (!b.slug) {
+        // Basic slugify
+        let baseSlug = b.boutiqueName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+        
+        if (!baseSlug) {
+          baseSlug = `shop-${b._id.slice(-6)}`;
+        }
+
+        // Handle collisions (just in case)
+        let uniqueSlug = baseSlug;
+        let counter = 1;
+        while (true) {
+          const existing = await ctx.db
+            .query("boutiques")
+            .filter((q) => q.eq(q.field("slug"), uniqueSlug))
+            .first();
+          if (!existing) break;
+          uniqueSlug = `${baseSlug}-${counter}`;
+          counter++;
+        }
+
+        await ctx.db.patch(b._id, { slug: uniqueSlug });
+        backfilledCount++;
+      }
+    }
+
+    return `Backfilled slugs for ${backfilledCount} boutiques.`;
+  }
 });

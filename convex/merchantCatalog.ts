@@ -167,7 +167,6 @@ export const importProductsCsv = mutation({
 
     for (const item of Object.values(grouped)) {
       const categoryId = await resolveCategory(item.categoryName);
-      const pricePaise = Math.round(item.price * 100);
 
       // Check if product with exact case-insensitive name exists
       const existingProduct = existingProducts.find(
@@ -213,7 +212,7 @@ export const importProductsCsv = mutation({
         const validationErrors = await getProductQualityIssues(ctx, {
           name: item.name,
           description: item.description,
-          price: pricePaise,
+          price: item.price,
           categoryId,
           sizes: mergedSizes,
           stockBySize: mergedStock,
@@ -235,7 +234,7 @@ export const importProductsCsv = mutation({
         const patchData: any = {
           description: item.description,
           categoryId,
-          price: pricePaise,
+          price: item.price,
           sizes: mergedSizes,
           stockBySize: mergedStock,
           active,
@@ -262,7 +261,7 @@ export const importProductsCsv = mutation({
         const validationErrors = await getProductQualityIssues(ctx, {
           name: item.name,
           description: item.description,
-          price: pricePaise,
+          price: item.price,
           categoryId,
           sizes,
           stockBySize: item.stockBySize,
@@ -287,7 +286,7 @@ export const importProductsCsv = mutation({
           slug,
           description: item.description,
           categoryId,
-          price: pricePaise,
+          price: item.price,
           images,
           sizes,
           stockBySize: item.stockBySize,

@@ -128,6 +128,23 @@ export const submitClaimCustomer = mutation({
       })
     );
 
+    const superadmin = await ctx.db.query("users").withIndex("by_role", q => q.eq("role", "admin")).first();
+    if (superadmin) {
+      await triggerNotification(
+        ctx,
+        superadmin._id,
+        "slack",
+        "claim_submitted_ops",
+        "claim",
+        claimId,
+        JSON.stringify({
+          claimNumber,
+          orderNumber: order.orderNumber,
+          type: args.type
+        })
+      );
+    }
+
     // 8. Log claim event
     await ctx.db.insert("claimEvents", {
       claimId,

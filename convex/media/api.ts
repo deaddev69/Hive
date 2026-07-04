@@ -13,7 +13,8 @@ import { ImageAsset } from "../schema";
  * Helper to construct the delivery URL securely using Cloudflare Named Variants.
  * Ensures the edge transformer always decodes and re-encodes the image.
  */
-export function getPublicUrl(asset: { objectKey: string }, variant: "thumbnail" | "pdp" | "zoom" | "original" = "original") {
+export function getPublicUrl(asset: any, variant: "thumbnail" | "pdp" | "zoom" | "original" = "original") {
+  if (typeof asset === "string") return asset;
   if (!asset?.objectKey) return "";
   
   const domain = process.env.R2_PUBLIC_DEV_URL || "cdn.hivenow.in";

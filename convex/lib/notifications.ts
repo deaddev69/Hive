@@ -276,7 +276,7 @@ function generateEmailContent(template: string, payload: any): { subject: string
 export async function triggerNotification(
   ctx: MutationCtx,
   userId: Id<"users">,
-  channel: "email" | "sms" | "whatsapp" | "push",
+  channel: "email" | "sms" | "whatsapp" | "push" | "in_app" | "slack",
   template: string,
   entityType: string,
   entityId: string,
@@ -338,8 +338,33 @@ export async function triggerNotification(
         status: "sent",
         sentAt: Date.now(),
       });
+    } else if (channel === "slack") {
+      const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+      if (webhookUrl) {
+        let text = `*New Notification: ${template}*\n`;
+        if (payload) {
+          text += "```\n" + JSON.stringify(payload, null, 2) + "\n```";
+        }
+        
+        const res = await fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Slack webhook failed: ${await res.text()}`);
+        }
+      } else {
+        console.warn("[triggerNotification] Slack webhook URL not configured");
+      }
+      
+      await ctx.db.patch(eventId, {
+        status: "sent",
+        sentAt: Date.now(),
+      });
     } else {
-      // Mock SMS/WhatsApp/Push immediately
+      // Mock SMS/WhatsApp/Push/in_app immediately
       console.log(`[triggerNotification] Sending mock ${channel} for template ${template} to user ${userId}`);
       await ctx.db.patch(eventId, {
         status: "sent",

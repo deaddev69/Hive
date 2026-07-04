@@ -214,7 +214,7 @@ export const getAdminProducts = query({
 
     // 4. Apply filters
     if (args.boutiqueId) {
-      enriched = enriched.filter(p => p.boutiqueId === args.boutiqueId);
+      enriched = enriched.filter(p => p.boutiqueId.toString() === args.boutiqueId!.toString());
     }
 
     if (args.status) {
