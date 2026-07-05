@@ -108,13 +108,6 @@ export const handleLogisticsWebhook = httpAction(async (ctx, request) => {
     });
   } catch (err: any) {
     console.error("[LogisticsWebhook] Mutation error:", err);
-    // If it's a dummy test webhook from Shiprocket, return 200 OK so it registers successfully.
-    if (err.message.includes("not found")) {
-      return new Response(JSON.stringify({ success: true, warning: "AWB not found, treating as test ping" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
     return new Response(`Processing error: ${err.message}`, { status: 500 });
   }
 
