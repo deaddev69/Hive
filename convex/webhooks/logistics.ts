@@ -86,6 +86,15 @@ export const handleLogisticsWebhook = httpAction(async (ctx, request) => {
     return new Response("Missing awbNumber or status", { status: 400 });
   }
 
+  // Intercept dummy test payloads from Shiprocket dashboard to avoid DB mutation errors
+  if (awbNumber === "123456" || awbNumber.toLowerCase().includes("test")) {
+    console.log(`[LogisticsWebhook] Received dummy test webhook for AWB: ${awbNumber}. Returning 200 OK.`);
+    return new Response(JSON.stringify({ success: true, message: "Test webhook received successfully." }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   // Deduplicate scans based on timestamp/status (to append safely if Shiprocket sends partial history)
   try {
     await ctx.runMutation(internal.adminLogistics.processLogisticsStatusUpdateInternal, {
