@@ -510,6 +510,7 @@ function OrderSummaryCard({
   deliverySlotWindow,
   showDetails,
   onToggleDetails,
+  boutiqueName,
 }: {
   itemCount: number;
   totalAmount: number;
