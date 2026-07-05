@@ -15,7 +15,11 @@ import {
   Award,
   List,
   Eye,
-  Scissors
+  Scissors,
+  Check,
+  Copy,
+  AlertCircle,
+  PackageX
 } from "lucide-react";
 import { useOrderStore } from "@/store/order-store";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
@@ -204,25 +208,10 @@ function OrderSuccessContent() {
               window={slotWindow}
             />
 
-            {/* Boutique Partner Card */}
-            <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3 flex items-start gap-4 text-left animate-[scaleUp_0.4s_ease-out]">
-              <div className="w-10 h-10 rounded-xl bg-hive-comb/35 border border-hive-gold/20 flex items-center justify-center text-hive-gold font-serif text-lg font-bold flex-shrink-0 select-none">
-                {(resolvedOrder.items[0]?.boutiqueName || "B").charAt(0).toUpperCase()}
-              </div>
-              <div className="space-y-1">
-                <span className="text-[9px] font-black text-hive-text-muted uppercase tracking-wider block">
-                  Fulfilled by
-                </span>
-                <h4 className="text-sm font-black text-hive-dark leading-tight">
-                  {resolvedOrder.items[0]?.boutiqueName || "Boutique Partner"}
-                </h4>
-                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200/20">
-                  ✓ Verified Hive Partner
-                </span>
-              </div>
-            </div>
 
-            <NextStepsSection />
+
+            {/* NextStepsSection with status passed in */}
+            <NextStepsSection status={resolvedOrder.status} />
 
             {/* Post-Purchase guarantees strip */}
             <PostPurchaseInfo />
@@ -243,6 +232,7 @@ function OrderSuccessContent() {
               deliverySlotWindow={slotWindow}
               showDetails={showDetails}
               onToggleDetails={() => setShowDetails(!showDetails)}
+              boutiqueName={resolvedOrder.items[0]?.boutiqueName}
             />
 
             {/* Action buttons */}
@@ -282,25 +272,35 @@ function OrderSuccessHero({
   orderId: string; 
   placedDuringClosedHours?: boolean; 
 }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(orderId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="w-full bg-white border border-hive-border rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col items-center text-center space-y-4">
-      <div className="relative w-16 h-16 bg-green-50 border border-green-200 rounded-full flex items-center justify-center text-green-500 shadow-sm">
-        <CheckCircle2 className="w-10 h-10 stroke-[1.8]" />
+    <div className="w-full bg-hive-cream/40 border border-hive-border/40 rounded-3xl p-8 sm:p-10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] flex flex-col items-center text-center space-y-5 relative overflow-hidden">
+      {/* Subtle background glow effect */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[400px] h-full bg-gradient-to-b from-hive-gold/5 to-transparent pointer-events-none" />
+
+      <div className="relative w-16 h-16 bg-white border border-hive-gold/20 rounded-full flex items-center justify-center text-hive-gold shadow-sm z-10">
+        <div className="absolute inset-0 rounded-full bg-hive-gold/10 animate-ping opacity-75 duration-1000" />
+        <CheckCircle2 className="w-9 h-9 stroke-[1.8] relative z-10" />
         <Sparkle className="w-4 h-4 text-hive-gold absolute -top-1 -right-1 animate-pulse" />
       </div>
 
-      <div className="space-y-1.5">
-        <h1 className="font-serif text-3xl font-black text-hive-dark">✓ Order Confirmed</h1>
-        <p className="text-xs text-hive-text-muted max-w-md font-semibold">
-          Your Hive Partner is reviewing your order.
-        </p>
-        <p className="text-[11px] text-hive-text-muted max-w-md">
+      <div className="space-y-1.5 z-10">
+        <h1 className="font-serif text-3xl font-black text-hive-dark tracking-tight">Order Confirmed</h1>
+        <p className="text-[13px] text-hive-text-muted max-w-md font-medium leading-relaxed">
+          Your Hive Partner is reviewing your order.<br/>
           You'll receive confirmation shortly.
         </p>
       </div>
 
       {placedDuringClosedHours && (
-        <div className="w-full max-w-md py-3 px-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col gap-1 text-center text-xs animate-[scaleUp_0.4s_ease-out]">
+        <div className="w-full max-w-md py-3 px-4 bg-amber-50 border border-amber-200/60 rounded-2xl flex flex-col gap-1 text-center text-xs animate-[scaleUp_0.4s_ease-out] z-10">
           <span className="font-extrabold text-amber-800 flex items-center justify-center gap-1">
             ⚠️ Order Placed During Closed Hours
           </span>
@@ -310,10 +310,16 @@ function OrderSuccessHero({
         </div>
       )}
 
-      <div className="py-2.5 px-4 bg-hive-cream/40 border border-hive-border/60 rounded-xl inline-flex items-center gap-1.5 text-xs">
-        <span className="font-bold text-hive-text-muted">Order ID:</span>
-        <span className="font-extrabold text-hive-dark select-all">{orderId}</span>
-      </div>
+      <button 
+        onClick={handleCopy}
+        className="mt-2 py-2.5 px-4 bg-amber-50/80 hover:bg-amber-100/80 active:bg-amber-100 transition-colors border border-amber-200/50 rounded-xl inline-flex items-center gap-2 text-xs z-10 cursor-pointer"
+      >
+        <span className="font-bold text-amber-900/60">Order ID:</span>
+        <span className="font-black text-amber-900 tracking-wide">{orderId}</span>
+        <div className="w-4 h-4 flex items-center justify-center text-amber-900/60 ml-1">
+          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3 h-3" />}
+        </div>
+      </button>
     </div>
   );
 }
@@ -331,34 +337,34 @@ function DeliveryConfirmationCard({
   window: string;
 }) {
   return (
-    <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-4 text-left">
-      <div className="border-b border-hive-border/40 pb-2">
-        <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider flex items-center gap-2">
+    <div className="bg-white border border-hive-border/20 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4 text-left">
+      <div className="border-b border-hive-border/40 pb-3">
+        <h3 className="text-[11px] font-extrabold text-hive-dark uppercase tracking-wider flex items-center gap-2">
           <Calendar className="w-4 h-4 text-hive-gold" />
           <span>Delivery & Fitting Window</span>
         </h3>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 text-xs font-bold text-hive-dark">
-        <div className="space-y-0.5">
+      <div className="grid grid-cols-2 gap-4 text-xs font-bold text-hive-dark pt-1">
+        <div className="space-y-1">
           <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
             Selected Date
           </span>
-          <p>{date}</p>
+          <p className="text-sm">{date}</p>
         </div>
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
             Preferred Slot
           </span>
-          <p>{slot}</p>
+          <p className="text-sm">{slot}</p>
         </div>
       </div>
 
-      <div className="bg-hive-comb/25 border border-hive-gold/15 p-3 rounded-2xl flex items-start gap-2.5">
+      <div className="bg-hive-cream/30 border border-hive-border/40 p-3.5 rounded-2xl flex items-start gap-3 mt-2">
         <Clock className="w-4.5 h-4.5 text-hive-gold mt-0.5 flex-shrink-0" />
-        <div className="text-[10px] text-hive-text leading-relaxed">
-          <span className="font-extrabold text-hive-dark block">{window}</span>
-          <p className="text-hive-text-muted mt-0.5 leading-normal">
+        <div className="text-[10.5px] text-hive-text leading-relaxed">
+          <span className="font-extrabold text-hive-dark block text-xs">{window}</span>
+          <p className="text-hive-text-muted mt-1 leading-relaxed">
             A boutique fit agent will deliver the items and assist you with trials or quick alterations on-site.
           </p>
         </div>
@@ -370,50 +376,121 @@ function DeliveryConfirmationCard({
 // ─────────────────────────────────────────────────────────────────────────────
 // Component: NextStepsSection (Timeline Stepper)
 // ─────────────────────────────────────────────────────────────────────────────
-function NextStepsSection() {
+function NextStepsSection({ status }: { status: string }) {
+  // Check for non-happy-path states
+  const isCancelledOrRefunded = ["cancelled", "return_requested", "returned", "refunded"].includes(status);
+
+  if (isCancelledOrRefunded) {
+    let title = "Order Cancelled";
+    let desc = "This order has been cancelled.";
+    let icon = <PackageX className="w-6 h-6 text-red-500" />;
+    
+    if (status === "return_requested" || status === "returned") {
+      title = "Return Processed";
+      desc = "Your return request is being processed.";
+      icon = <RotateCcw className="w-6 h-6 text-amber-500" />;
+    } else if (status === "refunded") {
+      title = "Refund Issued";
+      desc = "Your refund has been successfully processed.";
+      icon = <CheckCircle2 className="w-6 h-6 text-green-500" />;
+    }
+
+    return (
+      <div className="bg-white border border-hive-border/20 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4 text-left">
+        <div className="border-b border-hive-border/40 pb-3">
+          <h3 className="text-[11px] font-extrabold text-hive-dark uppercase tracking-wider">
+            Order Status
+          </h3>
+        </div>
+        <div className="flex items-center gap-4 py-4 px-2">
+          <div className="w-12 h-12 rounded-2xl bg-neutral-50 border border-hive-border/40 flex items-center justify-center">
+            {icon}
+          </div>
+          <div>
+            <h4 className="font-bold text-hive-dark">{title}</h4>
+            <p className="text-xs text-hive-text-muted mt-0.5">{desc}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Map status to progress index (0 to 4)
+  let currentStepIndex = 0;
+  if (["confirmed"].includes(status)) currentStepIndex = 1;
+  else if (["packed", "ready_for_pickup"].includes(status)) currentStepIndex = 2;
+  else if (["out_for_delivery"].includes(status)) currentStepIndex = 3;
+  else if (["delivered"].includes(status)) currentStepIndex = 4;
+
   const steps = [
-    { label: "Payment Received", desc: "✓ Payment succeeds via Razorpay", active: true },
-    { label: "Partner Confirmation", desc: "Awaiting boutique acceptance", active: false },
-    { label: "Preparing Order", desc: "Boutique hand-crafting & prep", active: false },
-    { label: "Out For Delivery", desc: "Doorstep fitting trials", active: false },
-    { label: "Delivered", desc: "Alterations finalized", active: false }
+    { label: "Payment Received", desc: "Via Razorpay" },
+    { label: "Partner Confirmation", desc: "Boutique accepted" },
+    { label: "Preparing Order", desc: "Hand-crafting & prep" },
+    { label: "Out For Delivery", desc: "Doorstep fitting trials" },
+    { label: "Delivered", desc: "Alterations finalized" }
   ];
 
   return (
-    <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-4 text-left">
-      <div className="border-b border-hive-border/40 pb-2">
-        <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider">
+    <div className="bg-white border border-hive-border/20 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4 text-left">
+      <div className="border-b border-hive-border/40 pb-3">
+        <h3 className="text-[11px] font-extrabold text-hive-dark uppercase tracking-wider">
           Fittings Journey Timeline
         </h3>
       </div>
 
       {/* Responsive pipeline: vertical on mobile, horizontal on desktop */}
-      <div className="flex flex-col md:flex-row md:justify-between gap-6 relative pt-2">
-        {steps.map((step, idx) => (
-          <div key={idx} className="flex md:flex-col items-start md:items-center text-left md:text-center gap-3 md:gap-1.5 flex-1 relative group">
+      <div className="flex flex-col md:flex-row md:justify-between gap-6 relative pt-4 pb-2">
+        {steps.map((step, idx) => {
+          const isCompleted = idx < currentStepIndex;
+          const isActive = idx === currentStepIndex;
+          const isPending = idx > currentStepIndex;
 
-            {/* Horizontal line connector for desktop */}
-            {idx < steps.length - 1 && (
-              <div className="hidden md:block absolute left-[50%] top-4 w-full h-[1.5px] bg-hive-border/40 group-hover:bg-hive-border transition-colors duration-300 -z-0" />
-            )}
+          return (
+            <div key={idx} className="flex md:flex-col items-start md:items-center text-left md:text-center gap-3 md:gap-2 flex-1 relative group">
+              
+              {/* Horizontal line connector for desktop */}
+              {idx < steps.length - 1 && (
+                <div className="hidden md:block absolute left-[50%] top-4 w-full h-[2px] bg-neutral-100 z-0">
+                  {(isCompleted || isActive) && (
+                    <div className={`h-full bg-gradient-to-r from-hive-gold to-hive-dark transition-all duration-700 ease-in-out ${isActive ? "w-1/2" : "w-full"}`} />
+                  )}
+                </div>
+              )}
 
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center border text-[10px] font-extrabold flex-shrink-0 z-10 transition-all ${step.active
-                ? "bg-hive-dark border-hive-dark text-hive-gold shadow-sm ring-4 ring-hive-gold/10"
-                : "bg-hive-cream/35 border-hive-border/40 text-hive-text-muted"
+              {/* Vertical line connector for mobile */}
+              {idx < steps.length - 1 && (
+                <div className="md:hidden absolute left-4 top-10 w-[2px] h-[calc(100%+8px)] bg-neutral-100 z-0">
+                  {(isCompleted || isActive) && (
+                    <div className={`w-full bg-gradient-to-b from-hive-gold to-hive-dark transition-all duration-700 ease-in-out ${isActive ? "h-1/2" : "h-full"}`} />
+                  )}
+                </div>
+              )}
+
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center border text-[11px] font-black flex-shrink-0 z-10 transition-all duration-300 ${
+                isCompleted 
+                  ? "bg-hive-dark border-hive-dark text-hive-gold shadow-sm"
+                  : isActive
+                  ? "bg-white border-hive-gold text-hive-dark shadow-[0_0_0_4px_rgba(212,175,55,0.1)] ring-1 ring-hive-gold"
+                  : "bg-neutral-50 border-hive-border/60 text-hive-text-muted/50"
               }`}>
-              {step.active ? "✓" : idx + 1}
-            </div>
+                {isCompleted ? <Check className="w-4 h-4" /> : idx + 1}
+              </div>
 
-            <div className="space-y-0.5 text-left md:text-center mt-0.5">
-              <span className={`text-[10px] font-extrabold block leading-none ${step.active ? "text-hive-dark font-black" : "text-hive-text-muted/80"}`}>
-                {step.label}
-              </span>
-              <span className="text-[9px] text-hive-text-muted/60 leading-normal block max-w-[110px] sm:mx-auto">
-                {step.desc}
-              </span>
+              <div className="space-y-1 text-left md:text-center mt-1 md:mt-1.5">
+                <span className={`text-[10px] uppercase tracking-wider block leading-none ${
+                  isCompleted || isActive ? "text-hive-dark font-black" : "text-hive-text-muted/60 font-bold"
+                }`}>
+                  {step.label}
+                </span>
+                <span className={`text-[10px] leading-normal block max-w-[110px] sm:mx-auto ${
+                  isCompleted || isActive ? "text-hive-text-muted font-medium" : "text-hive-text-muted/40"
+                }`}>
+                  {step.desc}
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -444,11 +521,31 @@ function OrderSummaryCard({
   deliverySlotWindow: string;
   showDetails: boolean;
   onToggleDetails: () => void;
+  boutiqueName?: string;
 }) {
   return (
-    <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-4 text-left">
-      <div className="border-b border-hive-border/40 pb-2 flex justify-between items-center">
-        <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider">
+    <div className="bg-white border border-hive-border/20 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4 text-left">
+      {/* Boutique Prestige Badge moved here */}
+      <div className="pb-4 mb-2 border-b border-hive-border/30 flex items-start gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-hive-dark border border-hive-gold/30 flex items-center justify-center text-hive-gold font-serif text-xl font-bold flex-shrink-0 select-none shadow-sm">
+          {(boutiqueName || "B").charAt(0).toUpperCase()}
+        </div>
+        <div className="space-y-1.5 mt-0.5">
+          <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-widest block leading-none">
+            Fulfilled by
+          </span>
+          <h4 className="text-sm font-black text-hive-dark leading-tight">
+            {boutiqueName || "Boutique Partner"}
+          </h4>
+          <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-hive-dark bg-gradient-to-r from-amber-50 to-amber-100/50 px-2.5 py-1 rounded-md border border-hive-gold/30 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+            <ShieldCheck className="w-3 h-3 text-hive-gold" strokeWidth={2.5} />
+            Verified Hive Partner
+          </span>
+        </div>
+      </div>
+
+      <div className="border-b border-hive-border/40 pb-3 flex justify-between items-center mt-4">
+        <h3 className="text-[11px] font-extrabold text-hive-dark uppercase tracking-wider">
           Order Summary
         </h3>
         <span className="text-[10px] font-extrabold text-hive-text-muted">
@@ -583,30 +680,30 @@ function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function PostPurchaseInfo() {
   const badges = [
-    { title: "3-Day Return & Refund Policy", desc: "Raise return requests within 3 days for approved refunds.", icon: RotateCcw },
-    { title: "Same-Day Delivery Support", desc: "Hyperlocal couriers handle custom adjustments.", icon: ShieldCheck },
-    { title: "Verified Boutique Protection", desc: "Designers construct and ship matching standards.", icon: Award }
+    { title: "3-Day Return & Refund", desc: "Raise requests within 3 days.", icon: RotateCcw },
+    { title: "Same-Day Delivery", desc: "Hyperlocal couriers.", icon: ShieldCheck },
+    { title: "Verified Boutique", desc: "Matching standards.", icon: Award }
   ];
 
   return (
-    <div className="bg-white border border-hive-border/40 rounded-3xl p-5 shadow-sm space-y-3.5 text-left">
-      <span className="text-[10px] font-extrabold text-hive-amber uppercase tracking-wider block">
+    <div className="bg-transparent pt-2 pb-4 space-y-3.5 text-left">
+      <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider block pl-2">
         Hive Post-Purchase Assurances
       </span>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {badges.map((badge, idx) => {
           const IconComponent = badge.icon;
           return (
-            <div key={idx} className="flex flex-col gap-2 items-start p-3 bg-hive-cream/35 border border-hive-border/50 rounded-2xl">
-              <div className="w-7 h-7 rounded-lg bg-hive-comb/35 flex items-center justify-center border border-hive-border/40 text-hive-dark">
-                <IconComponent className="w-3.5 h-3.5 text-hive-gold" />
+            <div key={idx} className="flex flex-col gap-2.5 items-start p-4 bg-white border border-hive-border/20 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] rounded-2xl group hover:border-hive-gold/30 transition-colors">
+              <div className="w-8 h-8 rounded-xl bg-hive-cream/40 flex items-center justify-center border border-hive-border/40 text-hive-dark group-hover:bg-hive-dark group-hover:text-hive-gold transition-colors">
+                <IconComponent className="w-4 h-4" strokeWidth={1.5} />
               </div>
-              <div className="space-y-0.5 text-left text-xs">
+              <div className="space-y-1 text-left">
                 <span className="font-extrabold text-hive-dark block text-[10px] leading-tight">
                   {badge.title}
                 </span>
-                <p className="text-[9px] text-hive-text-muted leading-relaxed mt-1">
+                <p className="text-[10px] text-hive-text-muted leading-snug">
                   {badge.desc}
                 </p>
               </div>
