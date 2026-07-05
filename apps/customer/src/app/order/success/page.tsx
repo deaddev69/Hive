@@ -579,7 +579,7 @@ function OrderSummaryCard({
         </div>
         <div className="flex justify-between items-center border-t border-hive-border/40 pt-2.5">
           <span className="text-xs font-extrabold">Final Paid</span>
-          <span className="text-sm font-extrabold">₹{totalAmount.toLocaleString("en-IN")}</span>
+          <span className="text-sm font-extrabold">₹{(totalAmount / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         </div>
       </div>
 
@@ -611,7 +611,7 @@ function OrderSummaryCard({
                   </span>
                 </div>
                 <span className="font-extrabold text-hive-dark flex-shrink-0">
-                  ₹{(item.price * item.quantity).toLocaleString("en-IN")}
+                  ₹{((item.price * item.quantity) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             ))}
