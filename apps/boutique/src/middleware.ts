@@ -1,6 +1,9 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
+// Customer app URL — environment variable in production, localhost in development
+const CUSTOMER_APP_URL = process.env.NEXT_PUBLIC_CUSTOMER_APP_URL || "http://localhost:3000";
+
 export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl.clone();
   const { pathname } = url;
@@ -18,27 +21,33 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   const requestHeaders = new Headers(req.headers);
-  requestHeaders.set("x-hive-portal", "admin");
+  requestHeaders.set("x-hive-portal", "seller");
 
-  // 1. Admin edge auth protection
+  // 1. Seller edge auth protection
   const isAuthPath = pathname.includes("/sign-in") || pathname.includes("/sign-up");
+  const isInvitePath = pathname.startsWith("/seller/invite") || pathname.startsWith("/invite") || pathname.startsWith("/apply");
 
-  if (!isAuthPath) {
+  if (!isAuthPath && !isInvitePath) {
     await auth.protect();
   }
 
-  // 2. Rewrite path internally to /admin/ if it doesn't already have it
+  // 2. Redirect merchant onboarding applications to customer app portal
+  if (pathname === "/apply") {
+    return NextResponse.redirect(`${CUSTOMER_APP_URL}/become-seller`, 302);
+  }
+
+  // 3. Rewrite path internally to /boutique/ if it doesn't already have it
   // Ignore auth paths so they route directly to root /sign-in and /sign-up
   if (!isAuthPath) {
     if (pathname === "/") {
-      url.pathname = "/admin";
+      url.pathname = "/boutique";
       return NextResponse.rewrite(url, {
         request: {
           headers: requestHeaders,
         },
       });
-    } else if (pathname !== "/admin" && !pathname.startsWith("/admin/")) {
-      url.pathname = `/admin${pathname}`;
+    } else if (pathname !== "/boutique" && !pathname.startsWith("/boutique/")) {
+      url.pathname = `/boutique${pathname}`;
       return NextResponse.rewrite(url, {
         request: {
           headers: requestHeaders,
