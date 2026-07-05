@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent } from "@hive/ui";
 import { Plus, Edit3, Trash2, Power, ArrowLeft, Loader2, ListCollapse, UploadCloud } from "lucide-react";
@@ -13,7 +13,8 @@ export default function AdminCategoriesPage() {
   const updateCategory = useMutation(api.categories.updateCategory);
   const deleteCategory = useMutation(api.categories.deleteCategory);
   const toggleCategory = useMutation(api.categories.toggleCategory);
-  const generateUploadUrl = useMutation(api.categories.generateUploadUrl);
+  const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
+  const commitUpload = useAction(api.media.api.commitUpload);
 
   // Form State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -99,16 +100,22 @@ export default function AdminCategoriesPage() {
 
       if (selectedFile) {
         setUploadProgress(true);
-        // Step 1: Get a short-lived upload URL
-        const postUrl = await generateUploadUrl();
-        // Step 2: POST the file to the URL
-        const result = await fetch(postUrl, {
-          method: "POST",
+        const { presignedUrl, sessionId } = await generateUploadUrl({
+          mimeType: selectedFile.type,
+          fileSize: selectedFile.size,
+          ownerType: "admin",
+          ownerId: "categories",
+          context: "category_image"
+        });
+        
+        await fetch(presignedUrl, {
+          method: "PUT",
           headers: { "Content-Type": selectedFile.type },
           body: selectedFile,
         });
-        const { storageId } = await result.json();
-        finalStorageId = storageId;
+        
+        const finalizedAsset = await commitUpload({ sessionId });
+        finalStorageId = finalizedAsset as any;
         setUploadProgress(false);
       }
       

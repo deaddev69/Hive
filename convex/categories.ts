@@ -2,6 +2,8 @@
 // Queries and mutations to manage product discovery categories.
 
 import { mutation, query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
+import { getPublicUrl } from "./media/api";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { validateUploadedFile } from "./lib/uploads";
@@ -28,10 +30,16 @@ export const getCategories = query({
       categories.map(async (cat) => {
         let imageUrl = cat.imageUrl || null;
         if (cat.imageStorageId) {
-          try {
-            imageUrl = await ctx.storage.getUrl(cat.imageStorageId);
-          } catch (e) {
-            console.error("Failed to get url for storage id", cat.imageStorageId, e);
+          if (typeof cat.imageStorageId === "object") {
+            imageUrl = getPublicUrl(cat.imageStorageId as any);
+          } else if (typeof cat.imageStorageId === "string" && cat.imageStorageId.startsWith("http")) {
+            imageUrl = cat.imageStorageId;
+          } else {
+            try {
+              imageUrl = await ctx.storage.getUrl(cat.imageStorageId as any);
+            } catch (e) {
+              console.error("Failed to get url for storage id", cat.imageStorageId, e);
+            }
           }
         }
         let homepageImageUrl = cat.homepageImage || null;
@@ -49,18 +57,6 @@ export const getCategories = query({
         };
       })
     );
-  },
-});
-
-/**
- * Generate a short-lived upload URL for Convex File Storage.
- * Admin-only.
- */
-export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
-    await requireRole(ctx, "admin");
-    return await ctx.storage.generateUploadUrl();
   },
 });
 
@@ -135,19 +131,21 @@ export const updateCategory = mutation({
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
 
-    if (args.imageStorageId) {
-      // Validate new category image if changed
+    if (args.imageStorageId && typeof args.imageStorageId === "string" && !args.imageStorageId.startsWith("http")) {
+      // Validate new category image if changed (legacy storage IDs only)
       const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
       const maxImageBytes = 5 * 1024 * 1024;
-      await validateUploadedFile(ctx, args.imageStorageId, undefined, allowedImageMimes, maxImageBytes);
+      await validateUploadedFile(ctx, args.imageStorageId as any, undefined, allowedImageMimes, maxImageBytes);
     }
 
     const oldCategory = await ctx.db.get(args.id);
     if (!oldCategory) throw new Error("Category not found");
 
-    // Clean up old image if it was replaced
+    // Clean up old image if it was replaced and it's a native storage ID
     if (args.imageStorageId && oldCategory.imageStorageId && oldCategory.imageStorageId !== args.imageStorageId) {
-      await ctx.storage.delete(oldCategory.imageStorageId);
+      if (typeof oldCategory.imageStorageId === "string" && !oldCategory.imageStorageId.startsWith("http")) {
+        await ctx.storage.delete(oldCategory.imageStorageId as any);
+      }
     }
 
     await ctx.db.patch(args.id, {
@@ -214,9 +212,9 @@ export const deleteCategory = mutation({
       );
     }
 
-    // Clean up associated image from storage
-    if (category.imageStorageId) {
-      await ctx.storage.delete(category.imageStorageId);
+    // Clean up associated image from storage if native
+    if (category.imageStorageId && typeof category.imageStorageId === "string" && !category.imageStorageId.startsWith("http")) {
+      await ctx.storage.delete(category.imageStorageId as any);
     }
     
     await ctx.db.delete(args.id);

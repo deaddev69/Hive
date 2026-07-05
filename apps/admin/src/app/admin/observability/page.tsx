@@ -276,7 +276,7 @@ export default function ObservabilityPage() {
       {/* Operational Backlogs Grid */}
       <div className="flex flex-col gap-4">
         <span className="font-serif font-black text-slate-900 tracking-tight text-lg">Operational Backlogs</span>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
           
           <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col">
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Settlements</span>
@@ -306,6 +306,18 @@ export default function ObservabilityPage() {
             <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Exceptions</span>
             <span className="text-xl font-serif font-black text-rose-600 mt-1">{backlogs.logisticsExceptions}</span>
             <span className="text-[9px] text-rose-400 mt-1 font-medium">Failed shipments</span>
+          </div>
+
+          <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col">
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Failed Refunds</span>
+            <span className="text-xl font-serif font-black text-rose-600 mt-1">{backlogs.failedRefundsCount}</span>
+            <span className="text-[9px] text-rose-400 mt-1 font-medium">Refund queue errors</span>
+          </div>
+
+          <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col">
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Stuck Refunds</span>
+            <span className="text-xl font-serif font-black text-amber-500 mt-1">{backlogs.stuckRefundsCount}</span>
+            <span className="text-[9px] text-amber-500 mt-1 font-medium">Pending &gt;24h</span>
           </div>
 
           <div className="bg-white border border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col">

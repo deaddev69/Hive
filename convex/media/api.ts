@@ -9,6 +9,9 @@ import { mediaLogger } from "./logger";
 import { internal } from "../_generated/api";
 import { ImageAsset } from "../schema";
 
+
+
+
 /**
  * Helper to construct the delivery URL securely using Cloudflare Named Variants.
  * Ensures the edge transformer always decodes and re-encodes the image.
@@ -109,6 +112,8 @@ export const generateUploadUrl = action({
     };
   },
 });
+
+
 
 export const createUploadSession = internalMutation({
   args: {
@@ -236,6 +241,8 @@ function buildImageAsset(session: any) {
   };
 }
 
+
+
 export const getUploadSession = internalQuery({
   args: { sessionId: v.string() },
   handler: async (ctx, args) => {
@@ -250,7 +257,8 @@ export const checkAuthAndRateLimit = internalMutation({
   args: { token: v.optional(v.string()), actionName: v.string() },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx, args.token);
-    await checkRateLimit(ctx, `${args.actionName}:${user._id}`, 20, 3600000);
+    // Bumped to 60/hour to support multi-image product listing flows and admin uploads
+    await checkRateLimit(ctx, `${args.actionName}:${user._id}`, 60, 3600000);
     return user;
   }
 });

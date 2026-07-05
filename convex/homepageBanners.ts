@@ -244,15 +244,3 @@ export const toggleBannerAdmin = mutation({
     return args.id;
   },
 });
-
-/**
- * Generate an upload URL for campaign banners.
- * Admin-only mutation.
- */
-export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
-    await requireRole(ctx, "admin");
-    return await ctx.storage.generateUploadUrl();
-  },
-});

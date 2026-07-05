@@ -424,7 +424,7 @@ export const getDeliveryQuoteAction = action({
     if (args.quoteId && result && result.serviceable) {
       await ctx.runMutation(internal.routing.storeQuote, {
         quoteId: args.quoteId,
-        deliveryFee: result.customerPaidFee,
+        deliveryFee: result.customerPaidFee / 100, // Convert paise to rupees
         quotedAt: result.quotedAt,
         expiresAt: result.quotedAt + 15 * 60 * 1000, // 15 mins expiry
       });

@@ -121,6 +121,13 @@ export const getObservabilityDashboardAdmin = query({
     // 4. Logistics Exceptions (failed shipments)
     const logisticsExceptions = health.failedShipmentsCount;
 
+    // 4b. Refund Queue Monitoring
+    const refundQueue = await ctx.db.query("refundQueue").collect();
+    const failedRefundsCount = refundQueue.filter(r => r.status === "failed").length;
+    const stuckRefundsCount = refundQueue.filter(r => 
+      (r.status === "pending" || r.status === "processing") && r.createdAt < now - 24 * 3600 * 1000
+    ).length;
+
     // 5. Same-Day SLA %
     const deliveredShipments = health.shipments.filter((s: any) => s.status === "delivered");
     let deliveredWithin8hCount = 0;
@@ -209,6 +216,22 @@ export const getObservabilityDashboardAdmin = query({
       });
     }
 
+    // Failed Refunds (always show if > 0)
+    if (failedRefundsCount > 0) {
+      needsImmediateAttention.push({
+        label: `${failedRefundsCount} Failed Refunds`,
+        severity: "critical",
+      });
+    }
+
+    // Stuck Refunds Pending >24h (always show if > 0)
+    if (stuckRefundsCount > 0) {
+      needsImmediateAttention.push({
+        label: `${stuckRefundsCount} Refunds Pending >24h`,
+        severity: "warning",
+      });
+    }
+
     // Blocked payouts
     const payoutsBlockedCount = health.unresolvedAlerts.filter((a: any) => a.code === "payout.blocked").length;
     if (payoutsBlockedCount > 0) {
@@ -252,6 +275,8 @@ export const getObservabilityDashboardAdmin = query({
         claimBacklog,
         complianceBacklog: health.complianceBacklog,
         logisticsExceptions,
+        failedRefundsCount,
+        stuckRefundsCount,
         rtoRate: Math.round(health.rtoRate * 10) / 10,
         sameDaySlaPercent: Math.round(sameDaySlaPercent * 10) / 10,
       },

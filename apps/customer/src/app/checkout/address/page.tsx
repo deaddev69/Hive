@@ -497,10 +497,10 @@ export default function CheckoutAddressPage() {
         <div className="bg-white border border-hive-border/30 rounded-2xl px-4 py-2.5 shadow-sm flex items-center justify-between gap-4 h-16 overflow-hidden select-none">
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative w-9 h-9 bg-neutral-100 rounded-lg overflow-hidden flex-shrink-0 border border-hive-border/20 flex items-center justify-center">
-              {effectiveItems[0]?.imageUrl ? (
+              {orderItems[0]?.imageUrl ? (
                 <img
-                  src={effectiveItems[0].imageUrl}
-                  alt={effectiveItems[0].name}
+                  src={orderItems[0].imageUrl}
+                  alt={orderItems[0].name}
                   className="object-cover w-full h-full"
                 />
               ) : (
@@ -512,8 +512,8 @@ export default function CheckoutAddressPage() {
                 {totalQuantity} ITEMS • {formatRupees(subtotal)}
               </p>
               <h2 className="text-xs font-bold text-hive-dark truncate">
-                {effectiveItems[0]?.name}
-                {effectiveItems.length > 1 ? ` +${effectiveItems.length - 1} more` : ""}
+                {orderItems[0]?.name}
+                {orderItems.length > 1 ? ` +${orderItems.length - 1} more` : ""}
               </h2>
             </div>
           </div>

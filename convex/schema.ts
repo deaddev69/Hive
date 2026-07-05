@@ -1324,7 +1324,7 @@ export default defineSchema({
   categories: defineTable({
     name:           v.string(),
     slug:           v.string(),
-    imageStorageId: v.optional(v.id("_storage")),
+    imageStorageId: v.optional(v.union(v.id("_storage"), v.string(), ImageAsset)),
     imageUrl:       v.optional(v.string()),
     homepageImage:  v.optional(v.string()),
     homepageOrder:  v.optional(v.number()),
@@ -1401,8 +1401,8 @@ export default defineSchema({
   banners: defineTable({
     title:           v.string(),
     subtitle:        v.string(),
-    desktopImageUrl: v.string(),
-    mobileImageUrl:  v.string(),
+    desktopImageUrl: v.union(v.string(), ImageAsset),
+    mobileImageUrl:  v.union(v.string(), ImageAsset),
     ctaText:         v.string(),
     ctaLink:         v.string(),
     active:          v.boolean(),

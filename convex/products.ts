@@ -136,17 +136,7 @@ async function enrichProduct(ctx: any, product: any) {
   return enriched[0];
 }
 
-/**
- * Generate a short-lived upload URL for boutique product images.
- */
-export const generateBoutiqueUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
-    // Requires boutique owner permissions
-    await getMyBoutique(ctx);
-    return await ctx.storage.generateUploadUrl();
-  },
-});
+
 
 /**
  * Computes product catalog content quality score (0-100) and details.

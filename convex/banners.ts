@@ -188,15 +188,3 @@ export const deleteBanner = mutation({
     return args.id;
   },
 });
-
-/**
- * Generate an upload URL for admin banner images.
- * Admin-only mutation.
- */
-export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
-    await requireRole(ctx, "admin");
-    return await ctx.storage.generateUploadUrl();
-  },
-});

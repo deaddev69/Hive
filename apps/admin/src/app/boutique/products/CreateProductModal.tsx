@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Modal } from "@hive/ui";
 import { Upload, X, ArrowRight, ArrowLeft, Check, ImageIcon, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
@@ -151,7 +151,8 @@ export default function CreateProductModal({
 }) {
   const createProduct = useMutation(api.products.createProduct);
   const updateProduct = useMutation(api.products.updateProduct);
-  const generateUploadUrl = useMutation(api.products.generateBoutiqueUploadUrl);
+  const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
+  const commitUpload = useAction(api.media.api.commitUpload);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -393,19 +394,27 @@ export default function CreateProductModal({
     setUploadingImages(true);
 
     try {
-      const finalImageStorageIds: string[] = [];
+      const finalImages: any[] = [];
       for (const item of localPreviews) {
         if (item.file) {
-          const uploadUrl = await generateUploadUrl();
-          const result = await fetch(uploadUrl, {
-            method: "POST",
+          const { presignedUrl, sessionId } = await generateUploadUrl({
+            mimeType: item.file.type,
+            fileSize: item.file.size,
+            ownerType: "boutique",
+            ownerId: "products",
+            context: "product_image"
+          });
+          
+          await fetch(presignedUrl, {
+            method: "PUT",
             headers: { "Content-Type": item.file.type },
             body: item.file,
           });
-          const { storageId } = await result.json();
-          finalImageStorageIds.push(storageId);
+          
+          const finalizedAsset = await commitUpload({ sessionId });
+          finalImages.push(finalizedAsset);
         } else if (item.storageId) {
-          finalImageStorageIds.push(item.storageId);
+          finalImages.push(item.storageId);
         }
       }
 
@@ -417,7 +426,7 @@ export default function CreateProductModal({
         categoryId: categoryId as any,
         price: parseFloat(price),
         discountPrice: discountPrice ? parseFloat(discountPrice) : undefined,
-        images: finalImageStorageIds,
+        images: finalImages,
         sizes: selectedSizes,
         stockBySize,
         sameDayEligible,

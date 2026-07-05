@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { RegisteredQuery } from "convex/server";
 import { requireRole } from "./lib/auth";
 import { determineOnboardingStatus } from "./boutiques";
+import { getPublicUrl } from "./media/api";
 
 export const getAdminCombinedDashboardData = query({
   args: {},
@@ -44,9 +45,15 @@ export const getAdminCombinedDashboardData = query({
           categoriesList.map(async (cat) => {
             let imageUrl = cat.imageUrl || null;
             if (cat.imageStorageId) {
-              try {
-                imageUrl = await ctx.storage.getUrl(cat.imageStorageId);
-              } catch {}
+              if (typeof cat.imageStorageId === "object") {
+                imageUrl = getPublicUrl(cat.imageStorageId as any);
+              } else if (typeof cat.imageStorageId === "string" && cat.imageStorageId.startsWith("http")) {
+                imageUrl = cat.imageStorageId;
+              } else {
+                try {
+                  imageUrl = await ctx.storage.getUrl(cat.imageStorageId as any);
+                } catch {}
+              }
             }
             let homepageImageUrl = cat.homepageImage || null;
             if (cat.homepageImage && !cat.homepageImage.startsWith("http")) {

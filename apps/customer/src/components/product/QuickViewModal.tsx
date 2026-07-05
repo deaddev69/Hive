@@ -349,7 +349,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     >
       {/* Backdrop overlay */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-[2px] transition-opacity duration-300"
+        className={cn("absolute inset-0 bg-black/50 backdrop-blur-[2px] transition-opacity duration-300", crossBoutiqueModalOpen ? "opacity-0 pointer-events-none" : "opacity-100")}
         onClick={onClose}
       />
 
@@ -363,7 +363,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
           // Mobile: bottom aligned, takes full width, capped height
           "h-auto max-h-[85vh] rounded-t-[24px]",
           // Desktop: centered lightbox 50/50 split
-          "md:flex-row md:max-w-4xl md:max-h-[80vh] md:rounded-3xl md:aspect-[2/1]"
+          "md:flex-row md:max-w-4xl md:max-h-[80vh] md:rounded-3xl md:aspect-[2/1]",
+          // Hide completely when cross boutique modal is open to fix dual-open bug
+          crossBoutiqueModalOpen ? "hidden" : "flex"
         )}
       >
         {/* Mobile Drag Handle */}
@@ -458,7 +460,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700">
                 {product.boutiqueName}
               </span>
-              <h2 className="text-xl md:text-2xl font-serif font-semibold text-stone-900 leading-tight">
+              <h2 className="text-xl md:text-2xl font-serif font-semibold text-stone-900 leading-tight line-clamp-2">
                 {cleanProductTitle(product.name)}
               </h2>
             </div>
@@ -479,7 +481,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               )}
             </div>
 
-            <div className="mb-6">
+            <div className="hidden md:block mb-6">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold text-stone-900 uppercase tracking-wider">Select Size</span>
               </div>
@@ -529,11 +531,12 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
           {/* Sticky Footer CTA */}
           <div className="p-4 md:p-6 bg-white border-t border-stone-100 flex-shrink-0">
+            {/* Desktop Add to Bag (Hidden on Mobile) */}
             <button
               onClick={handleAddToCart}
               disabled={isStoreOffline || adding || isOutOfStock || (!isLocationServiceable && latitude !== null)}
               className={cn(
-                "w-full h-12 flex items-center justify-center gap-2 rounded-xl text-sm font-bold tracking-wider uppercase transition-all shadow-sm",
+                "hidden md:flex w-full h-12 items-center justify-center gap-2 rounded-xl text-sm font-bold tracking-wider uppercase transition-all shadow-sm",
                 adding
                   ? "bg-stone-100 text-stone-400 cursor-not-allowed"
                   : isStoreOffline || isOutOfStock || (!isLocationServiceable && latitude !== null)
@@ -563,7 +566,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               )}
             </button>
             {isPreorderMode && (
-              <p className="mt-2 text-[10px] text-stone-500 text-center font-medium leading-normal max-w-[280px] mx-auto">
+              <p className="hidden md:block mt-2 text-[10px] text-stone-500 text-center font-medium leading-normal max-w-[280px] mx-auto">
                 ⓘ Boutique is currently closed. Order will be processed when they open at{" "}
                 {(boutiqueStatus as any).openingTime} on{" "}
                 {boutiqueStatus.type === "CLOSED_TODAY"
@@ -572,12 +575,14 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 .
               </p>
             )}
+            
+            {/* View Full Details Button */}
             <button
               onClick={() => {
                 onClose();
                 router.push(`/products/${product.slug}`);
               }}
-              className="w-full mt-3 text-xs text-stone-500 hover:text-stone-900 font-medium tracking-wide flex items-center justify-center transition-all"
+              className="w-full md:mt-3 h-12 md:h-auto text-sm md:text-xs bg-stone-900 text-white md:bg-transparent md:text-stone-500 hover:text-stone-900 rounded-xl md:rounded-none font-medium tracking-wide flex items-center justify-center transition-all shadow-sm md:shadow-none"
             >
               View Full Details →
             </button>

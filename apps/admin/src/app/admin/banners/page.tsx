@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
 import { ArrowLeft, Trash2, Edit3, Power, Upload, Check, Loader2, Image as ImageIcon } from "lucide-react";
@@ -13,7 +13,8 @@ export default function AdminBannersPage() {
   const updateBanner = useMutation(api.banners.updateBanner);
   const deleteBanner = useMutation(api.banners.deleteBanner);
   const toggleBanner = useMutation(api.banners.toggleBanner);
-  const generateUploadUrl = useMutation(api.banners.generateUploadUrl);
+  const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
+  const commitUpload = useAction(api.media.api.commitUpload);
 
   // Form State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -34,18 +35,23 @@ export default function AdminBannersPage() {
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
-  const uploadImage = async (file: File): Promise<string> => {
-    const uploadUrl = await generateUploadUrl();
-    const result = await fetch(uploadUrl, {
-      method: "POST",
+  const uploadImage = async (file: File): Promise<any> => {
+    const { presignedUrl, sessionId } = await generateUploadUrl({
+      mimeType: file.type,
+      fileSize: file.size,
+      ownerType: "admin",
+      ownerId: "banners",
+      context: "banner_image"
+    });
+    
+    await fetch(presignedUrl, {
+      method: "PUT",
       headers: { "Content-Type": file.type },
       body: file,
     });
-    if (!result.ok) {
-      throw new Error("File upload failed");
-    }
-    const { storageId } = await result.json();
-    return storageId;
+    
+    const finalizedAsset = await commitUpload({ sessionId });
+    return finalizedAsset;
   };
 
   const handleDesktopFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

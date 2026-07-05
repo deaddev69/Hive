@@ -39,8 +39,8 @@ const config: Config = {
         }
       },
       fontFamily: {
-        serif: ["var(--font-manrope)", "Manrope", "Georgia", "serif"],
-        sans: ["var(--font-manrope)", "Manrope", "system-ui", "sans-serif"],
+        serif: ["Satoshi", "sans-serif"],
+        sans: ["var(--font-inter)", "Inter", "sans-serif"],
         mono: ["var(--font-geist-mono)", "monospace"],
       },
     },

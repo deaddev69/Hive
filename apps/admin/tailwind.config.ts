@@ -38,8 +38,8 @@ const config: Config = {
         }
       },
       fontFamily: {
-        serif: ["var(--font-playfair)", "Georgia", "serif"],
-        sans: ["var(--font-manrope)", "Manrope", "system-ui", "sans-serif"],
+        serif: ["Satoshi", "sans-serif"],
+        sans: ["var(--font-inter)", "Inter", "sans-serif"],
         inter: ["var(--font-inter)", "sans-serif"],
         mono: ["var(--font-geist-mono)", "monospace"],
       },

@@ -1,4 +1,6 @@
 import { query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
+import { getPublicUrl } from "./media/api";
 import { v } from "convex/values";
 import { enrichProducts } from "./products";
 
@@ -155,7 +157,13 @@ export const getCustomerHomeData = query({
         categoriesSubset.map(async (cat) => {
           let imageUrl = cat.imageUrl || "";
           if (cat.imageStorageId) {
-            imageUrl = (await ctx.storage.getUrl(cat.imageStorageId)) || imageUrl;
+            if (typeof cat.imageStorageId === "object") {
+              imageUrl = getPublicUrl(cat.imageStorageId as any) || imageUrl;
+            } else if (typeof cat.imageStorageId === "string" && cat.imageStorageId.startsWith("http")) {
+              imageUrl = cat.imageStorageId;
+            } else {
+              imageUrl = (await ctx.storage.getUrl(cat.imageStorageId as any)) || imageUrl;
+            }
           }
           let homepageImageUrl = cat.homepageImage || "";
           if (homepageImageUrl && !homepageImageUrl.startsWith("http")) {

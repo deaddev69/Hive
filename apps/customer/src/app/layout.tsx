@@ -1,26 +1,13 @@
 import type { Metadata } from "next";
-import { Manrope, Inter, Playfair_Display } from "next/font/google";
+import { Inter } from "next/font/google";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import "./globals.css";
 
-const manrope = Manrope({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-manrope",
-  display: "swap",
-});
-
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-playfair",
   display: "swap",
 });
 
@@ -54,7 +41,10 @@ export default function RootLayout({
         formButtonPrimary: "Continue",
       }}
     >
-      <html lang="en" className={`${manrope.variable} ${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
+      <html lang="en" className={`${inter.variable}`} suppressHydrationWarning>
+        <head>
+          <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,300,400&display=swap" rel="stylesheet" />
+        </head>
         <body className="antialiased min-h-screen bg-white dark:bg-black text-slate-900 dark:text-slate-100 font-sans">
           <ConvexClientProvider>
             <Toaster />
