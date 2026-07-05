@@ -147,8 +147,8 @@ export default function AdminBannersPage() {
     setCtaLink(banner.ctaLink);
     setSortOrder(banner.sortOrder);
     setActive(banner.active);
-    setDesktopPreview(banner.desktopImageUrl);
-    setMobilePreview(banner.mobileImageUrl);
+    setDesktopPreview(typeof banner.desktopImageUrl === "string" ? banner.desktopImageUrl : (banner.desktopImageUrl as any)?.url || (banner.desktopImageUrl as any)?.objectKey || null);
+    setMobilePreview(typeof banner.mobileImageUrl === "string" ? banner.mobileImageUrl : (banner.mobileImageUrl as any)?.url || (banner.mobileImageUrl as any)?.objectKey || null);
     setDesktopFile(null);
     setMobileFile(null);
   };
@@ -396,7 +396,7 @@ export default function AdminBannersPage() {
                       {/* Image Thumbnail */}
                       <div className="relative w-20 h-10 rounded-lg border border-hive-border/60 overflow-hidden bg-slate-50 flex-shrink-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={banner.desktopImageUrl} alt={banner.title} className="w-full h-full object-cover" />
+                        <img src={typeof banner.desktopImageUrl === "string" ? banner.desktopImageUrl : (banner.desktopImageUrl as any)?.url || (banner.desktopImageUrl as any)?.objectKey || ""} alt={banner.title} className="w-full h-full object-cover" />
                       </div>
                       
                       {/* Text details */}

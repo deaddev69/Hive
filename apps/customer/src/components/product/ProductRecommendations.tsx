@@ -83,13 +83,10 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   occasion,
   boutiqueName,
 }) => {
-  const { isServiceable, locality, city } = useLocation();
-  const dbProducts = useQuery(api.products.getActiveProducts, isServiceable 
-    ? { 
-        serviceableLocality: locality || undefined,
-        serviceableCity: city || undefined,
-      } 
-    : {}
+  const { isServiceable, latitude, longitude } = useLocation();
+  const dbProducts = useQuery(
+    api.products.getActiveProducts,
+    isServiceable && latitude !== null && longitude !== null ? { userLat: latitude, userLng: longitude } : {}
   );
   const [quickViewModal, setQuickViewModal] = useState<{ open: boolean, productId: string | null }>({ open: false, productId: null });
 
