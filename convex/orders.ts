@@ -1614,6 +1614,11 @@ export const checkMerchantSLATimeouts = internalMutation({
           .first();
 
         if (!level4) {
+          if (!isValidTransition(order.status, "cancelled")) {
+            console.warn(`[checkMerchantSLATimeouts] Invalid transition from ${order.status} to cancelled for order ${order._id}`);
+            continue;
+          }
+
           // Transition order status to cancelled
           await ctx.db.patch(order._id, {
             status: "cancelled",

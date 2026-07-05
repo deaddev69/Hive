@@ -336,9 +336,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   };
 
   const images = rawProduct?.images?.length ? rawProduct.images : (product.imageUrl ? [product.imageUrl] : []);
-  const discountPercent = product.compareAtPrice && product.compareAtPrice > product.price
-    ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
-    : 0;
+  const discountPercent = product.discountPercent || 0;
 
   return createPortal(
     <div 

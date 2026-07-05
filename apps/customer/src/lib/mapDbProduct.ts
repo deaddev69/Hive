@@ -5,6 +5,7 @@ export function mapDbProduct(p: any): ProductCardData & {
   stockBySize: Record<string, number>;
   boutiqueId?: string;
   boutique?: any;
+  discountPercent?: number;
 } {
   const hasDiscount =
     p.discountPrice !== undefined &&
@@ -12,6 +13,11 @@ export function mapDbProduct(p: any): ProductCardData & {
     p.discountPrice < p.price;
   const price = hasDiscount ? p.discountPrice! : p.price;
   const compareAtPrice = hasDiscount ? p.price : undefined;
+  
+  const discountPercent = hasDiscount 
+    ? Math.round(((compareAtPrice! - price) / compareAtPrice!) * 100) 
+    : 0;
+
   return {
     id: p._id,
     slug: p.slug,
@@ -22,6 +28,7 @@ export function mapDbProduct(p: any): ProductCardData & {
     imageUrl: p.imageUrl || p.imageUrls?.[0] || "",
     price,
     compareAtPrice,
+    discountPercent: discountPercent > 0 ? discountPercent : undefined,
     rating: 4.8,
     reviewCount: 12,
     sizes: p.sizes || [],

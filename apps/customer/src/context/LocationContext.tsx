@@ -52,6 +52,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const dbLocation = useQuery(api.userLocations.get, { token: token || undefined });
   const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques) ?? [];
   const resolveRoadDistances = useAction(api.routing.resolveRoadDistancesAction);
+  const reverseGeocode = useAction(api.location.reverseGeocode);
 
   const [state, setState] = useState<LocationState>({
     pincode: null,
@@ -322,13 +323,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
           try {
             console.log('[Geolocation] Fetching reverse geocoding for:', { latitude, longitude });
-            const url = `/api/location/reverse?lat=${latitude}&lng=${longitude}`;
-            const res = await fetch(url);
-            if (!res.ok) {
-              throw new Error("Failed to contact geocoding service.");
-            }
-            const data = await res.json();
-            console.log('[Geolocation] Mappls Response:', data);
+            const data = await reverseGeocode({ lat: latitude, lng: longitude });
+            console.log('[Geolocation] Reverse Geocode Response:', data);
 
             const locality = data.locality || "";
             const city = data.city || "Kochi";
@@ -373,11 +369,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
                 try {
                   console.log('[Geolocation] Fetching reverse geocoding (fallback) for:', { latitude, longitude });
-                  const url = `/api/location/reverse?lat=${latitude}&lng=${longitude}`;
-                  const res = await fetch(url);
-                  if (!res.ok) throw new Error("Failed to reverse geocode");
-                  const data = await res.json();
-                  console.log('[Geolocation] Mappls Response (fallback):', data);
+                  const data = await reverseGeocode({ lat: latitude, lng: longitude });
+                  console.log('[Geolocation] Reverse Geocode Response (fallback):', data);
 
                   const locality = data.locality || "";
                   const city = data.city || "Kochi";
