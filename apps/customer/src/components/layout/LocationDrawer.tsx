@@ -62,7 +62,7 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
 
   const pendingServiceability = useQuery(
     api.serviceability.checkServiceability,
-    mapLat && mapLng ? { latitude: mapLat, longitude: mapLng } : "skip"
+    pendingResult?.city ? { city: pendingResult.city } : "skip"
   );
   const isPendingServiceable = pendingServiceability?.isServiceable ?? true;
   const requestService = useMutation(api.serviceability.requestService);
