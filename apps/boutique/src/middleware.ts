@@ -2,7 +2,7 @@ import { clerkMiddleware } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 // Customer app URL — environment variable in production, localhost in development
-const CUSTOMER_APP_URL = process.env.NEXT_PUBLIC_CUSTOMER_APP_URL || "http://localhost:3000";
+const CUSTOMER_APP_URL = process.env.NEXT_PUBLIC_CUSTOMER_APP_URL || "https://hivenow.in";
 
 export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl.clone();

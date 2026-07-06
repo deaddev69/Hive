@@ -40,7 +40,7 @@ export default function BoutiqueUnauthorizedPage() {
         )}
 
         <div className="flex flex-col gap-3">
-          <SignOutButton redirectUrl="http://localhost:3000/">
+          <SignOutButton redirectUrl="/sign-in">
             <Button variant="outline" className="w-full flex items-center justify-center gap-2">
               <LogOut className="w-4 h-4" />
               Sign Out / Switch Account

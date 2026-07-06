@@ -22,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider afterSignOutUrl="http://localhost:3000/">
+    <ClerkProvider afterSignOutUrl="/sign-in">
       <html lang="en" className={`${inter.variable}`}>
         <head>
           <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,300,400&display=swap" rel="stylesheet" />

@@ -47,7 +47,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
         return;
       }
       if (me.role === "customer") {
-        window.location.href = "http://localhost:3000/";
+        window.location.href = process.env.NEXT_PUBLIC_CUSTOMER_APP_URL || "https://hivenow.in";
         return;
       }
     }
@@ -192,7 +192,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
             </div>
           </div>
 
-          <SignOutButton redirectUrl="http://localhost:3000/">
+          <SignOutButton redirectUrl="/sign-in">
             <Button 
               variant="outline" 
               className="w-full justify-start gap-2 border-[#EBE3D0] bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-700 rounded-xl text-xs py-2.5 font-medium shadow-sm"

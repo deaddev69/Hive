@@ -601,7 +601,7 @@ export default function BoutiqueProfile() {
 
           {/* Mobile-only Logout */}
           <div className="md:hidden mt-4">
-            <SignOutButton redirectUrl="http://localhost:3000/">
+            <SignOutButton redirectUrl="/sign-in">
               <Button 
                 variant="outline" 
                 className="w-full justify-center gap-2 border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-xl py-3 font-bold"
