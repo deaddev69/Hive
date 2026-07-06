@@ -30,8 +30,8 @@ export const Footer: React.FC = () => {
                 <h4 className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase text-hive-gold/90">Shop</h4>
                 <div className="flex flex-col gap-1.5 text-[11px] md:text-xs">
                   <Link href="/products" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Shop</Link>
-                  <Link href="/orders" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Orders</Link>
-                  <Link href="/wishlist" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Wishlist</Link>
+                  <Link href="/orders" prefetch={false} className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Orders</Link>
+                  <Link href="/wishlist" prefetch={false} className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Wishlist</Link>
                 </div>
               </div>
 
