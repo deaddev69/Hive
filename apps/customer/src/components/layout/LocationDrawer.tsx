@@ -4,9 +4,10 @@ import React, { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { X, MapPin, CheckCircle2, Loader2 } from "lucide-react";
 import { useLocation } from "@/context/LocationContext";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
+import toast from "react-hot-toast";
 
 // Load map without SSR — Leaflet needs window
 const LocationMapPicker = dynamic(
@@ -58,6 +59,13 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
 
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const pendingServiceability = useQuery(
+    api.serviceability.checkServiceability,
+    mapLat && mapLng ? { latitude: mapLat, longitude: mapLng } : "skip"
+  );
+  const isPendingServiceable = pendingServiceability?.isServiceable ?? true;
+  const requestService = useMutation(api.serviceability.requestService);
 
   // Sync map centre when context coordinates update (e.g. previously saved location loads)
   useEffect(() => {
@@ -125,6 +133,28 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
   const handleConfirmLocation = async () => {
     if (!pendingResult) return;
     setIsSaving(true);
+    
+    if (!isPendingServiceable) {
+      try {
+        await requestService({
+          city: pendingResult.city || pendingResult.locality || "Unknown",
+          state: pendingResult.state || "Unknown",
+          latitude: mapLat,
+          longitude: mapLng,
+        });
+        toast.success("You're on the waitlist! We'll notify you when we launch here.");
+      } catch (e) {
+        console.error(e);
+      }
+      setIsSaving(false);
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        onClose();
+      }, 1500);
+      return;
+    }
+
     await updateLocationDetails({
       latitude: mapLat,
       longitude: mapLng,
@@ -139,7 +169,7 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
     setTimeout(() => {
       setSaved(false);
       onClose();
-    }, 900);
+    }, 400);
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -178,15 +208,15 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
                     </span>
                   )}
                 </div>
-                {isServiceable ? (
-                  <p className="text-[9px] font-bold tracking-widest text-slate-500 uppercase flex items-center gap-1.5 mt-1 select-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-hive-amber inline-block animate-pulse" />
-                    Same-day delivery active
-                  </p>
-                ) : (
+                {pendingResult && !isPendingServiceable ? (
                   <p className="text-[9px] font-bold tracking-widest text-slate-400 uppercase flex items-center gap-1.5 mt-1 select-none">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block animate-pulse" />
                     Launching Soon
+                  </p>
+                ) : (
+                  <p className="text-[9px] font-bold tracking-widest text-slate-500 uppercase flex items-center gap-1.5 mt-1 select-none">
+                    <span className="w-1.5 h-1.5 rounded-full bg-hive-amber inline-block animate-pulse" />
+                    Same-day delivery active
                   </p>
                 )}
               </div>
@@ -210,7 +240,7 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
             <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-hive-gold/10 border border-hive-gold/20 text-xs font-medium text-hive-dark">
               <MapPin className="w-4 h-4 text-hive-amber flex-shrink-0" />
               <span>
-                Tap the map or use <strong>Use Current Location</strong> to set your delivery area.
+                Tap the map or use your current location to set your delivery area.
               </span>
             </div>
           )}
@@ -309,17 +339,26 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
             type="button"
             disabled={!pendingResult || isSaving || saved}
             onClick={handleConfirmLocation}
-            className="w-full h-12 text-xs font-medium flex items-center justify-center gap-2 rounded-xl transition-all duration-200 bg-[#111111] text-white hover:bg-neutral-800 active:scale-[0.98] disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed shadow-md"
+            className={`w-full h-12 text-xs font-medium flex items-center justify-center gap-2 rounded-xl transition-all duration-200 text-white active:scale-[0.98] disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed shadow-md ${
+              pendingResult && !isPendingServiceable 
+                ? "bg-[#D97706] hover:bg-[#B45309]" 
+                : "bg-[#111111] hover:bg-neutral-800"
+            }`}
           >
             {saved ? (
               <>
                 <CheckCircle2 className="w-4 h-4" />
-                Location saved
+                {pendingResult && !isPendingServiceable ? "Added to waitlist" : "Location saved"}
               </>
             ) : isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
+                {pendingResult && !isPendingServiceable ? "Submitting..." : "Saving..."}
+              </>
+            ) : pendingResult && !isPendingServiceable ? (
+              <>
+                <MapPin className="w-4 h-4" />
+                Notify Me When Available
               </>
             ) : pendingResult?.precisionLevel === "area" ? (
               <>
