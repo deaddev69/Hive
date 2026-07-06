@@ -25,7 +25,7 @@ import { useConvexMutation } from "@/hooks/useConvexMutation";
 import { getEffectiveCheckoutItems } from "@/lib/getEffectiveCheckoutItems";
 import { useSessionStore } from "@/context/SessionContext";
 import { Id } from "../../../../../../convex/_generated/dataModel";
-import { formatRupees } from "@hive/utils";
+import { formatRupees, toast } from "@hive/utils";
 
 // ── Razorpay Script Loader ──────────────────────────────────────────────────
 function loadScript(src: string): Promise<boolean> {
@@ -117,7 +117,7 @@ export default function OrderReviewPage() {
   const updateAvailableStock = useCartStore((state) => state.updateAvailableStock);
 
   useEffect(() => {
-    if (cartData && cartData.items && !checkoutItems) {
+    if (cartData && cartData.items && checkoutItems.length === 0) {
       let changed = false;
       cartData.items.forEach((backendItem: any) => {
         const localItem = items.find(
@@ -218,16 +218,7 @@ export default function OrderReviewPage() {
   }, [selectedAddress?.id, selectedAddress?.lat, selectedAddress?.lng, selectedAddress?.pincode, boutiqueId, subtotal, skipQuote, getDeliveryQuoteAction, quoteId]);
 
 
-  console.log("[Checkout Review Debug]", {
-    selectedAddressId,
-    selectedAddress,
-    boutiqueId,
-    subtotal,
-    deliveryQuote,
-    isQuoteLoading,
-    cartDataItemsCount: cartData?.items?.length,
-    orderItemsCount: orderItems?.length,
-  });
+
 
   // Hydration checker
   useEffect(() => {
@@ -311,19 +302,19 @@ export default function OrderReviewPage() {
   const handlePay = async () => {
     if (isPlacingOrder || isOrderPlacing.current) return;
     if (!selectedAddress) {
-      alert("Please select a delivery address first.");
+      toast.error("Please select a delivery address first.");
       return;
     }
 
     setPaymentError(null);
 
     if (!deliveryQuote?.serviceable) {
-      alert("We don't deliver to this pincode yet. Please select a different address.");
+      toast.error("We don't deliver to this pincode yet. Please select a different address.");
       return;
     }
     
     if (deliveryQuote.quotedAt && Date.now() - deliveryQuote.quotedAt > 15 * 60 * 1000) {
-      alert("Delivery rate expired (valid for 15 mins). Please refresh the page to get a new rate.");
+      toast.error("Delivery rate expired (valid for 15 mins). Please refresh the page to get a new rate.");
       return;
     }
 
@@ -362,7 +353,7 @@ export default function OrderReviewPage() {
 
     const invalid = snapshotItems.filter((i) => !i.productId);
     if (invalid.length > 0) {
-      alert(`Cannot place order: ${invalid.length} item(s) are missing a product ID. Please try again.`);
+      toast.error(`Cannot place order: ${invalid.length} item(s) are missing a product ID. Please try again.`);
       setIsPlacingOrder(false);
       isOrderPlacing.current = false;
       return;
@@ -516,7 +507,7 @@ export default function OrderReviewPage() {
             }, 500);
           } catch (err) {
             console.error("Signature verification failed:", err);
-            alert("Signature verification failed. Please try again or contact support.");
+            toast.error("Signature verification failed. Please try again or contact support.");
             setIsPlacingOrder(false);
             isOrderPlacing.current = false;
           }
@@ -544,7 +535,7 @@ export default function OrderReviewPage() {
 
       const rzp = new (window as any).Razorpay(options);
       rzp.on("payment.failed", function (response: any) {
-        alert("Payment failed: " + response.error.description);
+        toast.error("Payment failed: " + response.error.description);
         setIsPlacingOrder(false);
         isOrderPlacing.current = false;
         trackCheckoutEvent("payment_failed", {
@@ -556,7 +547,7 @@ export default function OrderReviewPage() {
       rzp.open();
     } catch (err: any) {
       console.error("Order session failed:", err);
-      alert(err.message || "Failed to initiate transaction. Please try again.");
+      toast.error(err.message || "Failed to initiate transaction. Please try again.");
       setIsPlacingOrder(false);
       isOrderPlacing.current = false;
     }
@@ -564,7 +555,7 @@ export default function OrderReviewPage() {
 
   if (orderItems.length === 0) {
     const lastBoutiqueId = latestOrder?.items?.[0]?.boutiqueId;
-    const exploreUrl = lastBoutiqueId ? `/products?boutiqueId=${lastBoutiqueId}` : "/products";
+    const exploreUrl = "/shop/all";
     return (
       <div className="min-h-screen bg-hive-cream/30 py-20 px-6 flex items-center justify-center text-left animate-[scaleUp_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards]">
         <div className="max-w-md w-full bg-white border border-hive-border rounded-3xl p-8 shadow-sm space-y-6 flex flex-col items-center">
@@ -862,7 +853,7 @@ export default function OrderReviewPage() {
       </div>
 
       {/* Sticky Bottom Summary (Mobile Only) */}
-      <div className="fixed bottom-0 left-0 right-0 z-[999] bg-white border-t border-hive-border/30 shadow-[0_-8px_30px_rgb(0,0,0,0.06)] lg:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-[999] bg-white border-t border-hive-border/30 shadow-[0_-8px_30px_rgb(0,0,0,0.06)] lg:hidden pb-[env(safe-area-inset-bottom)]">
         {isPriceExpanded && (
           <div className="px-5 py-4 border-b border-hive-border/20 bg-neutral-50/50 space-y-2.5 text-xs animate-[fadeIn_0.2s_ease-out]">
             <div className="flex justify-between items-center text-hive-text-muted">

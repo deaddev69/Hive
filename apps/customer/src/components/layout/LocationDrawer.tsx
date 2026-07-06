@@ -4,7 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { X, MapPin, CheckCircle2, Loader2 } from "lucide-react";
 import { useLocation } from "@/context/LocationContext";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
 import { toast } from "@hive/utils";
@@ -66,6 +66,7 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
   );
   const isPendingServiceable = pendingServiceability?.isServiceable ?? true;
   const requestService = useMutation(api.serviceability.requestService);
+  const primeRoadDistanceCache = useAction(api.locationActions.primeRoadDistanceCache);
 
   // Sync map centre when context coordinates update (e.g. previously saved location loads)
   useEffect(() => {
@@ -154,6 +155,12 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
       }, 1500);
       return;
     }
+
+    // FIRE-AND-FORGET BACKGROUND WORKER DISPATCH
+    // Dispatched cleanly without an await block so the browser loader never stalls the UI
+    primeRoadDistanceCache({ userLat: mapLat, userLng: mapLng }).catch((err) => {
+      console.error("Async context routing pre-cache execution failure:", err);
+    });
 
     await updateLocationDetails({
       latitude: mapLat,

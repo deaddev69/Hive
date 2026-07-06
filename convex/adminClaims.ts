@@ -362,8 +362,27 @@ export const approveClaimRefundAdmin = mutation({
       .filter((q) => q.and(q.eq(q.field("orderId"), claim.orderId), q.eq(q.field("type"), "accrual")))
       .first();
 
-    // Deduct exact accrual or fallback to 90%
-    const deductionAmount = originalAccrual ? -originalAccrual.amount : -Math.floor(refundAmount * 0.9);
+    const originalOrder = await ctx.db.get(claim.orderId);
+
+    let deductionAmount = 0;
+
+    if (originalAccrual && originalOrder) {
+      // Calculate the exact original commission rate applied to this order
+      // e.g., If order total was ₹2,000 and boutique got ₹1,800, effective payout rate is 0.9 (90%)
+      const effectivePayoutRate = originalAccrual.amount / originalOrder.subtotal;
+      
+      // Apply that exact historical payout rate to the partial refund amount
+      // e.g., ₹500 refund * 0.9 = ₹450 clawback from boutique ledger
+      deductionAmount = -Math.floor(refundAmount * effectivePayoutRate);
+    } else {
+      // If the accrual record is missing, pull the boutique's true commission rate 
+      // from the database, falling back to a configuration constant only if everything fails
+      const boutique = await ctx.db.get(claim.boutiqueId);
+      const commissionRate = boutique?.commissionRate ?? 10; // e.g., 10 for 10%
+      const payoutRate = (100 - commissionRate) / 100;       // e.g., 0.90
+      
+      deductionAmount = -Math.floor(refundAmount * payoutRate);
+    }
 
     // Insert compensating negative deduction entry in settlementLedger
     await ctx.db.insert("settlementLedger", {

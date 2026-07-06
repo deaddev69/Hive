@@ -890,15 +890,45 @@ export const seedFinanceMockDataAdmin = mutation({
         .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
         .collect();
 
-      const commissionRate = boutique.commissionRate || 10;
-      let totalCommissionAmount = 0;
-      let totalGstAmount = 0;
+      const netOrderSubtotal = order.subtotal - (order.discount ?? 0);
+      const globalPlatformCommission = order.orderSnapshot?.commissionAmount ?? 0;
+      const globalGstOnCommission = order.orderSnapshot?.gstAmount ?? 0;
+      const commissionRate = order.orderSnapshot?.commissionRate || boutique.commissionRate || 10;
+
+      let allocatedCommissionSum = 0;
+      let allocatedGstSum = 0;
+      const totalItems = items.length;
 
       // 3. Insert commission per item
-      for (const item of items) {
-        const commissionAmount = Math.floor(item.subtotal * (commissionRate / 100));
-        const gstAmount = Math.floor(commissionAmount * 0.18);
-        const netCommission = commissionAmount - gstAmount;
+      for (let i = 0; i < totalItems; i++) {
+        const item = items[i];
+
+        // Calculate the item's proportional discount share to find its true net value
+        const itemProportionalDiscount = Math.floor(
+          (item.subtotal / order.subtotal) * (order.discount ?? 0)
+        );
+        const itemNetSubtotal = item.subtotal - itemProportionalDiscount;
+
+        let itemCommission = 0;
+        let itemGst = 0;
+
+        // Check if we have arrived at the final item in the array
+        if (i === totalItems - 1) {
+          // Allocate the exact algebraic remainder to guarantee 100% split accuracy
+          itemCommission = globalPlatformCommission - allocatedCommissionSum;
+          itemGst = globalGstOnCommission - allocatedGstSum;
+        } else {
+          // Proportional calculation step for intermediate items
+          const proportionalShare = itemNetSubtotal / netOrderSubtotal;
+          itemCommission = Math.floor(globalPlatformCommission * proportionalShare);
+          itemGst = Math.floor(globalGstOnCommission * proportionalShare);
+
+          // Update running sums
+          allocatedCommissionSum += itemCommission;
+          allocatedGstSum += itemGst;
+        }
+
+        const netCommission = itemCommission - itemGst;
 
         await ctx.db.insert("commissionLedger", {
           orderId: order._id,
@@ -908,19 +938,16 @@ export const seedFinanceMockDataAdmin = mutation({
           priceAtPurchase: item.priceAtPurchase,
           quantity: item.quantity,
           commissionRate,
-          commissionAmount,
-          gstAmount,
+          commissionAmount: itemCommission,
+          gstAmount: itemGst,
           netCommission,
-          commissionVersion: "v1", // Initial rule snapshot
+          commissionVersion: "v2_proportional", // updated rule snapshot
           createdAt: order.createdAt,
         });
-
-        totalCommissionAmount += commissionAmount;
-        totalGstAmount += gstAmount;
       }
 
       // 4. Calculate Net Boutique Accrual (Exclude customer-paid delivery fee)
-      const accrualAmount = (order.subtotal - order.discount) - totalCommissionAmount;
+      const accrualAmount = netOrderSubtotal - (globalPlatformCommission + globalGstOnCommission);
 
       // 5. Determine if settled (Claim window has expired)
       const claimWindowDays = 2; // 48h

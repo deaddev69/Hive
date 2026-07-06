@@ -601,9 +601,10 @@ export async function verifyPaymentAndPlaceOrderInternal(
   // Setup snapshot metrics
   const commissionRate = boutique ? (boutique.commissionRate || 18) : 18;
   // Commission is calculated on product revenue only (subtotal minus discount), NOT on delivery fees
-  const commissionBase = Math.max(0, session.subtotal - session.discount);
-  const platformCommissionAmount = Math.floor(commissionBase * (commissionRate / 100));
-  const gstOnCommission = Math.floor(platformCommissionAmount * 0.18);
+  const commissionBase = Math.max(0, session.subtotal - (session.discount ?? 0));
+  const platformCommissionAmount = Math.floor((commissionBase * commissionRate) / 100);
+  const gstOnCommission = Math.floor((platformCommissionAmount * 18) / 100);
+  const totalPlatformDeduction = platformCommissionAmount + gstOnCommission;
 
   // We skip calculateDeliveryQuoteAction here because it requires an Action ctx (for fetch and runQuery), and this is a mutation.
   // The frontend already verified the delivery fee, so we just use basic defaults for snapshot metadata.
@@ -644,7 +645,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
     actualCourierCost: 0,
     commissionAmount: platformCommissionAmount,
     gstAmount: gstOnCommission,
-    merchantPayable: commissionBase - platformCommissionAmount,
+    merchantPayable: commissionBase - totalPlatformDeduction,
   };
 
   const pickupAddress = boutique ? {

@@ -322,9 +322,10 @@ export const processPaymentCaptured = internalMutation({
     // Setup snapshot metrics
     const commissionRate = boutique.commissionRate || 18;
     // Commission is calculated on product revenue only (subtotal minus discount), NOT on delivery fees
-    const commissionBase = Math.max(0, session.subtotal - session.discount);
-    const platformCommissionAmount = Math.floor(commissionBase * (commissionRate / 100));
-    const gstOnCommission = Math.floor(platformCommissionAmount * 0.18);
+    const commissionBase = Math.max(0, session.subtotal - (session.discount ?? 0));
+    const platformCommissionAmount = Math.floor((commissionBase * commissionRate) / 100);
+    const gstOnCommission = Math.floor((platformCommissionAmount * 18) / 100);
+    const totalPlatformDeduction = platformCommissionAmount + gstOnCommission;
     // P0-4 FIX: Collision-resistant order number using timestamp (base36) + random suffix
     const orderNumber = `HIVE-${Math.floor(now / 1000).toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -383,7 +384,7 @@ export const processPaymentCaptured = internalMutation({
       actualCourierCost: 0,
       commissionAmount: platformCommissionAmount,
       gstAmount: gstOnCommission,
-      merchantPayable: commissionBase - platformCommissionAmount,
+      merchantPayable: commissionBase - totalPlatformDeduction,
     };
 
     const pickupAddress = boutique ? {

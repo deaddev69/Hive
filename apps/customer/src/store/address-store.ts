@@ -27,38 +27,7 @@ export interface AddressState {
   selectAddress: (id: string) => void;
 }
 
-const mockAddresses: Address[] = [
-  {
-    id: "addr_1",
-    name: "Aditi Rao",
-    phone: "9876543210",
-    addressLine1: "Plot 42, Road Number 12, Banjara Hills",
-    city: "Hyderabad",
-    state: "Telangana",
-    pincode: "500034",
-    isDefault: true,
-  },
-  {
-    id: "addr_2",
-    name: "Rohit Kumar",
-    phone: "8765432109",
-    addressLine1: "Apt 4B, Hilltop Apartments, Hitech City",
-    city: "Hyderabad",
-    state: "Telangana",
-    pincode: "500081",
-    isDefault: false,
-  },
-  {
-    id: "addr_3",
-    name: "Meera Nair",
-    phone: "7654321098",
-    addressLine1: "24/850 Heritage Villa, MG Road",
-    city: "Kochi",
-    state: "Kerala",
-    pincode: "682030",
-    isDefault: false,
-  },
-];
+const mockAddresses: Address[] = [];
 
 export const useAddressStore = create<AddressState>()(
   persist(

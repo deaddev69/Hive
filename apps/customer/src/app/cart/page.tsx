@@ -12,6 +12,7 @@ import { api } from "../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
 import { formatRupees } from "@hive/utils";
 import { useConvexMutation } from "@/hooks/useConvexMutation";
+import { useCheckoutStore } from "@/store/checkout-store";
 
 export default function CartPage() {
   const router = useRouter();
@@ -100,7 +101,8 @@ export default function CartPage() {
   const [mounted, setMounted] = useState(false);
   const [promoInput, setPromoInput] = useState("");
   const [showPromoInput, setShowPromoInput] = useState(false);
-  const [activePromo, setActivePromo] = useState<string | null>(null);
+  const activePromo = useCheckoutStore((state) => state.appliedPromo);
+  const setAppliedPromo = useCheckoutStore((state) => state.setAppliedPromo);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [promoSuccessMsg, setPromoSuccessMsg] = useState<string | null>(null);
 
@@ -118,7 +120,7 @@ export default function CartPage() {
 
   // Promo Code calculations
   let discountAmount = 0;
-  let deliveryFee = subtotal >= 3000 ? 0 : 99; // in rupees
+  let deliveryFee = 99; // in rupees
 
   if (activePromo === "WELCOME10") {
     discountAmount = Math.round(subtotal * 0.1); // 10% off items subtotal
@@ -140,15 +142,17 @@ export default function CartPage() {
     if (!code) return;
 
     if (code === "WELCOME10") {
-      setActivePromo("WELCOME10");
+      const discount = Math.round(subtotal * 0.1);
+      setAppliedPromo("WELCOME10", discount);
       setPromoSuccessMsg("WELCOME10 applied successfully! 10% off discount saved.");
       setPromoInput("");
     } else if (code === "HIVEFIRST") {
-      setActivePromo("HIVEFIRST");
+      const discount = Math.min(500, subtotal);
+      setAppliedPromo("HIVEFIRST", discount);
       setPromoSuccessMsg("HIVEFIRST applied successfully! Flat ₹500 discount saved.");
       setPromoInput("");
     } else if (code === "FREESHIP") {
-      setActivePromo("FREESHIP");
+      setAppliedPromo("FREESHIP", 0);
       setPromoSuccessMsg("FREESHIP applied successfully! Free boutique shipping enabled.");
       setPromoInput("");
     } else {
@@ -157,7 +161,7 @@ export default function CartPage() {
   };
 
   const handleRemovePromo = () => {
-    setActivePromo(null);
+    setAppliedPromo(null, 0);
     setPromoSuccessMsg(null);
     setPromoError(null);
   };
@@ -187,7 +191,7 @@ export default function CartPage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
             <button
               type="button"
-              onClick={() => router.push("/products")}
+              onClick={() => router.push("/shop/all")}
               className="px-6 h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg text-xs font-semibold uppercase tracking-[0.2em] flex items-center justify-center gap-1.5 shadow-sm"
             >
               <span>Browse Products</span>

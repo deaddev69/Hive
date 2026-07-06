@@ -54,7 +54,6 @@ export const seedServiceZones = mutation({
       { city: "Aluva", state: "Kerala" },
       { city: "Thrippunithura", state: "Kerala" },
       { city: "Edappally", state: "Kerala" },
-      { city: "Hyderabad", state: "Telangana" },
     ];
 
     const now = Date.now();
