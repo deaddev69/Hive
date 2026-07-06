@@ -30,7 +30,7 @@ const SECTIONS: Section[] = [
     num: "1",
     title: "Acceptance of Terms",
     content: [
-      `By accessing, browsing, registering on, or placing an order through the Hive by TailorBee platform, available at https://hive.tailorbee.in (the "Platform"), you ("User," "Customer," or "you") confirm that you have read, understood, and unconditionally agree to be bound by these Terms and Conditions ("Terms") and all policies incorporated herein by reference, including the Privacy Policy.`,
+      `By accessing, browsing, registering on, or placing an order through the Hive by TailorBee platform, available at https://hivenow.in (the "Platform"), you ("User," "Customer," or "you") confirm that you have read, understood, and unconditionally agree to be bound by these Terms and Conditions ("Terms") and all policies incorporated herein by reference, including the Privacy Policy.`,
       `If you do not agree with any part of these Terms, you must immediately discontinue your use of the Platform.`,
       `These Terms constitute a legally binding agreement between you and BEELYN LLP, a limited liability partnership incorporated under the laws of India, having its registered office at 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam Town South Police Station, Ernakulam, Kerala – 682016, India ("BEELYN LLP," "we," "us," or "our").`,
       `Hive by TailorBee is owned and operated by BEELYN LLP. These Terms apply exclusively to the Hive by TailorBee Platform and do not govern any other products, brands, or services operated by BEELYN LLP.`
@@ -42,7 +42,7 @@ const SECTIONS: Section[] = [
     title: "Definitions",
     content: [
       `In these Terms, the following expressions carry the meanings set out below unless the context requires otherwise:`,
-      `"Hive" or "Platform" means the Hive by TailorBee online marketplace accessible at https://hive.tailorbee.in, including its website, mobile applications, and related digital interfaces operated by BEELYN LLP.`,
+      `"Hive" or "Platform" means the Hive by TailorBee online marketplace accessible at https://hivenow.in, including its website, mobile applications, and related digital interfaces operated by BEELYN LLP.`,
       `"BEELYN LLP" means the limited liability partnership registered under LLPIN ACS-4901, being the legal entity that owns and operates the Platform.`,
       `"Customer" means any individual who accesses the Platform to browse, discover, or purchase products listed by Sellers.`,
       `"Seller" means an independent boutique, designer studio, artisan seller, fashion retailer, or other business entity that has been approved by Hive to list and sell products on the Platform.`,
@@ -468,7 +468,7 @@ const SECTIONS: Section[] = [
       `For all queries, complaints, grievances, and support requests relating to Hive by TailorBee, please contact:`,
       `Hive by TailorBee — Customer Support`,
       `BEELYN LLP 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam Town South Police Station, Ernakulam, Kerala – 682016, India`,
-      `Website: https://hive.tailorbee.in`,
+      `Website: https://hivenow.in`,
       `Email: support@hivenow.in`
     ]
   },
@@ -477,7 +477,7 @@ const SECTIONS: Section[] = [
     num: "32",
     title: "Privacy Policy Linkage",
     content: [
-      `Your use of the Platform is also governed by Hive's Privacy Policy, which is available at https://hive.tailorbee.in/privacy-policy. The Privacy Policy forms an integral part of the legal framework governing the Platform and should be read in conjunction with these Terms. By using the Platform, you also accept the terms of the Privacy Policy.`,
+      `Your use of the Platform is also governed by Hive's Privacy Policy, which is available at https://hivenow.in/terms#privacy-policy. The Privacy Policy forms an integral part of the legal framework governing the Platform and should be read in conjunction with these Terms. By using the Platform, you also accept the terms of the Privacy Policy.`,
       `These Terms and Conditions are published by BEELYN LLP (LLPIN: ACS-4901) for and on behalf of Hive by TailorBee.`
     ]
   }

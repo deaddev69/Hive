@@ -250,7 +250,7 @@ export const getNewOrderBoutiqueTemplate = (data: EmailTemplateInput) => {
     </table>
     
     <div class="btn-container">
-      <a href="https://hivebytailorbee.com/seller/orders" class="btn" style="background-color: #1f2937; color: #ffffff !important;">Go to Dashboard</a>
+      <a href="https://seller.hivenow.in/orders" class="btn" style="background-color: #1f2937; color: #ffffff !important;">Go to Dashboard</a>
     </div>
   `;
 
@@ -368,7 +368,7 @@ export const getOrderDeliveredCustomerTemplate = (data: EmailTemplateInput) => {
     <div class="divider"></div>
     
     <div class="btn-container">
-      <a href="https://hivebytailorbee.com/orders/${data.orderNumber}" class="btn" style="background-color: #111827; color: #ffffff !important; margin-right: 10px;">Review Order</a>
+      <a href="https://hivenow.in/orders/${data.orderNumber}" class="btn" style="background-color: #111827; color: #ffffff !important; margin-right: 10px;">Review Order</a>
       ${data.pdfUrl ? `<a href="${data.pdfUrl}" class="btn">Invoice</a>` : ""}
     </div>
   `;

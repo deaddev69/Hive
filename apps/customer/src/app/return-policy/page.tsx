@@ -27,14 +27,14 @@ export default function ReturnPolicyPage() {
               LLPIN: ACS-4901<br />
               Registered Office: 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam, Kerala – 682016, India<br />
               Email Support: <a href="mailto:support@hivenow.in" className="underline font-bold text-stone-800">support@hivenow.in</a><br />
-              Platform Link: <a href="https://hive.tailorbee.in" className="underline font-bold text-stone-800">https://hive.tailorbee.in</a>
+              Platform Link: <a href="https://hivenow.in" className="underline font-bold text-stone-800">https://hivenow.in</a>
             </p>
           </div>
 
           <section className="space-y-2">
             <h2 className="text-base font-serif font-bold text-stone-900">1. Introduction</h2>
             <p>
-              1.1 This Return and Refund Policy (the “Policy”) explains how returns, refunds, and order cancellations work on Hive by TailorBee, available at <a href="https://hive.tailorbee.in" className="underline text-stone-850">https://hive.tailorbee.in</a> (the “Platform”), operated by BEELYN LLP.
+              1.1 This Return and Refund Policy (the “Policy”) explains how returns, refunds, and order cancellations work on Hive by TailorBee, available at <a href="https://hivenow.in" className="underline text-stone-850">https://hivenow.in</a> (the “Platform”), operated by BEELYN LLP.
             </p>
             <p>
               1.2 This Policy forms an integral part of, and should be read together with, the Hive by TailorBee Customer Terms and Conditions, Version 2.0 (“Customer Terms”) and the Privacy Policy. In the event of any inconsistency between this Policy and the Customer Terms, the Customer Terms shall prevail.
