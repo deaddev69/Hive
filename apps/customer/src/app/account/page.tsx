@@ -1507,7 +1507,7 @@ function AccountPageContent() {
               </div>
               
               <a 
-                href="mailto:support@tailorbee.in"
+                href="mailto:support@hivenow.in"
                 className="text-xs font-bold text-[#1C1917] hover:text-[#F5A623] flex items-center gap-0.5 transition-colors group"
               >
                 Contact Hive Support →
@@ -1547,7 +1547,7 @@ function AccountPageContent() {
             </div>
             
             <a 
-              href="mailto:support@tailorbee.in"
+              href="mailto:support@hivenow.in"
               className="text-xs font-bold text-[#1C1917] hover:text-[#F5A623] flex items-center gap-0.5 transition-colors group"
             >
               Contact Hive Support →

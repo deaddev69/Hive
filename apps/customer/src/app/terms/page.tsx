@@ -30,7 +30,7 @@ const SECTIONS: Section[] = [
     num: "1",
     title: "Acceptance of Terms",
     content: [
-      `By accessing, browsing, registering on, or placing an order through the Hive by TailorBee platform, available at https://hive.tailorbee.in (the "Platform"), you ("User," "Customer," or "you") confirm that you have read, understood, and unconditionally agree to be bound by these Terms and Conditions ("Terms") and all policies incorporated herein by reference, including the Privacy Policy.`,
+      `By accessing, browsing, registering on, or placing an order through the Hive by TailorBee platform, available at https://hivenow.in (the "Platform"), you ("User," "Customer," or "you") confirm that you have read, understood, and unconditionally agree to be bound by these Terms and Conditions ("Terms") and all policies incorporated herein by reference, including the Privacy Policy.`,
       `If you do not agree with any part of these Terms, you must immediately discontinue your use of the Platform.`,
       `These Terms constitute a legally binding agreement between you and BEELYN LLP, a limited liability partnership incorporated under the laws of India, having its registered office at 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam Town South Police Station, Ernakulam, Kerala – 682016, India ("BEELYN LLP," "we," "us," or "our").`,
       `Hive by TailorBee is owned and operated by BEELYN LLP. These Terms apply exclusively to the Hive by TailorBee Platform and do not govern any other products, brands, or services operated by BEELYN LLP.`
@@ -42,7 +42,7 @@ const SECTIONS: Section[] = [
     title: "Definitions",
     content: [
       `In these Terms, the following expressions carry the meanings set out below unless the context requires otherwise:`,
-      `"Hive" or "Platform" means the Hive by TailorBee online marketplace accessible at https://hive.tailorbee.in, including its website, mobile applications, and related digital interfaces operated by BEELYN LLP.`,
+      `"Hive" or "Platform" means the Hive by TailorBee online marketplace accessible at https://hivenow.in, including its website, mobile applications, and related digital interfaces operated by BEELYN LLP.`,
       `"BEELYN LLP" means the limited liability partnership registered under LLPIN ACS-4901, being the legal entity that owns and operates the Platform.`,
       `"Customer" means any individual who accesses the Platform to browse, discover, or purchase products listed by Sellers.`,
       `"Seller" means an independent boutique, designer studio, artisan seller, fashion retailer, or other business entity that has been approved by Hive to list and sell products on the Platform.`,
@@ -85,7 +85,7 @@ const SECTIONS: Section[] = [
     content: [
       `5.1 Account Requirement. Guest checkout is not available on the Platform. Customers must create a registered account to place Orders. By creating an account, you agree to provide accurate, current, and complete information and to promptly update such information as and when it changes.`,
       `5.2 Account Confidentiality. You are solely responsible for maintaining the confidentiality of your account credentials, including your username and password. You must not share your account access with any third party.`,
-      `5.3 Account Responsibility. You are fully responsible for all activities, Orders, and transactions conducted through your account, whether or not authorised by you. If you become aware of any unauthorised access to or use of your account, you must notify Hive immediately at support@hive.tailorbee.in.`,
+      `5.3 Account Responsibility. You are fully responsible for all activities, Orders, and transactions conducted through your account, whether or not authorised by you. If you become aware of any unauthorised access to or use of your account, you must notify Hive immediately at support@hivenow.in.`,
       `5.4 Identity Verification. BEELYN LLP reserves the right to verify a User's identity and account information where reasonably necessary for the purposes of fraud prevention, regulatory compliance, or Platform security.`,
       `5.5 One Account Per User. Each User may maintain only one active Customer account. BEELYN LLP reserves the right to merge or terminate duplicate accounts.`,
       `5.6 Account Suspension. BEELYN LLP may suspend or permanently disable any account that it reasonably determines to have been created using false information, to be in violation of these Terms, or to have been used for abusive, fraudulent, or unlawful purposes.`
@@ -310,7 +310,7 @@ const SECTIONS: Section[] = [
       `(b) the User has engaged in fraudulent, abusive, or unlawful conduct;`,
       `(c) continued access poses a risk to the Platform, other Users, or third parties;`,
       `(d) a regulatory or legal obligation requires such action.`,
-      `18.2 By the User. You may close or delete your account at any time through the available account settings on the Platform or by contacting BEELYN LLP at support@hive.tailorbee.in. Account closure does not affect any outstanding Orders, obligations, or liabilities that arose prior to closure.`,
+      `18.2 By the User. You may close or delete your account at any time through the available account settings on the Platform or by contacting BEELYN LLP at support@hivenow.in. Account closure does not affect any outstanding Orders, obligations, or liabilities that arose prior to closure.`,
       `18.3 Effect of Termination. Upon termination, your right to access the Platform ceases immediately. BEELYN LLP may retain certain account information and transaction records to the extent required by Applicable Law or for legitimate operational purposes.`,
       `18.4 Survival. Clauses relating to intellectual property, limitation of liability, indemnity, governing law, and any other provisions that by their nature should survive termination shall continue to apply following termination of your account or these Terms.`
     ]
@@ -323,7 +323,7 @@ const SECTIONS: Section[] = [
       `19.1 Grievance Mechanism. BEELYN LLP has established a grievance redressal mechanism for the Platform in accordance with applicable Indian law, including the Consumer Protection Act, 2019 and the Consumer Protection (E-Commerce) Rules, 2020.`,
       `19.2 Submitting a Grievance. Customers and Users may submit grievances relating to the Platform, Orders, or Seller conduct by writing to:`,
       `Grievance Officer — Hive by TailorBee`,
-      `BEELYN LLP 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam Town South Police Station, Ernakulam, Kerala – 682016, India. Email: support@hive.tailorbee.in`,
+      `BEELYN LLP 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam Town South Police Station, Ernakulam, Kerala – 682016, India. Email: support@hivenow.in`,
       `19.3 Acknowledgement. BEELYN LLP endeavours to acknowledge grievances within forty-eight (48) hours of receipt.`,
       `19.4 Resolution Timeline. BEELYN LLP endeavours to resolve valid grievances within one (1) month of receipt, subject to the nature and complexity of the grievance.`,
       `19.5 Escalation. Nothing in these Terms prevents a User from approaching any competent regulatory authority, consumer forum, or court of law as permitted under Applicable Law.`
@@ -468,8 +468,8 @@ const SECTIONS: Section[] = [
       `For all queries, complaints, grievances, and support requests relating to Hive by TailorBee, please contact:`,
       `Hive by TailorBee — Customer Support`,
       `BEELYN LLP 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam Town South Police Station, Ernakulam, Kerala – 682016, India`,
-      `Website: https://hive.tailorbee.in`,
-      `Email: support@hive.tailorbee.in`
+      `Website: https://hivenow.in`,
+      `Email: support@hivenow.in`
     ]
   },
   {
@@ -477,7 +477,7 @@ const SECTIONS: Section[] = [
     num: "32",
     title: "Privacy Policy Linkage",
     content: [
-      `Your use of the Platform is also governed by Hive's Privacy Policy, which is available at https://hive.tailorbee.in/privacy-policy. The Privacy Policy forms an integral part of the legal framework governing the Platform and should be read in conjunction with these Terms. By using the Platform, you also accept the terms of the Privacy Policy.`,
+      `Your use of the Platform is also governed by Hive's Privacy Policy, which is available at https://hivenow.in/terms#privacy-policy. The Privacy Policy forms an integral part of the legal framework governing the Platform and should be read in conjunction with these Terms. By using the Platform, you also accept the terms of the Privacy Policy.`,
       `These Terms and Conditions are published by BEELYN LLP (LLPIN: ACS-4901) for and on behalf of Hive by TailorBee.`
     ]
   }
@@ -831,7 +831,7 @@ export default function TermsPage() {
           <Building className="w-4 h-4 mx-auto mb-2 text-slate-300 dark:text-neutral-600" />
           <p className="font-semibold text-slate-600 dark:text-slate-400">BEELYN LLP (LLPIN: ACS-4901)</p>
           <p className="mt-1">55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam, Kerala – 682016, India</p>
-          <p className="mt-1">Customer Care Support: support@hive.tailorbee.in</p>
+          <p className="mt-1">Customer Care Support: support@hivenow.in</p>
         </div>
 
       </div>

@@ -6,7 +6,7 @@ If you discover a security vulnerability in Hive, please report it responsibly.
 
 **Do NOT open a public GitHub issue for security vulnerabilities.**
 
-Instead, please email us at: **security@tailorbee.in**
+Instead, please email us at: **support@hivenow.in**
 
 Include the following information:
 - Description of the vulnerability

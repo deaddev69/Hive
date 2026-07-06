@@ -26,15 +26,15 @@ export default function ReturnPolicyPage() {
               <strong>BEELYN LLP</strong><br />
               LLPIN: ACS-4901<br />
               Registered Office: 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam, Kerala – 682016, India<br />
-              Email Support: <a href="mailto:support@hive.tailorbee.in" className="underline font-bold text-stone-800">support@hive.tailorbee.in</a><br />
-              Platform Link: <a href="https://hive.tailorbee.in" className="underline font-bold text-stone-800">https://hive.tailorbee.in</a>
+              Email Support: <a href="mailto:support@hivenow.in" className="underline font-bold text-stone-800">support@hivenow.in</a><br />
+              Platform Link: <a href="https://hivenow.in" className="underline font-bold text-stone-800">https://hivenow.in</a>
             </p>
           </div>
 
           <section className="space-y-2">
             <h2 className="text-base font-serif font-bold text-stone-900">1. Introduction</h2>
             <p>
-              1.1 This Return and Refund Policy (the “Policy”) explains how returns, refunds, and order cancellations work on Hive by TailorBee, available at <a href="https://hive.tailorbee.in" className="underline text-stone-850">https://hive.tailorbee.in</a> (the “Platform”), operated by BEELYN LLP.
+              1.1 This Return and Refund Policy (the “Policy”) explains how returns, refunds, and order cancellations work on Hive by TailorBee, available at <a href="https://hivenow.in" className="underline text-stone-850">https://hivenow.in</a> (the “Platform”), operated by BEELYN LLP.
             </p>
             <p>
               1.2 This Policy forms an integral part of, and should be read together with, the Hive by TailorBee Customer Terms and Conditions, Version 2.0 (“Customer Terms”) and the Privacy Policy. In the event of any inconsistency between this Policy and the Customer Terms, the Customer Terms shall prevail.
@@ -53,7 +53,7 @@ export default function ReturnPolicyPage() {
               2.2 Return requests raised after expiry of this window may not be accepted, except where required under applicable consumer protection law.
             </p>
             <p>
-              2.3 To initiate a return, Customers should raise a request through the Platform's “My Orders” section or contact <a href="mailto:support@hive.tailorbee.in" className="underline text-stone-850">support@hive.tailorbee.in</a> within the return window stated above.
+              2.3 To initiate a return, Customers should raise a request through the Platform's “My Orders” section or contact <a href="mailto:support@hivenow.in" className="underline text-stone-850">support@hivenow.in</a> within the return window stated above.
             </p>
           </section>
 
@@ -205,7 +205,7 @@ export default function ReturnPolicyPage() {
               BEELYN LLP<br />
               55/4379, Door No. 3623, Valanjambalam Junction,<br />
               Kochi M.G. Road, Ernakulam, Kerala – 682016, India<br />
-              Email: <a href="mailto:support@hive.tailorbee.in" className="underline">support@hive.tailorbee.in</a>
+              Email: <a href="mailto:support@hivenow.in" className="underline">support@hivenow.in</a>
             </p>
             <p>
               14.2 Hive endeavours to acknowledge support queries within forty-eight (48) hours and to resolve valid grievances within one (1) month, in accordance with the grievance redressal mechanism described in the Customer Terms.

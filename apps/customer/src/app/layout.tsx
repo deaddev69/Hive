@@ -14,6 +14,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Hive by TailorBee — Boutique Fashion, Delivered Today",
   description: "Experience hyperlocal boutique fashion delivered to your doorstep in hours. Curated designs from India's finest boutiques.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 import { Toaster } from "@hive/ui";

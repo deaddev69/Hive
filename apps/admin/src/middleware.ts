@@ -21,10 +21,14 @@ export default clerkMiddleware(async (auth, req) => {
   requestHeaders.set("x-hive-portal", "admin");
 
   // 1. Admin edge auth protection
-  const isAuthPath = pathname.includes("/sign-in") || pathname.includes("/sign-up");
+  const isAuthPath = pathname.includes("/sign-in") || pathname.includes("/sign-up") || pathname.includes("/unauthorized");
 
   if (!isAuthPath) {
-    await auth.protect();
+    const session = await auth.protect();
+    const userRole = session.sessionClaims?.metadata?.role || session.sessionClaims?.role;
+    if (userRole && userRole !== "admin") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
   }
 
   // 2. Rewrite path internally to /admin/ if it doesn't already have it

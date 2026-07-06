@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/context/SessionContext";
-import { X, Sparkles, ShoppingBag, Truck, ShieldCheck, ArrowRight } from "lucide-react";
+import { HiveLogo } from "@/components/shared/HiveLogo";
+import { X, ShoppingBag, Truck, ShieldCheck, ArrowRight } from "lucide-react";
 
 export function FirstVisitAuthModal() {
   const router = useRouter();
@@ -56,41 +57,41 @@ export function FirstVisitAuthModal() {
         </button>
 
         {/* Header Content */}
-        <div className="text-center space-y-2 mt-2">
-          <div className="w-14 h-14 rounded-full bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center border border-hive-border/30 mx-auto">
-            <Sparkles className="w-6 h-6 text-hive-gold" />
+        <div className="text-center space-y-3 mt-2">
+          <div className="w-24 h-auto mx-auto mb-4">
+            <HiveLogo />
           </div>
-          <h2 className="text-xl sm:text-2xl font-serif font-black text-slate-900 dark:text-white">
+          <h2 className="text-xl sm:text-2xl font-serif font-black text-stone-900 dark:text-white tracking-tight">
             Welcome to Hive
           </h2>
-          <p className="text-xs text-hive-text-muted font-medium max-w-[280px] mx-auto leading-relaxed">
+          <p className="text-xs text-stone-500 font-medium tracking-wide max-w-[320px] mx-auto leading-relaxed">
              hyper-local designer apparel and custom alterations delivered to your door same-day.
           </p>
         </div>
 
         {/* Benefits list */}
-        <div className="my-6 space-y-3 bg-slate-50 dark:bg-neutral-950 p-4 rounded-2xl border border-slate-100 dark:border-neutral-900">
+        <div className="my-6 space-y-3 bg-stone-50/50 dark:bg-neutral-950/50 p-4 rounded-2xl border border-stone-200/60 dark:border-neutral-800 shadow-[inset_0_1px_4px_rgba(0,0,0,0.02)]">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-lg bg-hive-gold/10 flex items-center justify-center text-hive-gold flex-shrink-0">
+            <div className="w-6 h-6 rounded-lg bg-amber-50/80 flex items-center justify-center text-hive-gold flex-shrink-0">
               <ShoppingBag className="w-3.5 h-3.5" />
             </div>
-            <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+            <span className="text-[11px] font-semibold text-stone-700 dark:text-slate-300">
               Browse & buy from verified local designers
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-lg bg-hive-gold/10 flex items-center justify-center text-hive-gold flex-shrink-0">
+            <div className="w-6 h-6 rounded-lg bg-amber-50/80 flex items-center justify-center text-hive-gold flex-shrink-0">
               <Truck className="w-3.5 h-3.5" />
             </div>
-            <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+            <span className="text-[11px] font-semibold text-stone-700 dark:text-slate-300">
               Hyperlocal same-day delivery inside zones
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-lg bg-hive-gold/10 flex items-center justify-center text-hive-gold flex-shrink-0">
+            <div className="w-6 h-6 rounded-lg bg-amber-50/80 flex items-center justify-center text-hive-gold flex-shrink-0">
               <ShieldCheck className="w-3.5 h-3.5" />
             </div>
-            <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+            <span className="text-[11px] font-semibold text-stone-700 dark:text-slate-300">
               Secure payments & easy 3-day returns
             </span>
           </div>
@@ -100,7 +101,7 @@ export function FirstVisitAuthModal() {
         <div className="space-y-2.5">
           <button
             onClick={handleSignUp}
-            className="w-full h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-2xl text-xs font-extrabold uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-md shadow-hive-dark/10 cursor-pointer"
+            className="w-full h-[46px] bg-stone-900 text-stone-50 hover:bg-stone-800 hover:shadow-lg hover:shadow-stone-900/20 active:scale-[0.98] transition-all duration-300 rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <span>Create an Account</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -108,7 +109,7 @@ export function FirstVisitAuthModal() {
           
           <button
             onClick={handleLogin}
-            className="w-full h-11 border border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-neutral-800/40 active:scale-[0.98] transition-all rounded-2xl text-xs font-extrabold uppercase tracking-widest flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full h-[46px] border border-stone-200 dark:border-neutral-800 text-stone-700 dark:text-slate-300 hover:bg-stone-50 dark:hover:bg-neutral-800/40 active:scale-[0.98] transition-all duration-300 rounded-xl text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <span>Log In to Account</span>
           </button>

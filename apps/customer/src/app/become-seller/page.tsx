@@ -417,7 +417,7 @@ export default function BecomeSellerPage() {
                   {rejectionReason || "Your store details did not match our current verification parameters."}
                 </p>
                 <p className="text-[10px] text-red-500/80 mt-1 italic leading-relaxed">
-                  * Please reach out to partners@tailorbee.in to clarify physical store location details or request a re-review.
+                  * Please reach out to support@hivenow.in to clarify physical store location details or request a re-review.
                 </p>
               </div>
             )}

@@ -335,6 +335,7 @@ export const Navbar: React.FC = () => {
               {/* My Orders — desktop only */}
               <Link
                 href="/orders"
+                prefetch={false}
                 className="hidden md:flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-widest text-hive-dark hover:text-hive-gold transition-colors duration-150"
               >
                 <List className="w-4 h-4" />
@@ -606,6 +607,7 @@ export const Navbar: React.FC = () => {
               <div className="flex flex-col gap-3 pl-1">
                 <Link
                   href="/orders"
+                  prefetch={false}
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-[13px] font-medium text-stone-850 hover:text-hive-gold active:text-hive-gold transition-colors"
                 >
@@ -613,6 +615,7 @@ export const Navbar: React.FC = () => {
                 </Link>
                 <Link
                   href="/wishlist"
+                  prefetch={false}
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-[13px] font-medium text-stone-850 hover:text-hive-gold active:text-hive-gold transition-colors"
                 >
@@ -620,6 +623,7 @@ export const Navbar: React.FC = () => {
                 </Link>
                 <Link
                   href="/account"
+                  prefetch={false}
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-[13px] font-medium text-stone-850 hover:text-hive-gold active:text-hive-gold transition-colors"
                 >
@@ -682,7 +686,7 @@ export const Navbar: React.FC = () => {
           {/* ── Support | Terms | Privacy ──────────────────────────── */}
           <div className="px-5 py-4 text-center">
             <div className="flex items-center justify-center gap-3 text-[10.5px] text-stone-400 font-semibold">
-              <a href="mailto:support@hive.tailorbee.in" className="hover:text-hive-gold transition-colors">
+              <a href="mailto:support@hivenow.in" className="hover:text-hive-gold transition-colors">
                 Support
               </a>
               <span className="text-stone-200 select-none">|</span>

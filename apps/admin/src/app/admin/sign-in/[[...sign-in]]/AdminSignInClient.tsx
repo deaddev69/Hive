@@ -122,7 +122,7 @@ export default function AdminSignInClient() {
 
               <SignIn
                 path={currentPath}
-                signUpUrl="https://hivebytailorbee.com/apply-admin-restricted"
+                signUpUrl="https://hivenow.in/apply-admin-restricted"
                 appearance={{
                   variables: {
                     colorBackground: "#2B2622",

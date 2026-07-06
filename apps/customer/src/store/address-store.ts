@@ -11,6 +11,10 @@ export interface Address {
   state: string;
   pincode: string;
   landmark?: string;
+  receiverName?: string;
+  deliveryInstructions?: string;
+  entryPhotoId?: string;
+  entryPhotoUrl?: string;
   isDefault: boolean;
 }
 
