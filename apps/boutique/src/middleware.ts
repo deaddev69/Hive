@@ -28,7 +28,11 @@ export default clerkMiddleware(async (auth, req) => {
   const isInvitePath = pathname.startsWith("/seller/invite") || pathname.startsWith("/invite") || pathname.startsWith("/apply");
 
   if (!isAuthPath && !isInvitePath) {
-    await auth.protect();
+    const session = await auth.protect();
+    const userRole = session.sessionClaims?.metadata?.role || session.sessionClaims?.role;
+    if (userRole && userRole !== "boutique" && userRole !== "boutique_owner" && userRole !== "admin") {
+      return NextResponse.redirect(new URL(CUSTOMER_APP_URL, req.url));
+    }
   }
 
   // 2. Redirect merchant onboarding applications to customer app portal
