@@ -682,7 +682,7 @@ export const Navbar: React.FC = () => {
           {/* ── Support | Terms | Privacy ──────────────────────────── */}
           <div className="px-5 py-4 text-center">
             <div className="flex items-center justify-center gap-3 text-[10.5px] text-stone-400 font-semibold">
-              <a href="mailto:support@hive.tailorbee.in" className="hover:text-hive-gold transition-colors">
+              <a href="mailto:support@hivenow.in" className="hover:text-hive-gold transition-colors">
                 Support
               </a>
               <span className="text-stone-200 select-none">|</span>

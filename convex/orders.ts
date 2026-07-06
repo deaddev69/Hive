@@ -1604,6 +1604,12 @@ export const checkMerchantSLATimeouts = internalMutation({
     let cancelledCount = 0;
 
     for (const order of pendingOrders) {
+      // Skip SLA SLA timeouts for orders placed outside of operating hours
+      // The SLA timer for these orders should be exempt overnight.
+      if (order.placedDuringClosedHours) {
+        continue;
+      }
+
       const elapsed = now - order.createdAt;
 
       // Tier 4: Auto Cancel if unaccepted after 45 minutes

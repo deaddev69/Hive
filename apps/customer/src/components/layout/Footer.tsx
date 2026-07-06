@@ -41,7 +41,8 @@ export const Footer: React.FC = () => {
                 <div className="flex flex-col gap-1.5 text-[11px] md:text-xs">
                   <Link href="/become-seller" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Sell on Hive</Link>
                   <Link href="/become-seller" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Partner Portal</Link>
-                  <a href="mailto:support@hive.tailorbee.in" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Support</a>
+                  <Link href="/contact" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Contact Us</Link>
+                  <a href="mailto:support@hivenow.in" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Support</a>
                   <Link href="/terms#section-14" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Returns</Link>
                   <Link href="/terms" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Terms</Link>
                   <Link href="/terms#privacy-policy" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Privacy</Link>
