@@ -249,7 +249,7 @@ function MapPickerInner({
           disableDefaultUI={true}
           zoomControl={false}
           gestureHandling={readOnly ? "none" : "greedy"}
-          onDragStart={() => setIsDragging(true)}
+          onDragstart={() => setIsDragging(true)}
           onIdle={(e: any) => {
             setIsDragging(false);
             if (!readOnly && e.map) {
