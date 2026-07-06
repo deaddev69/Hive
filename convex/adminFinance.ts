@@ -902,6 +902,7 @@ export const seedFinanceMockDataAdmin = mutation({
       // 3. Insert commission per item
       for (let i = 0; i < totalItems; i++) {
         const item = items[i];
+        if (!item) continue;
 
         // Calculate the item's proportional discount share to find its true net value
         const itemProportionalDiscount = Math.floor(
