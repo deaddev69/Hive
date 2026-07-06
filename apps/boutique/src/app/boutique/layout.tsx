@@ -47,7 +47,9 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
         return;
       }
       if (me.role === "customer") {
-        window.location.href = process.env.NEXT_PUBLIC_CUSTOMER_APP_URL || "https://hivenow.in";
+        if (pathname !== "/boutique/unauthorized" && pathname !== "/unauthorized") {
+          router.push("/boutique/unauthorized");
+        }
         return;
       }
     }

@@ -25,13 +25,13 @@ export default clerkMiddleware(async (auth, req) => {
 
   // 1. Seller edge auth protection
   const isAuthPath = pathname.includes("/sign-in") || pathname.includes("/sign-up");
-  const isInvitePath = pathname.startsWith("/seller/invite") || pathname.startsWith("/invite") || pathname.startsWith("/apply");
+  const isInvitePath = pathname.startsWith("/seller/invite") || pathname.startsWith("/invite") || pathname.startsWith("/apply") || pathname.startsWith("/unauthorized") || pathname.startsWith("/boutique/unauthorized");
 
   if (!isAuthPath && !isInvitePath) {
     const session = await auth.protect();
     const userRole = session.sessionClaims?.metadata?.role || session.sessionClaims?.role;
     if (userRole && userRole !== "boutique" && userRole !== "boutique_owner" && userRole !== "admin") {
-      return NextResponse.redirect(new URL(CUSTOMER_APP_URL, req.url));
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
   }
 
