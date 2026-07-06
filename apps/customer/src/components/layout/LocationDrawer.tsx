@@ -7,7 +7,7 @@ import { useLocation } from "@/context/LocationContext";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
-import toast from "react-hot-toast";
+import { toast } from "@hive/utils";
 
 // Load map without SSR — Leaflet needs window
 const LocationMapPicker = dynamic(
