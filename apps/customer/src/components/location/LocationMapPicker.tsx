@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { Search, MapPin, Loader2, Navigation, AlertCircle } from "lucide-react";
+import { Search, MapPin, Loader2, Navigation, AlertCircle, X } from "lucide-react";
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap } from "@vis.gl/react-google-maps";
 
 export interface ReverseGeocodeResult {
@@ -72,6 +72,7 @@ function PlaceAutocomplete({ onPlaceSelect, setActiveMapTab }: { onPlaceSelect: 
   const [placeAutocomplete, setPlaceAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const places = useMapsLibrary("places");
+  const [inputValue, setInputValue] = useState("");
 
   useEffect(() => {
     if (!places || !inputRef.current) return;
@@ -85,11 +86,20 @@ function PlaceAutocomplete({ onPlaceSelect, setActiveMapTab }: { onPlaceSelect: 
     if (!placeAutocomplete) return;
     const listener = placeAutocomplete.addListener('place_changed', () => {
       onPlaceSelect(placeAutocomplete.getPlace());
+      setInputValue(inputRef.current?.value || "");
     });
     return () => {
       google.maps.event.removeListener(listener);
     }
   }, [onPlaceSelect, placeAutocomplete]);
+
+  const handleClear = () => {
+    setInputValue("");
+    if (inputRef.current) {
+      inputRef.current.value = "";
+      inputRef.current.focus();
+    }
+  };
 
   return (
     <div className="relative">
@@ -98,9 +108,19 @@ function PlaceAutocomplete({ onPlaceSelect, setActiveMapTab }: { onPlaceSelect: 
         ref={inputRef}
         type="text"
         placeholder="Search your area, building, or landmark..."
-        className="w-full pl-10 pr-4 py-3 bg-white border border-hive-border rounded-xl text-sm focus:outline-none focus:border-hive-gold focus:ring-1 focus:ring-hive-gold transition-all"
+        className="w-full pl-10 pr-10 py-3 bg-white border border-hive-border rounded-xl text-sm focus:outline-none focus:border-hive-gold focus:ring-1 focus:ring-hive-gold transition-all"
         onClick={() => setActiveMapTab("search")}
+        onChange={(e) => setInputValue(e.target.value)}
       />
+      {inputValue.length > 0 && (
+        <button
+          type="button"
+          onClick={handleClear}
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-hive-text-muted hover:text-slate-800 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 }
@@ -114,6 +134,7 @@ function MapPickerInner({
   height = "300px",
 }: LocationMapPickerProps) {
   const [activeMapTab, setActiveMapTab] = useState<"search" | "gps" | "manual">("search");
+  const [isDragging, setIsDragging] = useState(false);
   
   // GPS state
   const [geoLoading, setGeoLoading] = useState(false);
@@ -125,19 +146,7 @@ function MapPickerInner({
 
   const handleMapClick = (e: any) => {
     if (readOnly || !e.detail || !e.detail.latLng) return;
-    const newLat = e.detail.latLng.lat;
-    const newLng = e.detail.latLng.lng;
-    
-    if (onChange) onChange(newLat, newLng);
-
-    if (onReverseGeocode && geocodingLib) {
-      const geocoder = new geocodingLib.Geocoder();
-      geocoder.geocode({ location: { lat: newLat, lng: newLng } }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
-        if (status === "OK" && results && results.length > 0) {
-          onReverseGeocode(extractGeocodeData(results, "map_pin"));
-        }
-      });
-    }
+    map?.panTo(e.detail.latLng);
   };
 
   const handlePlaceSelect = useCallback((place: google.maps.places.PlaceResult) => {
@@ -238,11 +247,38 @@ function MapPickerInner({
           zoom={14}
           onClick={handleMapClick}
           disableDefaultUI={true}
-          zoomControl={true}
+          zoomControl={false}
           gestureHandling={readOnly ? "none" : "greedy"}
+          onDragStart={() => setIsDragging(true)}
+          onIdle={(e: any) => {
+            setIsDragging(false);
+            if (!readOnly && e.map) {
+              const centerLatLng = e.map.getCenter();
+              if (centerLatLng) {
+                const newLat = centerLatLng.lat();
+                const newLng = centerLatLng.lng();
+                if (onChange) onChange(newLat, newLng);
+                if (onReverseGeocode && geocodingLib) {
+                  const geocoder = new geocodingLib.Geocoder();
+                  geocoder.geocode({ location: { lat: newLat, lng: newLng } }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+                    if (status === "OK" && results && results.length > 0) {
+                      onReverseGeocode(extractGeocodeData(results, "map_pin"));
+                    }
+                  });
+                }
+              }
+            }
+          }}
+        />
+        
+        {/* Exact Center Overlay Pin */}
+        <div 
+          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none transition-transform duration-200 ease-out z-10 ${
+            isDragging && !readOnly ? "-translate-y-[calc(100%+8px)] scale-105" : ""
+          }`}
         >
-          <AdvancedMarker position={center} />
-        </Map>
+          <MapPin className="w-8 h-8 text-hive-gold fill-hive-gold drop-shadow-md" />
+        </div>
         
         {readOnly && (
           <div className="absolute inset-0 bg-black/5 pointer-events-none" />
