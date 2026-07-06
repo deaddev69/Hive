@@ -38,7 +38,7 @@ export function FirstVisitAuthModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Dark backdrop blur */}
       <div 
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300"
@@ -46,7 +46,7 @@ export function FirstVisitAuthModal() {
       />
       
       {/* Modal Card */}
-      <div className="relative bg-white dark:bg-neutral-900 w-full max-w-md border border-slate-200/60 dark:border-neutral-800 rounded-[2.5rem] shadow-2xl p-6 sm:p-8 animate-[popIn_0.35s_cubic-bezier(0.16,1,0.3,1)_forwards] z-10 text-left">
+      <div className="relative bg-white dark:bg-neutral-900 w-full max-w-md border border-stone-200/60 dark:border-neutral-800 rounded-t-3xl rounded-b-none sm:rounded-[2.5rem] sm:rounded-b-[2.5rem] shadow-[0_-8px_30px_rgba(0,0,0,0.12)] sm:shadow-2xl p-6 sm:p-8 animate-[slideUp_0.35s_cubic-bezier(0.16,1,0.3,1)_forwards] sm:animate-[popIn_0.35s_cubic-bezier(0.16,1,0.3,1)_forwards] z-10 text-left mt-auto sm:mt-0 pb-10 sm:pb-8">
         
         {/* Close Button */}
         <button
@@ -116,7 +116,7 @@ export function FirstVisitAuthModal() {
 
           <button
             onClick={handleClose}
-            className="w-full text-center py-2 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer bg-transparent mt-1"
+            className="w-full text-center py-2 text-xs font-bold text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 transition-colors cursor-pointer bg-transparent mt-1 underline underline-offset-4"
           >
             Continue as Guest
           </button>
@@ -128,6 +128,10 @@ export function FirstVisitAuthModal() {
         @keyframes popIn {
           from { opacity: 0; transform: scale(0.95) translateY(10px); }
           to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes slideUp {
+          from { transform: translateY(100%); }
+          to { transform: translateY(0); }
         }
       `}</style>
     </div>
