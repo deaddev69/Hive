@@ -134,6 +134,9 @@ export default defineSchema({
     houseNumber:      v.optional(v.string()),              // flat/house/door number (user input)
     landmark:         v.optional(v.string()),              // nearby landmark (user input)
     phone:            v.optional(v.string()),              // E.164 phone number
+    receiverName:     v.optional(v.string()),              // custom receiver name if not user
+    deliveryInstructions: v.optional(v.string()),          // instructions to reach location
+    entryPhotoId:     v.optional(v.id("_storage")),        // convex storage ID for entry photo
     regionId:         v.optional(v.id("regions")),         // resolved at save time; null = not serviceable
     isDefault:        v.boolean(),
     isDeleted:        v.boolean(),                         // soft delete

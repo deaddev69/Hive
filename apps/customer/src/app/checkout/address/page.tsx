@@ -61,6 +61,10 @@ type Address = {
   phone?: string;
   isDefault: boolean;
   eLoc?: string;
+  receiverName?: string;
+  deliveryInstructions?: string;
+  entryPhotoId?: Id<"_storage">;
+  entryPhotoUrl?: string;
 };
 
 type MapResult = {
@@ -128,6 +132,10 @@ export default function CheckoutAddressPage() {
     houseNumber: a.houseNumber,
     landmark: a.landmark,
     phone: a.phone,
+    receiverName: a.receiverName,
+    deliveryInstructions: a.deliveryInstructions,
+    entryPhotoId: a.entryPhotoId,
+    entryPhotoUrl: a.entryPhotoUrl || undefined,
     isDefault: a.isDefault,
   }));
 
@@ -234,6 +242,21 @@ export default function CheckoutAddressPage() {
   const [gpsDetecting, setGpsDetecting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<Id<"addresses"> | null>(null);
   const [isPriceExpanded, setIsPriceExpanded] = useState(false);
+
+  const generateUploadUrl = useMutation(api.addresses.generateUploadUrl);
+  const [formReceiverName, setFormReceiverName] = useState("");
+  const [useAccountDetails, setUseAccountDetails] = useState(true);
+  const [formDeliveryInstructions, setFormDeliveryInstructions] = useState("");
+  const [formEntryPhotoId, setFormEntryPhotoId] = useState<Id<"_storage"> | null>(null);
+  const [formEntryPhotoUrl, setFormEntryPhotoUrl] = useState("");
+  const [uploadState, setUploadState] = useState<"idle" | "uploading" | "success" | "error">("idle");
+
+  useEffect(() => {
+    if (useAccountDetails && currentUser) {
+      setFormReceiverName((currentUser as any)?.name || (currentUser as any)?.email?.split("@")[0] || "");
+      setFormPhone((currentUser as any)?.phoneNumber || "");
+    }
+  }, [useAccountDetails, currentUser]);
 
   // ── CRITICAL FIX: set mounted=true after first render so the guard below passes ──
   useEffect(() => {
@@ -352,6 +375,13 @@ export default function CheckoutAddressPage() {
     setFormLandmark("");
     setFormIsDefault(addresses.length === 0);
     setFormError("");
+    setFormReceiverName((currentUser as any)?.name || (currentUser as any)?.email?.split("@")[0] || "");
+    setFormPhone((currentUser as any)?.phoneNumber || "");
+    setUseAccountDetails(true);
+    setFormDeliveryInstructions("");
+    setFormEntryPhotoId(null);
+    setFormEntryPhotoUrl("");
+    setUploadState("idle");
     setShowForm(true);
   };
 
@@ -376,6 +406,12 @@ export default function CheckoutAddressPage() {
     setFormLandmark(addr.landmark || "");
     setFormIsDefault(addr.isDefault);
     setFormError("");
+    setFormReceiverName(addr.receiverName || "");
+    setFormDeliveryInstructions(addr.deliveryInstructions || "");
+    setFormEntryPhotoId(addr.entryPhotoId || null);
+    setFormEntryPhotoUrl(addr.entryPhotoUrl || "");
+    setUseAccountDetails(false);
+    setUploadState("idle");
     setShowForm(true);
   };
 
@@ -423,6 +459,10 @@ export default function CheckoutAddressPage() {
       houseNumber: formHouseNumber.trim(),
       phone: formPhone.trim(),
       landmark: formLandmark.trim() || undefined,
+      receiverName: formReceiverName.trim() || undefined,
+      deliveryInstructions: formDeliveryInstructions.trim() || undefined,
+      entryPhotoId: formEntryPhotoId || undefined,
+      clearEntryPhoto: !formEntryPhotoId,
       isDefault: formIsDefault,
       token: token || undefined,
       eLoc: mapResult.eLoc || undefined,
@@ -448,6 +488,30 @@ export default function CheckoutAddressPage() {
     if (confirm("Are you sure you want to delete this address?")) {
       await removeAddressMutation({ addressId: id, token: token || undefined });
       if (selectedAddressId === id) setSelectedAddressId(null);
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadState("uploading");
+    setFormError("");
+    try {
+      const uploadUrl = await generateUploadUrl();
+      const result = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!result.ok) throw new Error("Upload failed");
+      const { storageId } = await result.json();
+      setFormEntryPhotoId(storageId);
+      setFormEntryPhotoUrl(URL.createObjectURL(file));
+      setUploadState("success");
+    } catch(err: any) {
+      console.error(err);
+      setUploadState("error");
+      setFormError("Failed to upload photo. Please try again.");
     }
   };
 
@@ -788,21 +852,73 @@ export default function CheckoutAddressPage() {
                 )}
               </button>
 
-              {/* Address Label */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                  Address Label
-                </label>
-                <div className="flex gap-2">
+              {/* Receiver Details */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-hive-dark">Receiver Details</h4>
+                  <div className="flex items-center gap-1.5 select-none">
+                    <input
+                      id="use-account"
+                      type="checkbox"
+                      checked={useAccountDetails}
+                      onChange={(e) => setUseAccountDetails(e.target.checked)}
+                      className="w-3.5 h-3.5 accent-hive-dark cursor-pointer"
+                    />
+                    <label htmlFor="use-account" className="text-[10px] font-bold text-hive-text-muted cursor-pointer uppercase tracking-wider">
+                      Use my account details
+                    </label>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
+                      Receiver Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Aditi Rao"
+                      value={formReceiverName}
+                      onChange={(e) => {
+                        setFormReceiverName(e.target.value);
+                        if (useAccountDetails) setUseAccountDetails(false);
+                      }}
+                      className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
+                      Contact Phone <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. 9876543210"
+                      value={formPhone}
+                      onChange={(e) => {
+                        setFormPhone(e.target.value);
+                        if (useAccountDetails) setUseAccountDetails(false);
+                      }}
+                      className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Location Details */}
+              <div className="space-y-3 pt-4 border-t border-hive-border/40">
+                <h4 className="text-xs font-bold text-hive-dark">Location Details</h4>
+                
+                {/* Segmented Tabs */}
+                <div className="flex gap-2 p-1 bg-neutral-100 rounded-xl">
                   {["Home", "Work", "Other"].map((opt) => (
                     <button
                       key={opt}
                       type="button"
                       onClick={() => setFormLabel(opt)}
-                      className={`flex-1 h-9 rounded-xl text-xs font-bold border transition-all ${
+                      className={`flex-1 h-8 rounded-lg text-[11px] font-bold transition-all ${
                         formLabel === opt
-                          ? "bg-hive-dark text-hive-gold border-hive-dark"
-                          : "bg-white text-hive-text border-hive-border hover:border-hive-gold"
+                          ? "bg-white text-hive-dark shadow-sm"
+                          : "text-hive-text-muted hover:text-hive-dark"
                       }`}
                     >
                       {opt}
@@ -815,80 +931,113 @@ export default function CheckoutAddressPage() {
                     placeholder="Custom label (e.g. Gym, Relative)"
                     value={formLabel}
                     onChange={(e) => setFormLabel(e.target.value)}
-                    className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
+                    className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium mt-2"
                   />
                 )}
-              </div>
 
-              {/* House Number & Phone Number Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* House Number */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                    Flat / House / Door Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Flat 4B, Door No. 12"
-                    value={formHouseNumber}
-                    onChange={(e) => setFormHouseNumber(e.target.value)}
-                    className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
-                  />
-                </div>
-
-                {/* Contact Phone */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                    Contact Phone Number <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="e.g. 9876543210"
-                    value={formPhone}
-                    onChange={(e) => setFormPhone(e.target.value)}
-                    className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
-                  />
-                </div>
-              </div>
-
-              {/* Landmark */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                  Nearby Landmark <span className="normal-case text-hive-text-muted font-normal">(optional)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Near HDFC Bank, Opp. City Mall"
-                  value={formLandmark}
-                  onChange={(e) => setFormLandmark(e.target.value)}
-                  className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
-                />
-              </div>
-
-              {/* Location display if geocoded */}
-              {mapResult && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-xl flex items-start gap-2 text-left">
-                  <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-[11px] space-y-0.5">
-                    <p className="font-extrabold text-green-800">Pinned Location: {mapResult.city}, {mapResult.pincode}</p>
-                    <p className="text-green-700 leading-relaxed truncate">{mapResult.formattedAddress}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
+                      Building / Floor <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Flat 4B, Hilltop Apts"
+                      value={formHouseNumber}
+                      onChange={(e) => setFormHouseNumber(e.target.value)}
+                      className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
+                      Street / Landmark <span className="normal-case text-hive-text-muted font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Opp. City Mall"
+                      value={formLandmark}
+                      onChange={(e) => setFormLandmark(e.target.value)}
+                      className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
+                    />
                   </div>
                 </div>
-              )}
 
-              {/* Map Preview (185px) */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                  Adjust Pin Location (Tap/Drag to adjust)
-                </label>
-                <LocationMapPicker
-                  lat={mapLat}
-                  lng={mapLng}
-                  onChange={handleMapChange}
-                  onReverseGeocode={handleReverseGeocode}
-                  showCurrentLocation={false}
-                  height="185px"
-                />
+                {/* Map Preview & Area display */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
+                    Area / Locality
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-3 p-2 bg-white border border-hive-border rounded-2xl items-center">
+                    <div className="w-full sm:w-28 h-20 rounded-xl overflow-hidden flex-shrink-0 relative">
+                      <LocationMapPicker
+                        lat={mapLat}
+                        lng={mapLng}
+                        onChange={handleMapChange}
+                        onReverseGeocode={handleReverseGeocode}
+                        showCurrentLocation={false}
+                        height="100%"
+                      />
+                      <div className="absolute inset-0 border border-black/5 rounded-xl pointer-events-none" />
+                    </div>
+                    <div className="flex-1 min-w-0 px-2 space-y-1 text-left w-full">
+                      <p className="text-[11px] font-bold text-hive-dark truncate">
+                        {mapResult ? `${mapResult.city}, ${mapResult.pincode}` : "Location not set"}
+                      </p>
+                      <p className="text-[10px] text-hive-text-muted leading-relaxed line-clamp-2">
+                        {mapResult ? mapResult.formattedAddress : "Please detect location or move pin on map."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Instructions */}
+              <div className="space-y-3 pt-4 border-t border-hive-border/40">
+                <h4 className="text-xs font-bold text-hive-dark">Delivery Preferences</h4>
+                
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider flex items-center justify-between">
+                    <span>Entry Photo <span className="normal-case font-normal">(helps riders locate)</span></span>
+                    {uploadState === "uploading" && <Loader2 className="w-3 h-3 animate-spin text-hive-gold" />}
+                  </label>
+                  <div className="flex items-center gap-3">
+                    {formEntryPhotoUrl ? (
+                      <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-hive-border/50 group flex-shrink-0">
+                        <img src={formEntryPhotoUrl} alt="Entry" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormEntryPhotoId(null);
+                            setFormEntryPhotoUrl("");
+                          }}
+                          className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center transition-all"
+                        >
+                          <X className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="w-16 h-16 rounded-xl border-2 border-dashed border-hive-border hover:border-hive-gold bg-neutral-50 hover:bg-neutral-100 flex items-center justify-center cursor-pointer transition-all flex-shrink-0">
+                        <Plus className="w-5 h-5 text-hive-text-muted" />
+                        <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploadState === "uploading"} />
+                      </label>
+                    )}
+                    <div className="text-[10px] text-hive-text-muted leading-tight">
+                      Upload a photo of your front door or building entrance.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 mt-3">
+                  <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
+                    Delivery Instructions <span className="normal-case text-hive-text-muted font-normal">(optional)</span>
+                  </label>
+                  <textarea
+                    placeholder="e.g. Leave with security, call upon arrival..."
+                    value={formDeliveryInstructions}
+                    onChange={(e) => setFormDeliveryInstructions(e.target.value)}
+                    className="w-full h-16 p-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium resize-none"
+                  />
+                </div>
               </div>
 
               {/* Default toggle */}

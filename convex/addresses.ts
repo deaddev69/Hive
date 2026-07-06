@@ -117,7 +117,28 @@ export const list = query({
       .withIndex("by_userId", (q) => q.eq("userId", user._id))
       .order("desc")
       .take(50);
-    return addresses.filter((a) => !a.isDeleted);
+      
+    const validAddresses = addresses.filter((a) => !a.isDeleted);
+    
+    return await Promise.all(
+      validAddresses.map(async (addr) => {
+        let entryPhotoUrl = undefined;
+        if (addr.entryPhotoId) {
+          entryPhotoUrl = await ctx.storage.getUrl(addr.entryPhotoId);
+        }
+        return {
+          ...addr,
+          entryPhotoUrl,
+        };
+      })
+    );
+  },
+});
+
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
   },
 });
 
@@ -212,6 +233,9 @@ export const add = action({
     houseNumber: v.optional(v.string()),
     landmark: v.optional(v.string()),
     phone: v.optional(v.string()),
+    receiverName: v.optional(v.string()),
+    deliveryInstructions: v.optional(v.string()),
+    entryPhotoId: v.optional(v.id("_storage")),
     isDefault: v.boolean(),
     token: v.optional(v.string()),
     placeId: v.optional(v.string()),
@@ -278,6 +302,9 @@ export const add = action({
       houseNumber: args.houseNumber,
       landmark: args.landmark,
       phone: args.phone,
+      receiverName: args.receiverName,
+      deliveryInstructions: args.deliveryInstructions,
+      entryPhotoId: args.entryPhotoId,
       isDefault: args.isDefault,
       addressStatus,
       locality: finalLocality,
@@ -304,6 +331,9 @@ export const addInternal = internalMutation({
     houseNumber: v.optional(v.string()),
     landmark: v.optional(v.string()),
     phone: v.optional(v.string()),
+    receiverName: v.optional(v.string()),
+    deliveryInstructions: v.optional(v.string()),
+    entryPhotoId: v.optional(v.id("_storage")),
     isDefault: v.boolean(),
     addressStatus: v.union(v.literal("pending"), v.literal("verified"), v.literal("rejected")),
     locality: v.optional(v.string()),
@@ -345,6 +375,9 @@ export const addInternal = internalMutation({
       houseNumber: args.houseNumber,
       landmark: args.landmark,
       phone: args.phone,
+      receiverName: args.receiverName,
+      deliveryInstructions: args.deliveryInstructions,
+      entryPhotoId: args.entryPhotoId,
       isDefault: args.isDefault,
       isDeleted: false,
       addressStatus: args.addressStatus,
@@ -388,6 +421,10 @@ export const update = action({
     houseNumber: v.optional(v.string()),
     landmark: v.optional(v.string()),
     phone: v.optional(v.string()),
+    receiverName: v.optional(v.string()),
+    deliveryInstructions: v.optional(v.string()),
+    entryPhotoId: v.optional(v.id("_storage")),
+    clearEntryPhoto: v.optional(v.boolean()),
     isDefault: v.optional(v.boolean()),
     token: v.optional(v.string()),
     placeId: v.optional(v.string()),
@@ -466,6 +503,10 @@ export const update = action({
       houseNumber: args.houseNumber,
       landmark: args.landmark,
       phone: args.phone,
+      receiverName: args.receiverName,
+      deliveryInstructions: args.deliveryInstructions,
+      entryPhotoId: args.entryPhotoId,
+      clearEntryPhoto: args.clearEntryPhoto,
       isDefault: args.isDefault,
       addressStatus: addressStatus ?? undefined,
       locality,
@@ -493,6 +534,10 @@ export const updateInternal = internalMutation({
     houseNumber: v.optional(v.string()),
     landmark: v.optional(v.string()),
     phone: v.optional(v.string()),
+    receiverName: v.optional(v.string()),
+    deliveryInstructions: v.optional(v.string()),
+    entryPhotoId: v.optional(v.id("_storage")),
+    clearEntryPhoto: v.optional(v.boolean()),
     isDefault: v.optional(v.boolean()),
     addressStatus: v.optional(v.union(v.literal("pending"), v.literal("verified"), v.literal("rejected"))),
     locality: v.optional(v.string()),
@@ -516,9 +561,36 @@ export const updateInternal = internalMutation({
         }
       }
     }
+    
+    // Check for orphaned photo
+    const oldEntryPhotoId = addr.entryPhotoId;
+    let shouldDeleteOld = false;
 
-    const { addressId, userId, ...fields } = args;
-    await ctx.db.patch(addressId, fields);
+    if (args.clearEntryPhoto && oldEntryPhotoId) {
+      shouldDeleteOld = true;
+    } else if (args.entryPhotoId && oldEntryPhotoId && args.entryPhotoId !== oldEntryPhotoId) {
+      shouldDeleteOld = true;
+    }
+
+    const { addressId, userId, clearEntryPhoto, ...fields } = args;
+    const patchData: any = { ...fields };
+    if (clearEntryPhoto) {
+      patchData.entryPhotoId = undefined; // convex patch ignores undefined, but we can set it to undefined? Wait.
+      // In Convex, to clear an optional field, you set it to undefined.
+      // But passing undefined in `patchData` removes the key from the patch object entirely in some setups.
+      // Actually, passing `entryPhotoId: undefined` to patch() in Convex WILL remove the field from the document.
+      patchData.entryPhotoId = undefined;
+    }
+    
+    await ctx.db.patch(addressId, patchData);
+    
+    if (shouldDeleteOld && oldEntryPhotoId) {
+      try {
+        await ctx.storage.delete(oldEntryPhotoId);
+      } catch (err) {
+        console.error("Failed to delete orphaned entry photo:", err);
+      }
+    }
   },
 });
 

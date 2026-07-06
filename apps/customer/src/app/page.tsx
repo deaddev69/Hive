@@ -191,9 +191,10 @@ export default function HomePage() {
 
     const interval = setInterval(() => {
       if (mobileScrollRef.current) {
-        const { clientWidth } = mobileScrollRef.current;
+        const { scrollLeft, clientWidth } = mobileScrollRef.current;
         if (clientWidth > 0) {
-          const nextIdx = (activeMobileIdx + 1) % totalBanners;
+          const currentIdx = Math.round(scrollLeft / clientWidth);
+          const nextIdx = (currentIdx + 1) % totalBanners;
           mobileScrollRef.current.scrollTo({
             left: nextIdx * clientWidth,
             behavior: "smooth",
@@ -203,7 +204,7 @@ export default function HomePage() {
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [activeMobileIdx, dbBanners, isCarouselPaused]);
+  }, [dbBanners, isCarouselPaused]);
 
   // Helper to resolve campaign redirection path
   const getBannerHref = (targetType: string, targetValue: string) => {
