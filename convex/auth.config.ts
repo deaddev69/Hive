@@ -11,6 +11,14 @@
 export default {
   providers: [
     {
+      domain: "https://hivenow.in",
+      applicationID: "convex",
+    },
+    {
+      domain: "https://accounts.hivenow.in",
+      applicationID: "convex",
+    },
+    {
       domain: "https://clerk.hivenow.in",
       applicationID: "convex",
     },
