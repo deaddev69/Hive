@@ -178,6 +178,45 @@ export default function BoutiqueDashboard() {
     return orders.slice(0, 3);
   }, [orders]);
 
+  // Delivery Rating: 30-day Merchant Fulfillment Rate
+  const deliveryRatingData = useMemo(() => {
+    if (!orders || orders.length === 0) {
+      return { label: "Excellent", percentage: 100, variant: "success" as const, icon: Sparkles };
+    }
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysMs = thirtyDaysAgo.getTime();
+
+    let totalClosedOrders = 0;
+    let deliveredOrders = 0;
+
+    orders.forEach((o: any) => {
+      if (o._creationTime >= thirtyDaysMs) {
+        if (o.status === "delivered") {
+          totalClosedOrders++;
+          deliveredOrders++;
+        } else if (o.status === "cancelled") {
+          const reason = (o.cancelReason || "").toLowerCase();
+          // Count merchant-initiated cancellations against their fulfillment rate
+          const isMerchantFault = reason.includes("out of stock") || reason.includes("stock") || reason.includes("boutique owner") || reason.includes("merchant");
+          if (isMerchantFault) {
+            totalClosedOrders++;
+          }
+        }
+      }
+    });
+
+    if (totalClosedOrders === 0) {
+      return { label: "Excellent", percentage: 100, variant: "success" as const, icon: Sparkles };
+    }
+
+    const rate = Math.round((deliveredOrders / totalClosedOrders) * 100);
+    
+    if (rate >= 98) return { label: "Excellent", percentage: rate, variant: "success" as const, icon: Sparkles };
+    if (rate >= 90) return { label: "Good", percentage: rate, variant: "info" as const, icon: CheckCircle2 };
+    return { label: "Needs Attention", percentage: rate, variant: "warning" as const, icon: AlertTriangle };
+  }, [orders]);
+
   if (boutique === undefined || products === undefined || orders === undefined) {
     if (waitedLong && boutique === null) {
       return (
@@ -361,12 +400,21 @@ export default function BoutiqueDashboard() {
               {/* Item 2: Delivery rating */}
               <StatusRow
                 title="Delivery rating"
-                description="Pack and ship on time"
+                description={`${deliveryRatingData.percentage}% Order Fulfillment Rate`}
                 icon={Star}
-                iconBgClass="bg-[#E8F0FE]"
-                iconColorClass="text-[#1A73E8]"
-                iconBorderClass="border-[#D2E3FC]/30"
-                badge={<StatusBadge variant="info" label="Excellent" icon={Sparkles} />}
+                iconBgClass={
+                  deliveryRatingData.variant === "success" ? "bg-[#EAF6ED]" : 
+                  deliveryRatingData.variant === "info" ? "bg-[#E8F0FE]" : "bg-[#FEF3D6]"
+                }
+                iconColorClass={
+                  deliveryRatingData.variant === "success" ? "text-[#2E7D32]" : 
+                  deliveryRatingData.variant === "info" ? "text-[#1A73E8]" : "text-[#B06000]"
+                }
+                iconBorderClass={
+                  deliveryRatingData.variant === "success" ? "border-[#C6EBD3]/30" : 
+                  deliveryRatingData.variant === "info" ? "border-[#D2E3FC]/30" : "border-[#FDE7B9]/30"
+                }
+                badge={<StatusBadge variant={deliveryRatingData.variant} label={deliveryRatingData.label} icon={deliveryRatingData.icon} />}
               />
 
               {/* Item 3: Seller tier */}

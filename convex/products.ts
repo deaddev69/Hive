@@ -1576,10 +1576,25 @@ export const getDashboardMetrics = query({
     const totalAcceptanceTime = acceptedOrders.reduce((sum, o) => sum + (o.orderAcceptedAt! - o.createdAt), 0);
     const avgAcceptanceTimeMs = acceptedOrders.length > 0 ? totalAcceptanceTime / acceptedOrders.length : 0;
 
-    // Packing time (readyForPickupAt - orderAcceptedAt)
-    const packedOrders = allRecentBoutiqueOrders.filter(o => o.readyForPickupAt !== undefined && o.orderAcceptedAt !== undefined);
-    const totalPackingTime = packedOrders.reduce((sum, o) => sum + (o.readyForPickupAt! - o.orderAcceptedAt!), 0);
-    const avgPackingTimeMs = packedOrders.length > 0 ? totalPackingTime / packedOrders.length : 0;
+    // Order Fulfillment Rate (30-day window)
+    const thirtyDaysAgoMs = nowLocal.getTime() - (30 * 24 * 60 * 60 * 1000);
+    const last30DaysOrders = allRecentBoutiqueOrders.filter(o => o.createdAt >= thirtyDaysAgoMs);
+    let closedOrderCount = 0;
+    let deliveredOrderCount = 0;
+    
+    last30DaysOrders.forEach(o => {
+      if (o.status === "delivered") {
+        closedOrderCount++;
+        deliveredOrderCount++;
+      } else if (o.status === "cancelled") {
+        const reason = (o.cancelReason || "").toLowerCase();
+        const isMerchantFault = reason.includes("out of stock") || reason.includes("stock") || reason.includes("boutique owner") || reason.includes("merchant");
+        if (isMerchantFault) {
+          closedOrderCount++;
+        }
+      }
+    });
+    const orderFulfillmentRate = closedOrderCount > 0 ? (deliveredOrderCount / closedOrderCount) * 100 : 100;
 
     // Same-Day Success % (delivered within 8 hours of confirmation/creation)
     const deliveredOrders = dbDelivered;
@@ -1738,7 +1753,7 @@ export const getDashboardMetrics = query({
       // Sprint 3.0A operational metrics
       todaysOrders,
       avgAcceptanceTimeMs,
-      avgPackingTimeMs,
+      orderFulfillmentRate,
       sameDaySuccessRate,
       merchantTier,
       trustTier: merchantTier,
