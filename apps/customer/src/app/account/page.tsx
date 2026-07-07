@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useSessionStore } from "@/context/SessionContext";
 import { useRouter } from "next/navigation";
+import { navigateToSignIn } from "@/lib/auth-redirect";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -1359,7 +1360,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push("/sign-in?redirect_url=/account");
+      navigateToSignIn(router, "/account");
     }
   }, [isAuthenticated, isLoading, router]);
 
