@@ -26,6 +26,7 @@ export interface LocationMapPickerProps {
   height?: string;
   showCurrentLocation?: boolean;
   topOverlay?: React.ReactNode;
+  children?: (props: { gpsButton: React.ReactNode }) => React.ReactNode;
 }
 
 const extractGeocodeData = (results: google.maps.GeocoderResult[], source: ReverseGeocodeResult["source"] = "map_pin"): ReverseGeocodeResult => {
@@ -144,6 +145,7 @@ function MapPickerInner({
   readOnly = false,
   height = "100%", // Default changed to full height
   topOverlay,
+  children,
 }: LocationMapPickerProps) {
   const [activeMapTab, setActiveMapTab] = useState<"search" | "gps" | "manual">("search");
   const [isDragging, setIsDragging] = useState(false);
@@ -247,21 +249,35 @@ function MapPickerInner({
           )}
 
           {/* Floating GPS Button */}
-          {/* Note: The bottom spacing will be handled by LocationDrawer wrapping it, 
-              but it's positioned using absolute right-4 bottom-4 by default. */}
-          <button
-            type="button"
-            onClick={requestGeolocation}
-            disabled={geoLoading}
-            aria-label="Use current location"
-            className="absolute right-4 bottom-4 z-20 flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-slate-50 transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {geoLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin text-hive-gold" />
-            ) : (
-              <Navigation className="w-5 h-5 text-hive-gold" />
-            )}
-          </button>
+          {/* We create the button, but if children render prop is provided, we pass it down instead of rendering it here */}
+          {(() => {
+            const gpsButton = (
+              <button
+                type="button"
+                onClick={requestGeolocation}
+                disabled={geoLoading}
+                aria-label="Use current location"
+                className="flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-slate-50 transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {geoLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-hive-gold" />
+                ) : (
+                  <Navigation className="w-5 h-5 text-hive-gold" />
+                )}
+              </button>
+            );
+
+            if (children) {
+              return children({ gpsButton });
+            }
+
+            // Fallback default positioning if no children render prop is used
+            return (
+              <div className="absolute right-4 bottom-4 z-20 pointer-events-auto">
+                {gpsButton}
+              </div>
+            );
+          })()}
         </>
       )}
 

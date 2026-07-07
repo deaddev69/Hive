@@ -289,74 +289,86 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
                 </div>
               ) : undefined
             }
-          />
-
-          {/* Bottom Sheet for Confirmation */}
-          <div 
-            className={`absolute bottom-0 inset-x-0 z-30 bg-white rounded-t-[28px] shadow-[0_-12px_40px_rgba(0,0,0,0.12)] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${
-              pendingResult ? "translate-y-0" : "translate-y-full"
-            }`}
           >
-            {pendingResult && (
-              <div className="px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+            {({ gpsButton }) => (
+              <div className="absolute bottom-0 inset-x-0 z-30 pointer-events-none flex flex-col justify-end">
                 
-                {/* Address Details */}
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-hive-gold/10 border border-hive-gold/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <MapPin className="w-5 h-5 text-hive-amber" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-extrabold text-hive-dark truncate">
-                      {pendingResult.locality || pendingResult.city || "Location Selected"}
-                    </p>
-                    <p className="text-xs text-hive-text-muted mt-1 leading-relaxed line-clamp-2 pr-4">
-                      {pendingResult.formattedAddress}
-                    </p>
-                  </div>
+                {/* Floating GPS FAB - Dynamically sits above bottom sheet */}
+                <div className="flex justify-end px-4 pb-4 pointer-events-auto">
+                  {gpsButton}
                 </div>
 
-                {/* Confirm Button */}
-                <button
-                  type="button"
-                  disabled={!pendingResult || isSaving || saved}
-                  onClick={handleConfirmLocation}
-                  aria-label={saved ? "Location saved" : isSaving ? "Saving location" : "Confirm location selection"}
-                  className={`w-full h-14 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 rounded-xl transition-all duration-200 active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold ${
-                    pendingResult && !isPendingServiceable 
-                      ? "bg-[#D97706] hover:bg-[#B45309] text-white" 
-                      : "bg-hive-dark hover:bg-neutral-800 text-hive-gold"
+                {/* Bottom Sheet for Confirmation - Uses grid height animation */}
+                <div 
+                  className={`w-full bg-white rounded-t-[28px] pointer-events-auto grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                    pendingResult ? "grid-rows-[1fr] shadow-[0_-12px_40px_rgba(0,0,0,0.12)]" : "grid-rows-[0fr]"
                   }`}
                 >
-                  {saved ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4" />
-                      {pendingResult && !isPendingServiceable ? "Added to waitlist" : "Location saved"}
-                    </>
-                  ) : isSaving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {pendingResult && !isPendingServiceable ? "Submitting..." : "Saving..."}
-                    </>
-                  ) : pendingResult && !isPendingServiceable ? (
-                    <>
-                      <MapPin className="w-4 h-4" />
-                      Notify Me When Available
-                    </>
-                  ) : pendingResult?.precisionLevel === "area" ? (
-                    <>
-                      <MapPin className="w-4 h-4" />
-                      Browse {pendingResult.locality || pendingResult.city || "this area"}
-                    </>
-                  ) : (
-                    <>
-                      Confirm Location
-                    </>
-                  )}
-                </button>
+                  <div className="overflow-hidden">
+                    <div className="px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+                      {pendingResult && (
+                        <>
+                          {/* Address Details */}
+                          <div className="flex items-start gap-4 mb-6">
+                            <div className="w-10 h-10 rounded-full bg-hive-gold/10 border border-hive-gold/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <MapPin className="w-5 h-5 text-hive-amber" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-extrabold text-hive-dark truncate">
+                                {pendingResult.locality || pendingResult.city || "Location Selected"}
+                              </p>
+                              <p className="text-xs text-hive-text-muted mt-1 leading-relaxed line-clamp-2 pr-4">
+                                {pendingResult.formattedAddress}
+                              </p>
+                            </div>
+                          </div>
 
+                          {/* Confirm Button */}
+                          <button
+                            type="button"
+                            disabled={!pendingResult || isSaving || saved}
+                            onClick={handleConfirmLocation}
+                            aria-label={saved ? "Location saved" : isSaving ? "Saving location" : "Confirm location selection"}
+                            className={`w-full h-14 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 rounded-xl transition-all duration-200 active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold ${
+                              pendingResult && !isPendingServiceable 
+                                ? "bg-[#D97706] hover:bg-[#B45309] text-white" 
+                                : "bg-hive-dark hover:bg-neutral-800 text-hive-gold"
+                            }`}
+                          >
+                            {saved ? (
+                              <>
+                                <CheckCircle2 className="w-4 h-4" />
+                                {pendingResult && !isPendingServiceable ? "Added to waitlist" : "Location saved"}
+                              </>
+                            ) : isSaving ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                {pendingResult && !isPendingServiceable ? "Submitting..." : "Saving..."}
+                              </>
+                            ) : pendingResult && !isPendingServiceable ? (
+                              <>
+                                <MapPin className="w-4 h-4" />
+                                Notify Me When Available
+                              </>
+                            ) : pendingResult?.precisionLevel === "area" ? (
+                              <>
+                                <MapPin className="w-4 h-4" />
+                                Browse {pendingResult.locality || pendingResult.city || "this area"}
+                              </>
+                            ) : (
+                              <>
+                                Confirm Location
+                              </>
+                            )}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
-          </div>
+          </LocationMapPicker>
 
         </div>
       </div>
