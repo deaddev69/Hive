@@ -20,7 +20,10 @@ export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
     if (!userId) {
       // Hardcode or extract your auth domain. Assuming accounts.hivenow.in based on user prompt.
-      const signInUrl = new URL("https://accounts.hivenow.in/sign-in");
+      const signInUrl = new URL(
+        process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/sign-in",
+        req.url
+      );
       signInUrl.searchParams.set("redirect_url", req.url);
 
       const isNextDataRequest = 
