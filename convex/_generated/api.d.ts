@@ -59,6 +59,7 @@ import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_shiprocket from "../lib/shiprocket.js";
 import type * as lib_uploads from "../lib/uploads.js";
 import type * as location from "../location.js";
+import type * as locationActions from "../locationActions.js";
 import type * as media from "../media.js";
 import type * as media_api from "../media/api.js";
 import type * as media_cleanup from "../media/cleanup.js";
@@ -167,6 +168,7 @@ declare const fullApi: ApiFromModules<{
   "lib/shiprocket": typeof lib_shiprocket;
   "lib/uploads": typeof lib_uploads;
   location: typeof location;
+  locationActions: typeof locationActions;
   media: typeof media;
   "media/api": typeof media_api;
   "media/cleanup": typeof media_cleanup;

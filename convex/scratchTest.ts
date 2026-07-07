@@ -1,4 +1,4 @@
-import { action } from "./_generated/server";
+import { action, internalMutation } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 
@@ -44,5 +44,13 @@ export const runBurstTest = action({
     console.log(`Blocked: ${blockedCount} (Expected: 15)`);
 
     return { successCount, blockedCount, lastError: errors[errors.length - 1] };
+  }
+});
+
+export const forceSetRole = internalMutation({
+  args: { userId: v.id("users"), role: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, { role: args.role as any });
+    return `Updated ${args.userId} to ${args.role}`;
   }
 });

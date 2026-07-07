@@ -7,6 +7,7 @@ import { getPublicUrl } from "./media/api";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { validateUploadedFile } from "./lib/uploads";
+import { ImageAsset } from "./schema";
 
 /**
  * Fetch categories.
@@ -68,7 +69,7 @@ export const createCategory = mutation({
   args: {
     name:           v.string(),
     slug:           v.string(),
-    imageStorageId: v.optional(v.id("_storage")),
+    imageStorageId: v.optional(v.union(v.id("_storage"), v.string(), ImageAsset)),
     imageUrl:       v.optional(v.string()),
     homepageImage:  v.optional(v.string()),
     homepageOrder:  v.optional(v.number()),
@@ -117,7 +118,7 @@ export const updateCategory = mutation({
     id:             v.id("categories"),
     name:           v.string(),
     slug:           v.string(),
-    imageStorageId: v.optional(v.id("_storage")),
+    imageStorageId: v.optional(v.union(v.id("_storage"), v.string(), ImageAsset)),
     imageUrl:       v.optional(v.string()),
     homepageImage:  v.optional(v.string()),
     homepageOrder:  v.optional(v.number()),

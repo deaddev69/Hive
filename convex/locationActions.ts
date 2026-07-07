@@ -94,7 +94,7 @@ export const primeRoadDistanceCache = action({
 
     // 2. Coarse 30km Haversine pre-filter to drop obviously out-of-range targets
     const MAX_COARSE_RADIUS_KM = 30;
-    const filteredBoutiques = boutiques.filter((b) => {
+    const filteredBoutiques = boutiques.filter((b: any) => {
       const birdEyeDistance = calculateHaversine(args.userLat, args.userLng, b.latitude, b.longitude);
       return birdEyeDistance <= MAX_COARSE_RADIUS_KM;
     });
@@ -104,7 +104,7 @@ export const primeRoadDistanceCache = action({
     // 3. Chunk destinations into groups of 25 to respect Google Matrix API hard limits
     const GOOGLE_MAX_CHUNKS = 25;
     const origin = `${args.userLat},${args.userLng}`;
-    const writePayloads = [];
+    const writePayloads: any[] = [];
 
     // Format startLat/Lng to 3 decimal places to perfectly match customerHome.ts lookups
     const startLat = Math.round(args.userLat * 1000) / 1000;
@@ -112,7 +112,7 @@ export const primeRoadDistanceCache = action({
 
     for (let i = 0; i < filteredBoutiques.length; i += GOOGLE_MAX_CHUNKS) {
       const chunk = filteredBoutiques.slice(i, i + GOOGLE_MAX_CHUNKS);
-      const destinations = chunk.map((b) => `${b.latitude},${b.longitude}`).join("|");
+      const destinations = chunk.map((b: any) => `${b.latitude},${b.longitude}`).join("|");
 
       const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${destinations}&key=${apiKey}`;
 
@@ -127,7 +127,7 @@ export const primeRoadDistanceCache = action({
 
         const elements = data.rows[0].elements;
 
-        chunk.forEach((boutique, idx) => {
+        chunk.forEach((boutique: any, idx: number) => {
           const element = elements[idx];
           if (!element || element.status !== "OK") return;
 
