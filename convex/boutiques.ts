@@ -2080,7 +2080,13 @@ export const getFounderOnboardingMetrics = query({
 export const getBoutiqueTierAndStats = query({
   args: { boutiqueId: v.id("boutiques") },
   handler: async (ctx, args) => {
-    // Fetch all successfully completed transactions
+    // 1. Verify the targeted boutique document exists first
+    const boutique = await ctx.db.get(args.boutiqueId);
+    if (!boutique) {
+      return { tier: "Bronze", totalOrders: 0, totalRevenue: 0 };
+    }
+
+    // 2. Fetch completed records using the newly registered schema index
     const deliveredOrders = await ctx.db
       .query("orders")
       .withIndex("by_boutiqueId_status", (q) =>
@@ -2088,25 +2094,17 @@ export const getBoutiqueTierAndStats = query({
       )
       .collect();
 
-    const totalOrders = deliveredOrders.length;
-    
-    // Sum up gross sales volume (using total which is in paise, so divide by 100 for INR)
-    const totalRevenuePaise = deliveredOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+    // 3. Fallback handle empty array arrays gracefully
+    const safeOrders = deliveredOrders || [];
+    const totalOrders = safeOrders.length;
+    // Note: changed totalPrice to total, because totalPrice doesn't exist in orders schema
+    const totalRevenuePaise = safeOrders.reduce((sum, order) => sum + (order.total || 0), 0);
     const totalRevenue = totalRevenuePaise / 100;
 
-    // Compute tier eligibility logic programmatically
     let tier: "Bronze" | "Silver" | "Gold" = "Bronze";
-    
-    if (totalOrders >= 150 && totalRevenue >= 400000) {
-      tier = "Gold";
-    } else if (totalOrders >= 30 && totalRevenue >= 75000) {
-      tier = "Silver";
-    }
+    if (totalOrders >= 150 && totalRevenue >= 400000) tier = "Gold";
+    else if (totalOrders >= 30 && totalRevenue >= 75000) tier = "Silver";
 
-    return {
-      tier,
-      totalOrders,
-      totalRevenue,
-    };
+    return { tier, totalOrders, totalRevenue };
   },
 });

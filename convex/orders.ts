@@ -5,7 +5,7 @@
 import { mutation, query, internalMutation, action } from "./_generated/server";
 import { triggerNotification } from "./lib/notifications";
 import { v, ConvexError } from "convex/values";
-import { getAuthenticatedUser, getMyBoutique, getCurrentUserOrNull } from "./lib/auth";
+import { getAuthenticatedUser, getMyBoutique, getCurrentUserOrNull, requireRole } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 import { incrementBoutiqueOrderCount, decrementBoutiqueOrderCount } from "./lib/boutiqueCounters";
 import { validateProductSizeAndStock, MOCK_INVENTORY } from "./lib/mockInventory";
@@ -1839,7 +1839,8 @@ export const reconcileBoutiquePayouts = mutation({
       const gross = order.total || 0;
       const base = order.subtotal || 0;
       const hiveFee = Math.round(base * 0.18);
-      const logisticsDrag = order.actualCourierCost || order.courierCost || order.deliveryFee || 0;
+      // Logistics drag for manual settlement
+      const logisticsDrag = order.deliveryFee || 0;
       const gstTcs = Math.round(base * 0.01);
       const netDisbursement = gross - hiveFee - logisticsDrag - gstTcs;
 

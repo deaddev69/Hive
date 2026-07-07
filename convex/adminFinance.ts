@@ -1379,9 +1379,9 @@ export const getPendingPayoutsAdmin = query({
         const boutique = await ctx.db.get(order.boutiqueId);
         boutiqueMap.set(order.boutiqueId, {
           boutiqueId: order.boutiqueId,
-          boutiqueName: boutique?.boutiqueName || "Unknown Boutique",
-          bankAccountNumber: boutique?.bankAccountNumber || "N/A",
-          bankIfscCode: boutique?.bankIfscCode || "N/A",
+          boutiqueName: boutique?.boutiqueName || boutique?.name || "Unknown Boutique",
+          bankAccountNumber: boutique?.bankAccount?.accountNoLast4 || "N/A",
+          bankIfscCode: boutique?.bankAccount?.ifsc || "N/A",
           pendingOrdersCount: 0,
           netLiability: 0,
           orders: [],
@@ -1394,7 +1394,7 @@ export const getPendingPayoutsAdmin = query({
       // Logic: 18% fee + 1% TCS
       const base = order.subtotal || 0;
       const hiveFee = Math.round(base * 0.18);
-      const logisticsDrag = order.actualCourierCost || order.courierCost || order.deliveryFee || 0;
+      const logisticsDrag = order.deliveryFee || 0;
       const gstTcs = Math.round(base * 0.01);
       const netDisbursement = gross - hiveFee - logisticsDrag - gstTcs;
 
