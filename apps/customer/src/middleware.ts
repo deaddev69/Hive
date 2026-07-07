@@ -18,6 +18,26 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   if (isProtectedRoute(req)) {
+    if (!userId) {
+      // Hardcode or extract your auth domain. Assuming accounts.hivenow.in based on user prompt.
+      const signInUrl = new URL("https://accounts.hivenow.in/sign-in");
+      signInUrl.searchParams.set("redirect_url", req.url);
+
+      const isNextDataRequest = 
+        req.headers.get("x-next-js-data") || 
+        req.headers.get("purpose") === "prefetch" ||
+        req.nextUrl.searchParams.has("_rsc");
+
+      if (isNextDataRequest) {
+        return new Response(JSON.stringify({ redirect: signInUrl.toString() }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      
+      return Response.redirect(signInUrl);
+    }
+    
     await auth.protect();
   }
 });
