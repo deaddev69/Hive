@@ -257,13 +257,14 @@ function MapPickerInner({
                 onClick={requestGeolocation}
                 disabled={geoLoading}
                 aria-label="Use current location"
-                className="flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-slate-50 transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold disabled:opacity-60 disabled:cursor-not-allowed"
+                className="flex items-center justify-center gap-2.5 px-5 py-3 bg-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-slate-50 transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold disabled:opacity-60 disabled:cursor-not-allowed border border-slate-100"
               >
                 {geoLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-hive-gold" />
+                  <Loader2 className="w-4 h-4 animate-spin text-hive-gold" />
                 ) : (
-                  <Navigation className="w-5 h-5 text-hive-gold" />
+                  <Navigation className="w-4 h-4 text-hive-gold" />
                 )}
+                <span className="text-sm font-bold text-hive-dark">Locate Me</span>
               </button>
             );
 
