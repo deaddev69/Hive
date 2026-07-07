@@ -150,6 +150,13 @@ export default defineSchema({
     .index("by_userId",         ["userId"])
     .index("by_userId_default", ["userId", "isDefault"]),
 
+  // ─── LEGAL DOCUMENTS ──────────────────────────────────────────────────────
+  legalDocuments: defineTable({
+    slug:      v.string(),
+    content:   v.string(),
+    updatedAt: v.number(),
+  }).index("by_slug", ["slug"]),
+
   // ─── REGIONS ──────────────────────────────────────────────────────────────
   regions: defineTable({
     name:           v.string(),                     // "Banjara Hills"
@@ -179,6 +186,7 @@ export default defineSchema({
     description:      v.string(),
     status:           v.string(), // PENDING, APPROVED, REJECTED, SUSPENDED
     createdAt:        v.number(),
+    hasAcceptedLegalTerms: v.optional(v.boolean()),
     isAcceptingOrders: v.optional(v.boolean()),
     whatsAppNotificationsEnabled: v.optional(v.boolean()),
     notificationPhone:            v.optional(v.string()),

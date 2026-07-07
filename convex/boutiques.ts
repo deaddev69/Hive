@@ -2108,3 +2108,14 @@ export const getBoutiqueTierAndStats = query({
     return { tier, totalOrders, totalRevenue };
   },
 });
+
+export const acceptLegalTerms = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const boutique = await getMyBoutique(ctx);
+    await ctx.db.patch(boutique._id, {
+      hasAcceptedLegalTerms: true,
+    });
+    return { success: true };
+  },
+});

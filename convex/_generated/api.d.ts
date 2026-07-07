@@ -39,6 +39,7 @@ import type * as homepageBanners from "../homepageBanners.js";
 import type * as homepageConfig from "../homepageConfig.js";
 import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
+import type * as legal from "../legal.js";
 import type * as lib_alerts from "../lib/alerts.js";
 import type * as lib_audit from "../lib/audit.js";
 import type * as lib_auth from "../lib/auth.js";
@@ -149,6 +150,7 @@ declare const fullApi: ApiFromModules<{
   homepageConfig: typeof homepageConfig;
   http: typeof http;
   invoices: typeof invoices;
+  legal: typeof legal;
   "lib/alerts": typeof lib_alerts;
   "lib/audit": typeof lib_audit;
   "lib/auth": typeof lib_auth;

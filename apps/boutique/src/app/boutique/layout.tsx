@@ -10,6 +10,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@hive/ui";
 import { HiveLogo } from "@/components/shared/HiveLogo";
+import LegalAgreementStep from "@/components/onboarding/LegalAgreementStep";
 
 const BOUTIQUE_NAV_ITEMS = [
   { label: "Dashboard", href: "/boutique", icon: Home },
@@ -106,6 +107,11 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   if ((me && me.role !== "boutique" && me.role !== "boutique_owner" && pathname !== "/boutique/unauthorized") ||
       (myBoutiqueSafe && !myBoutiqueSafe.exists && pathname !== "/boutique/unauthorized")) {
     return null; // Redirects to unauthorized
+  }
+
+  // Legal Gating Check
+  if (myBoutiqueSafe && myBoutiqueSafe.exists && myBoutiqueSafe.boutique && !myBoutiqueSafe.boutique.hasAcceptedLegalTerms) {
+    return <LegalAgreementStep />;
   }
 
   return (

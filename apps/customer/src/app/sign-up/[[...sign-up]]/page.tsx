@@ -3,6 +3,7 @@
 import React from "react";
 import { SignUp } from "@clerk/nextjs";
 import { useLocation } from "@/context/LocationContext";
+import Link from "next/link";
 
 export default function SignUpPage() {
   const { locality } = useLocation();
@@ -43,6 +44,17 @@ export default function SignUpPage() {
             },
           }}
         />
+        
+        <div className="mt-6 text-center text-[11px] text-hive-text-muted max-w-xs mx-auto">
+          By continuing, you agree to Hive's{" "}
+          <Link href="/legal/terms-and-conditions" className="font-semibold text-hive-amber hover:underline">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/legal/privacy-policy" className="font-semibold text-hive-amber hover:underline">
+            Privacy Policy
+          </Link>.
+        </div>
       </div>
     </div>
   );

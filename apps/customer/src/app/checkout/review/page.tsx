@@ -930,7 +930,16 @@ export default function OrderReviewPage() {
           </div>
         )}
 
-        <div className="flex items-center justify-between px-5 py-4 gap-4">
+        <div className="px-5 pb-3">
+          <p className="text-[10px] text-hive-text-muted text-center leading-relaxed">
+            By placing this order, you agree to our{" "}
+            <Link href="/legal/return-policy" target="_blank" className="font-semibold text-hive-amber hover:underline">
+              Return & Refund Policy
+            </Link>.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between px-5 py-4 gap-4 border-t border-hive-border/20">
           <button
             type="button"
             onClick={() => setIsPriceExpanded(!isPriceExpanded)}
