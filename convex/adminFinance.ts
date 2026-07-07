@@ -1348,3 +1348,75 @@ export const getRegionalEconomicsDashboardAdmin = query({
   },
 });
 
+export const getPendingPayoutsAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireRole(ctx, "admin");
+
+    // Fetch all delivered orders
+    const pendingOrders = await ctx.db
+      .query("orders")
+      .withIndex("by_status", (q) => q.eq("status", "delivered"))
+      .collect();
+      
+    const activePending = pendingOrders.filter(o => o.payoutStatus === "pending");
+
+    // Also calculate settled this week for macro metrics
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recentlySettled = pendingOrders.filter(
+      o => o.payoutStatus === "settled" && o.payoutDetails?.settledAt && o.payoutDetails.settledAt >= sevenDaysAgo
+    );
+    const settledThisWeek = recentlySettled.reduce((sum, o) => sum + (o.payoutDetails?.netSettlement || 0), 0);
+
+    const boutiqueMap = new Map<string, any>();
+    let totalEscrowPool = 0;
+
+    for (const order of activePending) {
+      const gross = order.total || 0;
+      totalEscrowPool += gross;
+
+      if (!boutiqueMap.has(order.boutiqueId)) {
+        const boutique = await ctx.db.get(order.boutiqueId);
+        boutiqueMap.set(order.boutiqueId, {
+          boutiqueId: order.boutiqueId,
+          boutiqueName: boutique?.boutiqueName || "Unknown Boutique",
+          bankAccountNumber: boutique?.bankAccountNumber || "N/A",
+          bankIfscCode: boutique?.bankIfscCode || "N/A",
+          pendingOrdersCount: 0,
+          netLiability: 0,
+          orders: [],
+        });
+      }
+
+      const current = boutiqueMap.get(order.boutiqueId)!;
+      current.pendingOrdersCount += 1;
+
+      // Logic: 18% fee + 1% TCS
+      const base = order.subtotal || 0;
+      const hiveFee = Math.round(base * 0.18);
+      const logisticsDrag = order.actualCourierCost || order.courierCost || order.deliveryFee || 0;
+      const gstTcs = Math.round(base * 0.01);
+      const netDisbursement = gross - hiveFee - logisticsDrag - gstTcs;
+
+      current.netLiability += netDisbursement;
+      current.orders.push({
+        _id: order._id,
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        baseItemValue: base,
+        customerPaid: gross,
+        hiveFee,
+        logisticsDrag,
+        gstTcs,
+        netDisbursement,
+      });
+    }
+
+    return {
+      totalEscrowPool,
+      pendingPayoutsCount: boutiqueMap.size,
+      settledThisWeek,
+      boutiques: Array.from(boutiqueMap.values()),
+    };
+  },
+});

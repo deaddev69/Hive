@@ -1805,3 +1805,62 @@ export const checkMerchantSLATimeouts = internalMutation({
     return { warnedCount, cancelledCount };
   },
 });
+
+export const reconcileBoutiquePayouts = mutation({
+  args: {
+    boutiqueId: v.string(),
+    orderIds: v.array(v.id("orders")),
+    utrNumber: v.string(),
+    netSettledAmount: v.number(),
+    settledAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+
+    if (args.utrNumber.length < 10) {
+      throw new Error("Invalid UTR number length.");
+    }
+
+    let calculatedTotalNet = 0;
+
+    for (const orderId of args.orderIds) {
+      const order = await ctx.db.get(orderId);
+      
+      if (!order) {
+        throw new Error(`Order ${orderId} not found in database.`);
+      }
+      
+      // Defensive Check: Prevent double-settlement of funds
+      if (order.payoutStatus === "settled") {
+        throw new Error(`Order ${orderId} has already been settled via UTR: ${order.payoutDetails?.utrNumber}`);
+      }
+
+      // Re-calculate the 18% fee + 1% TCS logic dynamically to ensure data integrity
+      const gross = order.total || 0;
+      const base = order.subtotal || 0;
+      const hiveFee = Math.round(base * 0.18);
+      const logisticsDrag = order.actualCourierCost || order.courierCost || order.deliveryFee || 0;
+      const gstTcs = Math.round(base * 0.01);
+      const netDisbursement = gross - hiveFee - logisticsDrag - gstTcs;
+
+      calculatedTotalNet += netDisbursement;
+
+      await ctx.db.patch(orderId, {
+        payoutStatus: "settled",
+        payoutDetails: {
+          settledAt: args.settledAt,
+          utrNumber: args.utrNumber,
+          netSettlement: netDisbursement,
+        }
+      });
+    }
+
+    // Optional verification that the front-end calculation matched the server math
+    // But we write it anyway as source of truth.
+    if (Math.abs(calculatedTotalNet - args.netSettledAmount) > 10) {
+      console.warn(`[reconcileBoutiquePayouts] Mismatch in netSettledAmount. Expected ${calculatedTotalNet}, got ${args.netSettledAmount}`);
+    }
+
+    return { success: true, processedOrdersCount: args.orderIds.length };
+  },
+});
