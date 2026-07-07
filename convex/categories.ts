@@ -83,11 +83,11 @@ export const createCategory = mutation({
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
 
-    if (args.imageStorageId) {
-      // Validate category image (max 5MB, MIME: jpeg/png/webp)
+    if (args.imageStorageId && typeof args.imageStorageId === "string" && !args.imageStorageId.startsWith("http")) {
+      // Validate category image (max 5MB, MIME: jpeg/png/webp) (legacy storage IDs only)
       const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
       const maxImageBytes = 5 * 1024 * 1024;
-      await validateUploadedFile(ctx, args.imageStorageId, undefined, allowedImageMimes, maxImageBytes);
+      await validateUploadedFile(ctx, args.imageStorageId as any, undefined, allowedImageMimes, maxImageBytes);
     }
 
     const categoryId = await ctx.db.insert("categories", {
