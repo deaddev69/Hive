@@ -201,6 +201,21 @@ export default function BoutiqueDashboard() {
   const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const firstName = boutique.ownerName ? boutique.ownerName.split(' ')[0] : "Partner";
 
+  // Dynamic Onboarding State
+  const onboardingSteps = [
+    { id: "profile", done: !!boutique },
+    { id: "approval", done: boutique?.status === "APPROVED" },
+    { id: "bank", done: !!boutique?.bankAccount },
+    { id: "delivery", done: !!boutique?.deliveryRadiusKm },
+    { id: "location", done: !!boutique?.latitude && !!boutique?.longitude },
+    { id: "products", done: products && products.length > 0 },
+    { id: "stock", done: products && products.some((p: any) => p.sizes && p.sizes.some((sz: string) => p.stockBySize?.[sz] > 0)) },
+  ];
+  const completedCount = onboardingSteps.filter(s => s.done).length;
+  const totalSteps = onboardingSteps.length;
+  const completionPercentage = Math.round((completedCount / totalSteps) * 100);
+  const hasProducts = products && products.length > 0;
+
   // Stacking order layout (Mobile first stack, Desktop 2-column layout)
   return (
     <div className="flex flex-col gap-6 text-left max-w-6xl w-full pt-2 pb-14 font-sans px-2 lg:px-6">
@@ -398,54 +413,59 @@ export default function BoutiqueDashboard() {
           )}
 
           {/* Get Your Shop Ready Card (Routine Setup Onboarding) */}
-          <div className="bg-hive-white border border-hive-border rounded-[32px] p-6 flex flex-row items-center gap-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
-            
-            {/* Circular progress SVG */}
-            <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
-              <svg className="w-full h-full transform -rotate-90">
-                {/* Background circle */}
-                <circle
-                  cx="48"
-                  cy="48"
-                  r="38"
-                  className="stroke-hive-border/40"
-                  strokeWidth="6"
-                  fill="transparent"
-                />
-                {/* Foreground circle */}
-                <circle
-                  cx="48"
-                  cy="48"
-                  r="38"
-                  className="stroke-hive-gold"
-                  strokeWidth="6"
-                  fill="transparent"
-                  strokeDasharray="238.76"
-                  strokeDashoffset={238.76 - (238.76 * 5) / 7}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center justify-center leading-none text-center select-none">
-                <span className="text-base font-black text-hive-text font-sans">5/7</span>
-                <span className="text-[9px] font-bold text-hive-text-muted mt-1 font-sans">71%</span>
+          {!hasProducts && (
+            <div className="bg-hive-white border border-hive-border rounded-[32px] p-6 flex flex-row items-center gap-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+              
+              {/* Circular progress SVG */}
+              <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
+                <svg className="w-full h-full transform -rotate-90">
+                  {/* Background circle */}
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r="38"
+                    className="stroke-hive-border/40"
+                    strokeWidth="6"
+                    fill="transparent"
+                  />
+                  {/* Foreground circle */}
+                  <circle
+                    cx="48"
+                    cy="48"
+                    r="38"
+                    className="stroke-hive-gold"
+                    strokeWidth="6"
+                    fill="transparent"
+                    strokeDasharray="238.76"
+                    strokeDashoffset={238.76 - (238.76 * completedCount) / totalSteps}
+                    strokeLinecap="round"
+                    style={{ transition: "stroke-dashoffset 0.8s ease-out" }}
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center leading-none text-center select-none">
+                  <span className="text-base font-black text-hive-text font-sans">{completedCount}/{totalSteps}</span>
+                  <span className="text-[9px] font-bold text-hive-text-muted mt-1 font-sans">{completionPercentage}%</span>
+                </div>
               </div>
-            </div>
 
-            {/* Text & Button */}
-            <div className="flex flex-col gap-1.5 justify-center text-left w-full">
-              <h2 className="text-lg md:text-xl font-serif font-extrabold text-hive-text leading-tight">Get Your Shop Ready</h2>
-              <p className="text-[11px] md:text-xs font-semibold text-hive-text-muted leading-normal max-w-xs">
-                Welcome to Hive! Let's get your digital storefront ready for customers.
-              </p>
-              <div className="mt-3.5 w-full">
-                <Link href="/boutique/products" className="w-full">
-                  <Button className="w-full border-2 border-hive-gold bg-transparent text-hive-gold hover:bg-hive-cream rounded-full py-3.5 font-bold text-xs uppercase tracking-widest transition-all duration-150 active:scale-[0.98]">
-                    ADD FIRST PRODUCT
-                  </Button>
-                </Link>
+              {/* Text & Button */}
+              <div className="flex flex-col gap-1.5 justify-center text-left w-full">
+                <h2 className="text-lg md:text-xl font-serif font-extrabold text-hive-text leading-tight">Get Your Shop Ready</h2>
+                <p className="text-[11px] md:text-xs font-semibold text-hive-text-muted leading-normal max-w-xs">
+                  {completionPercentage === 100 
+                    ? "Your storefront is completely ready for live orders." 
+                    : "Welcome to Hive! Let's get your digital storefront ready for customers."}
+                </p>
+                <div className="mt-3.5 w-full">
+                  <Link href="/boutique/products" className="w-full">
+                    <Button className="w-full border-2 border-hive-gold bg-transparent text-hive-gold hover:bg-hive-cream rounded-full py-3.5 font-bold text-xs uppercase tracking-widest transition-all duration-150 active:scale-[0.98]">
+                      ADD FIRST PRODUCT
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
         </div>
 
