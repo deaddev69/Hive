@@ -11,6 +11,7 @@ import { incrementBoutiqueOrderCount, decrementBoutiqueOrderCount } from "./lib/
 import { validateProductSizeAndStock, MOCK_INVENTORY } from "./lib/mockInventory";
 import { internal, api } from "./_generated/api";
 import { checkRateLimit } from "./lib/rateLimit";
+import { assertExists } from "./lib/utils";
 import { calculateDeliveryQuoteAction } from "./routing";
 import { parseMoney, formatMoney } from "./lib/money";
 import { checkKillSwitch } from "./lib/killSwitches";
@@ -89,15 +90,15 @@ export const placeOrder = mutation({
       .withIndex("by_reservationId", (q) => q.eq("reservationId", args.reservationId))
       .first();
     if (existingOrder) {
-      return { orderId: existingOrder._id, orderNumber: existingOrder.orderNumber };
+      return { orderId: existingOrder!._id, orderNumber: existingOrder!.orderNumber };
     }
 
     // Rate limit checkout attempts: max 5 per user per 15 minutes
     await checkRateLimit(ctx, `checkout:${user._id}`, 5, 15 * 60 * 1000);
 
     // Verify address ownership
-    const addr = await ctx.db.get(args.addressId);
-    if (!addr || addr.userId !== user._id) {
+    const addr = assertExists(await ctx.db.get(args.addressId), "Delivery address record missing or deleted.");
+    if (addr.userId !== user._id) {
       throw new Error("Invalid address");
     }
 
@@ -128,7 +129,7 @@ export const placeOrder = mutation({
     }
 
     // Required Address Completeness Validation (P1)
-    if (!addr.houseNumber || !addr.houseNumber.trim()) {
+    if (!addr.houseNumber || !addr.houseNumber!.trim()) {
       throw new Error("House/Flat Number is required for delivery.");
     }
     const finalPhone = addr.phone || user.phone;
@@ -138,7 +139,7 @@ export const placeOrder = mutation({
 
     // Server-Side Promo Validation (P0)
     let expectedDiscount = 0;
-    const cleanPromoCode = args.promoCode ? args.promoCode.trim().toUpperCase() : "";
+    const cleanPromoCode = args.promoCode ? args.promoCode!.trim().toUpperCase() : "";
     if (cleanPromoCode) {
       if (cleanPromoCode === "WELCOME10") {
         expectedDiscount = Math.round(args.subtotal * 0.1);
@@ -199,7 +200,7 @@ export const placeOrder = mutation({
     // Dedupe boutique IDs and batch-fetch all boutiques at once
     const uniqueBoutiqueIds = new Set<string>();
     for (const { productRow } of resolvedProducts) {
-      if (productRow) uniqueBoutiqueIds.add(productRow.boutiqueId.toString());
+      if (productRow) uniqueBoutiqueIds.add(productRow!.boutiqueId.toString());
     }
     const boutiqueArray: any[] = await Promise.all(
       [...uniqueBoutiqueIds].map((id) => ctx.db.get(id as Id<"boutiques">))
@@ -224,14 +225,14 @@ export const placeOrder = mutation({
       }
 
       // Active Flag Check (deactivated products block)
-      if (productRow && !productRow.active) {
+      if (productRow && !productRow!.active) {
         throw new Error(`The item "${item.name}" is currently deactivated. Please remove it from your cart.`);
       }
 
       // Resolve Boutique from the pre-fetched map
       let boutique: any = null;
       if (productRow) {
-        boutique = boutiqueMap.get(productRow.boutiqueId.toString()) ?? null;
+        boutique = boutiqueMap.get(productRow!.boutiqueId.toString()) ?? null;
       } else {
         // Fallback for mock products: resolve first approved boutique (cached)
         if (!fallbackBoutique) {
@@ -292,7 +293,7 @@ export const placeOrder = mutation({
 
       // Recalculate price in integer Paise to prevent price manipulation
       const activePricePaise = productRow
-        ? Math.round((productRow.discountPrice ?? productRow.price) * 100)
+        ? Math.round((productRow!.discountPrice ?? productRow!.price) * 100)
         : Math.round(item.price * 100);
       expectedSubtotalPaise += activePricePaise * item.quantity;
 
@@ -360,7 +361,7 @@ export const placeOrder = mutation({
 
     const bStatus = boutique ? getBoutiqueStatus(boutique, now) : { type: "OPEN" as const };
     const placedDuringClosedHours = bStatus.type !== "OPEN";
-    const scheduledProcessingDate = (bStatus.type === "CLOSED_TODAY" || bStatus.type === "CLOSED_EXTENDED") ? bStatus.nextOperatingDay : undefined;
+    const scheduledProcessingDate = (bStatus.type === "CLOSED_TODAY" || bStatus.type === "CLOSED_EXTENDED") ? (bStatus as any).nextOperatingDay : undefined;
 
     const subtotalPaise = parseMoney(args.subtotal);
     const deliveryFeePaise = parseMoney(args.deliveryFee);
@@ -371,7 +372,7 @@ export const placeOrder = mutation({
     const resolvedProductMap = new Map<string, Id<"products">>();
     for (const { item, productRow } of resolvedProducts) {
       if (productRow) {
-        resolvedProductMap.set(item.productId, productRow._id);
+        resolvedProductMap.set(item.productId, productRow!._id);
       }
     }
 
@@ -503,7 +504,7 @@ export const placeOrder = mutation({
         const stockBySize = { ...productRow.stockBySize };
         stockBySize[item.size] = newStock;
 
-        const totalStock = Object.values(stockBySize).reduce((sum, val) => sum + val, 0);
+        const totalStock = (Object.values(stockBySize) as number[]).reduce((sum, val) => sum + val, 0);
         const active = totalStock > 0;
 
         await ctx.db.patch(productRow._id, { stockBySize, active, updatedAt: now });

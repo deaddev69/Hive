@@ -60,6 +60,7 @@ import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_serviceability from "../lib/serviceability.js";
 import type * as lib_shiprocket from "../lib/shiprocket.js";
 import type * as lib_uploads from "../lib/uploads.js";
+import type * as lib_utils from "../lib/utils.js";
 import type * as location from "../location.js";
 import type * as locationActions from "../locationActions.js";
 import type * as media from "../media.js";
@@ -171,6 +172,7 @@ declare const fullApi: ApiFromModules<{
   "lib/serviceability": typeof lib_serviceability;
   "lib/shiprocket": typeof lib_shiprocket;
   "lib/uploads": typeof lib_uploads;
+  "lib/utils": typeof lib_utils;
   location: typeof location;
   locationActions: typeof locationActions;
   media: typeof media;
