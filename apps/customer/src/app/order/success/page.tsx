@@ -105,7 +105,7 @@ function OrderSuccessContent() {
         subtotal: queriedOrder.subtotal,
         discount: queriedOrder.discount || 0,
         deliveryFee: queriedOrder.deliveryFee || 0,
-        codFee: paymentMethod === "cod" ? 49 : 0,
+        codFee: 0,
         total: queriedOrder.total,
         paymentMethod,
         address: {
@@ -169,7 +169,7 @@ function OrderSuccessContent() {
       case "card": return "Credit / Debit Card";
       case "netbanking": return "Net Banking Portal";
       case "wallet": return "Digital Wallet";
-      case "cod": return "Cash On Delivery (COD)";
+      case "online": return "Prepaid (Online)";
       default: return "Online Checkout";
     }
   };

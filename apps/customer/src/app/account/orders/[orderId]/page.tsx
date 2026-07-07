@@ -76,7 +76,7 @@ export default function OrderTrackingPage() {
       case "card": return "Credit / Debit Card";
       case "netbanking": return "Net Banking Portal";
       case "wallet": return "Digital Wallet";
-      case "cod": return "Cash On Delivery (COD)";
+      case "online": return "Prepaid (Online)";
       default: return "Online Checkout";
     }
   };
@@ -449,12 +449,7 @@ function OrderPricesCard({
           <span className="text-hive-dark font-medium">{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</span>
         </div>
 
-        {codFee > 0 && (
-          <div className="flex justify-between items-center text-hive-amber bg-amber-50/40 px-2 py-0.5 rounded-lg border border-hive-gold/10">
-            <span>COD Handling Surcharge</span>
-            <span>+₹{codFee}</span>
-          </div>
-        )}
+
 
         <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1.5">
           <span className="text-xs font-extrabold text-hive-dark">Amount Paid</span>

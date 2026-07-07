@@ -65,6 +65,8 @@ export const placeOrder = mutation({
     reservationId:   v.string(), // Enforce required identifier for COD checkouts
   },
   handler: async (ctx, args) => {
+    throw new Error("Cash on Delivery (COD) is not supported.");
+    
     // 1. Verify kill switches
     const isMaintenanceMode = await checkKillSwitch(ctx.db, "maintenanceMode");
     if (isMaintenanceMode) {

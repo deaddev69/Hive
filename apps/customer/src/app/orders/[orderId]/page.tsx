@@ -115,7 +115,7 @@ export default function OrderDetailPage() {
   const paymentLabel = (m: string) => {
     const map: Record<string, string> = {
       upi: "UPI Payment", card: "Credit / Debit Card",
-      netbanking: "Net Banking", wallet: "Digital Wallet", cod: "Cash On Delivery",
+      netbanking: "Net Banking", wallet: "Digital Wallet", online: "Prepaid (Online)",
     };
     return map[m] ?? "Online Checkout";
   };
@@ -472,12 +472,7 @@ function BillingCard({
           <span className="text-hive-dark">{deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}</span>
         </div>
 
-        {codFee > 0 && (
-          <div className="flex justify-between items-center text-hive-amber bg-amber-50/40 px-2 py-1 rounded-lg border border-hive-gold/10">
-            <span>COD Surcharge</span>
-            <span>+{formatCurrency(codFee)}</span>
-          </div>
-        )}
+
 
         <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1">
           <span className="text-sm font-extrabold text-hive-dark">Amount Paid</span>

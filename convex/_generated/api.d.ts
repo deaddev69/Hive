@@ -56,6 +56,7 @@ import type * as lib_money from "../lib/money.js";
 import type * as lib_notifications from "../lib/notifications.js";
 import type * as lib_productStats from "../lib/productStats.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
+import type * as lib_serviceability from "../lib/serviceability.js";
 import type * as lib_shiprocket from "../lib/shiprocket.js";
 import type * as lib_uploads from "../lib/uploads.js";
 import type * as location from "../location.js";
@@ -165,6 +166,7 @@ declare const fullApi: ApiFromModules<{
   "lib/notifications": typeof lib_notifications;
   "lib/productStats": typeof lib_productStats;
   "lib/rateLimit": typeof lib_rateLimit;
+  "lib/serviceability": typeof lib_serviceability;
   "lib/shiprocket": typeof lib_shiprocket;
   "lib/uploads": typeof lib_uploads;
   location: typeof location;
