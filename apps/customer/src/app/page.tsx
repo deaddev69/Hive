@@ -282,7 +282,7 @@ export default function HomePage() {
 
   const homepageSubcategories = useMemo(() => {
     return (dbCategories || [])
-      .filter((c) => c.parentId && c.showOnHomepage)
+      .filter((c) => c.showOnHomepage)
       .sort((a, b) => (a.homepageOrder ?? 0) - (b.homepageOrder ?? 0));
   }, [dbCategories]);
 

@@ -22,6 +22,7 @@ export default function AdminCategoriesPage() {
   const [slug, setSlug] = useState("");
   const [sortOrder, setSortOrder] = useState(1);
   const [active, setActive] = useState(true);
+  const [showOnHomepage, setShowOnHomepage] = useState(false);
   
   // Image Upload State
   const [imageStorageId, setImageStorageId] = useState<string | null>(null);
@@ -72,6 +73,7 @@ export default function AdminCategoriesPage() {
     setSelectedFile(null);
     setSortOrder(category.sortOrder);
     setActive(category.active);
+    setShowOnHomepage(category.showOnHomepage ?? false);
   };
 
   const resetForm = () => {
@@ -83,6 +85,7 @@ export default function AdminCategoriesPage() {
     setSelectedFile(null);
     setSortOrder((categories?.length || 0) + 1);
     setActive(true);
+    setShowOnHomepage(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,6 +134,7 @@ export default function AdminCategoriesPage() {
           imageStorageId: finalStorageId as any,
           active,
           sortOrder,
+          showOnHomepage,
         });
         alert("Category updated successfully!");
       } else {
@@ -140,6 +144,7 @@ export default function AdminCategoriesPage() {
           imageStorageId: finalStorageId as any,
           active,
           sortOrder,
+          showOnHomepage,
         });
         alert("Category created successfully!");
       }
@@ -280,6 +285,16 @@ export default function AdminCategoriesPage() {
                   className="rounded border-hive-border text-hive-gold focus:ring-hive-gold w-4 h-4"
                 />
                 <span className="text-sm font-bold text-hive-dark">Active status</span>
+              </label>
+              
+              <label className="flex items-center gap-2 cursor-pointer select-none mt-2">
+                <input
+                  type="checkbox"
+                  checked={showOnHomepage}
+                  onChange={(e) => setShowOnHomepage(e.target.checked)}
+                  className="rounded border-hive-border text-hive-gold focus:ring-hive-gold w-4 h-4"
+                />
+                <span className="text-sm font-bold text-hive-dark">Show on Homepage</span>
               </label>
             </div>
           </div>
