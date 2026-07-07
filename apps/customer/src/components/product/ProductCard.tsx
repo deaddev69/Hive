@@ -12,6 +12,7 @@ import { QuickViewModal } from "./QuickViewModal";
 import { calculateDistanceKm } from "@/lib/distance";
 import { useSessionStore } from "@/context/SessionContext";
 import { useRouter } from "next/navigation";
+import { navigateToSignIn } from "@/lib/auth-redirect";
 
 export interface ProductCardProps {
   product: ProductCardData;
@@ -300,7 +301,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
                 type="button"
                 onClick={() => {
                   setShowAuthPrompt(false);
-                  router.push(`/sign-in?redirect_url=${encodeURIComponent(window.location.pathname)}`);
+                  navigateToSignIn(router);
                 }}
                 className="w-full py-3 bg-[#111111] hover:bg-neutral-800 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-md active:scale-[0.98]"
               >

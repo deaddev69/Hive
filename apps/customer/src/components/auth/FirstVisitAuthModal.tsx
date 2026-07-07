@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/context/SessionContext";
+import { navigateToSignIn, navigateToSignUp } from "@/lib/auth-redirect";
 import { HiveLogo } from "@/components/shared/HiveLogo";
 import { X, ShoppingBag, Truck, ShieldCheck, ArrowRight } from "lucide-react";
 
@@ -29,12 +30,12 @@ export function FirstVisitAuthModal() {
 
   const handleLogin = () => {
     setGuestMode(true); // set guest mode so if they cancel signin they can browse
-    router.push("/sign-in");
+    navigateToSignIn(router);
   };
 
   const handleSignUp = () => {
     setGuestMode(true);
-    router.push("/sign-up");
+    navigateToSignUp(router);
   };
 
   return (

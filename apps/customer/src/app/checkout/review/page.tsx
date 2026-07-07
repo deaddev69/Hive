@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { navigateToSignIn } from "@/lib/auth-redirect";
 import { PremiumShoppingBag } from "@/components/shared/PremiumShoppingBag";
 import {
   ArrowLeft,
@@ -236,7 +237,7 @@ export default function OrderReviewPage() {
   useEffect(() => {
     if (mounted && !sessionLoading) {
       if (!isAuthenticated) {
-        router.replace("/sign-in?redirect_url=" + encodeURIComponent("/checkout/review"));
+        navigateToSignIn(router, "/checkout/review");
       } else if (!storedAddressId && convexAddresses.length > 0) {
         // Wait till addresses load before deciding to redirect
         const defaultId = convexAddresses.find((a) => a.isDefault)?._id || convexAddresses[0]?._id;

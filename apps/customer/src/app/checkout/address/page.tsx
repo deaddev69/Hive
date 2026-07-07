@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { navigateToSignIn } from "@/lib/auth-redirect";
 import { PremiumShoppingBag } from "@/components/shared/PremiumShoppingBag";
 import {
   ArrowLeft,
@@ -279,7 +280,7 @@ export default function CheckoutAddressPage() {
   if (!mounted || !sessionLoaded) return <AddressSkeleton />;
 
   if (!isSignedIn) {
-    router.replace("/sign-in?redirect_url=" + encodeURIComponent("/checkout/address"));
+    navigateToSignIn(router, "/checkout/address");
     return <AddressSkeleton />;
   }
 

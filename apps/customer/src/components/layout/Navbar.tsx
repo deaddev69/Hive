@@ -30,6 +30,7 @@ import { useSessionStore } from "@/context/SessionContext";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
+import { getSignInUrl, getSignUpUrl, navigateToSignIn, navigateToSignUp } from "@/lib/auth-redirect";
 
 export const Navbar: React.FC = () => {
   const { locality, city, setDrawerOpen, isServiceable, updateLocationDetails } = useLocation();
@@ -463,13 +464,13 @@ export const Navbar: React.FC = () => {
                     {/* Desktop: Sign In + Create Account */}
                     <div className="hidden sm:flex items-center gap-3">
                       <button 
-                        onClick={() => router.push(`/sign-in?redirect_url=${encodeURIComponent(window.location.pathname)}`)}
+                        onClick={() => navigateToSignIn(router)}
                         className="h-10 px-5 rounded-xl border border-slate-200 text-xs font-medium text-hive-dark hover:bg-slate-50 transition-colors duration-200 cursor-pointer shadow-sm"
                       >
                         Sign In
                       </button>
                       <button 
-                        onClick={() => router.push(`/sign-up?redirect_url=${encodeURIComponent(window.location.pathname)}`)}
+                        onClick={() => navigateToSignUp(router)}
                         className="h-10 px-5 rounded-xl bg-[#111111] text-white hover:bg-neutral-800 text-xs font-medium active:scale-[0.98] transition-all duration-200 shadow-sm cursor-pointer"
                       >
                         Create Account
@@ -478,7 +479,7 @@ export const Navbar: React.FC = () => {
 
                     {/* Mobile: compact Sign In button only */}
                     <button 
-                      onClick={() => router.push(`/sign-in?redirect_url=${encodeURIComponent(window.location.pathname)}`)}
+                      onClick={() => navigateToSignIn(router)}
                       className="sm:hidden h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-medium text-hive-dark hover:bg-slate-50 transition-colors duration-200 whitespace-nowrap cursor-pointer shadow-sm"
                     >
                       Sign In
@@ -721,7 +722,7 @@ export const Navbar: React.FC = () => {
           ) : (
             <div className="flex items-center gap-4 text-xs font-semibold text-stone-500">
               <Link
-                href={`/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`}
+                href={getSignInUrl(redirectUrl)}
                 onClick={() => setMobileMenuOpen(false)}
                 className="hover:text-hive-gold transition-colors"
               >
@@ -729,7 +730,7 @@ export const Navbar: React.FC = () => {
               </Link>
               <span className="text-stone-200 select-none">|</span>
               <Link
-                href="/sign-up"
+                href={getSignUpUrl(redirectUrl)}
                 onClick={() => setMobileMenuOpen(false)}
                 className="hover:text-hive-gold transition-colors"
               >

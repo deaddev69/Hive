@@ -10,6 +10,7 @@ import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, cn }
 import { Store, User, Phone, MapPin, Truck, AlignLeft, ShieldCheck, AlertCircle, CheckCircle2, ArrowRight, Loader2, Sparkles, DollarSign, Package, FileText, TrendingUp, Check, ChevronRight, Shirt, Crown, Gem, Layers, ShoppingBag } from "lucide-react";
 import { useLocation } from "@/context/LocationContext";
 import Link from "next/link";
+import { getSignInUrl, getSignUpUrl } from "@/lib/auth-redirect";
 
 // Load LocationMapPicker dynamically with SSR disabled to prevent Leaflet window reference errors during builds.
 const LocationMapPicker = dynamic(
@@ -1073,12 +1074,12 @@ export default function BecomeSellerPage() {
               </p>
             </div>
             <div className="pt-2 flex flex-col sm:flex-row justify-center gap-4 max-w-xs mx-auto">
-              <Link href={`/sign-in?redirect_url=/become-seller?category=${storeCategory}&model=${sellerModel}`} className="w-full">
+              <Link href={getSignInUrl(`/become-seller?category=${storeCategory}&model=${sellerModel}`)} className="w-full">
                 <Button variant="primary" className="w-full h-11 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 font-semibold tracking-[0.2em] text-[10px] uppercase rounded-xl transition-all">
                   Sign In to Account
                 </Button>
               </Link>
-              <Link href={`/sign-up?redirect_url=/become-seller?category=${storeCategory}&model=${sellerModel}`} className="w-full">
+              <Link href={getSignUpUrl(`/become-seller?category=${storeCategory}&model=${sellerModel}`)} className="w-full">
                 <Button variant="outline" className="w-full h-11 border border-hive-gold text-hive-dark hover:bg-hive-cream tracking-[0.2em] text-[10px] font-semibold uppercase rounded-xl transition-all">
                   Register Account
                 </Button>
