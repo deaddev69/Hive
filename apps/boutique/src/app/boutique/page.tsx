@@ -72,6 +72,7 @@ export default function BoutiqueDashboard() {
   const boutique = useQuery(api.boutiques.getMyBoutiqueDetails);
   const products = useQuery(api.products.getBoutiqueProducts);
   const orders = useQuery(api.orders.getBoutiqueOrders);
+  const tierStats = useQuery(api.boutiques.getBoutiqueTierAndStats, boutique ? { boutiqueId: boutique._id } : "skip");
 
   const [waitedLong, setWaitedLong] = useState(false);
   useEffect(() => {
@@ -217,7 +218,7 @@ export default function BoutiqueDashboard() {
     return { label: "Needs Attention", percentage: rate, variant: "warning" as const, icon: AlertTriangle };
   }, [orders]);
 
-  if (boutique === undefined || products === undefined || orders === undefined) {
+  if (boutique === undefined || products === undefined || orders === undefined || tierStats === undefined) {
     if (waitedLong && boutique === null) {
       return (
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center">
@@ -420,12 +421,34 @@ export default function BoutiqueDashboard() {
               {/* Item 3: Seller tier */}
               <StatusRow
                 title="Seller tier"
-                description=""
+                description={
+                  tierStats.tier === "Bronze" ? "Standard 18% commission tier" :
+                  tierStats.tier === "Silver" ? "Algorithm boost active — priority rider routing unlocked" :
+                  "Premium tier reached — commission optimized to 16%"
+                }
                 icon={Trophy}
-                iconBgClass="bg-[#FEF3D6]"
-                iconColorClass="text-[#B06000]"
-                iconBorderClass="border-[#FDE7B9]/30"
-                badge={<StatusBadge variant="warning" label="Bronze" icon={Trophy} />}
+                iconBgClass={
+                  tierStats.tier === "Bronze" ? "bg-[#FEF3D6]" :
+                  tierStats.tier === "Silver" ? "bg-[#E8F0FE]" : "bg-[#EAF6ED]"
+                }
+                iconColorClass={
+                  tierStats.tier === "Bronze" ? "text-[#B06000]" :
+                  tierStats.tier === "Silver" ? "text-[#1A73E8]" : "text-[#2E7D32]"
+                }
+                iconBorderClass={
+                  tierStats.tier === "Bronze" ? "border-[#FDE7B9]/30" :
+                  tierStats.tier === "Silver" ? "border-[#D2E3FC]/30" : "border-[#C6EBD3]/30"
+                }
+                badge={
+                  <StatusBadge 
+                    variant={
+                      tierStats.tier === "Bronze" ? "warning" : 
+                      tierStats.tier === "Silver" ? "info" : "success"
+                    } 
+                    label={tierStats.tier} 
+                    icon={Trophy} 
+                  />
+                }
               />
 
             </div>

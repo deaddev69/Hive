@@ -2077,4 +2077,36 @@ export const getFounderOnboardingMetrics = query({
   },
 });
 
+export const getBoutiqueTierAndStats = query({
+  args: { boutiqueId: v.id("boutiques") },
+  handler: async (ctx, args) => {
+    // Fetch all successfully completed transactions
+    const deliveredOrders = await ctx.db
+      .query("orders")
+      .withIndex("by_boutiqueId_status", (q) =>
+        q.eq("boutiqueId", args.boutiqueId).eq("status", "delivered")
+      )
+      .collect();
 
+    const totalOrders = deliveredOrders.length;
+    
+    // Sum up gross sales volume (using total which is in paise, so divide by 100 for INR)
+    const totalRevenuePaise = deliveredOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const totalRevenue = totalRevenuePaise / 100;
+
+    // Compute tier eligibility logic programmatically
+    let tier: "Bronze" | "Silver" | "Gold" = "Bronze";
+    
+    if (totalOrders >= 150 && totalRevenue >= 400000) {
+      tier = "Gold";
+    } else if (totalOrders >= 30 && totalRevenue >= 75000) {
+      tier = "Silver";
+    }
+
+    return {
+      tier,
+      totalOrders,
+      totalRevenue,
+    };
+  },
+});
