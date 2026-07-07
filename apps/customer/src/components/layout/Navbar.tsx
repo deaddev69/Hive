@@ -247,11 +247,15 @@ export const Navbar: React.FC = () => {
             <div className="relative">
               <button
                 onClick={handleLocationClick}
-                className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-[8.5px] sm:text-[10px] font-medium text-hive-dark/95 transition-all duration-200 min-w-0 max-w-[115px] sm:max-w-[200px] shadow-sm select-none cursor-pointer"
+                className={`flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-white border text-[8.5px] sm:text-[10px] font-medium transition-all duration-200 min-w-0 max-w-[115px] sm:max-w-[200px] select-none cursor-pointer ${
+                  hydrated && !(locality || city)
+                    ? "border-hive-gold/50 shadow-[0_0_12px_rgba(217,119,6,0.3)] hover:shadow-[0_0_16px_rgba(217,119,6,0.4)] animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] ring-1 ring-hive-gold/20"
+                    : "border-slate-200 text-hive-dark/95 shadow-sm hover:bg-slate-50"
+                }`}
               >
                 <MapPin className="w-2.5 h-2.5 sm:w-3 h-3 text-hive-gold flex-shrink-0" />
                 <div className="flex flex-col items-start text-left min-w-0 leading-none">
-                  <span className="truncate w-full max-w-[70px] sm:max-w-[140px] font-medium text-hive-dark/95">
+                  <span className={`truncate w-full max-w-[70px] sm:max-w-[140px] font-medium ${hydrated && !(locality || city) ? "text-hive-gold font-bold" : "text-hive-dark/95"}`}>
                     {hydrated && (locality || city) ? `${locality || city} ▾` : "Set Location"}
                   </span>
                   {hydrated && city && !isServiceable && (
