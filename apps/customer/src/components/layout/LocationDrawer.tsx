@@ -239,146 +239,125 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
           </button>
         </div>
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-5 min-h-0">
+        {/* Full Bleed Map Body */}
+        <div className="flex-1 relative overflow-hidden bg-hive-cream/30 z-0">
 
-          {/* Instruction hint (only before a location is pinned) */}
-          {!pendingResult && (
-            <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-hive-gold/10 border border-hive-gold/20 text-xs font-medium text-hive-dark">
-              <MapPin className="w-4 h-4 text-hive-amber flex-shrink-0" />
-              <span>
-                Tap the map or use your current location to set your delivery area.
-              </span>
-            </div>
-          )}
+          {/* Map Layer with Top Overlay (Saved Address Chips) */}
+          <LocationMapPicker
+            lat={mapLat}
+            lng={mapLng}
+            onChange={handleMapChange}
+            onReverseGeocode={handleReverseGeocode}
+            showCurrentLocation={true}
+            height="100%"
+            topOverlay={
+              isAuthenticated && savedAddresses.length > 0 ? (
+                <div className="px-4 pointer-events-auto">
+                  <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-3 pt-1 -mx-4 px-4 snap-x">
+                    {savedAddresses.map((addr: any) => (
+                      <button
+                        key={addr._id}
+                        type="button"
+                        onClick={async () => {
+                          setMapLat(addr.lat);
+                          setMapLng(addr.lng);
+                          setPendingResult({
+                            formattedAddress: addr.formattedAddress || `${addr.houseNumber ? addr.houseNumber + ', ' : ''}${addr.landmark ? addr.landmark + ', ' : ''}${addr.city}`,
+                            locality: addr.locality || addr.city,
+                            city: addr.city,
+                            state: addr.state,
+                            pincode: addr.pincode,
+                            country: "India",
+                            precisionLevel: "exact",
+                            source: "saved_address",
+                          });
+                        }}
+                        aria-label={`Select saved address: ${addr.label}`}
+                        className={`snap-start flex items-center gap-2 px-4 py-2.5 rounded-full border shadow-sm transition-all duration-200 cursor-pointer whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold ${
+                          pendingResult?.pincode === addr.pincode && Math.abs(mapLat - addr.lat) < 0.001
+                            ? "border-hive-amber bg-white shadow-md scale-105"
+                            : "border-hive-border/50 bg-white/95 backdrop-blur-sm hover:bg-white"
+                        }`}
+                      >
+                        <MapPin className={`w-3.5 h-3.5 flex-shrink-0 ${pendingResult?.pincode === addr.pincode && Math.abs(mapLat - addr.lat) < 0.001 ? "text-hive-amber" : "text-hive-text-muted"}`} />
+                        <span className={`text-xs font-bold ${pendingResult?.pincode === addr.pincode && Math.abs(mapLat - addr.lat) < 0.001 ? "text-hive-dark" : "text-hive-text"}`}>
+                          {addr.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : undefined
+            }
+          />
 
-          {/* Saved Addresses list (Quick switch) */}
-          {isAuthenticated && savedAddresses.length > 0 && (
-            <div className="flex flex-col gap-2.5 w-full select-none text-left flex-shrink-0">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-hive-text-muted">
-                Saved Addresses
-              </span>
-              <div className="flex flex-col gap-2">
-                {savedAddresses.map((addr: any) => (
-                  <button
-                    key={addr._id}
-                    type="button"
-                    onClick={async () => {
-                      setMapLat(addr.lat);
-                      setMapLng(addr.lng);
-                      setPendingResult({
-                        formattedAddress: addr.formattedAddress || `${addr.houseNumber ? addr.houseNumber + ', ' : ''}${addr.landmark ? addr.landmark + ', ' : ''}${addr.city}`,
-                        locality: addr.locality || addr.city,
-                        city: addr.city,
-                        state: addr.state,
-                        pincode: addr.pincode,
-                        country: "India",
-                        precisionLevel: "exact",
-                        source: "saved_address",
-                      });
-                    }}
-                    className={`p-3 rounded-2xl border text-left flex items-start gap-3 transition-all duration-200 hover:bg-slate-50 cursor-pointer shadow-sm ${
-                      pendingResult?.pincode === addr.pincode && 
-                      Math.abs(mapLat - addr.lat) < 0.001
-                        ? "border-hive-amber bg-hive-gold/5"
-                        : "border-slate-200 bg-white"
-                    }`}
-                  >
-                    <MapPin className="w-4 h-4 text-hive-amber flex-shrink-0 mt-0.5" />
-                    <div className="min-w-0 flex-1 leading-tight">
-                      <p className="text-xs font-extrabold text-hive-dark">{addr.label}</p>
-                      <p className="text-[10px] text-hive-text-muted truncate mt-0.5">
-                        {addr.formattedAddress || `${addr.houseNumber ? addr.houseNumber + ', ' : ''}${addr.landmark ? addr.landmark + ', ' : ''}${addr.city}`}
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* OpenStreetMap picker */}
-          <div className="flex-shrink-0">
-            <LocationMapPicker
-              lat={mapLat}
-              lng={mapLng}
-              onChange={handleMapChange}
-              onReverseGeocode={handleReverseGeocode}
-              showCurrentLocation={true}
-              height="300px"
-            />
-          </div>
-
-          {/* Confirmed address preview */}
-          {pendingResult && (
-            <div className="p-4 bg-green-50 border border-green-200 rounded-2xl flex items-start gap-3 text-left">
-              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs space-y-0.5 flex-1">
-                {pendingResult.precisionLevel === "area" ? (
-                  <>
-                    <p className="font-extrabold text-green-800">Shopping Area Selected</p>
-                    <p className="text-green-700 font-bold text-sm">
-                      {pendingResult.locality || pendingResult.city || "This Area"}
-                    </p>
-                    <p className="text-green-600 font-medium text-[11px] mt-1">
-                      We'll show products available for delivery in this area.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <p className="font-extrabold text-green-800">Location selected</p>
-                    <p className="text-green-700 leading-relaxed">{pendingResult.formattedAddress}</p>
-                    <p className="text-green-600 font-semibold">
-                      {pendingResult.locality || pendingResult.city}
-                      {pendingResult.city && pendingResult.locality ? `, ${pendingResult.city}` : pendingResult.state ? `, ${pendingResult.state}` : ""}
-                      {pendingResult.pincode ? ` — ${pendingResult.pincode}` : ""}
-                    </p>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer — confirm button */}
-        <div className="flex-shrink-0 px-5 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:pb-4 border-t border-hive-border/40 bg-white">
-          <button
-            type="button"
-            disabled={!pendingResult || isSaving || saved}
-            onClick={handleConfirmLocation}
-            className={`w-full h-12 text-xs font-medium flex items-center justify-center gap-2 rounded-xl transition-all duration-200 text-white active:scale-[0.98] disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed shadow-md ${
-              pendingResult && !isPendingServiceable 
-                ? "bg-[#D97706] hover:bg-[#B45309]" 
-                : "bg-[#111111] hover:bg-neutral-800"
+          {/* Bottom Sheet for Confirmation */}
+          <div 
+            className={`absolute bottom-0 inset-x-0 z-30 bg-white rounded-t-[28px] shadow-[0_-12px_40px_rgba(0,0,0,0.12)] transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${
+              pendingResult ? "translate-y-0" : "translate-y-full"
             }`}
           >
-            {saved ? (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                {pendingResult && !isPendingServiceable ? "Added to waitlist" : "Location saved"}
-              </>
-            ) : isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                {pendingResult && !isPendingServiceable ? "Submitting..." : "Saving..."}
-              </>
-            ) : pendingResult && !isPendingServiceable ? (
-              <>
-                <MapPin className="w-4 h-4" />
-                Notify Me When Available
-              </>
-            ) : pendingResult?.precisionLevel === "area" ? (
-              <>
-                <MapPin className="w-4 h-4" />
-                Browse {pendingResult.locality || pendingResult.city || "this area"}
-              </>
-            ) : (
-              <>
-                <MapPin className="w-4 h-4" />
-                Confirm Location
-              </>
+            {pendingResult && (
+              <div className="px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+                
+                {/* Address Details */}
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-10 h-10 rounded-full bg-hive-gold/10 border border-hive-gold/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <MapPin className="w-5 h-5 text-hive-amber" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-extrabold text-hive-dark truncate">
+                      {pendingResult.locality || pendingResult.city || "Location Selected"}
+                    </p>
+                    <p className="text-xs text-hive-text-muted mt-1 leading-relaxed line-clamp-2 pr-4">
+                      {pendingResult.formattedAddress}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Confirm Button */}
+                <button
+                  type="button"
+                  disabled={!pendingResult || isSaving || saved}
+                  onClick={handleConfirmLocation}
+                  aria-label={saved ? "Location saved" : isSaving ? "Saving location" : "Confirm location selection"}
+                  className={`w-full h-14 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 rounded-xl transition-all duration-200 active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold ${
+                    pendingResult && !isPendingServiceable 
+                      ? "bg-[#D97706] hover:bg-[#B45309] text-white" 
+                      : "bg-hive-dark hover:bg-neutral-800 text-hive-gold"
+                  }`}
+                >
+                  {saved ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      {pendingResult && !isPendingServiceable ? "Added to waitlist" : "Location saved"}
+                    </>
+                  ) : isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {pendingResult && !isPendingServiceable ? "Submitting..." : "Saving..."}
+                    </>
+                  ) : pendingResult && !isPendingServiceable ? (
+                    <>
+                      <MapPin className="w-4 h-4" />
+                      Notify Me When Available
+                    </>
+                  ) : pendingResult?.precisionLevel === "area" ? (
+                    <>
+                      <MapPin className="w-4 h-4" />
+                      Browse {pendingResult.locality || pendingResult.city || "this area"}
+                    </>
+                  ) : (
+                    <>
+                      Confirm Location
+                    </>
+                  )}
+                </button>
+
+              </div>
             )}
-          </button>
+          </div>
+
         </div>
       </div>
     </div>

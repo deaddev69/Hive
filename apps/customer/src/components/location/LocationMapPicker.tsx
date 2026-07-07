@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Search, MapPin, Loader2, Navigation, AlertCircle, X } from "lucide-react";
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap } from "@vis.gl/react-google-maps";
+import { toast } from "@hive/utils";
 
 export interface ReverseGeocodeResult {
   formattedAddress: string;
@@ -24,9 +25,8 @@ export interface LocationMapPickerProps {
   readOnly?: boolean;
   height?: string;
   showCurrentLocation?: boolean;
+  topOverlay?: React.ReactNode;
 }
-
-type GeoError = "permission_denied" | "timeout" | "unavailable" | "unsupported" | null;
 
 const extractGeocodeData = (results: google.maps.GeocoderResult[], source: ReverseGeocodeResult["source"] = "map_pin"): ReverseGeocodeResult => {
   const result = results[0];
@@ -92,7 +92,10 @@ function PlaceAutocomplete({ onPlaceSelect, setActiveMapTab }: { onPlaceSelect: 
   useEffect(() => {
     if (!placeAutocomplete) return;
     const listener = placeAutocomplete.addListener('place_changed', () => {
-      onPlaceSelect(placeAutocomplete.getPlace());
+      const place = placeAutocomplete.getPlace();
+      if (place && place.geometry) {
+        onPlaceSelect(place);
+      }
       setInputValue(inputRef.current?.value || "");
     });
     return () => {
@@ -109,13 +112,13 @@ function PlaceAutocomplete({ onPlaceSelect, setActiveMapTab }: { onPlaceSelect: 
   };
 
   return (
-    <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-hive-text-muted" />
+    <div className="relative w-full rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] group">
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-hive-dark opacity-60" />
       <input
         ref={inputRef}
         type="text"
         placeholder="Search your area, building, or landmark..."
-        className="w-full pl-10 pr-10 py-3 bg-white border border-hive-border rounded-xl text-sm focus:outline-none focus:border-hive-gold focus:ring-1 focus:ring-hive-gold transition-all"
+        className="w-full pl-11 pr-11 py-3.5 bg-white/95 backdrop-blur-xl border-0 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-hive-gold/50 transition-all text-hive-dark placeholder:text-hive-text-muted"
         onClick={() => setActiveMapTab("search")}
         onChange={(e) => setInputValue(e.target.value)}
       />
@@ -123,7 +126,8 @@ function PlaceAutocomplete({ onPlaceSelect, setActiveMapTab }: { onPlaceSelect: 
         <button
           type="button"
           onClick={handleClear}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-hive-text-muted hover:text-slate-800 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
+          aria-label="Clear search"
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-hive-text-muted hover:text-hive-dark rounded-full hover:bg-slate-100 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold"
         >
           <X className="w-4 h-4" />
         </button>
@@ -138,14 +142,14 @@ function MapPickerInner({
   onChange,
   onReverseGeocode,
   readOnly = false,
-  height = "300px",
+  height = "100%", // Default changed to full height
+  topOverlay,
 }: LocationMapPickerProps) {
   const [activeMapTab, setActiveMapTab] = useState<"search" | "gps" | "manual">("search");
   const [isDragging, setIsDragging] = useState(false);
   
   // GPS state
   const [geoLoading, setGeoLoading] = useState(false);
-  const [geoError, setGeoError] = useState<GeoError>(null);
   const map = useMap();
   const geocodingLib = useMapsLibrary("geocoding");
 
@@ -173,16 +177,19 @@ function MapPickerInner({
         formatted_address: place.formatted_address,
         place_id: place.place_id
       };
-      onReverseGeocode(extractGeocodeData([mockResult], "search"));
+      try {
+        onReverseGeocode(extractGeocodeData([mockResult], "search"));
+      } catch (err) {
+        toast.error("Unable to identify this location. Please try pinning it manually.");
+      }
     }
   }, [map, onChange, onReverseGeocode]);
 
   const requestGeolocation = useCallback(() => {
-    setGeoError(null);
     setActiveMapTab("gps");
     
     if (!navigator.geolocation) {
-      setGeoError("unsupported");
+      toast.error("Location services are not supported by your browser.");
       return;
     }
 
@@ -200,15 +207,21 @@ function MapPickerInner({
           geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
             if (status === "OK" && results && results.length > 0) {
               onReverseGeocode(extractGeocodeData(results, "gps"));
+            } else {
+              toast.error("Unable to identify this location. Please search manually.");
             }
           });
         }
       },
       (error) => {
         setGeoLoading(false);
-        if (error.code === error.PERMISSION_DENIED) setGeoError("permission_denied");
-        else if (error.code === error.TIMEOUT) setGeoError("timeout");
-        else setGeoError("unavailable");
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error("Location access denied. Please enable in settings or search manually.");
+        } else if (error.code === error.TIMEOUT) {
+          toast.error("Location request timed out. Please try again.");
+        } else {
+          toast.error("Unable to fetch location. Please search manually.");
+        }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -217,35 +230,43 @@ function MapPickerInner({
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID";
 
   return (
-    <div className="flex flex-col space-y-3">
-      {/* Search / GPS Controls */}
+    <div className="absolute inset-0 w-full h-full">
+      {/* Floating Controls Overlay - Rendered FIRST in DOM for correct Tab order (Search -> Chips -> FAB -> Map) */}
       {!readOnly && (
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
+        <>
+          {/* Top Search Bar */}
+          <div className="absolute top-4 left-4 right-4 z-20">
             <PlaceAutocomplete onPlaceSelect={handlePlaceSelect} setActiveMapTab={setActiveMapTab} />
           </div>
 
+          {/* Injected Top Overlay (Saved Address Chips) */}
+          {topOverlay && (
+            <div className="absolute top-[84px] inset-x-0 z-20 pointer-events-none">
+              {topOverlay}
+            </div>
+          )}
+
+          {/* Floating GPS Button */}
+          {/* Note: The bottom spacing will be handled by LocationDrawer wrapping it, 
+              but it's positioned using absolute right-4 bottom-4 by default. */}
           <button
             type="button"
             onClick={requestGeolocation}
             disabled={geoLoading}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-white border border-hive-border rounded-xl text-sm font-medium hover:bg-hive-light/50 transition-colors disabled:opacity-50 whitespace-nowrap"
+            aria-label="Use current location"
+            className="absolute right-4 bottom-4 z-20 flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:bg-slate-50 transition-all active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {geoLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin text-hive-gold" />
+              <Loader2 className="w-5 h-5 animate-spin text-hive-gold" />
             ) : (
-              <Navigation className="w-4 h-4 text-hive-gold" />
+              <Navigation className="w-5 h-5 text-hive-gold" />
             )}
-            Use Current Location
           </button>
-        </div>
+        </>
       )}
 
-      {/* Map Container */}
-      <div 
-        className={`relative w-full rounded-2xl overflow-hidden border border-hive-border shadow-sm ${readOnly ? 'opacity-90' : ''}`}
-        style={{ height }}
-      >
+      {/* Map Container - Full Bleed */}
+      <div className={`w-full h-full ${readOnly ? 'opacity-90' : ''}`} style={{ height }}>
         <Map
           mapId={mapId}
           defaultCenter={center}
@@ -269,7 +290,13 @@ function MapPickerInner({
                   const geocoder = new geocodingLib.Geocoder();
                   geocoder.geocode({ location: { lat: newLat, lng: newLng } }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
                     if (status === "OK" && results && results.length > 0) {
-                      onReverseGeocode(extractGeocodeData(results, "map_pin"));
+                      try {
+                        onReverseGeocode(extractGeocodeData(results, "map_pin"));
+                      } catch (err) {
+                        toast.error("Unable to parse location details.");
+                      }
+                    } else if (status !== "ZERO_RESULTS") {
+                      toast.error("Unable to identify this location. Please try again.");
                     }
                   });
                 }
@@ -284,20 +311,13 @@ function MapPickerInner({
             isDragging && !readOnly ? "-translate-y-[calc(100%+8px)] scale-105" : ""
           }`}
         >
-          <MapPin className="w-8 h-8 text-hive-gold fill-hive-gold drop-shadow-md" />
+          <MapPin className="w-9 h-9 text-hive-gold fill-hive-gold drop-shadow-lg" />
         </div>
         
         {readOnly && (
           <div className="absolute inset-0 bg-black/5 pointer-events-none" />
         )}
       </div>
-
-      {geoError === "permission_denied" && (
-        <p className="text-xs text-red-500 flex items-center gap-1.5 mt-1">
-          <AlertCircle className="w-3.5 h-3.5" />
-          Location permission denied. Please enable it in your browser settings or search manually.
-        </p>
-      )}
     </div>
   );
 }
