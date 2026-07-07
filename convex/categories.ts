@@ -215,7 +215,11 @@ export const deleteCategory = mutation({
 
     // Clean up associated image from storage if native
     if (category.imageStorageId && typeof category.imageStorageId === "string" && !category.imageStorageId.startsWith("http")) {
-      await ctx.storage.delete(category.imageStorageId as any);
+      try {
+        await ctx.storage.delete(category.imageStorageId as any);
+      } catch (e) {
+        console.warn(`Failed to delete storage id ${category.imageStorageId}, it may have already been deleted.`, e);
+      }
     }
     
     await ctx.db.delete(args.id);
