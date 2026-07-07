@@ -16,7 +16,7 @@ import { parseMoney, formatMoney } from "./lib/money";
 import { checkKillSwitch } from "./lib/killSwitches";
 import { validateBoutiqueOperationalLimits } from "./lib/gating";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
-
+import { checkServiceability } from "./lib/serviceability";
 // ─── Cart item input shape for order placement ────────────────────────────
 const cartItemArg = v.object({
   productId:   v.string(),
@@ -174,19 +174,6 @@ export const placeOrder = mutation({
     const deliveryLat = addr.lat;
     const deliveryLng = addr.lng;
 
-    // Haversine formula (inline — no external dependency needed server-side)
-    const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number) => {
-      const R = 6371;
-      const dLat = ((lat2 - lat1) * Math.PI) / 180;
-      const dLng = ((lng2 - lng1) * Math.PI) / 180;
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLng / 2) ** 2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    };
-
     const now = Date.now();
     // Resolve all products in parallel — eliminates N sequential roundtrips
     const resolvedProducts = await Promise.all(
@@ -281,18 +268,21 @@ export const placeOrder = mutation({
       }
 
       // Targeted Serviceability Check
-      if (deliveryLat && deliveryLng && !(deliveryLat === 0 && deliveryLng === 0)) {
-        const bLat = boutique.latitude ?? boutique.addressDetails?.lat;
-        const bLng = boutique.longitude ?? boutique.addressDetails?.lng;
-        const radius = Math.min(15, boutique.deliveryRadiusKm ?? 15);
+      const serviceability = checkServiceability(deliveryLat, deliveryLng, boutique);
+      console.log(JSON.stringify({
+        event: "serviceability_check",
+        timestamp: Date.now(),
+        boutiqueId: boutique._id,
+        distanceKm: serviceability.distanceKm,
+        effectiveDistanceKm: serviceability.effectiveDistanceKm,
+        radiusKm: serviceability.radiusKm,
+        serviceable: serviceability.serviceable,
+        reason: serviceability.reason,
+        checkoutType: "cod"
+      }));
 
-        if (bLat !== undefined && bLng !== undefined) {
-          const distKm = haversineKm(deliveryLat, deliveryLng, bLat, bLng);
-          if (distKm > radius) {
-            // Mixed Boutique Cart validation: throw global delivery error message
-            throw new Error("One or more items cannot be delivered to your address.");
-          }
-        }
+      if (!serviceability.serviceable) {
+        throw new Error(serviceability.reason || "One or more items cannot be delivered to your address.");
       }
 
       // Validate size and stock using the inventory helper

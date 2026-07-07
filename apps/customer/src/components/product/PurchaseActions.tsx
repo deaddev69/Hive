@@ -10,7 +10,7 @@ import { useCheckoutStore } from "@/store/checkout-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { cleanProductTitle } from "./ProductCard";
 import { useLocation } from "@/context/LocationContext";
-import { calculateDistanceKm } from "@/lib/distance";
+import { checkServiceability } from "../../../../../convex/lib/serviceability";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Modal } from "@hive/ui";
@@ -416,12 +416,8 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const isLocationServiceable = React.useMemo(() => {
     if (process.env.NODE_ENV === "development") return true;
     if (latitude === null || longitude === null) return true;
-    const bLat = (product.boutique as any).latitude;
-    const bLng = (product.boutique as any).longitude;
-    const bRad = (product.boutique as any).deliveryRadiusKm ?? 15;
-    if (bLat === undefined || bLng === undefined) return true;
-    const dist = calculateDistanceKm(latitude, longitude, bLat, bLng);
-    return dist <= bRad;
+    const serviceability = checkServiceability(latitude, longitude, product.boutique as any);
+    return serviceability.serviceable;
   }, [latitude, longitude, product.boutique]);
 
   const boutiqueStatus = product.boutique

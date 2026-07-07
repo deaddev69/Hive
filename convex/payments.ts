@@ -20,7 +20,7 @@ import { checkKillSwitch } from "./lib/killSwitches";
 import { validateBoutiqueOperationalLimits, checkBoutiqueClosedStatus } from "./lib/gating";
 import { restoreCheckoutSessionStock } from "./lib/inventory";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
-
+import { checkServiceability } from "./lib/serviceability";
 // ─── Input Schemas ───────────────────────────────────────────────────────────
 const cartItemArg = v.object({
   productId: v.string(),
@@ -282,6 +282,24 @@ export const initCheckoutSessionInternal = internalMutation({
 
       // Check stock
       await validateProductSizeAndStock(ctx.db, item.productId, item.size, item.quantity);
+
+      // Enforce Serviceability before payment session
+      const serviceability = checkServiceability(deliveryLat, deliveryLng, boutique);
+      console.log(JSON.stringify({
+        event: "serviceability_check",
+        timestamp: Date.now(),
+        boutiqueId: boutique._id,
+        distanceKm: serviceability.distanceKm,
+        effectiveDistanceKm: serviceability.effectiveDistanceKm,
+        radiusKm: serviceability.radiusKm,
+        serviceable: serviceability.serviceable,
+        reason: serviceability.reason,
+        checkoutType: "razorpay"
+      }));
+
+      if (!serviceability.serviceable) {
+        throw new Error(serviceability.reason || "One or more items cannot be delivered to your address.");
+      }
 
       // Recalculate price in integer Paise to prevent price manipulation
       const activePricePaise = productRow
