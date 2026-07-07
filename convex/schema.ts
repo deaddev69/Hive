@@ -682,6 +682,14 @@ export default defineSchema({
                           })),
     shipmentId:           v.optional(v.id("shipments")),
     notes:                v.optional(v.string()),
+    payoutStatus:         v.optional(v.union(v.literal("pending"), v.literal("settled"), v.literal("withheld"))),
+    payoutDetails:        v.optional(
+                            v.object({
+                              settledAt: v.number(),      // Timestamp of bank transfer
+                              utrNumber: v.string(),      // Bank transaction reference number (IMPS/NEFT/UPI UTR)
+                              netSettlement: v.number(),  // Exact cash transferred to boutique after all deductions
+                            })
+                          ),
     cancelledAt:          v.optional(v.number()),
     cancelReason:         v.optional(v.string()),
     cancelledBy:          v.optional(v.id("users")),
