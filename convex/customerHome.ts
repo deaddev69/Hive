@@ -3,21 +3,7 @@ import { Id } from "./_generated/dataModel";
 import { getPublicUrl } from "./media/api";
 import { v } from "convex/values";
 import { enrichProducts } from "./products";
-
-// Helper for Haversine distance
-function calculateDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371; // Earth's radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+import { haversineKm } from "./lib/serviceability";
 
 export const getCustomerHomeData = query({
   args: {
@@ -254,7 +240,7 @@ export const getCustomerHomeData = query({
             distanceKm = cached.distanceKm;
             durationMin = cached.durationMin;
           } else {
-            distanceKm = calculateDistanceKm(args.userLat!, args.userLng!, bLat, bLng);
+            distanceKm = haversineKm(args.userLat!, args.userLng!, bLat, bLng);
             durationMin = (distanceKm / 25) * 60;
           }
 
@@ -326,7 +312,7 @@ export const getCustomerHomeData = query({
       mostLovedRaw = mostLovedRaw.filter((p) => {
         const b = boutiques.find((btq) => btq._id.toString() === p.boutiqueId.toString());
         if (!b || b.latitude === undefined || b.longitude === undefined) return false;
-        const dist = calculateDistanceKm(args.userLat!, args.userLng!, b.latitude, b.longitude);
+        const dist = haversineKm(args.userLat!, args.userLng!, b.latitude, b.longitude);
         return dist <= b.deliveryRadiusKm;
       });
     }

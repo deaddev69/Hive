@@ -1,19 +1,8 @@
 import { action, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import { haversineKm } from "./lib/serviceability";
 
-// Coarse pre-filter helper to eliminate out-of-range boutiques before hitting Google's billing
-function calculateHaversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371; // Earth's radius in km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
 
 export const getActiveBoutiquesForRouting = internalQuery({
   args: {},
@@ -82,9 +71,9 @@ export const primeRoadDistanceCache = action({
     userLng: v.number(),
   },
   handler: async (ctx, args) => {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY;
+    const apiKey = process.env.GOOGLE_MAPS_SERVER_KEY;
     if (!apiKey) {
-      console.error("Missing GOOGLE_MAPS_API_KEY environment variable.");
+      console.error("Missing GOOGLE_MAPS_SERVER_KEY environment variable.");
       return;
     }
 
@@ -95,7 +84,7 @@ export const primeRoadDistanceCache = action({
     // 2. Coarse 30km Haversine pre-filter to drop obviously out-of-range targets
     const MAX_COARSE_RADIUS_KM = 30;
     const filteredBoutiques = boutiques.filter((b: any) => {
-      const birdEyeDistance = calculateHaversine(args.userLat, args.userLng, b.latitude, b.longitude);
+      const birdEyeDistance = haversineKm(args.userLat, args.userLng, b.latitude, b.longitude);
       return birdEyeDistance <= MAX_COARSE_RADIUS_KM;
     });
 

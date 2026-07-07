@@ -414,7 +414,6 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const isLowStock = selectedSize ? inventoryCount > 0 && inventoryCount <= 3 : false;
 
   const isLocationServiceable = React.useMemo(() => {
-    if (process.env.NODE_ENV === "development") return true;
     if (latitude === null || longitude === null) return true;
     const serviceability = checkServiceability(latitude, longitude, product.boutique as any);
     return serviceability.serviceable;

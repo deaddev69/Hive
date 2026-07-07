@@ -6,23 +6,7 @@ import { action, mutation, query, internalMutation, internalQuery } from "./_gen
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { calculateDeliveryFeeRupees, estimateCourierCostRupees } from "./lib/deliveryPricing";
-
-/**
- * Standard Haversine distance formula.
- */
-function calculateHaversineDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371; // Earth's radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+import { haversineKm } from "./lib/serviceability";
 
 /**
  * Fetch Google Maps Distance Matrix
@@ -30,9 +14,9 @@ function calculateHaversineDistanceKm(lat1: number, lng1: number, lat2: number, 
 async function fetchGoogleMapsDistance(
   startLat: number, startLng: number, endLat: number, endLng: number
 ): Promise<{ distanceKm: number, durationMin: number }> {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+  const apiKey = process.env.GOOGLE_MAPS_SERVER_KEY;
   if (!apiKey) {
-    throw new Error("GOOGLE_MAPS_API_KEY not configured.");
+    throw new Error("GOOGLE_MAPS_SERVER_KEY not configured.");
   }
   const url = `https://maps.googleapis.com/maps/api/distancematrix/json?destinations=${endLat},${endLng}&origins=${startLat},${startLng}&key=${apiKey}`;
   const res = await fetch(url);
@@ -172,7 +156,7 @@ export const resolveRoadDistancesAction = action({
         const bLng = b.longitude ?? b.addressDetails?.lng;
         if (bLat === undefined || bLng === undefined) return null;
         
-        const haversineDist = calculateHaversineDistanceKm(args.userLat, args.userLng, bLat, bLng);
+        const haversineDist = haversineKm(args.userLat, args.userLng, bLat, bLng);
         return { boutique: b, haversineDist, bLat, bLng };
       })
       .filter(Boolean) as Array<{ boutique: any; haversineDist: number; bLat: number; bLng: number }>;
@@ -323,14 +307,14 @@ export async function calculateDeliveryQuoteAction(
       });
     } catch(err) {
       console.error("[calculateDeliveryQuote] Google Maps failed, falling back to Haversine", err);
-      distanceKm = calculateHaversineDistanceKm(args.userLat, args.userLng, boutiqueLat, boutiqueLng);
+      distanceKm = haversineKm(args.userLat, args.userLng, boutiqueLat, boutiqueLng);
       durationMin = (distanceKm / 25) * 60;
     }
   }
 
   // Enforce STRICT road distance limit as a fast pre-filter. 
   // We use Haversine distance here for the hard cutoff so that it perfectly matches the frontend address validation logic.
-  const haversineDist = calculateHaversineDistanceKm(args.userLat, args.userLng, boutiqueLat, boutiqueLng);
+  const haversineDist = haversineKm(args.userLat, args.userLng, boutiqueLat, boutiqueLng);
   const effectiveRadius = boutique.deliveryRadiusKm ?? 15;
   if (haversineDist > effectiveRadius) {
     return {

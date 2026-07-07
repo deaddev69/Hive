@@ -290,7 +290,6 @@ export const initCheckoutSessionInternal = internalMutation({
         timestamp: Date.now(),
         boutiqueId: boutique._id,
         distanceKm: serviceability.distanceKm,
-        effectiveDistanceKm: serviceability.effectiveDistanceKm,
         radiusKm: serviceability.radiusKm,
         serviceable: serviceability.serviceable,
         reason: serviceability.reason,

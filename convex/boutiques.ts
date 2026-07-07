@@ -146,6 +146,9 @@ function validateBoutiqueDetails(details: {
   if (!details.deliveryRadiusKm || details.deliveryRadiusKm <= 0) {
     throw new Error("Delivery radius must be a positive number.");
   }
+  if (details.deliveryRadiusKm > 17) {
+    throw new Error("Delivery radius cannot exceed 17 km. Please contact support if you need a larger coverage area.");
+  }
   if (!details.description.trim()) throw new Error("Boutique description is required.");
 
   if (details.searchKeywords) {
@@ -965,6 +968,11 @@ export const updateBoutiqueProfile = mutation({
       if (!gstRegex.test(args.gstNumber)) {
         throw new ConvexError("Invalid GSTIN format. Must be a valid 15-character Indian GSTIN.");
       }
+    }
+
+    // Validate delivery radius cap at update time
+    if (args.deliveryRadiusKm !== undefined && args.deliveryRadiusKm > 17) {
+      throw new ConvexError("Delivery radius cannot exceed 17 km. Please contact support if you need a larger coverage area.");
     }
 
     const patchData: any = {

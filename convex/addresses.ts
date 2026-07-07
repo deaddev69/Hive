@@ -7,6 +7,7 @@ import { v } from "convex/values";
 import { getAuthenticatedUser, getCurrentUserOrNull } from "./lib/auth";
 import { checkRateLimit } from "./lib/rateLimit";
 import { api as rawApi, internal as rawInternal } from "./_generated/api";
+import { haversineKm } from "./lib/serviceability";
 const api = rawApi as any;
 const internal = rawInternal as any;
 
@@ -66,22 +67,7 @@ async function fetchGoogleMapsReverseGeocode(lat: number, lng: number): Promise<
   };
 }
 
-/**
- * Standard Haversine distance formula.
- */
-function calculateHaversineDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371; // Earth's radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLng / 2) *
-    Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+
 
 function validateCoordinates(lat?: number, lng?: number) {
   if (
@@ -168,7 +154,7 @@ export const checkAddressVerification = query({
     let closestPincodeRecord = null;
 
     for (const p of activePincodes) {
-      const dist = calculateHaversineDistanceKm(args.lat, args.lng, p.lat, p.lng);
+      const dist = haversineKm(args.lat, args.lng, p.lat, p.lng);
       if (dist < closestDist) {
         closestDist = dist;
         closestPincodeRecord = p;

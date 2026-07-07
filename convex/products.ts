@@ -13,6 +13,7 @@ import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
 import { internal } from "./_generated/api";
 import { checkRateLimit } from "./lib/rateLimit";
 import { getPublicUrl } from "./media/api";
+import { haversineKm } from "./lib/serviceability";
 import { ImageAsset } from "./schema";
 import { triggerNotification } from "./lib/notifications";
 
@@ -858,20 +859,7 @@ export const getProduct = query({
   },
 });
 
-// Helper for Haversine distance
-function calculateDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371; // Earth's radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLng = ((lng2 - lng1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+
 
 /**
  * Public query to fetch products matching filters (for Customer App).
@@ -1004,7 +992,7 @@ export const getActiveProducts = query({
           distanceKm = cached.distanceKm;
           durationMin = cached.durationMin;
         } else {
-          distanceKm = calculateDistanceKm(args.userLat, args.userLng, bLat, bLng);
+          distanceKm = haversineKm(args.userLat, args.userLng, bLat, bLng);
           durationMin = (distanceKm / 25) * 60;
         }
 
@@ -1966,7 +1954,7 @@ export const searchProductsInternal = internalQuery({
             const bLat = b.latitude;
             const bLng = b.longitude;
             if (bLat === undefined || bLng === undefined) return false;
-            const dist = calculateDistanceKm(args.userLat!, args.userLng!, bLat, bLng);
+            const dist = haversineKm(args.userLat!, args.userLng!, bLat, bLng);
             return dist <= b.deliveryRadiusKm;
           })
           .map((b) => b._id)
@@ -2065,7 +2053,7 @@ export const getMostLovedProducts = query({
       const deliverableBoutiqueIds = new Set(
         approvedBoutiques
           .filter((b) => {
-            const dist = calculateDistanceKm(args.userLat!, args.userLng!, b.latitude, b.longitude);
+            const dist = haversineKm(args.userLat!, args.userLng!, b.latitude, b.longitude);
             return dist <= b.deliveryRadiusKm;
           })
           .map((b) => b._id.toString())
@@ -2093,7 +2081,7 @@ export const getMostLovedProducts = query({
         const deliverableBoutiqueIds = new Set(
           approvedBoutiques
             .filter((b) => {
-              const dist = calculateDistanceKm(args.userLat!, args.userLng!, b.latitude, b.longitude);
+              const dist = haversineKm(args.userLat!, args.userLng!, b.latitude, b.longitude);
               return dist <= b.deliveryRadiusKm;
             })
             .map((b) => b._id.toString())
@@ -2149,7 +2137,7 @@ export const getCartDrawerRecommendations = query({
             const bLat = b.latitude ?? b.addressDetails?.lat;
             const bLng = b.longitude ?? b.addressDetails?.lng;
             if (bLat === undefined || bLng === undefined) return false;
-            const dist = calculateDistanceKm(args.userLat!, args.userLng!, bLat, bLng);
+            const dist = haversineKm(args.userLat!, args.userLng!, bLat, bLng);
             const effectiveRadius = b.deliveryRadiusKm ?? 15;
             return dist <= effectiveRadius;
           })

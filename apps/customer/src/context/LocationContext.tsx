@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useQuery, useMutation, useAction, useConvex } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useSessionStore } from "./SessionContext";
-import { calculateDistanceKm } from "../lib/distance";
+import { isWithinDeliveryRadius } from "../../../../convex/lib/serviceability";
 
 export interface LocationState {
   pincode: string | null;
@@ -75,13 +75,9 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (state.latitude === null || state.longitude === null) return [];
     if (dbBoutiques.length === 0) return [];
 
-    return dbBoutiques.filter((b) => {
-      const bLat = b.latitude ?? b.addressDetails?.lat;
-      const bLng = b.longitude ?? b.addressDetails?.lng;
-      if (bLat === undefined || bLng === undefined) return false;
-      const dist = calculateDistanceKm(state.latitude!, state.longitude!, bLat, bLng);
-      return dist <= (b.deliveryRadiusKm ?? 15);
-    });
+    return dbBoutiques.filter((b) => 
+      isWithinDeliveryRadius(state.latitude, state.longitude, b)
+    );
   }, [state.latitude, state.longitude, dbBoutiques]);
 
   const isLocationServiceable = useMemo(() => {

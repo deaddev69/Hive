@@ -12,7 +12,7 @@ import { useWishlistStore } from "@/store/wishlist-store";
 import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
 import { useSessionStore } from "@/context/SessionContext";
-import { calculateDistanceKm } from "@/lib/distance";
+import { checkServiceability } from "../../../../../convex/lib/serviceability";
 import { inrToPaise, toast } from "@hive/utils";
 import { mapDbProduct } from "@/lib/mapDbProduct";
 import { getBoutiqueStatus } from "../../../../../convex/shared/boutiqueStatus";
@@ -216,12 +216,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
   const isLocationServiceable = (() => {
     if (latitude === null || longitude === null) return true;
-    const bLat = product.boutique?.latitude;
-    const bLng = product.boutique?.longitude;
-    const bRad = product.boutique?.deliveryRadiusKm ?? 15;
-    if (bLat === undefined || bLng === undefined) return true;
-    const dist = calculateDistanceKm(latitude, longitude, bLat, bLng);
-    return dist <= bRad;
+    return checkServiceability(latitude, longitude, product.boutique as any).serviceable;
   })();
 
   const boutiqueStatus = product.boutique
