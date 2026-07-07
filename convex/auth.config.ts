@@ -11,19 +11,13 @@
 export default {
   providers: [
     {
-      domain: (() => {
-        const domain = process.env.CLERK_JWT_ISSUER_DOMAIN;
-        if (!domain) {
-          throw new Error(
-            "CLERK_JWT_ISSUER_DOMAIN is not set. " +
-            "Add it in Convex Dashboard → Settings → Environment Variables. " +
-            "Find the value in Clerk Dashboard → JWT Templates → convex."
-          );
-        }
-        return domain;
-      })(),
+      domain: "https://clerk.hivenow.in",
       applicationID: "convex",
     },
+    {
+      domain: "https://artistic-tiger-76.clerk.accounts.dev",
+      applicationID: "convex",
+    }
   ],
 };
 
