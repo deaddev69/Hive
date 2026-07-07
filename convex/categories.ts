@@ -145,7 +145,11 @@ export const updateCategory = mutation({
     // Clean up old image if it was replaced and it's a native storage ID
     if (args.imageStorageId && oldCategory.imageStorageId && oldCategory.imageStorageId !== args.imageStorageId) {
       if (typeof oldCategory.imageStorageId === "string" && !oldCategory.imageStorageId.startsWith("http")) {
-        await ctx.storage.delete(oldCategory.imageStorageId as any);
+        try {
+          await ctx.storage.delete(oldCategory.imageStorageId as any);
+        } catch (e) {
+          console.warn(`Failed to delete old storage id ${oldCategory.imageStorageId}`, e);
+        }
       }
     }
 
