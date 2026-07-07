@@ -40,25 +40,32 @@ const extractGeocodeData = (results: google.maps.GeocoderResult[], source: Rever
   let country = "";
 
   for (const component of result.address_components) {
-    if (component.types.includes("locality") || component.types.includes("sublocality")) {
-      locality = locality || component.long_name;
-      city = city || component.long_name;
+    const types = component.types;
+    if (types.includes("locality")) {
+      city = component.long_name;
+    } else if (types.includes("sublocality") || types.includes("sublocality_level_1") || types.includes("neighborhood")) {
+      if (!locality) {
+        locality = component.long_name;
+      }
+    } else if (types.includes("administrative_area_level_2") && !city) {
+      city = component.long_name;
     }
-    if (component.types.includes("administrative_area_level_1")) {
+    
+    if (types.includes("administrative_area_level_1")) {
       state = component.long_name;
     }
-    if (component.types.includes("postal_code")) {
+    if (types.includes("postal_code")) {
       pincode = component.long_name;
     }
-    if (component.types.includes("country")) {
+    if (types.includes("country")) {
       country = component.long_name;
     }
   }
 
   return {
     formattedAddress: result.formatted_address,
-    locality,
-    city,
+    locality: locality.trim(),
+    city: city.trim(),
     state,
     pincode,
     country,
