@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
   devIndicators: false,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === "production" 
+      ? { exclude: ["error", "warn"] }
+      : false,
+  },
   transpilePackages: ["@hive/types", "@hive/ui", "@hive/utils"],
   images: {
     remotePatterns: [
