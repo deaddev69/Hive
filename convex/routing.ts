@@ -371,12 +371,12 @@ export async function calculateDeliveryQuoteAction(
     standardFee = 79;
   }
 
-  const thresholdRupees = boutique.freeDeliveryThreshold ?? 2500;
+  const thresholdRupees = (boutique.freeDeliveryThreshold && boutique.freeDeliveryThreshold >= 10000)
+    ? boutique.freeDeliveryThreshold
+    : 10000;
   let finalFeeRupees = standardFee;
   if (subtotalRupees >= thresholdRupees) {
     finalFeeRupees = 0;
-  } else if (subtotalRupees >= thresholdRupees * 0.6) {
-    finalFeeRupees = standardFee / 2;
   }
 
   const customerPaidFeePaise = Math.round(finalFeeRupees * 100);

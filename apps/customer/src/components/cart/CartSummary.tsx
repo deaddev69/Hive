@@ -16,7 +16,7 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
   const clearCheckoutItems = useCheckoutStore((state) => state.clearCheckoutItems);
   const items = useCartStore((state) => state.items);
 
-  const deliveryFee = subtotal >= 3000 ? 0 : 99; // in rupees
+  const deliveryFee = subtotal >= 10000 ? 0 : 99; // in rupees
   const total = subtotal + deliveryFee;
 
   const handleCheckout = () => {

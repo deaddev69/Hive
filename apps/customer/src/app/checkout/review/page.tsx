@@ -259,8 +259,8 @@ export default function OrderReviewPage() {
 
   let deliveryFee = (deliveryQuote && deliveryQuote.serviceable && typeof deliveryQuote.customerPaidFee === "number")
     ? deliveryQuote.customerPaidFee / 100
-    : 99;
-  if (appliedPromo === "FREESHIP") {
+    : (subtotal >= 10000 ? 0 : 99);
+  if (subtotal >= 10000 || appliedPromo === "FREESHIP") {
     deliveryFee = 0;
   }
   const taxAmount = 0;

@@ -296,7 +296,7 @@ export default function CheckoutAddressPage() {
   const isServiceable = selectedAddress ? isAddressServiceable(selectedAddress) : false;
   const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
   const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  const deliveryFee = subtotal >= 3000 ? 0 : 99; // rupees
+  const deliveryFee = subtotal >= 10000 ? 0 : 99; // rupees
   const tax = 0;
   const total = subtotal + (isServiceable ? deliveryFee : 0);
 

@@ -120,7 +120,7 @@ export default function CartPage() {
 
   // Promo Code calculations
   let discountAmount = 0;
-  let deliveryFee = 99; // in rupees
+  let deliveryFee = subtotal >= 10000 ? 0 : 99; // in rupees
 
   if (activePromo === "WELCOME10") {
     discountAmount = Math.round(subtotal * 0.1); // 10% off items subtotal

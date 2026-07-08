@@ -35,8 +35,8 @@ export const runCartCurrencyTests = mutation({
       throw new Error(`FAIL: low subtotal expected 199800, got ${lowSubtotalPaise}`);
     }
 
-    // Delivery fee threshold is ₹3,000 (300,000 paise). Since 199800 < 300000, it charges ₹99 (9900 paise).
-    const lowDeliveryFeePaise = lowSubtotalPaise >= 300000 ? 0 : 9900;
+    // Delivery fee threshold is ₹10,000 (1,000,000 paise). Since 199800 < 1000000, it charges ₹99 (9900 paise).
+    const lowDeliveryFeePaise = lowSubtotalPaise >= 1000000 ? 0 : 9900;
     if (lowDeliveryFeePaise !== 9900) {
       throw new Error(`FAIL: low delivery fee expected 9900, got ${lowDeliveryFeePaise}`);
     }
@@ -56,29 +56,29 @@ export const runCartCurrencyTests = mutation({
     }
 
     console.log("Test 3: High-value Cart Verification (Free Delivery)...");
-    // 1x Premium Kasavu Saree (₹1,776) + 2x Cotton Block Print Kurti (₹1,998)
-    const highSubtotalPaise = price1Paise * 1 + price2Paise * 2; // 577200 paise
-    if (highSubtotalPaise !== 577200) {
-      throw new Error(`FAIL: high subtotal expected 577200, got ${highSubtotalPaise}`);
+    // 4x Premium Kasavu Saree (₹1,776) + 2x Cotton Block Print Kurti (₹1,998) = ₹11,100
+    const highSubtotalPaise = price1Paise * 4 + price2Paise * 2; // 1110000 paise
+    if (highSubtotalPaise !== 1110000) {
+      throw new Error(`FAIL: high subtotal expected 1110000, got ${highSubtotalPaise}`);
     }
 
-    // Since 577200 >= 300000, it should be FREE delivery (0 paise)
-    const highDeliveryFeePaise = highSubtotalPaise >= 300000 ? 0 : 9900;
+    // Since 1110000 >= 1000000, it should be FREE delivery (0 paise)
+    const highDeliveryFeePaise = highSubtotalPaise >= 1000000 ? 0 : 9900;
     if (highDeliveryFeePaise !== 0) {
       throw new Error(`FAIL: high delivery fee expected 0, got ${highDeliveryFeePaise}`);
     }
 
     const highTotalPaise = highSubtotalPaise + highDeliveryFeePaise;
-    if (highTotalPaise !== 577200) {
-      throw new Error(`FAIL: high total expected 577200, got ${highTotalPaise}`);
+    if (highTotalPaise !== 1110000) {
+      throw new Error(`FAIL: high total expected 1110000, got ${highTotalPaise}`);
     }
 
     const formattedHighSubtotal = formatCurrency(highSubtotalPaise);
     const formattedHighTotal = formatCurrency(highTotalPaise);
-    if (formattedHighSubtotal !== "₹5,772.00") {
+    if (formattedHighSubtotal !== "₹11,100.00") {
       throw new Error(`FAIL: formatted high subtotal mismatch, got ${formattedHighSubtotal}`);
     }
-    if (formattedHighTotal !== "₹5,772.00") {
+    if (formattedHighTotal !== "₹11,100.00") {
       throw new Error(`FAIL: formatted high total mismatch, got ${formattedHighTotal}`);
     }
 
