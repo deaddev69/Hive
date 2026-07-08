@@ -214,6 +214,38 @@ export default function CreateProductModal({
   const [uploadingImages, setUploadingImages] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const activeCategory = categories?.find((c) => c._id === categoryId);
+  const isSareeCategory = activeCategory && (
+    activeCategory.name.toLowerCase().includes("saree") ||
+    activeCategory.name.toLowerCase().includes("sarree")
+  );
+
+  // Auto-set FREE size for Saree category
+  useEffect(() => {
+    if (categoryId) {
+      const activeCategory = categories?.find((c) => c._id === categoryId);
+      const isSaree = activeCategory && (
+        activeCategory.name.toLowerCase().includes("saree") ||
+        activeCategory.name.toLowerCase().includes("sarree")
+      );
+      if (isSaree) {
+        setSelectedSizes(["FREE"]);
+        setStockBySize((prev) => {
+          if (prev["FREE"] !== undefined) return prev;
+          return { ...prev, FREE: 5 }; // default stock 5
+        });
+      } else {
+        // If it was auto-set to FREE size when switching, clear it.
+        setSelectedSizes((prev) => {
+          if (prev.length === 1 && prev[0] === "FREE") {
+            return [];
+          }
+          return prev;
+        });
+      }
+    }
+  }, [categoryId, categories]);
+
   useEffect(() => {
     if (isOpen) {
       setStep(1);
@@ -687,26 +719,36 @@ export default function CreateProductModal({
 
             <hr className="border-slate-100 -my-3" />
 
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">SELECT SIZES <span className="text-red-500">*</span></label>
-              <div className="flex flex-wrap gap-2">
-                {SIZE_OPTIONS.map((sz) => {
-                  const isSelected = selectedSizes.includes(sz);
-                  return (
-                    <button
-                      type="button"
-                      key={sz}
-                      onClick={() => toggleSize(sz)}
-                      className={`h-12 w-12 sm:h-14 sm:w-14 rounded-2xl border font-black text-xs transition-colors flex items-center justify-center ${
-                        isSelected ? "bg-[#252323] text-white border-[#252323]" : "bg-white text-slate-800 border-slate-200 hover:border-[#C89653]"
-                      }`}
-                    >
-                      {sz}
-                    </button>
-                  );
-                })}
+            {isSareeCategory ? (
+              <div className="flex flex-col gap-2 bg-[#FCFAF7] p-4 rounded-2xl border border-[#F2EFEA]">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">PRODUCT SIZE</label>
+                <div className="text-xs font-semibold text-slate-800 flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#C89653]" />
+                  Sarees are Free Size. Size "FREE" has been automatically set for this product.
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">SELECT SIZES <span className="text-red-500">*</span></label>
+                <div className="flex flex-wrap gap-2">
+                  {SIZE_OPTIONS.map((sz) => {
+                    const isSelected = selectedSizes.includes(sz);
+                    return (
+                      <button
+                        type="button"
+                        key={sz}
+                        onClick={() => toggleSize(sz)}
+                        className={`h-12 w-12 sm:h-14 sm:w-14 rounded-2xl border font-black text-xs transition-colors flex items-center justify-center ${
+                          isSelected ? "bg-[#252323] text-white border-[#252323]" : "bg-white text-slate-800 border-slate-200 hover:border-[#C89653]"
+                        }`}
+                      >
+                        {sz}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {selectedSizes.length > 0 && (
               <div className="flex flex-col gap-1 animate-in fade-in zoom-in-95 mt-2">
