@@ -78,10 +78,14 @@ const extractGeocodeData = (results: google.maps.GeocoderResult[], source: Rever
 
 function PlaceAutocomplete({ 
   onPlaceSelect, 
-  setActiveMapTab 
+  setActiveMapTab,
+  lat,
+  lng
 }: { 
   onPlaceSelect: (place: google.maps.places.PlaceResult) => void;
   setActiveMapTab: (v: any) => void;
+  lat?: number;
+  lng?: number;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const places = useMapsLibrary("places");
@@ -103,6 +107,10 @@ function PlaceAutocomplete({
         const response = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
           input: inputValue,
           includedRegionCodes: ["in"],
+          locationBias: (lat && lng) ? {
+            radius: 30000,
+            center: { lat, lng }
+          } : undefined
         });
         setSuggestions(response.suggestions || []);
       } catch (err) {
@@ -310,7 +318,7 @@ function MapPickerInner({
         <>
           {/* Top Search Bar */}
           <div className="absolute top-4 left-4 right-4 z-20">
-            <PlaceAutocomplete onPlaceSelect={handlePlaceSelect} setActiveMapTab={setActiveMapTab} />
+            <PlaceAutocomplete onPlaceSelect={handlePlaceSelect} setActiveMapTab={setActiveMapTab} lat={lat} lng={lng} />
           </div>
 
           {/* Injected Top Overlay (Saved Address Chips) */}
