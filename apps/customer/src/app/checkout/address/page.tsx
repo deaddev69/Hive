@@ -755,7 +755,7 @@ export default function CheckoutAddressPage() {
                   <span>{formatRupees(subtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-                  <span>Boutique Delivery (Estimated)</span>
+                  <span>Delivery Partner Fee (Estimated)</span>
                   <span>{isServiceable ? (deliveryFee === 0 ? "FREE" : `~${formatRupees(deliveryFee)}`) : "₹0.00"}</span>
                 </div>
                 {isServiceable && deliveryFee > 0 && (
@@ -803,7 +803,7 @@ export default function CheckoutAddressPage() {
               </div>
             )}
             <div className="flex justify-between items-center text-hive-text-muted">
-              <span>Boutique Delivery (Estimated)</span>
+              <span>Delivery Partner Fee (Estimated)</span>
               <span>{isServiceable ? (deliveryFee === 0 ? "FREE" : `~${formatRupees(deliveryFee)}`) : "₹0.00"}</span>
             </div>
             {isServiceable && deliveryFee > 0 && (

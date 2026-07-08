@@ -745,7 +745,7 @@ export default function OrderReviewPage() {
                 )}
 
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-                  <span>Boutique Delivery</span>
+                  <span>Delivery Partner Fee</span>
                   <span>{deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
@@ -869,7 +869,7 @@ export default function OrderReviewPage() {
               </div>
             )}
             <div className="flex justify-between items-center text-hive-text-muted">
-              <span>Boutique Delivery</span>
+              <span>Delivery Partner Fee</span>
               <span>{deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)}</span>
             </div>
 
