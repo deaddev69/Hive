@@ -76,36 +76,84 @@ const extractGeocodeData = (results: google.maps.GeocoderResult[], source: Rever
   };
 };
 
-function PlaceAutocomplete({ onPlaceSelect, setActiveMapTab }: { onPlaceSelect: (place: google.maps.places.PlaceResult) => void, setActiveMapTab: (v: any) => void }) {
-  const [placeAutocomplete, setPlaceAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+function PlaceAutocomplete({ 
+  onPlaceSelect, 
+  setActiveMapTab 
+}: { 
+  onPlaceSelect: (place: google.maps.places.PlaceResult) => void;
+  setActiveMapTab: (v: any) => void;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const places = useMapsLibrary("places");
   const [inputValue, setInputValue] = useState("");
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!places || !inputRef.current) return;
-    const options = {
-      componentRestrictions: { country: "in" }
-    };
-    setPlaceAutocomplete(new places.Autocomplete(inputRef.current, options));
-  }, [places]);
-
-  useEffect(() => {
-    if (!placeAutocomplete) return;
-    const listener = placeAutocomplete.addListener('place_changed', () => {
-      const place = placeAutocomplete.getPlace();
-      if (place && place.geometry) {
-        onPlaceSelect(place);
-      }
-      setInputValue(inputRef.current?.value || "");
-    });
-    return () => {
-      google.maps.event.removeListener(listener);
+    if (!places || inputValue.trim().length === 0) {
+      setSuggestions([]);
+      return;
     }
-  }, [onPlaceSelect, placeAutocomplete]);
+
+    const fetchSuggestions = async () => {
+      try {
+        setLoading(true);
+        const { AutocompleteSuggestion } = places;
+        if (!AutocompleteSuggestion) return;
+        const response = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
+          input: inputValue,
+          componentRestrictions: { country: "in" },
+        });
+        setSuggestions(response.suggestions || []);
+      } catch (err) {
+        console.error("Error fetching suggestions:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const delayDebounceFn = setTimeout(() => {
+      fetchSuggestions();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [inputValue, places]);
+
+  const handleSelectSuggestion = async (suggestion: any) => {
+    const placeId = suggestion.placePrediction.placeId;
+    const formattedText = suggestion.placePrediction.text.toString();
+    setInputValue(formattedText);
+    if (inputRef.current) {
+      inputRef.current.value = formattedText;
+    }
+    setSuggestions([]);
+
+    // Geocode to get lat/lng details
+    try {
+      const geocoder = new google.maps.Geocoder();
+      geocoder.geocode({ placeId }, (results, status) => {
+        if (status === "OK" && results && results[0]) {
+          onPlaceSelect({
+            geometry: {
+              location: results[0].geometry.location
+            },
+            address_components: results[0].address_components,
+            formatted_address: results[0].formatted_address,
+            place_id: results[0].place_id
+          } as any);
+        } else {
+          toast.error("Failed to load details for selected location.");
+        }
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load details for selected location.");
+    }
+  };
 
   const handleClear = () => {
     setInputValue("");
+    setSuggestions([]);
     if (inputRef.current) {
       inputRef.current.value = "";
       inputRef.current.focus();
@@ -113,8 +161,8 @@ function PlaceAutocomplete({ onPlaceSelect, setActiveMapTab }: { onPlaceSelect: 
   };
 
   return (
-    <div className="relative w-full rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] group">
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-hive-dark opacity-60" />
+    <div className="relative w-full rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] group z-50">
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-hive-dark opacity-60 pointer-events-none" />
       <input
         ref={inputRef}
         type="text"
@@ -132,6 +180,30 @@ function PlaceAutocomplete({ onPlaceSelect, setActiveMapTab }: { onPlaceSelect: 
         >
           <X className="w-4 h-4" />
         </button>
+      )}
+
+      {/* Custom Suggestions Dropdown List */}
+      {suggestions.length > 0 && (
+        <div className="absolute left-0 right-0 mt-2 bg-white rounded-2xl border border-slate-100 shadow-[0_12px_40px_rgba(0,0,0,0.12)] overflow-hidden max-h-60 overflow-y-auto z-[9999] pointer-events-auto">
+          {suggestions.map((s, idx) => (
+            <button
+              key={s.placePrediction.placeId || idx}
+              type="button"
+              onClick={() => handleSelectSuggestion(s)}
+              className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-b-0 flex items-start gap-3 text-xs text-hive-dark"
+            >
+              <MapPin className="w-4 h-4 text-hive-gold flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold truncate">
+                  {s.placePrediction.text.toString().split(",")[0]}
+                </p>
+                <p className="text-[10px] text-hive-text-muted truncate mt-0.5">
+                  {s.placePrediction.text.toString()}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
