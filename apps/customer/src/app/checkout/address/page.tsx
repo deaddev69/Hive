@@ -755,9 +755,14 @@ export default function CheckoutAddressPage() {
                   <span>{formatRupees(subtotal)}</span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-                  <span>Boutique Delivery</span>
-                  <span>{isServiceable ? (deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)) : "₹0.00"}</span>
+                  <span>Boutique Delivery (Estimated)</span>
+                  <span>{isServiceable ? (deliveryFee === 0 ? "FREE" : `~${formatRupees(deliveryFee)}`) : "₹0.00"}</span>
                 </div>
+                {isServiceable && deliveryFee > 0 && (
+                  <div className="text-[10px] text-hive-text-muted/80 italic -mt-1.5 text-right">
+                    *final fee confirmed at next step
+                  </div>
+                )}
                 <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1.5">
                   <span className="text-sm font-extrabold text-hive-dark">Estimated Total</span>
                   <span className="text-base font-extrabold text-hive-dark">
@@ -798,9 +803,14 @@ export default function CheckoutAddressPage() {
               </div>
             )}
             <div className="flex justify-between items-center text-hive-text-muted">
-              <span>Boutique Delivery</span>
-              <span>{isServiceable ? (deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)) : "₹0.00"}</span>
+              <span>Boutique Delivery (Estimated)</span>
+              <span>{isServiceable ? (deliveryFee === 0 ? "FREE" : `~${formatRupees(deliveryFee)}`) : "₹0.00"}</span>
             </div>
+            {isServiceable && deliveryFee > 0 && (
+              <div className="text-[9px] text-hive-text-muted/80 italic -mt-1 text-right">
+                *final fee confirmed at next step
+              </div>
+            )}
           </div>
         )}
 
@@ -813,8 +823,9 @@ export default function CheckoutAddressPage() {
             <span className="text-[11px] font-bold text-hive-text-muted flex items-center gap-1">
               {totalQuantity} {totalQuantity === 1 ? "item" : "items"} {isPriceExpanded ? "↓" : "↑"}
             </span>
-            <span className="text-base font-black text-hive-dark">
-              {formatRupees(total)}
+            <span className="text-base font-black text-hive-dark flex items-center gap-1">
+              <span>{formatRupees(total)}</span>
+              <span className="text-[10px] text-hive-text-muted/80 font-medium font-sans lowercase">(est.)</span>
             </span>
           </button>
 
