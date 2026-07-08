@@ -363,7 +363,6 @@ export default function CheckoutAddressPage() {
   // ── Form open/close ───────────────────────────────────────────────────────
   const openAddForm = () => {
     setEditingAddress(null);
-    setMapResult(null);
 
     // Fallback chain: Selected header location -> Kochi city center -> Kakkanad
     const initialLat = headerLat ?? 9.9816; // Kochi city center (9.9816, 76.2999)
@@ -371,6 +370,19 @@ export default function CheckoutAddressPage() {
 
     setMapLat(initialLat);
     setMapLng(initialLng);
+
+    if (headerLat && headerLng) {
+      setMapResult({
+        lat: headerLat,
+        lng: headerLng,
+        formattedAddress: `${headerLocality || headerRegion || headerCity || ""}, ${headerState || ""} ${headerPostcode || ""}`.trim().replace(/^,|,$/g, "") || "Kaloor, Kochi, Kerala 682025, India",
+        city: headerCity || "Kochi",
+        state: headerState || "Kerala",
+        pincode: headerPostcode || "682025",
+      });
+    } else {
+      setMapResult(null);
+    }
     setFormLabel("Home");
     setFormHouseNumber("");
     setFormPhone("");
@@ -500,7 +512,7 @@ export default function CheckoutAddressPage() {
     setUploadState("uploading");
     setFormError("");
     try {
-      const uploadUrl = await generateUploadUrl();
+      const uploadUrl = await generateUploadUrl({ token: token || undefined });
       const result = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": file.type },

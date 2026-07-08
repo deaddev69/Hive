@@ -6,6 +6,7 @@ import { mutation, query, action, internalMutation, internalQuery } from "./_gen
 import { v } from "convex/values";
 import { getAuthenticatedUser, getCurrentUserOrNull } from "./lib/auth";
 import { checkRateLimit } from "./lib/rateLimit";
+import { validateUploadedFile } from "./lib/uploads";
 import { api as rawApi, internal as rawInternal } from "./_generated/api";
 import { haversineKm } from "./lib/serviceability";
 const api = rawApi as any;
@@ -122,8 +123,12 @@ export const list = query({
 });
 
 export const generateUploadUrl = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { token: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await ctx.runMutation(internal.media.api.checkAuthAndRateLimit, {
+      token: args.token,
+      actionName: "entry_photo_upload",
+    });
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -332,6 +337,10 @@ export const addInternal = internalMutation({
     // Rate limit address creation: max 10 per user per 15 minutes
     await checkRateLimit(ctx, `address_add:${args.userId}`, 10, 15 * 60 * 1000);
 
+    if (args.entryPhotoId) {
+      await validateUploadedFile(ctx, args.entryPhotoId, undefined, ["image/jpeg", "image/png", "image/webp"], 5 * 1024 * 1024);
+    }
+
     const now = Date.now();
 
     if (args.isDefault) {
@@ -535,6 +544,10 @@ export const updateInternal = internalMutation({
   handler: async (ctx, args) => {
     const addr = await ctx.db.get(args.addressId);
     if (!addr || addr.userId !== args.userId) throw new Error("Address not found");
+
+    if (args.entryPhotoId && args.entryPhotoId !== addr.entryPhotoId) {
+      await validateUploadedFile(ctx, args.entryPhotoId, undefined, ["image/jpeg", "image/png", "image/webp"], 5 * 1024 * 1024);
+    }
 
     if (args.isDefault) {
       const all = await ctx.db
