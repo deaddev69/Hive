@@ -467,54 +467,15 @@ function OverviewTab({
   setActiveTab: (tab: NavId) => void;
 }) {
   const router = useRouter();
-  const { token } = useSessionStore();
-
-  const SELLER_PORTAL_URL = process.env.NEXT_PUBLIC_SELLER_PORTAL_URL || "http://seller.localhost:3001";
-
-  // Fetch boutique status
-  const boutiqueSafe = useQuery(api.boutiques.getMyBoutiqueSafeCustomer, { token: token || undefined });
-  const boutique = boutiqueSafe?.boutique;
-  const isApprovedMerchant = boutiqueSafe?.exists && boutique && boutique.status === "APPROVED";
-
+  const { token, logout } = useSessionStore();
   const updateDisplayName = useMutation(api.users.updateProfileDisplayName);
 
-  // Load orders to build Journey stats
-  const orders = useQuery(api.orders.listMyOrders, { token: token || undefined }) || [];
-
-  // Local Fashion Supported journey stats calculation
-  const completedOrdersCount = useMemo(() => {
-    return orders.filter((o: any) => o.status === "delivered" || o.status === "completed" || o.status === "received").length;
-  }, [orders]);
-
-  const uniquePartnersCount = useMemo(() => {
-    const ids = orders.map((o: any) => o.boutiqueId).filter(Boolean);
-    return new Set(ids).size;
-  }, [orders]);
-
-
-
-  // Member registration formatted date
-  const memberSinceStr = useMemo(() => {
-    if (!user?.createdAt) return "June 2026";
-    return new Date(user.createdAt).toLocaleDateString("en-IN", {
-      month: "long",
-      year: "numeric",
-    });
-  }, [user]);
-
-  // Load preferred shopping details from localStorage
-  const [defaultSize, setDefaultSize] = useState("M");
-  const [prefArea, setPrefArea] = useState("Kakkanad, Kochi");
   const [prefPhone, setPrefPhone] = useState("");
-
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameVal, setNameVal] = useState("");
 
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [phoneVal, setPhoneVal] = useState("");
-
-  const [isEditingArea, setIsEditingArea] = useState(false);
-  const [areaVal, setAreaVal] = useState("");
 
   useEffect(() => {
     if (user?.name) {
@@ -524,22 +485,6 @@ function OverviewTab({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const storedSize = localStorage.getItem("hive_pref_size");
-      if (storedSize) setDefaultSize(storedSize);
-
-      const storedArea = localStorage.getItem("hive_pref_area");
-      if (storedArea) {
-        setPrefArea(storedArea);
-        setAreaVal(storedArea);
-      } else {
-        const defaultAddr = addresses.find(a => a.isDefault) || addresses[0];
-        if (defaultAddr) {
-          const defaultStr = `${defaultAddr.city}, ${defaultAddr.state}`;
-          setPrefArea(defaultStr);
-          setAreaVal(defaultStr);
-        }
-      }
-
       const storedPhone = localStorage.getItem("hive_pref_phone");
       if (storedPhone) {
         setPrefPhone(storedPhone);
@@ -549,53 +494,12 @@ function OverviewTab({
         setPhoneVal(user.phone);
       }
     }
-  }, [addresses, user]);
-
-  const handleSizeChange = (val: string) => {
-    setDefaultSize(val);
-    localStorage.setItem("hive_pref_size", val);
-  };
-
-  const handleAreaChange = (val: string) => {
-    setPrefArea(val);
-    localStorage.setItem("hive_pref_area", val);
-  };
+  }, [user]);
 
   const handlePhoneChange = (val: string) => {
     setPrefPhone(val);
     localStorage.setItem("hive_pref_phone", val);
   };
-
-  // Profile completeness count out of 4
-  const completedCount = useMemo(() => {
-    return [
-      true, // Email verified
-      !!user?.name, // Profile created
-      addresses.length > 0, // Address added
-      !!prefPhone || !!user?.phone, // Phone added
-    ].filter(Boolean).length;
-  }, [user, addresses, prefPhone]);
-
-  // Recently Viewed Local Storage shelf
-  const [recentlyViewed, setRecentlyViewed] = useState<any[]>([]);
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("hive_recently_viewed");
-      if (stored) {
-        try {
-          setRecentlyViewed(JSON.parse(stored));
-        } catch {
-          // ignore
-        }
-      }
-    }
-  }, []);
-
-  const recentlyViewedDisplay = recentlyViewed.length > 0 ? recentlyViewed.slice(0, 3) : [
-    { id: "rv-1", name: "Linen Kurti", boutiqueName: "Cochin Couture", price: "₹2,450", img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80" },
-    { id: "rv-2", name: "Cotton Dupatta", boutiqueName: "Kakkanad Handloom", price: "₹950", img: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80" },
-    { id: "rv-3", name: "Relaxed Co-ord Set", boutiqueName: "Palarivattom Threads", price: "₹3,200", img: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=400&q=80" },
-  ];
 
   return (
     <div className="flex flex-col gap-10 text-left animate-fadeIn">
@@ -604,102 +508,7 @@ function OverviewTab({
         <h1 className="text-3xl font-serif font-light text-[#1C1917] leading-tight">
           Welcome back, {toTitleCase(user?.name?.split(" ")[0]) || "Athul"} 👋
         </h1>
-        <div className="flex items-center gap-2 text-xs text-[#78716C] font-medium">
-          <span className="text-[#4D7C0F]">Verified Hive Member</span>
-          <span className="text-[#1c1917]/[0.12]">•</span>
-          <span>Supporting Local Fashion Since 2026</span>
-        </div>
       </section>
-
-      {/* ── SECTION 2 — MEMBERSHIP PROGRESS (Setup) ── */}
-      <section className="bg-white border border-[#1c1917]/[0.08] rounded-xl p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 text-left">
-          <div className="space-y-1">
-            <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wider">Membership Setup</h4>
-            <p className="text-xs text-[#78716C] font-medium">{completedCount} of 4 Complete</p>
-          </div>
-          {completedCount < 4 && (
-            <button
-              onClick={() => {
-                if (!user?.name) {
-                  setIsEditingName(true);
-                  const nameCard = document.getElementById("profile-name-card");
-                  if (nameCard) {
-                    nameCard.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }
-                } else if (!prefPhone && !user?.phone) {
-                  setIsEditingPhone(true);
-                  const phoneCard = document.getElementById("profile-phone-card");
-                  if (phoneCard) {
-                    phoneCard.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }
-                } else if (addresses.length === 0) {
-                  setActiveTab("addresses");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }
-              }}
-              className="h-10 px-4 rounded-lg bg-[#1C1917] hover:bg-[#1c1917]/90 text-white font-medium text-xs tracking-wider transition-all cursor-pointer flex items-center justify-center self-start sm:self-center"
-            >
-              Complete Profile →
-            </button>
-          )}
-        </div>
-        
-        {/* Checklist */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 pt-4 border-t border-[#1c1917]/[0.04]">
-          <div className="flex items-center gap-2 text-xs text-[#1C1917] font-medium">
-            <span className="text-[#4D7C0F] font-bold">✓</span>
-            <span>Email Verified</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-[#1C1917] font-medium">
-            {addresses.length > 0 ? (
-              <span className="text-[#4D7C0F] font-bold">✓</span>
-            ) : (
-              <span className="text-[#78716C] font-light">○</span>
-            )}
-            <span>Address Added</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-[#1C1917] font-medium">
-            {user?.name ? (
-              <span className="text-[#4D7C0F] font-bold">✓</span>
-            ) : (
-              <span className="text-[#78716C] font-light">○</span>
-            )}
-            <span>Profile Created</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-[#1C1917] font-medium">
-            {prefPhone || user?.phone ? (
-              <span className="text-[#4D7C0F] font-bold">✓</span>
-            ) : (
-              <span className="text-[#78716C] font-light">○</span>
-            )}
-            <span>Phone Number Added</span>
-          </div>
-        </div>
-      </section>
-
-      {/* ── SECTION 2.5 — MERCHANT ACCESS (YOUR BOUTIQUE) ── */}
-      {isApprovedMerchant && boutique && (
-        <section className="bg-white border border-[#1c1917]/[0.08] rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-left">
-          <div className="space-y-1">
-            <span className="text-[9px] font-extrabold uppercase tracking-widest text-[#D97706] bg-[#FAF8F4] border border-[#1c1917]/[0.08] px-2.5 py-0.5 rounded-full">
-              Your Boutique
-            </span>
-            <h4 className="text-base font-serif font-bold text-[#1C1917] pt-1">
-              {boutique.boutiqueName}
-            </h4>
-            <p className="text-xs text-[#78716C] font-medium">
-              Manage products, orders, and payouts
-            </p>
-          </div>
-          <a
-            href={SELLER_PORTAL_URL}
-            className="h-10 px-5 rounded-lg bg-[#1C1917] hover:bg-[#1c1917]/90 text-[#F5A623] font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center self-start sm:self-center"
-          >
-            Open Seller Portal
-          </a>
-        </section>
-      )}
 
       {/* ── SECTION 6 — PROFILE DETAILS (Single Elegant Container) ── */}
       <section className="space-y-4 text-left">
@@ -832,225 +641,24 @@ function OverviewTab({
             )}
           </div>
 
-          {/* Field 4: Preferred Delivery Area */}
-          <div 
-            id="profile-area-card"
-            className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-left transition-colors duration-200 hover:bg-stone-50/30"
-          >
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#78716C]">Preferred Delivery Area</span>
-              {!isEditingArea && (
-                <div className="text-xs font-semibold text-[#1C1917]">
-                  {prefArea || <span className="text-stone-300 italic font-normal">No delivery area added</span>}
-                </div>
-              )}
+          {/* Field 4: Sign Out */}
+          <div className="p-5 flex items-center justify-between gap-4 transition-colors duration-200 hover:bg-stone-50/30">
+            <div className="space-y-0.5 text-left">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-[#78716C]">Session Control</span>
+              <div className="text-xs font-semibold text-[#78716C]">Sign out of your account on this device</div>
             </div>
-            {isEditingArea ? (
-              <form 
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAreaChange(areaVal);
-                  setIsEditingArea(false);
-                }}
-                className="flex items-center gap-2 w-full sm:w-auto"
-              >
-                <input 
-                  type="text" 
-                  value={areaVal} 
-                  onChange={(e) => setAreaVal(e.target.value)}
-                  className="bg-[#FAF8F4]/30 border border-[#1c1917]/[0.1] rounded px-3 py-1.5 text-xs font-semibold text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#1C1917] flex-1 sm:w-64"
-                  autoFocus
-                />
-                <button 
-                  type="submit"
-                  className="px-3 py-1.5 bg-[#1C1917] text-white rounded text-[10px] font-bold uppercase tracking-wider hover:bg-stone-850 cursor-pointer"
-                >
-                  Save
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setAreaVal(prefArea);
-                    setIsEditingArea(false);
-                  }}
-                  className="px-2 py-1.5 border border-[#1c1917]/[0.15] text-[#78716C] rounded text-[10px] font-bold uppercase hover:bg-stone-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </form>
-            ) : (
-              <button 
-                onClick={() => setIsEditingArea(true)}
-                className="text-[10px] font-bold uppercase tracking-widest text-[#78716C] hover:text-[#1C1917] transition-colors cursor-pointer self-start sm:self-center"
-              >
-                {prefArea ? "Edit" : "Add delivery area →"}
-              </button>
-            )}
-          </div>
-
-          {/* Field 5: Default Size */}
-          <div className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-left transition-colors duration-200 hover:bg-stone-50/30">
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#78716C]">Default Size</span>
-              <div className="flex items-center gap-1.5">
-                <select 
-                  value={defaultSize} 
-                  onChange={(e) => handleSizeChange(e.target.value)}
-                  className="bg-transparent text-xs font-semibold text-[#1C1917] focus:outline-none cursor-pointer pr-4 appearance-none hover:underline"
-                >
-                  {["XS", "S", "M", "L", "XL", "XXL", "Free"].map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
-            </div>
-            <span className="text-[9px] text-[#78716C] font-bold uppercase tracking-widest self-start sm:self-center">Select size</span>
-          </div>
-
-          {/* Field 6: Account Status */}
-          <div className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-left transition-colors duration-200 hover:bg-stone-50/30">
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#78716C]">Account Status</span>
-              <span className="text-xs font-bold text-[#4D7C0F] flex items-center gap-1.5 pt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#4D7C0F]" />
-                Verified Hive Member
-              </span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── SECTION 3 — YOUR HIVE JOURNEY ── */}
-      <section className="space-y-4 text-left">
-        <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Your Hive Journey</h3>
-        
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 border-b border-[#1c1917]/[0.08]">
-          <div className="flex flex-wrap gap-x-12 gap-y-6 items-baseline">
-            <div className="space-y-0.5">
-              <div className="text-4xl font-sans font-light text-[#1C1917] tracking-tight">{completedOrdersCount}</div>
-              <div className="text-xs text-[#78716C] font-medium tracking-wide">Orders Completed</div>
-            </div>
-            <div className="space-y-0.5">
-              <div className="text-4xl font-sans font-light text-[#1C1917] tracking-tight">{uniquePartnersCount}</div>
-              <div className="text-xs text-[#78716C] font-medium tracking-wide">Partners Supported</div>
-            </div>
-          </div>
-          <div className="text-xs font-bold uppercase tracking-widest text-[#78716C] mt-2 md:mt-0">
-            Member Since {memberSinceStr}
-          </div>
-        </div>
-
-        {/* Empty state supportive copy */}
-        {completedOrdersCount === 0 && (
-          <p className="text-xs text-[#78716C] leading-relaxed max-w-xl font-medium pt-1">
-            Your journey with local fashion starts here. Explore curated pieces from independent Hive Partners across your city.
-          </p>
-        )}
-      </section>
-
-      {/* ── SECTION 4 — YOUR IMPACT ── */}
-      <section className="bg-[#FAF8F4] border-l border-[#D97706] p-8 text-left space-y-3">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Your Impact</span>
-        <h3 className="text-lg font-serif font-light text-[#1C1917] leading-relaxed max-w-2xl">
-          {uniquePartnersCount > 0 ? (
-            <>
-              You have supported {uniquePartnersCount} Local Fashion {uniquePartnersCount === 1 ? "Business" : "Businesses"} through Hive.
-            </>
-          ) : (
-            <>
-              Explore verified independent designers across your city. Every purchase supports local creative entrepreneurship.
-            </>
-          )}
-        </h3>
-        {uniquePartnersCount > 0 && (
-          <p className="text-xs text-[#78716C] leading-relaxed max-w-xl font-medium">
-            Supporting independent designers helps build a thriving creative community.
-          </p>
-        )}
-      </section>
-
-      {/* ── SECTION 5 — RECENTLY VIEWED (Horizontal Scroll) ── */}
-      <section className="space-y-4 text-left">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Recently Viewed</h3>
-          {recentlyViewed.length === 0 && (
-            <span className="text-[10px] text-[#78716C] font-normal italic">Curated pieces are waiting for you.</span>
-          )}
-        </div>
-
-        <div className="flex gap-6 overflow-x-auto no-scrollbar pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 scroll-smooth snap-x snap-mandatory">
-          {recentlyViewedDisplay.map((item, idx) => (
-            <div 
-              key={item.id || idx} 
-              className="w-[200px] sm:w-[220px] flex-shrink-0 snap-start space-y-3 group cursor-pointer" 
-              onClick={() => {
-                if (item.slug) {
-                  router.push(`/products/${item.slug}`);
-                } else {
-                  router.push("/products");
-                }
+            <button
+              onClick={async () => {
+                await logout();
+                router.push("/");
               }}
+              className="px-4 py-2 border border-red-200 hover:bg-red-50 text-red-500 font-bold text-[10px] uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <div className="relative aspect-[3/4] bg-[#FAF8F4] rounded-lg overflow-hidden border border-[#1c1917]/[0.08]">
-                <img 
-                  src={item.img || item.imageUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=400&q=80"} 
-                  alt={item.name} 
-                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 ease-out" 
-                />
-              </div>
-              <div className="text-left space-y-1">
-                <p className="text-xs font-serif font-medium text-[#1C1917] group-hover:underline truncate">{item.name}</p>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-[#78716C] truncate">{item.boutiqueName || item.partnerName}</p>
-                <p className="text-xs font-semibold text-[#1C1917]">{typeof item.price === "number" ? `₹${item.price.toLocaleString("en-IN")}` : item.price}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+              <LogOut className="w-3.5 h-3.5" />
+              Sign Out
+            </button>
+          </div>
 
-      {/* ── SECTION 7 — CONTINUE EXPLORING ── */}
-      <section className="space-y-4 text-left">
-        <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Continue Exploring</h3>
-        <div className="flex flex-col md:grid md:grid-cols-3 gap-6">
-          {[
-            {
-              title: "Browse New Arrivals →",
-              desc: "Latest seasonal collections from Kochi",
-              img: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80",
-              url: "/products",
-            },
-            {
-              title: "Discover Local Partners →",
-              desc: "Explore verified independent designers",
-              img: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80",
-              url: "/products",
-            },
-            {
-              title: "View Wishlist →",
-              desc: "Return to your curated collection",
-              img: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
-              url: "/wishlist",
-            },
-          ].map((card, idx) => (
-            <Link 
-              key={idx} 
-              href={card.url}
-              className="relative block w-full h-[200px] md:aspect-[4/3] md:h-auto rounded-xl overflow-hidden group shadow-sm active:scale-[0.99] transition-all border border-[#1c1917]/[0.08]"
-            >
-              <img 
-                src={card.img} 
-                alt={card.title} 
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out" 
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1C1917]/95 via-[#1C1917]/25 to-transparent" />
-              
-              <div className="absolute inset-0 p-8 flex flex-col justify-end text-left select-none space-y-1">
-                <h4 className="text-xl font-serif font-light text-[#FAF8F4] leading-tight tracking-wide">
-                  {card.title}
-                </h4>
-                <p className="text-[10px] text-[#FAF8F4]/70 font-semibold uppercase tracking-widest">{card.desc}</p>
-              </div>
-            </Link>
-          ))}
         </div>
       </section>
     </div>
@@ -1346,9 +954,6 @@ function SettingsTab() {
 const NAVIGATION_ITEMS = [
   { id: "overview", label: "Overview" },
   { id: "addresses", label: "Addresses" },
-  { id: "orders", label: "Orders", route: "/orders" },
-  { id: "wishlist", label: "Wishlist", route: "/wishlist" },
-  { id: "notifications", label: "Notifications" },
   { id: "settings", label: "Settings" },
 ] as const;
 
@@ -1411,15 +1016,10 @@ function AccountPageContent() {
     <div className="min-h-screen bg-[#FAF8F4] text-[#1C1917] font-sans pb-24 antialiased selection:bg-[#F5A623]/20">
       
       {/* Mobile Top Profile Identity (compact layout visible only on mobile) */}
-      <div className="lg:hidden bg-white border-b border-[#1c1917]/[0.08] px-6 pt-6 pb-4 text-left space-y-2">
+      <div className="lg:hidden bg-white border-b border-[#1c1917]/[0.08] px-6 pt-6 pb-4 text-left">
         <h2 className="text-xl font-serif font-light text-[#1C1917] leading-tight">
           Welcome back, {toTitleCase(user?.name?.split(" ")[0]) || "Athul"} 👋
         </h2>
-        <div className="flex items-center gap-2 text-xs text-[#78716C] font-medium">
-          <span className="text-[#4D7C0F]">Verified Hive Member</span>
-          <span className="text-[#1c1917]/[0.12]">•</span>
-          <span>Supporting Local Fashion Since 2026</span>
-        </div>
       </div>
 
       {/* Mobile Navigation Pills sticky container (replaces vertical list) */}
@@ -1459,23 +1059,6 @@ function AccountPageContent() {
                 <h2 className="text-xl font-serif font-medium text-[#1C1917] tracking-wide">
                   {toTitleCase(user?.name) || "Athul Krishna"}
                 </h2>
-                
-                <div className="flex flex-col gap-1 items-start">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#4D7C0F]/5 border border-[#4D7C0F]/10 text-[8.5px] font-extrabold uppercase tracking-widest text-[#4D7C0F]">
-                    Verified Hive Member
-                  </span>
-                  
-                  {/* Founding Member badge if registered early */}
-                  {createdYear <= 2026 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#D97706]/5 border border-[#D97706]/10 text-[8.5px] font-extrabold uppercase tracking-widest text-[#D97706] mt-1">
-                      Founding Member
-                    </span>
-                  )}
-                </div>
-                
-                <p className="text-[10px] text-[#78716C] italic font-semibold pt-1">
-                  Supporting Local Fashion Since {createdYear || 2026}
-                </p>
               </div>
             </div>
 
@@ -1530,10 +1113,6 @@ function AccountPageContent() {
 
           {activeTab === "addresses" && (
             <AddressesTab userName={user?.name || "Athul Krishna"} />
-          )}
-
-          {activeTab === "notifications" && (
-            <NotificationsTab />
           )}
 
           {activeTab === "settings" && (
