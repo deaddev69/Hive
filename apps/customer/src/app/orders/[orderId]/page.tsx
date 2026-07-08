@@ -468,7 +468,7 @@ function BillingCard({
         )}
 
         <div className="flex justify-between items-center">
-          <span>Delivery Fee</span>
+          <span>Delivery Partner Fee</span>
           <span className="text-hive-dark">{deliveryFee === 0 ? "FREE" : formatCurrency(deliveryFee)}</span>
         </div>
 

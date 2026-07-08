@@ -47,9 +47,9 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
 
       {/* Delivery Fee */}
       <div className="flex justify-between items-center text-xs text-stone-500 font-normal mt-2">
-        <span>Delivery Fee</span>
+        <span>Delivery Partner Fee (Estimated)</span>
         <span className="text-stone-900 font-medium font-semibold">
-          {deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)}
+          {deliveryFee === 0 ? "FREE" : `~${formatRupees(deliveryFee)}`}
         </span>
       </div>
 
