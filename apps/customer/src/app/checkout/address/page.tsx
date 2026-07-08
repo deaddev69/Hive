@@ -464,15 +464,17 @@ export default function CheckoutAddressPage() {
       receiverName: formReceiverName.trim() || undefined,
       deliveryInstructions: formDeliveryInstructions.trim() || undefined,
       entryPhotoId: formEntryPhotoId || undefined,
-      clearEntryPhoto: !formEntryPhotoId,
       isDefault: formIsDefault,
       token: token || undefined,
-      eLoc: mapResult.eLoc || undefined,
     };
 
     try {
       if (editingAddress) {
-        await updateAddressMutation({ addressId: editingAddress._id, ...payload });
+        await updateAddressMutation({
+          addressId: editingAddress._id,
+          clearEntryPhoto: !formEntryPhotoId,
+          ...payload,
+        });
       } else {
         const newId = await addAddressMutation(payload);
         if (newId) setSelectedAddressId(newId as Id<"addresses">);
