@@ -110,7 +110,15 @@ export default function CheckoutAddressPage() {
   const sessionLoaded = !isLoading;
   const isSignedIn = isAuthenticated;
 
-  const { latitude: headerLat, longitude: headerLng } = useLocation();
+  const {
+    latitude: headerLat,
+    longitude: headerLng,
+    locality: headerLocality,
+    regionName: headerRegion,
+    city: headerCity,
+    stateName: headerState,
+    postcode: headerPostcode,
+  } = useLocation();
 
   const convexAddresses = useQuery(api.addresses.list, { token: token || undefined }) ?? [];
   const addAddressMutation = useAction(api.addresses.add);
