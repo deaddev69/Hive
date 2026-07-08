@@ -6,11 +6,9 @@ import { useLocation } from "@/context/LocationContext";
 import { Navbar } from "./Navbar";
 import { CheckoutHeader } from "./CheckoutHeader";
 import { Footer } from "./Footer";
-import { LocationPermissionModal } from "./LocationPermissionModal";
 import { LocationDrawer } from "./LocationDrawer";
 import { UnsupportedArea } from "../location/UnsupportedArea";
 import { CartDrawer } from "@/components/cart/CartDrawer";
-import { FirstVisitAuthModal } from "../auth/FirstVisitAuthModal";
 import { MobileBottomNav } from "./MobileBottomNav";
 
 import { usePathname } from "next/navigation";
@@ -29,8 +27,6 @@ export const CustomerLayout: React.FC<{ children: React.ReactNode }> = ({ childr
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Dynamic first-visit prompt for guests */}
-      <FirstVisitAuthModal />
 
       {isCheckoutPage ? (
         <CheckoutHeader backHref={backHref} subline={subline} />
@@ -48,9 +44,6 @@ export const CustomerLayout: React.FC<{ children: React.ReactNode }> = ({ childr
 
       {/* Sticky bottom nav for mobile */}
       <MobileBottomNav />
-
-      {/* Global location overlays */}
-      <LocationPermissionModal />
       
       <UnsupportedArea />
       
