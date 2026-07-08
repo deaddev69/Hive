@@ -41,7 +41,7 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3">
-        {users.map((user) => (
+        {users.map((user: any) => (
           <Card key={user._id} className="overflow-hidden border border-hive-border bg-white shadow-sm">
             <CardContent className="p-4 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
               
@@ -59,7 +59,7 @@ export default function AdminUsersPage() {
                 <div className="flex flex-col min-w-0 text-left">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-serif font-bold text-hive-dark text-base truncate">
-                      {user.email || "No Email provided"}
+                      {user.email || user.phone || "No Email/Phone provided"}
                     </span>
                     <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
                       user.role === "admin" ? "bg-red-100 text-red-700 border-red-200" :
