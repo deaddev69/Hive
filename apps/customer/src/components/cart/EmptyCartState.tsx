@@ -122,7 +122,7 @@ export const EmptyCartState: React.FC<EmptyCartStateProps> = ({ onClose }) => {
 
         {/* Body */}
         <p className="text-xs text-stone-500 mt-2 max-w-[270px] leading-relaxed font-normal">
-          Discover independent fashion houses across Kochi, with same-day delivery and expert alterations.
+          Discover curated apparel and exclusive collections from the finest independent fashion sellers near you.
         </p>
 
         {/* Branded CTA button */}
@@ -137,7 +137,7 @@ export const EmptyCartState: React.FC<EmptyCartStateProps> = ({ onClose }) => {
 
         {/* Quiet trust row */}
         <div className="text-[10px] text-stone-400 font-semibold tracking-wider mt-5 uppercase">
-          Same-Day Delivery • Verified Designers • Tailoring
+          Same-Day Delivery • Verified Designers • Curated Fashion
         </div>
 
         {/* Branded statistics label */}

@@ -180,7 +180,7 @@ export default function CartPage() {
           <div className="space-y-2">
             <h1 className="font-serif text-2xl font-bold text-hive-dark">Your Hive Bag is empty.</h1>
             <p className="text-xs text-hive-text-muted max-w-[290px] mx-auto leading-relaxed font-medium">
-              Discover unique handcrafted designer apparel and bespoke alteration services near you.
+              Discover curated apparel and exclusive collections from the finest independent fashion sellers near you.
             </p>
           </div>
 
