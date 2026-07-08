@@ -173,12 +173,8 @@ export default function CartPage() {
     return (
       <div className="min-h-[70vh] bg-hive-cream/30 py-20 px-6 flex items-center justify-center text-left">
         <div className="max-w-md w-full text-center space-y-6 animate-[fadeIn_0.4s_ease-out_forwards]">
-          <div className="w-20 h-20 rounded-full bg-hive-comb/40 flex items-center justify-center border border-hive-border/40 mx-auto relative">
+          <div className="w-20 h-20 rounded-full bg-hive-comb/40 flex items-center justify-center border border-hive-border/40 mx-auto">
             <PremiumShoppingBag className="w-8 h-8 text-hive-gold" strokeWidth={1.5} />
-            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-hive-amber opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-hive-amber"></span>
-            </span>
           </div>
 
           <div className="space-y-2">
