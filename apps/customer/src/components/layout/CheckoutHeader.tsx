@@ -15,12 +15,12 @@ interface CheckoutHeaderProps {
 }
 
 export const CheckoutHeader: React.FC<CheckoutHeaderProps> = ({ backHref, subline }) => {
-  const { token } = useSessionStore();
+  const { token, isAuthenticated } = useSessionStore();
   const selectedAddressId = useCheckoutStore((state) => state.selectedAddressId);
   const savedAddresses = useQuery(api.addresses.list, { token: token || undefined }) ?? [];
   
   // Find selected address to extract label and city
-  const selectedAddress = savedAddresses.find((addr: any) => addr._id === selectedAddressId);
+  const selectedAddress = isAuthenticated ? savedAddresses.find((addr: any) => addr._id === selectedAddressId) : null;
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white dark:bg-hive-dark border-b border-slate-200/80 dark:border-neutral-800/80 select-none flex flex-col">
@@ -67,10 +67,10 @@ export const CheckoutHeader: React.FC<CheckoutHeaderProps> = ({ backHref, sublin
               {/* Text Block */}
               <div className="flex flex-col text-left min-w-0 leading-tight">
                 <span className="text-[10px] font-black text-hive-dark uppercase tracking-wider truncate">
-                  {selectedAddress ? selectedAddress.label : "CHOOSE"}
+                  {isAuthenticated ? (selectedAddress ? selectedAddress.label : "CHOOSE") : "SECURE"}
                 </span>
                 <span className="text-[9px] text-hive-text-muted font-bold truncate">
-                  {selectedAddress ? (selectedAddress.city ? `${selectedAddress.city}, Kochi` : "Kochi") : "Address"}
+                  {isAuthenticated ? (selectedAddress ? (selectedAddress.city ? `${selectedAddress.city}, Kochi` : "Kochi") : "Address") : "Checkout"}
                 </span>
               </div>
 
@@ -83,7 +83,7 @@ export const CheckoutHeader: React.FC<CheckoutHeaderProps> = ({ backHref, sublin
       {/* Bottom Row: Orientation progress tracker */}
       <div className="w-full border-t border-slate-100 dark:border-neutral-800/60 h-8 flex items-center justify-center bg-slate-50/50 dark:bg-neutral-900/10">
         <span className="text-[9px] font-extrabold uppercase tracking-widest text-stone-500">
-          {subline}
+          {isAuthenticated ? subline : "SECURE SIGN IN"}
         </span>
       </div>
     </header>

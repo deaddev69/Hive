@@ -296,13 +296,6 @@ export default function CheckoutAddressPage() {
               // Authentication will trigger session context refresh automatically
             }}
           />
-          <button
-            type="button"
-            onClick={() => router.push("/cart")}
-            className="text-xs font-bold text-center text-hive-text-muted hover:text-hive-dark dark:hover:text-white transition-colors cursor-pointer"
-          >
-            ← Cancel & Return to Cart
-          </button>
         </div>
       </div>
     );
