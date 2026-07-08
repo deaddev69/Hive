@@ -3,11 +3,13 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Disallow: /sign-in/
-Disallow: /sign-up/
-Disallow: /checkout/
-Disallow: /account/
-Disallow: /order/
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /checkout
+Disallow: /account
+Disallow: /orders
+Disallow: /wishlist
+Disallow: /search
 
 # Sitemap
 Sitemap: https://hivenow.in/sitemap.xml
