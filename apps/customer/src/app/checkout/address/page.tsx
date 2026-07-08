@@ -253,18 +253,14 @@ export default function CheckoutAddressPage() {
   const [openMenuId, setOpenMenuId] = useState<Id<"addresses"> | null>(null);
   const [isPriceExpanded, setIsPriceExpanded] = useState(false);
 
-  const generateUploadUrl = useMutation(api.addresses.generateUploadUrl);
   const [formReceiverName, setFormReceiverName] = useState("");
   const [useAccountDetails, setUseAccountDetails] = useState(true);
   const [formDeliveryInstructions, setFormDeliveryInstructions] = useState("");
-  const [formEntryPhotoId, setFormEntryPhotoId] = useState<Id<"_storage"> | null>(null);
-  const [formEntryPhotoUrl, setFormEntryPhotoUrl] = useState("");
-  const [uploadState, setUploadState] = useState<"idle" | "uploading" | "success" | "error">("idle");
 
   useEffect(() => {
     if (useAccountDetails && currentUser) {
-      setFormReceiverName((currentUser as any)?.name || (currentUser as any)?.email?.split("@")[0] || "");
-      setFormPhone((currentUser as any)?.phoneNumber || "");
+      setFormReceiverName((currentUser as any)?.name || "");
+      setFormPhone((currentUser as any)?.phone || "");
     }
   }, [useAccountDetails, currentUser]);
 
@@ -397,13 +393,10 @@ export default function CheckoutAddressPage() {
     setFormLandmark("");
     setFormIsDefault(addresses.length === 0);
     setFormError("");
-    setFormReceiverName((currentUser as any)?.name || (currentUser as any)?.email?.split("@")[0] || "");
-    setFormPhone((currentUser as any)?.phoneNumber || "");
+    setFormReceiverName((currentUser as any)?.name || "");
+    setFormPhone((currentUser as any)?.phone || "");
     setUseAccountDetails(true);
     setFormDeliveryInstructions("");
-    setFormEntryPhotoId(null);
-    setFormEntryPhotoUrl("");
-    setUploadState("idle");
     setShowForm(true);
   };
 
@@ -430,10 +423,7 @@ export default function CheckoutAddressPage() {
     setFormError("");
     setFormReceiverName(addr.receiverName || "");
     setFormDeliveryInstructions(addr.deliveryInstructions || "");
-    setFormEntryPhotoId(addr.entryPhotoId || null);
-    setFormEntryPhotoUrl(addr.entryPhotoUrl || "");
     setUseAccountDetails(false);
-    setUploadState("idle");
     setShowForm(true);
   };
 
@@ -483,7 +473,6 @@ export default function CheckoutAddressPage() {
       landmark: formLandmark.trim() || undefined,
       receiverName: formReceiverName.trim() || undefined,
       deliveryInstructions: formDeliveryInstructions.trim() || undefined,
-      entryPhotoId: formEntryPhotoId || undefined,
       isDefault: formIsDefault,
       token: token || undefined,
     };
@@ -492,7 +481,6 @@ export default function CheckoutAddressPage() {
       if (editingAddress) {
         await updateAddressMutation({
           addressId: editingAddress._id,
-          clearEntryPhoto: !formEntryPhotoId,
           ...payload,
         });
       } else {
@@ -514,29 +502,7 @@ export default function CheckoutAddressPage() {
     toast.success("Address deleted");
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadState("uploading");
-    setFormError("");
-    try {
-      const uploadUrl = await generateUploadUrl({ token: token || undefined });
-      const result = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!result.ok) throw new Error("Upload failed");
-      const { storageId } = await result.json();
-      setFormEntryPhotoId(storageId);
-      setFormEntryPhotoUrl(URL.createObjectURL(file));
-      setUploadState("success");
-    } catch(err: any) {
-      console.error(err);
-      setUploadState("error");
-      setFormError("Failed to upload photo. Please try again.");
-    }
-  };
+
 
   // Waitlist functionality removed
 
@@ -862,25 +828,27 @@ export default function CheckoutAddressPage() {
       >
         <div className="space-y-4">
           
-          {/* GPS Auto-Detect Button */}
-          <button
-            type="button"
-            onClick={handleGPSDetect}
-            disabled={gpsDetecting}
-            className="w-full h-14 bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 font-semibold uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 rounded-lg transition-all select-none disabled:opacity-50"
-          >
-            {gpsDetecting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Detecting Location...</span>
-              </>
-            ) : (
-              <>
-                <Navigation className="w-4 h-4" />
-                <span>Auto-Detect My Location (GPS)</span>
-              </>
-            )}
-          </button>
+          {/* GPS Auto-Detect Button - Hidden if location is already resolved */}
+          {!mapResult && (
+            <button
+              type="button"
+              onClick={handleGPSDetect}
+              disabled={gpsDetecting}
+              className="w-full h-14 bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 font-semibold uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 rounded-lg transition-all select-none disabled:opacity-50"
+            >
+              {gpsDetecting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Detecting Location...</span>
+                </>
+              ) : (
+                <>
+                  <Navigation className="w-4 h-4" />
+                  <span>Auto-Detect My Location (GPS)</span>
+                </>
+              )}
+            </button>
+          )}
 
           {/* Receiver Details */}
           <div className="space-y-3">
@@ -993,12 +961,13 @@ export default function CheckoutAddressPage() {
             </div>
 
             {/* Map Preview & Area display */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
                 Area / Locality
               </label>
-              <div className="flex flex-col sm:flex-row gap-3 p-2 bg-white border border-hive-border rounded-2xl items-center">
-                <div className="w-full sm:w-28 h-20 rounded-xl overflow-hidden flex-shrink-0 relative">
+              <div className="flex flex-col gap-3 p-3 bg-white border border-hive-border rounded-2xl">
+                {/* 100% Width Spacious Map Container */}
+                <div className="w-full h-40 rounded-xl overflow-hidden relative border border-hive-border/40 shadow-inner">
                   <LocationMapPicker
                     lat={mapLat}
                     lng={mapLng}
@@ -1009,11 +978,15 @@ export default function CheckoutAddressPage() {
                   />
                   <div className="absolute inset-0 border border-black/5 rounded-xl pointer-events-none" />
                 </div>
-                <div className="flex-1 min-w-0 px-2 space-y-1 text-left w-full">
-                  <p className="text-[11px] font-bold text-hive-dark truncate">
-                    {mapResult ? `${mapResult.city}, ${mapResult.pincode}` : "Location not set"}
-                  </p>
-                  <p className="text-[10px] text-hive-text-muted leading-relaxed line-clamp-2">
+                {/* Geocoded Address Details Block Below Map */}
+                <div className="min-w-0 p-3 bg-neutral-50/50 border border-hive-border/30 rounded-xl text-left w-full space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-hive-gold" />
+                    <p className="text-xs font-bold text-hive-dark truncate">
+                      {mapResult ? `${mapResult.city}, ${mapResult.pincode}` : "Location not set"}
+                    </p>
+                  </div>
+                  <p className="text-[10px] text-hive-text-muted leading-relaxed pl-3.5">
                     {mapResult ? mapResult.formattedAddress : "Please detect location or move pin on map."}
                   </p>
                 </div>
@@ -1022,52 +995,16 @@ export default function CheckoutAddressPage() {
           </div>
 
           {/* Delivery Instructions */}
-          <div className="space-y-3 pt-4 border-t border-hive-border/40">
-            <h4 className="text-xs font-bold text-hive-dark">Delivery Preferences</h4>
-            
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider flex items-center justify-between">
-                <span>Entry Photo <span className="normal-case font-normal">(helps riders locate)</span></span>
-                {uploadState === "uploading" && <Loader2 className="w-3 h-3 animate-spin text-hive-gold" />}
-              </label>
-              <div className="flex items-center gap-3">
-                {formEntryPhotoUrl ? (
-                  <div className="relative w-16 h-16 rounded-xl overflow-hidden border border-hive-border/50 group flex-shrink-0">
-                    <img src={formEntryPhotoUrl} alt="Entry" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormEntryPhotoId(null);
-                        setFormEntryPhotoUrl("");
-                      }}
-                      className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center transition-all"
-                    >
-                      <X className="w-4 h-4 text-white" />
-                    </button>
-                  </div>
-                ) : (
-                  <label className="w-16 h-16 rounded-xl border-2 border-dashed border-hive-border hover:border-hive-gold bg-neutral-50 hover:bg-neutral-100 flex items-center justify-center cursor-pointer transition-all flex-shrink-0">
-                    <Plus className="w-5 h-5 text-hive-text-muted" />
-                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} disabled={uploadState === "uploading"} />
-                  </label>
-                )}
-                <div className="text-[10px] text-hive-text-muted leading-tight">
-                  Upload a photo of your front door or building entrance.
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1.5 mt-3">
-              <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                Delivery Instructions <span className="normal-case text-hive-text-muted font-normal">(optional)</span>
-              </label>
-              <textarea
-                placeholder="e.g. Leave with security, call upon arrival..."
-                value={formDeliveryInstructions}
-                onChange={(e) => setFormDeliveryInstructions(e.target.value)}
-                className="w-full h-16 p-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium resize-none"
-              />
-            </div>
+          <div className="space-y-1.5 pt-4 border-t border-hive-border/40">
+            <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
+              Delivery Instructions <span className="normal-case text-hive-text-muted font-normal">(optional)</span>
+            </label>
+            <textarea
+              placeholder="e.g. Leave with security, call upon arrival..."
+              value={formDeliveryInstructions}
+              onChange={(e) => setFormDeliveryInstructions(e.target.value)}
+              className="w-full h-16 p-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium resize-none"
+            />
           </div>
 
           {/* Default toggle */}
