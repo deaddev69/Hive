@@ -95,3 +95,8 @@ dialog[open]::backdrop {
   -ms-overflow-style: none !important;  /* IE and Edge */
   scrollbar-width: none !important;  /* Firefox */
 }
+
+/* Force Google Places Autocomplete suggestions dropdown to display on top of checkout modals */
+.pac-container {
+  z-index: 99999 !important;
+}
