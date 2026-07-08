@@ -10,4 +10,4 @@ Disallow: /account/
 Disallow: /order/
 
 # Sitemap
-# Sitemap: https://yourdomain.com/sitemap.xml
+Sitemap: https://hivenow.in/sitemap.xml
