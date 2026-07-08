@@ -102,7 +102,7 @@ function PlaceAutocomplete({
         if (!AutocompleteSuggestion) return;
         const response = await AutocompleteSuggestion.fetchAutocompleteSuggestions({
           input: inputValue,
-          componentRestrictions: { country: "in" },
+          includedRegionCodes: ["in"],
         });
         setSuggestions(response.suggestions || []);
       } catch (err) {
