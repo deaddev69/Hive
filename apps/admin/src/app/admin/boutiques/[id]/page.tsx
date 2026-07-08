@@ -61,9 +61,9 @@ export default function EditBoutiquePage() {
       setDeliveryRadiusKm(boutique.deliveryRadiusKm);
       setDescription(boutique.description);
       setStatus(boutique.status);
-      setCity(boutique.city || "Kochi");
-      setState(boutique.state || "Kerala");
-      setPincode(boutique.pincode || "");
+      setCity(boutique.city || boutique.addressDetails?.city || "Kochi");
+      setState(boutique.state || boutique.addressDetails?.state || "Kerala");
+      setPincode(boutique.pincode || boutique.addressDetails?.pincode || "");
     }
   }, [boutique]);
 
