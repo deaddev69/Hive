@@ -11,9 +11,14 @@ import { ArrowRight, Phone, ShieldCheck, CheckCircle2, AlertCircle } from "lucid
 interface FirebaseAuthCardProps {
   title?: string;
   subtitle?: string;
+  onSuccess?: () => void;
 }
 
-export function FirebaseAuthCard({ title = "Welcome back", subtitle = "Secure sign in with Google or mobile OTP" }: FirebaseAuthCardProps) {
+export function FirebaseAuthCard({ 
+  title = "Welcome back", 
+  subtitle = "Secure sign in with Google or mobile OTP",
+  onSuccess
+}: FirebaseAuthCardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect_url") || "/";
@@ -29,9 +34,13 @@ export function FirebaseAuthCard({ title = "Welcome back", subtitle = "Secure si
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push(redirectUrl);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(redirectUrl);
+      }
     }
-  }, [isAuthenticated, router, redirectUrl]);
+  }, [isAuthenticated, router, redirectUrl, onSuccess]);
 
   const setupRecaptcha = () => {
     if ((window as any).recaptchaVerifier) {
@@ -62,7 +71,11 @@ export function FirebaseAuthCard({ title = "Welcome back", subtitle = "Secure si
     setError(null);
     try {
       await loginWithGoogle();
-      router.push(redirectUrl);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(redirectUrl);
+      }
     } catch (err: any) {
       console.error("Google login error:", err);
       setError(err.message || "Failed to sign in with Google. Please try again.");
@@ -121,7 +134,11 @@ export function FirebaseAuthCard({ title = "Welcome back", subtitle = "Secure si
     setError(null);
     try {
       await confirmationResult.confirm(otp);
-      router.push(redirectUrl);
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push(redirectUrl);
+      }
     } catch (err: any) {
       console.error("Verify OTP error:", err);
       setError("Invalid or expired OTP. Please check and try again.");

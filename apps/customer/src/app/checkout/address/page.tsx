@@ -39,6 +39,7 @@ import { useSessionStore } from "@/context/SessionContext";
 import { calculateDistanceKm } from "@/lib/distance";
 import { formatRupees, toast } from "@hive/utils";
 import { Modal } from "@hive/ui";
+import { FirebaseAuthCard } from "@/components/auth/FirebaseAuthCard";
 
 // Dynamically load the map (Leaflet requires browser, SSR disabled)
 const LocationMapPicker = dynamic(
@@ -284,8 +285,27 @@ export default function CheckoutAddressPage() {
   if (!mounted || !sessionLoaded) return <AddressSkeleton />;
 
   if (!isSignedIn) {
-    navigateToSignIn(router, "/checkout/address");
-    return <AddressSkeleton />;
+    return (
+      <div className="min-h-screen bg-slate-50/50 dark:bg-neutral-950/50 flex items-center justify-center p-4 relative">
+        <div className="absolute inset-0 bg-[#FCF8F2] dark:bg-neutral-950 opacity-95"></div>
+        <div className="relative z-10 w-full max-w-md flex flex-col gap-4">
+          <FirebaseAuthCard 
+            title="Checkout Sign In" 
+            subtitle="Please sign in to proceed with your order" 
+            onSuccess={() => {
+              // Authentication will trigger session context refresh automatically
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => router.push("/cart")}
+            className="text-xs font-bold text-center text-hive-text-muted hover:text-hive-dark dark:hover:text-white transition-colors cursor-pointer"
+          >
+            ← Cancel & Return to Cart
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const selectedAddress = addresses.find((a) => a._id === selectedAddressId) ?? null;
