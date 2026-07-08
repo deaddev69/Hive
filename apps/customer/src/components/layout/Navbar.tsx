@@ -183,7 +183,7 @@ export const Navbar: React.FC = () => {
     return combined.slice(0, 8);
   }, [searchQuery, searchResults]);
 
-  const SELLER_PORTAL_URL = process.env.NEXT_PUBLIC_SELLER_PORTAL_URL || "http://seller.localhost:3001";
+  const SELLER_PORTAL_URL = process.env.NEXT_PUBLIC_SELLER_PORTAL_URL || "https://seller.hivenow.in";
 
   // Fetch boutique status
   const boutiqueSafe = useQuery(api.boutiques.getMyBoutiqueSafeCustomer, { token: token || undefined });

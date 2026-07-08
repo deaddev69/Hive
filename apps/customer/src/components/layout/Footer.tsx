@@ -3,7 +3,7 @@ import { HiveLogo } from "@/components/shared/HiveLogo";
 import Link from "next/link";
 
 export const Footer: React.FC = () => {
-  const SELLER_PORTAL_URL = process.env.NEXT_PUBLIC_SELLER_PORTAL_URL || "http://seller.localhost:3001";
+  const SELLER_PORTAL_URL = process.env.NEXT_PUBLIC_SELLER_PORTAL_URL || "https://seller.hivenow.in";
 
   return (
     <>

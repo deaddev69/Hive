@@ -7,7 +7,7 @@ export function getUserLandingPage(role?: UserRole | string): string {
     
   const sellerAppUrl = typeof process !== "undefined" && process.env?.NEXT_PUBLIC_SELLER_PORTAL_URL
     ? process.env.NEXT_PUBLIC_SELLER_PORTAL_URL
-    : "http://seller.localhost:3002";
+    : "https://seller.hivenow.in";
 
   const customerAppUrl = typeof process !== "undefined" && process.env?.NEXT_PUBLIC_CUSTOMER_APP_URL
     ? process.env.NEXT_PUBLIC_CUSTOMER_APP_URL

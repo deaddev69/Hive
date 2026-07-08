@@ -32,7 +32,7 @@ export default function BecomeSellerPage() {
   const isSignedIn = isAuthenticated;
   const { latitude: userLat, longitude: userLng } = useLocation();
 
-  const SELLER_PORTAL_URL = process.env.NEXT_PUBLIC_SELLER_PORTAL_URL || "http://seller.localhost:3001";
+  const SELLER_PORTAL_URL = process.env.NEXT_PUBLIC_SELLER_PORTAL_URL || "https://seller.hivenow.in";
 
   // Fetch boutique status
   const boutiqueSafe = useQuery(api.boutiques.getMyBoutiqueSafeCustomer, { token: token || undefined });
