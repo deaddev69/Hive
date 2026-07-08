@@ -333,7 +333,12 @@ export async function calculateDeliveryQuoteAction(
         pickup_postcode: boutique.addressDetails.pincode,
         delivery_postcode: args.userPincode,
         weight: 0.5, // TODO: Pull weight from product schema
-        cod: 0
+        cod: 0,
+        is_new_hyperlocal: true,
+        lat_from: boutique.latitude,
+        long_from: boutique.longitude,
+        lat_to: args.userLat,
+        long_to: args.userLng,
       });
 
       if (srQuote && srQuote.serviced) {

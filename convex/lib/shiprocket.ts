@@ -355,11 +355,28 @@ export const checkServiceability = action({
     delivery_postcode: v.string(),
     weight: v.number(),
     cod: v.number(),
+    is_new_hyperlocal: v.optional(v.boolean()),
+    lat_from: v.optional(v.number()),
+    long_from: v.optional(v.number()),
+    lat_to: v.optional(v.number()),
+    long_to: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<{ customerPaidFee: number; estimatedDeliveryDate: string; courierName: string; quotedAt: number; serviced: boolean; reason?: string }> => {
     try {
-      const url = `${SHIPROCKET_BASE_URL}/courier/serviceability/?pickup_postcode=${args.pickup_postcode}&delivery_postcode=${args.delivery_postcode}&weight=${args.weight}&cod=${args.cod}`;
+      let url = `${SHIPROCKET_BASE_URL}/courier/serviceability/?pickup_postcode=${args.pickup_postcode}&delivery_postcode=${args.delivery_postcode}&weight=${args.weight}&cod=${args.cod}`;
       
+      const isHyperlocal =
+        args.is_new_hyperlocal &&
+        args.lat_from != null &&
+        args.long_from != null &&
+        args.lat_to != null &&
+        args.long_to != null;
+
+      if (isHyperlocal) {
+        url += `&is_new_hyperlocal=1&lat_from=${args.lat_from}&long_from=${args.long_from}&lat_to=${args.lat_to}&long_to=${args.long_to}`;
+        console.log(`[Shiprocket] Hyperlocal serviceability query: (${args.lat_from},${args.long_from}) → (${args.lat_to},${args.long_to})`);
+      }
+
       const res = await fetchShiprocketAPI(ctx, url, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
@@ -373,13 +390,31 @@ export const checkServiceability = action({
       const data = await res.json();
       
       if (data.status === 200 && data.data && data.data.available_courier_companies && data.data.available_courier_companies.length > 0) {
-        // Use the first recommended courier
-        const recommendedCourier = data.data.available_courier_companies[0];
+        const couriers = data.data.available_courier_companies;
+        let selectedCourier: any;
+
+        if (isHyperlocal) {
+          const bikeCouriers = couriers.filter(
+            (c: any) => c.etd && c.rate != null && c.blocked === 0
+          );
+          if (!bikeCouriers.length) {
+            console.warn("[Shiprocket] Hyperlocal query returned no unblocked couriers.");
+            return { serviced: false, reason: "unserviceable", customerPaidFee: 0, estimatedDeliveryDate: "", courierName: "", quotedAt: Date.now() };
+          }
+          bikeCouriers.sort((a: any, b: any) => a.rate - b.rate);
+          selectedCourier = bikeCouriers[0];
+          console.log(
+            `[Shiprocket] Selected hyperlocal courier: ${selectedCourier.courier_name} @ ₹${selectedCourier.rate}`
+          );
+        } else {
+          selectedCourier = couriers.find((c: any) => c.is_recommended === 1) ?? couriers[0];
+        }
+
         return {
           serviced: true,
-          customerPaidFee: Math.round(recommendedCourier.rate * 100), // convert to paise
-          estimatedDeliveryDate: recommendedCourier.etd || "",
-          courierName: recommendedCourier.courier_name || "Standard Courier",
+          customerPaidFee: Math.round(selectedCourier.rate * 100), // convert to paise
+          estimatedDeliveryDate: selectedCourier.etd || "",
+          courierName: selectedCourier.courier_name || (isHyperlocal ? "Bike Courier" : "Standard Courier"),
           quotedAt: Date.now(),
         };
       } else {
