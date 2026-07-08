@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { navigateToSignIn } from "@/lib/auth-redirect";
 import { PremiumShoppingBag } from "@/components/shared/PremiumShoppingBag";
 import {

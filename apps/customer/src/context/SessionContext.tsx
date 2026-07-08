@@ -3,13 +3,10 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
+import { auth, googleProvider } from "@/lib/firebase";
+import { signInWithPopup, signOut } from "firebase/auth";
 
-/**
- * @deprecated
- * Compatibility layer during Clerk migration.
- * Remove after Phase 1.
- */
 export interface SessionUser {
   _id: string;
   email?: string;
@@ -21,11 +18,6 @@ export interface SessionUser {
   createdAt: number;
 }
 
-/**
- * @deprecated
- * Compatibility layer during Clerk migration.
- * Remove after Phase 1.
- */
 export interface SessionState {
   user: SessionUser | null;
   isAuthenticated: boolean;
@@ -34,34 +26,23 @@ export interface SessionState {
   token: string | null;
 }
 
-/**
- * @deprecated
- * Compatibility layer during Clerk migration.
- * Remove after Phase 1.
- */
 export interface SessionContextType extends SessionState {
   loginWithPassword: (email: string, password: string) => Promise<{ token: string; userId: string; role: string }>;
   signUpWithPassword: (email: string, password: string, name?: string) => Promise<{ token: string; userId: string; role: string }>;
-  loginWithGoogle: (credential: string) => Promise<{ token: string; userId: string; role: string }>;
+  loginWithGoogle: (credential?: string) => Promise<any>;
   logout: () => Promise<void>;
   setGuestMode: (enabled: boolean) => void;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
 
-/**
- * @deprecated
- * Compatibility layer during Clerk migration.
- * Remove after Phase 1.
- */
 export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isLoaded: authLoaded, isSignedIn, signOut } = useAuth();
-  const { user: clerkUser, isLoaded: userLoaded } = useUser();
+  const { user: firebaseUser, isAuthenticated: isFirebaseAuthenticated, isLoading: firebaseLoading } = useFirebaseAuth();
   const [isGuest, setIsGuest] = useState<boolean>(false);
   const syncUser = useMutation(api.users.syncUser);
 
-  // Fetch user profile from Convex using the Clerk JWT context automatically
-  const user = useQuery(api.auth.getMe, isSignedIn ? {} : "skip");
+  // Fetch user profile from Convex using the authenticated context
+  const user = useQuery(api.auth.getMe, isFirebaseAuthenticated ? {} : "skip");
 
   // Load initial guest status from localStorage
   useEffect(() => {
@@ -69,53 +50,59 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setIsGuest(savedGuest);
   }, []);
 
-  // Safe developer-only client-side sync fallback when webhooks are not tunneled locally
+  // Sync Firebase user with Convex users table immediately upon login
   useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
-    if (!isSignedIn || !clerkUser || user !== null) return;
+    if (!isFirebaseAuthenticated || !firebaseUser) return;
 
-    const performDevSync = async () => {
+    const performSync = async () => {
       try {
-        console.log("[SessionContext] Performing local development fallback user sync...");
-        const email = clerkUser.primaryEmailAddress?.emailAddress;
-        const name = clerkUser.fullName || clerkUser.firstName || clerkUser.lastName || undefined;
-        const phone = clerkUser.primaryPhoneNumber?.phoneNumber || undefined;
+        console.log("[SessionContext] Syncing Firebase user to Convex database...");
+        const email = firebaseUser.email || undefined;
+        const name = firebaseUser.displayName || undefined;
+        const phone = firebaseUser.phoneNumber || undefined;
         await syncUser({ email, name, phone });
-        console.log("[SessionContext] Local fallback user sync completed successfully.");
+        console.log("[SessionContext] User sync completed successfully.");
       } catch (err) {
-        console.error("[SessionContext] Local fallback user sync failed:", err);
+        console.error("[SessionContext] User sync failed:", err);
       }
     };
 
-    performDevSync();
-  }, [isSignedIn, clerkUser, user, syncUser]);
+    performSync();
+  }, [isFirebaseAuthenticated, firebaseUser, syncUser]);
 
   // Update authentication status
-  const isAuthenticated = !!isSignedIn && !!user;
-  const isLoading = !authLoaded || !userLoaded || (isSignedIn && user === undefined);
+  const isAuthenticated = !!isFirebaseAuthenticated && !!user;
+  const isLoading = firebaseLoading || (isFirebaseAuthenticated && user === undefined);
 
   const loginWithPassword = async (email: string, password: string) => {
-    console.warn("loginWithPassword is deprecated. Please authenticate via Clerk.");
-    throw new Error("Deprecated: Use Clerk components for authentication.");
+    console.warn("loginWithPassword is not supported under passwordless Firebase Auth.");
+    throw new Error("Password login is not supported. Use Google or Phone OTP.");
   };
 
   const signUpWithPassword = async (email: string, password: string, name?: string) => {
-    console.warn("signUpWithPassword is deprecated. Please authenticate via Clerk.");
-    throw new Error("Deprecated: Use Clerk components for authentication.");
+    console.warn("signUpWithPassword is not supported under passwordless Firebase Auth.");
+    throw new Error("Password sign up is not supported. Use Google or Phone OTP.");
   };
 
-  const loginWithGoogle = async (credential: string) => {
-    console.warn("loginWithGoogle is deprecated. Please authenticate via Clerk.");
-    throw new Error("Deprecated: Use Clerk components for authentication.");
+  const loginWithGoogle = async (credential?: string): Promise<any> => {
+    try {
+      const res = await signInWithPopup(auth, googleProvider);
+      setIsGuest(false);
+      localStorage.removeItem("hive_guest");
+      return { token: "firebase", userId: res.user.uid, role: "customer" };
+    } catch (err) {
+      console.error("Firebase Google SignIn error:", err);
+      throw err;
+    }
   };
 
   const logout = async () => {
     try {
-      await signOut();
+      await signOut(auth);
       setIsGuest(false);
       localStorage.removeItem("hive_guest");
     } catch (err) {
-      console.error("Clerk signOut error:", err);
+      console.error("Firebase signOut error:", err);
     }
   };
 
@@ -128,30 +115,6 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Redirect role check on login (admin / boutique portals)
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const searchParams = new URLSearchParams(window.location.search);
-      const isDebugPath = window.location.pathname === "/debug";
-      const hasBypassParam = searchParams.get("no_redirect") === "true";
-      
-      if (isDebugPath || hasBypassParam) {
-        console.log("[SessionContext] Role redirect bypassed in debug/bypass mode.");
-        return;
-      }
-    }
-
-    if (user && isAuthenticated) {
-      // Direct user depending on their role
-      const adminAppUrl = process.env.NEXT_PUBLIC_ADMIN_APP_URL || "http://localhost:3001";
-      if (user.role === "boutique_owner") {
-        window.location.href = `${adminAppUrl}/seller`;
-      } else if (user.role === "admin") {
-        window.location.href = `${adminAppUrl}/admin`;
-      }
-    }
-  }, [user, isAuthenticated]);
-
   return (
     <SessionContext.Provider 
       value={{ 
@@ -159,7 +122,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isAuthenticated, 
         isLoading, 
         isGuest, 
-        token: null, // Legacy custom token is null under Clerk
+        token: null,
         loginWithPassword, 
         signUpWithPassword, 
         loginWithGoogle, 

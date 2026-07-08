@@ -1,9 +1,8 @@
 "use client";
 
 import { ReactNode } from "react";
-import { ConvexReactClient } from "convex/react";
-import { ConvexProviderWithClerk } from "convex/react-clerk";
-import { useAuth } from "@clerk/nextjs";
+import { ConvexReactClient, ConvexProviderWithAuth } from "convex/react";
+import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 if (!convexUrl && typeof window !== "undefined") {
@@ -18,7 +17,7 @@ const convex = new ConvexReactClient(convexUrl || "https://placeholder-url.conve
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
   return (
-    <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+    <ConvexProviderWithAuth client={convex} useAuth={useFirebaseAuth}>
       <SessionProvider>
         <LocationProvider>
           <CartProvider>
@@ -26,6 +25,6 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
           </CartProvider>
         </LocationProvider>
       </SessionProvider>
-    </ConvexProviderWithClerk>
+    </ConvexProviderWithAuth>
   );
 }

@@ -84,6 +84,7 @@ import type * as seedMutations from "../seedMutations.js";
 import type * as serviceability from "../serviceability.js";
 import type * as serviceablePincodes from "../serviceablePincodes.js";
 import type * as shared_boutiqueStatus from "../shared/boutiqueStatus.js";
+import type * as tests_authGatingTest from "../tests/authGatingTest.js";
 import type * as tests_boutiqueAudit from "../tests/boutiqueAudit.js";
 import type * as tests_cartCurrency from "../tests/cartCurrency.js";
 import type * as tests_checkTimestamps from "../tests/checkTimestamps.js";
@@ -196,6 +197,7 @@ declare const fullApi: ApiFromModules<{
   serviceability: typeof serviceability;
   serviceablePincodes: typeof serviceablePincodes;
   "shared/boutiqueStatus": typeof shared_boutiqueStatus;
+  "tests/authGatingTest": typeof tests_authGatingTest;
   "tests/boutiqueAudit": typeof tests_boutiqueAudit;
   "tests/cartCurrency": typeof tests_cartCurrency;
   "tests/checkTimestamps": typeof tests_checkTimestamps;

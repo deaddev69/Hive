@@ -43,7 +43,66 @@ export async function getAuthenticatedUser(ctx: AuthCtx, token?: string) {
     throw new ConvexError(HiveError.ACCOUNT_DISABLED);
   }
 
+  assertRoleIssuerGating(user, identity, true);
+
   return user;
+}
+
+/**
+ * Asserts bi-directional allowlist domain boundaries between Firebase and Clerk tokens.
+ */
+export function assertRoleIssuerGating(user: { role: string }, identity: { issuer?: string }, throwOnViolation: boolean = true): boolean {
+  if (!identity.issuer) return true;
+  const isProd = process.env.NODE_ENV === "production" || process.env.CONVEX_ENV === "production";
+  const VALID_FIREBASE_ISSUERS = [
+    `https://securetoken.google.com/${process.env.FIREBASE_PROJECT_ID || "hive-fashion"}`
+  ];
+  const VALID_CLERK_ISSUERS = [
+    "https://clerk.hivenow.in",
+    "https://hivenow.in",
+    "https://accounts.hivenow.in",
+  ];
+  if (!isProd) {
+    VALID_CLERK_ISSUERS.push("https://artistic-tiger-76.clerk.accounts.dev");
+  }
+
+  const isFirebaseToken = VALID_FIREBASE_ISSUERS.includes(identity.issuer);
+  const isClerkToken = VALID_CLERK_ISSUERS.includes(identity.issuer);
+
+  const isSellerOrAdminRole = [
+    "admin",
+    "super_admin",
+    "support_agent",
+    "logistics_partner",
+    "boutique_owner",
+    "boutique",
+    "seller_pending",
+    "seller_rejected"
+  ].includes(user.role);
+
+  if (isSellerOrAdminRole) {
+    if (!isClerkToken) {
+      if (throwOnViolation) {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: "Security violation: Privileged seller/admin accounts must authenticate via authorized enterprise identity providers."
+        });
+      }
+      return false;
+    }
+  } else if (user.role === "customer") {
+    if (!isFirebaseToken) {
+      if (throwOnViolation) {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: "Security violation: Retail customer accounts must authenticate via authorized customer identity providers."
+        });
+      }
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -174,8 +233,13 @@ export async function getCurrentUserOrNull(ctx: AuthCtx, token?: string) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) return null;
 
-  return await ctx.db
+  const user = await ctx.db
     .query("users")
     .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
     .unique();
+
+  if (!user || !user.isActive) return null;
+  if (!assertRoleIssuerGating(user, identity, false)) return null;
+
+  return user;
 }

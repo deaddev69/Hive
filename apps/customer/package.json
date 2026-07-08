@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.12.12",
+    "firebase": "^11.4.0",
     "@hive/types": "*",
     "@hive/ui": "*",
     "@hive/utils": "*",

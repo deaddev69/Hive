@@ -54,6 +54,8 @@ export const syncUser = mutation({
     // Use tokenIdentifier as the canonical stable Clerk ID
     const clerkId = identity.subject;
 
+    const isFirebase = identity.issuer && identity.issuer.includes("securetoken.google.com");
+
     const existing = await ctx.db
       .query("users")
       .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
@@ -72,7 +74,7 @@ export const syncUser = mutation({
         existing.email !== args.email ||
         existing.originalEmail !== args.email ||
         existing.normalizedEmail !== emailNormalized
-      )) || (args.phone !== undefined && existing.phone !== args.phone);
+      )) || (args.phone !== undefined && existing.phone !== args.phone) || existing.authProvider !== (isFirebase ? "firebase" : "clerk");
       if (hasChanges) {
         await ctx.db.patch(existing._id, {
           email:           args.email ?? existing.email,
@@ -80,12 +82,13 @@ export const syncUser = mutation({
           normalizedEmail: emailNormalized ?? existing.normalizedEmail,
           phone:           args.phone ?? existing.phone,
           isPhoneVerified: args.phone !== undefined ? true : existing.isPhoneVerified,
+          authProvider:    isFirebase ? "firebase" : "clerk",
           updatedAt: now,
         });
       }
     } else {
-      // If no clerkId user exists, check if we can link to an existing credentials/Google user by normalized email
-      if (emailNormalized) {
+      // Section 3 Cut: Do NOT soft-link by email/phone for Firebase customer logins to prevent account takeover vectors
+      if (!isFirebase && emailNormalized) {
         const existingEmailUser = await ctx.db
           .query("users")
           .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", emailNormalized))
@@ -100,6 +103,7 @@ export const syncUser = mutation({
             normalizedEmail: emailNormalized,
             phone:           args.phone ?? existingEmailUser.phone,
             isPhoneVerified: args.phone !== undefined ? true : existingEmailUser.isPhoneVerified,
+            authProvider:    "clerk",
             updatedAt:       now,
           });
           targetUserId = existingEmailUser._id;
@@ -126,6 +130,7 @@ export const syncUser = mutation({
           normalizedEmail: emailNormalized,
           phone:           args.phone,
           role:            "customer",
+          authProvider:    isFirebase ? "firebase" : "clerk",
           isActive:        true,
           isPhoneVerified: args.phone !== undefined,
           createdAt:       now,
@@ -155,8 +160,8 @@ export const syncUser = mutation({
       }
     }
 
-    // Auto link approved boutique owner by normalized email
-    if (emailNormalized && targetUserRole !== "admin") {
+    // Auto link approved boutique owner by normalized email (ONLY for Clerk authentication!)
+    if (!isFirebase && emailNormalized && targetUserRole !== "admin") {
       const boutique = await ctx.db
         .query("boutiques")
         .withIndex("by_email", (q) => q.eq("email", emailNormalized))

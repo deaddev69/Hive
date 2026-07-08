@@ -298,7 +298,7 @@ export default function HomePage() {
       .map((b) => {
         const bLat = b.latitude ?? b.addressDetails?.lat;
         const bLng = b.longitude ?? b.addressDetails?.lng;
-        let distance = null;
+        let distance: number | null = null;
         if (latitude !== null && longitude !== null && bLat !== undefined && bLng !== undefined) {
           distance = calculateDistanceKm(latitude, longitude, bLat, bLng);
         }
@@ -341,7 +341,7 @@ export default function HomePage() {
         return true;
       })
       .map((b) => {
-        let etaMinutes = null;
+        let etaMinutes: number | null = null;
         if (b.distance !== null) {
           const durationMin = (b.distance / 25) * 60; // 25 km/h driving speed approximation
           etaMinutes = Math.round(durationMin + (b.averagePrepTime ?? 30));

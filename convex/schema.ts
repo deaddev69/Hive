@@ -89,7 +89,7 @@ export default defineSchema({
     isPhoneVerified: v.boolean(),
     isMerged:        v.optional(v.boolean()),      // for soft merging duplicate users
     mergedIntoUserId: v.optional(v.id("users")),   // tracks target user after link
-    authProvider:    v.optional(v.union(v.literal("legacy"), v.literal("clerk"), v.literal("guest"))),
+    authProvider:    v.optional(v.union(v.literal("legacy"), v.literal("clerk"), v.literal("guest"), v.literal("firebase"))),
     lastLoginAt:     v.optional(v.number()),
     pushEnabled:     v.optional(v.boolean()),      // for future push notifications activation
     fcmToken:        v.optional(v.string()),       // Firebase Cloud Messaging token for mobile push

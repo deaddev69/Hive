@@ -6,9 +6,9 @@
  *
  * Flow:
  *   1. Accept { orderId, token } in the request body
- *   2. Use the Clerk token to fetch the invoice from Convex (ownership-checked)
+ *   2. Use the auth token to fetch the invoice from Convex (ownership-checked)
  *   3. Generate the PDF with pdf-lib (Node.js runtime)
- *   4. Upload the PDF bytes to Convex storage (using the same Clerk token)
+ *   4. Upload the PDF bytes to Convex storage (using the same auth token)
  *   5. Patch invoice.pdfUrl via updateInvoicePdfUrl mutation
  *   6. Return { pdfUrl }
  *

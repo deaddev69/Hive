@@ -5,6 +5,7 @@ import { useQuery, useMutation, useAction, useConvex } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useSessionStore } from "./SessionContext";
 import { isWithinDeliveryRadius } from "../../../../convex/lib/serviceability";
+import { calculateDistanceKm } from "@/lib/distance";
 
 export interface LocationState {
   pincode: string | null;

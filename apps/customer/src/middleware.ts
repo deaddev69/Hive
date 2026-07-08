@@ -1,56 +1,15 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+// apps/customer/src/middleware.ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-const isProtectedRoute = createRouteMatcher([
-  "/checkout(.*)",
-  "/orders(.*)",
-  "/order(.*)",
-  "/account(.*)"
-]);
-
-const isAuthRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
-
-export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
-
-  // Redirect signed-in users away from auth pages to prevent Clerk warnings
-  if (userId && isAuthRoute(req)) {
-    return Response.redirect(new URL("/", req.url));
-  }
-
-  if (isProtectedRoute(req)) {
-    if (!userId) {
-      // Use production account portal in production, or fallback to local /sign-in in development
-      const signInPath = process.env.NODE_ENV === "production" 
-        ? "https://accounts.hivenow.in/sign-in" 
-        : (process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL || "/sign-in");
-        
-      const signInUrl = new URL(signInPath, req.url);
-      signInUrl.searchParams.set("redirect_url", req.url);
-
-      const isNextDataRequest = 
-        req.headers.get("x-next-js-data") || 
-        req.headers.get("purpose") === "prefetch" ||
-        req.nextUrl.searchParams.has("_rsc");
-
-      if (isNextDataRequest) {
-        return new Response(JSON.stringify({ redirect: signInUrl.toString() }), {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-      
-      return Response.redirect(signInUrl);
-    }
-    
-    await auth.protect();
-  }
-});
+export function middleware(request: NextRequest) {
+  // Clean pass-through middleware; client route guards and Convex backend enforce authentication and role authorization
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
-    // Match all routes except static assets and internal Next.js paths
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
     "/(api|trpc)(.*)",
   ],
 };
