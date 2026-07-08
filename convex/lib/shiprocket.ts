@@ -388,37 +388,52 @@ export const checkServiceability = action({
       }
 
       const data = await res.json();
+      console.log("[Shiprocket serviceability response data]:", JSON.stringify(data, null, 2));
       
-      if (data.status === 200 && data.data && data.data.available_courier_companies && data.data.available_courier_companies.length > 0) {
-        const couriers = data.data.available_courier_companies;
-        let selectedCourier: any;
-
-        if (isHyperlocal) {
+      if (isHyperlocal) {
+        if (data.status === true && Array.isArray(data.data) && data.data.length > 0) {
+          // Sort or filter if multiple are returned; usually Shiprocket Quick returns one or more local partners
+          const couriers = data.data;
           const bikeCouriers = couriers.filter(
-            (c: any) => c.etd && c.rate != null && c.blocked === 0
+            (c: any) => (c.etd || c.etd_hours) && (c.rates != null || c.rate != null)
           );
           if (!bikeCouriers.length) {
-            console.warn("[Shiprocket] Hyperlocal query returned no unblocked couriers.");
+            console.warn("[Shiprocket] Hyperlocal query returned no valid couriers.");
             return { serviced: false, reason: "unserviceable", customerPaidFee: 0, estimatedDeliveryDate: "", courierName: "", quotedAt: Date.now() };
           }
-          bikeCouriers.sort((a: any, b: any) => a.rate - b.rate);
-          selectedCourier = bikeCouriers[0];
+          // Sort by rate (rates field is used in hyperlocal)
+          bikeCouriers.sort((a: any, b: any) => (a.rates ?? a.rate) - (b.rates ?? b.rate));
+          const selectedCourier = bikeCouriers[0];
+          const rateRupees = selectedCourier.rates ?? selectedCourier.rate;
+          
           console.log(
-            `[Shiprocket] Selected hyperlocal courier: ${selectedCourier.courier_name} @ ₹${selectedCourier.rate}`
+            `[Shiprocket] Selected hyperlocal courier: ${selectedCourier.courier_name} @ ₹${rateRupees}`
           );
-        } else {
-          selectedCourier = couriers.find((c: any) => c.is_recommended === 1) ?? couriers[0];
-        }
 
-        return {
-          serviced: true,
-          customerPaidFee: Math.round(selectedCourier.rate * 100), // convert to paise
-          estimatedDeliveryDate: selectedCourier.etd || "",
-          courierName: selectedCourier.courier_name || (isHyperlocal ? "Bike Courier" : "Standard Courier"),
-          quotedAt: Date.now(),
-        };
+          return {
+            serviced: true,
+            customerPaidFee: Math.round(rateRupees * 100), // convert to paise
+            estimatedDeliveryDate: selectedCourier.etd || `${selectedCourier.etd_hours || 1} hours`,
+            courierName: selectedCourier.courier_name || "Shiprocket Quick",
+            quotedAt: Date.now(),
+          };
+        } else {
+          return { serviced: false, reason: "unserviceable", customerPaidFee: 0, estimatedDeliveryDate: "", courierName: "", quotedAt: Date.now() };
+        }
       } else {
-        return { serviced: false, reason: "unserviceable", customerPaidFee: 0, estimatedDeliveryDate: "", courierName: "", quotedAt: Date.now() };
+        if (data.status === 200 && data.data && data.data.available_courier_companies && data.data.available_courier_companies.length > 0) {
+          const couriers = data.data.available_courier_companies;
+          const selectedCourier = couriers.find((c: any) => c.is_recommended === 1) ?? couriers[0];
+          return {
+            serviced: true,
+            customerPaidFee: Math.round(selectedCourier.rate * 100), // convert to paise
+            estimatedDeliveryDate: selectedCourier.etd || "",
+            courierName: selectedCourier.courier_name || "Standard Courier",
+            quotedAt: Date.now(),
+          };
+        } else {
+          return { serviced: false, reason: "unserviceable", customerPaidFee: 0, estimatedDeliveryDate: "", courierName: "", quotedAt: Date.now() };
+        }
       }
     } catch (err: any) {
       console.error("checkServiceability exception:", err);
