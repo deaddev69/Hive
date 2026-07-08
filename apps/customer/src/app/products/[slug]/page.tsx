@@ -1,34 +1,49 @@
-"use client";
-
-import React, { useEffect } from "react";
-import { useParams, notFound } from "next/navigation";
-import { useQuery } from "convex/react";
+import React from "react";
+import { notFound } from "next/navigation";
+import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../convex/_generated/api";
 import { ProductDetailPageClient } from "./ProductDetailPageClient";
-import { Loader2 } from "lucide-react";
+import { Metadata } from "next";
 import { cleanProductTitle } from "@/components/product/ProductCard";
 
-export default function ProductDetailPage() {
-  const params = useParams() as { slug: string };
-  const product = useQuery(api.products.getProduct, { slug: params.slug });
+interface Props {
+  params: Promise<{ slug: string }>;
+}
 
-  // Update document title dynamically
-  useEffect(() => {
-    if (product) {
-      document.title = `${cleanProductTitle(product.name)} — Hive by TailorBee`;
-    }
-  }, [product]);
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!convexUrl) return {};
 
-  if (product === undefined) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
-        <p className="text-sm text-hive-text-muted font-bold">Loading product details...</p>
-      </div>
-    );
+  const client = new ConvexHttpClient(convexUrl);
+  try {
+    const product = await client.query(api.products.getProduct, { slug });
+    if (!product) return {};
+
+    return {
+      title: `${cleanProductTitle(product.name)} — Hive by TailorBee`,
+      description: product.description || `Discover and shop ${product.name} on Hive by TailorBee.`,
+      openGraph: {
+        title: `${cleanProductTitle(product.name)} — Hive by TailorBee`,
+        description: product.description || `Discover and shop ${product.name} on Hive by TailorBee.`,
+      },
+    };
+  } catch {
+    return {};
+  }
+}
+
+export default async function ProductDetailPage({ params }: Props) {
+  const { slug } = await params;
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!convexUrl) {
+    return notFound();
   }
 
-  if (product === null) {
+  const client = new ConvexHttpClient(convexUrl);
+  const product = await client.query(api.products.getProduct, { slug });
+
+  if (!product) {
     notFound();
   }
 
