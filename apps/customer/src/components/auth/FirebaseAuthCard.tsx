@@ -273,11 +273,7 @@ export function FirebaseAuthCard({
         </form>
       )}
 
-      {/* Footer reassurance */}
-      <div className="flex items-center justify-center gap-2 text-[11px] text-slate-400 dark:text-neutral-500 mt-2">
-        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
-        <span>256-bit HTTPS encrypted in transit</span>
-      </div>
+
     </div>
   );
 }
