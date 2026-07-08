@@ -509,7 +509,7 @@ export default function HomePage() {
                 {dbBanners.slice(0, 3).map((banner, idx) => (
                   <Link
                     key={banner._id}
-                    href={getBannerHref(banner.targetType, banner.targetValue)}
+                    href={(banner as any).ctaLink || getBannerHref(banner.targetType, banner.targetValue)}
                     className="banner-card group relative aspect-[16/10] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm hover:shadow-md cursor-pointer block bg-slate-50 transform hover:-translate-y-0.5 transition-all duration-500"
                     style={{ animationDelay: `${idx * 150}ms` }}
                   >
@@ -553,7 +553,7 @@ export default function HomePage() {
                   {dbBanners.map((banner, idx) => (
                     <Link
                       key={banner._id}
-                      href={getBannerHref(banner.targetType, banner.targetValue)}
+                      href={(banner as any).ctaLink || getBannerHref(banner.targetType, banner.targetValue)}
                       className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[4/5] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
                       style={{ animationDelay: `${idx * 150}ms` }}
                     >

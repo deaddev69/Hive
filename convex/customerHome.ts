@@ -14,32 +14,11 @@ export const getCustomerHomeData = query({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // 1. Fetch active campaign banners (Promise 1)
     const bannersPromise = (async () => {
-      let bannersRaw = await ctx.db
-        .query("homepageBanners")
-        .withIndex("by_active_and_displayOrder", (q) => q.eq("active", true))
+      const bannersRaw = await ctx.db
+        .query("banners")
+        .withIndex("by_active_and_sortOrder", (q) => q.eq("active", true))
         .collect();
-
-      bannersRaw = bannersRaw.filter((b) => {
-        if (b.startDate && now < b.startDate) return false;
-        if (b.endDate && now > b.endDate) return false;
-        return true;
-      });
-
-      if (args.city) {
-        const normalizedCity = args.city.trim().toLowerCase();
-        const cityBanners = bannersRaw.filter(
-          (b) => b.city && b.city.trim().toLowerCase() === normalizedCity
-        );
-        const generalBanners = bannersRaw.filter((b) => !b.city);
-        bannersRaw = [
-          ...cityBanners.sort((a, b) => a.displayOrder - b.displayOrder),
-          ...generalBanners.sort((a, b) => a.displayOrder - b.displayOrder),
-        ];
-      } else {
-        bannersRaw.sort((a, b) => a.displayOrder - b.displayOrder);
-      }
 
       return bannersRaw.slice(0, 10).map((b) => ({
         _id: b._id,
@@ -48,8 +27,9 @@ export const getCustomerHomeData = query({
         desktopImageUrl: b.desktopImageUrl,
         mobileImageUrl: b.mobileImageUrl || b.desktopImageUrl,
         ctaText: b.ctaText,
-        targetType: b.targetType,
-        targetValue: b.targetValue,
+        ctaLink: b.ctaLink,
+        targetType: "category",
+        targetValue: "all",
       }));
     })();
 
