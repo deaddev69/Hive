@@ -12,12 +12,14 @@ interface FirebaseAuthCardProps {
   title?: string;
   subtitle?: string;
   onSuccess?: () => void;
+  showLogo?: boolean;
 }
 
 export function FirebaseAuthCard({ 
   title = "Welcome back", 
   subtitle = "Secure sign in with Google or mobile OTP",
-  onSuccess
+  onSuccess,
+  showLogo = true
 }: FirebaseAuthCardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -153,9 +155,11 @@ export function FirebaseAuthCard({
       
       {/* Header */}
       <div className="flex flex-col gap-2 items-center text-center mb-2">
-        <div className="w-20 h-auto mb-2">
-          <HiveLogo />
-        </div>
+        {showLogo && (
+          <div className="w-20 h-auto mb-2">
+            <HiveLogo />
+          </div>
+        )}
         <h1 className="font-serif text-2xl sm:text-3xl font-medium text-slate-900 dark:text-white tracking-tight">
           {title}
         </h1>

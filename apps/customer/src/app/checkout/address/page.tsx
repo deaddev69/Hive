@@ -292,6 +292,7 @@ export default function CheckoutAddressPage() {
           <FirebaseAuthCard 
             title="Checkout Sign In" 
             subtitle="Please sign in to proceed with your order" 
+            showLogo={false}
             onSuccess={() => {
               // Authentication will trigger session context refresh automatically
             }}
