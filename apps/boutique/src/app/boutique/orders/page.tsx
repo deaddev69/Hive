@@ -5,6 +5,7 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Card, CardContent } from "@hive/ui";
+import { formatCurrency } from "@hive/utils";
 import {
   Loader2,
   ClipboardList,
@@ -152,7 +153,7 @@ export default function BoutiqueOrders() {
 
                     {/* Total */}
                     <td className="px-6 py-4 font-bold text-sm">
-                      <span>₹{order.total.toLocaleString("en-IN")}</span>
+                      <span>{formatCurrency(order.total)}</span>
                     </td>
 
                     {/* Invoice — NEW */}

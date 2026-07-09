@@ -110,7 +110,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   }
 
   // Legal Gating Check
-  if (myBoutiqueSafe && myBoutiqueSafe.exists && myBoutiqueSafe.boutique && !myBoutiqueSafe.boutique.hasAcceptedLegalTerms) {
+  if (myBoutiqueSafe && myBoutiqueSafe.exists && myBoutiqueSafe.boutique && !(myBoutiqueSafe.boutique as any).hasAcceptedLegalTerms) {
     return <LegalAgreementStep />;
   }
 

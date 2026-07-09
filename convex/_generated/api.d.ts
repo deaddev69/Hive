@@ -78,7 +78,6 @@ import type * as payments from "../payments.js";
 import type * as products from "../products.js";
 import type * as recommendations from "../recommendations.js";
 import type * as routing from "../routing.js";
-import type * as scratchTest from "../scratchTest.js";
 import type * as seed from "../seed.js";
 import type * as seedMutations from "../seedMutations.js";
 import type * as serviceability from "../serviceability.js";
@@ -191,7 +190,6 @@ declare const fullApi: ApiFromModules<{
   products: typeof products;
   recommendations: typeof recommendations;
   routing: typeof routing;
-  scratchTest: typeof scratchTest;
   seed: typeof seed;
   seedMutations: typeof seedMutations;
   serviceability: typeof serviceability;

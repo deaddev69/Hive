@@ -208,8 +208,8 @@ export async function generateInvoicePdf(invoice: InvoiceData): Promise<Blob> {
     page.drawText(nameStr, { x: 60, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
     page.drawText(item.size, { x: 300, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
     page.drawText(String(item.quantity), { x: 350, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
-    page.drawText(`Rs. ${item.unitPrice.toLocaleString("en-IN")}`, { x: 400, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
-    page.drawText(`Rs. ${item.totalPrice.toLocaleString("en-IN")}`, { x: 485, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
+    page.drawText(`Rs. ${(item.unitPrice / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, { x: 400, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
+    page.drawText(`Rs. ${(item.totalPrice / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, { x: 485, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
 
     currentY -= 22;
   }
@@ -234,19 +234,19 @@ export async function generateInvoicePdf(invoice: InvoiceData): Promise<Blob> {
   const valX = 485;
 
   page.drawText("Subtotal", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
-  page.drawText(`Rs. ${invoice.subtotal.toLocaleString("en-IN")}`, { x: valX, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
+  page.drawText(`Rs. ${(invoice.subtotal / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, { x: valX, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
 
   currentY -= 16;
   page.drawText("Delivery Fee", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
   page.drawText(
-    invoice.deliveryFee === 0 ? "FREE" : `Rs. ${invoice.deliveryFee.toLocaleString("en-IN")}`,
+    invoice.deliveryFee === 0 ? "FREE" : `Rs. ${(invoice.deliveryFee / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     { x: valX, y: currentY, size: 9, font: fontHelvetica, color: colorDark }
   );
 
   currentY -= 16;
   page.drawText("Discount", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
   page.drawText(
-    invoice.discount > 0 ? `-Rs. ${invoice.discount.toLocaleString("en-IN")}` : "Rs. 0",
+    invoice.discount > 0 ? `-Rs. ${(invoice.discount / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Rs. 0.00",
     { x: valX, y: currentY, size: 9, font: fontHelvetica, color: invoice.discount > 0 ? rgb(0.1, 0.5, 0.1) : colorDark }
   );
 
@@ -260,7 +260,7 @@ export async function generateInvoicePdf(invoice: InvoiceData): Promise<Blob> {
   });
 
   page.drawText("Grand Total", { x: summaryX, y: currentY, size: 12, font: fontHelveticaBold, color: colorDark });
-  page.drawText(`Rs. ${invoice.totalAmount.toLocaleString("en-IN")}`, { x: valX, y: currentY, size: 12, font: fontHelveticaBold, color: colorAmber });
+  page.drawText(`Rs. ${(invoice.totalAmount / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, { x: valX, y: currentY, size: 12, font: fontHelveticaBold, color: colorAmber });
 
   // 6. FOOTER INFO
   page.drawLine({

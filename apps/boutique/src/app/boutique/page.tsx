@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Card, CardContent, Button } from "@hive/ui";
+import { formatCurrency } from "@hive/utils";
 import {
   Loader2,
   ShieldX,
@@ -129,7 +130,7 @@ export default function BoutiqueDashboard() {
   const salesToday = useMemo(() => {
     return orders
       ?.filter(isCreatedToday)
-      ?.reduce((sum: number, o: any) => sum + (o.totalPrice ?? 0), 0) ?? 0;
+      ?.reduce((sum: number, o: any) => sum + (o.total ?? 0), 0) ?? 0;
   }, [orders]);
 
   const toPackCount = useMemo(() => {
@@ -148,7 +149,7 @@ export default function BoutiqueDashboard() {
       const diffTime = today.getTime() - orderDate.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       if (diffDays >= 0 && diffDays < 7) {
-        dailyTotals[6 - diffDays] += o.totalPrice ?? 0;
+        dailyTotals[6 - diffDays] += o.total ?? 0;
       }
     });
     return dailyTotals;
@@ -282,7 +283,7 @@ export default function BoutiqueDashboard() {
               <div className="flex flex-col gap-1 text-left">
                 <span className="text-[10px] text-hive-text-muted font-bold uppercase tracking-wider">Sales Today</span>
                 <span className={`text-xl font-bold ${salesToday === 0 ? "text-hive-text-muted/40 font-medium" : "text-hive-text"}`}>
-                  {salesToday === 0 ? "₹—" : `₹${salesToday.toLocaleString('en-IN')}`}
+                  {salesToday === 0 ? "₹—" : formatCurrency(salesToday)}
                 </span>
               </div>
               <div className="flex flex-col gap-1 text-left">

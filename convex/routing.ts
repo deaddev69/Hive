@@ -342,12 +342,17 @@ export async function calculateDeliveryQuoteAction(
       });
 
       if (srQuote && srQuote.serviced) {
+        const thresholdRupees = (boutique.freeDeliveryThreshold && boutique.freeDeliveryThreshold >= 10000)
+          ? boutique.freeDeliveryThreshold
+          : 10000;
+        const finalFeePaise = args.subtotal >= thresholdRupees ? 0 : srQuote.customerPaidFee;
+
         return {
           serviceable: true,
           distanceKm,
           durationMin,
           etaMinutes: Math.round(durationMin + (boutique.averagePrepTime ?? 30)),
-          customerPaidFee: srQuote.customerPaidFee, // paise
+          customerPaidFee: finalFeePaise, // paise (0 if subtotal >= threshold)
           estimatedCourierCost: srQuote.customerPaidFee,
           courierName: srQuote.courierName,
           quotedAt: srQuote.quotedAt,

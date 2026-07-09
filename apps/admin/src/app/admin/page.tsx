@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { StatCard, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
+import { formatCurrency } from "@hive/utils";
 import { Store, CheckCircle, FolderKanban, Image as ImageIcon, ArrowRight, Loader2, ShieldX, ShoppingBag, Clock, TrendingUp, Package } from "lucide-react";
 import Link from "next/link";
 
@@ -78,7 +79,7 @@ export default function AdminDashboardPage() {
             { label: "Total Orders", value: orderMetrics.totalOrders, icon: ShoppingBag, color: "text-blue-500 bg-blue-50 border-blue-100" },
             { label: "Pending Orders", value: orderMetrics.pendingOrders, icon: Clock, color: "text-amber-500 bg-amber-50 border-amber-100" },
             { label: "Delivered", value: orderMetrics.deliveredOrders, icon: CheckCircle, color: "text-green-500 bg-green-50 border-green-100" },
-            { label: "Total Revenue", value: `₹${orderMetrics.totalRevenue.toLocaleString("en-IN")}`, icon: TrendingUp, color: "text-indigo-500 bg-indigo-50 border-indigo-100" },
+            { label: "Total Revenue", value: formatCurrency(orderMetrics.totalRevenue), icon: TrendingUp, color: "text-indigo-500 bg-indigo-50 border-indigo-100" },
           ].map((card) => {
             const Icon = card.icon;
             return (
@@ -165,7 +166,7 @@ export default function AdminDashboardPage() {
                         {order.boutiqueName}
                       </td>
                       <td className="px-5 py-4 font-bold">
-                        ₹{order.total.toLocaleString("en-IN")}
+                        {formatCurrency(order.total)}
                       </td>
                       <td className="px-5 py-4">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${

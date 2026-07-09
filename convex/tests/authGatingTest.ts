@@ -64,7 +64,7 @@ async function runAuthGatingTests() {
   );
 
   // 7. Test Dev Clerk instance excluded in production
-  process.env.NODE_ENV = "production";
+  (process.env as any).NODE_ENV = "production";
   const isDevClerkAllowedInProd = assertRoleIssuerGating(
     { role: "boutique_owner" },
     { issuer: "https://artistic-tiger-76.clerk.accounts.dev" },

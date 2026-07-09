@@ -6,6 +6,7 @@ import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Card, CardContent } from "@hive/ui";
+import { formatCurrency } from "@hive/utils";
 import {
   ShoppingBag,
   Clock,
@@ -361,10 +362,10 @@ function OrderDetailDrawer({
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-xs font-bold text-hive-dark">
-                        ₹{item.subtotal.toLocaleString("en-IN")}
+                        {formatCurrency(item.subtotal)}
                       </p>
                       <p className="text-[10px] text-hive-text-muted">
-                        ₹{item.priceAtPurchase.toLocaleString("en-IN")} each
+                        {formatCurrency(item.priceAtPurchase)} each
                       </p>
                     </div>
                   </div>
@@ -384,26 +385,26 @@ function OrderDetailDrawer({
                 <div className="flex justify-between text-hive-text-muted">
                   <span>Subtotal</span>
                   <span className="font-semibold text-hive-dark">
-                    ₹{order.subtotal.toLocaleString("en-IN")}
+                    {formatCurrency(order.subtotal)}
                   </span>
                 </div>
                 <div className="flex justify-between text-hive-text-muted">
                   <span>Delivery Fee</span>
                   <span className="font-semibold text-hive-dark">
-                    ₹{order.deliveryFee.toLocaleString("en-IN")}
+                    {formatCurrency(order.deliveryFee)}
                   </span>
                 </div>
                 {order.discount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
                     <span className="font-semibold">
-                      − ₹{order.discount.toLocaleString("en-IN")}
+                      − {formatCurrency(order.discount)}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-base text-hive-dark border-t border-hive-border/40 pt-2 mt-1">
                   <span>Total</span>
-                  <span>₹{order.total.toLocaleString("en-IN")}</span>
+                  <span>{formatCurrency(order.total)}</span>
                 </div>
               </div>
               {order.notes && (
@@ -549,7 +550,7 @@ export default function AdminOrdersPage() {
     },
     {
       label: "Total Revenue",
-      value: `₹${metrics.totalRevenue.toLocaleString("en-IN")}`,
+      value: formatCurrency(metrics.totalRevenue),
       icon: TrendingUp,
       color: "text-indigo-500 bg-indigo-50 border-indigo-100",
     },
@@ -694,7 +695,7 @@ export default function AdminOrdersPage() {
                       </span>
                     </td>
                     <td className="px-5 py-4 font-bold whitespace-nowrap">
-                      ₹{order.total.toLocaleString("en-IN")}
+                      {formatCurrency(order.total)}
                     </td>
                     <td className="px-5 py-4">
                       <StatusBadge status={order.status} />
