@@ -7,7 +7,6 @@ import { Navbar } from "./Navbar";
 import { CheckoutHeader } from "./CheckoutHeader";
 import { Footer } from "./Footer";
 import { LocationDrawer } from "./LocationDrawer";
-import { UnsupportedArea } from "../location/UnsupportedArea";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { MobileBottomNav } from "./MobileBottomNav";
 
@@ -44,8 +43,6 @@ export const CustomerLayout: React.FC<{ children: React.ReactNode }> = ({ childr
 
       {/* Sticky bottom nav for mobile */}
       <MobileBottomNav />
-      
-      <UnsupportedArea />
       
       <LocationDrawer
         isOpen={isDrawerOpen}
