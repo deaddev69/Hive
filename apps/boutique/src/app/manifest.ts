@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Hive Seller Dashboard",
-    short_name: "Hive Seller",
+    name: "Hive Partners",
+    short_name: "Hive Partners",
     description: "Manage your boutique orders, inventory, and analytics.",
     start_url: "/",
     display: "standalone",

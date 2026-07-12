@@ -18,7 +18,7 @@ export function usePWAInstallation() {
     }
 
     // 2. Check if this specific user has explicitly tapped 'Skip' or 'Dismiss' before
-    const hasDismissed = localStorage.getItem("hive_seller_pwa_dismissed") === "true";
+    const hasDismissed = localStorage.getItem("hive_partners_pwa_dismissed") === "true";
     if (hasDismissed) {
       setShowPrompt(false);
       return;
@@ -46,8 +46,8 @@ export function usePWAInstallation() {
     // 5. Listen for successful installation
     const handleAppInstalled = () => {
       setShowPrompt(false);
-      localStorage.setItem("hive_seller_pwa_installed", "true");
-      console.log("Hive Seller successfully added to home screen.");
+      localStorage.setItem("hive_partners_pwa_installed", "true");
+      console.log("Hive Partners successfully added to home screen.");
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -61,7 +61,7 @@ export function usePWAInstallation() {
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    localStorage.setItem("hive_seller_pwa_dismissed", "true"); // Ensures you never force the user again
+    localStorage.setItem("hive_partners_pwa_dismissed", "true"); // Ensures you never force the user again
   };
 
   const handleInstall = async () => {

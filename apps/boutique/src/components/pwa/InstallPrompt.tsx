@@ -12,13 +12,13 @@ export function InstallPrompt() {
       {/* Self-contained styling for display-mode standalone safety switch */}
       <style dangerouslySetInnerHTML={{__html: `
         @media (display-mode: standalone) {
-          .hive-seller-install-modal-overlay {
+          .hive-partners-install-modal-overlay {
             display: none !important;
           }
         }
       `}} />
 
-      <div className="hive-seller-install-modal-overlay fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/75 backdrop-blur-sm p-0 md:p-4">
+      <div className="hive-partners-install-modal-overlay fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/75 backdrop-blur-sm p-0 md:p-4">
         <div className="relative w-full md:max-w-4xl bg-stone-900 text-stone-100 rounded-t-[32px] md:rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row border-t md:border border-stone-800 animate-in slide-in-from-bottom md:zoom-in duration-300">
           
           {/* Skip / Close Button */}
@@ -38,7 +38,7 @@ export function InstallPrompt() {
             <div className="space-y-4 md:space-y-6">
               {/* App Brand Identity */}
               <div className="flex items-center gap-2">
-                <span className="text-xl md:text-2xl font-serif font-black tracking-tight text-white">Hive Seller</span>
+                <span className="text-xl md:text-2xl font-serif font-black tracking-tight text-white">Hive Partners</span>
               </div>
 
               {/* Hook Copy */}
@@ -47,7 +47,7 @@ export function InstallPrompt() {
                   Manage your boutique <span className="text-amber-500 font-semibold">on the go.</span>
                 </h2>
                 <p className="text-stone-300 text-sm md:text-lg">
-                  Add Hive Seller to your home screen for quick access to orders, inventory, and analytics.
+                  Add Hive Partners to your home screen for quick access to orders, inventory, and analytics.
                 </p>
               </div>
 
@@ -97,13 +97,13 @@ export function InstallPrompt() {
                     onClick={handleInstall}
                     className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-white text-stone-950 font-semibold rounded-xl hover:bg-stone-100 active:scale-[0.98] transition-all focus:outline-none"
                   >
-                    <span>Install Hive Seller</span>
+                    <span>Install Hive Partners</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                     </svg>
                   </button>
                   <p className="text-center text-[10px] md:text-xs text-stone-400">
-                    Add Hive Seller to your home screen for the best experience.
+                    Add Hive Partners to your home screen for the best experience.
                   </p>
                 </div>
               ) : (
@@ -115,7 +115,7 @@ export function InstallPrompt() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-stone-200 text-sm font-medium">
-                      Install Hive Seller on iOS Safari:
+                      Install Hive Partners on iOS Safari:
                     </p>
                     <p className="text-stone-400 text-xs">
                       Tap the <span className="font-semibold text-white">Share</span> icon in the browser menu, then choose <span className="font-semibold text-white">Add to Home Screen</span>.

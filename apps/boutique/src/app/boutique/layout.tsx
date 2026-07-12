@@ -70,7 +70,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
         <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
         <div className="flex flex-col gap-1">
-          <span className="text-base font-serif font-black text-hive-dark">Hive Seller Portal</span>
+          <span className="text-base font-serif font-black text-hive-dark">Hive Partners Portal</span>
           <span className="text-xs text-hive-text-muted">Loading secure session...</span>
         </div>
       </div>
@@ -185,7 +185,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
                 {clerkUser?.fullName || "Shop Owner"}
               </span>
               <span className="text-[9px] text-[#BFA36F] font-semibold tracking-wider uppercase">
-                Seller Portal
+                Partners Portal
               </span>
             </div>
           </div>
