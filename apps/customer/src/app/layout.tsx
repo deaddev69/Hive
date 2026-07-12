@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description: "Your city's premium fashion stores, unified in one place. Shop local, delivered in hours.",
   icons: {
     icon: "/logo.png",
-    apple: "/logo.png",
+    apple: "/apple-touch-icon.png",
   },
 };
 

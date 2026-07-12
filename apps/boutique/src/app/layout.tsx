@@ -15,6 +15,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Hive Marketplace Admin Dashboard",
   description: "HIVE Central Marketplace Source of Truth Admin Panel",
+  icons: {
+    icon: "/logo.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
