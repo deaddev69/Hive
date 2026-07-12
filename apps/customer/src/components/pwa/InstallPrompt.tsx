@@ -77,18 +77,21 @@ export function InstallPrompt() {
               </svg>
             </button>
           ) : (
-            <div className="mt-8 bg-amber-50/60 border border-amber-200/40 rounded-2xl p-4 flex items-start gap-3">
-              <div className="p-2 bg-white rounded-lg shadow-sm text-stone-700 flex-shrink-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" />
+            <div className="mt-8 w-full bg-[#111827] rounded-xl p-4 flex items-center gap-4 text-white shadow-lg border border-slate-700">
+              {/* The iOS Share Icon */}
+              <div className="w-12 h-12 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                  <polyline points="16 6 12 2 8 6"></polyline>
+                  <line x1="12" y1="2" x2="12" y2="15"></line>
                 </svg>
               </div>
-              <div className="space-y-1 text-left">
-                <p className="text-stone-850 text-xs font-bold uppercase tracking-wider">
-                  Install Hive on iOS Safari:
-                </p>
-                <p className="text-stone-600 text-xs font-medium">
-                  Tap the <span className="font-semibold text-stone-900">Share</span> icon in the browser menu, then choose <span className="font-semibold text-stone-900">Add to Home Screen</span>.
+
+              {/* Instructions */}
+              <div className="flex-1 text-left">
+                <p className="font-semibold text-sm md:text-base tracking-wide">Install on iOS</p>
+                <p className="text-[11px] md:text-xs text-slate-300 mt-0.5 leading-tight">
+                  Tap the <strong className="text-white">Share</strong> icon below, then select <strong className="text-white">Add to Home Screen</strong>.
                 </p>
               </div>
             </div>
