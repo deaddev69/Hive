@@ -123,18 +123,13 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
           <Link href="/boutique" className="flex items-center hover:opacity-85 active:scale-[0.98] transition-all">
             <Image
               src="/logo.png"
-              alt="Hive"
-              width={120}
-              height={48}
+              alt="Hive Partners"
+              width={140}
+              height={50}
               priority
-              className="h-11 w-auto object-contain shrink-0"
+              className="h-12 w-auto object-contain shrink-0"
             />
           </Link>
-          <div className="h-6 w-[1.5px] bg-[#E5DCC6] mx-3.5" />
-          <div className="flex flex-col text-left leading-none justify-center">
-            <span className="text-[8px] font-extrabold tracking-widest text-[#BFA36F] uppercase">SELLER</span>
-            <span className="text-xs font-serif font-bold text-[#A89A7E] mt-0.5">Portal</span>
-          </div>
         </div>
       </header>
 
@@ -147,18 +142,13 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
             <Link href="/boutique" className="flex items-center hover:opacity-85 active:scale-[0.98] transition-all">
               <Image
                 src="/logo.png"
-                alt="Hive"
-                width={120}
-                height={48}
+                alt="Hive Partners"
+                width={140}
+                height={50}
                 priority
-                className="h-11 w-auto object-contain shrink-0"
+                className="h-12 w-auto object-contain shrink-0"
               />
             </Link>
-            <div className="h-6 w-[1.5px] bg-[#E5DCC6] mx-3.5" />
-            <div className="flex flex-col text-left leading-none justify-center">
-              <span className="text-[8px] font-extrabold tracking-widest text-[#BFA36F] uppercase">SELLER</span>
-              <span className="text-xs font-serif font-bold text-[#A89A7E] mt-0.5">Portal</span>
-            </div>
           </div>
 
           {/* Navigation Links */}
