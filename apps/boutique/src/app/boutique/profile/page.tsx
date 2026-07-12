@@ -407,7 +407,7 @@ export default function BoutiqueProfile() {
                 </span>
               </span>
               <div className="bg-amber-50 border border-amber-200/60 p-4 rounded-xl text-xs text-amber-800 font-medium leading-relaxed">
-                Once map coordinates are set through admin, they are locked. To change your store location, you must contact admin and send a support mail to <a href="mailto:myhive.in@gmail.com" className="font-bold underline">myhive.in@gmail.com</a>.
+                Once map coordinates are set through admin, they are locked. To change your store location, you must contact admin and send a support mail to <a href="mailto:support@hivenow.in" className="font-bold underline">support@hivenow.in</a>.
               </div>
             </div>
 
