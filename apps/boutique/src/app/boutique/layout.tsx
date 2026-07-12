@@ -143,10 +143,10 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
               <Image
                 src="/logo.png"
                 alt="Hive Partners"
-                width={140}
-                height={50}
+                width={80}
+                height={80}
                 priority
-                className="h-12 w-auto object-contain shrink-0"
+                className="h-20 w-auto object-contain shrink-0"
               />
             </Link>
           </div>

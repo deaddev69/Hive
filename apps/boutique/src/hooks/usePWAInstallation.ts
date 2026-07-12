@@ -1,12 +1,25 @@
 "use client";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export function usePWAInstallation() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
+    // 0. Check if the current route is an excluded utility/auth page
+    const isExcludedPath = pathname.includes("/unauthorized") 
+      || pathname.includes("/sign-in") 
+      || pathname.includes("/sign-up") 
+      || pathname.includes("/invite");
+
+    if (isExcludedPath) {
+      setShowPrompt(false);
+      return;
+    }
+
     // 1. Check if the application is currently running inside standalone/app mode
     const isStandalone = window.matchMedia("(display-mode: standalone)").matches 
       || (window.navigator as any).standalone 
@@ -18,7 +31,8 @@ export function usePWAInstallation() {
     }
 
     // 2. Check if this specific user has explicitly tapped 'Skip' or 'Dismiss' before
-    const hasDismissed = localStorage.getItem("hive_partners_pwa_dismissed") === "true";
+    const hasDismissed = localStorage.getItem("hive_partners_pwa_dismissed") === "true"
+      || localStorage.getItem("hive_seller_pwa_dismissed") === "true";
     if (hasDismissed) {
       setShowPrompt(false);
       return;
@@ -57,7 +71,7 @@ export function usePWAInstallation() {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
     };
-  }, []);
+  }, [pathname]);
 
   const handleDismiss = () => {
     setShowPrompt(false);
