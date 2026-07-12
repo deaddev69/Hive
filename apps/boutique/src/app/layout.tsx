@@ -4,6 +4,7 @@ import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { UserSync } from "@/components/auth/UserSync";
 import { Inter } from "next/font/google";
 import { Toaster } from "@hive/ui";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import "./globals.css";
 
 const inter = Inter({
@@ -32,6 +33,7 @@ export default function RootLayout({
             <UserSync />
             {children}
             <Toaster />
+            <InstallPrompt />
           </ConvexClientProvider>
         </body>
       </html>

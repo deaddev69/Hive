@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PremiumShoppingBag } from "@/components/shared/PremiumShoppingBag";
-import { ArrowRight, Ticket, Check, AlertCircle, Sparkles, Loader2 } from "lucide-react";
+import { ArrowRight, Ticket, Check, AlertCircle, Sparkles, Loader2, X } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { CartItemComponent } from "@/components/cart/CartItem";
 import { useQuery, useMutation } from "convex/react";
@@ -13,6 +13,8 @@ import { useSessionStore } from "@/context/SessionContext";
 import { formatRupees } from "@hive/utils";
 import { useConvexMutation } from "@/hooks/useConvexMutation";
 import { useCheckoutStore } from "@/store/checkout-store";
+import { Modal } from "@hive/ui";
+import { FirebaseAuthCard } from "@/components/auth/FirebaseAuthCard";
 
 export default function CartPage() {
   const router = useRouter();
@@ -26,6 +28,7 @@ export default function CartPage() {
   const blockingReason = cartData?.blockingReason;
 
   const [cleaning, setCleaning] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const removeInvalidMutation = useConvexMutation(useMutation(api.cart.removeInvalidItems).withOptimisticUpdate((localStore, args) => {
     if (args.token) {
       const cart = localStore.getQuery(api.cart.getCart, { token: args.token });
@@ -362,7 +365,13 @@ export default function CartPage() {
               <button
                 type="button"
                 disabled={hasIssues}
-                onClick={() => router.push("/checkout/address")}
+                onClick={() => {
+                  if (isAuthenticated) {
+                    router.push("/checkout/address");
+                  } else {
+                    setIsAuthModalOpen(true);
+                  }
+                }}
                 className="w-full h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:bg-hive-border/40 disabled:text-hive-text-muted/50 disabled:cursor-not-allowed"
               >
                 <span>Secure Checkout →</span>
@@ -395,6 +404,35 @@ export default function CartPage() {
           
         </div>
       </div>
+
+      {/* Inline Checkout Sign In Modal (Option A) */}
+      <Modal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        hideHeader={true}
+        className="w-[calc(100%-2.5rem)] max-w-md h-fit max-h-[90vh] bg-transparent border-none shadow-none outline-none m-auto"
+      >
+        <div className="relative">
+          <FirebaseAuthCard 
+            title="Checkout Sign In" 
+            subtitle="Please sign in to proceed with your order" 
+            showLogo={false}
+            onSuccess={() => {
+              setIsAuthModalOpen(false);
+              router.push("/checkout/address");
+            }}
+          />
+          {/* Frosted dismiss close button overlayed on card */}
+          <button
+            type="button"
+            onClick={() => setIsAuthModalOpen(false)}
+            className="absolute top-6 right-6 z-20 w-8 h-8 rounded-full border border-stone-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md flex items-center justify-center text-slate-500 hover:text-stone-950 dark:hover:text-white active:scale-95 transition-all shadow-sm cursor-pointer"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

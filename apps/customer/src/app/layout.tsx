@@ -11,8 +11,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Hive by TailorBee — Boutique Fashion, Delivered Today",
-  description: "Experience hyperlocal boutique fashion delivered to your doorstep in hours. Curated designs from India's finest boutiques.",
+  title: {
+    template: "%s | Hive",
+    default: "Hive | Shop Your City's Fashion Instantly",
+  },
+  description: "Your city's premium fashion stores, unified in one place. Shop local, delivered in hours.",
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",
@@ -20,6 +23,7 @@ export const metadata: Metadata = {
 };
 
 import { Toaster } from "@hive/ui";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 export default function RootLayout({
   children,
@@ -38,6 +42,7 @@ export default function RootLayout({
             {children}
           </CustomerLayout>
           <div id="modal-root" />
+          <InstallPrompt />
         </ConvexClientProvider>
       </body>
     </html>

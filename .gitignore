@@ -53,6 +53,12 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 
+# PWA Service Workers
+**/public/sw.js
+**/public/workbox-*.js
+**/public/sw.js.map
+**/public/workbox-*.js.map
+
 AGENTS.md
 CLAUDE.md
 HIVE_BACKEND_SPEC.md

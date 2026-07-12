@@ -90,8 +90,35 @@ export const submitFitFeedback = mutation({
  * Used to show which items already have responses.
  */
 export const getFitFeedbackForOrder = query({
-  args: { orderId: v.id("orders") },
+  args: { orderId: v.id("orders"), token: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    // 1. Authenticate the caller and fetch user record
+    const user = await getAuthenticatedUser(ctx, args.token);
+
+    // 2. Fetch the target order
+    const order = await ctx.db.get(args.orderId);
+    if (!order) {
+      throw new Error("Order not found.");
+    }
+
+    // 3. Authorization Matrix: Only the buyer, the seller (boutique owner), or an admin can view.
+    const isCustomer = order.customerId === user._id;
+    
+    let isBoutiqueOwner = false;
+    if (user.role === "boutique" || user.role === "boutique_owner") {
+      const boutique = await ctx.db
+        .query("boutiques")
+        .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
+        .unique();
+      isBoutiqueOwner = boutique !== null && order.boutiqueId === boutique._id;
+    }
+    
+    const isAdmin = user.role === "admin";
+
+    if (!isCustomer && !isBoutiqueOwner && !isAdmin) {
+      throw new Error("Unauthorized: You do not have permission to view this feedback.");
+    }
+
     return await ctx.db
       .query("fitFeedback")
       .withIndex("by_orderId", (q: any) => q.eq("orderId", args.orderId))

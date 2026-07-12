@@ -88,6 +88,7 @@ import type * as tests_boutiqueAudit from "../tests/boutiqueAudit.js";
 import type * as tests_cartCurrency from "../tests/cartCurrency.js";
 import type * as tests_checkTimestamps from "../tests/checkTimestamps.js";
 import type * as tests_dataIntegrityAudit from "../tests/dataIntegrityAudit.js";
+import type * as tests_debugGatingTest from "../tests/debugGatingTest.js";
 import type * as tests_encryptionTest from "../tests/encryptionTest.js";
 import type * as tests_financeAudit from "../tests/financeAudit.js";
 import type * as tests_hyperlocal from "../tests/hyperlocal.js";
@@ -200,6 +201,7 @@ declare const fullApi: ApiFromModules<{
   "tests/cartCurrency": typeof tests_cartCurrency;
   "tests/checkTimestamps": typeof tests_checkTimestamps;
   "tests/dataIntegrityAudit": typeof tests_dataIntegrityAudit;
+  "tests/debugGatingTest": typeof tests_debugGatingTest;
   "tests/encryptionTest": typeof tests_encryptionTest;
   "tests/financeAudit": typeof tests_financeAudit;
   "tests/hyperlocal": typeof tests_hyperlocal;

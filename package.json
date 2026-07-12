@@ -42,5 +42,8 @@
     "@aws-sdk/s3-request-presigner": "^3.1078.0",
     "react-markdown": "^10.1.0",
     "resend": "^6.12.4"
+  },
+  "overrides": {
+    "postcss": "8.5.16"
   }
 }

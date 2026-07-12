@@ -893,6 +893,11 @@ export const getAuthenticatedUserQuery = query({
 export const promoteEmailToAdminDebug = mutation({
   args: { email: v.string() },
   handler: async (ctx, args) => {
+    // STRICT PRODUCTION GATE
+    if (process.env.NODE_ENV === "production" || process.env.ENABLE_DEBUG_TOOLS !== "true") {
+      throw new Error("Unauthorized: Debug mutations are strictly disabled in this environment.");
+    }
+
     const emailNormalized = args.email.trim().toLowerCase();
     const user = await ctx.db
       .query("users")
@@ -907,6 +912,11 @@ export const promoteEmailToAdminDebug = mutation({
 export const forceCreateAdminDebug = mutation({
   args: { email: v.string(), clerkId: v.string(), name: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    // STRICT PRODUCTION GATE
+    if (process.env.NODE_ENV === "production" || process.env.ENABLE_DEBUG_TOOLS !== "true") {
+      throw new Error("Unauthorized: Debug mutations are strictly disabled in this environment.");
+    }
+
     const emailNormalized = args.email.trim().toLowerCase();
     const existing = await ctx.db
       .query("users")

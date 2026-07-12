@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.12.12",
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@hive/types": "*",
     "@hive/ui": "*",
     "@hive/utils": "*",
