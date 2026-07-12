@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Card, CardContent, Button } from "@hive/ui";
-import { formatCurrency } from "@hive/utils";
+import { formatCurrency, toast } from "@hive/utils";
 import {
   Loader2,
   ShieldX,
@@ -74,6 +74,40 @@ export default function BoutiqueDashboard() {
   const products = useQuery(api.products.getBoutiqueProducts);
   const orders = useQuery(api.orders.getBoutiqueOrders);
   const tierStats = useQuery(api.boutiques.getBoutiqueTierAndStats, boutique ? { boutiqueId: boutique._id } : "skip");
+
+  const toggleAvailability = useMutation(api.boutiques.toggleBoutiqueAvailability);
+  const updateStatus = useMutation(api.boutiques.updateStoreStatus);
+
+  const [isPending, setIsPending] = useState(false);
+
+  const handleToggleAvailability = async () => {
+    if (!boutique) return;
+    setIsPending(true);
+    try {
+      const nextVal = !boutique.isAcceptingOrders;
+      await toggleAvailability({ isAcceptingOrders: nextVal });
+      toast.success(nextVal ? "Store is now accepting orders!" : "Store order acceptance paused.");
+    } catch (e) {
+      toast.error("Failed to update order acceptance status.");
+      console.error(e);
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  const handleUpdateStatus = async (newStatus: "open" | "busy" | "closed") => {
+    if (!boutique) return;
+    setIsPending(true);
+    try {
+      await updateStatus({ storeStatus: newStatus });
+      toast.success(`Store status updated to ${newStatus.toUpperCase()}`);
+    } catch (e) {
+      toast.error("Failed to update store status.");
+      console.error(e);
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   const [waitedLong, setWaitedLong] = useState(false);
   useEffect(() => {
@@ -460,6 +494,86 @@ export default function BoutiqueDashboard() {
         {/* Right Column (Alerts, Shop Setup) */}
         <div className="flex flex-col gap-6 order-1 lg:order-2 w-full">
           
+          {/* Store Operations Quick Controls Card */}
+          <div className="bg-hive-white border border-hive-border rounded-[32px] p-6 flex flex-col gap-5 shadow-[0_4px_16px_rgba(0,0,0,0.01)] select-none">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-hive-text font-sans tracking-wide">Store Operations</h3>
+              {isPending && <Loader2 className="w-4 h-4 animate-spin text-hive-amber" />}
+            </div>
+
+            {/* Segmented Button Group (Open | Busy | Closed) */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] text-hive-text-muted font-bold uppercase tracking-wider text-left">
+                Operational Status
+              </span>
+              <div className="grid grid-cols-3 bg-[#FAF6F0] p-1.5 rounded-2xl border border-hive-border/40 gap-1.5">
+                {(["open", "busy", "closed"] as const).map((status) => {
+                  const isActive = boutique.storeStatus === status;
+                  const colors = {
+                    open: {
+                      active: "bg-[#EAF6ED] text-[#2E7D32] border-[#C6EBD3]/60 shadow-sm",
+                      inactive: "text-slate-600 hover:bg-[#EAF6ED]/30",
+                    },
+                    busy: {
+                      active: "bg-[#FEF3D6] text-[#B06000] border-[#FDE7B9]/60 shadow-sm",
+                      inactive: "text-slate-600 hover:bg-[#FEF3D6]/30",
+                    },
+                    closed: {
+                      active: "bg-[#FCE8E6] text-[#C5221F] border-[#FAD2CF]/60 shadow-sm",
+                      inactive: "text-slate-600 hover:bg-[#FCE8E6]/30",
+                    },
+                  };
+
+                  return (
+                    <button
+                      key={status}
+                      disabled={isPending}
+                      onClick={() => handleUpdateStatus(status)}
+                      className={`py-2 px-3 rounded-xl text-[10px] sm:text-xs font-bold transition-all duration-150 uppercase tracking-wider border border-transparent focus:outline-none cursor-pointer ${
+                        isActive ? colors[status].active : colors[status].inactive
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {status}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Accepting Orders Toggle Switch */}
+            <div className="flex items-center justify-between border-t border-hive-border/40 pt-4.5">
+              <div className="flex flex-col text-left gap-0.5">
+                <span className="text-xs font-bold text-hive-text">Accepting New Orders</span>
+                <span className="text-[10px] text-hive-text-muted font-medium">
+                  {boutique.storeStatus === "closed"
+                    ? "Orders paused (Store is Closed)"
+                    : boutique.isAcceptingOrders
+                    ? "Live & accepting orders from customer app"
+                    : "Orders temporarily paused"}
+                </span>
+              </div>
+
+              {/* Toggle Switch */}
+              <button
+                disabled={isPending || boutique.storeStatus === "closed"}
+                onClick={handleToggleAvailability}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  boutique.storeStatus !== "closed" && boutique.isAcceptingOrders
+                    ? "bg-[#2E7D32]"
+                    : "bg-slate-200"
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    boutique.storeStatus !== "closed" && boutique.isAcceptingOrders
+                      ? "translate-x-5"
+                      : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* Check Your Stock Card (Urgent Warning - Hidden if verified today) */}
           {!isStockVerifiedToday && (
             <div className="bg-brand-50 border border-brand-100 rounded-[32px] p-6 flex flex-col gap-5 relative overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.01)]">
