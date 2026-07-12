@@ -311,69 +311,6 @@ export default function BoutiqueProfile() {
                 />
               </div>
             </div>
-            
-            <div className="pt-4 mt-2 border-t border-hive-border/60">
-              <h4 className="text-sm font-semibold text-hive-dark mb-3">Store Operational Status</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-hive-dark">Store Status</label>
-                  <select 
-                    value={storeStatus} 
-                    onChange={(e: any) => setStoreStatus(e.target.value)}
-                    className="w-full h-11 px-3 border border-hive-border bg-hive-light rounded-xl text-sm"
-                  >
-                    <option value="open">Open (Normal Operations)</option>
-                    <option value="busy">Busy (High Volume)</option>
-                    <option value="closed">Closed / Paused</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-hive-dark">Accepting New Orders?</label>
-                  <select 
-                    value={isAcceptingOrders ? "true" : "false"} 
-                    onChange={(e: any) => setIsAcceptingOrders(e.target.value === "true")}
-                    className="w-full h-11 px-3 border border-hive-border bg-hive-light rounded-xl text-sm"
-                  >
-                    <option value="true">Yes, accepting orders</option>
-                    <option value="false">No, temporarily paused</option>
-                  </select>
-                </div>
-              </div>
-              
-              {(!isAcceptingOrders || storeStatus === "closed") && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-hive-dark">Reason for pausing</label>
-                    <select 
-                      value={pauseReason} 
-                      onChange={(e: any) => setPauseReason(e.target.value)}
-                      className="w-full h-11 px-3 border border-hive-border bg-hive-light rounded-xl text-sm"
-                    >
-                      <option value="vacation">On Vacation</option>
-                      <option value="capacity">At Capacity</option>
-                      <option value="festival">Festival Holiday</option>
-                      <option value="restocking">Restocking Inventory</option>
-                      <option value="renovation">Store Renovation</option>
-                      <option value="personal">Personal Reason</option>
-                      <option value="emergency">Emergency</option>
-                      <option value="other">Other</option>
-                    </select>
-                    <p className="text-xs text-hive-text-muted mt-1">This will be shown to customers when they view your products.</p>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-hive-dark">Reopen Date (Optional)</label>
-                    <input 
-                      type="date"
-                      value={closedUntilStr}
-                      onChange={(e) => setClosedUntilStr(e.target.value)}
-                      min={new Date().toISOString().split("T")[0]}
-                      className="w-full h-11 px-3 border border-hive-border bg-hive-light rounded-xl text-sm"
-                    />
-                    <p className="text-xs text-hive-text-muted mt-1">We'll show customers when you'll be back.</p>
-                  </div>
-                </div>
-              )}
-            </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Physical Registered Address</label>
