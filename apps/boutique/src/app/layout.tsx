@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description: "HIVE Central Marketplace Source of Truth Admin Panel",
   icons: {
     icon: "/logo.png",
-    apple: "/apple-touch-icon.png",
+    apple: "/apple-touch-icon.png?v=2",
   },
 };
 
