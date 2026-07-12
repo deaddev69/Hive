@@ -24,34 +24,50 @@ export function InstallPrompt() {
         <div className="relative w-full md:max-w-md bg-[#fdfbf7] rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 flex flex-col p-6 md:p-8 border border-stone-200/40">
           
           {/* Header with minimal Hive branding */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <h1 className="text-xl font-serif font-black text-slate-900 tracking-tight">Hive</h1>
+            {/* Replaced 'Skip' with a clean, minimal X icon */}
             <button 
               onClick={handleDismiss} 
-              className="px-3 py-1.5 bg-white/60 backdrop-blur-md border border-stone-200/20 rounded-full text-xs font-semibold text-slate-700 hover:bg-white transition focus:outline-none"
+              className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition focus:outline-none"
+              aria-label="Close"
             >
-              Skip ✕
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
           </div>
 
-          {/* Punchy Headline */}
-          <h2 className="text-3xl font-serif text-slate-900 tracking-tight leading-snug text-left">
+          {/* Punchy Headline (Tightened leading) */}
+          <h2 className="text-3xl font-serif text-slate-900 tracking-tight leading-[1.1] text-left">
             Premium fashion.<br />
             <span className="text-[#a47a24] font-semibold">Delivered instantly.</span>
           </h2>
           
-          {/* The 3-Liner (Who, What, How) */}
-          <div className="mt-5 space-y-3 text-sm text-slate-600 leading-relaxed text-left">
-            <p><strong>1.</strong> Hive is your ultimate destination for on-demand, high-end fashion.</p>
-            <p><strong>2.</strong> We curate an exclusive, real-time catalog from the best stores around you.</p>
-            <p><strong>3.</strong> Skip the traffic and get your outfit delivered in under 60 minutes.</p>
+          {/* Scannable Value Props (Replaces the 1, 2, 3 wall of text) */}
+          <div className="mt-6 space-y-4 text-sm text-slate-600 text-left">
+            <div className="flex gap-3">
+              <div className="mt-0.5 w-5 h-5 rounded-full bg-amber-100/50 flex items-center justify-center flex-shrink-0 text-amber-600 text-xs">✨</div>
+              <p><strong className="text-slate-800 font-bold">On-demand luxury.</strong> Your ultimate destination for high-end fashion.</p>
+            </div>
+            
+            <div className="flex gap-3">
+              <div className="mt-0.5 w-5 h-5 rounded-full bg-amber-100/50 flex items-center justify-center flex-shrink-0 text-amber-600 text-xs">📍</div>
+              <p><strong className="text-slate-800 font-bold">Real-time curation.</strong> An exclusive catalog from the best stores around you.</p>
+            </div>
+            
+            <div className="flex gap-3">
+              <div className="mt-0.5 w-5 h-5 rounded-full bg-amber-100/50 flex items-center justify-center flex-shrink-0 text-amber-600 text-xs">⚡</div>
+              <p><strong className="text-slate-800 font-bold">Skip the traffic.</strong> Get your outfit delivered in under 60 minutes.</p>
+            </div>
           </div>
 
           {/* Primary Action: Install or iOS instructions */}
           {!isIOS ? (
             <button 
               onClick={handleInstall}
-              className="mt-8 w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl font-medium flex items-center justify-center gap-2 shadow-md transition active:scale-[0.98] focus:outline-none"
+              className="mt-8 w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg transition active:scale-[0.98] focus:outline-none"
             >
               <span>Install Hive</span>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4.5 h-4.5">
