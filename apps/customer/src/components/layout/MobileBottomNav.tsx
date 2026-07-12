@@ -49,12 +49,10 @@ export const MobileBottomNav: React.FC = () => {
   const isAuthPage = pathname?.startsWith("/sign-in") || pathname?.startsWith("/sign-up");
 
   return (
-    <div className={`md:hidden fixed bottom-0 inset-x-0 bg-white/95 dark:bg-hive-dark/95 backdrop-blur-md border-t border-hive-border/60 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40 h-16 flex items-center justify-around px-2 pb-safe transition-all duration-300 ${
-      isAuthPage ? "opacity-35 pointer-events-none cursor-not-allowed select-none" : ""
-    }`}>
+    <div className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 dark:bg-hive-dark/95 backdrop-blur-md border-t border-hive-border/60 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] z-40 h-16 flex items-center justify-around px-2 pb-safe transition-all duration-300">
       {items.map((item) => {
         const Icon = item.icon;
-        const isActive = pathname === item.href;
+        const isActive = pathname === item.href || (item.label === "Account" && (pathname?.startsWith("/sign-in") || pathname?.startsWith("/sign-up")));
         return (
           <Link
             key={item.href}
