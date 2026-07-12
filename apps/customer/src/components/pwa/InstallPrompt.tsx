@@ -21,106 +21,102 @@ export function InstallPrompt() {
       <div className="hive-install-modal-overlay fixed inset-0 z-[100] flex flex-col items-center justify-end bg-black/40 backdrop-blur-sm sm:p-6 transition-opacity">
         
         {/* The Bottom Sheet Card */}
-        <div className="relative w-full md:max-w-md bg-[#fdfbf7] rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 flex flex-col p-6 md:p-8 border border-stone-200/40">
+        <div className="relative w-full md:max-w-md bg-[#fdfbf7] rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 flex flex-col p-6 md:p-8 border border-stone-200/40 text-center items-center">
           
-          {/* Header with minimal Hive branding */}
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="text-xl font-serif font-black text-slate-900 tracking-tight">Hive</h1>
-            {/* Replaced 'Skip' with a clean, minimal X icon */}
-            <button 
-              onClick={handleDismiss} 
-              className="p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition focus:outline-none"
-              aria-label="Close"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
+          {/* Header minimal close */}
+          <button 
+            onClick={handleDismiss} 
+            className="absolute top-4 right-4 p-2 bg-stone-100 hover:bg-stone-200 rounded-full text-slate-500 transition focus:outline-none"
+            aria-label="Close"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+
+          {/* Premium Gold Shopping Bag Logo / Brand Mark */}
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-[#a47a24] mb-4 mt-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 1.75 0zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 1.75 0z" />
+            </svg>
           </div>
 
-          {/* Punchy Headline (Tightened leading) */}
-          <h2 className="text-3xl font-serif text-slate-900 tracking-tight leading-[1.1] text-left">
-            Premium fashion.<br />
-            <span className="text-[#a47a24] font-semibold">Delivered instantly.</span>
+          {/* Punchy Onboarding Copy */}
+          <h2 className="text-2xl md:text-3xl font-serif font-black text-slate-900 tracking-tight leading-tight">
+            Shop faster with Hive
           </h2>
-          
-          {/* Scannable Value Props (Premium SVGs instead of emojis) */}
-          <div className="mt-6 space-y-4 text-sm text-slate-600 text-left">
-            
-            <div className="flex gap-3 items-start">
-              <div className="mt-0.5 text-[#a47a24] shrink-0">
-                {/* Minimalist Star/Sparkle SVG */}
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                </svg>
-              </div>
-              <p><strong className="text-slate-900 font-medium">On-demand luxury.</strong> Your ultimate destination for high-end fashion.</p>
+          <p className="text-stone-500 text-xs md:text-sm mt-2 max-w-sm leading-relaxed">
+            Install Hive for a faster, smoother shopping experience with instant access to your favourite boutiques.
+          </p>
+
+          {/* Divider line */}
+          <div className="w-full h-px bg-stone-200/60 my-5" />
+
+          {/* Clean, Checklist Benefits List */}
+          <div className="space-y-3.5 text-sm text-slate-800 font-semibold w-full text-left px-4">
+            <div className="flex items-center gap-3">
+              <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Opens instantly</span>
             </div>
             
-            <div className="flex gap-3 items-start">
-              <div className="mt-0.5 text-[#a47a24] shrink-0">
-                {/* Minimalist Shopping Bag SVG */}
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <path d="M16 10a4 4 0 0 1-8 0"></path>
-                </svg>
-              </div>
-              <p><strong className="text-slate-900 font-medium">Real-time curation.</strong> An exclusive catalog from the best stores around you.</p>
+            <div className="flex items-center gap-3">
+              <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Live order tracking</span>
             </div>
             
-            <div className="flex gap-3 items-start">
-              <div className="mt-0.5 text-[#a47a24] shrink-0">
-                {/* Minimalist Clock/Timer SVG */}
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-              </div>
-              <p><strong className="text-slate-900 font-medium">Skip the traffic.</strong> Get your outfit delivered in under 60 minutes.</p>
+            <div className="flex items-center gap-3">
+              <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>One-tap checkout</span>
             </div>
           </div>
 
-          {/* Conditional Install Action or iOS instructions fallback */}
-          {isIOS ? (
-            /* iOS Safari Fallback State (Platform agnostic text) */
-            <div className="mt-8 w-full bg-[#111827] rounded-xl p-4 flex items-center gap-4 text-white shadow-lg border border-slate-800">
-              <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-                  <polyline points="16 6 12 2 8 6"></polyline>
-                  <line x1="12" y1="2" x2="12" y2="15"></line>
-                </svg>
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-semibold text-sm md:text-base tracking-wide text-white">Install Hive App</p>
-                <p className="text-[11px] md:text-xs text-slate-300 mt-0.5 leading-tight">
-                  Tap the <strong className="text-white">Share</strong> icon below, then select <strong className="text-white">Add to Home Screen</strong>.
-                </p>
-              </div>
-            </div>
-          ) : (
-            /* Standard Android / Desktop Button */
+          {/* Divider line */}
+          <div className="w-full h-px bg-stone-200/60 my-5" />
+
+          {/* Primary Action / Install or iOS instructions fallback */}
+          {!isIOS ? (
             <button 
-              onClick={handleInstall} 
-              className="mt-8 w-full bg-[#111827] hover:bg-black text-white py-4 rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg transition active:scale-[0.98] focus:outline-none"
+              onClick={handleInstall}
+              className="w-full bg-[#a47a24] hover:bg-[#8f6a1e] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition active:scale-[0.98] focus:outline-none"
             >
-              <span>Install Hive</span> 
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <span>Install Hive</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4.5 h-4.5">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
             </button>
+          ) : (
+            <div className="w-full bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4 flex items-start gap-3">
+              <div className="p-2 bg-[#a47a24]/10 rounded-lg text-[#a47a24] flex-shrink-0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                  <polyline points="16 6 12 2 8 6"></polyline>
+                  <line x1="12" y1="2" x2="12" y2="15"></line>
+                </svg>
+              </div>
+              <div className="space-y-0.5 text-left">
+                <p className="text-stone-850 text-sm font-bold">Add to Home Screen</p>
+                <p className="text-stone-600 text-xs leading-normal">
+                  Tap the <span className="font-semibold text-stone-900">Share</span> icon in Safari, then select <span className="font-semibold text-stone-900">Add to Home Screen</span>.
+                </p>
+              </div>
+            </div>
           )}
           
-          {/* Secondary Action: Continue on Web */}
+          {/* Softer opt-out link */}
           <button 
             onClick={handleDismiss}
-            className="mt-3 w-full py-3 text-sm font-medium text-slate-500 hover:text-slate-800 transition focus:outline-none"
+            className="mt-4 w-full py-2 text-sm font-semibold text-stone-400 hover:text-stone-700 transition focus:outline-none"
           >
-            Continue on web
+            Maybe later
           </button>
 
         </div>
