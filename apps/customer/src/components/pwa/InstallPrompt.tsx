@@ -18,124 +18,73 @@ export function InstallPrompt() {
         }
       `}} />
 
-      <div className="hive-install-modal-overlay fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-4">
-        <div className="relative w-full md:max-w-4xl bg-[#fdfbf7] rounded-t-[32px] md:rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row border-t md:border border-stone-200/50 animate-in slide-in-from-bottom md:zoom-in duration-300">
+      <div className="hive-install-modal-overlay fixed inset-0 z-[100] flex flex-col items-center justify-end bg-black/40 backdrop-blur-sm sm:p-6 transition-opacity">
+        
+        {/* The Bottom Sheet Card */}
+        <div className="relative w-full md:max-w-md bg-[#fdfbf7] rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 flex flex-col p-6 md:p-8 border border-stone-200/40">
           
-          {/* Skip / Close Button */}
-          <button 
-            onClick={handleDismiss}
-            className="absolute top-4 right-4 md:top-6 md:right-6 z-10 px-3 py-1.5 bg-white/60 backdrop-blur-md border border-stone-200/20 rounded-full text-sm font-medium text-stone-850 hover:bg-white/80 transition flex items-center gap-1 focus:outline-none"
-            aria-label="Skip installation"
-          >
-            <span>Skip</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {/* Header with minimal Hive branding */}
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-xl font-serif font-black text-slate-900 tracking-tight">Hive</h1>
+            <button 
+              onClick={handleDismiss} 
+              className="px-3 py-1.5 bg-white/60 backdrop-blur-md border border-stone-200/20 rounded-full text-xs font-semibold text-slate-700 hover:bg-white transition focus:outline-none"
+            >
+              Skip ✕
+            </button>
+          </div>
 
-          {/* Left Panel: Content & Call to Actions */}
-          <div className="flex-1 p-6 md:p-12 flex flex-col justify-between">
-            <div className="space-y-4 md:space-y-6">
-              {/* App Brand Identity */}
-              <div className="flex items-center gap-2">
-                <span className="text-xl md:text-2xl font-serif font-black tracking-tight text-stone-950">Hive</span>
+          {/* Punchy Headline */}
+          <h2 className="text-3xl font-serif text-slate-900 tracking-tight leading-snug text-left">
+            Premium fashion.<br />
+            <span className="text-[#a47a24] font-semibold">Delivered instantly.</span>
+          </h2>
+          
+          {/* The 3-Liner (Who, What, How) */}
+          <div className="mt-5 space-y-3 text-sm text-slate-600 leading-relaxed text-left">
+            <p><strong>1.</strong> Hive is your ultimate destination for on-demand, high-end fashion.</p>
+            <p><strong>2.</strong> We curate an exclusive, real-time catalog from the best stores around you.</p>
+            <p><strong>3.</strong> Skip the traffic and get your outfit delivered in under 60 minutes.</p>
+          </div>
+
+          {/* Primary Action: Install or iOS instructions */}
+          {!isIOS ? (
+            <button 
+              onClick={handleInstall}
+              className="mt-8 w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl font-medium flex items-center justify-center gap-2 shadow-md transition active:scale-[0.98] focus:outline-none"
+            >
+              <span>Install Hive</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4.5 h-4.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </button>
+          ) : (
+            <div className="mt-8 bg-amber-50/60 border border-amber-200/40 rounded-2xl p-4 flex items-start gap-3">
+              <div className="p-2 bg-white rounded-lg shadow-sm text-stone-700 flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" />
+                </svg>
               </div>
-
-              {/* Hook Copy */}
-              <div className="space-y-1.5 md:space-y-3">
-                <h2 className="text-2xl md:text-5xl font-serif font-bold text-stone-950 leading-tight">
-                  Fashion that feels like <span className="text-[#a47a24] font-semibold">your city.</span>
-                </h2>
-                <p className="text-stone-600 text-sm md:text-lg">
-                  Curated local fashion delivered to your door.
+              <div className="space-y-1 text-left">
+                <p className="text-stone-850 text-xs font-bold uppercase tracking-wider">
+                  Install Hive on iOS Safari:
+                </p>
+                <p className="text-stone-600 text-xs font-medium">
+                  Tap the <span className="font-semibold text-stone-900">Share</span> icon in the browser menu, then choose <span className="font-semibold text-stone-900">Add to Home Screen</span>.
                 </p>
               </div>
-
-              {/* Value Propositions */}
-              <div className="py-2 md:py-4 grid grid-cols-3 md:grid-cols-1 gap-2 md:gap-4">
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-1 md:gap-4 text-center md:text-left">
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-amber-100/50 flex items-center justify-center text-[#a47a24] flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 md:w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 21l8.904-4.43a1.902 1.902 0 001.096-1.704V8.303a1.902 1.902 0 00-1.096-1.704L9 2.167v13.737z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-stone-900 text-xs md:text-base leading-tight">Local Finds</h3>
-                  </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-1 md:gap-4 text-center md:text-left">
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-pink-100/50 flex items-center justify-center text-pink-600 flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 md:w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.129-1.125V11.25c0-.446-.26-.846-.663-1.018l-3.125-1.34A1.125 1.125 0 0014.25 9.9V18.75m-9-4.75h10.5M5.25 7.5h6" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-stone-900 text-xs md:text-base leading-tight">Fast Delivery</h3>
-                  </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-1 md:gap-4 text-center md:text-left">
-                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-amber-100/50 flex items-center justify-center text-amber-600 flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 md:w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-stone-900 text-xs md:text-base leading-tight">New Arrivals</h3>
-                  </div>
-                </div>
-              </div>
             </div>
-
-            {/* Install Call-to-Actions */}
-            <div className="space-y-4 pt-4 md:pt-6 border-t border-stone-200/60 mt-4">
-              {!isIOS ? (
-                <div className="space-y-2">
-                  <button 
-                    onClick={handleInstall}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-stone-950 text-white font-semibold rounded-xl hover:bg-stone-850 active:scale-[0.98] transition-all focus:outline-none"
-                  >
-                    <span>Install Hive</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                    </svg>
-                  </button>
-                  <p className="text-center text-[10px] md:text-xs text-stone-500">
-                    Add Hive to your home screen for the best experience.
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-amber-50/50 border border-amber-200/40 rounded-2xl p-4 flex items-start gap-3">
-                  <div className="p-2 bg-white rounded-lg shadow-sm text-stone-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15M9 12l3 3m0 0l3-3m-3 3V2.25" />
-                    </svg>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-stone-800 text-sm font-medium">
-                      Install Hive on iOS Safari:
-                    </p>
-                    <p className="text-stone-600 text-xs">
-                      Tap the <span className="font-semibold">Share</span> icon in the browser menu, then choose <span className="font-semibold text-stone-900">Add to Home Screen</span>.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-          </div>
-
-          {/* Right Panel: Showcase Graphic (Hidden on mobile) */}
-          <div className="hidden md:block w-[40%] bg-stone-100 relative">
-            <img 
-              src="/boutique_sketch.png" 
-              alt="Hive Local Fashion Storefront" 
-              className="w-full h-full object-cover"
-            />
-            {/* Soft overlay gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#fdfbf7] via-transparent to-transparent pointer-events-none" />
-          </div>
+          )}
+          
+          {/* Secondary Action: Continue on Web */}
+          <button 
+            onClick={handleDismiss}
+            className="mt-4 w-full py-3 text-sm font-medium text-slate-500 hover:text-slate-800 transition focus:outline-none"
+          >
+            Continue on web
+          </button>
 
         </div>
       </div>
