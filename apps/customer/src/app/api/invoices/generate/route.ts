@@ -41,6 +41,9 @@ async function convexQuery(
     throw new Error(`Convex query ${fnName} failed (${res.status}): ${text}`);
   }
   const json = await res.json();
+  if (json.status === "error" || json.error) {
+    throw new Error(json.error || "Convex query error");
+  }
   return json.value;
 }
 
@@ -62,6 +65,9 @@ async function convexMutation(
     throw new Error(`Convex mutation ${fnName} failed (${res.status}): ${text}`);
   }
   const json = await res.json();
+  if (json.status === "error" || json.error) {
+    throw new Error(json.error || "Convex mutation error");
+  }
   return json.value;
 }
 
