@@ -178,29 +178,29 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
     color: colorBorder,
   });
 
-  // 3. META DETAILS & CUSTOMER DETAILS (Wrapped in Ivory Cards)
+  // 3. META DETAILS & CUSTOMER DETAILS (Wrapped in Ivory Cards - aligned to margins)
   const detailsY = pageHeight - 120;
   const cardY = detailsY - 70;
   const cardHeight = 78;
 
-  // Metadata Card Wrapper
+  // Card 1: Metadata Card Wrapper (x: 50, width: 155)
   page.drawRectangle({
-    x: 45,
+    x: 50,
     y: cardY,
-    width: 152,
+    width: 155,
     height: cardHeight,
     color: colorBgLight,
     borderColor: colorBorder,
     borderWidth: 0.5,
   });
 
-  page.drawText("INVOICE METADATA", { x: 55, y: cardY + 62, size: 8, font: fontHelveticaBold, color: colorAmber });
-  page.drawText(`Order ID: ${invoice.orderNumber}`, { x: 55, y: cardY + 45, size: 8, font: fontHelvetica, color: colorDark });
-  page.drawText(`Txn ID: ${invoice.transactionId}`, { x: 55, y: cardY + 31, size: 8, font: fontHelvetica, color: colorDark });
+  page.drawText("INVOICE METADATA", { x: 60, y: cardY + 62, size: 8, font: fontHelveticaBold, color: colorAmber });
+  page.drawText(`Order ID: ${invoice.orderNumber}`, { x: 60, y: cardY + 45, size: 8, font: fontHelvetica, color: colorDark });
+  page.drawText(`Txn ID: ${invoice.transactionId}`, { x: 60, y: cardY + 31, size: 8, font: fontHelvetica, color: colorDark });
   
   const isPaid = invoice.paymentStatus === "paid";
   page.drawRectangle({
-    x: 55,
+    x: 60,
     y: cardY + 12,
     width: 60,
     height: 14,
@@ -209,36 +209,36 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
     borderWidth: 0.5,
   });
   page.drawText(invoice.paymentStatus.toUpperCase(), { 
-    x: 61, 
+    x: 66, 
     y: cardY + 16, 
     size: 7, 
     font: fontHelveticaBold, 
     color: isPaid ? rgb(0.12, 0.44, 0.12) : colorAmber 
   });
 
-  // Billed To Card Wrapper
+  // Card 2: Billed To Card Wrapper (x: 220, width: 155)
   page.drawRectangle({
-    x: 207,
+    x: 220,
     y: cardY,
-    width: 168,
+    width: 155,
     height: cardHeight,
     color: colorBgLight,
     borderColor: colorBorder,
     borderWidth: 0.5,
   });
 
-  page.drawText("BILLED TO", { x: 217, y: cardY + 62, size: 8, font: fontHelveticaBold, color: colorAmber });
-  const custName = invoice.customerName.length > 25 ? invoice.customerName.substring(0, 22) + "..." : invoice.customerName;
-  page.drawText(custName, { x: 217, y: cardY + 45, size: 8, font: fontHelveticaBold, color: colorDark });
-  const custEmail = invoice.customerEmail.length > 30 ? invoice.customerEmail.substring(0, 27) + "..." : invoice.customerEmail;
-  page.drawText(custEmail || "N/A", { x: 217, y: cardY + 31, size: 8, font: fontHelvetica, color: colorDark });
-  page.drawText(invoice.customerPhone || "N/A", { x: 217, y: cardY + 17, size: 8, font: fontHelvetica, color: colorDark });
+  page.drawText("BILLED TO", { x: 230, y: cardY + 62, size: 8, font: fontHelveticaBold, color: colorAmber });
+  const custName = invoice.customerName.length > 22 ? invoice.customerName.substring(0, 19) + "..." : invoice.customerName;
+  page.drawText(custName, { x: 230, y: cardY + 45, size: 8, font: fontHelveticaBold, color: colorDark });
+  const custEmail = invoice.customerEmail.length > 24 ? invoice.customerEmail.substring(0, 21) + "..." : invoice.customerEmail;
+  page.drawText(custEmail || "N/A", { x: 230, y: cardY + 31, size: 8, font: fontHelvetica, color: colorDark });
+  page.drawText(invoice.customerPhone || "N/A", { x: 230, y: cardY + 17, size: 8, font: fontHelvetica, color: colorDark });
 
-  // Shipping Address Card Wrapper
+  // Card 3: Shipping Address Card Wrapper (x: 390, width: 155)
   page.drawRectangle({
-    x: 385,
+    x: 390,
     y: cardY,
-    width: 168,
+    width: 155,
     height: cardHeight,
     color: colorBgLight,
     borderColor: colorBorder,
@@ -246,16 +246,16 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
   });
 
   const addr = invoice.shippingAddress;
-  page.drawText("SHIPPING ADDRESS", { x: 395, y: cardY + 62, size: 8, font: fontHelveticaBold, color: colorAmber });
-  const addr1 = addr.line1.length > 32 ? addr.line1.substring(0, 29) + "..." : addr.line1;
-  page.drawText(addr1, { x: 395, y: cardY + 45, size: 8, font: fontHelvetica, color: colorDark });
+  page.drawText("SHIPPING ADDRESS", { x: 400, y: cardY + 62, size: 8, font: fontHelveticaBold, color: colorAmber });
+  const addr1 = addr.line1.length > 26 ? addr.line1.substring(0, 23) + "..." : addr.line1;
+  page.drawText(addr1, { x: 400, y: cardY + 45, size: 8, font: fontHelvetica, color: colorDark });
   if (addr.line2) {
-    const addr2 = addr.line2.length > 32 ? addr.line2.substring(0, 29) + "..." : addr.line2;
-    page.drawText(addr2, { x: 395, y: cardY + 31, size: 8, font: fontHelvetica, color: colorDark });
+    const addr2 = addr.line2.length > 26 ? addr.line2.substring(0, 23) + "..." : addr.line2;
+    page.drawText(addr2, { x: 400, y: cardY + 31, size: 8, font: fontHelvetica, color: colorDark });
   }
   const addressLine3 = `${addr.city}, ${addr.state} - ${addr.pincode}`;
-  const addr3 = addressLine3.length > 32 ? addressLine3.substring(0, 29) + "..." : addressLine3;
-  page.drawText(addr3, { x: 395, y: cardY + (addr.line2 ? 17 : 31), size: 8, font: fontHelveticaBold, color: colorDark });
+  const addr3 = addressLine3.length > 26 ? addressLine3.substring(0, 23) + "..." : addressLine3;
+  page.drawText(addr3, { x: 400, y: cardY + (addr.line2 ? 17 : 31), size: 8, font: fontHelveticaBold, color: colorDark });
 
   // Divider under cards
   page.drawLine({
@@ -279,12 +279,16 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
     borderWidth: 0.5,
   });
 
-  // Header texts
+  // Header texts (right aligning price headers)
   page.drawText("PRODUCT", { x: 60, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
   page.drawText("SIZE", { x: 300, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
-  page.drawText("QTY", { x: 350, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
-  page.drawText("UNIT PRICE", { x: 400, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
-  page.drawText("TOTAL PRICE", { x: 485, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
+  page.drawText("QTY", { x: 345, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
+  
+  const unitPriceHeaderWidth = fontHelveticaBold.widthOfTextAtSize("UNIT PRICE", 9);
+  page.drawText("UNIT PRICE", { x: 460 - unitPriceHeaderWidth, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
+  
+  const totalHeaderWidth = fontHelveticaBold.widthOfTextAtSize("TOTAL PRICE", 9);
+  page.drawText("TOTAL PRICE", { x: 535 - totalHeaderWidth, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
 
   currentY -= 28;
 
@@ -297,9 +301,21 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
 
     page.drawText(nameStr, { x: 60, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
     page.drawText(item.size, { x: 300, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
-    page.drawText(String(item.quantity), { x: 350, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
-    page.drawText(`Rs. ${item.unitPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, { x: 400, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
-    page.drawText(`Rs. ${item.totalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, { x: 485, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
+    
+    // Qty text alignment (centered at 355)
+    const qtyText = String(item.quantity);
+    const qtyWidth = fontHelvetica.widthOfTextAtSize(qtyText, 9);
+    page.drawText(qtyText, { x: 355 - qtyWidth / 2, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
+    
+    // Unit price text alignment (right aligned at x: 460)
+    const unitPriceText = `Rs. ${item.unitPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const unitPriceWidth = fontHelvetica.widthOfTextAtSize(unitPriceText, 9);
+    page.drawText(unitPriceText, { x: 460 - unitPriceWidth, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
+    
+    // Total price text alignment (right aligned at x: 535)
+    const totalPriceText = `Rs. ${item.totalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const totalPriceWidth = fontHelveticaBold.widthOfTextAtSize(totalPriceText, 9);
+    page.drawText(totalPriceText, { x: 535 - totalPriceWidth, y: currentY, size: 9, font: fontHelveticaBold, color: colorDark });
 
     // Draw horizontal row divider line
     page.drawLine({
@@ -321,24 +337,23 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
 
   // Right column: Cost overview
   const summaryX = 360;
-  const valX = 485;
 
   page.drawText("Subtotal", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
-  page.drawText(`Rs. ${invoice.subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, { x: valX, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
+  const subtotalText = `Rs. ${invoice.subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const subtotalWidth = fontHelvetica.widthOfTextAtSize(subtotalText, 9);
+  page.drawText(subtotalText, { x: 535 - subtotalWidth, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
 
   currentY -= 16;
   page.drawText("Delivery Fee", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
-  page.drawText(
-    invoice.deliveryFee === 0 ? "FREE" : `Rs. ${invoice.deliveryFee.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-    { x: valX, y: currentY, size: 9, font: fontHelvetica, color: colorDark }
-  );
+  const delText = invoice.deliveryFee === 0 ? "FREE" : `Rs. ${invoice.deliveryFee.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const delWidth = fontHelvetica.widthOfTextAtSize(delText, 9);
+  page.drawText(delText, { x: 535 - delWidth, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
 
   currentY -= 16;
   page.drawText("Discount", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
-  page.drawText(
-    invoice.discount > 0 ? `-Rs. ${invoice.discount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Rs. 0.00",
-    { x: valX, y: currentY, size: 9, font: fontHelvetica, color: invoice.discount > 0 ? rgb(0.1, 0.5, 0.1) : colorDark }
-  );
+  const discText = invoice.discount > 0 ? `-Rs. ${invoice.discount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Rs. 0.00";
+  const discWidth = fontHelvetica.widthOfTextAtSize(discText, 9);
+  page.drawText(discText, { x: 535 - discWidth, y: currentY, size: 9, font: fontHelvetica, color: invoice.discount > 0 ? rgb(0.1, 0.5, 0.1) : colorDark });
 
   currentY -= 20;
 
@@ -354,7 +369,9 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
   });
 
   page.drawText("Grand Total", { x: summaryX, y: currentY, size: 11, font: fontHelveticaBold, color: colorDark });
-  page.drawText(`Rs. ${invoice.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, { x: valX, y: currentY, size: 11, font: fontHelveticaBold, color: colorAmber });
+  const totalText = `Rs. ${invoice.totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const totalWidth = fontHelveticaBold.widthOfTextAtSize(totalText, 11);
+  page.drawText(totalText, { x: 535 - totalWidth, y: currentY, size: 11, font: fontHelveticaBold, color: colorAmber });
 
   // 6. FOOTER INFO
   page.drawLine({
