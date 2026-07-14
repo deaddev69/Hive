@@ -6,20 +6,24 @@ import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Card, CardContent } from "@hive/ui";
 import { formatCurrency } from "@hive/utils";
+import { useAuth } from "@clerk/nextjs";
 import {
   Loader2,
   ClipboardList,
   Calendar,
   FileDown,
   Receipt,
+  FileText
 } from "lucide-react";
 
 // ── Invoice download cell ────────────────────────────────────────────────────
 function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
   const invoice = useQuery(api.invoices.getInvoiceByOrderId_boutique, { orderId });
+  const { getToken } = useAuth();
+  const [generating, setGenerating] = React.useState(false);
 
   if (invoice === undefined) {
-    return <span className="inline-block w-14 h-4 bg-slate-100 rounded animate-pulse" />;
+    return <span className="inline-block w-14 h-4 bg-[#FAF6F0] rounded animate-pulse" />;
   }
 
   if (!invoice) {
@@ -30,22 +34,50 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
     );
   }
 
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const token = await getToken({ template: "convex" });
+      if (!token) throw new Error("Authentication token is missing.");
+
+      const res = await fetch("/api/invoices/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, token }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to generate invoice");
+      }
+    } catch (e: any) {
+      alert("Invoice PDF generation failed: " + e.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   if (!invoice.pdfUrl) {
     return (
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[9px] text-amber-600 font-medium whitespace-nowrap flex items-center gap-1">
-          <Receipt className="w-3 h-3" />
-          {invoice.invoiceNumber}
-        </span>
-        <span className="text-[8px] text-slate-400 italic">PDF pending</span>
-      </div>
+      <button
+        onClick={handleGenerate}
+        disabled={generating}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-200/50 bg-amber-50 text-[9px] font-bold text-amber-800 hover:bg-amber-100/50 transition-colors whitespace-nowrap disabled:opacity-50"
+        title="Trigger PDF generation"
+      >
+        {generating ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+        ) : (
+          <FileText className="w-3.5 h-3.5 text-amber-600" />
+        )}
+        Generate
+      </button>
     );
   }
 
   return (
     <button
       onClick={() => window.open(invoice.pdfUrl!, "_blank")}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-hive-border bg-white text-[9px] font-bold text-hive-dark hover:bg-hive-cream hover:border-hive-gold transition-colors whitespace-nowrap"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-hive-border bg-white text-[9px] font-bold text-hive-dark hover:bg-[#FAF6F0] hover:border-hive-gold transition-colors whitespace-nowrap"
       title={`Download ${invoice.invoiceNumber}`}
     >
       <FileDown className="w-3.5 h-3.5 text-hive-gold" />

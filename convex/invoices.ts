@@ -134,8 +134,28 @@ export const updateInvoicePdfUrl = mutation({
       throw new Error("Invoice not found");
     }
 
-    // Verify ownership
-    if (invoice.userId !== user._id) {
+    // Verify ownership (allow customer, fulfilling boutique owner, or admin)
+    const isCustomer = invoice.userId === user._id;
+    let isBoutiqueOwner = false;
+
+    if (!isCustomer && (user.role === "boutique" || user.role === "boutique_owner" || user.role === "admin")) {
+      if (user.role === "admin") {
+        isBoutiqueOwner = true;
+      } else {
+        const boutique = await ctx.db
+          .query("boutiques")
+          .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
+          .unique();
+        if (boutique && invoice.orderId) {
+          const order = await ctx.db.get(invoice.orderId);
+          if (order && order.boutiqueId === boutique._id) {
+            isBoutiqueOwner = true;
+          }
+        }
+      }
+    }
+
+    if (!isCustomer && !isBoutiqueOwner) {
       throw new Error("Unauthorized to update invoice");
     }
 

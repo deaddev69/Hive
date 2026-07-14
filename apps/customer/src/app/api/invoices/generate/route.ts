@@ -77,11 +77,21 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Fetch invoice from Convex (ownership-checked by the query)
-    const invoice = await convexQuery(
-      "invoices:getInvoiceByOrderId",
-      { orderId },
-      token
-    );
+    let invoice = null;
+    try {
+      invoice = await convexQuery(
+        "invoices:getInvoiceByOrderId",
+        { orderId },
+        token
+      );
+    } catch (e) {
+      // If customer check fails, try boutique owner check
+      invoice = await convexQuery(
+        "invoices:getInvoiceByOrderId_boutique",
+        { orderId },
+        token
+      );
+    }
 
     if (!invoice) {
       return NextResponse.json({ error: "Invoice not found for this order" }, { status: 404 });
