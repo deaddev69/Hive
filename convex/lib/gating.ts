@@ -46,7 +46,7 @@ export async function validateBoutiqueOperationalLimits(
   const status = getBoutiqueStatus(boutique, Date.now());
   if (status.type === "PAUSED" && status.reason === "capacity_limit") {
     throw new Error(
-      `The boutique "${boutique.boutiqueName || boutique.name}" is temporarily unavailable as it has reached its daily order capacity of ${boutique.dailyOrderLimit} orders for today.`
+      `The boutique "${boutique.boutiqueName || boutique.name}" is temporarily unavailable as it has reached its operational active order limit capacity for today.`
     );
   }
 }

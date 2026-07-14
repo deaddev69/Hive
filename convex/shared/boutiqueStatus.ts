@@ -11,7 +11,6 @@ export interface BoutiqueStatusInput {
   maxActiveOrders?: number;
   activeOrdersToday?: number;
   activeOrdersDate?: string;
-  dailyOrderLimit?: number;
 }
 
 export type BoutiqueStatus =
@@ -92,11 +91,7 @@ export function getBoutiqueStatus(
       return { type: "PAUSED", reason: "capacity_limit" };
     }
   }
-  if (boutique.dailyOrderLimit !== undefined && boutique.dailyOrderLimit !== null) {
-    if (activeCountToday >= boutique.dailyOrderLimit) {
-      return { type: "PAUSED", reason: "capacity_limit" };
-    }
-  }
+
 
   // Fail-safe: if the profile is incomplete (missing openingTime or operatingDays), default to OPEN
   if (!boutique.openingTime || !boutique.operatingDays || boutique.operatingDays.length === 0) {

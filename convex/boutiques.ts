@@ -878,7 +878,6 @@ export const updateBoutiqueProfile = mutation({
     weeklyClosedDays: v.optional(v.array(v.number())),
     holidayDates:     v.optional(v.array(v.string())),
     prepTimeMinutes:  v.optional(v.number()),
-    dailyOrderLimit:  v.optional(v.number()),
     storeMessage:     v.optional(v.string()),
     openingTime:      v.optional(v.string()),
     closingTime:      v.optional(v.string()),
@@ -1005,7 +1004,6 @@ export const updateBoutiqueProfile = mutation({
       weeklyClosedDays: args.weeklyClosedDays ?? boutique.weeklyClosedDays,
       holidayDates: args.holidayDates ?? boutique.holidayDates,
       prepTimeMinutes: args.prepTimeMinutes ?? boutique.prepTimeMinutes,
-      dailyOrderLimit: args.dailyOrderLimit ?? boutique.dailyOrderLimit,
       storeMessage: args.storeMessage ?? boutique.storeMessage,
       openingTime: args.openingTime ?? boutique.openingTime,
       closingTime: args.closingTime ?? boutique.closingTime,
@@ -1483,7 +1481,6 @@ export const updateStoreStatus = mutation({
     prepTimeMinutes: v.optional(v.number()),
     weeklyClosedDays: v.optional(v.array(v.number())),
     holidayDates: v.optional(v.array(v.string())),
-    dailyOrderLimit: v.optional(v.number()),
     isEmergency: v.optional(v.boolean()),
     isResume: v.optional(v.boolean()),
   },
@@ -1514,7 +1511,6 @@ export const updateStoreStatus = mutation({
       patchData.prepTimeMinutes = args.prepTimeMinutes;
       patchData.weeklyClosedDays = args.weeklyClosedDays;
       patchData.holidayDates = args.holidayDates;
-      patchData.dailyOrderLimit = args.dailyOrderLimit;
 
       if (args.storeStatus === "open") {
         patchData.isAcceptingOrders = true;

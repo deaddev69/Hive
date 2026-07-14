@@ -129,7 +129,7 @@ export const runVacationCapacityTests = mutation({
 
     // TEST 5: O(1) Counter and Capacity Limits
     console.log("Test 5: Order capacity counters and threshold shifts...");
-    await ctx.db.patch(boutiqueId, { dailyOrderLimit: 10 });
+    await ctx.db.patch(boutiqueId, { maxActiveOrders: 10 });
 
     // Initial check (0 active orders)
     b = await getB();
@@ -138,41 +138,28 @@ export const runVacationCapacityTests = mutation({
       throw new Error(`FAIL: Expected open at 0/10 capacity, got ${res.resolvedStatus}`);
     }
 
-    // Increment orders to 7 (still open, below 80%)
-    for (let i = 0; i < 7; i++) {
+    // Increment orders to 9 (still open, below 100%)
+    for (let i = 0; i < 9; i++) {
       await incrementBoutiqueOrderCount(ctx, boutiqueId, now);
     }
     b = await getB();
     res = await resolveBoutiqueStatus(ctx.db, b);
     if (res.resolvedStatus !== "open") {
-      throw new Error(`FAIL: Expected open at 7/10 capacity, got ${res.resolvedStatus}`);
+      throw new Error(`FAIL: Expected open at 9/10 capacity, got ${res.resolvedStatus}`);
     }
 
-    // Increment to 8 (80% capacity -> busy)
+    // Increment to 10 (100% capacity -> paused)
     await incrementBoutiqueOrderCount(ctx, boutiqueId, now);
     b = await getB();
     res = await resolveBoutiqueStatus(ctx.db, b);
-    if (res.resolvedStatus !== "busy" || res.reason !== "capacity_busy") {
-      throw new Error(`FAIL: Expected busy/capacity_busy at 8/10 capacity, got ${res.resolvedStatus}/${res.reason}`);
-    }
-
-    // Busy should allow checkout
-    await validateBoutiqueOperationalLimits(ctx.db, boutiqueId);
-    console.log("✓ Busy mode check allowed checkout successfully.");
-
-    // Increment to 10 (100% capacity -> temporarily_unavailable)
-    await incrementBoutiqueOrderCount(ctx, boutiqueId, now);
-    await incrementBoutiqueOrderCount(ctx, boutiqueId, now);
-    b = await getB();
-    res = await resolveBoutiqueStatus(ctx.db, b);
-    if (res.resolvedStatus !== "temporarily_unavailable" || res.reason !== "capacity_limit") {
-      throw new Error(`FAIL: Expected temporarily_unavailable/capacity_limit at 10/10 capacity, got ${res.resolvedStatus}/${res.reason}`);
+    if (res.resolvedStatus !== "paused" || res.reason !== "capacity_limit") {
+      throw new Error(`FAIL: Expected paused/capacity_limit at 10/10 capacity, got ${res.resolvedStatus}/${res.reason}`);
     }
 
     // Gating check should now block checkout
     try {
       await validateBoutiqueOperationalLimits(ctx.db, boutiqueId);
-      throw new Error("FAIL: Should have blocked checkout at 100% daily limit.");
+      throw new Error("FAIL: Should have blocked checkout at 100% active limit.");
     } catch (err: any) {
       console.log("✓ Expected block at 100% capacity:", err.message);
     }
@@ -182,8 +169,8 @@ export const runVacationCapacityTests = mutation({
     await decrementBoutiqueOrderCount(ctx, boutiqueId, fakeOrder);
     b = await getB();
     res = await resolveBoutiqueStatus(ctx.db, b);
-    if (res.resolvedStatus !== "busy") {
-      throw new Error(`FAIL: Expected busy after decrementing from 10 to 9, got ${res.resolvedStatus}`);
+    if (res.resolvedStatus !== "open") {
+      throw new Error(`FAIL: Expected open after decrementing from 10 to 9, got ${res.resolvedStatus}`);
     }
     console.log("✓ Test 5 Passed.");
 

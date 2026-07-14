@@ -104,32 +104,6 @@ export async function resolveBoutiqueStatus(db: DatabaseReader, boutique: any) {
     }
   }
 
-  // Resolve active orders count for today based on date tracking
-  const activeCountToday = boutique.activeOrdersDate === dateStrIst ? (boutique.activeOrdersToday ?? 0) : 0;
-
-  // 6. Legacy Capacity Limits (Open -> Busy -> Temporarily Unavailable)
-  if (boutique.dailyOrderLimit !== undefined && boutique.dailyOrderLimit !== null) {
-    if (activeCountToday >= boutique.dailyOrderLimit) {
-      return {
-        resolvedStatus: "paused",
-        isOpen: false,
-        isPaused: true,
-        vacationMode: false,
-        isAcceptingOrders: false,
-        reason: "capacity_limit",
-      };
-    }
-    if (activeCountToday >= boutique.dailyOrderLimit * 0.8) {
-      return {
-        resolvedStatus: "paused",
-        isOpen: true,
-        isPaused: true,
-        vacationMode: false,
-        isAcceptingOrders: true,
-        reason: "capacity_busy",
-      };
-    }
-  }
 
   // 7. Manual Busy state
   if (boutique.storeStatus === "busy") {

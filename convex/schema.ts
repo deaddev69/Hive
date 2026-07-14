@@ -248,7 +248,6 @@ export default defineSchema({
     openingTime:      v.optional(v.string()),
     closingTime:      v.optional(v.string()),
     operatingDays:    v.optional(v.array(v.number())),
-    dailyOrderLimit:  v.optional(v.number()),
     isOrderable:      v.optional(v.boolean()),
     acceptingOrdersReason: v.optional(v.string()),
 
@@ -1445,7 +1444,6 @@ export default defineSchema({
     openingTime:      v.optional(v.string()),
     closingTime:      v.optional(v.string()),
     operatingDays:    v.optional(v.array(v.number())),
-    dailyOrderLimit:  v.optional(v.number()),
     isOrderable:      v.optional(v.boolean()),
     state:            v.optional(v.string()),
     pincode:          v.optional(v.string()),
