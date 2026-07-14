@@ -140,16 +140,10 @@ export default function BoutiqueFinance() {
           <Building className="w-4.5 h-4.5" />
         </div>
         <div className="flex flex-col gap-1 text-left">
-          <h4 className="text-xs font-bold text-hive-dark">Settlement Destination Account</h4>
-          {boutique.bankAccount ? (
-            <p className="text-[11px] font-medium text-hive-text-muted leading-relaxed">
-              Payouts are auto-processed to <span className="font-extrabold text-slate-700">{boutique.bankAccount.holderName}</span> (Account: <span className="font-mono font-bold text-slate-700">•••• {boutique.bankAccount.accountNoLast4}</span>, IFSC: <span className="font-mono font-bold text-slate-700">{boutique.bankAccount.ifsc}</span>) on a weekly basis.
-            </p>
-          ) : (
-            <p className="text-[11px] font-medium text-red-600/90 leading-relaxed">
-              No bank account configured. Please complete your bank account details under the Profile tab to receive payments.
-            </p>
-          )}
+          <h4 className="text-xs font-bold text-hive-dark">Settlement Destination</h4>
+          <p className="text-[11px] font-medium text-hive-text-muted leading-relaxed">
+            Payouts are processed manually to your registered business bank account on a weekly basis. To change or register your settlement bank details, please contact the platform administration or email support directly at <a href="mailto:support@hivenow.in" className="underline font-bold text-hive-gold">support@hivenow.in</a>.
+          </p>
         </div>
       </div>
 

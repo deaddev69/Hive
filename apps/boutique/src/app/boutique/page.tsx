@@ -280,7 +280,6 @@ export default function BoutiqueDashboard() {
   const onboardingSteps = [
     { id: "profile", done: !!boutique },
     { id: "approval", done: boutique?.status === "APPROVED" },
-    { id: "bank", done: !!boutique?.bankAccount },
     { id: "delivery", done: !!boutique?.deliveryRadiusKm },
     { id: "location", done: !!boutique?.latitude && !!boutique?.longitude },
     { id: "products", done: products && products.length > 0 },
