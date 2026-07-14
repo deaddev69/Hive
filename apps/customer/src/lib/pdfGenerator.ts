@@ -11,6 +11,8 @@ export interface InvoiceItem {
 }
 
 export interface InvoiceData {
+  _id?: string;
+  userId?: string;
   invoiceNumber: string;
   orderNumber: string;
   transactionId: string;
@@ -230,9 +232,12 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
   page.drawText("BILLED TO", { x: 230, y: cardY + 62, size: 8, font: fontHelveticaBold, color: colorAmber });
   const custName = invoice.customerName.length > 22 ? invoice.customerName.substring(0, 19) + "..." : invoice.customerName;
   page.drawText(custName, { x: 230, y: cardY + 45, size: 8, font: fontHelveticaBold, color: colorDark });
-  const custEmail = invoice.customerEmail.length > 24 ? invoice.customerEmail.substring(0, 21) + "..." : invoice.customerEmail;
-  page.drawText(custEmail || "N/A", { x: 230, y: cardY + 31, size: 8, font: fontHelvetica, color: colorDark });
-  page.drawText(invoice.customerPhone || "N/A", { x: 230, y: cardY + 17, size: 8, font: fontHelvetica, color: colorDark });
+  
+  const custId = invoice.userId || invoice._id || "";
+  if (custId) {
+    const maskedRef = `Ref: ••••${String(custId).slice(-4).toUpperCase()}`;
+    page.drawText(maskedRef, { x: 230, y: cardY + 31, size: 8, font: fontHelvetica, color: colorDark });
+  }
 
   // Card 3: Shipping Address Card Wrapper (x: 390, width: 155)
   page.drawRectangle({
