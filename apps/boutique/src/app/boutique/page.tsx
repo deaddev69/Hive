@@ -457,9 +457,9 @@ export default function BoutiqueDashboard() {
               <StatusRow
                 title="Seller tier"
                 description={
-                  tierStats.tier === "Bronze" ? "Standard 18% commission tier" :
+                  tierStats.tier === "Bronze" ? "Standard tier" :
                   tierStats.tier === "Silver" ? "Algorithm boost active — priority rider routing unlocked" :
-                  "Premium tier reached — commission optimized to 16%"
+                  "Premium tier reached"
                 }
                 icon={Trophy}
                 iconBgClass={
