@@ -97,17 +97,22 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
   }
 
   if (logoImage) {
-    const logoDims = logoImage.scale(0.11);
+    // scale to fit cleanly on the left (e.g. width of ~100 pt)
+    const scaleFactor = 100 / logoImage.width;
+    const logoDims = logoImage.scale(scaleFactor);
+    const logoTopY = pageHeight - 20; // 20pt padding from the top edge
+    const logoBottomY = logoTopY - logoDims.height;
+
     page.drawImage(logoImage, {
       x: 50,
-      y: pageHeight - 62,
+      y: logoBottomY,
       width: logoDims.width,
       height: logoDims.height,
     });
 
     page.drawText("BOUTIQUE PARTNER", {
       x: 50,
-      y: pageHeight - 74,
+      y: logoBottomY - 12,
       size: 7,
       font: fontHelveticaBold,
       color: colorAmber,
