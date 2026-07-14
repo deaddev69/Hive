@@ -335,25 +335,29 @@ export default function BoutiqueProducts() {
                         <h3 className="text-base font-black text-slate-800 truncate pr-2 uppercase font-sans tracking-tight">
                           {prod.name}
                         </h3>
-                        {/* Status Badges with correct active/approvalStatus bindings */}
                         {!prod.active ? (
-                          <span className="shrink-0 text-[9px] font-black tracking-widest uppercase px-2.5 py-1 rounded-md border bg-slate-50 text-slate-700 border-slate-200">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-widest uppercase px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-200/50 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                             DRAFT
                           </span>
                         ) : isApproved ? (
-                          <span className="shrink-0 text-[9px] font-black tracking-widest uppercase px-2.5 py-1 rounded-md border bg-emerald-50 text-emerald-700 border-emerald-100">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-widest uppercase px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/40 shadow-[0_1px_2px_rgba(16,185,129,0.04)]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             LIVE
                           </span>
                         ) : isPending ? (
-                          <span className="shrink-0 text-[9px] font-black tracking-widest uppercase px-2.5 py-1 rounded-md border bg-amber-50 text-amber-700 border-amber-100">
-                            PENDING REVIEW
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-widest uppercase px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200/40 shadow-[0_1px_2px_rgba(245,158,11,0.04)]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                            PENDING
                           </span>
                         ) : isChangesRequested ? (
-                          <span className="shrink-0 text-[9px] font-black tracking-widest uppercase px-2.5 py-1 rounded-md border bg-rose-50 text-rose-700 border-rose-100">
-                            CHANGES REQUESTED
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-widest uppercase px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200/40 shadow-[0_1px_2px_rgba(239,68,68,0.04)]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                            CHANGES REQ
                           </span>
                         ) : (
-                          <span className="shrink-0 text-[9px] font-black tracking-widest uppercase px-2.5 py-1 rounded-md border bg-slate-50 text-slate-700 border-slate-200">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-widest uppercase px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-200/50 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                             INACTIVE
                           </span>
                         )}

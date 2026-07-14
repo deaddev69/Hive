@@ -83,7 +83,7 @@ export default function BoutiqueFinance() {
         <div className="bg-white border border-hive-border rounded-[24px] p-6 flex flex-col justify-between shadow-[0_4px_16px_rgba(0,0,0,0.015)]">
           <div className="flex items-center justify-between w-full">
             <span className="text-[10px] text-hive-text-muted font-bold uppercase tracking-wider">Available Balance</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+            <div className="w-8 h-8 rounded-2xl bg-emerald-50/50 text-emerald-600 flex items-center justify-center border border-emerald-500/10">
               <Wallet className="w-4.5 h-4.5" />
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function BoutiqueFinance() {
         <div className="bg-white border border-hive-border rounded-[24px] p-6 flex flex-col justify-between shadow-[0_4px_16px_rgba(0,0,0,0.015)]">
           <div className="flex items-center justify-between w-full">
             <span className="text-[10px] text-hive-text-muted font-bold uppercase tracking-wider">Pending Settlements</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+            <div className="w-8 h-8 rounded-2xl bg-amber-50/50 text-amber-600 flex items-center justify-center border border-amber-500/10">
               <Clock className="w-4.5 h-4.5" />
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function BoutiqueFinance() {
         <div className="bg-white border border-hive-border rounded-[24px] p-6 flex flex-col justify-between shadow-[0_4px_16px_rgba(0,0,0,0.015)]">
           <div className="flex items-center justify-between w-full">
             <span className="text-[10px] text-hive-text-muted font-bold uppercase tracking-wider">Total Paid Out</span>
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+            <div className="w-8 h-8 rounded-2xl bg-blue-50/50 text-blue-600 flex items-center justify-center border border-blue-500/10">
               <CheckCircle2 className="w-4.5 h-4.5" />
             </div>
           </div>

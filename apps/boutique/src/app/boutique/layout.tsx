@@ -194,7 +194,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
           <SignOutButton redirectUrl="/sign-in">
             <Button 
               variant="outline" 
-              className="w-full justify-start gap-2 border-[#EBE3D0] bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-700 rounded-xl text-xs py-2.5 font-medium shadow-sm"
+              className="w-full justify-start gap-2.5 border-[#EBE3D0]/60 bg-white text-slate-600 hover:bg-[#FAF6F0] hover:text-[#BFA36F] hover:border-[#BFA36F]/40 rounded-xl text-xs py-2.5 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-150"
             >
               <LogOut className="w-3.5 h-3.5 text-slate-400" />
               <span>Log out</span>

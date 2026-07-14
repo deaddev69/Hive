@@ -430,14 +430,24 @@ export default function BoutiqueInventory() {
   return (
     <div className="flex flex-col gap-4 text-left pb-36 max-w-2xl mx-auto px-4 font-manrope bg-transparent relative">
       
-      {/* Branded Premium Toast Overlay (Floats below header, high contrast charcoal styling) */}
+      {/* Branded Premium Toast Overlay (Frosted glass designer style) */}
       {toast && (
-        <div className="fixed top-20 md:top-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 duration-300 font-manrope">
-          <div className="flex items-center gap-3 px-4.5 py-2.5 rounded-xl bg-[#1A1D1D] text-white shadow-2xl border border-[#C89653]/30 select-none">
-            <div className="w-5 h-5 rounded-full bg-[#FAF9F5]/10 flex items-center justify-center border border-[#C89653]/20">
-              <Check className="w-3.5 h-3.5 text-[#C89653] stroke-[3]" />
+        <div className="fixed top-20 md:top-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-full bg-[#FAF6F0]/95 backdrop-blur-md text-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[#E6D5B8] select-none">
+            <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${
+              toast.type === "error" 
+                ? "bg-red-50 border-red-200 text-red-500" 
+                : "bg-emerald-50 border-emerald-200 text-emerald-600"
+            }`}>
+              {toast.type === "error" ? (
+                <X className="w-3 h-3 stroke-[3]" />
+              ) : (
+                <Check className="w-3 h-3 stroke-[3]" />
+              )}
             </div>
-            <span className="text-xs font-bold tracking-wider uppercase font-manrope text-slate-100">{toast.message}</span>
+            <span className="text-[11px] font-bold tracking-wider uppercase text-slate-700 font-sans">
+              {toast.message}
+            </span>
           </div>
         </div>
       )}

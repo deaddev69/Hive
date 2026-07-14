@@ -474,10 +474,11 @@ export default function BoutiqueProfile() {
                 <span className="font-extrabold text-hive-dark">{deliveryRadiusKm} Km</span>
               </div>
 
-              <div className="flex justify-between items-center py-2 border-b border-slate-100">
+              <div className="flex justify-between items-center py-2.5 border-b border-slate-100/60">
                 <span className="font-bold text-hive-text-muted">Verification Status</span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 uppercase tracking-wider">
-                  <CheckCircle2 className="w-3 h-3" /> Approved
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200/40 shadow-[0_1px_2px_rgba(16,185,129,0.04)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Approved
                 </span>
               </div>
 
@@ -494,10 +495,10 @@ export default function BoutiqueProfile() {
             <SignOutButton redirectUrl="/sign-in">
               <Button 
                 variant="outline" 
-                className="w-full justify-center gap-2 border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 rounded-xl py-3 font-bold"
+                className="w-full justify-center gap-2 border-[#EBE3D0] bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-800 rounded-2xl py-3 text-xs font-bold shadow-sm"
               >
-                <LogOut className="w-4 h-4" />
-                <span>Log out</span>
+                <LogOut className="w-4 h-4 text-slate-400" />
+                <span>Sign Out</span>
               </Button>
             </SignOutButton>
           </div>
