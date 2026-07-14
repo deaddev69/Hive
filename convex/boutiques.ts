@@ -1054,6 +1054,77 @@ export const getMyBoutiqueDetails = query({
   },
 });
 
+export const getBoutiqueFinance = query({
+  args: {},
+  handler: async (ctx) => {
+    const boutique = await getMyBoutique(ctx, undefined, true);
+    if (!boutique) {
+      throw new Error("Boutique not found");
+    }
+
+    const settlements = await ctx.db
+      .query("settlementLedger")
+      .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", boutique._id))
+      .collect();
+
+    const payouts = await ctx.db
+      .query("payoutLedger")
+      .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", boutique._id))
+      .collect();
+
+    let pendingBalance = 0;
+    let availableBalance = 0;
+    let totalPaidOut = 0;
+
+    for (const s of settlements) {
+      if (s.status === "pending") {
+        pendingBalance += s.amount;
+      } else if (s.status === "available" && !s.payoutId) {
+        availableBalance += s.amount;
+      }
+    }
+
+    for (const p of payouts) {
+      if (p.status === "success") {
+        totalPaidOut += p.amount;
+      }
+    }
+
+    const sortedSettlements = [...settlements]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 50);
+
+    const sortedPayouts = [...payouts]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 50);
+
+    const settlementsWithOrders = [];
+    for (const s of sortedSettlements) {
+      let orderNumber = undefined;
+      if (s.orderId) {
+        const order = await ctx.db.get(s.orderId);
+        if (order) {
+          orderNumber = order.orderNumber;
+        }
+      }
+      settlementsWithOrders.push({
+        ...s,
+        orderNumber,
+      });
+    }
+
+    return {
+      metrics: {
+        pendingBalance,
+        availableBalance,
+        totalPaidOut,
+      },
+      settlements: settlementsWithOrders,
+      payouts: sortedPayouts,
+    };
+  },
+});
+
 export const getMyBoutiqueSafe = query({
   args: {},
   handler: async (ctx) => {

@@ -5,7 +5,7 @@ import { useAuth, SignOutButton, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Tag, Package, ClipboardList, User, LogOut, Menu, X, Loader2, ShieldX } from "lucide-react";
+import { Home, Tag, Package, ClipboardList, User, LogOut, Menu, X, Loader2, ShieldX, Wallet } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@hive/ui";
@@ -17,6 +17,7 @@ const BOUTIQUE_NAV_ITEMS = [
   { label: "Products", href: "/boutique/products", icon: Tag },
   { label: "Inventory", href: "/boutique/inventory", icon: Package },
   { label: "Orders", href: "/boutique/orders", icon: ClipboardList },
+  { label: "Finance", href: "/boutique/finance", icon: Wallet },
   { label: "Profile", href: "/boutique/profile", icon: User },
 ];
 
