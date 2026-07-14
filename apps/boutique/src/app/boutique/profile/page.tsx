@@ -154,11 +154,9 @@ export default function BoutiqueProfile() {
         setCoverFile(null);
       }
 
-      await updateBoutiqueProfile({
+      const payload: any = {
         phone,
         description,
-        logoUrl: logoPayload,
-        bannerUrl: bannerPayload,
         boutiqueName,
         ownerName,
         address,
@@ -175,7 +173,16 @@ export default function BoutiqueProfile() {
         closingTime,
         weeklyClosedDays,
         holidayDates,
-      });
+      };
+
+      if (logoPayload !== undefined) {
+        payload.logoUrl = logoPayload;
+      }
+      if (bannerPayload !== undefined) {
+        payload.bannerUrl = bannerPayload;
+      }
+
+      await updateBoutiqueProfile(payload);
 
       toast.success("Profile updated successfully!");
     } catch (err: any) {
@@ -207,61 +214,7 @@ export default function BoutiqueProfile() {
         {/* Left Form: Editable Settings (7 cols) */}
         <form onSubmit={handleSubmit} className="lg:col-span-7 flex flex-col gap-6">
           <Card className="border border-hive-border bg-white rounded-3xl p-6 shadow-sm flex flex-col gap-5">
-            <h3 className="text-lg font-serif font-bold text-hive-dark pb-2 border-b border-hive-border/60">
-              Customize Presentation
-            </h3>
 
-            {/* Logo and Cover Side-by-Side Uplod */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              
-              {/* Logo (4 cols) */}
-              <div className="md:col-span-4 flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Logo Representation</label>
-                <div className="relative w-28 h-28 rounded-full border-2 border-dashed border-hive-border hover:border-hive-gold flex items-center justify-center overflow-hidden bg-slate-50 cursor-pointer group">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                  />
-                  {logoPreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={logoPreview} alt="Logo" className="w-full h-full object-cover animate-fade-in" />
-                  ) : (
-                    <Store className="w-8 h-8 text-slate-300" />
-                  )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] text-white font-bold transition-opacity">
-                    Replace
-                  </div>
-                </div>
-              </div>
-
-              {/* Cover Image (8 cols) */}
-              <div className="md:col-span-8 flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Storefront Banner</label>
-                <div className="relative w-full h-28 rounded-2xl border-2 border-dashed border-hive-border hover:border-hive-gold flex items-center justify-center overflow-hidden bg-slate-50 cursor-pointer group">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCoverChange}
-                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                  />
-                  {coverPreview ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={coverPreview} alt="Cover Banner" className="w-full h-full object-cover animate-fade-in" />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-slate-300 gap-1.5">
-                      <UploadCloud className="w-6 h-6" />
-                      <span className="text-[10px] uppercase font-bold tracking-wider">Upload Cover</span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] text-white font-bold transition-opacity">
-                    Replace Cover Banner
-                  </div>
-                </div>
-              </div>
-
-            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
