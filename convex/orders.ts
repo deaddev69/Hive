@@ -439,7 +439,7 @@ export const placeOrder = mutation({
       boutiqueId:      primaryBoutiqueId,
       boutiqueName,
       status:          "pending_confirmation",
-      acceptanceTimeoutAt: now + 45 * 60 * 1000,
+      acceptanceTimeoutAt: undefined,
       deliveryAddress: compiledAddressSnapshot,
       pickupAddress,
       addressId:       args.addressId,

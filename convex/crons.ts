@@ -30,12 +30,6 @@ crons.interval(
   internal.payments.cleanExpiredCheckoutSessions
 );
 
-// Sweep merchant unaccepted order SLA timeouts every 5 minutes
-crons.interval(
-  "check_merchant_sla_timeouts_every_5_minutes",
-  { minutes: 5 },
-  internal.orders.checkMerchantSLATimeouts
-);
 
 // Process refund queue every 5 minutes (calls Razorpay Refund API)
 crons.interval(
