@@ -230,7 +230,13 @@ export default function OrderReviewPage() {
   // Bypass delivery preference screen and default slot values
   useEffect(() => {
     if (mounted) {
-      setDeliverySelection("Same Day", "Same-Day", "Same-Day Delivery");
+      const istHour = new Date(Date.now() + 5.5 * 60 * 60 * 1000).getUTCHours();
+      const isAfter10PM = istHour >= 22; // 10 PM IST
+      if (isAfter10PM) {
+        setDeliverySelection("Next Day", "Next-Day", "Next-Day Delivery");
+      } else {
+        setDeliverySelection("Same Day", "Same-Day", "Same-Day Delivery");
+      }
     }
   }, [mounted, setDeliverySelection]);
 
@@ -361,12 +367,17 @@ export default function OrderReviewPage() {
       return;
     }
 
+    const istHour = new Date(Date.now() + 5.5 * 60 * 60 * 1000).getUTCHours();
+    const isAfter10PM = istHour >= 22; // 10 PM IST
+    const resolvedDeliveryDate = isAfter10PM ? "Next Day" : "Same Day";
+    const resolvedDeliverySlot = isAfter10PM ? "Next-Day" : "Same-Day";
+
     try {
       // 1. Create Checkout Session (Backend expects all values in rupees)
       const sessionResult = await createCheckoutSession({
         addressId: selectedAddress.id as Id<"addresses">,
-        deliveryDate: "Same Day",
-        deliverySlot: "Same-Day",
+        deliveryDate: resolvedDeliveryDate,
+        deliverySlot: resolvedDeliverySlot,
         paymentMethod: "online",
         items: snapshotItems,
         subtotal: subtotal,
@@ -411,8 +422,8 @@ export default function OrderReviewPage() {
               pincode: selectedAddress.pincode,
               isDefault: selectedAddress.isDefault,
             },
-            deliveryDate: "Same Day",
-            deliverySlot: "Same-Day",
+            deliveryDate: resolvedDeliveryDate,
+            deliverySlot: resolvedDeliverySlot,
           });
         }
 
@@ -486,8 +497,8 @@ export default function OrderReviewPage() {
                   pincode: selectedAddress.pincode,
                   isDefault: selectedAddress.isDefault,
                 },
-                deliveryDate: "Same Day",
-                deliverySlot: "Same-Day",
+                deliveryDate: resolvedDeliveryDate,
+                deliverySlot: resolvedDeliverySlot,
               });
             }
 

@@ -685,7 +685,6 @@ export async function verifyPaymentAndPlaceOrderInternal(
     boutiqueId,
     boutiqueName,
     status: "pending_confirmation",
-    acceptanceTimeoutAt: now + 45 * 60 * 1000,
     deliveryAddress: session.addressSnapshot,
     pickupAddress,
     addressId: session.addressId,
