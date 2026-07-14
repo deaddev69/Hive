@@ -522,7 +522,7 @@ function ContextualActionsConvex({
   }
 
   if (status === "delivered") {
-    const isWithinWindow = deliveredAt ? (Date.now() - deliveredAt) <= 3 * 24 * 60 * 60 * 1000 : true; // Default true if no timestamp
+    const isWithinWindow = deliveredAt ? (Date.now() - deliveredAt) <= 24 * 60 * 60 * 1000 : true; // Default true if no timestamp
     if (!isWithinWindow) return null;
 
     return (
@@ -530,7 +530,7 @@ function ContextualActionsConvex({
         <div className="space-y-1">
           <h4 className="text-xs font-extrabold text-hive-dark">Have quality concerns or need a different size?</h4>
           <p className="text-[10px] text-hive-text-muted leading-relaxed">
-            Our 3-Day Return & Refund Policy covers you. Report issues or initiate exchanges easily.
+            Our 24-Hour Return & Refund Policy covers you. Report issues or initiate exchanges easily.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
