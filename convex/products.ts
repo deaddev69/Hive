@@ -1163,7 +1163,9 @@ export const updateInventory = mutation({
       autoDeactivatedBecauseOutOfStock = false;
     }
 
+    const updatedSizes = Array.from(new Set([...(product.sizes || []), ...Object.keys(args.stockBySize)]));
     await ctx.db.patch(args.productId, {
+      sizes: updatedSizes,
       stockBySize: args.stockBySize,
       active,
       autoDeactivatedBecauseOutOfStock,
@@ -1378,7 +1380,9 @@ export const bulkRestock = mutation({
         autoDeactivatedBecauseOutOfStock = false;
       }
 
+      const updatedSizes = Array.from(new Set([...(product.sizes || []), ...Object.keys(currentStockBySize)]));
       await ctx.db.patch(product._id, {
+        sizes: updatedSizes,
         stockBySize: currentStockBySize,
         active,
         autoDeactivatedBecauseOutOfStock,
