@@ -16,8 +16,7 @@ import {
   AlertCircle,
   Building,
   ArrowDownRight,
-  FileText,
-  BadgeAlert
+  FileText
 } from "lucide-react";
 
 function StatusBadge({ variant, label }: { variant: "success" | "info" | "warning" | "danger"; label: string }) {
@@ -250,7 +249,7 @@ export default function BoutiqueFinance() {
           <div>
             {payouts.length === 0 ? (
               <div className="py-16 text-center">
-                <BadgeAlert className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+                <AlertCircle className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                 <p className="text-xs text-hive-text-muted italic font-medium">No payout transactions processed yet.</p>
               </div>
             ) : (
@@ -287,8 +286,8 @@ export default function BoutiqueFinance() {
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-xs font-bold text-slate-700">{p.bankAccount.holderName}</span>
-                              <span className="text-[10px] font-mono text-slate-400">•••• {p.bankAccount.accountNo.slice(-4)}</span>
+                              <span className="text-xs font-bold text-slate-700">{p.bankAccount?.holderName || "Boutique Owner"}</span>
+                              <span className="text-[10px] font-mono text-slate-400">•••• {p.bankAccount?.accountNo?.slice(-4) || "••••"}</span>
                             </div>
                           </td>
                           <td className="py-4 px-4 text-xs font-medium text-slate-500">
