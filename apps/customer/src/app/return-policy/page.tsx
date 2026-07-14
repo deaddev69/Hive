@@ -47,7 +47,7 @@ export default function ReturnPolicyPage() {
           <section className="space-y-2">
             <h2 className="text-base font-serif font-bold text-stone-900">2. Return Window</h2>
             <p>
-              2.1 Customers wishing to initiate a return must generally do so within <strong>three (3) days</strong> from the date of delivery of the Product.
+              2.1 Customers wishing to initiate a return must generally do so within <strong>twenty-four (24) hours</strong> from the date of delivery of the Product.
             </p>
             <p>
               2.2 Return requests raised after expiry of this window may not be accepted, except where required under applicable consumer protection law.
@@ -118,7 +118,7 @@ export default function ReturnPolicyPage() {
               7.1 To raise a return, Customers should:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-xs">
-              <li>(a) go to “My Orders” on the Platform and select the relevant Order within the three (3) day return window;</li>
+              <li>(a) go to “My Orders” on the Platform and select the relevant Order within the twenty-four (24) hour return window;</li>
               <li>(b) choose the applicable reason for return from the options provided;</li>
               <li>(c) upload supporting evidence where requested, including photographs or an unboxing video as described in Section 6;</li>
               <li>(d) submit the request for review.</li>
@@ -141,7 +141,7 @@ export default function ReturnPolicyPage() {
           <section className="space-y-2">
             <h2 className="text-base font-serif font-bold text-stone-900">9. Refund Timeline</h2>
             <p>
-              9.1 The return window for raising a claim is <strong>three (3) days</strong> from the date of delivery, as set out in Section 2.
+              9.1 The return window for raising a claim is <strong>twenty-four (24) hours</strong> from the date of delivery, as set out in Section 2.
             </p>
             <p>
               9.2 Once a return is approved and the returned Product has been picked up and verified, Hive will process the refund to the Customer’s original payment source. Refunds are generally processed and credited within <strong>five (5) to seven (7) business days</strong> of approval.
@@ -150,7 +150,7 @@ export default function ReturnPolicyPage() {
               9.3 The actual time for the refunded amount to reflect in the Customer’s account or card statement may vary depending on the Customer’s bank or payment provider and is not within Hive’s control.
             </p>
             <p>
-              9.4 Where an Order is cancelled prior to dispatch — for example, where a Seller does not accept the Order within the applicable acceptance window, or a Customer cancels prior to Seller acceptance — any amount paid will generally be refunded within <strong>five (5) to seven (7) business days</strong>.
+              9.4 Where an Order is cancelled prior to dispatch — for example, where a Seller rejects the Order, or a Customer cancels prior to Seller acceptance — any amount paid will generally be refunded within <strong>five (5) to seven (7) business days</strong>.
             </p>
           </section>
 
@@ -160,7 +160,7 @@ export default function ReturnPolicyPage() {
               10.1 Customers may request cancellation of an Order prior to Seller acceptance. Once an Order has been accepted by the Seller, cancellation may not be possible except as set out in the Customer Terms or as required by applicable law.
             </p>
             <p>
-              10.2 If a Seller does not accept or reject an Order within the applicable acceptance window, Hive may automatically cancel the Order and will notify the Customer of the cancellation and its reason. Any amount paid will be refunded in accordance with Section 9.
+              10.2 If a Seller rejects or is unable to fulfill an Order, Hive will cancel the Order and notify the Customer of the cancellation. Any amount paid will be refunded in accordance with Section 9.
             </p>
           </section>
 
@@ -177,7 +177,7 @@ export default function ReturnPolicyPage() {
               12.1 In addition to change-of-mind returns described in Section 3, Hive may decline a return where:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-xs">
-              <li>(a) the return request is raised after the three (3) day return window;</li>
+              <li>(a) the return request is raised after the twenty-four (24) hour return window;</li>
               <li>(b) the Product shows signs of use, alteration, or damage not present at the time of delivery;</li>
               <li>(c) original tags, packaging, or accessories are missing, where applicable to the claim;</li>
               <li>(d) requested supporting evidence, including an unboxing video, is not provided as described in Section 6;</li>
