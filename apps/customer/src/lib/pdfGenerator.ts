@@ -252,15 +252,10 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
 
   const addr = invoice.shippingAddress;
   page.drawText("SHIPPING ADDRESS", { x: 400, y: cardY + 62, size: 8, font: fontHelveticaBold, color: colorAmber });
-  const addr1 = addr.line1.length > 26 ? addr.line1.substring(0, 23) + "..." : addr.line1;
-  page.drawText(addr1, { x: 400, y: cardY + 45, size: 8, font: fontHelvetica, color: colorDark });
-  if (addr.line2) {
-    const addr2 = addr.line2.length > 26 ? addr.line2.substring(0, 23) + "..." : addr.line2;
-    page.drawText(addr2, { x: 400, y: cardY + 31, size: 8, font: fontHelvetica, color: colorDark });
-  }
+  page.drawText("•••••, •••••", { x: 400, y: cardY + 45, size: 8, font: fontHelvetica, color: colorDark });
   const addressLine3 = `${addr.city}, ${addr.state} - ${addr.pincode}`;
   const addr3 = addressLine3.length > 26 ? addressLine3.substring(0, 23) + "..." : addressLine3;
-  page.drawText(addr3, { x: 400, y: cardY + (addr.line2 ? 17 : 31), size: 8, font: fontHelveticaBold, color: colorDark });
+  page.drawText(addr3, { x: 400, y: cardY + 31, size: 8, font: fontHelveticaBold, color: colorDark });
 
   // Divider under cards
   page.drawLine({
