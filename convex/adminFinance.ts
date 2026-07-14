@@ -950,8 +950,7 @@ export const seedFinanceMockDataAdmin = mutation({
       // 4. Calculate Net Boutique Accrual (Exclude customer-paid delivery fee)
       const accrualAmount = netOrderSubtotal - (globalPlatformCommission + globalGstOnCommission);
 
-      // 5. Determine if settled (Claim window has expired)
-      const claimWindowDays = 2; // 48h
+      const claimWindowDays = 7; // weekly
       const expiresAt = order.claimWindowExpiresAt || (order.deliveredAt || order.createdAt) + claimWindowDays * 24 * 3600 * 1000;
       const isSettled = expiresAt <= now && order.status === "delivered";
 

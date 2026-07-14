@@ -407,7 +407,7 @@ export const placeOrder = mutation({
         etaMinutes: quote.etaMinutes ?? 45,
       },
       merchantOperatingModel: boutique ? (boutique.sellerModel || "boutique") : "boutique",
-      payoutHoldDays: 2,
+      payoutHoldDays: 7,
       taxBreakdown: {
         gstOnCommission,
       },
@@ -1179,7 +1179,7 @@ export const updateBoutiqueOrderStatus = mutation({
     if (args.status === "out_for_delivery" && !order.outForDeliveryAt) patch.outForDeliveryAt = now;
     if (args.status === "delivered" && !order.deliveredAt) {
       patch.deliveredAt = now;
-      patch.claimWindowExpiresAt = now + 48 * 3600 * 1000;
+      patch.claimWindowExpiresAt = now + 7 * 24 * 3600 * 1000;
     }
     if (args.status === "cancelled" && !order.cancelledAt) patch.cancelledAt = now;
 
@@ -1428,7 +1428,7 @@ export const bulkUpdateBoutiqueOrderStatus = mutation({
       if (args.status === "out_for_delivery" && !order.outForDeliveryAt) patch.outForDeliveryAt = now;
       if (args.status === "delivered" && !order.deliveredAt) {
         patch.deliveredAt = now;
-        patch.claimWindowExpiresAt = now + 48 * 3600 * 1000;
+        patch.claimWindowExpiresAt = now + 7 * 24 * 3600 * 1000;
       }
       if (args.status === "cancelled" && !order.cancelledAt) patch.cancelledAt = now;
 

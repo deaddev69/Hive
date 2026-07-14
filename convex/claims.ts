@@ -62,7 +62,7 @@ export const submitClaimCustomer = mutation({
 
     // 2. Validate claim window expiration
     if (!order.claimWindowExpiresAt || now > order.claimWindowExpiresAt) {
-      throw new Error("Claim submission window (48 hours from delivery) has expired.");
+      throw new Error("Claim submission window (7 days from delivery) has expired.");
     }
 
     // 3. Validate order item

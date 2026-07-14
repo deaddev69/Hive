@@ -654,7 +654,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
       etaMinutes: quote.etaMinutes,
     },
     merchantOperatingModel: boutique ? (boutique.sellerModel || "boutique") : "boutique",
-    payoutHoldDays: 2,
+    payoutHoldDays: 7,
     taxBreakdown: {
       gstOnCommission,
     },
