@@ -54,6 +54,20 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
   );
 }
 
+const getStatusSelectClass = (status: string) => {
+  const base = "appearance-none pr-8 pl-3.5 py-1.5 border rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-no-repeat bg-[position:right_10px_center] bg-[size:10px] focus:outline-none cursor-pointer transition-all duration-150 shadow-[0_1px_2px_rgba(0,0,0,0.02)] ";
+  if (status === "delivered") {
+    return base + "bg-emerald-50 text-emerald-700 border-emerald-200/40 hover:bg-emerald-100/40 bg-[image:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23047857\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg>')]";
+  }
+  if (status === "cancelled") {
+    return base + "bg-rose-50 text-rose-700 border-rose-200/40 hover:bg-rose-100/40 bg-[image:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23BE123C\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg>')]";
+  }
+  if (status === "pending_payment" || status === "pending_confirmation") {
+    return base + "bg-amber-50 text-amber-800 border-amber-200/40 hover:bg-amber-100/40 bg-[image:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23B45309\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg>')]";
+  }
+  return base + "bg-blue-50 text-blue-700 border-blue-200/40 hover:bg-blue-100/40 bg-[image:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%231D4ED8\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg>')]";
+};
+
 // ── Boutique Orders Page ──────────────────────────────────────────────────────
 export default function BoutiqueOrders() {
   const orders = useQuery(api.orders.getBoutiqueOrders);
@@ -82,7 +96,7 @@ export default function BoutiqueOrders() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-hive-border/40 text-[10px] font-bold uppercase tracking-wider text-hive-text-muted">
+                <tr className="bg-[#FAF6F0]/60 border-b border-hive-border/30 text-[10px] font-extrabold uppercase tracking-wider text-[#A89A7E] select-none">
                   <th className="px-6 py-4">Order No.</th>
                   <th className="px-6 py-4">Delivery Slot / Date</th>
                   <th className="px-6 py-4">Customer Details</th>
@@ -175,11 +189,7 @@ export default function BoutiqueOrders() {
                             alert("Failed to update status: " + err.message);
                           }
                         }}
-                        className={`px-3 py-1.5 border rounded-xl text-xs font-bold bg-white focus:outline-none cursor-pointer ${
-                          order.status === "delivered" ? "border-green-200 text-green-700 bg-green-50/20" :
-                          order.status === "cancelled" ? "border-red-200 text-red-700 bg-red-50/20" :
-                          "border-amber-200 text-amber-700 bg-amber-50/20"
-                        }`}
+                        className={getStatusSelectClass(order.status)}
                       >
                         <option value="pending_payment">Pending Payment</option>
                         <option value="pending_confirmation">Pending Confirmation</option>
@@ -208,7 +218,7 @@ export default function BoutiqueOrders() {
                             }
                           }}
                           disabled={retryingOrderId === order._id}
-                          className="mt-2 block w-full px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded hover:bg-red-200 transition disabled:opacity-50"
+                          className="mt-2 block w-full px-2.5 py-1.5 bg-rose-50 text-rose-700 text-[9px] font-extrabold uppercase tracking-wider rounded-xl border border-rose-200/40 hover:bg-rose-100/40 transition-all duration-150 text-center select-none disabled:opacity-50"
                         >
                           {retryingOrderId === order._id ? "Retrying..." : "Retry Booking"}
                         </button>

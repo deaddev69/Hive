@@ -466,7 +466,7 @@ export default function BoutiqueInventory() {
         <div className="flex items-center gap-2.5 font-manrope">
           <button
             onClick={() => setIsBulkModalOpen(true)}
-            className="bg-white border border-[#C89653]/40 text-[#C89653] hover:bg-[#C89653]/5 px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-95 shadow-sm font-manrope"
+            className="bg-white border border-[#C89653]/30 text-[#C89653] hover:bg-[#C89653]/5 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-sm font-manrope"
           >
             Bulk Restock
           </button>
@@ -480,7 +480,7 @@ export default function BoutiqueInventory() {
             <button
               onClick={handleGlobalVerify}
               disabled={saving || verifySuccess}
-              className={`bg-white border border-[#C89653]/40 text-[#C89653] hover:bg-[#C89653]/5 px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-95 shadow-sm font-manrope`}
+              className={`bg-white border border-[#C89653]/30 text-[#C89653] hover:bg-[#C89653]/5 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-sm font-manrope`}
             >
               {saving ? "VERIFYING..." : verifySuccess ? "✓ VERIFIED" : "CONFIRM SHELF"}
             </button>
@@ -500,7 +500,7 @@ export default function BoutiqueInventory() {
           {/* Action chip: FILTER */}
           <button
             onClick={() => setFilterMode(filterMode === "attention" ? "all" : "attention")}
-            className="bg-[#FAF9F5] border border-[#C89653]/40 text-[#C89653] hover:bg-[#C89653]/5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all select-none"
+            className="bg-[#FAF9F5] border border-[#C89653]/30 text-[#C89653] hover:bg-[#C89653]/5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98]"
           >
             {filterMode === "attention" ? "SHOW ALL" : "FILTER"}
           </button>
@@ -508,19 +508,19 @@ export default function BoutiqueInventory() {
       )}
 
       {/* Search & Filters Segment Control */}
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-3 items-center mt-1">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-[9px] w-3.5 h-3.5 text-slate-400" />
+          <Search className="absolute left-3.5 top-[10px] w-3.5 h-3.5 text-slate-400" />
           <input
             type="text"
             placeholder="Search catalog..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-white border border-[#E6D5B8]/30 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#C89653] font-manrope text-slate-800 placeholder:text-slate-400"
+            className="w-full pl-9.5 pr-4 py-2 bg-white border border-[#E6D5B8]/40 rounded-full text-xs focus:outline-none focus:ring-1.5 focus:ring-[#C89653] font-manrope text-slate-800 placeholder:text-slate-400 transition-all duration-150"
           />
         </div>
 
-        <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-bold shrink-0">
+        <div className="flex bg-[#FAF6F0] p-1 border border-[#E6D5B8]/20 rounded-full text-[9px] font-extrabold uppercase tracking-wider shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.01)] select-none">
           {[
             { id: "all", label: "ALL" },
             { id: "attention", label: "LOW/OUT" }
@@ -528,8 +528,8 @@ export default function BoutiqueInventory() {
             <button
               key={t.id}
               onClick={() => setFilterMode(t.id as any)}
-              className={`px-2.5 py-1 rounded-md transition-all select-none ${
-                filterMode === t.id ? "bg-white text-[#1A1D1D] shadow-sm" : "text-slate-500"
+              className={`px-3 py-1.5 rounded-full transition-all select-none cursor-pointer ${
+                filterMode === t.id ? "bg-white text-[#1A1D1D] shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#E6D5B8]/30 font-black" : "text-slate-500 hover:text-slate-700"
               }`}
             >
               {t.label}

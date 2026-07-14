@@ -510,16 +510,16 @@ export default function BoutiqueDashboard() {
                   const isActive = boutique.storeStatus === status;
                   const colors = {
                     open: {
-                      active: "bg-[#EAF6ED] text-[#2E7D32] border-[#C6EBD3]/60 shadow-sm",
-                      inactive: "text-slate-600 hover:bg-[#EAF6ED]/30",
+                      active: "bg-emerald-50 text-emerald-700 border-emerald-200/50 shadow-[0_2px_8px_rgba(16,185,129,0.08)] font-extrabold",
+                      inactive: "text-slate-500 hover:text-emerald-700 hover:bg-emerald-50/30 border-transparent",
                     },
                     busy: {
-                      active: "bg-[#FEF3D6] text-[#B06000] border-[#FDE7B9]/60 shadow-sm",
-                      inactive: "text-slate-600 hover:bg-[#FEF3D6]/30",
+                      active: "bg-amber-50 text-amber-800 border-amber-200/50 shadow-[0_2px_8px_rgba(245,158,11,0.08)] font-extrabold",
+                      inactive: "text-slate-500 hover:text-amber-800 hover:bg-amber-50/30 border-transparent",
                     },
                     closed: {
-                      active: "bg-[#FCE8E6] text-[#C5221F] border-[#FAD2CF]/60 shadow-sm",
-                      inactive: "text-slate-600 hover:bg-[#FCE8E6]/30",
+                      active: "bg-rose-50 text-rose-700 border-rose-200/50 shadow-[0_2px_8px_rgba(239,68,68,0.08)] font-extrabold",
+                      inactive: "text-slate-500 hover:text-rose-700 hover:bg-rose-50/30 border-transparent",
                     },
                   };
 
@@ -528,7 +528,7 @@ export default function BoutiqueDashboard() {
                       key={status}
                       disabled={isPending}
                       onClick={() => handleUpdateStatus(status)}
-                      className={`py-2 px-3 rounded-xl text-[10px] sm:text-xs font-bold transition-all duration-150 uppercase tracking-wider border border-transparent focus:outline-none cursor-pointer ${
+                      className={`py-2 px-4 rounded-full text-[10px] sm:text-xs font-bold transition-all duration-150 uppercase tracking-wider border focus:outline-none cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
                         isActive ? colors[status].active : colors[status].inactive
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
@@ -558,7 +558,7 @@ export default function BoutiqueDashboard() {
                 onClick={handleToggleAvailability}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                   boutique.storeStatus !== "closed" && boutique.isAcceptingOrders
-                    ? "bg-[#2E7D32]"
+                    ? "bg-emerald-500"
                     : "bg-slate-200"
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
