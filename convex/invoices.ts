@@ -211,3 +211,18 @@ export const getInvoiceByOrderId_admin = query({
     return formatInvoiceForClient(invoice);
   },
 });
+
+/**
+ * Temporary admin utility to clear PDF URLs on all invoices.
+ * Forces regeneration with the updated premium design.
+ */
+export const clearAllInvoicePdfUrls = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const invoices = await ctx.db.query("invoices").collect();
+    for (const inv of invoices) {
+      await ctx.db.patch(inv._id, { pdfUrl: undefined });
+    }
+    return invoices.length;
+  },
+});
