@@ -1179,7 +1179,7 @@ export const updateBoutiqueOrderStatus = mutation({
     if (args.status === "out_for_delivery" && !order.outForDeliveryAt) patch.outForDeliveryAt = now;
     if (args.status === "delivered" && !order.deliveredAt) {
       patch.deliveredAt = now;
-      patch.claimWindowExpiresAt = now + 7 * 24 * 3600 * 1000;
+      patch.claimWindowExpiresAt = now + 24 * 3600 * 1000;
     }
     if (args.status === "cancelled" && !order.cancelledAt) patch.cancelledAt = now;
 
@@ -1428,7 +1428,7 @@ export const bulkUpdateBoutiqueOrderStatus = mutation({
       if (args.status === "out_for_delivery" && !order.outForDeliveryAt) patch.outForDeliveryAt = now;
       if (args.status === "delivered" && !order.deliveredAt) {
         patch.deliveredAt = now;
-        patch.claimWindowExpiresAt = now + 7 * 24 * 3600 * 1000;
+        patch.claimWindowExpiresAt = now + 24 * 3600 * 1000;
       }
       if (args.status === "cancelled" && !order.cancelledAt) patch.cancelledAt = now;
 

@@ -740,7 +740,8 @@ export async function settleEligibleOrdersHelper(ctx: any, adminId?: any) {
       // Check if order claim window has expired
       if (s.orderId) {
         const order = await ctx.db.get(s.orderId);
-        if (order && order.claimWindowExpiresAt && order.claimWindowExpiresAt <= now) {
+        const deliveredTime = order ? (order.deliveredAt || order.createdAt) : 0;
+        if (order && (deliveredTime + 7 * 24 * 3600 * 1000 <= now)) {
           // Hardening Check: Require both order AND shipment status to be explicitly "delivered"
           if (order.shipmentId) {
             const shipment = await ctx.db.get(order.shipmentId);
@@ -950,8 +951,8 @@ export const seedFinanceMockDataAdmin = mutation({
       // 4. Calculate Net Boutique Accrual (Exclude customer-paid delivery fee)
       const accrualAmount = netOrderSubtotal - (globalPlatformCommission + globalGstOnCommission);
 
-      const claimWindowDays = 7; // weekly
-      const expiresAt = order.claimWindowExpiresAt || (order.deliveredAt || order.createdAt) + claimWindowDays * 24 * 3600 * 1000;
+      const settlementHoldDays = 7; // weekly payout hold
+      const expiresAt = (order.deliveredAt || order.createdAt) + settlementHoldDays * 24 * 3600 * 1000;
       const isSettled = expiresAt <= now && order.status === "delivered";
 
       const settlementId = await ctx.db.insert("settlementLedger", {
@@ -961,7 +962,7 @@ export const seedFinanceMockDataAdmin = mutation({
         source: "order",
         amount: accrualAmount,
         status: isSettled ? "available" : "pending",
-        claimWindowDays,
+        claimWindowDays: 1, // 24h customer claim window
         accruedAt: order.deliveredAt || order.createdAt,
         settledAt: isSettled ? expiresAt : undefined,
         createdAt: order.createdAt,

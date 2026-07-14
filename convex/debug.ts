@@ -1031,7 +1031,7 @@ export const runDisasterRecoveryChaosTests = mutation({
       await ctx.db.patch(orderId, {
         status: "delivered",
         deliveredAt: now,
-        claimWindowExpiresAt: now + 7 * 24 * 3600 * 1000,
+        claimWindowExpiresAt: now + 24 * 3600 * 1000,
       });
 
       // Submit claim 1: Should succeed

@@ -726,7 +726,7 @@ export const updateOrderStatus = mutation({
       }
       if (!order.deliveredAt) {
         patch.deliveredAt = now;
-        patch.claimWindowExpiresAt = now + 7 * 24 * 3600 * 1000;
+        patch.claimWindowExpiresAt = now + 24 * 3600 * 1000;
       }
     }
     if (args.status === "cancelled" && !order.cancelledAt) patch.cancelledAt = now;

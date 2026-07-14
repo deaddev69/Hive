@@ -508,7 +508,7 @@ export const simulateLogisticsWebhookAdmin = mutation({
       } else if (args.status === "delivered") {
         orderPatch.status = "delivered";
         orderPatch.deliveredAt = now;
-        orderPatch.claimWindowExpiresAt = now + 7 * 24 * 3600 * 1000; // 7-day claim window
+        orderPatch.claimWindowExpiresAt = now + 24 * 3600 * 1000; // 24-hour claim window
       } else if (args.status === "returned" || args.status === "cancelled") {
         orderPatch.status = "cancelled";
         orderPatch.cancelledAt = now;
@@ -706,7 +706,7 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
       } else if (args.status === "delivered") {
         orderPatch.status = "delivered";
         orderPatch.deliveredAt = now;
-        orderPatch.claimWindowExpiresAt = now + 7 * 24 * 3600 * 1000;
+        orderPatch.claimWindowExpiresAt = now + 24 * 3600 * 1000;
       } else if (args.status === "returned" || args.status === "cancelled") {
         orderPatch.status = "cancelled";
         orderPatch.cancelledAt = now;
@@ -1224,7 +1224,7 @@ export const seedLogisticsMockDataAdmin = mutation({
       if (status === "delivered") {
         orderPatch.status = "delivered";
         orderPatch.deliveredAt = now;
-        orderPatch.claimWindowExpiresAt = now + 7 * 24 * 3600 * 1000;
+        orderPatch.claimWindowExpiresAt = now + 24 * 3600 * 1000;
       } else if (status === "pickup_scheduled") {
         orderPatch.status = "pickup_scheduled";
         orderPatch.pickupScheduledAt = now;
