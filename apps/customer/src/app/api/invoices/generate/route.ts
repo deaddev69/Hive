@@ -109,7 +109,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Generate the PDF (pdf-lib runs fine in Next.js Node.js runtime)
-    const blob = await generateInvoicePdf(invoice);
+    const origin = new URL(req.url).origin;
+    const logoUrl = `${origin}/logo.png`;
+    const blob = await generateInvoicePdf(invoice, logoUrl);
     const arrayBuffer = await blob.arrayBuffer();
     const pdfBytes = Buffer.from(arrayBuffer);
 
