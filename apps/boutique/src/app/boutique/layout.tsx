@@ -57,9 +57,8 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
     }
 
     if (myBoutiqueSafe && !myBoutiqueSafe.exists) {
-      if (pathname !== "/boutique/unauthorized") {
-        router.push("/boutique/unauthorized");
-      }
+      // Allow user to view portal even without a boutique record, as requested.
+      // We no longer redirect to /boutique/unauthorized here.
     }
   }, [me, myBoutiqueSafe, router, pathname]);
 
@@ -105,8 +104,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   }
 
   // Non-boutique signed in
-  if ((me && me.role !== "boutique" && me.role !== "boutique_owner" && pathname !== "/boutique/unauthorized") ||
-      (myBoutiqueSafe && !myBoutiqueSafe.exists && pathname !== "/boutique/unauthorized")) {
+  if ((me && me.role !== "boutique" && me.role !== "boutique_owner" && pathname !== "/boutique/unauthorized")) {
     return null; // Redirects to unauthorized
   }
 
