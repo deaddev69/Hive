@@ -96,6 +96,7 @@ export default function BoutiqueOrders() {
   const [retryingOrderId, setRetryingOrderId] = React.useState<string | null>(null);
   const [pendingActionId, setPendingActionId] = React.useState<string | null>(null);
   const [orderToDecline, setOrderToDecline] = React.useState<string | null>(null);
+  const [retryDispatchOrderId, setRetryDispatchOrderId] = React.useState<string | null>(null);
   const [cancelReason, setCancelReason] = React.useState<string>("");
   const [declineReasonType, setDeclineReasonType] = React.useState<string>("Out of stock");
   const [declineError, setDeclineError] = React.useState<boolean>(false);
@@ -274,31 +275,10 @@ export default function BoutiqueOrders() {
                       
                       {order.shipmentStatus === "booking_failed" && (
                         <button
-                          onClick={async () => {
-                            if (!confirm("Retry dispatching this order to Shiprocket?")) return;
-                            setRetryingOrderId(order._id);
-                            try {
-                              await retryDispatch({ orderId: order._id });
-                              alert("Dispatch retried successfully!");
-                            } catch (err: any) {
-                              const msg = (err.message || "").toLowerCase();
-                              let friendlyMessage = "Delivery partner network is currently busy. Please click retry again in 1 minute.";
-                              
-                              if (msg.includes("address") || msg.includes("pincode") || msg.includes("location")) {
-                                friendlyMessage = "There is an issue with the customer's delivery location. Please contact Hive support.";
-                              } else if (msg.includes("unauthorized") || msg.includes("token") || msg.includes("auth")) {
-                                friendlyMessage = "System connection issue. Please refresh the page and try again.";
-                              }
-                              
-                              alert(friendlyMessage);
-                            } finally {
-                              setRetryingOrderId(null);
-                            }
-                          }}
-                          disabled={retryingOrderId === order._id}
-                          className="mt-2 block w-full px-2.5 py-1.5 bg-rose-50 text-rose-700 text-[9px] font-extrabold uppercase tracking-wider rounded-xl border border-rose-200/40 hover:bg-rose-100/40 transition-all duration-150 text-center select-none disabled:opacity-50"
+                          onClick={() => setRetryDispatchOrderId(order._id)}
+                          className="mt-2 block w-full px-2.5 py-1.5 bg-rose-50 text-rose-700 text-[9px] font-extrabold uppercase tracking-wider rounded-xl border border-rose-200/40 hover:bg-rose-100/40 transition-all duration-150 text-center select-none"
                         >
-                          {retryingOrderId === order._id ? "Retrying..." : "Retry Booking"}
+                          Retry Booking
                         </button>
                       )}
                     </td>
@@ -406,6 +386,56 @@ export default function BoutiqueOrders() {
                   setDeclineError(false);
                 }}
                 disabled={pendingActionId === orderToDecline}
+                className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-Screen Retry Logistics Modal */}
+      {retryDispatchOrderId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div>
+              <h3 className="text-lg font-black text-hive-dark">Retry Logistics Booking</h3>
+              <p className="text-sm font-medium text-slate-600 mt-2">
+                The previous attempt to assign a delivery rider failed. Would you like to try again?
+              </p>
+            </div>
+            
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={async () => {
+                  setRetryingOrderId(retryDispatchOrderId);
+                  try {
+                    await retryDispatch({ orderId: retryDispatchOrderId as Id<"orders"> });
+                    setRetryDispatchOrderId(null);
+                  } catch (err: any) {
+                    const msg = (err.message || "").toLowerCase();
+                    let friendlyMessage = "Delivery partner network is currently busy. Please click retry again in 1 minute.";
+                    
+                    if (msg.includes("address") || msg.includes("pincode") || msg.includes("location")) {
+                      friendlyMessage = "There is an issue with the customer's delivery location. Please contact Hive support.";
+                    } else if (msg.includes("unauthorized") || msg.includes("token") || msg.includes("auth")) {
+                      friendlyMessage = "System connection issue. Please refresh the page and try again.";
+                    }
+                    
+                    alert(friendlyMessage);
+                  } finally {
+                    setRetryingOrderId(null);
+                  }
+                }}
+                disabled={retryingOrderId === retryDispatchOrderId}
+                className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black hover:bg-rose-700 disabled:opacity-50 transition-colors"
+              >
+                {retryingOrderId === retryDispatchOrderId ? "Retrying..." : "Confirm Retry"}
+              </button>
+              <button
+                onClick={() => setRetryDispatchOrderId(null)}
+                disabled={retryingOrderId === retryDispatchOrderId}
                 className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 disabled:opacity-50 transition-colors"
               >
                 Cancel
