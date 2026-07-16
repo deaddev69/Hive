@@ -1500,3 +1500,26 @@ export const prepareShiprocketShipmentInternal = internalMutation({
     return shipmentId;
   }
 });
+
+/**
+ * Updates shipment details with the response from the logistics provider.
+ */
+export const updateShipmentDetails = internalMutation({
+  args: {
+    shipmentId: v.id("shipments"),
+    awbNumber: v.string(),
+    trackingUrl: v.optional(v.string()),
+    status: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const shipment = await ctx.db.get(args.shipmentId);
+    if (!shipment) throw new Error("Shipment not found");
+
+    await ctx.db.patch(args.shipmentId, {
+      awbNumber: args.awbNumber,
+      trackingUrl: args.trackingUrl,
+      status: args.status as any,
+      updatedAt: Date.now(),
+    });
+  },
+});

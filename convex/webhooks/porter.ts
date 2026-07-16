@@ -81,6 +81,7 @@ export const handlePorterWebhook = httpAction(async (ctx, request) => {
     driverDetails: payload.order_details?.driver_details ? {
       name: payload.order_details.driver_details.driver_name,
       phone: payload.order_details.driver_details.mobile,
+      vehiclePlate: payload.order_details.driver_details.vehicle_number,
     } : undefined,
   }).catch((err) => {
     console.error("[PorterWebhook] Background mutation error:", err);

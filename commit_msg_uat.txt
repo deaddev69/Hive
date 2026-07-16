@@ -1,0 +1,5 @@
+fix: save tracking url from createOrder and map vehicle plate in webhook
+
+- Created updateShipmentDetails internal mutation to immediately save the CRN and tracking URL when createOrder runs in the background.
+- Updated the Porter webhook listener to extract ehicle_number and map it to ehiclePlate for the frontend.
+- Added a simulateUATFlow internal action to manually trigger Porter lifecycle simulations without writing custom scripts.

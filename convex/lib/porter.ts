@@ -1,5 +1,6 @@
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
+import { internal } from "../_generated/api";
 
 const PORTER_BASE_URL = "https://pfe-apigw-uat.porter.in/v1";
 
@@ -141,6 +142,15 @@ export const createOrder = internalAction({
     }
 
     const data = await res.json();
+    
+    // Save the CRN and tracking URL immediately to avoid async data loss
+    await ctx.runMutation(internal.adminLogistics.updateShipmentDetails, {
+      shipmentId: args.shipmentId,
+      awbNumber: data.order_id,
+      trackingUrl: data.tracking_url,
+      status: "booking_requested",
+    });
+
     return {
       crn: data.order_id,
       trackingUrl: data.tracking_url,
@@ -162,6 +172,32 @@ export const cancelOrder = internalAction({
     if (!res.ok) {
       const errText = await res.text();
       throw new Error(`Porter cancelOrder failed: ${res.status} - ${errText}`);
+    }
+
+    return await res.json();
+  },
+});
+
+export const simulateUATFlow = internalAction({
+  args: {
+    crn: v.string(),
+    flowType: v.number(), // 0 for happy flow, 2 for rider cancel, etc.
+  },
+  handler: async (ctx, args) => {
+    const payload = {
+      order_id: args.crn,
+      flow_type: args.flowType,
+    };
+
+    const res = await fetch(`${PORTER_BASE_URL}/simulation/initiate_order_flow`, {
+      method: "POST",
+      headers: getPorterHeaders(),
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Porter simulator failed: ${res.status} - ${errText}`);
     }
 
     return await res.json();
