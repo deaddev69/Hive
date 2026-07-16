@@ -281,7 +281,16 @@ export default function BoutiqueOrders() {
                               await retryDispatch({ orderId: order._id });
                               alert("Dispatch retried successfully!");
                             } catch (err: any) {
-                              alert("Dispatch failed again: " + err.message);
+                              const msg = (err.message || "").toLowerCase();
+                              let friendlyMessage = "Delivery partner network is currently busy. Please click retry again in 1 minute.";
+                              
+                              if (msg.includes("address") || msg.includes("pincode") || msg.includes("location")) {
+                                friendlyMessage = "There is an issue with the customer's delivery location. Please contact Hive support.";
+                              } else if (msg.includes("unauthorized") || msg.includes("token") || msg.includes("auth")) {
+                                friendlyMessage = "System connection issue. Please refresh the page and try again.";
+                              }
+                              
+                              alert(friendlyMessage);
                             } finally {
                               setRetryingOrderId(null);
                             }
