@@ -559,7 +559,7 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   pending_payment: ["pending_confirmation", "cancelled"],
   pending_confirmation: ["confirmed", "cancelled"],
   confirmed: ["packed", "cancelled"],
-  packed: ["pickup_scheduled", "picked_up", "in_transit", "out_for_delivery", "cancelled"],
+  packed: ["confirmed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery", "cancelled"],
   pickup_scheduled: ["picked_up", "in_transit", "out_for_delivery", "cancelled"],
   picked_up: ["in_transit", "out_for_delivery", "delivered", "cancelled"],
   in_transit: ["out_for_delivery", "delivered", "cancelled"],
