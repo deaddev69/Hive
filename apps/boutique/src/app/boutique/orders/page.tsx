@@ -86,19 +86,7 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
   );
 }
 
-const getStatusSelectClass = (status: string) => {
-  const base = "appearance-none pr-8 pl-3.5 py-1.5 border rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-no-repeat bg-[position:right_10px_center] bg-[size:10px] focus:outline-none cursor-pointer transition-all duration-150 shadow-[0_1px_2px_rgba(0,0,0,0.02)] ";
-  if (status === "delivered") {
-    return base + "bg-emerald-50 text-emerald-700 border-emerald-200/40 hover:bg-emerald-100/40 bg-[image:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23047857\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg>')]";
-  }
-  if (status === "cancelled") {
-    return base + "bg-rose-50 text-rose-700 border-rose-200/40 hover:bg-rose-100/40 bg-[image:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23BE123C\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg>')]";
-  }
-  if (status === "pending_payment" || status === "pending_confirmation") {
-    return base + "bg-amber-50 text-amber-800 border-amber-200/40 hover:bg-amber-100/40 bg-[image:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23B45309\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg>')]";
-  }
-  return base + "bg-blue-50 text-blue-700 border-blue-200/40 hover:bg-blue-100/40 bg-[image:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%231D4ED8\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg>')]";
-};
+// Removed getStatusSelectClass as we will use a standard dropdown style now.
 
 // ── Boutique Orders Page ──────────────────────────────────────────────────────
 export default function BoutiqueOrders() {
@@ -109,6 +97,8 @@ export default function BoutiqueOrders() {
   const [pendingActionId, setPendingActionId] = React.useState<string | null>(null);
   const [orderToDecline, setOrderToDecline] = React.useState<string | null>(null);
   const [cancelReason, setCancelReason] = React.useState<string>("");
+  const [declineReasonType, setDeclineReasonType] = React.useState<string>("Out of stock");
+  const [declineError, setDeclineError] = React.useState<boolean>(false);
 
   if (orders === undefined) {
     return (
@@ -267,10 +257,9 @@ export default function BoutiqueOrders() {
                               alert("Failed to update status: " + err.message);
                             }
                           }}
-                          className={getStatusSelectClass(order.status)}
+                          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-hive-gold transition-colors cursor-pointer"
                           disabled={order.status === "cancelled"}
                         >
-                          {order.status === "pending_payment" && <option value="pending_payment">Pending Payment</option>}
                           <option value="confirmed">Confirmed</option>
                           <option value="packed">Packed</option>
                           <option value="pickup_scheduled">Pickup Scheduled</option>
@@ -278,7 +267,6 @@ export default function BoutiqueOrders() {
                           <option value="in_transit">In Transit</option>
                           <option value="out_for_delivery">Out For Delivery</option>
                           <option value="delivered">Delivered</option>
-                          {order.status === "cancelled" && <option value="cancelled">Cancelled</option>}
                         </select>
                       )}
                       
@@ -337,30 +325,52 @@ export default function BoutiqueOrders() {
               <label htmlFor="cancelReason" className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
                 Reason for declining
               </label>
-              <input 
-                id="cancelReason"
-                type="text" 
-                placeholder="e.g. Out of stock, Store closing" 
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                className="px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400 bg-slate-50 transition-colors"
-                autoFocus
-              />
+              <select
+                value={declineReasonType}
+                onChange={(e) => {
+                  setDeclineReasonType(e.target.value);
+                  setDeclineError(false);
+                }}
+                className="px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400 bg-slate-50 transition-colors"
+              >
+                <option value="Out of stock">Out of stock</option>
+                <option value="Store is too busy / SLA risk">Store is too busy / SLA risk</option>
+                <option value="Closing early">Closing early</option>
+                <option value="Other (Type reason)">Other (Type reason)</option>
+              </select>
+              
+              {declineReasonType === "Other (Type reason)" && (
+                <input 
+                  id="cancelReason"
+                  type="text" 
+                  placeholder="e.g. System glitch, Manager away" 
+                  value={cancelReason}
+                  onChange={(e) => {
+                    setCancelReason(e.target.value);
+                    setDeclineError(false);
+                  }}
+                  className={`mt-2 px-3 py-2.5 border ${declineError ? 'border-rose-400 bg-rose-50 placeholder:text-rose-300 focus:ring-rose-400' : 'border-slate-200 bg-slate-50 focus:border-slate-400 focus:ring-slate-400'} rounded-xl text-sm focus:outline-none focus:ring-1 transition-colors`}
+                  autoFocus
+                />
+              )}
             </div>
             
             <div className="flex gap-3 mt-2">
               <button
                 onClick={async () => {
-                  if (!cancelReason.trim()) {
-                    alert("Please provide a reason for declining.");
+                  const finalReason = declineReasonType === "Other (Type reason)" ? cancelReason.trim() : declineReasonType;
+                  
+                  if (declineReasonType === "Other (Type reason)" && !finalReason) {
+                    setDeclineError(true);
                     return;
                   }
+                  
                   setPendingActionId(orderToDecline);
                   try {
                     await updateStatus({
                       orderId: orderToDecline as Id<"orders">,
                       status: "cancelled",
-                      cancelReason: cancelReason.trim(),
+                      cancelReason: finalReason,
                     });
                   } catch (err: any) {
                     alert("Failed to decline order: " + err.message);
@@ -368,6 +378,8 @@ export default function BoutiqueOrders() {
                     setPendingActionId(null);
                     setOrderToDecline(null);
                     setCancelReason("");
+                    setDeclineReasonType("Out of stock");
+                    setDeclineError(false);
                   }
                 }}
                 disabled={pendingActionId === orderToDecline}
@@ -379,6 +391,8 @@ export default function BoutiqueOrders() {
                 onClick={() => {
                   setOrderToDecline(null);
                   setCancelReason("");
+                  setDeclineReasonType("Out of stock");
+                  setDeclineError(false);
                 }}
                 disabled={pendingActionId === orderToDecline}
                 className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 disabled:opacity-50 transition-colors"
