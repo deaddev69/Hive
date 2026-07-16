@@ -120,7 +120,7 @@ export default function BoutiqueOrders() {
   }
 
   return (
-    <div className="flex flex-col gap-6 text-left">
+    <div className="flex flex-col gap-6 text-left pb-24">
       <div>
         <h1 className="text-3xl font-serif font-black text-hive-dark">Orders Directory</h1>
         <p className="text-sm text-hive-text-muted">Monitor orders, customer details, and dispatch statuses.</p>
@@ -149,7 +149,6 @@ export default function BoutiqueOrders() {
                       <div className="flex flex-col gap-1">
                         <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Order No.</span>
                         <span className="font-mono font-bold text-sm text-slate-700">{order.orderNumber}</span>
-                        <span className="text-[10px] text-hive-text-muted">ID: {order._id}</span>
                       </div>
                     </td>
 
@@ -173,9 +172,16 @@ export default function BoutiqueOrders() {
                     <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
                       <div className="flex flex-col gap-1">
                         <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Customer Details</span>
-                        <span className="font-bold text-hive-dark">{order.deliveryAddress.label || "Customer Address"}</span>
+                        <span className="font-bold text-hive-dark">
+                          {(() => {
+                            const name = order.customerName || order.deliveryAddress.name || order.deliveryAddress.label || "Customer";
+                            const parts = name.trim().split(" ");
+                            if (parts.length <= 1) return parts[0] || "Customer";
+                            return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+                          })()}
+                        </span>
                         <span className="text-hive-text-muted leading-tight max-w-xs truncate">
-                          {order.deliveryAddress.line1}, {order.deliveryAddress.city}
+                          {order.deliveryAddress.city}
                         </span>
                         <span className="text-[10px] font-mono text-slate-500">Pincode: {order.deliveryAddress.pincode}</span>
                       </div>
@@ -236,14 +242,14 @@ export default function BoutiqueOrders() {
                               }
                             }}
                             disabled={pendingActionId === order._id}
-                            className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-50 shadow-sm transition-all"
+                            className="w-full px-3 py-3 bg-emerald-600 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-50 shadow-sm transition-all"
                           >
                             {pendingActionId === order._id ? "Accepting..." : "Accept Order"}
                           </button>
                           <button
                             onClick={() => setOrderToDecline(order._id)}
                             disabled={pendingActionId === order._id}
-                            className="px-3 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-rose-50 disabled:opacity-50 shadow-sm transition-all"
+                            className="mb-4 w-full px-3 py-2.5 bg-white border-2 border-rose-600 text-rose-600 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-rose-50 disabled:opacity-50 transition-all"
                           >
                             Decline Order
                           </button>
