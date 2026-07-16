@@ -4,6 +4,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import { CatalogLayout } from "@/components/catalog/CatalogLayout";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import { MobileFilterDrawer } from "@/components/catalog/MobileFilterDrawer";
+import { getCategoryContent } from "@/lib/content/categoryContent";
+import { CategorySEOBlock } from "@/components/seo/CategorySEOBlock";
 import { CatalogHeader } from "@/components/catalog/CatalogHeader";
 import { CatalogToolbar } from "@/components/catalog/CatalogToolbar";
 import { CatalogPagination } from "@/components/catalog/CatalogPagination";
@@ -89,12 +91,12 @@ export function ProductsClient({ initialCategorySlug }: { initialCategorySlug?: 
         <p className="text-sm text-hive-text-muted font-bold">Loading product directory...</p>
       </div>
     }>
-      <ProductsCatalog />
+      <ProductsCatalog initialCategorySlug={initialCategorySlug} />
     </React.Suspense>
   );
 }
 
-function ProductsCatalog() {
+function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string }) {
   const searchParams = useSearchParams();
   const browseAllFromUrl = searchParams.get("browse") === "all";
   const boutiqueIdFromUrl = searchParams.get("boutiqueId");
@@ -374,6 +376,11 @@ function ProductsCatalog() {
           onClose={() => setQuickViewModal({ open: false, productId: null })}
           productSlug={quickViewModal.productId}
         />
+      )}
+
+      {/* Render SEO block only if we are on a specific category page */}
+      {categorySlugFromUrl && (
+        <CategorySEOBlock content={getCategoryContent(categorySlugFromUrl)} />
       )}
     </CatalogLayout>
   );

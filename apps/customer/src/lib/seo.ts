@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { getCategoryContent } from "./content/categoryContent";
 
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://hivenow.in";
 
@@ -71,10 +72,13 @@ export function getProductsMetadata(): Metadata {
 }
 
 export function getCategoryMetadata(category: string): Metadata {
-  const formattedCategory = category.charAt(0).toUpperCase() + category.slice(1);
+  const content = getCategoryContent(category);
+  const title = content ? content.seoTitle : `${category.charAt(0).toUpperCase() + category.slice(1)}'s Fashion in Ernakulam`;
+  const description = content ? content.metaDescription : `Shop premium ${category.toLowerCase()}'s clothing from Ernakulam boutiques with same-day delivery on Hive.`;
+  
   return constructMetadata({
-    title: `${formattedCategory}'s Fashion in Ernakulam`,
-    description: `Shop premium ${category.toLowerCase()}'s clothing from Ernakulam boutiques with same-day delivery on Hive.`,
+    title,
+    description,
     path: `/products/${category.toLowerCase()}`,
   });
 }
