@@ -418,8 +418,8 @@ function NextStepsSection({ status }: { status: string }) {
   // Map status to progress index (0 to 4)
   let currentStepIndex = 0;
   if (["confirmed"].includes(status)) currentStepIndex = 1;
-  else if (["packed", "ready_for_pickup"].includes(status)) currentStepIndex = 2;
-  else if (["out_for_delivery"].includes(status)) currentStepIndex = 3;
+  else if (["packed", "pickup_scheduled", "ready_for_pickup"].includes(status)) currentStepIndex = 2;
+  else if (["picked_up", "in_transit", "out_for_delivery"].includes(status)) currentStepIndex = 3;
   else if (["delivered"].includes(status)) currentStepIndex = 4;
 
   const steps = [

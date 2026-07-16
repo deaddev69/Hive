@@ -106,6 +106,9 @@ export default function BoutiqueOrders() {
   const updateStatus = useMutation(api.orders.updateBoutiqueOrderStatus);
   const retryDispatch = useAction(api.orders.retryBoutiqueOrderDispatch);
   const [retryingOrderId, setRetryingOrderId] = React.useState<string | null>(null);
+  const [pendingActionId, setPendingActionId] = React.useState<string | null>(null);
+  const [decliningOrderId, setDecliningOrderId] = React.useState<string | null>(null);
+  const [cancelReason, setCancelReason] = React.useState<string>("");
 
   if (orders === undefined) {
     return (
@@ -208,32 +211,116 @@ export default function BoutiqueOrders() {
                     </td>
 
                     {/* Status updater */}
-                    <td className="px-6 py-4">
-                      <select
-                        value={order.status}
-                        onChange={async (e) => {
-                          try {
-                            await updateStatus({
-                              orderId: order._id,
-                              status: e.target.value as any,
-                            });
-                          } catch (err: any) {
-                            alert("Failed to update status: " + err.message);
-                          }
-                        }}
-                        className={getStatusSelectClass(order.status)}
-                      >
-                        <option value="pending_payment">Pending Payment</option>
-                        <option value="pending_confirmation">Pending Confirmation</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="packed">Packed</option>
-                        <option value="pickup_scheduled">Pickup Scheduled</option>
-                        <option value="picked_up">Picked Up</option>
-                        <option value="in_transit">In Transit</option>
-                        <option value="out_for_delivery">Out For Delivery</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
+                    <td className="px-6 py-4 min-w-[160px]">
+                      {order.status === "pending_confirmation" ? (
+                        decliningOrderId === order._id ? (
+                          <div className="flex flex-col gap-2 bg-rose-50 p-2 rounded-xl border border-rose-100">
+                            <span className="text-[9px] text-rose-700 font-bold leading-tight">
+                              Declining this order will initiate a refund to the customer and cannot be undone.
+                            </span>
+                            <input 
+                              type="text" 
+                              placeholder="Reason (e.g. Out of stock)" 
+                              value={cancelReason}
+                              onChange={(e) => setCancelReason(e.target.value)}
+                              className="px-2 py-1.5 border border-rose-200 rounded-md text-[10px] focus:outline-none focus:border-rose-400 bg-white placeholder:text-rose-300"
+                            />
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={async () => {
+                                  if (!cancelReason.trim()) {
+                                    alert("Please provide a reason for declining.");
+                                    return;
+                                  }
+                                  setPendingActionId(order._id);
+                                  try {
+                                    await updateStatus({
+                                      orderId: order._id,
+                                      status: "cancelled",
+                                      cancelReason: cancelReason.trim(),
+                                    });
+                                  } catch (err: any) {
+                                    alert("Failed to decline order: " + err.message);
+                                  } finally {
+                                    setPendingActionId(null);
+                                    setDecliningOrderId(null);
+                                    setCancelReason("");
+                                  }
+                                }}
+                                disabled={pendingActionId === order._id}
+                                className="px-2 py-1.5 bg-rose-600 text-white rounded-md text-[9px] font-bold hover:bg-rose-700 disabled:opacity-50 flex-1 transition-colors whitespace-nowrap"
+                              >
+                                {pendingActionId === order._id ? "Processing..." : "Confirm Decline"}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setDecliningOrderId(null);
+                                  setCancelReason("");
+                                }}
+                                disabled={pendingActionId === order._id}
+                                className="px-2 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-md text-[9px] font-bold hover:bg-rose-50 disabled:opacity-50 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            <button
+                              onClick={async () => {
+                                setPendingActionId(order._id);
+                                try {
+                                  await updateStatus({
+                                    orderId: order._id,
+                                    status: "confirmed",
+                                  });
+                                } catch (err: any) {
+                                  alert("Failed to accept order: " + err.message);
+                                } finally {
+                                  setPendingActionId(null);
+                                }
+                              }}
+                              disabled={pendingActionId === order._id}
+                              className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-50 shadow-sm transition-all"
+                            >
+                              {pendingActionId === order._id ? "Accepting..." : "Accept Order"}
+                            </button>
+                            <button
+                              onClick={() => setDecliningOrderId(order._id)}
+                              disabled={pendingActionId === order._id}
+                              className="px-3 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-rose-50 disabled:opacity-50 shadow-sm transition-all"
+                            >
+                              Decline Order
+                            </button>
+                          </div>
+                        )
+                      ) : (
+                        <select
+                          value={order.status}
+                          onChange={async (e) => {
+                            try {
+                              await updateStatus({
+                                orderId: order._id,
+                                status: e.target.value as any,
+                              });
+                            } catch (err: any) {
+                              alert("Failed to update status: " + err.message);
+                            }
+                          }}
+                          className={getStatusSelectClass(order.status)}
+                          disabled={order.status === "cancelled"}
+                        >
+                          {order.status === "pending_payment" && <option value="pending_payment">Pending Payment</option>}
+                          <option value="confirmed">Confirmed</option>
+                          <option value="packed">Packed</option>
+                          <option value="pickup_scheduled">Pickup Scheduled</option>
+                          <option value="picked_up">Picked Up</option>
+                          <option value="in_transit">In Transit</option>
+                          <option value="out_for_delivery">Out For Delivery</option>
+                          <option value="delivered">Delivered</option>
+                          {order.status === "cancelled" && <option value="cancelled">Cancelled</option>}
+                        </select>
+                      )}
                       
                       {order.shipmentStatus === "booking_failed" && (
                         <button

@@ -1065,6 +1065,7 @@ export const updateBoutiqueOrderStatus = mutation({
       v.literal("booking_failed")
     ),
     token: v.optional(v.string()),
+    cancelReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const boutique = await getMyBoutique(ctx, args.token);
@@ -1181,7 +1182,11 @@ export const updateBoutiqueOrderStatus = mutation({
       patch.deliveredAt = now;
       patch.claimWindowExpiresAt = now + 24 * 3600 * 1000;
     }
-    if (args.status === "cancelled" && !order.cancelledAt) patch.cancelledAt = now;
+    if (args.status === "cancelled") {
+      if (!order.cancelledAt) patch.cancelledAt = now;
+      if (args.cancelReason) patch.cancelReason = args.cancelReason;
+      patch.refundStatus = "pending"; // For manual admin dashboard refunds
+    }
 
     await ctx.db.patch(args.orderId, patch);
 
@@ -1191,7 +1196,8 @@ export const updateBoutiqueOrderStatus = mutation({
     }
 
     // Wire Shiprocket booking here
-    if (args.status === "packed") {
+    // TODO: Swap to Porter integration once migration is complete. Shifted to 'confirmed' for 3-hour SLA buffer.
+    if (args.status === "confirmed") {
       const customer = await ctx.db.get(order.customerId);
       const shipmentId = await ctx.db.insert("shipments", {
         orderId: args.orderId,

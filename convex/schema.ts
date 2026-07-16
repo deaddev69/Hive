@@ -709,6 +709,7 @@ export default defineSchema({
     deliveredAt:          v.optional(v.number()),
     claimWindowExpiresAt: v.optional(v.number()),   // deliveredAt + 48h
     refunded_lost_shipment: v.optional(v.boolean()),
+    refundStatus:         v.optional(v.union(v.literal("pending"), v.literal("processed"), v.literal("failed"))),
     orderAcceptedAt:      v.optional(v.number()),
     readyForPickupAt:     v.optional(v.number()),
     prepTimeDurationMinutes: v.optional(v.number()),
