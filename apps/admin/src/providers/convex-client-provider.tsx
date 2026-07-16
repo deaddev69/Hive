@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient } from "convex/react";
@@ -53,7 +53,8 @@ export function ConvexClientProvider({ children }: { children: ReactNode }) {
   }
 
   // Safe to initialize now that we have a valid absolute URL
-  const convex = new ConvexReactClient(convexUrl);
+  // Wrap in useState so we don't recreate the client on every re-render (which causes 429s from Clerk token fetching)
+  const [convex] = useState(() => new ConvexReactClient(convexUrl as string));
 
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
