@@ -277,13 +277,10 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
           {openAccordion === "returns" && (
             <div className="text-xs text-stone-600 leading-relaxed font-medium pt-1 space-y-2 text-left animate-fade-in">
               <p>
-                • <strong>3-Day Return Window</strong>: Return requests must be initiated within 3 days from delivery.
+                • <strong>1-Day Return Window</strong>: Return requests must be initiated within 24 hours of delivery.
               </p>
               <p>
                 • <strong>No Change-of-Mind</strong>: Returns are eligible for physically damaged, defective, or wrong items only.
-              </p>
-              <p>
-                • <strong>Unboxing Video Required</strong>: An uninterrupted unboxing video is required as supporting evidence for claims of damage or defects.
               </p>
               <p>
                 • <strong>Refund Timeline</strong>: Once approved, refunds are credited back to your original payment method within 5–7 business days.
