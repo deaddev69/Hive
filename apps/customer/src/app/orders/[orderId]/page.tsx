@@ -231,8 +231,7 @@ export default function OrderDetailPage() {
 // ─────────────────────────────────────────────────────────────────────────────
 function TrackingTimeline({ status }: { status: string }) {
   const steps = [
-    { key: "confirmed", label: "Order Confirmed", desc: "Your order has been successfully placed", statuses: ["placed", "pending_confirmation", "confirmed"] },
-    { key: "packed", label: "Packing", desc: "Boutique is packing your order", statuses: ["packed", "pickup_scheduled"] },
+    { key: "confirmed", label: "Partner Confirmation", desc: "Boutique is preparing your order", statuses: ["placed", "pending_confirmation", "confirmed", "packed", "pickup_scheduled"] },
     { key: "picked_up", label: "Dispatched", desc: "Order handed over to courier", statuses: ["picked_up"] },
     { key: "in_transit", label: "In Transit", desc: "Arriving at your doorstep", statuses: ["in_transit", "out_for_delivery"] },
     { key: "delivered", label: "Delivered", desc: "Order completed — enjoy your outfit!", statuses: ["delivered", "claim_submitted", "refund_requested", "refunded"] },

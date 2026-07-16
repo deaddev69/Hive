@@ -245,31 +245,15 @@ export default function BoutiqueOrders() {
                             Decline Order
                           </button>
                         </div>
-                      ) : order.status === "confirmed" || order.status === "packed" ? (
-                        <select
-                          value={order.status}
-                          onChange={async (e) => {
-                            try {
-                              await updateStatus({
-                                orderId: order._id,
-                                status: e.target.value as any,
-                              });
-                            } catch (err: any) {
-                              alert("Failed to update status: " + err.message);
-                            }
-                          }}
-                          className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-hive-gold transition-colors cursor-pointer"
-                        >
-                          <option value="confirmed">Confirmed</option>
-                          <option value="packed">Packed</option>
-                        </select>
                       ) : (
-                        <div className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-center border shadow-sm ${
+                        <div className={`w-full px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider text-center border shadow-sm ${
                           order.status === 'cancelled' ? 'bg-rose-50 text-rose-700 border-rose-200/60' : 
                           order.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' :
+                          (order.status === 'confirmed' || order.status === 'packed') ? 'bg-amber-50 text-amber-700 border-amber-200/60' :
                           'bg-blue-50 text-blue-700 border-blue-200/60'
                         }`}>
-                          {order.status.replace(/_/g, ' ')}
+                          {(order.status === 'confirmed' || order.status === 'packed') ? 'Waiting for Rider' : 
+                           order.status.replace(/_/g, ' ')}
                         </div>
                       )}
                       

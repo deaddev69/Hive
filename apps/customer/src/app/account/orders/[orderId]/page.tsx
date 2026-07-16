@@ -200,18 +200,24 @@ function OrderDetailsHeader({ order }: { order: Order }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function OrderTrackingTimeline({ status }: { status: string }) {
   const pipelineSteps = [
-    { key: "placed", label: "Order Placed", desc: "Successfully scheduled" },
-    { key: "confirmed", label: "Boutique Confirmed", desc: "Designer approved" },
-    { key: "picked_up", label: "Picked Up", desc: "Fits coordinator dispatch" },
-    { key: "out_for_delivery", label: "Out For Delivery", desc: "Doorstep fitting trials" },
-    { key: "delivered", label: "Delivered", desc: "Garment fits finalized" }
+    { key: "placed", label: "Order Placed", desc: "Successfully scheduled", statuses: ["placed", "pending_payment"] },
+    { key: "confirmed", label: "Boutique Confirmed", desc: "Designer approved", statuses: ["pending_confirmation", "confirmed", "packed", "pickup_scheduled"] },
+    { key: "picked_up", label: "Picked Up", desc: "Fits coordinator dispatch", statuses: ["picked_up"] },
+    { key: "out_for_delivery", label: "Out For Delivery", desc: "Doorstep fitting trials", statuses: ["in_transit", "out_for_delivery"] },
+    { key: "delivered", label: "Delivered", desc: "Garment fits finalized", statuses: ["delivered", "claim_submitted", "refund_requested", "refunded"] }
   ];
 
   // If status is cancelled, timeline statuses are cancelled/greyed out
-  const isCancelled = status === "cancelled";
+  const isCancelled = status === "cancelled" || status === "booking_failed";
   
-  // Find current step index in the pipeline
-  const currentIdx = pipelineSteps.findIndex((step) => step.key === status);
+  // Find current active step index based on statuses array
+  let currentIdx = -1;
+  for (let i = pipelineSteps.length - 1; i >= 0; i--) {
+    if (pipelineSteps[i]?.statuses?.includes(status)) {
+      currentIdx = i;
+      break;
+    }
+  }
 
   return (
     <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-5 text-left">
