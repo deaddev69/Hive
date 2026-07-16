@@ -65,10 +65,10 @@ export const HeroSection: React.FC = () => {
             </span>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-serif text-hive-dark tracking-tight leading-[1.15]">
-              Hyperlocal Fashion.
+              Shop Premium Fashion.
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-hive-amber to-hive-gold">
-                Delivered Today.
+                From Ernakulam Boutiques.
               </span>
             </h1>
 

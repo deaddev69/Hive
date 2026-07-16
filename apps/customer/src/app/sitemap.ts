@@ -44,7 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 2. Dynamic Categories pages
   const categoryPages = categories.map((cat) => ({
-    url: `${baseUrl}/products?category=${cat.slug}`,
+    url: `${baseUrl}/products/${cat.slug}`,
     lastModified: new Date(cat.updatedAt || cat._creationTime || Date.now()),
     changeFrequency: "daily" as const,
     priority: 0.8,

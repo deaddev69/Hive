@@ -583,21 +583,21 @@ export const Navbar: React.FC = () => {
               <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-stone-400">Categories</p>
               <div className="flex flex-col gap-3 pl-1">
                 <Link
-                  href="/products?category=women"
+                  href="/products/women"
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-[13px] font-medium text-stone-850 hover:text-hive-gold active:text-hive-gold transition-colors"
                 >
                   Women
                 </Link>
                 <Link
-                  href="/products?category=men"
+                  href="/products/men"
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-[13px] font-medium text-stone-850 hover:text-hive-gold active:text-hive-gold transition-colors"
                 >
                   Men
                 </Link>
                 <Link
-                  href="/products?category=sale"
+                  href="/products/sale"
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-[13px] font-medium text-red-500 hover:text-red-650 transition-colors"
                 >
@@ -827,7 +827,7 @@ export const Navbar: React.FC = () => {
                         key={subcat._id}
                         type="button"
                         onClick={() => {
-                          router.push(`/products?category=${subcat.slug}`);
+                          router.push(`/products/${subcat.slug}`);
                           setSearchOpen(false);
                         }}
                         className="flex flex-col items-center gap-2 flex-shrink-0 group cursor-pointer"

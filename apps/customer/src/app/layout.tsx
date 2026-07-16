@@ -11,9 +11,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://hivenow.in"),
   title: {
     template: "%s | Hive",
-    default: "Hive | Shop Your City's Fashion Instantly",
+    default: "Hive | Premium Fashion Delivery in Ernakulam",
   },
   description: "Your city's premium fashion stores, unified in one place. Shop local, delivered in hours.",
   icons: {
