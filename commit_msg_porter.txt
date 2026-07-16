@@ -1,0 +1,6 @@
+feat: integrate Porter 2W API for hyperlocal delivery
+
+- Added convex/lib/porter.ts with strict types and UAT API integrations for getQuote, createOrder, and cancelOrder.
+- Created dedicated fast-response webhook listener in convex/webhooks/porter.ts with constant-time token verification.
+- Modified orders.ts and dminOrders.ts to automatically schedule createOrder upon store confirmation.
+- Updated dminLogistics.ts state machine to gracefully handle order_reopen backwards state transitions when drivers cancel.

@@ -10,9 +10,9 @@ import { triggerNotification } from "./lib/notifications";
 
 // Provider configuration registry
 export const LOGISTICS_PROVIDERS = {
-  shiprocket: {
-    name: "Shiprocket Same-Day",
-    trackingUrl: (awb: string) => `https://shiprocket.co/track/${awb}`,
+  porter: {
+    name: "Porter Hyperlocal",
+    trackingUrl: (awb: string) => `https://tracking.porter.in/${awb}`,
   },
   manual: {
     name: "Manual Delivery (Boutique Self)",
@@ -94,9 +94,9 @@ const VALID_SHIPMENT_TRANSITIONS: Record<string, string[]> = {
   created: ["pickup_scheduled", "booking_requested", "driver_assigned"],
   booking_requested: ["driver_assigned", "booking_failed", "cancelled"],
   booking_failed: ["booking_requested", "cancelled"],
-  driver_assigned: ["driver_arrived", "picked_up", "in_transit", "cancelled", "pickup_scheduled"],
-  driver_arrived: ["picked_up", "in_transit", "cancelled"],
-  pickup_scheduled: ["driver_assigned", "driver_arrived", "picked_up", "in_transit", "cancelled"],
+  driver_assigned: ["driver_arrived", "picked_up", "in_transit", "cancelled", "pickup_scheduled", "created"],
+  driver_arrived: ["picked_up", "in_transit", "cancelled", "created"],
+  pickup_scheduled: ["driver_assigned", "driver_arrived", "picked_up", "in_transit", "cancelled", "created"],
   picked_up: ["in_transit", "failed", "delivered"],
   in_transit: ["out_for_delivery", "delivered", "failed", "rto_initiated"],
   out_for_delivery: ["delivered", "failed"],
@@ -683,7 +683,9 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
     const orderPatch: any = { updatedAt: now };
 
     if (order) {
-      if (args.status === "pickup_scheduled") {
+      if (args.status === "created") {
+        orderPatch.status = "confirmed";
+      } else if (args.status === "pickup_scheduled") {
         orderPatch.status = "pickup_scheduled";
         orderPatch.pickupScheduledAt = now;
         if (!order.readyForPickupAt) {

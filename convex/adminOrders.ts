@@ -772,7 +772,39 @@ export const updateOrderStatus = mutation({
 
       await ctx.db.patch(args.orderId, { shipmentId });
 
-      // TODO: Wire Porter API here
+      await ctx.scheduler.runAfter(0, internal.lib.porter.createOrder, {
+        orderId: args.orderId,
+        shipmentId: shipmentId,
+        pickupAddress: {
+          street_address1: boutique?.address || "Store",
+          city: boutique?.addressDetails?.city || boutique?.city || "",
+          state: boutique?.addressDetails?.state || boutique?.state || "",
+          pincode: boutique?.addressDetails?.pincode || boutique?.pincode || "",
+          country: "India",
+          lat: boutique?.latitude || 0,
+          lng: boutique?.longitude || 0,
+          contact_details: {
+            name: boutique?.boutiqueName || "Boutique",
+            phone_number: boutique?.phone ? `+91${boutique.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
+          }
+        },
+        dropAddress: {
+          street_address1: order.deliveryAddress.line1 || order.deliveryAddress.formattedAddress || "Home",
+          street_address2: order.deliveryAddress.line2 || order.deliveryAddress.houseNumber || "",
+          landmark: order.deliveryAddress.landmark || "",
+          city: order.deliveryAddress.city || "",
+          state: order.deliveryAddress.state || "",
+          pincode: order.deliveryAddress.pincode || "",
+          country: "India",
+          lat: order.deliveryAddress.lat || 0,
+          lng: order.deliveryAddress.lng || 0,
+          contact_details: {
+            name: (customer as any)?.name || customer?.email || "Customer",
+            phone_number: order.deliveryAddress.phone || customer?.phone ? `+91${(order.deliveryAddress.phone || customer?.phone || "").replace(/\D/g, '').slice(-10)}` : "+910000000000",
+          }
+        },
+        orderNumber: order.orderNumber,
+      });
     }
 
     const targetStatuses = ["confirmed", "packed", "out_for_delivery", "delivered"];
@@ -802,7 +834,14 @@ export const updateOrderStatus = mutation({
     }
 
     if (args.status === "cancelled") {
-      // TODO: wire logistics cancellation here
+      if (order.shipmentId) {
+        const shipment = await ctx.db.get(order.shipmentId);
+        if (shipment && shipment.provider === "porter" && shipment.awbNumber) {
+          await ctx.scheduler.runAfter(0, internal.lib.porter.cancelOrder, {
+            crn: shipment.awbNumber,
+          });
+        }
+      }
 
       const boutique = await ctx.db.get(order.boutiqueId);
       const isWhatsAppEnabled = boutique?.whatsAppNotificationsEnabled ?? true;

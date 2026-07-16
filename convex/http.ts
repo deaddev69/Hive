@@ -3,6 +3,7 @@ import { httpAction } from "./_generated/server";
 import { handleClerkWebhook } from "./webhooks/clerk";
 import { handleRazorpayWebhook } from "./webhooks/razorpay";
 import { handleLogisticsWebhook } from "./webhooks/logistics";
+import { handlePorterWebhook } from "./webhooks/porter";
 
 const http = httpRouter();
 
@@ -24,12 +25,20 @@ http.route({
 
 
 
-// Logistics provider webhook (Delhivery / Shiprocket)
+// Logistics provider webhook (Delhivery / Porter)
 // POST /webhooks/logistics
 http.route({
   path: "/webhooks/logistics",
   method: "POST",
   handler: handleLogisticsWebhook,
+});
+
+// Porter Logistics webhook
+// POST /webhooks/porter
+http.route({
+  path: "/webhooks/porter",
+  method: "POST",
+  handler: handlePorterWebhook,
 });
 
 // Health check

@@ -1,6 +1,0 @@
-refactor: purge Shiprocket logistics integration
-
-- Removed convex/lib/shiprocket.ts and associated tests.
-- Stripped Shiprocket tokens and provider unions from schema.ts.
-- Removed Shiprocket cron jobs, webhooks, and routing serviceability checks.
-- Temporarily disabled dispatch triggers in orders.ts and dminOrders.ts in preparation for new logistics provider.

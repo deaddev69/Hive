@@ -1,5 +1,5 @@
 // convex/webhooks/logistics.ts
-// Unified logistics webhook handler for processing Delhivery / Shiprocket / Porter updates.
+// Unified logistics webhook handler for processing Delhivery / Porter updates.
 // Enforces strict secret verification and fails closed in production.
 
 import { httpAction } from "../_generated/server";
