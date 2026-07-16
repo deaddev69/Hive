@@ -79,6 +79,6 @@ export default async function ProductOrCategoryPage({ params }: Props) {
   }
 
   return (
-    <ProductDetailPageClient initialProduct={initialProduct} />
+    <ProductDetailPageClient product={initialProduct} />
   );
 }
