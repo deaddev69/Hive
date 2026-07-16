@@ -23,12 +23,12 @@ const BoutiqueMap = dynamic(() => import("@/components/BoutiqueMap"), {
 export default function EditBoutiquePage() {
   const params = useParams();
   const router = useRouter();
-  const boutiqueId = params.id as string;
+  const boutiqueId = params?.id as string | undefined;
 
   console.log("[EditBoutiquePage] Initialized with boutiqueId:", boutiqueId);
 
   // Fetch boutique details
-  const boutique = useQuery(api.boutiques.getBoutiqueById, { id: boutiqueId as any });
+  const boutique = useQuery(api.boutiques.getBoutiqueById, boutiqueId ? { id: boutiqueId as any } : "skip");
   const updateBoutique = useMutation(api.boutiques.updateBoutique);
 
   // Form State
