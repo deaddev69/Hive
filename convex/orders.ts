@@ -1197,7 +1197,7 @@ export const updateBoutiqueOrderStatus = mutation({
 
     // Wire Shiprocket booking here
     // TODO: Swap to Porter integration once migration is complete. Shifted to 'confirmed' for 3-hour SLA buffer.
-    if (args.status === "confirmed") {
+    if (args.status === "confirmed" && !order.shipmentId) {
       const customer = await ctx.db.get(order.customerId);
       const shipmentId = await ctx.db.insert("shipments", {
         orderId: args.orderId,

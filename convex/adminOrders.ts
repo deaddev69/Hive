@@ -737,7 +737,7 @@ export const updateOrderStatus = mutation({
       await markOrderFinanciallyDelivered(ctx, args.orderId, now);
     }
 
-    if (args.status === "packed") {
+    if (args.status === "confirmed" && !order.shipmentId) {
       // 1. Create a shipment record first
       const boutique = await ctx.db.get(order.boutiqueId);
       const customer = await ctx.db.get(order.customerId);
