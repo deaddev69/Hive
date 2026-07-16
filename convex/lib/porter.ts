@@ -2,8 +2,11 @@ import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 
-const PORTER_BASE_URL = "https://pfe-apigw-uat.porter.in/v1";
-
+const getPorterBaseUrl = () => {
+  const url = process.env.PORTER_API_URL;
+  if (!url) throw new Error("Missing PORTER_API_URL environment variable.");
+  return url;
+};
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
 export interface AddressLatLng {
@@ -85,7 +88,7 @@ export const getQuote = internalAction({
       },
     };
 
-    const res = await fetch(`${PORTER_BASE_URL}/get_quote`, {
+    const res = await fetch(`${getPorterBaseUrl()}/v1/get_quote`, {
       method: "POST",
       headers: getPorterHeaders(),
       body: JSON.stringify(payload),
@@ -130,7 +133,7 @@ export const createOrder = internalAction({
       }
     };
 
-    const res = await fetch(`${PORTER_BASE_URL}/orders/create`, {
+    const res = await fetch(`${getPorterBaseUrl()}/v1/orders/create`, {
       method: "POST",
       headers: getPorterHeaders(),
       body: JSON.stringify(payload),
@@ -164,7 +167,7 @@ export const cancelOrder = internalAction({
     crn: v.string(),
   },
   handler: async (ctx, args) => {
-    const res = await fetch(`${PORTER_BASE_URL}/orders/${args.crn}/cancel`, {
+    const res = await fetch(`${getPorterBaseUrl()}/v1/orders/${args.crn}/cancel`, {
       method: "POST",
       headers: getPorterHeaders(),
     });
@@ -189,7 +192,7 @@ export const simulateUATFlow = internalAction({
       flow_type: args.flowType,
     };
 
-    const res = await fetch(`${PORTER_BASE_URL}/simulation/initiate_order_flow`, {
+    const res = await fetch(`${getPorterBaseUrl()}/v1/simulation/initiate_order_flow`, {
       method: "POST",
       headers: getPorterHeaders(),
       body: JSON.stringify(payload),
