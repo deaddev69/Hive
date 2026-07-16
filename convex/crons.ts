@@ -45,11 +45,6 @@ crons.hourly(
   internal.media.cleanup.cleanupOrphans
 );
 
-// Reconcile stuck shipments daily at 2am IST (20:30 UTC)
-crons.daily(
-  "reconcile_stuck_shipments",
-  { hourUTC: 20, minuteUTC: 30 },
-  internal.lib.shiprocket.reconcileStuckShipments
-);
+
 
 export default crons;

@@ -326,49 +326,7 @@ export async function calculateDeliveryQuoteAction(
     };
   }
 
-  // Distance is <= 15km, try Shiprocket Serviceability API for rates
-  if (args.userPincode && boutique.addressDetails?.pincode) {
-    try {
-      const srQuote: any = await ctx.runAction(api.lib.shiprocket.checkServiceability, {
-        pickup_postcode: boutique.addressDetails.pincode,
-        delivery_postcode: args.userPincode,
-        weight: 0.5, // TODO: Pull weight from product schema
-        cod: 0,
-        is_new_hyperlocal: true,
-        lat_from: boutique.latitude,
-        long_from: boutique.longitude,
-        lat_to: args.userLat,
-        long_to: args.userLng,
-      });
-
-      if (srQuote && srQuote.serviced) {
-        const thresholdRupees = (boutique.freeDeliveryThreshold && boutique.freeDeliveryThreshold >= 10000)
-          ? boutique.freeDeliveryThreshold
-          : 10000;
-        const finalFeePaise = args.subtotal >= thresholdRupees ? 0 : srQuote.customerPaidFee;
-
-        return {
-          serviceable: true,
-          distanceKm,
-          durationMin,
-          etaMinutes: Math.round(durationMin + (boutique.averagePrepTime ?? 30)),
-          customerPaidFee: finalFeePaise, // paise (0 if subtotal >= threshold)
-          estimatedCourierCost: srQuote.customerPaidFee,
-          courierName: srQuote.courierName,
-          quotedAt: srQuote.quotedAt,
-          estimatedDeliveryDate: srQuote.estimatedDeliveryDate,
-          isCached: false,
-        };
-      } else if (srQuote && !srQuote.serviced) {
-        console.warn(`[calculateDeliveryQuote] Shiprocket cannot service pincode ${args.userPincode}, falling back to internal hyperlocal pricing.`);
-        // Do nothing, let it fall through to internal pricing
-      }
-    } catch (err) {
-      console.error("[calculateDeliveryQuote] Shiprocket API failed, falling back to internal pricing", err);
-    }
-  }
-
-  // Fallback to internal pricing logic if Shiprocket errored out or returned no serviceability
+  // Strict reliance on internal hyperlocal pricing
 
   const subtotalRupees = args.subtotal; // args.subtotal is now passed in rupees
   

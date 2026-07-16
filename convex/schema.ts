@@ -768,17 +768,11 @@ export default defineSchema({
     .index("by_regionId_date",   ["regionId", "date"])
     .index("by_date",            ["date"])
     .index("by_regionId_active", ["regionId", "isActive"]),
-  // ─── SHIPROCKET TOKENS ────────────────────────────────────────────────────
-  shiprocketTokens: defineTable({
-    token: v.string(),
-    issuedAt: v.number(),
-    expiresAt: v.number(),
-  }),
 
   // ─── SHIPMENTS ────────────────────────────────────────────────────────────
   shipments: defineTable({
     orderId:            v.id("orders"),
-    provider:           v.string(),                 // "delhivery" | "shiprocket"
+    provider:           v.string(),                 // "porter"
     awbNumber:          v.string(),
     providerShipmentId: v.optional(v.string()),
     retryCount:         v.optional(v.number()),

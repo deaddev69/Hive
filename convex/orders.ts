@@ -1201,7 +1201,7 @@ export const updateBoutiqueOrderStatus = mutation({
       const customer = await ctx.db.get(order.customerId);
       const shipmentId = await ctx.db.insert("shipments", {
         orderId: args.orderId,
-        provider: "shiprocket",
+        provider: "porter",
         status: "created",
         awbNumber: "",
         trackingUrl: "",
@@ -1229,10 +1229,7 @@ export const updateBoutiqueOrderStatus = mutation({
 
       await ctx.db.patch(args.orderId, { shipmentId });
 
-      await ctx.scheduler.runAfter(0, internal.lib.shiprocket.dispatchOrder, {
-        orderId: args.orderId,
-        shipmentId: shipmentId,
-      });
+      // TODO: Wire Porter API here
     }
 
     const targetStatuses = ["confirmed", "packed", "out_for_delivery", "delivered"];

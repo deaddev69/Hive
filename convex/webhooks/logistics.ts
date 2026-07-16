@@ -25,8 +25,8 @@ export const handleLogisticsWebhook = httpAction(async (ctx, request) => {
     return new Response("Webhook secret not configured", { status: 500 });
   }
 
-  // Retrieve credentials from header (supporting custom signature header, token header, or Shiprocket x-api-key)
-  const signature = request.headers.get("x-logistics-signature") || request.headers.get("authorization") || request.headers.get("x-api-key");
+  // Retrieve credentials from header (supporting custom signature header, or token header)
+  const signature = request.headers.get("x-logistics-signature") || request.headers.get("authorization");
   if (!signature) {
     console.error("[LogisticsWebhook] Missing signature or authorization header.");
     return new Response("Unauthorized", { status: 401 });
@@ -45,14 +45,14 @@ export const handleLogisticsWebhook = httpAction(async (ctx, request) => {
     return new Response("Invalid JSON payload", { status: 400 });
   }
 
-  // Determine if it's a Shiprocket payload by checking specific fields
+
   let awbNumber = payload.awbNumber || payload.awb;
   if (awbNumber) awbNumber = String(awbNumber); // Ensure string
   
   let rawStatus = payload.status || payload.current_status || payload.shipment_status;
   let status = rawStatus;
   
-  // Map Shiprocket string/numeric statuses to our internal enum
+  // Map string/numeric statuses to our internal enum
   if (rawStatus !== undefined && rawStatus !== null) {
     const s = String(rawStatus).toLowerCase();
     let mapped = true;
@@ -65,11 +65,6 @@ export const handleLogisticsWebhook = httpAction(async (ctx, request) => {
     else if (s.includes("rto delivered")) status = "rto_delivered";
     else if (s.includes("cancel")) status = "cancelled";
     else if (s.includes("failed")) status = "failed";
-    // Add common Shiprocket numeric status IDs if known, else log
-    else if (s === "7") status = "delivered"; 
-    else if (s === "6") status = "picked_up";
-    else if (s === "17") status = "out_for_delivery";
-    else if (s === "18") status = "in_transit";
     else mapped = false;
 
     if (!mapped) {
@@ -86,16 +81,7 @@ export const handleLogisticsWebhook = httpAction(async (ctx, request) => {
     return new Response("Missing awbNumber or status", { status: 400 });
   }
 
-  // Intercept dummy test payloads from Shiprocket dashboard to avoid DB mutation errors
-  if (awbNumber === "123456" || awbNumber.toLowerCase().includes("test")) {
-    console.log(`[LogisticsWebhook] Received dummy test webhook for AWB: ${awbNumber}. Returning 200 OK.`);
-    return new Response(JSON.stringify({ success: true, message: "Test webhook received successfully." }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Deduplicate scans based on timestamp/status (to append safely if Shiprocket sends partial history)
+  // Deduplicate scans based on timestamp/status (to append safely if provider sends partial history)
   try {
     await ctx.runMutation(internal.adminLogistics.processLogisticsStatusUpdateInternal, {
       awbNumber,
