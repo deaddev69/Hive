@@ -13,7 +13,9 @@ import {
   Calendar,
   FileDown,
   Receipt,
-  FileText
+  FileText,
+  CheckCircle2,
+  XCircle
 } from "lucide-react";
 
 // ── Invoice download cell ────────────────────────────────────────────────────
@@ -89,6 +91,57 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
 // Removed getStatusSelectClass as we will use a standard dropdown style now.
 
 // ── Boutique Orders Page ──────────────────────────────────────────────────────
+// ── Order Status Badge Component ───────────────────────────────────────────────
+const OrderStatusBadge = ({ status }: { status: string }) => {
+  // 1. Active Logistics States (Pulsing Dot)
+  if (["waiting_for_rider", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery"].includes(status) || status === "confirmed" || status === "packed") {
+    return (
+      <div className="flex items-center justify-center w-full py-3 bg-white border border-gray-200 rounded-full shadow-sm">
+        <span className="relative flex h-2.5 w-2.5 mr-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+        </span>
+        <span className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
+          {(status === 'confirmed' || status === 'packed') ? 'Waiting for Rider' : status.replace(/_/g, " ")}
+        </span>
+      </div>
+    );
+  }
+
+  // 2. Delivered State (Solid Green + Icon)
+  if (status === "delivered") {
+    return (
+      <div className="flex items-center justify-center w-full py-3 bg-white border border-gray-200 rounded-full shadow-sm">
+        <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-500" strokeWidth={2.5} />
+        <span className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
+          Delivered
+        </span>
+      </div>
+    );
+  }
+
+  // 3. Cancelled State (Solid Red + Icon)
+  if (status === "cancelled") {
+    return (
+      <div className="flex items-center justify-center w-full py-3 bg-white border border-gray-200 rounded-full shadow-sm">
+        <XCircle className="w-4 h-4 mr-2 text-red-500" strokeWidth={2.5} />
+        <span className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
+          Cancelled
+        </span>
+      </div>
+    );
+  }
+
+  // Fallback for any other locked states
+  return (
+    <div className="flex items-center justify-center w-full py-3 bg-gray-50 border border-gray-200 rounded-full">
+      <span className="text-sm font-semibold text-gray-500 tracking-wide uppercase">
+        {status.replace(/_/g, " ")}
+      </span>
+    </div>
+  );
+};
+
 export default function BoutiqueOrders() {
   const orders = useQuery(api.orders.getBoutiqueOrders);
   const updateStatus = useMutation(api.orders.updateBoutiqueOrderStatus);
@@ -246,15 +299,7 @@ export default function BoutiqueOrders() {
                           </button>
                         </div>
                       ) : (
-                        <div className={`w-full px-3 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider text-center border shadow-sm ${
-                          order.status === 'cancelled' ? 'bg-rose-50 text-rose-700 border-rose-200/60' : 
-                          order.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' :
-                          (order.status === 'confirmed' || order.status === 'packed') ? 'bg-amber-50 text-amber-700 border-amber-200/60' :
-                          'bg-blue-50 text-blue-700 border-blue-200/60'
-                        }`}>
-                          {(order.status === 'confirmed' || order.status === 'packed') ? 'Waiting for Rider' : 
-                           order.status.replace(/_/g, ' ')}
-                        </div>
+                        <OrderStatusBadge status={order.status} />
                       )}
                       
                       {(order.status === "confirmed" || order.status === "packed") && order.shipmentStatus === "booking_failed" && (
