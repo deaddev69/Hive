@@ -140,7 +140,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
   const isSoldOut = hydrated && product.stockBySize && Object.values(product.stockBySize).reduce((sum, val) => sum + (val || 0), 0) <= 0;
 
   return (
-    <div className="relative w-full flex flex-col group select-none bg-white rounded-xl border border-black/[0.06] overflow-hidden transition-all duration-300">
+    <div className="relative w-full h-full flex flex-col group select-none bg-white rounded-xl border border-black/[0.06] overflow-hidden transition-all duration-300">
       
       {/* ── Image area (4:5 Aspect Ratio, reduced height) ── */}
       <div className="relative w-full aspect-[4/5] overflow-hidden bg-stone-50 rounded-t-xl transform translate-z-0" style={{ aspectRatio: "4/5" }}>
