@@ -257,7 +257,7 @@ export default function BoutiqueOrders() {
                         </div>
                       )}
                       
-                      {order.shipmentStatus === "booking_failed" && (
+                      {(order.status === "confirmed" || order.status === "packed") && order.shipmentStatus === "booking_failed" && (
                         <button
                           onClick={() => setRetryDispatchOrderId(order._id)}
                           className="mt-2 block w-full px-2.5 py-1.5 bg-rose-50 text-rose-700 text-[9px] font-extrabold uppercase tracking-wider rounded-xl border border-rose-200/40 hover:bg-rose-100/40 transition-all duration-150 text-center select-none"
