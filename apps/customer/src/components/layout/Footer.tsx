@@ -53,6 +53,12 @@ export const Footer: React.FC = () => {
 
           </div>
 
+          {/* SEO Service Areas (Kept subtle for design, present for Local SEO) */}
+          <div className="w-full text-center md:text-left text-[9px] text-hive-cream/30 font-medium leading-relaxed pb-1 border-b border-[#25211B]/50 mb-2">
+            <span className="text-hive-cream/40 mr-1">Areas We Serve in Ernakulam:</span> 
+            Kakkanad | Edappally | Panampilly Nagar | MG Road | Kadavanthra | Kaloor | Vyttila | Palarivattom | Thrippunithura | Marine Drive | and nearby neighborhoods
+          </div>
+
           {/* Bottom copyright row */}
           <div className="flex flex-row justify-between items-center w-full text-[10px] text-hive-cream/35 font-medium tracking-wide">
             <span>© {new Date().getFullYear()} Hive</span>

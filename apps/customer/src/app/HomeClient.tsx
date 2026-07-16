@@ -893,15 +893,7 @@ export function HomeClient() {
       {/* ── THE HIVE DIFFERENCE (TRUST STRIP) ── */}
       <TrustStrip />
 
-      {/* ── LOCAL SEO: AREAS WE SERVE ── */}
-      <section className="bg-slate-50 py-12 border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
-          <h2 className="text-xl font-bold font-serif text-hive-dark mb-4">Areas We Serve in Ernakulam</h2>
-          <p className="text-sm text-hive-text-muted leading-relaxed max-w-4xl mx-auto">
-            Hive delivers premium fashion across Ernakulam including Kakkanad, Edappally, Panampilly Nagar, MG Road, Kadavanthra, Kaloor, Vyttila, Palarivattom, Thrippunithura, Marine Drive, and nearby neighborhoods. Discover local boutiques and get your fashion delivered on the exact same day.
-          </p>
-        </div>
-      </section>
+
 
       <style>{`
         .banner-card {
