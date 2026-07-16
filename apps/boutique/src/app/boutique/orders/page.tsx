@@ -107,7 +107,7 @@ export default function BoutiqueOrders() {
   const retryDispatch = useAction(api.orders.retryBoutiqueOrderDispatch);
   const [retryingOrderId, setRetryingOrderId] = React.useState<string | null>(null);
   const [pendingActionId, setPendingActionId] = React.useState<string | null>(null);
-  const [decliningOrderId, setDecliningOrderId] = React.useState<string | null>(null);
+  const [orderToDecline, setOrderToDecline] = React.useState<string | null>(null);
   const [cancelReason, setCancelReason] = React.useState<string>("");
 
   if (orders === undefined) {
@@ -130,7 +130,7 @@ export default function BoutiqueOrders() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
-              <thead>
+              <thead className="hidden md:table-header-group">
                 <tr className="bg-[#FAF6F0]/60 border-b border-hive-border/30 text-[10px] font-extrabold uppercase tracking-wider text-[#A89A7E] select-none">
                   <th className="px-6 py-4">Order No.</th>
                   <th className="px-6 py-4">Delivery Slot / Date</th>
@@ -143,18 +143,20 @@ export default function BoutiqueOrders() {
               </thead>
               <tbody className="divide-y divide-hive-border/30 font-semibold text-hive-dark">
                 {orders.map((order: any) => (
-                  <tr key={order._id} className="hover:bg-slate-50/30 transition-colors">
+                  <tr key={order._id} className="flex flex-col md:table-row bg-white border-b border-hive-border/30 mb-4 md:mb-0 hover:bg-slate-50/30 transition-colors p-4 md:p-0">
                     {/* Order Number */}
-                    <td className="px-6 py-4">
+                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
                       <div className="flex flex-col gap-1">
+                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Order No.</span>
                         <span className="font-mono font-bold text-sm text-slate-700">{order.orderNumber}</span>
                         <span className="text-[10px] text-hive-text-muted">ID: {order._id}</span>
                       </div>
                     </td>
 
                     {/* Date */}
-                    <td className="px-6 py-4 text-left">
+                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
                       <div className="flex flex-col gap-1.5 text-slate-700">
+                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Delivery Slot / Date</span>
                         <div className="flex items-center gap-1.5">
                           <Calendar className="w-4 h-4 text-hive-amber flex-shrink-0" />
                           <span>{new Date(order.createdAt).toLocaleDateString()}</span>
@@ -168,8 +170,9 @@ export default function BoutiqueOrders() {
                     </td>
 
                     {/* Customer Details (delivery address as proxy) */}
-                    <td className="px-6 py-4 text-left">
+                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
                       <div className="flex flex-col gap-1">
+                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Customer Details</span>
                         <span className="font-bold text-hive-dark">{order.deliveryAddress.label || "Customer Address"}</span>
                         <span className="text-hive-text-muted leading-tight max-w-xs truncate">
                           {order.deliveryAddress.line1}, {order.deliveryAddress.city}
@@ -179,8 +182,9 @@ export default function BoutiqueOrders() {
                     </td>
 
                     {/* Items */}
-                    <td className="px-6 py-4 text-left">
+                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
                       <div className="flex flex-col gap-2">
+                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Purchased Items</span>
                         {order.items.map((it: any) => (
                           <div key={it._id} className="flex items-center gap-2">
                             <div className="relative w-8 h-10 rounded border border-slate-100 overflow-hidden bg-slate-50 flex-shrink-0">
@@ -201,99 +205,49 @@ export default function BoutiqueOrders() {
                     </td>
 
                     {/* Total */}
-                    <td className="px-6 py-4 font-bold text-sm">
+                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 font-bold text-sm border-t md:border-t-0 border-hive-border/10">
+                      <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-1">Total Amount</span>
                       <span>{formatCurrency(order.total)}</span>
                     </td>
 
                     {/* Invoice — NEW */}
-                    <td className="px-6 py-4">
+                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 border-t md:border-t-0 border-hive-border/10">
+                      <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-1">Invoice</span>
                       <BoutiqueInvoiceCell orderId={order._id} />
                     </td>
 
                     {/* Status updater */}
-                    <td className="px-6 py-4 min-w-[160px]">
+                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 min-w-[160px] border-t md:border-t-0 border-hive-border/10">
+                      <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-2">Order Status</span>
                       {order.status === "pending_confirmation" ? (
-                        decliningOrderId === order._id ? (
-                          <div className="flex flex-col gap-2 bg-rose-50 p-2 rounded-xl border border-rose-100">
-                            <span className="text-[9px] text-rose-700 font-bold leading-tight">
-                              Declining this order will initiate a refund to the customer and cannot be undone.
-                            </span>
-                            <input 
-                              type="text" 
-                              placeholder="Reason (e.g. Out of stock)" 
-                              value={cancelReason}
-                              onChange={(e) => setCancelReason(e.target.value)}
-                              className="px-2 py-1.5 border border-rose-200 rounded-md text-[10px] focus:outline-none focus:border-rose-400 bg-white placeholder:text-rose-300"
-                            />
-                            <div className="flex gap-1.5">
-                              <button
-                                onClick={async () => {
-                                  if (!cancelReason.trim()) {
-                                    alert("Please provide a reason for declining.");
-                                    return;
-                                  }
-                                  setPendingActionId(order._id);
-                                  try {
-                                    await updateStatus({
-                                      orderId: order._id,
-                                      status: "cancelled",
-                                      cancelReason: cancelReason.trim(),
-                                    });
-                                  } catch (err: any) {
-                                    alert("Failed to decline order: " + err.message);
-                                  } finally {
-                                    setPendingActionId(null);
-                                    setDecliningOrderId(null);
-                                    setCancelReason("");
-                                  }
-                                }}
-                                disabled={pendingActionId === order._id}
-                                className="px-2 py-1.5 bg-rose-600 text-white rounded-md text-[9px] font-bold hover:bg-rose-700 disabled:opacity-50 flex-1 transition-colors whitespace-nowrap"
-                              >
-                                {pendingActionId === order._id ? "Processing..." : "Confirm Decline"}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setDecliningOrderId(null);
-                                  setCancelReason("");
-                                }}
-                                disabled={pendingActionId === order._id}
-                                className="px-2 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-md text-[9px] font-bold hover:bg-rose-50 disabled:opacity-50 transition-colors"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-2">
-                            <button
-                              onClick={async () => {
-                                setPendingActionId(order._id);
-                                try {
-                                  await updateStatus({
-                                    orderId: order._id,
-                                    status: "confirmed",
-                                  });
-                                } catch (err: any) {
-                                  alert("Failed to accept order: " + err.message);
-                                } finally {
-                                  setPendingActionId(null);
-                                }
-                              }}
-                              disabled={pendingActionId === order._id}
-                              className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-50 shadow-sm transition-all"
-                            >
-                              {pendingActionId === order._id ? "Accepting..." : "Accept Order"}
-                            </button>
-                            <button
-                              onClick={() => setDecliningOrderId(order._id)}
-                              disabled={pendingActionId === order._id}
-                              className="px-3 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-rose-50 disabled:opacity-50 shadow-sm transition-all"
-                            >
-                              Decline Order
-                            </button>
-                          </div>
-                        )
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={async () => {
+                              setPendingActionId(order._id);
+                              try {
+                                await updateStatus({
+                                  orderId: order._id,
+                                  status: "confirmed",
+                                });
+                              } catch (err: any) {
+                                alert("Failed to accept order: " + err.message);
+                              } finally {
+                                setPendingActionId(null);
+                              }
+                            }}
+                            disabled={pendingActionId === order._id}
+                            className="px-3 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-50 shadow-sm transition-all"
+                          >
+                            {pendingActionId === order._id ? "Accepting..." : "Accept Order"}
+                          </button>
+                          <button
+                            onClick={() => setOrderToDecline(order._id)}
+                            disabled={pendingActionId === order._id}
+                            className="px-3 py-1.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-rose-50 disabled:opacity-50 shadow-sm transition-all"
+                          >
+                            Decline Order
+                          </button>
+                        </div>
                       ) : (
                         <select
                           value={order.status}
@@ -361,6 +315,74 @@ export default function BoutiqueOrders() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Full-Screen Decline Modal */}
+      {orderToDecline !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+            <div>
+              <h3 className="text-lg font-black text-hive-dark">Decline Order</h3>
+              <p className="text-xs font-bold text-rose-600 mt-1">
+                Declining this order will initiate a refund to the customer and cannot be undone.
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="cancelReason" className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                Reason for declining
+              </label>
+              <input 
+                id="cancelReason"
+                type="text" 
+                placeholder="e.g. Out of stock, Store closing" 
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400 bg-slate-50 transition-colors"
+                autoFocus
+              />
+            </div>
+            
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={async () => {
+                  if (!cancelReason.trim()) {
+                    alert("Please provide a reason for declining.");
+                    return;
+                  }
+                  setPendingActionId(orderToDecline);
+                  try {
+                    await updateStatus({
+                      orderId: orderToDecline as Id<"orders">,
+                      status: "cancelled",
+                      cancelReason: cancelReason.trim(),
+                    });
+                  } catch (err: any) {
+                    alert("Failed to decline order: " + err.message);
+                  } finally {
+                    setPendingActionId(null);
+                    setOrderToDecline(null);
+                    setCancelReason("");
+                  }
+                }}
+                disabled={pendingActionId === orderToDecline}
+                className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black hover:bg-rose-700 disabled:opacity-50 transition-colors"
+              >
+                {pendingActionId === orderToDecline ? "Processing..." : "Confirm Decline"}
+              </button>
+              <button
+                onClick={() => {
+                  setOrderToDecline(null);
+                  setCancelReason("");
+                }}
+                disabled={pendingActionId === orderToDecline}
+                className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
