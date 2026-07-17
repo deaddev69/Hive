@@ -22,19 +22,14 @@ export async function calculateItemFinancials(
     platformFeeRate: 0.02,
   };
 
-  const basePriceAtPurchase = productRow.basePrice; // in paise
+  const basePriceRupees = productRow.basePrice;
   const platformMarkupRateAtPurchase = settings.markupRate;
   const platformFeeRateAtPurchase = settings.platformFeeRate;
   
-  // Re-calculate the exact customer price dynamically.
-  // Note: if there is a discountPrice, we should apply markup on discountPrice? 
-  // Wait, if a boutique sets a discountPrice, they are discounting their basePrice. 
-  // Let's assume the active base price is basePrice. If discountPrice exists, it's a legacy field, but in the new model 
-  // boutiques might still set a discount price. For now, we use basePrice.
-  // Actually, let's check if the product has a baseDiscountPrice. They don't. 
-  // So basePrice is the source of truth.
-  
-  const expectedCustomerPricePaise = Math.floor(basePriceAtPurchase * (1 + platformMarkupRateAtPurchase));
+  // Re-calculate the exact customer price dynamically using Charm Pricing (Nearest 9)
+  const rawCustomerPriceRupees = basePriceRupees * (1 + platformMarkupRateAtPurchase);
+  const customerPriceRupees = Math.ceil(rawCustomerPriceRupees / 10) * 10 - 1;
+  const expectedCustomerPricePaise = Math.round(customerPriceRupees * 100);
   
   // Validate against client-provided price (in paise) to prevent manipulation and handle stale carts.
   // A threshold of 100 paise (1 Rupee) allows for minor fractional rounding differences.
@@ -45,17 +40,19 @@ export async function calculateItemFinancials(
     });
   }
 
-  const platformMarkupAmount = Math.floor(basePriceAtPurchase * platformMarkupRateAtPurchase);
-  const platformFeeAmount = Math.floor(basePriceAtPurchase * platformFeeRateAtPurchase);
+  // The platform takes the entire markup amount (difference between customer price and base price)
+  const platformMarkupAmountPaise = Math.round((customerPriceRupees - basePriceRupees) * 100);
+  const platformFeeAmountPaise = Math.round(basePriceRupees * platformFeeRateAtPurchase * 100);
+  const basePriceAtPurchasePaise = Math.round(basePriceRupees * 100);
   
   return {
-    priceAtPurchase: expectedCustomerPricePaise,
-    basePriceAtPurchase,
+    priceAtPurchase: expectedCustomerPricePaise, // in paise
+    basePriceAtPurchase: basePriceAtPurchasePaise, // in paise
     platformMarkupRateAtPurchase,
     platformFeeRateAtPurchase,
-    platformMarkupAmount,
-    platformFeeAmount,
-    subtotal: expectedCustomerPricePaise * quantity,
+    platformMarkupAmount: platformMarkupAmountPaise, // in paise
+    platformFeeAmount: platformFeeAmountPaise, // in paise
+    subtotal: expectedCustomerPricePaise * quantity, // in paise
   };
 }
 
