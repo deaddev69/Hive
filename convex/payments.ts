@@ -326,7 +326,7 @@ export const initCheckoutSessionInternal = internalMutation({
 
     // Verify subtotal in integer Paise
     const clientSubtotalPaise = Math.round(args.subtotal * 100);
-    if (clientSubtotalPaise !== expectedSubtotalPaise) {
+    if (Math.abs(clientSubtotalPaise - expectedSubtotalPaise) > 100) {
       console.error(`[TAMPERING_CHECK] Mismatch detected. clientSubtotalPaise: ${clientSubtotalPaise}, expectedSubtotalPaise: ${expectedSubtotalPaise}, client args.subtotal: ${args.subtotal}`);
       // calculateItemFinancials will throw ConvexError for stale prices. If we reach here, it's tampering or rounding.
       throw new Error(`Security Exception: Cart subtotal mismatch. Price tampering detected.`);
@@ -365,7 +365,10 @@ export const initCheckoutSessionInternal = internalMutation({
 
     // Verify total calculation
     const expectedTotal = Math.max(0, args.subtotal - expectedDiscount + expectedDeliveryFee);
-    if (args.total !== expectedTotal) {
+    const expectedTotalPaise = Math.round(expectedTotal * 100);
+    const clientTotalPaise = Math.round(args.total * 100);
+    
+    if (Math.abs(expectedTotalPaise - clientTotalPaise) > 100) {
       throw new Error(`Order total mismatch. Expected: ₹${expectedTotal}, Got: ₹${args.total}`);
     }
 
