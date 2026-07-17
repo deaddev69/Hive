@@ -556,37 +556,23 @@ export default function CreateProductModal({
               categories={categories}
             />
 
-            <div className="grid grid-cols-2 gap-4 mt-1">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-black uppercase tracking-widest text-slate-600">YOUR BASE PRICE (₹) <span className="text-red-500">*</span></label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm"
-                />
-                {price && platformSettings && (
-                  <div className="text-[11px] font-medium text-slate-500 mt-1">
-                    Customer Display Price: <span className="font-bold text-slate-700">₹{Math.floor(parseFloat(price) * (1 + platformSettings.markupRate))}</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-black uppercase tracking-widest text-slate-600">DISCOUNT PRICE (₹)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Optional"
-                  value={discountPrice}
-                  onChange={(e) => setDiscountPrice(e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm"
-                />
-              </div>
+            <div className="flex flex-col gap-1.5 mt-2">
+              <label className="text-[11px] font-black uppercase tracking-widest text-slate-600">YOUR BASE PRICE (₹) <span className="text-red-500">*</span></label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm"
+              />
+              {price && platformSettings && (
+                <div className="text-[11px] font-medium text-slate-500 mt-1">
+                  Customer Display Price: <span className="font-bold text-slate-700">₹{Math.floor(parseFloat(price) * (1 + platformSettings.markupRate))}</span>
+                </div>
+              )}
             </div>
 
             <hr className="border-slate-100 my-4" />
