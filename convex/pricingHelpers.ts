@@ -12,19 +12,19 @@ export async function calculateItemFinancials(
   clientPricePaise: number,
   quantity: number
 ) {
-  if (productRow.basePrice === undefined) {
-    throw new Error(`Product ${productRow._id} has not been migrated to the new pricing model yet.`);
-  }
-
   // Fetch active platform settings
   const settings = await ctx.db.query("platformSettings").first() || {
     markupRate: 0.15,
     platformFeeRate: 0.02,
   };
 
-  const basePriceRupees = productRow.basePrice;
   const platformMarkupRateAtPurchase = settings.markupRate;
   const platformFeeRateAtPurchase = settings.platformFeeRate;
+
+  // Fallback to reverse-calculating basePrice if it's missing (e.g. products created before write-time patching)
+  const basePriceRupees = productRow.basePrice !== undefined 
+    ? productRow.basePrice 
+    : Math.floor(productRow.price / (1 + platformMarkupRateAtPurchase));
   
   // Re-calculate the exact customer price dynamically using Charm Pricing (Nearest 9)
   const rawCustomerPriceRupees = basePriceRupees * (1 + platformMarkupRateAtPurchase);
