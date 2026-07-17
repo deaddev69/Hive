@@ -1020,7 +1020,7 @@ export const createCheckoutSession = action({
     // 1. Initialize checkout records and validate cart details
     const initResult = await ctx.runMutation(paymentsApi.initCheckoutSessionInternal, args);
 
-    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     const isMock = !keySecret || keySecret === "mock_secret";
 
@@ -1486,7 +1486,7 @@ export const retryCheckoutSession = action({
        throw new Error("COD sessions cannot be retried through this payment pipeline.");
     }
 
-    const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     const isMock = !keySecret || keySecret === "mock_secret";
 
