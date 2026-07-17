@@ -440,8 +440,12 @@ export const createProduct = mutation({
     const settings = await ctx.db.query("platformSettings").first();
     const markupRate = settings ? settings.markupRate : 0.15;
     
-    const customerPrice = Math.floor(args.price * (1 + markupRate));
-    const customerDiscountPrice = args.discountPrice ? Math.floor(args.discountPrice * (1 + markupRate)) : undefined;
+    const rawCustomerPrice = args.price * (1 + markupRate);
+    const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
+    
+    const customerDiscountPrice = args.discountPrice 
+      ? Math.ceil((args.discountPrice * (1 + markupRate)) / 10) * 10 - 1 
+      : undefined;
 
     const productId = await ctx.db.insert("products", {
       boutiqueId: boutique._id,
@@ -678,8 +682,12 @@ export const updateProduct = mutation({
     const settings = await ctx.db.query("platformSettings").first();
     const markupRate = settings ? settings.markupRate : 0.15;
     
-    const customerPrice = Math.floor(args.price * (1 + markupRate));
-    const customerDiscountPrice = args.discountPrice ? Math.floor(args.discountPrice * (1 + markupRate)) : undefined;
+    const rawCustomerPrice = args.price * (1 + markupRate);
+    const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
+    
+    const customerDiscountPrice = args.discountPrice 
+      ? Math.ceil((args.discountPrice * (1 + markupRate)) / 10) * 10 - 1 
+      : undefined;
 
     await ctx.db.patch(args.id, {
       name: args.name,

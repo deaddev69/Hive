@@ -571,7 +571,7 @@ export default function CreateProductModal({
               />
               {price && platformSettings && (
                 <div className="text-[11px] font-medium text-slate-500 mt-1">
-                  Customer Display Price: <span className="font-bold text-slate-700">₹{Math.floor(parseFloat(price) * (1 + platformSettings.markupRate))}</span>
+                  Customer Display Price: <span className="font-bold text-slate-700">₹{Math.ceil((parseFloat(price) * (1 + platformSettings.markupRate)) / 10) * 10 - 1}</span>
                 </div>
               )}
             </div>
