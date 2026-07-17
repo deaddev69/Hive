@@ -560,7 +560,15 @@ export default function OrderReviewPage() {
       rzp.open();
     } catch (err: any) {
       console.error("Order session failed:", err);
-      toast.error(err.message || "Failed to initiate transaction. Please try again.");
+      
+      // Self-healing cart UX for stale prices
+      if (err.data?.code === "STALE_CART_PRICE") {
+        toast.error(err.data.message || "Cart prices have been updated. Please review the new total.");
+        // The Convex useQuery will automatically reactively update the UI to show the new prices
+        // based on the Phase 1 background batch updates on the products table.
+      } else {
+        toast.error(err.message || "Failed to initiate transaction. Please try again.");
+      }
       setIsPlacingOrder(false);
       isOrderPlacing.current = false;
     }

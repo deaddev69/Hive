@@ -46,6 +46,12 @@ export const ImageAsset = v.object({
 
 export default defineSchema({
 
+  // ─── PLATFORM SETTINGS ────────────────────────────────────────────────────
+  platformSettings: defineTable({
+    markupRate: v.number(),
+    platformFeeRate: v.number(),
+    updatedAt: v.number(),
+  }),
   // ─── MEDIA UPLOAD SESSIONS ────────────────────────────────────────────────
   uploadSessions: defineTable({
     sessionId: v.string(),           // UUID matching the object key
@@ -391,6 +397,7 @@ export default defineSchema({
     slug:             v.string(),
     description:      v.string(),
     categoryId:       v.id("categories"),
+    basePrice:        v.optional(v.number()),         // The boutique's set price (optional until migration completes)
     price:            v.number(),
     discountPrice:    v.optional(v.number()),
     images:           v.array(v.union(v.string(), ImageAsset)),
@@ -504,6 +511,7 @@ export default defineSchema({
                     ),
     color:          v.optional(v.string()),
     sku:            v.string(),
+    basePrice:      v.optional(v.number()),         // The boutique's set price (optional until migration completes)
     price:          v.number(),                     // paise
     compareAtPrice: v.optional(v.number()),         // MRP in paise
     isActive:       v.boolean(),
@@ -746,6 +754,11 @@ export default defineSchema({
     imageUrl:        v.string(),
     sku:             v.string(),
     priceAtPurchase: v.number(),                    // paise — locked forever
+    basePriceAtPurchase:          v.optional(v.number()),
+    platformMarkupRateAtPurchase: v.optional(v.number()),
+    platformFeeRateAtPurchase:    v.optional(v.number()),
+    platformMarkupAmount:         v.optional(v.number()),
+    platformFeeAmount:            v.optional(v.number()),
     quantity:        v.number(),
     subtotal:        v.number(),                    // paise
   })
@@ -931,6 +944,11 @@ export default defineSchema({
                        boutiqueName: v.string(),
                        size: v.string(),
                        quantity: v.number(),
+                       basePriceAtPurchase: v.optional(v.number()),
+                       platformMarkupRateAtPurchase: v.optional(v.number()),
+                       platformFeeRateAtPurchase: v.optional(v.number()),
+                       platformMarkupAmount: v.optional(v.number()),
+                       platformFeeAmount: v.optional(v.number()),
                      })),
     subtotal:        v.number(),
     deliveryFee:     v.number(),

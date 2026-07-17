@@ -483,6 +483,11 @@ export const processPaymentCaptured = internalMutation({
         imageUrl: item.imageUrl,
         sku: `SKU-${orderNumber}-${item.productId}-${item.size}`,
         priceAtPurchase: item.price,
+        basePriceAtPurchase: (item as any).basePriceAtPurchase,
+        platformMarkupRateAtPurchase: (item as any).platformMarkupRateAtPurchase,
+        platformFeeRateAtPurchase: (item as any).platformFeeRateAtPurchase,
+        platformMarkupAmount: (item as any).platformMarkupAmount,
+        platformFeeAmount: (item as any).platformFeeAmount,
         quantity: item.quantity,
         subtotal: item.price * item.quantity,
       });

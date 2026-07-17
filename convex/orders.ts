@@ -13,6 +13,7 @@ import { internal, api } from "./_generated/api";
 import { checkRateLimit } from "./lib/rateLimit";
 import { assertExists } from "./lib/utils";
 import { calculateDeliveryQuoteAction } from "./routing";
+import { calculateItemFinancials } from "./pricingHelpers";
 import { parseMoney, formatMoney } from "./lib/money";
 import { checkKillSwitch } from "./lib/killSwitches";
 import { validateBoutiqueOperationalLimits } from "./lib/gating";
@@ -291,21 +292,31 @@ export const placeOrder = mutation({
       await validateProductSizeAndStock(ctx.db, item.productId, item.size, item.quantity);
 
       // Recalculate price in integer Paise to prevent price manipulation
-      const activePricePaise = productRow
-        ? Math.round((productRow!.discountPrice ?? productRow!.price) * 100)
-        : Math.round(item.price * 100);
+      let activePricePaise = 0;
+      let financialSnapshot: any = {};
+      
+      if (productRow) {
+        // dynamically fetch global settings and recalculate
+        financialSnapshot = await calculateItemFinancials(ctx, productRow, Math.round(item.price * 100), item.quantity);
+        activePricePaise = financialSnapshot.priceAtPurchase;
+      } else {
+        activePricePaise = Math.round(item.price * 100);
+      }
+      
       expectedSubtotalPaise += activePricePaise * item.quantity;
 
       resolvedItems.push({
         item,
         productRow,
         boutiqueId: boutique._id,
+        financialSnapshot,
       });
     }
 
     // Verify subtotal in integer Paise
     const clientSubtotalPaise = Math.round(args.subtotal * 100);
     if (clientSubtotalPaise !== expectedSubtotalPaise) {
+      // calculateItemFinancials handles STALE_CART_PRICE, so this is just tampering fallback
       throw new Error(`Security Exception: Cart subtotal mismatch. Price tampering detected.`);
     }
 
@@ -490,7 +501,8 @@ export const placeOrder = mutation({
     // Create order items and update inventory
     const anyCategory = await ctx.db.query("categories").first();
 
-    for (const { item, productRow, boutiqueId } of resolvedItems) {
+    for (const { item, productRow, boutiqueId, financialSnapshot } of resolvedItems) {
+      const snap = financialSnapshot || {};
       if (productRow) {
         // Real product found — check stock first
         const currentStock = productRow.stockBySize[item.size] ?? 0;
@@ -531,9 +543,14 @@ export const placeOrder = mutation({
           variantSize:     item.size,
           imageUrl:        item.imageUrl,
           sku:             `SKU-${orderNumber}-${productRow.slug}-${item.size}`,
-          priceAtPurchase: parseMoney(item.price),
+          priceAtPurchase: snap.priceAtPurchase ?? parseMoney(item.price),
+          basePriceAtPurchase: snap.basePriceAtPurchase,
+          platformMarkupRateAtPurchase: snap.platformMarkupRateAtPurchase,
+          platformFeeRateAtPurchase: snap.platformFeeRateAtPurchase,
+          platformMarkupAmount: snap.platformMarkupAmount,
+          platformFeeAmount: snap.platformFeeAmount,
           quantity:        item.quantity,
-          subtotal:        parseMoney(item.price) * item.quantity,
+          subtotal:        (snap.priceAtPurchase ?? parseMoney(item.price)) * item.quantity,
         });
         continue;
       }

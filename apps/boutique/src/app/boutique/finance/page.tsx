@@ -228,8 +228,15 @@ export default function BoutiqueFinance() {
                               <span>{getReleaseDate(s)}</span>
                             )}
                           </td>
-                          <td className={`py-4 px-6 text-right font-extrabold text-sm ${isNegative ? "text-red-500" : "text-slate-800"}`}>
-                            {isNegative ? "-" : ""}{formatCurrency(Math.abs(s.amount) / 100)}
+                          <td className="py-4 px-6 text-right flex flex-col items-end gap-0.5">
+                            <span className={`font-extrabold text-sm ${isNegative ? "text-red-500" : "text-slate-800"}`}>
+                              {isNegative ? "-" : ""}{formatCurrency(Math.abs(s.amount) / 100)}
+                            </span>
+                            {s.snapshotMath && !isNegative && (
+                              <span className="text-[9px] text-slate-400 font-medium whitespace-nowrap">
+                                {formatCurrency(s.snapshotMath.basePrice / 100)} base - {formatCurrency(s.snapshotMath.platformFee / 100)} fee
+                              </span>
+                            )}
                           </td>
                         </tr>
                       );

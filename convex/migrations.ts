@@ -189,3 +189,52 @@ export const backfillBoutiqueSlugs = mutation({
     return `Backfilled slugs for ${backfilledCount} boutiques.`;
   }
 });
+
+/**
+ * Phase 1 Migration: Set basePrice and bump customer price by 15%
+ */
+export const migrateProductPricesPhase1 = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity !== null) {
+      await requireRole(ctx, "admin");
+    }
+
+    // 1. Migrate Products
+    const products = await ctx.db.query("products").collect();
+    let updatedProducts = 0;
+    
+    for (const product of products) {
+      if (product.basePrice === undefined) {
+        const basePrice = product.price; // Treat current price as basePrice
+        const newCustomerPrice = Math.floor(basePrice * 1.15); // Add 15% markup
+        
+        await ctx.db.patch(product._id, {
+          basePrice: basePrice,
+          price: newCustomerPrice,
+        });
+        updatedProducts++;
+      }
+    }
+
+    // 2. Migrate Product Variants
+    const variants = await ctx.db.query("productVariants").collect();
+    let updatedVariants = 0;
+    
+    for (const variant of variants) {
+      if (variant.basePrice === undefined) {
+        const basePrice = variant.price;
+        const newCustomerPrice = Math.floor(basePrice * 1.15);
+        
+        await ctx.db.patch(variant._id, {
+          basePrice: basePrice,
+          price: newCustomerPrice,
+        });
+        updatedVariants++;
+      }
+    }
+
+    return `Successfully migrated ${updatedProducts} products and ${updatedVariants} variants to the new pricing model.`;
+  },
+});

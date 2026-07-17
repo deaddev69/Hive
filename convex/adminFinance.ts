@@ -598,8 +598,13 @@ export async function markOrderFinanciallyDelivered(ctx: any, orderId: any, now:
 
     if (existingCommission) continue;
 
-    const commissionAmount = Math.floor(item.subtotal * (commissionRate / 100));
-    const gstAmount = Math.floor(commissionAmount * 0.18);
+    let commissionAmount = 0;
+    if ((item as any).platformMarkupAmount !== undefined && (item as any).platformFeeAmount !== undefined) {
+      commissionAmount = ((item as any).platformMarkupAmount + (item as any).platformFeeAmount) * item.quantity;
+    } else {
+      commissionAmount = Math.floor(item.subtotal * (commissionRate / 100));
+    }
+    const gstAmount = Math.floor(commissionAmount * 0.18); // GST is calculated on platform revenue
     const netCommission = commissionAmount - gstAmount;
 
     await ctx.db.insert("commissionLedger", {
@@ -922,8 +927,18 @@ export const seedFinanceMockDataAdmin = mutation({
         } else {
           // Proportional calculation step for intermediate items
           const proportionalShare = itemNetSubtotal / netOrderSubtotal;
-          itemCommission = Math.floor(globalPlatformCommission * proportionalShare);
-          itemGst = Math.floor(globalGstOnCommission * proportionalShare);
+          
+          if ((item as any).platformMarkupAmount !== undefined && (item as any).platformFeeAmount !== undefined) {
+             const basePlatformRevenue = ((item as any).platformMarkupAmount + (item as any).platformFeeAmount) * item.quantity;
+             // Platform absorbs discount fully. Boutique gets basePrice - fee.
+             itemCommission = basePlatformRevenue - itemProportionalDiscount;
+             // If discount > markup, platform revenue could technically be negative, clamp to 0 or allow negative?
+             // Usually allow negative to reflect true loss, but let's clamp at 0 for GST logic.
+             itemGst = Math.floor(Math.max(0, itemCommission) * 0.18);
+          } else {
+             itemCommission = Math.floor(globalPlatformCommission * proportionalShare);
+             itemGst = Math.floor(globalGstOnCommission * proportionalShare);
+          }
 
           // Update running sums
           allocatedCommissionSum += itemCommission;

@@ -43,6 +43,7 @@ const NAV_GROUPS = [
       { label: "Users", href: "/admin/users", icon: Users },
       { label: "Categories", href: "/admin/categories", icon: FolderKanban },
       { label: "Banners", href: "/admin/banners", icon: ImageIcon },
+      { label: "Platform Config", href: "/admin/settings", icon: LayoutDashboard },
     ]
   }
 ];

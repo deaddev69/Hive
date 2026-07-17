@@ -1101,15 +1101,46 @@ export const getBoutiqueFinance = query({
     const settlementsWithOrders = [];
     for (const s of sortedSettlements) {
       let orderNumber = undefined;
+      let snapshotMath = undefined;
+      
       if (s.orderId) {
         const order = await ctx.db.get(s.orderId);
         if (order) {
           orderNumber = order.orderNumber;
+          
+          // Fetch order items to calculate snapshot math for this boutique
+          const orderItems = await ctx.db
+            .query("orderItems")
+            .withIndex("by_orderId", (q) => q.eq("orderId", s.orderId))
+            .collect();
+            
+          let totalBasePrice = 0;
+          let totalPlatformFee = 0;
+          
+          for (const item of orderItems) {
+            if (item.boutiqueId === boutique._id) {
+              // Ensure we fallback to (item.priceAtPurchase * quantity) if basePrice is missing during transition
+              const base = item.basePriceAtPurchase ? (item.basePriceAtPurchase * item.quantity) : (item.priceAtPurchase * item.quantity);
+              const fee = item.platformFeeAmount || 0;
+              
+              totalBasePrice += base;
+              totalPlatformFee += fee;
+            }
+          }
+          
+          // Only attach snapshotMath if this settlement is an order payout (not an adjustment)
+          if (totalBasePrice > 0) {
+            snapshotMath = {
+              basePrice: totalBasePrice,
+              platformFee: totalPlatformFee
+            };
+          }
         }
       }
       settlementsWithOrders.push({
         ...s,
         orderNumber,
+        snapshotMath,
       });
     }
 

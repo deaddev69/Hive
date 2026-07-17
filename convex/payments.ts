@@ -13,6 +13,7 @@ import { calculateDeliveryFeeRupees } from "./lib/deliveryPricing";
 import { anyApi } from "convex/server";
 import { parseMoney } from "./lib/money";
 import { calculateDeliveryQuoteAction } from "./routing";
+import { calculateItemFinancials, calculateBoutiquePayout } from "./pricingHelpers";
 
 import { checkRateLimit } from "./lib/rateLimit";
 import { triggerNotification } from "./lib/notifications";
@@ -301,9 +302,16 @@ export const initCheckoutSessionInternal = internalMutation({
       }
 
       // Recalculate price in integer Paise to prevent price manipulation
-      const activePricePaise = productRow
-        ? Math.round((productRow.discountPrice ?? productRow.price) * 100)
-        : Math.round(item.price * 100);
+      let activePricePaise = 0;
+      let financialSnapshot: any = {};
+      
+      if (productRow && !isMock) {
+        // dynamically fetch global settings and recalculate
+        financialSnapshot = await calculateItemFinancials(ctx, productRow, Math.round(item.price * 100), item.quantity);
+        activePricePaise = financialSnapshot.priceAtPurchase;
+      } else {
+        activePricePaise = Math.round(item.price * 100);
+      }
         
       expectedSubtotalPaise += activePricePaise * item.quantity;
 
@@ -312,6 +320,7 @@ export const initCheckoutSessionInternal = internalMutation({
         productRow,
         isMock,
         boutiqueId: boutique._id,
+        financialSnapshot,
       });
     }
 
@@ -319,6 +328,7 @@ export const initCheckoutSessionInternal = internalMutation({
     const clientSubtotalPaise = Math.round(args.subtotal * 100);
     if (clientSubtotalPaise !== expectedSubtotalPaise) {
       console.error(`[TAMPERING_CHECK] Mismatch detected. clientSubtotalPaise: ${clientSubtotalPaise}, expectedSubtotalPaise: ${expectedSubtotalPaise}, client args.subtotal: ${args.subtotal}`);
+      // calculateItemFinancials will throw ConvexError for stale prices. If we reach here, it's tampering or rounding.
       throw new Error(`Security Exception: Cart subtotal mismatch. Price tampering detected.`);
     }
 
@@ -400,11 +410,19 @@ export const initCheckoutSessionInternal = internalMutation({
     const discountPaise = parseMoney(args.discount);
     const totalPaise = parseMoney(args.total);
 
-    const itemsParsed = args.items.map((item, index) => ({
-      ...item,
-      productId: resolvedItems[index].productRow?._id ?? item.productId,
-      price: parseMoney(item.price),
-    }));
+    const itemsParsed = args.items.map((item, index) => {
+      const snap = resolvedItems[index].financialSnapshot || {};
+      return {
+        ...item,
+        productId: resolvedItems[index].productRow?._id ?? item.productId,
+        price: snap.priceAtPurchase ?? parseMoney(item.price),
+        basePriceAtPurchase: snap.basePriceAtPurchase,
+        platformMarkupRateAtPurchase: snap.platformMarkupRateAtPurchase,
+        platformFeeRateAtPurchase: snap.platformFeeRateAtPurchase,
+        platformMarkupAmount: snap.platformMarkupAmount,
+        platformFeeAmount: snap.platformFeeAmount,
+      };
+    });
 
     // Save temporary Checkout Session
     const checkoutSessionId = await ctx.db.insert("checkoutSessions", {
@@ -770,6 +788,11 @@ export async function verifyPaymentAndPlaceOrderInternal(
       imageUrl: item.imageUrl,
       sku: `SKU-${orderNumber}-${item.productId}-${item.size}`,
       priceAtPurchase: item.price,
+      basePriceAtPurchase: (item as any).basePriceAtPurchase,
+      platformMarkupRateAtPurchase: (item as any).platformMarkupRateAtPurchase,
+      platformFeeRateAtPurchase: (item as any).platformFeeRateAtPurchase,
+      platformMarkupAmount: (item as any).platformMarkupAmount,
+      platformFeeAmount: (item as any).platformFeeAmount,
       quantity: item.quantity,
       subtotal: item.price * item.quantity,
     });
