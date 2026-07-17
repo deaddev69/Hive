@@ -2,11 +2,6 @@ import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 
-const getPorterBaseUrl = () => {
-  const url = process.env.PORTER_API_URL;
-  if (!url) throw new Error("Missing PORTER_API_URL environment variable.");
-  return url;
-};
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
 export interface AddressLatLng {
@@ -49,16 +44,6 @@ export interface AddressDetails {
 
 // ─── INTERNAL ACTIONS ────────────────────────────────────────────────────────
 
-function getPorterHeaders() {
-  const apiKey = process.env.PORTER_API_KEY || process.env.PORTER_WEBHOOK_SECRET;
-  if (!apiKey) {
-    throw new Error("Missing PORTER_API_KEY or PORTER_WEBHOOK_SECRET");
-  }
-  return {
-    "Content-Type": "application/json",
-    "x-api-key": apiKey,
-  };
-}
 
 export const getQuote = internalAction({
   args: {
@@ -70,6 +55,10 @@ export const getQuote = internalAction({
     customer_phone: v.string(), // Assume standard 10 digit or handles splitting internally
   },
   handler: async (ctx, args) => {
+    if (!process.env.PORTER_API_URL || !process.env.PORTER_API_KEY) {
+      throw new Error("Missing PORTER_API_URL or PORTER_API_KEY environment variable.");
+    }
+
     // Strip any +91 from phone number if present for the payload
     let phoneStr = args.customer_phone.replace(/\D/g, "");
     if (phoneStr.length > 10 && phoneStr.startsWith("91")) {
@@ -88,9 +77,12 @@ export const getQuote = internalAction({
       },
     };
 
-    const res = await fetch(`${getPorterBaseUrl()}/v1/get_quote`, {
+    const res = await fetch(`${process.env.PORTER_API_URL}/v1/get_quote`, {
       method: "POST",
-      headers: getPorterHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.PORTER_API_KEY,
+      },
       body: JSON.stringify(payload),
     });
 
@@ -112,6 +104,10 @@ export const createOrder = internalAction({
     orderNumber: v.string(),
   },
   handler: async (ctx, args) => {
+    if (!process.env.PORTER_API_URL || !process.env.PORTER_API_KEY) {
+      throw new Error("Missing PORTER_API_URL or PORTER_API_KEY environment variable.");
+    }
+
     // We use the shipment ID as the requestId. Porter requires uuid max 32 chars.
     const cryptoId = crypto.randomUUID().replace(/-/g, "");
 
@@ -133,9 +129,12 @@ export const createOrder = internalAction({
       }
     };
 
-    const res = await fetch(`${getPorterBaseUrl()}/v1/orders/create`, {
+    const res = await fetch(`${process.env.PORTER_API_URL}/v1/orders/create`, {
       method: "POST",
-      headers: getPorterHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.PORTER_API_KEY,
+      },
       body: JSON.stringify(payload),
     });
 
@@ -167,9 +166,16 @@ export const cancelOrder = internalAction({
     crn: v.string(),
   },
   handler: async (ctx, args) => {
-    const res = await fetch(`${getPorterBaseUrl()}/v1/orders/${args.crn}/cancel`, {
+    if (!process.env.PORTER_API_URL || !process.env.PORTER_API_KEY) {
+      throw new Error("Missing PORTER_API_URL or PORTER_API_KEY environment variable.");
+    }
+
+    const res = await fetch(`${process.env.PORTER_API_URL}/v1/orders/${args.crn}/cancel`, {
       method: "POST",
-      headers: getPorterHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.PORTER_API_KEY,
+      },
     });
 
     if (!res.ok) {
@@ -187,14 +193,21 @@ export const simulateUATFlow = internalAction({
     flowType: v.number(), // 0 for happy flow, 2 for rider cancel, etc.
   },
   handler: async (ctx, args) => {
+    if (!process.env.PORTER_API_URL || !process.env.PORTER_API_KEY) {
+      throw new Error("Missing PORTER_API_URL or PORTER_API_KEY environment variable.");
+    }
+
     const payload = {
       order_id: args.crn,
       flow_type: args.flowType,
     };
 
-    const res = await fetch(`${getPorterBaseUrl()}/v1/simulation/initiate_order_flow`, {
+    const res = await fetch(`${process.env.PORTER_API_URL}/v1/simulation/initiate_order_flow`, {
       method: "POST",
-      headers: getPorterHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.PORTER_API_KEY,
+      },
       body: JSON.stringify(payload),
     });
 

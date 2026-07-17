@@ -1,3 +1,0 @@
-fix: use dynamic porter api gateway url based on environment
-
-- Replaced hardcoded UAT url with dynamic resolution from process.env.PORTER_API_URL in convex/lib/porter.ts

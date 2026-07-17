@@ -55,10 +55,10 @@ import type * as lib_killSwitches from "../lib/killSwitches.js";
 import type * as lib_mockInventory from "../lib/mockInventory.js";
 import type * as lib_money from "../lib/money.js";
 import type * as lib_notifications from "../lib/notifications.js";
+import type * as lib_porter from "../lib/porter.js";
 import type * as lib_productStats from "../lib/productStats.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_serviceability from "../lib/serviceability.js";
-import type * as lib_shiprocket from "../lib/shiprocket.js";
 import type * as lib_uploads from "../lib/uploads.js";
 import type * as lib_utils from "../lib/utils.js";
 import type * as location from "../location.js";
@@ -102,7 +102,6 @@ import type * as tests_runCartCurrencyTests from "../tests/runCartCurrencyTests.
 import type * as tests_runHyperlocalTests from "../tests/runHyperlocalTests.js";
 import type * as tests_runMerchantTests from "../tests/runMerchantTests.js";
 import type * as tests_runVacationTests from "../tests/runVacationTests.js";
-import type * as tests_shiprocketTest from "../tests/shiprocketTest.js";
 import type * as tests_signatureTest from "../tests/signatureTest.js";
 import type * as tests_testPipeline from "../tests/testPipeline.js";
 import type * as tests_vacationCapacity from "../tests/vacationCapacity.js";
@@ -111,6 +110,7 @@ import type * as userLocations from "../userLocations.js";
 import type * as users from "../users.js";
 import type * as webhooks_clerk from "../webhooks/clerk.js";
 import type * as webhooks_logistics from "../webhooks/logistics.js";
+import type * as webhooks_porter from "../webhooks/porter.js";
 import type * as webhooks_razorpay from "../webhooks/razorpay.js";
 import type * as whatsapp from "../whatsapp.js";
 
@@ -168,10 +168,10 @@ declare const fullApi: ApiFromModules<{
   "lib/mockInventory": typeof lib_mockInventory;
   "lib/money": typeof lib_money;
   "lib/notifications": typeof lib_notifications;
+  "lib/porter": typeof lib_porter;
   "lib/productStats": typeof lib_productStats;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/serviceability": typeof lib_serviceability;
-  "lib/shiprocket": typeof lib_shiprocket;
   "lib/uploads": typeof lib_uploads;
   "lib/utils": typeof lib_utils;
   location: typeof location;
@@ -215,7 +215,6 @@ declare const fullApi: ApiFromModules<{
   "tests/runHyperlocalTests": typeof tests_runHyperlocalTests;
   "tests/runMerchantTests": typeof tests_runMerchantTests;
   "tests/runVacationTests": typeof tests_runVacationTests;
-  "tests/shiprocketTest": typeof tests_shiprocketTest;
   "tests/signatureTest": typeof tests_signatureTest;
   "tests/testPipeline": typeof tests_testPipeline;
   "tests/vacationCapacity": typeof tests_vacationCapacity;
@@ -224,6 +223,7 @@ declare const fullApi: ApiFromModules<{
   users: typeof users;
   "webhooks/clerk": typeof webhooks_clerk;
   "webhooks/logistics": typeof webhooks_logistics;
+  "webhooks/porter": typeof webhooks_porter;
   "webhooks/razorpay": typeof webhooks_razorpay;
   whatsapp: typeof whatsapp;
 }>;
