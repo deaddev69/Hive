@@ -282,8 +282,9 @@ export default function CreateProductModal({
         setFitRecommendation(productToEdit.fitRecommendation || "true_to_size");
         setSilhouette(productToEdit.silhouette || "regular_fit");
         
-        setPrice(productToEdit.price ? productToEdit.price.toString() : "");
-        setDiscountPrice(productToEdit.discountPrice ? productToEdit.discountPrice.toString() : "");
+        setPrice(productToEdit.basePrice?.toString() || productToEdit.price?.toString() || "");
+        setDiscountPrice(productToEdit.baseDiscountPrice?.toString() || productToEdit.discountPrice?.toString() || "");
+
         setSameDayEligible(productToEdit.sameDayEligible || false);
         setFeatured(productToEdit.featured || false);
         setActive(productToEdit.active !== false);
