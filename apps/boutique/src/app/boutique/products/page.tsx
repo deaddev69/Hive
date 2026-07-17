@@ -364,7 +364,7 @@ export default function BoutiqueProducts() {
                       </div>
                       
                       <div className="flex items-center gap-2 text-xs mb-3 font-sans">
-                        <span className="font-bold text-slate-700 font-mono">₹{prod.price.toLocaleString()}</span>
+                        <span className="font-bold text-slate-700 font-mono">₹{(prod.basePrice || prod.price).toLocaleString()}</span>
                         <span className="w-1 h-1 rounded-full bg-slate-300" />
                         <span className="text-slate-500 font-medium truncate max-w-[120px]">
                           {categories?.find((c: any) => c._id === prod.categoryId)?.name || "Unknown"}
