@@ -437,14 +437,22 @@ export const createProduct = mutation({
       }
     }
 
+    const settings = await ctx.db.query("platformSettings").first();
+    const markupRate = settings ? settings.markupRate : 0.15;
+    
+    const customerPrice = Math.floor(args.price * (1 + markupRate));
+    const customerDiscountPrice = args.discountPrice ? Math.floor(args.discountPrice * (1 + markupRate)) : undefined;
+
     const productId = await ctx.db.insert("products", {
       boutiqueId: boutique._id,
       name: args.name,
       slug,
       description: args.description,
       categoryId: args.categoryId,
-      price: args.price,
-      discountPrice: args.discountPrice,
+      basePrice: args.price,
+      price: customerPrice,
+      baseDiscountPrice: args.discountPrice,
+      discountPrice: customerDiscountPrice,
       images: args.images,
       sizes: args.sizes,
       stockBySize: args.stockBySize,
@@ -667,12 +675,20 @@ export const updateProduct = mutation({
       ? (merchantTier === "Bronze" ? "pending" : "approved")
       : undefined;
 
+    const settings = await ctx.db.query("platformSettings").first();
+    const markupRate = settings ? settings.markupRate : 0.15;
+    
+    const customerPrice = Math.floor(args.price * (1 + markupRate));
+    const customerDiscountPrice = args.discountPrice ? Math.floor(args.discountPrice * (1 + markupRate)) : undefined;
+
     await ctx.db.patch(args.id, {
       name: args.name,
       description: args.description,
       categoryId: args.categoryId,
-      price: args.price,
-      discountPrice: args.discountPrice,
+      basePrice: args.price,
+      price: customerPrice,
+      baseDiscountPrice: args.discountPrice,
+      discountPrice: customerDiscountPrice,
       images: args.images,
       sizes: args.sizes,
       stockBySize: args.stockBySize,

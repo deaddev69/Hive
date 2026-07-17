@@ -399,6 +399,7 @@ export default defineSchema({
     categoryId:       v.id("categories"),
     basePrice:        v.optional(v.number()),         // The boutique's set price (optional until migration completes)
     price:            v.number(),
+    baseDiscountPrice:v.optional(v.number()),
     discountPrice:    v.optional(v.number()),
     images:           v.array(v.union(v.string(), ImageAsset)),
     sizes:            v.array(v.string()),
