@@ -941,6 +941,28 @@ export default function AdminProductsPage() {
               </div>
             </div>
 
+            {/* Image Gallery */}
+            {historyProduct.imageUrls && historyProduct.imageUrls.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold text-hive-text-muted uppercase tracking-wider mb-2 font-sans">
+                  Product Images ({historyProduct.imageUrls.length})
+                </h4>
+                <div className="flex gap-3 overflow-x-auto pb-2 snap-x scrollbar-thin scrollbar-thumb-slate-200">
+                  {historyProduct.imageUrls.map((url: string, idx: number) => (
+                    <a key={idx} href={url} target="_blank" rel="noreferrer" className="w-32 h-40 shrink-0 rounded-xl border bg-slate-50 overflow-hidden snap-start relative group block cursor-zoom-in">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`Product Image ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      {idx === 0 && (
+                        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider">
+                          Primary
+                        </div>
+                      )}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Moderation Timeline */}
             <div>
               <h4 className="text-xs font-bold text-hive-text-muted uppercase tracking-wider mb-4 font-sans">
