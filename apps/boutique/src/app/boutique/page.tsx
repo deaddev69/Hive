@@ -327,43 +327,36 @@ export default function BoutiqueDashboard() {
     <div className="flex flex-col gap-6 text-left max-w-6xl w-full pt-2 pb-14 font-sans px-2 lg:px-6">
       
       {/* 1. Operations Control Center Card */}
-      <div className="bg-hive-white border border-hive-border rounded-[32px] p-6 md:p-8 flex flex-col gap-6 shadow-[0_4px_20px_rgba(0,0,0,0.015)] select-none">
+      <div className="bg-white border border-slate-200/60 rounded-[24px] p-6 flex flex-col shadow-none select-none">
         
         {/* Top Row: Greeting & Status Dropdown Selector */}
-        <div className="flex flex-row items-start justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-[28px] md:text-[34px] leading-tight font-serif font-bold text-hive-text">
+        <div className="flex flex-row items-center justify-between gap-4 mb-4">
+          <div className="flex flex-col gap-0.5">
+            <h1 className="text-[24px] md:text-[28px] leading-tight font-extrabold text-slate-800 tracking-tight">
               {greetingPrefix}, {firstName}.
             </h1>
-            <p className="text-xs font-semibold text-hive-text-muted font-sans">{currentDate}</p>
+            <p className="text-[13px] font-medium text-slate-500">{currentDate}</p>
           </div>
 
           <div className="relative shrink-0">
             <button
               onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-wider transition-all duration-150 shadow-sm active:scale-[0.98] cursor-pointer ${
-                boutique.storeStatus === "open"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-250/50"
-                  : boutique.storeStatus === "busy"
-                  ? "bg-amber-50 text-amber-800 border-amber-250/50"
-                  : "bg-rose-50 text-rose-700 border-rose-250/50"
-              }`}
+              className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-[14px] font-bold transition-all duration-150 cursor-pointer bg-slate-50 hover:bg-slate-100 text-slate-700"
             >
-              <span className={`w-2 h-2 rounded-full ${
+              <span className={`w-2.5 h-2.5 rounded-full ${
                 boutique.storeStatus === "open"
-                  ? "bg-emerald-500 animate-pulse"
+                  ? "bg-[#059669]"
                   : boutique.storeStatus === "busy"
-                  ? "bg-amber-500"
-                  : "bg-rose-500"
+                  ? "bg-[#D97706]"
+                  : "bg-[#E11D48]"
               }`} />
-              <span>{boutique.storeStatus}</span>
-              <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+              <span>{boutique.storeStatus === "open" ? "Open" : boutique.storeStatus === "busy" ? "Busy" : "Closed"}</span>
             </button>
 
             {isStatusDropdownOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-hive-border rounded-2xl shadow-lg py-2 z-20 animate-in fade-in slide-in-from-top-2 duration-100">
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200/60 rounded-2xl shadow-lg py-2 z-20 animate-in fade-in slide-in-from-top-2 duration-100">
                   {(["open", "busy", "closed"] as const).map((status) => (
                     <button
                       key={status}
@@ -372,19 +365,19 @@ export default function BoutiqueDashboard() {
                         handleUpdateStatus(status);
                         setIsStatusDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-700 hover:bg-[#FAF6F0] transition-colors flex items-center gap-2 cursor-pointer ${
-                        boutique.storeStatus === status ? "bg-[#FAF6F0]" : ""
+                      className={`w-full text-left px-4 py-2.5 text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer ${
+                        boutique.storeStatus === status ? "bg-slate-50" : ""
                       }`}
                     >
                       <span className={`w-2 h-2 rounded-full ${
-                        status === "open" ? "bg-emerald-500 animate-pulse" : status === "busy" ? "bg-amber-500" : "bg-rose-500"
+                        status === "open" ? "bg-[#059669]" : status === "busy" ? "bg-[#D97706]" : "bg-[#E11D48]"
                       }`} />
-                      {status}
+                      {status === "open" ? "Open" : status === "busy" ? "Busy" : "Closed"}
                     </button>
                   ))}
-                  <div className="border-t border-hive-border/40 my-1" />
+                  <div className="border-t border-slate-100 my-1" />
                   <div className="px-4 py-2 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-bold text-hive-text-muted uppercase">Accepting Orders</span>
+                    <span className="text-[11px] font-bold text-slate-500">Accepting Orders</span>
                     <button
                       disabled={isPending || boutique.storeStatus === "closed"}
                       onClick={() => {
@@ -393,7 +386,7 @@ export default function BoutiqueDashboard() {
                       }}
                       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
                         boutique.storeStatus !== "closed" && boutique.isAcceptingOrders
-                          ? "bg-emerald-500"
+                          ? "bg-[#059669]"
                           : "bg-slate-200"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
@@ -412,24 +405,23 @@ export default function BoutiqueDashboard() {
           </div>
         </div>
 
-        {/* Dynamic Alerts List */}
-        <div className="flex flex-col gap-3 py-1">
+        <hr className="border-t border-slate-200/60 my-2" />
+
+        {/* Dynamic Alerts List (Compressed) */}
+        <div className="flex flex-col gap-2.5 py-2">
           {/* New Orders Item */}
           <div className="flex items-center gap-3">
             {pendingConfirmationCount > 0 ? (
               <>
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
-                <span className="text-lg font-bold text-slate-800">
+                <span className="h-2 w-2 rounded-full bg-[#059669]"></span>
+                <span className="text-[15px] font-bold text-slate-800">
                   {pendingConfirmationCount} New {pendingConfirmationCount === 1 ? "Order" : "Orders"}
                 </span>
               </>
             ) : (
               <>
-                <span className="h-3 w-3 rounded-full bg-slate-300" />
-                <span className="text-lg font-semibold text-slate-400">
+                <span className="h-2 w-2 rounded-full bg-slate-300" />
+                <span className="text-[15px] font-semibold text-slate-500">
                   No New Orders
                 </span>
               </>
@@ -440,40 +432,38 @@ export default function BoutiqueDashboard() {
           <div className="flex items-center gap-3">
             {lowStockDetail ? (
               <>
-                <span className="h-3 w-3 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-base font-bold text-slate-800 leading-snug">
+                <span className="h-2 w-2 rounded-full bg-[#D97706]" />
+                <span className="text-[15px] font-bold text-slate-800">
                   {lowStockDetail.totalCount === 1 ? (
                     <span>
-                      Only {lowStockDetail.first.stock} {lowStockDetail.first.size} left of {lowStockDetail.first.name}. <span className="text-hive-gold block font-semibold text-xs mt-0.5">Restock today?</span>
+                      {lowStockDetail.first.stock} {lowStockDetail.first.size} left of {lowStockDetail.first.name}
                     </span>
                   ) : (
                     <span>
-                      Only {lowStockDetail.first.stock} {lowStockDetail.first.size} left of {lowStockDetail.first.name} (+{lowStockDetail.totalCount - 1} others). <span className="text-hive-gold block font-semibold text-xs mt-0.5">Restock today?</span>
+                      {lowStockDetail.first.stock} {lowStockDetail.first.size} left of {lowStockDetail.first.name} (+{lowStockDetail.totalCount - 1} more)
                     </span>
                   )}
                 </span>
               </>
             ) : (
               <>
-                <span className="h-3 w-3 rounded-full bg-slate-300" />
-                <span className="text-base font-semibold text-slate-400">
-                  All Stock Okay
+                <span className="h-2 w-2 rounded-full bg-slate-300" />
+                <span className="text-[15px] font-semibold text-slate-500">
+                  Stock Healthy
                 </span>
               </>
             )}
           </div>
         </div>
 
-        <hr className="border-t border-hive-border/60 my-1" />
-
         {/* Immediate CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 w-full">
+        <div className="flex flex-col sm:flex-row gap-3 w-full mt-4">
           <Link href="/boutique/orders" className="flex-1">
             <Button 
-              className={`w-full py-4 rounded-2xl font-extrabold text-xs uppercase tracking-widest transition-all duration-150 active:scale-[0.98] shadow-sm cursor-pointer ${
+              className={`w-full py-5 rounded-[16px] font-semibold text-[15px] transition-all duration-200 active:scale-[0.98] cursor-pointer ${
                 pendingConfirmationCount > 0
-                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                  ? "bg-[#059669] hover:bg-[#047857] text-white border-none shadow-none"
+                  : "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/60 shadow-none"
               }`}
             >
               {pendingConfirmationCount > 0 ? `Accept Orders (${pendingConfirmationCount})` : "View Orders"}
@@ -481,17 +471,16 @@ export default function BoutiqueDashboard() {
           </Link>
           <Link href="/boutique/inventory" className="flex-1">
             <Button 
-              className={`w-full py-4 rounded-2xl font-extrabold text-xs uppercase tracking-widest transition-all duration-150 active:scale-[0.98] shadow-sm cursor-pointer ${
+              className={`w-full py-5 rounded-[16px] font-semibold text-[15px] transition-all duration-200 active:scale-[0.98] cursor-pointer ${
                 lowStockCount > 0 || !isStockVerifiedToday
-                  ? "bg-hive-gold hover:bg-hive-amber text-white"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                  ? "bg-white border border-[#C89653] text-[#C89653] hover:bg-[#FAF7F2] shadow-none"
+                  : "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/60 shadow-none"
               }`}
             >
-              Update Stock
+              Update Inventory
             </Button>
           </Link>
         </div>
-
       </div>
 
       {/* 2. Secondary Sections Layout Grid */}
@@ -501,87 +490,52 @@ export default function BoutiqueDashboard() {
         <div className="flex flex-col gap-6 w-full">
           
           {/* Today's Snapshot Card */}
-          <div className="bg-hive-white border border-hive-border rounded-[28px] p-6 flex flex-col gap-4.5 shadow-[0_4px_16px_rgba(0,0,0,0.01)]">
-            <h3 className="text-sm font-bold text-hive-text font-sans tracking-wide">Today's Snapshot</h3>
+          <div className="bg-white border border-slate-200/60 rounded-[24px] p-6 flex flex-col gap-6 shadow-none">
             
-            <div className="grid grid-cols-3 gap-6 pt-1 select-none">
-              <div className="flex flex-col gap-1 text-left">
-                <span className="text-[10px] text-hive-text-muted font-bold uppercase tracking-wider">Sales Today</span>
-                <span className={`text-xl font-bold ${salesToday === 0 ? "text-hive-text-muted/40 font-medium" : "text-hive-text"}`}>
-                  {salesToday === 0 ? "₹—" : formatCurrency(salesToday)}
+            <div className="grid grid-cols-3 gap-4 select-none">
+              <div className="flex flex-col gap-0.5 text-left">
+                <span className="text-[28px] font-extrabold text-slate-800 tracking-tight">
+                  {salesToday === 0 ? "₹0" : formatCurrency(salesToday).replace(".00", "")}
                 </span>
+                <span className="text-[13px] text-slate-500 font-medium">Today's Sales</span>
               </div>
-              <div className="flex flex-col gap-1 text-left">
-                <span className="text-[10px] text-hive-text-muted font-bold uppercase tracking-wider">New Orders</span>
-                <span className={`text-xl font-bold ${ordersNewToday === 0 ? "text-hive-text-muted/40 font-medium" : "text-hive-text"}`}>
-                  {ordersNewToday === 0 ? "—" : ordersNewToday}
+              <div className="flex flex-col gap-0.5 text-left">
+                <span className="text-[28px] font-extrabold text-slate-800 tracking-tight">
+                  {ordersNewToday}
                 </span>
+                <span className="text-[13px] text-slate-500 font-medium">Pending Orders</span>
               </div>
-              <div className="flex flex-col gap-1 text-left">
-                <span className="text-[10px] text-hive-text-muted font-bold uppercase tracking-wider">To Pack</span>
-                <span className={`text-xl font-bold ${toPackCount === 0 ? "text-hive-text-muted/40 font-medium" : "text-hive-text"}`}>
-                  {toPackCount === 0 ? "—" : toPackCount}
+              <div className="flex flex-col gap-0.5 text-left">
+                <span className="text-[28px] font-extrabold text-slate-800 tracking-tight">
+                  {toPackCount}
                 </span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between border-t border-hive-border pt-3.5 mt-0.5 select-none">
-              <span className="text-[10px] text-hive-text-muted font-bold tracking-wider uppercase flex items-center gap-1">
-                <TrendingUp className="w-3.5 h-3.5 text-hive-text-muted/80" /> 7-Day Trend
-              </span>
-              <div className="flex items-center gap-2 pr-1">
-                {isTrendEmpty ? (
-                  <span className="text-[10px] text-hive-text-muted/65 font-medium italic">
-                    No sales activity yet
-                  </span>
-                ) : (
-                  <svg className="w-[110px] h-[30px] overflow-visible">
-                    <polyline
-                      fill="none"
-                      stroke="#C59A5B"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      points={sparklinePoints}
-                      className="stroke-hive-gold"
-                    />
-                  </svg>
-                )}
+                <span className="text-[13px] text-slate-500 font-medium">Ready to Pack</span>
               </div>
             </div>
           </div>
 
           {/* Recent Orders Card */}
-          <div className="bg-hive-white border border-hive-border rounded-[28px] p-6 flex flex-col gap-4 shadow-[0_4px_16px_rgba(0,0,0,0.01)]">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-hive-text font-sans tracking-wide">Recent Orders</h3>
-              <Link href="/boutique/orders" className="text-[11px] font-bold text-hive-gold hover:text-hive-amber hover:underline flex items-center gap-0.5">
-                All Orders <ArrowRight className="w-3 h-3" />
+          <div className="bg-white border border-slate-200/60 rounded-[24px] p-6 flex flex-col gap-4 shadow-none">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-[15px] font-extrabold text-slate-800 tracking-tight">Recent Orders</h3>
+              <Link href="/boutique/orders" className="text-[13px] font-bold text-[#C89653] hover:text-[#B88643] transition-colors flex items-center gap-1">
+                View All <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
             {recentOrders.length === 0 ? (
-              <p className="text-xs text-hive-text-muted italic py-4 text-center font-medium">No orders received yet.</p>
+              <p className="text-[14px] text-slate-500 font-medium py-4">No orders received yet.</p>
             ) : (
               <div className="flex flex-col gap-3">
                 {recentOrders.map((o: any) => (
-                  <div key={o._id} className="flex items-center justify-between text-xs border-b border-hive-border/30 pb-2.5 last:border-0 last:pb-0">
+                  <div key={o._id} className="flex items-center justify-between border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                     <div className="flex flex-col gap-0.5">
-                      <span className="font-mono font-bold text-hive-text">{o.orderNumber}</span>
-                      <span className="text-[10px] text-hive-text-muted font-medium">
+                      <span className="font-bold text-[14px] text-slate-800">{o.orderNumber}</span>
+                      <span className="text-[12px] text-slate-500 font-medium">
                         {new Date(o._creationTime).toLocaleDateString([], { month: "short", day: "numeric" })}
                       </span>
                     </div>
                     <div className="text-right flex items-center gap-3">
-                      <span className="font-bold text-hive-text">₹{(o.totalPrice ?? 0).toLocaleString('en-IN')}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide border ${
-                        o.status === "delivered" 
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-150" 
-                          : o.status === "cancelled" 
-                          ? "bg-red-50 text-red-700 border-red-150"
-                          : "bg-brand-50 text-brand-700 border-brand-100"
-                      }`}>
-                        {o.status.replace("_", " ")}
-                      </span>
+                      <span className="font-extrabold text-[15px] text-slate-800">₹{(o.totalPrice ?? 0).toLocaleString('en-IN')}</span>
                     </div>
                   </div>
                 ))}
@@ -595,59 +549,47 @@ export default function BoutiqueDashboard() {
         <div className="flex flex-col gap-6 w-full">
           
           {/* Shop Standing Card */}
-          <div className="bg-hive-white border border-hive-border rounded-[28px] p-6 flex flex-col gap-4 shadow-[0_4px_16px_rgba(0,0,0,0.01)]">
-            <span className="text-[10px] text-hive-text-muted font-bold tracking-wider uppercase">Shop Standing</span>
+          <div className="bg-white border border-slate-200/60 rounded-[24px] p-6 flex flex-col gap-4 shadow-none">
+            <span className="text-[13px] text-slate-500 font-medium">Shop Standing</span>
             
-            <div className="flex flex-col gap-3.5 mt-2">
+            <div className="flex flex-col gap-4 mt-2">
               <StatusRow
-                title="Store status"
+                title="Store Status"
                 description="Ready for selling"
                 icon={Shield}
-                iconBgClass="bg-[#EAF6ED]"
-                iconColorClass="text-[#2E7D32]"
-                iconBorderClass="border-[#C6EBD3]/30"
+                iconBgClass="bg-white"
+                iconColorClass="text-[#059669]"
+                iconBorderClass="border-slate-200/60"
                 badge={<StatusBadge variant="success" label="Approved" icon={Check} />}
               />
 
               <StatusRow
-                title="Delivery rating"
+                title="Delivery Rating"
                 description={`${deliveryRatingData.percentage}% Order Fulfillment Rate`}
                 icon={Star}
-                iconBgClass={
-                  deliveryRatingData.variant === "success" ? "bg-[#EAF6ED]" : 
-                  deliveryRatingData.variant === "info" ? "bg-[#E8F0FE]" : "bg-[#FEF3D6]"
-                }
+                iconBgClass="bg-white"
                 iconColorClass={
-                  deliveryRatingData.variant === "success" ? "text-[#2E7D32]" : 
-                  deliveryRatingData.variant === "info" ? "text-[#1A73E8]" : "text-[#B06000]"
+                  deliveryRatingData.variant === "success" ? "text-[#059669]" : 
+                  deliveryRatingData.variant === "info" ? "text-[#1A73E8]" : "text-[#D97706]"
                 }
-                iconBorderClass={
-                  deliveryRatingData.variant === "success" ? "border-[#C6EBD3]/30" : 
-                  deliveryRatingData.variant === "info" ? "border-[#D2E3FC]/30" : "border-[#FDE7B9]/30"
-                }
+                iconBorderClass="border-slate-200/60"
                 badge={<StatusBadge variant={deliveryRatingData.variant} label={deliveryRatingData.label} icon={deliveryRatingData.icon} />}
               />
 
               <StatusRow
-                title="Seller tier"
+                title="Seller Tier"
                 description={
                   tierStats.tier === "Bronze" ? "Standard tier" :
-                  tierStats.tier === "Silver" ? "Algorithm boost active — priority rider routing unlocked" :
+                  tierStats.tier === "Silver" ? "Algorithm boost active — priority routing unlocked" :
                   "Premium tier reached"
                 }
                 icon={Trophy}
-                iconBgClass={
-                  tierStats.tier === "Bronze" ? "bg-[#FEF3D6]" :
-                  tierStats.tier === "Silver" ? "bg-[#E8F0FE]" : "bg-[#EAF6ED]"
-                }
+                iconBgClass="bg-white"
                 iconColorClass={
-                  tierStats.tier === "Bronze" ? "text-[#B06000]" :
-                  tierStats.tier === "Silver" ? "text-[#1A73E8]" : "text-[#2E7D32]"
+                  tierStats.tier === "Bronze" ? "text-[#D97706]" :
+                  tierStats.tier === "Silver" ? "text-[#1A73E8]" : "text-[#059669]"
                 }
-                iconBorderClass={
-                  tierStats.tier === "Bronze" ? "border-[#FDE7B9]/30" :
-                  tierStats.tier === "Silver" ? "border-[#D2E3FC]/30" : "border-[#C6EBD3]/30"
-                }
+                iconBorderClass="border-slate-200/60"
                 badge={
                   <StatusBadge 
                     variant={
@@ -664,14 +606,14 @@ export default function BoutiqueDashboard() {
 
           {/* Get Your Shop Ready Card (Routine Setup Onboarding) */}
           {!hasProducts && (
-            <div className="bg-hive-white border border-hive-border rounded-[32px] p-6 flex flex-row items-center gap-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+            <div className="bg-white border border-slate-200/60 rounded-[24px] p-6 flex flex-row items-center gap-6 shadow-none">
               <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
                 <svg className="w-full h-full transform -rotate-90">
                   <circle
                     cx="48"
                     cy="48"
                     r="38"
-                    className="stroke-hive-border/40"
+                    className="stroke-slate-100"
                     strokeWidth="6"
                     fill="transparent"
                   />
