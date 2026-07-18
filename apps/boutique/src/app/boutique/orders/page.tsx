@@ -197,104 +197,99 @@ export default function BoutiqueOrders() {
                   const isAcceptedOptimistically = acceptedOrderIds[order._id];
 
                   if (isPending) {
+                    const elapsedMin = Math.max(0, Math.floor((Date.now() - (order.createdAt || order._creationTime)) / 60000));
+                    const timeText = elapsedMin === 0 ? "Just now" : `${elapsedMin} min ago`;
+
                     return (
-                      <tr key={order._id} className="flex flex-col md:table-row bg-white border border-hive-border/60 rounded-[32px] mb-6 md:mb-0 hover:shadow-md transition-all p-6 md:p-8">
+                      <tr key={order._id} className="flex flex-col md:table-row bg-white border border-slate-200 rounded-3xl mb-6 md:mb-0 hover:shadow-xs transition-all p-6 md:p-8">
                         <td colSpan={7} className="p-0">
-                          <div className="flex flex-col gap-5 text-left">
-                            {/* Top Header: Pulsing Badge & Time with Icon */}
-                            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                              <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border border-emerald-250/30">
+                          <div className="flex flex-col text-left font-sans">
+                            {/* 1. Top Header: Status Capsule & Time/Urgency */}
+                            <div className="flex items-center justify-between pb-5">
+                              <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[12px] font-bold tracking-wide border border-emerald-200/60">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                New Order
+                                NEW ORDER
                               </span>
-                              <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 font-sans uppercase tracking-wider">
-                                <Clock className="w-3.5 h-3.5 text-slate-350" />
-                                <span>{new Date(order.createdAt || order._creationTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              <div className="flex items-center gap-2 text-[13px] text-slate-400 font-medium">
+                                <span>Received {timeText}</span>
                               </div>
                             </div>
 
-                            {/* Amount & Summary */}
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-widest leading-none">Your Net Payout</span>
-                              <div className="text-3xl font-black text-slate-800 tracking-tight leading-none mt-1">
-                                {formatCurrency(order.totalPayout ?? 0)}
-                              </div>
-                              <span className="text-[10px] font-bold text-[#A89A7E]/90 mt-1 select-none">
-                                Boutique Payout (Base {formatCurrency(order.totalBasePrice ?? 0)} - 2% fee)
-                              </span>
-                            </div>
-
-                            {/* Purchased Items Nested Box */}
-                            <div className="bg-[#FAF6F0]/65 border border-hive-border/40 rounded-2xl p-4 flex flex-col gap-3">
+                            {/* 2. Hero Product Row (Dominant hierarchy & multi-line layout) */}
+                            <div className="pt-5 pb-6 border-t border-slate-100 flex flex-col gap-5">
                               {order.items.map((it: any) => (
-                                <div key={it._id} className="flex items-center gap-3">
-                                  <div className="relative w-12 h-15 rounded-xl border border-slate-150 overflow-hidden bg-slate-50 flex-shrink-0 shadow-sm">
+                                <div key={it._id} className="flex items-start gap-4">
+                                  <div className="relative w-20 h-26 rounded-2xl border border-slate-200 overflow-hidden bg-slate-50 flex-shrink-0 shadow-2xs">
                                     {it.imageUrl ? (
                                       <img src={it.imageUrl} alt="" className="w-full h-full object-cover" />
                                     ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-hive-text-muted">No Image</div>
+                                      <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-slate-300">No Image</div>
                                     )}
                                   </div>
-                                  <div className="flex flex-col min-w-0">
-                                    <span className="text-sm font-extrabold text-slate-800 leading-snug truncate uppercase tracking-tight">{it.productName}</span>
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                      <span className="bg-white border border-[#E6D5B8]/40 px-2 py-0.5 rounded-md text-[10px] font-bold text-[#A89A7E] uppercase">
-                                        Size {it.variantSize}
+                                  <div className="flex flex-col min-w-0 justify-center pt-1">
+                                    <h3 className="text-[18px] font-bold text-slate-900 leading-snug truncate">
+                                      {it.productName}
+                                    </h3>
+                                    {it.category && (
+                                      <span className="text-[14px] text-slate-400 font-medium mt-0.5">
+                                        {it.category}
                                       </span>
-                                      <span className="text-slate-400 text-xs font-semibold">x {it.quantity}</span>
-                                      <span className="text-[10px] font-bold text-[#A89A7E] bg-white border border-[#E6D5B8]/45 px-1.5 py-0.5 rounded-md font-mono ml-1 shadow-sm">
-                                        Base: {formatCurrency(it.basePriceAtPurchase ?? it.priceAtPurchase)}
-                                      </span>
-                                    </div>
+                                    )}
+                                    <p className="text-[14px] text-slate-500 font-medium mt-1">
+                                      Size {it.variantSize} • Qty {it.quantity}
+                                    </p>
                                   </div>
                                 </div>
                               ))}
                             </div>
 
-                            {/* Delivery & Customer Info Grid */}
-                            <div className="grid grid-cols-2 gap-6 pt-1">
-                              <div className="flex flex-col gap-1 text-left">
-                                <span className="text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-widest flex items-center gap-1">
-                                  <User className="w-3 h-3 text-[#A89A7E]/80" /> Customer
-                                </span>
-                                <span className="text-[13px] font-bold text-slate-700 truncate mt-0.5">
+                            {/* 3. Money (Left aligned, no decimals, clean wording) */}
+                            <div className="py-6 border-t border-slate-100 flex flex-col gap-1">
+                              <span className="text-[14px] font-medium text-slate-500">
+                                Net payout
+                              </span>
+                              <div className="text-[32px] font-bold text-slate-900 tracking-tight leading-none my-1">
+                                ₹{Math.round(order.totalPayout ?? 0).toLocaleString("en-IN")}
+                              </div>
+                              <span className="text-[14px] font-medium text-slate-400">
+                                Hive fee ₹{Math.round(Math.max(0, (order.totalBasePrice ?? 0) - (order.totalPayout ?? 0))).toLocaleString("en-IN")}
+                              </span>
+                            </div>
+
+                            {/* 4. Customer & Location (Left aligned, clean Lucide icons, no emoji, no labels) */}
+                            <div className="py-6 border-t border-slate-100 flex flex-wrap items-center gap-8 text-[14px] font-semibold text-slate-700">
+                              <div className="flex items-center gap-2">
+                                <User className="w-4 h-4 text-slate-400 stroke-[2]" />
+                                <span>
                                   {(() => {
-                                    const name = order.customerName || order.deliveryAddress.name || order.deliveryAddress.label || "Customer";
+                                    const name = order.customerName || order.deliveryAddress?.name || order.deliveryAddress?.label || "Customer";
                                     const parts = name.trim().split(" ");
                                     if (parts.length <= 1) return parts[0] || "Customer";
                                     return `${parts[0]} ${parts[parts.length - 1][0]}.`;
                                   })()}
                                 </span>
                               </div>
-
-                              <div className="flex flex-col gap-1 text-left">
-                                <span className="text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-widest flex items-center gap-1">
-                                  <MapPin className="w-3 h-3 text-[#A89A7E]/80" /> Area
-                                </span>
-                                <span className="text-[13px] font-bold text-slate-700 truncate mt-0.5">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-slate-400 stroke-[2]" />
+                                <span>
                                   {(() => {
                                     const locality = order.deliveryAddress?.locality || "";
                                     const line2 = order.deliveryAddress?.line2 || "";
                                     const line1 = order.deliveryAddress?.line1 || "";
                                     const city = order.deliveryAddress?.city || "";
-                                    const area = (locality || line2 || line1 || city || "Local").split(',')[0].trim();
+                                    const area = (locality || line2 || line1 || city || "Local").split(",")[0].trim();
                                     return order.deliveryAddress?.pincode ? `${area} (${order.deliveryAddress.pincode})` : area;
                                   })()}
                                 </span>
                               </div>
                             </div>
 
-                            {/* Button Row */}
-                            <div className="flex gap-4 w-full pt-2">
+                            {/* 5. Shopify POS Action Stack (One huge primary button above quiet text decline) */}
+                            <div className="pt-6 border-t border-slate-100 flex flex-col items-center gap-2">
                               {isAcceptedOptimistically ? (
-                                <div className="w-full py-4 bg-emerald-50 border border-emerald-250/30 text-emerald-800 rounded-2xl flex flex-col items-center justify-center gap-1 select-none animate-in fade-in zoom-in-95 duration-200">
-                                  <div className="flex items-center gap-1.5 font-extrabold text-sm tracking-wide">
-                                    <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
-                                    <span>ACCEPTED!</span>
-                                  </div>
-                                  <span className="text-[10px] font-extrabold text-emerald-600/80 uppercase tracking-widest animate-pulse">
-                                    Rider being assigned...
-                                  </span>
+                                <div className="w-full py-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
+                                  <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
+                                  <span className="font-bold text-[14px]">Order Accepted — Assigning Rider...</span>
                                 </div>
                               ) : (
                                 <>
@@ -315,14 +310,14 @@ export default function BoutiqueOrders() {
                                       }
                                     }}
                                     disabled={pendingActionId === order._id}
-                                    className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[11px] font-extrabold uppercase tracking-widest disabled:opacity-50 transition-all shadow-md hover:scale-[1.01] active:scale-[0.99] cursor-pointer text-center"
+                                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-2xl text-[14px] font-bold tracking-wide disabled:opacity-50 transition-all shadow-xs cursor-pointer text-center"
                                   >
-                                    Accept
+                                    Accept Order
                                   </button>
                                   <button
                                     onClick={() => setOrderToDecline(order._id)}
                                     disabled={pendingActionId === order._id}
-                                    className="flex-1 py-4 bg-white border-2 border-rose-600 text-rose-600 hover:bg-rose-50 rounded-2xl text-[11px] font-extrabold uppercase tracking-widest disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer text-center"
+                                    className="w-full py-2.5 bg-transparent hover:bg-slate-50 active:bg-slate-100 text-slate-400 hover:text-rose-600 rounded-xl text-[13px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
                                   >
                                     Decline
                                   </button>
