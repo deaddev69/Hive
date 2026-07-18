@@ -216,10 +216,10 @@ export default function BoutiqueOrders() {
                             <div className="flex flex-col gap-1">
                               <span className="text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-widest leading-none">Your Net Payout</span>
                               <div className="text-3xl font-black text-slate-800 tracking-tight leading-none mt-1">
-                                {formatCurrency((order.totalPayout ?? 0) / 100)}
+                                {formatCurrency(order.totalPayout ?? 0)}
                               </div>
                               <span className="text-[10px] font-bold text-[#A89A7E]/90 mt-1 select-none">
-                                Boutique Payout (Base {formatCurrency((order.totalBasePrice ?? 0) / 100)} - 2% fee)
+                                Boutique Payout (Base {formatCurrency(order.totalBasePrice ?? 0)} - 2% fee)
                               </span>
                             </div>
 
@@ -242,7 +242,7 @@ export default function BoutiqueOrders() {
                                       </span>
                                       <span className="text-slate-400 text-xs font-semibold">x {it.quantity}</span>
                                       <span className="text-[10px] font-bold text-[#A89A7E] bg-white border border-[#E6D5B8]/45 px-1.5 py-0.5 rounded-md font-mono ml-1 shadow-sm">
-                                        Base: {formatCurrency((it.basePriceAtPurchase ?? it.priceAtPurchase) / 100)}
+                                        Base: {formatCurrency(it.basePriceAtPurchase ?? it.priceAtPurchase)}
                                       </span>
                                     </div>
                                   </div>
