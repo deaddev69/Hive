@@ -33,7 +33,7 @@ function CategoryFilterSelect({
   }, []);
 
   return (
-    <div className="relative w-full sm:w-44 font-sans" ref={containerRef}>
+    <div className="relative w-[130px] sm:w-44 shrink-0 font-sans" ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
