@@ -173,7 +173,7 @@ export default function BoutiqueOrders() {
     <div className="flex flex-col gap-6 text-left pb-24">
       <div>
         <h1 className="text-3xl font-serif font-black text-hive-dark">Orders</h1>
-        <p className="text-sm text-hive-text-muted">Review and accept incoming orders.</p>
+        <p className="text-sm text-hive-text-muted">Review incoming orders.</p>
       </div>
 
       <Card className="border border-hive-border bg-white shadow-sm overflow-hidden rounded-3xl">
@@ -199,11 +199,7 @@ export default function BoutiqueOrders() {
                   if (isPending) {
                     const createdTime = order.createdAt || order._creationTime || Date.now();
                     const elapsedMin = Math.max(0, Math.floor((Date.now() - createdTime) / 60000));
-                    const remMin = Math.max(0, 14 - (elapsedMin % 15));
-                    const remSec = (60 - Math.floor(((Date.now() - createdTime) / 1000) % 60)) % 60;
-                    const remMinStr = remMin.toString().padStart(2, "0");
-                    const remSecStr = remSec.toString().padStart(2, "0");
-                    const countdownStr = `Accept within ${remMinStr}:${remSecStr}`;
+                    const timeText = elapsedMin === 0 ? "Just now" : elapsedMin < 60 ? `${elapsedMin} min ago` : `${Math.floor(elapsedMin / 60)} hr ago`;
 
                     const payoutRupees = Math.round((order.totalPayout ?? 0) / 100);
                     const baseRupees = Math.round((order.totalBasePrice ?? 0) / 100);
@@ -215,62 +211,76 @@ export default function BoutiqueOrders() {
                     const distanceStr = order.distanceKm ? `${order.distanceKm} km` : "3.2 km";
 
                     return (
-                      <tr key={order._id} className="flex flex-col md:table-row bg-white border border-slate-200 rounded-2xl mb-4 hover:shadow-xs transition-all p-4 md:p-5">
+                      <tr key={order._id} className="flex flex-col md:table-row bg-white border border-slate-200 rounded-2xl mb-3.5 hover:shadow-2xs transition-all p-3.5 md:p-4.5">
                         <td colSpan={7} className="p-0">
-                          <div className="flex flex-col text-left font-sans gap-3">
-                            {/* 1. Top Header: Status Capsule & Urgency Countdown */}
+                          <div className="flex flex-col text-left font-sans gap-2.5">
+                            {/* 1. Top Header: Status Capsule & Real Elapsed Timestamp */}
                             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                              <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full text-[12px] font-bold tracking-wide border border-emerald-200/60">
+                              <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[11px] font-bold tracking-wide border border-emerald-200/50">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                 NEW ORDER
                               </span>
-                              <span className="text-[12px] text-slate-500 font-semibold font-mono">
-                                {countdownStr}
+                              <span className="text-[12px] text-slate-400 font-semibold font-mono">
+                                {timeText}
                               </span>
                             </div>
 
-                            {/* 2. Compact Product Row (w-14 h-16 thumbnail + dominant title & size) */}
+                            {/* 2. Compact Product Row (52x52px thumbnail + Category & Size) */}
                             <div className="flex items-center gap-3">
-                              <div className="relative w-14 h-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 flex-shrink-0 shadow-2xs">
+                              <div className="relative w-13 h-13 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 flex-shrink-0 shadow-2xs">
                                 {order.items?.[0]?.imageUrl ? (
                                   <img src={order.items[0].imageUrl} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[9px] font-bold text-slate-300">No Image</div>
+                                  <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-slate-300">No Image</div>
                                 )}
                               </div>
                               <div className="flex flex-col min-w-0 justify-center">
-                                <h3 className="text-[18px] font-bold text-slate-900 leading-snug truncate">
+                                <h3 className="text-[17px] font-bold text-slate-900 leading-tight truncate">
                                   {order.items?.[0]?.productName || "Product Order"}
                                 </h3>
-                                <p className="text-[14px] text-slate-600 font-medium mt-0.5">
+                                {order.items?.[0]?.category && (
+                                  <span className="text-[13px] text-slate-400 font-medium">
+                                    {order.items[0].category}
+                                  </span>
+                                )}
+                                <p className="text-[13px] text-slate-600 font-medium mt-0.5">
                                   Size {order.items?.[0]?.variantSize || "Free"} • Qty {order.items?.[0]?.quantity || 1}
                                   {order.items?.length > 1 ? ` (+${order.items.length - 1} more)` : ""}
                                 </p>
                               </div>
                             </div>
 
-                            {/* 3. Money & Customer Context (Tight block separated by 1 divider) */}
+                            {/* 3. Transparent Money & Lucide Customer Row */}
                             <div className="pt-2 border-t border-slate-100 flex flex-col gap-1">
-                              <span className="text-[14px] font-medium text-slate-600">
+                              <div className="flex items-center justify-between text-[12px] text-slate-400 font-medium">
+                                <span>Selling price</span>
+                                <span>₹{baseRupees.toLocaleString("en-IN")}</span>
+                              </div>
+                              <span className="text-[12px] font-medium text-slate-500 block pt-0.5">
                                 You&apos;ll receive
                               </span>
-                              <div className="text-[28px] font-bold text-slate-900 tracking-tight leading-none my-0.5">
-                                ₹{payoutRupees.toLocaleString("en-IN")}
-                              </div>
-                              <div className="flex items-center justify-between text-[12px] text-slate-500 font-semibold pt-0.5">
-                                <span>Hive fee ₹{feeRupees.toLocaleString("en-IN")}</span>
-                                <span className="text-[14px] text-slate-700 font-medium">
-                                  {firstCustName} • {locality} • {distanceStr}
+                              <div className="flex items-baseline justify-between -mt-0.5">
+                                <span className="text-[26px] font-bold text-slate-900 tracking-tight leading-none">
+                                  ₹{payoutRupees.toLocaleString("en-IN")}
                                 </span>
+                                <span className="text-[12px] font-medium text-slate-500">
+                                  Hive fee ₹{feeRupees.toLocaleString("en-IN")}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-3 text-[12px] text-slate-600 font-medium pt-2 border-t border-slate-100/80 mt-1">
+                                <span className="inline-flex items-center gap-1"><User className="w-3.5 h-3.5 text-slate-400 stroke-[2]" /> {firstCustName}</span>
+                                <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-slate-400 stroke-[2]" /> {locality}</span>
+                                <span className="text-slate-500 font-mono">{distanceStr}</span>
                               </div>
                             </div>
 
-                            {/* 4. Action Stack (Huge 46px primary button above secondary dark grey text button) */}
-                            <div className="pt-3 border-t border-slate-100 flex flex-col items-center gap-1.5">
+                            {/* 4. Action Stack (~46px Accept Order button + clean Decline button) */}
+                            <div className="pt-2.5 border-t border-slate-100 flex flex-col items-center gap-1">
                               {isAcceptedOptimistically ? (
-                                <div className="w-full py-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
+                                <div className="w-full py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
                                   <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
-                                  <span className="font-bold text-[14px]">Order Accepted — Assigning Rider...</span>
+                                  <span className="font-bold text-[13px]">Order Accepted — Assigning Rider...</span>
                                 </div>
                               ) : (
                                 <>
@@ -291,16 +301,16 @@ export default function BoutiqueOrders() {
                                       }
                                     }}
                                     disabled={pendingActionId === order._id}
-                                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-[14px] font-bold tracking-wide disabled:opacity-50 transition-all shadow-xs cursor-pointer text-center"
+                                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-[14px] font-bold tracking-wide disabled:opacity-50 transition-all shadow-2xs cursor-pointer text-center"
                                   >
                                     Accept Order
                                   </button>
                                   <button
                                     onClick={() => setOrderToDecline(order._id)}
                                     disabled={pendingActionId === order._id}
-                                    className="w-full py-2 bg-transparent hover:bg-slate-50 active:bg-slate-100 text-slate-700 hover:text-rose-600 rounded-lg text-[13px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
+                                    className="w-full py-1.5 bg-transparent hover:bg-slate-50 active:bg-slate-100 text-slate-500 hover:text-rose-600 rounded-lg text-[13px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
                                   >
-                                    Decline order
+                                    Decline
                                   </button>
                                 </>
                               )}
