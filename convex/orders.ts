@@ -885,14 +885,16 @@ export const getBoutiqueOrders = query({
 
       items.forEach((it) => {
         const qty = it.quantity || 1;
-        const base = it.basePriceAtPurchase !== undefined ? it.basePriceAtPurchase : it.priceAtPurchase;
+        const base = (it.basePriceAtPurchase != null && it.basePriceAtPurchase > 0)
+          ? it.basePriceAtPurchase
+          : (it.priceAtPurchase || 0);
         let fee = 0;
 
-        if (it.platformFeeAmount !== undefined) {
+        if (it.platformFeeAmount != null && it.platformFeeAmount >= 0) {
           fee = it.platformFeeAmount;
-        } else if (it.basePriceAtPurchase !== undefined) {
+        } else if (it.basePriceAtPurchase != null && it.basePriceAtPurchase > 0) {
           fee = Math.round(it.basePriceAtPurchase * 0.02); // 2% Platform Fee fallback
-        } else {
+        } else if (it.priceAtPurchase != null && it.priceAtPurchase > 0) {
           fee = Math.round(it.priceAtPurchase * 0.18); // 18% commission fallback for legacy
         }
 
