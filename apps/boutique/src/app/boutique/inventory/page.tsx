@@ -12,6 +12,12 @@ import {
   X,
 } from "lucide-react";
 
+const getStockBadgeStyle = (stock: number) => {
+  if (stock >= 10) return "bg-emerald-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-mono font-extrabold text-[12px] shadow-sm";
+  if (stock >= 5) return "bg-amber-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-mono font-extrabold text-[12px] shadow-sm";
+  return "bg-rose-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-mono font-extrabold text-[12px] shadow-sm";
+};
+
 export default function BoutiqueInventory() {
   const products = useQuery(api.products.getBoutiqueProducts);
   const orders = useQuery(api.orders.getBoutiqueOrders);
@@ -608,7 +614,7 @@ export default function BoutiqueInventory() {
                     >
                       -
                     </button>
-                    <span className={`w-6 text-center font-mono font-bold text-[13px] select-all leading-none ${isFirstOut ? "text-[#D93025]" : isFirstLow ? "text-[#E68A00]" : "text-slate-800"}`}>
+                    <span className={`${getStockBadgeStyle(firstStock)} select-all mx-1.5`}>
                       {firstStock}
                     </span>
                     <button
@@ -661,7 +667,7 @@ export default function BoutiqueInventory() {
                           >
                             -
                           </button>
-                          <span className={`w-6 text-center font-mono font-bold text-[13px] select-all leading-none ${isOut ? "text-[#D93025]" : isLow ? "text-[#E68A00]" : "text-slate-800"}`}>
+                          <span className={`${getStockBadgeStyle(stock)} select-all mx-1.5`}>
                             {stock}
                           </span>
                           <button

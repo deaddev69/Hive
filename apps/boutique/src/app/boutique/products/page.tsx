@@ -88,7 +88,7 @@ export default function BoutiqueProducts() {
   // Listing controls
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "live" | "pending" | "draft" | "low">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "live" | "pending" | "draft" | "low" | "missing_images">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
 
@@ -126,11 +126,12 @@ export default function BoutiqueProducts() {
 
   // Computations of metrics
   const stats = useMemo(() => {
-    if (!products) return { all: 0, live: 0, pending: 0, draft: 0, low: 0 };
+    if (!products) return { all: 0, live: 0, pending: 0, draft: 0, low: 0, missingImages: 0 };
     let live = 0;
     let pending = 0;
     let draft = 0;
     let low = 0;
+    let missingImages = 0;
 
     products.forEach((p: any) => {
       const isApproved = p.approvalStatus === "approved" || !p.approvalStatus;
@@ -148,9 +149,13 @@ export default function BoutiqueProducts() {
       if (hasLowStock) {
         low++;
       }
+
+      if (!p.images || p.images.length === 0) {
+        missingImages++;
+      }
     });
 
-    return { all: products.length, live, pending, draft, low };
+    return { all: products.length, live, pending, draft, low, missingImages };
   }, [products]);
 
   // Filter listings
@@ -169,6 +174,7 @@ export default function BoutiqueProducts() {
       if (statusFilter === "pending") return prod.active && isPending;
       if (statusFilter === "draft") return !prod.active;
       if (statusFilter === "low") return Object.values(prod.stockBySize).some((qty: any) => qty <= 2);
+      if (statusFilter === "missing_images") return !prod.images || prod.images.length === 0;
 
       return true;
     });
@@ -220,6 +226,57 @@ export default function BoutiqueProducts() {
             Manage your product listings, stock levels, and catalog.
           </p>
         </div>
+
+        {/* Needs Attention Panel */}
+        {(stats.low > 0 || stats.missingImages > 0 || stats.draft > 0) && (
+          <div className="bg-rose-50 border border-rose-100 rounded-3xl p-5 flex flex-col gap-3 shadow-sm select-none">
+            <h3 className="text-xs font-black text-rose-800 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+              Needs Attention
+            </h3>
+            <div className="flex flex-col gap-2.5 mt-0.5">
+              {stats.low > 0 && (
+                <button
+                  onClick={() => { setStatusFilter("low"); setCurrentPage(1); }}
+                  className={`flex items-center justify-between px-4 py-2.5 bg-white hover:bg-rose-50/20 border border-rose-100 rounded-2xl text-xs font-bold text-slate-700 transition-all select-none active:scale-[0.98] cursor-pointer ${
+                    statusFilter === "low" ? "ring-2 ring-rose-500/20 bg-rose-50/20" : ""
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    🚨 <span>{stats.low} {stats.low === 1 ? "Product is" : "Products are"} Low Stock</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Filter →</span>
+                </button>
+              )}
+              {stats.missingImages > 0 && (
+                <button
+                  onClick={() => { setStatusFilter("missing_images"); setCurrentPage(1); }}
+                  className={`flex items-center justify-between px-4 py-2.5 bg-white hover:bg-rose-50/20 border border-rose-100 rounded-2xl text-xs font-bold text-slate-700 transition-all select-none active:scale-[0.98] cursor-pointer ${
+                    statusFilter === "missing_images" ? "ring-2 ring-rose-500/20 bg-rose-50/20" : ""
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    🖼️ <span>{stats.missingImages} {stats.missingImages === 1 ? "Product is" : "Products are"} Missing Images</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Filter →</span>
+                </button>
+              )}
+              {stats.draft > 0 && (
+                <button
+                  onClick={() => { setStatusFilter("draft"); setCurrentPage(1); }}
+                  className={`flex items-center justify-between px-4 py-2.5 bg-white hover:bg-rose-50/20 border border-rose-100 rounded-2xl text-xs font-bold text-slate-700 transition-all select-none active:scale-[0.98] cursor-pointer ${
+                    statusFilter === "draft" ? "ring-2 ring-rose-500/20 bg-rose-50/20" : ""
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    📄 <span>{stats.draft} {stats.draft === 1 ? "Product is in" : "Products are in"} Draft</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Filter →</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Premium Interactive Filter Tabs */}
         <div className="flex border-b border-[#E6D5B8]/20 overflow-x-auto no-scrollbar gap-5 text-xs font-bold font-sans mt-1 select-none">
@@ -312,7 +369,11 @@ export default function BoutiqueProducts() {
               const isChangesRequested = prod.approvalStatus === "changes_requested";
 
               return (
-                <Card key={prod._id} className="overflow-hidden border-none shadow-sm rounded-3xl bg-white hover:shadow-md transition-shadow">
+                <Card 
+                  key={prod._id} 
+                  onClick={() => handleEdit(prod)}
+                  className="overflow-hidden border-none shadow-sm rounded-3xl bg-white hover:shadow-md transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] select-none"
+                >
                   <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-center">
                     
                     {/* Thumbnail Image / Monogram Fallback Placeholder */}
@@ -363,7 +424,7 @@ export default function BoutiqueProducts() {
                         )}
                       </div>
                       
-                      <div className="flex items-center gap-2 text-xs mb-3 font-sans">
+                      <div className="flex items-center gap-2 text-xs font-sans mt-0.5">
                         <span className="font-bold text-slate-700 font-mono">₹{(prod.basePrice || prod.price).toLocaleString()}</span>
                         <span className="w-1 h-1 rounded-full bg-slate-300" />
                         <span className="text-slate-500 font-medium truncate max-w-[120px]">
@@ -374,25 +435,6 @@ export default function BoutiqueProducts() {
                           {(Object.values(prod.stockBySize).reduce((a: any, b: any) => a + (b || 0), 0) as any)}{" "}
                           <span className="text-slate-500 font-medium">units</span>
                         </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 mt-auto">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(prod)}
-                          className="h-9 px-4 rounded-xl border-slate-200 text-slate-700 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-50 flex items-center gap-2"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" /> Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(prod._id)}
-                          className="h-9 w-9 p-0 rounded-xl border-slate-200 text-red-400 hover:text-red-600 hover:bg-slate-50 flex items-center justify-center shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
                       </div>
                     </div>
                   </CardContent>

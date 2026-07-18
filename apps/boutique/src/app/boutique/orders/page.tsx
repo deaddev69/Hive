@@ -15,7 +15,8 @@ import {
   Receipt,
   FileText,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Check
 } from "lucide-react";
 
 // ── Invoice download cell ────────────────────────────────────────────────────
@@ -153,6 +154,7 @@ export default function BoutiqueOrders() {
   const [cancelReason, setCancelReason] = React.useState<string>("");
   const [declineReasonType, setDeclineReasonType] = React.useState<string>("Out of stock");
   const [declineError, setDeclineError] = React.useState<boolean>(false);
+  const [acceptedOrderIds, setAcceptedOrderIds] = React.useState<Record<string, boolean>>({});
 
   if (orders === undefined) {
     return (
@@ -186,133 +188,222 @@ export default function BoutiqueOrders() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-hive-border/30 font-semibold text-hive-dark">
-                {orders.map((order: any) => (
-                  <tr key={order._id} className="flex flex-col md:table-row bg-white border-b border-hive-border/30 mb-4 md:mb-0 hover:bg-slate-50/30 transition-colors p-4 md:p-0">
-                    {/* Order Number */}
-                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
-                      <div className="flex flex-col gap-1">
-                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Order No.</span>
-                        <span className="font-mono font-bold text-sm text-slate-700">{order.orderNumber}</span>
-                      </div>
-                    </td>
+                {orders.map((order: any) => {
+                  const isPending = order.status === "pending_confirmation";
+                  const isAcceptedOptimistically = acceptedOrderIds[order._id];
 
-                    {/* Date */}
-                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
-                      <div className="flex flex-col gap-1.5 text-slate-700">
-                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Delivery Slot / Date</span>
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="w-4 h-4 text-hive-amber flex-shrink-0" />
-                          <span>{new Date(order.createdAt).toLocaleDateString()}</span>
-                        </div>
-                        {order.scheduledProcessingDate && (
-                          <div className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full w-fit whitespace-nowrap">
-                            Pre-order — process on {new Date(`${order.scheduledProcessingDate}T00:00:00+05:30`).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' })}
-                          </div>
-                        )}
-                      </div>
-                    </td>
+                  if (isPending) {
+                    return (
+                      <tr key={order._id} className="flex flex-col md:table-row bg-white border-b border-hive-border/30 mb-4 md:mb-0 hover:bg-slate-50/30 transition-colors p-6 md:p-6">
+                        <td colSpan={7} className="p-0">
+                          <div className="flex flex-col gap-4 text-left">
+                            {/* Header row: NEW ORDER + Time */}
+                            <div className="flex items-center justify-between">
+                              <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider border border-emerald-200/40 shadow-[0_1px_2px_rgba(16,185,129,0.04)]">
+                                New Order
+                              </span>
+                              <span className="text-xs font-semibold text-slate-500 font-sans">
+                                {new Date(order.createdAt || order._creationTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
 
-                    {/* Customer Details (delivery address as proxy) */}
-                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
-                      <div className="flex flex-col gap-1">
-                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Customer Details</span>
-                        <span className="font-bold text-hive-dark">
-                          {(() => {
-                            const name = order.customerName || order.deliveryAddress.name || order.deliveryAddress.label || "Customer";
-                            const parts = name.trim().split(" ");
-                            if (parts.length <= 1) return parts[0] || "Customer";
-                            return `${parts[0]} ${parts[parts.length - 1][0]}.`;
-                          })()}
-                        </span>
-                        <span className="text-hive-text-muted leading-tight max-w-xs truncate">
-                          {order.deliveryAddress.city}
-                        </span>
-                        <span className="text-[10px] font-mono text-slate-500">Pincode: {order.deliveryAddress.pincode}</span>
-                      </div>
-                    </td>
+                            {/* Pricing & Product Details */}
+                            <div className="flex flex-col gap-2 mt-1">
+                              <div className="text-2xl font-black text-slate-800">
+                                {formatCurrency(order.total)}
+                              </div>
+                              
+                              {order.items.map((it: any) => (
+                                <div key={it._id} className="flex items-center gap-3 mt-1">
+                                  <div className="relative w-10 h-12 rounded-lg border border-slate-100 overflow-hidden bg-slate-50 flex-shrink-0">
+                                    {it.imageUrl ? (
+                                      <img src={it.imageUrl} alt={it.productName} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-hive-text-muted">No Image</div>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-bold text-slate-800 leading-snug">{it.productName}</span>
+                                    <span className="text-xs font-semibold text-slate-500 mt-0.5">Size: {it.variantSize} x {it.quantity}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
 
-                    {/* Items */}
-                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
-                      <div className="flex flex-col gap-2">
-                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Purchased Items</span>
-                        {order.items.map((it: any) => (
-                          <div key={it._id} className="flex items-center gap-2">
-                            <div className="relative w-8 h-10 rounded border border-slate-100 overflow-hidden bg-slate-50 flex-shrink-0">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              {it.imageUrl ? (
-                                <img src={it.imageUrl} alt={it.productName} className="w-full h-full object-cover" />
+                            {/* Customer & Locality info */}
+                            <div className="flex items-center justify-between text-xs font-bold text-slate-700 pt-2 border-t border-slate-100/50 mt-1 select-none">
+                              <div className="flex flex-col">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Customer</span>
+                                <span className="text-xs font-bold text-slate-700 mt-0.5">
+                                  {(() => {
+                                    const name = order.customerName || order.deliveryAddress.name || order.deliveryAddress.label || "Customer";
+                                    const parts = name.trim().split(" ");
+                                    if (parts.length <= 1) return parts[0] || "Customer";
+                                    return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+                                  })()}
+                                </span>
+                              </div>
+                              <div className="flex flex-col text-right">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Delivery Area</span>
+                                <span className="text-xs font-bold text-slate-700 mt-0.5">
+                                  {(() => {
+                                    const line2 = order.deliveryAddress?.line2 || "";
+                                    const line1 = order.deliveryAddress?.line1 || "";
+                                    const city = order.deliveryAddress?.city || "";
+                                    return (line2 || line1 || city || "Local").split(',')[0].trim();
+                                  })()}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Accept / Decline Action buttons with optimistic anim */}
+                            <div className="flex gap-4 w-full mt-3">
+                              {isAcceptedOptimistically ? (
+                                <div className="w-full py-3.5 bg-emerald-50 border border-emerald-200/50 text-emerald-800 rounded-xl flex flex-col items-center justify-center gap-1 select-none animate-in fade-in zoom-in-95 duration-200">
+                                  <div className="flex items-center gap-1.5 font-extrabold text-sm">
+                                    <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
+                                    <span>Accepted!</span>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-emerald-600/80 uppercase tracking-wider animate-pulse">
+                                    Rider being assigned...
+                                  </span>
+                                </div>
                               ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[7px] font-bold text-hive-text-muted">No Image</div>
+                                <>
+                                  <button
+                                    onClick={async () => {
+                                      setAcceptedOrderIds(prev => ({ ...prev, [order._id]: true }));
+                                      setPendingActionId(order._id);
+                                      try {
+                                        await updateStatus({
+                                          orderId: order._id,
+                                          status: "confirmed",
+                                        });
+                                      } catch (err: any) {
+                                        setAcceptedOrderIds(prev => ({ ...prev, [order._id]: false }));
+                                        alert("Failed to accept order: " + err.message);
+                                      } finally {
+                                        setPendingActionId(null);
+                                      }
+                                    }}
+                                    disabled={pendingActionId === order._id}
+                                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-extrabold uppercase tracking-wider disabled:opacity-50 transition-all shadow-sm cursor-pointer text-center"
+                                  >
+                                    Accept
+                                  </button>
+                                  <button
+                                    onClick={() => setOrderToDecline(order._id)}
+                                    disabled={pendingActionId === order._id}
+                                    className="flex-1 py-3 bg-white border-2 border-rose-600 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-extrabold uppercase tracking-wider disabled:opacity-50 transition-all cursor-pointer text-center"
+                                  >
+                                    Decline
+                                  </button>
+                                </>
                               )}
                             </div>
-                            <div className="flex flex-col">
-                              <span className="font-bold text-hive-dark">{it.productName}</span>
-                              <span className="text-[10px] text-hive-text-muted">Size: {it.variantSize} x {it.quantity}</span>
-                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </td>
+                        </td>
+                      </tr>
+                    );
+                  }
 
-                    {/* Total */}
-                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 font-bold text-sm border-t md:border-t-0 border-hive-border/10">
-                      <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-1">Total Amount</span>
-                      <span>{formatCurrency(order.total)}</span>
-                    </td>
-
-                    {/* Invoice — NEW */}
-                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 border-t md:border-t-0 border-hive-border/10">
-                      <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-1">Invoice</span>
-                      <BoutiqueInvoiceCell orderId={order._id} />
-                    </td>
-
-                    {/* Status updater */}
-                    <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 min-w-[160px] border-t md:border-t-0 border-hive-border/10">
-                      <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-2">Order Status</span>
-                      {order.status === "pending_confirmation" ? (
-                        <div className="flex flex-col gap-2">
-                          <button
-                            onClick={async () => {
-                              setPendingActionId(order._id);
-                              try {
-                                await updateStatus({
-                                  orderId: order._id,
-                                  status: "confirmed",
-                                });
-                              } catch (err: any) {
-                                alert("Failed to accept order: " + err.message);
-                              } finally {
-                                setPendingActionId(null);
-                              }
-                            }}
-                            disabled={pendingActionId === order._id}
-                            className="w-full px-3 py-3 bg-emerald-600 text-white rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-emerald-700 disabled:opacity-50 shadow-sm transition-all"
-                          >
-                            {pendingActionId === order._id ? "Accepting..." : "Accept Order"}
-                          </button>
-                          <button
-                            onClick={() => setOrderToDecline(order._id)}
-                            disabled={pendingActionId === order._id}
-                            className="mb-4 w-full px-3 py-2.5 bg-white border-2 border-rose-600 text-rose-600 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-rose-50 disabled:opacity-50 transition-all"
-                          >
-                            Decline Order
-                          </button>
+                  // Non-pending (Already Accepted / Confirmed / etc.) row layout
+                  return (
+                    <tr key={order._id} className="flex flex-col md:table-row bg-white border-b border-hive-border/30 mb-4 md:mb-0 hover:bg-slate-50/30 transition-colors p-4 md:p-0">
+                      {/* Order Number */}
+                      <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
+                        <div className="flex flex-col gap-1">
+                          <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Order No.</span>
+                          <span className="font-mono font-bold text-sm text-slate-700">{order.orderNumber}</span>
                         </div>
-                      ) : (
+                      </td>
+
+                      {/* Date */}
+                      <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
+                        <div className="flex flex-col gap-1.5 text-slate-700">
+                          <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Delivery Slot / Date</span>
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4 text-hive-amber flex-shrink-0" />
+                            <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          {order.scheduledProcessingDate && (
+                            <div className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full w-fit whitespace-nowrap">
+                              Pre-order — process on {new Date(`${order.scheduledProcessingDate}T00:00:00+05:30`).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' })}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Customer Details (delivery address as proxy) */}
+                      <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
+                        <div className="flex flex-col gap-1">
+                          <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Customer Details</span>
+                          <span className="font-bold text-hive-dark">
+                            {(() => {
+                              const name = order.customerName || order.deliveryAddress.name || order.deliveryAddress.label || "Customer";
+                              const parts = name.trim().split(" ");
+                              if (parts.length <= 1) return parts[0] || "Customer";
+                              return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+                            })()}
+                          </span>
+                          <span className="text-hive-text-muted leading-tight max-w-xs truncate">
+                            {order.deliveryAddress.city}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-500">Pincode: {order.deliveryAddress.pincode}</span>
+                        </div>
+                      </td>
+
+                      {/* Items */}
+                      <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
+                        <div className="flex flex-col gap-2">
+                          <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Purchased Items</span>
+                          {order.items.map((it: any) => (
+                            <div key={it._id} className="flex items-center gap-2">
+                              <div className="relative w-8 h-10 rounded border border-slate-100 overflow-hidden bg-slate-50 flex-shrink-0">
+                                {it.imageUrl ? (
+                                  <img src={it.imageUrl} alt={it.productName} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-[7px] font-bold text-hive-text-muted">No Image</div>
+                                )}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-bold text-hive-dark">{it.productName}</span>
+                                <span className="text-[10px] text-hive-text-muted">Size: {it.variantSize} x {it.quantity}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* Total */}
+                      <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 font-bold text-sm border-t md:border-t-0 border-hive-border/10">
+                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-1">Total Amount</span>
+                        <span>{formatCurrency(order.total)}</span>
+                      </td>
+
+                      {/* Invoice */}
+                      <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 border-t md:border-t-0 border-hive-border/10">
+                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-1">Invoice</span>
+                        <BoutiqueInvoiceCell orderId={order._id} />
+                      </td>
+
+                      {/* Status updater */}
+                      <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 min-w-[160px] border-t md:border-t-0 border-hive-border/10">
+                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-2">Order Status</span>
                         <OrderStatusBadge status={order.status} />
-                      )}
-                      
-                      {(order.status === "confirmed" || order.status === "packed") && order.shipmentStatus === "booking_failed" && (
-                        <button
-                          onClick={() => setRetryDispatchOrderId(order._id)}
-                          className="mt-2 block w-full px-2.5 py-1.5 bg-rose-50 text-rose-700 text-[9px] font-extrabold uppercase tracking-wider rounded-xl border border-rose-200/40 hover:bg-rose-100/40 transition-all duration-150 text-center select-none"
-                        >
-                          Retry Booking
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                        
+                        {(order.status === "confirmed" || order.status === "packed") && order.shipmentStatus === "booking_failed" && (
+                          <button
+                            onClick={() => setRetryDispatchOrderId(order._id)}
+                            className="mt-2 block w-full px-2.5 py-1.5 bg-rose-50 text-rose-700 text-[9px] font-extrabold uppercase tracking-wider rounded-xl border border-rose-200/40 hover:bg-rose-100/40 transition-all duration-150 text-center select-none"
+                          >
+                            Retry Booking
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
 
                 {orders.length === 0 && (
                   <tr>

@@ -13,12 +13,12 @@ import { HiveLogo } from "@/components/shared/HiveLogo";
 import LegalAgreementStep from "@/components/onboarding/LegalAgreementStep";
 
 const BOUTIQUE_NAV_ITEMS = [
-  { label: "Dashboard", href: "/boutique", icon: Home },
+  { label: "Home", href: "/boutique", icon: Home },
   { label: "Products", href: "/boutique/products", icon: Tag },
-  { label: "Inventory", href: "/boutique/inventory", icon: Package },
+  { label: "Stock", href: "/boutique/inventory", icon: Package },
   { label: "Orders", href: "/boutique/orders", icon: ClipboardList },
-  { label: "Finance", href: "/boutique/finance", icon: Wallet },
-  { label: "Profile", href: "/boutique/profile", icon: User },
+  { label: "Money", href: "/boutique/finance", icon: Wallet },
+  { label: "More", href: "/boutique/profile", icon: User },
 ];
 
 export default function BoutiqueLayout({ children }: { children: React.ReactNode }) {

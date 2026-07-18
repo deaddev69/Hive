@@ -148,6 +148,24 @@ export default function BoutiqueDashboard() {
     return count;
   }, [products]);
 
+  const lowStockDetail = useMemo(() => {
+    if (!products) return null;
+    const lowStockItems: { name: string; size: string; stock: number }[] = [];
+    products.forEach((p: any) => {
+      p.sizes.forEach((sz: string) => {
+        const stock = p.stockBySize[sz] ?? 0;
+        if (stock > 0 && stock <= 2) {
+          lowStockItems.push({ name: p.name, size: sz, stock });
+        }
+      });
+    });
+    if (lowStockItems.length === 0) return null;
+    return {
+      first: lowStockItems[0]!,
+      totalCount: lowStockItems.length
+    };
+  }, [products]);
+
   const isCreatedToday = (order: any) => {
     const date = new Date(order._creationTime);
     const today = new Date();
@@ -420,17 +438,25 @@ export default function BoutiqueDashboard() {
 
           {/* Low Stock Item */}
           <div className="flex items-center gap-3">
-            {lowStockCount > 0 ? (
+            {lowStockDetail ? (
               <>
-                <span className="h-3 w-3 rounded-full bg-amber-500" />
-                <span className="text-lg font-bold text-slate-800">
-                  {lowStockCount} {lowStockCount === 1 ? "Product" : "Products"} Low Stock
+                <span className="h-3 w-3 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-base font-bold text-slate-800 leading-snug">
+                  {lowStockDetail.totalCount === 1 ? (
+                    <span>
+                      Only {lowStockDetail.first.stock} {lowStockDetail.first.size} left of {lowStockDetail.first.name}. <span className="text-hive-gold block font-semibold text-xs mt-0.5">Restock today?</span>
+                    </span>
+                  ) : (
+                    <span>
+                      Only {lowStockDetail.first.stock} {lowStockDetail.first.size} left of {lowStockDetail.first.name} (+{lowStockDetail.totalCount - 1} others). <span className="text-hive-gold block font-semibold text-xs mt-0.5">Restock today?</span>
+                    </span>
+                  )}
                 </span>
               </>
             ) : (
               <>
                 <span className="h-3 w-3 rounded-full bg-slate-300" />
-                <span className="text-lg font-semibold text-slate-400">
+                <span className="text-base font-semibold text-slate-400">
                   All Stock Okay
                 </span>
               </>
