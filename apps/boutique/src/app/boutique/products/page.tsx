@@ -429,12 +429,6 @@ export default function BoutiqueProducts() {
                       <Edit3 className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> Edit
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); handleEdit(prod); }}
-                      className="px-3 py-1.5 bg-white hover:bg-[#FAF6F0] border border-[#EBE3D5] rounded-[14px] text-[12px] font-bold text-[#2C261E] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                    >
-                      <span>📦</span> Inventory
-                    </button>
-                    <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(prod._id); }}
                       className="w-8 h-8 flex items-center justify-center bg-transparent hover:bg-rose-50 text-[#8C806D] hover:text-rose-600 rounded-[14px] transition-all cursor-pointer"
                       title="Delete Product"
