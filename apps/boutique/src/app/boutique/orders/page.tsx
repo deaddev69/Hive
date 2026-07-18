@@ -225,9 +225,9 @@ export default function BoutiqueOrders() {
                               </span>
                             </div>
 
-                            {/* 2. Compact Product Row (52x52px thumbnail + Category & Size) */}
-                            <div className="flex items-center gap-3">
-                              <div className="relative w-13 h-13 rounded-xl border border-slate-200 overflow-hidden bg-slate-50 flex-shrink-0 shadow-2xs">
+                            {/* 2. Compact Product Row (Exact 56x56px thumbnail + dominant title & size) */}
+                            <div className="flex items-center gap-3.5">
+                              <div className="w-[56px] h-[56px] rounded-[14px] border border-slate-200 overflow-hidden bg-slate-50 flex-shrink-0 shadow-2xs relative">
                                 {order.items?.[0]?.imageUrl ? (
                                   <img src={order.items[0].imageUrl} alt="" className="w-full h-full object-cover" />
                                 ) : (
@@ -250,13 +250,9 @@ export default function BoutiqueOrders() {
                               </div>
                             </div>
 
-                            {/* 3. Transparent Money & Lucide Customer Row */}
+                            {/* 3. Money & Lucide Customer Row */}
                             <div className="pt-2 border-t border-slate-100 flex flex-col gap-1">
-                              <div className="flex items-center justify-between text-[12px] text-slate-400 font-medium">
-                                <span>Selling price</span>
-                                <span>₹{baseRupees.toLocaleString("en-IN")}</span>
-                              </div>
-                              <span className="text-[12px] font-medium text-slate-500 block pt-0.5">
+                              <span className="text-[12px] font-medium text-slate-500 block">
                                 You&apos;ll receive
                               </span>
                               <div className="flex items-baseline justify-between -mt-0.5">
