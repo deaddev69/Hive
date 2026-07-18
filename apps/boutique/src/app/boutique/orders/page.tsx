@@ -171,9 +171,9 @@ export default function BoutiqueOrders() {
 
   return (
     <div className="flex flex-col gap-6 text-left pb-24">
-      <div>
-        <h1 className="text-3xl font-serif font-black text-hive-dark">Orders</h1>
-        <p className="text-sm text-hive-text-muted">Review incoming orders.</p>
+      <div className="flex flex-col gap-1 pt-1">
+        <h1 className="text-3xl font-serif font-black text-[#2C261E] tracking-tight">Orders</h1>
+        <p className="text-sm font-medium text-[#8C806D]">Review incoming orders.</p>
       </div>
 
       <Card className="border border-hive-border bg-white shadow-sm overflow-hidden rounded-3xl">
@@ -211,39 +211,39 @@ export default function BoutiqueOrders() {
                     const distanceStr = order.distanceKm ? `${order.distanceKm} km` : "3.2 km";
 
                     return (
-                      <tr key={order._id} className="flex flex-col md:table-row bg-white border border-slate-200 rounded-2xl mb-3.5 hover:shadow-2xs transition-all p-3.5 md:p-4.5">
+                      <tr key={order._id} className="flex flex-col md:table-row bg-[#FFFCF8] border border-[#EBE3D5]/80 shadow-[0_4px_20px_-4px_rgba(168,154,126,0.08)] rounded-2xl mb-3.5 hover:shadow-[0_8px_24px_-4px_rgba(168,154,126,0.14)] transition-all p-4 md:p-5">
                         <td colSpan={7} className="p-0">
                           <div className="flex flex-col text-left font-sans gap-2.5">
-                            {/* 1. Top Header: Status Capsule & Real Elapsed Timestamp */}
-                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                              <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full text-[11px] font-bold tracking-wide border border-emerald-200/50">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                NEW ORDER
+                            {/* 1. Top Header: Status Capsule (Warm cream & green dot) & Real Timestamp */}
+                            <div className="flex items-center justify-between pb-2 border-b border-[#EBE3D5]/60">
+                              <span className="inline-flex items-center gap-1.5 bg-[#FAF6F0] text-[#5C5346] px-2.5 py-0.5 rounded-full text-[12px] font-semibold tracking-normal border border-[#EBE3D5]/80">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                                New order
                               </span>
-                              <span className="text-[12px] text-slate-400 font-semibold font-mono">
+                              <span className="text-[12px] text-[#8C806D] font-medium font-mono">
                                 {timeText}
                               </span>
                             </div>
 
-                            {/* 2. Compact Product Row (Exact 56x56px thumbnail + dominant title & size) */}
+                            {/* 2. Compact Product Row (Exact 56x56px thumbnail + dominant title & muted gold category) */}
                             <div className="flex items-center gap-3.5">
-                              <div className="w-[56px] h-[56px] rounded-[14px] border border-slate-200 overflow-hidden bg-slate-50 flex-shrink-0 shadow-2xs relative">
+                              <div className="w-[56px] h-[56px] rounded-[14px] border border-[#EBE3D5] overflow-hidden bg-[#FAF6F0] flex-shrink-0 shadow-2xs relative">
                                 {order.items?.[0]?.imageUrl ? (
                                   <img src={order.items[0].imageUrl} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-slate-300">No Image</div>
+                                  <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-[#A89A7E]">No Image</div>
                                 )}
                               </div>
                               <div className="flex flex-col min-w-0 justify-center">
-                                <h3 className="text-[17px] font-bold text-slate-900 leading-tight truncate">
+                                <h3 className="text-[17px] font-extrabold text-[#2C261E] tracking-[-0.02em] leading-tight truncate">
                                   {order.items?.[0]?.productName || "Product Order"}
                                 </h3>
                                 {order.items?.[0]?.category && (
-                                  <span className="text-[13px] text-slate-400 font-medium">
+                                  <span className="text-[12px] font-semibold text-[#B88643] tracking-wide mt-0.5">
                                     {order.items[0].category}
                                   </span>
                                 )}
-                                <p className="text-[13px] text-slate-600 font-medium mt-0.5">
+                                <p className="text-[13px] font-medium text-[#7A6F5D] mt-0.5">
                                   Size {order.items?.[0]?.variantSize || "Free"} • Qty {order.items?.[0]?.quantity || 1}
                                   {order.items?.length > 1 ? ` (+${order.items.length - 1} more)` : ""}
                                 </p>
@@ -251,31 +251,31 @@ export default function BoutiqueOrders() {
                             </div>
 
                             {/* 3. Money & Lucide Customer Row */}
-                            <div className="pt-2 border-t border-slate-100 flex flex-col gap-1">
-                              <span className="text-[12px] font-medium text-slate-500 block">
+                            <div className="pt-2 border-t border-[#EBE3D5]/60 flex flex-col gap-1">
+                              <span className="text-[12px] font-medium text-[#8C806D] block">
                                 You&apos;ll receive
                               </span>
                               <div className="flex items-baseline justify-between -mt-0.5">
-                                <span className="text-[26px] font-bold text-slate-900 tracking-tight leading-none">
+                                <span className="text-[26px] font-black text-[#2C261E] tracking-tight leading-none">
                                   ₹{payoutRupees.toLocaleString("en-IN")}
                                 </span>
-                                <span className="text-[12px] font-medium text-slate-500">
+                                <span className="text-[12px] font-medium text-[#8C806D]">
                                   Hive fee ₹{feeRupees.toLocaleString("en-IN")}
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-3 text-[12px] text-slate-600 font-medium pt-2 border-t border-slate-100/80 mt-1">
-                                <span className="inline-flex items-center gap-1"><User className="w-3.5 h-3.5 text-slate-400 stroke-[2]" /> {firstCustName}</span>
-                                <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-slate-400 stroke-[2]" /> {locality}</span>
-                                <span className="text-slate-500 font-mono">{distanceStr}</span>
+                              <div className="flex items-center gap-3 text-[12px] text-[#5C5346] font-medium pt-2 border-t border-[#EBE3D5]/50 mt-1">
+                                <span className="inline-flex items-center gap-1"><User className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> {firstCustName}</span>
+                                <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> {locality}</span>
+                                <span className="text-[#8C806D] font-mono">{distanceStr}</span>
                               </div>
                             </div>
 
-                            {/* 4. Action Stack (~46px Accept Order button + clean Decline button) */}
-                            <div className="pt-2.5 border-t border-slate-100 flex flex-col items-center gap-1">
+                            {/* 4. Action Stack (~46px Warm Gold Accept Order CTA + subtle warm Decline button) */}
+                            <div className="pt-2.5 border-t border-[#EBE3D5]/60 flex flex-col items-center gap-1">
                               {isAcceptedOptimistically ? (
-                                <div className="w-full py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
-                                  <Check className="w-4 h-4 text-emerald-600 stroke-[3]" />
+                                <div className="w-full py-2.5 bg-[#FAF6F0] border border-[#EBE3D5] text-[#5C5346] rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
+                                  <Check className="w-4 h-4 text-[#C89653] stroke-[2.5]" />
                                   <span className="font-bold text-[13px]">Order Accepted — Assigning Rider...</span>
                                 </div>
                               ) : (
@@ -297,14 +297,14 @@ export default function BoutiqueOrders() {
                                       }
                                     }}
                                     disabled={pendingActionId === order._id}
-                                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-[14px] font-bold tracking-wide disabled:opacity-50 transition-all shadow-2xs cursor-pointer text-center"
+                                    className="w-full py-2.5 bg-[#C89653] hover:bg-[#B88643] active:bg-[#A67533] text-white rounded-xl text-[14px] font-extrabold tracking-wide disabled:opacity-50 transition-all shadow-[0_4px_14px_-3px_rgba(200,150,83,0.35)] cursor-pointer text-center"
                                   >
                                     Accept Order
                                   </button>
                                   <button
                                     onClick={() => setOrderToDecline(order._id)}
                                     disabled={pendingActionId === order._id}
-                                    className="w-full py-1.5 bg-transparent hover:bg-slate-50 active:bg-slate-100 text-slate-500 hover:text-rose-600 rounded-lg text-[13px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
+                                    className="w-full py-1.5 bg-transparent hover:bg-[#FAF6F0] active:bg-[#F3ECE1] text-[#8C806D] hover:text-rose-600 rounded-lg text-[13px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
                                   >
                                     Decline
                                   </button>
