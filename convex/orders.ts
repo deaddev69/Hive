@@ -878,6 +878,24 @@ export const getBoutiqueOrders = query({
       const shipment = shipmentsList[i];
       const profile = profilesList[i];
       const user = usersList[i];
+
+      // Calculate boutique pricing metrics (in paise)
+      let totalBasePrice = 0;
+      let totalPayout = 0;
+
+      items.forEach((it) => {
+        const qty = it.quantity || 1;
+        if (it.basePriceAtPurchase !== undefined && it.platformFeeAmount !== undefined) {
+          totalBasePrice += it.basePriceAtPurchase * qty;
+          totalPayout += (it.basePriceAtPurchase - it.platformFeeAmount) * qty;
+        } else {
+          // Legacy orders fallback
+          const payout = Math.floor(it.priceAtPurchase * 0.82);
+          totalBasePrice += payout * qty; // assume base is payout for legacy
+          totalPayout += payout * qty;
+        }
+      });
+
       return {
         ...order,
         items,
@@ -885,6 +903,8 @@ export const getBoutiqueOrders = query({
         invoiceNumber: invoice?.invoiceNumber || null,
         invoicePdfUrl: invoice?.pdfUrl || null,
         shipmentStatus: shipment?.status || null,
+        totalBasePrice,
+        totalPayout,
       };
     });
   },
