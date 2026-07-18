@@ -1,6 +1,6 @@
 "use client";
 
-// Trigger Vercel build for robust orders pricing fallbacks
+// Trigger Vercel build: null-safe order pricing checks deployed
 import React from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
