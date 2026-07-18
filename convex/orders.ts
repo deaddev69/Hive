@@ -885,15 +885,19 @@ export const getBoutiqueOrders = query({
 
       items.forEach((it) => {
         const qty = it.quantity || 1;
-        if (it.basePriceAtPurchase !== undefined && it.platformFeeAmount !== undefined) {
-          totalBasePrice += it.basePriceAtPurchase * qty;
-          totalPayout += (it.basePriceAtPurchase - it.platformFeeAmount) * qty;
+        const base = it.basePriceAtPurchase !== undefined ? it.basePriceAtPurchase : it.priceAtPurchase;
+        let fee = 0;
+
+        if (it.platformFeeAmount !== undefined) {
+          fee = it.platformFeeAmount;
+        } else if (it.basePriceAtPurchase !== undefined) {
+          fee = Math.round(it.basePriceAtPurchase * 0.02); // 2% Platform Fee fallback
         } else {
-          // Legacy orders fallback
-          const payout = Math.floor(it.priceAtPurchase * 0.82);
-          totalBasePrice += payout * qty; // assume base is payout for legacy
-          totalPayout += payout * qty;
+          fee = Math.round(it.priceAtPurchase * 0.18); // 18% commission fallback for legacy
         }
+
+        totalBasePrice += base * qty;
+        totalPayout += (base - fee) * qty;
       });
 
       return {
@@ -1770,4 +1774,20 @@ export const reconcileBoutiquePayouts = mutation({
 
     return { success: true, processedOrdersCount: args.orderIds.length };
   },
+});
+
+export const debugOrder = query({
+  args: { orderNumber: v.string() },
+  handler: async (ctx, args) => {
+    const order = await ctx.db
+      .query("orders")
+      .withIndex("by_orderNumber", (q) => q.eq("orderNumber", args.orderNumber))
+      .unique();
+    if (!order) return null;
+    const items = await ctx.db
+      .query("orderItems")
+      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+      .collect();
+    return { order, items };
+  }
 });
