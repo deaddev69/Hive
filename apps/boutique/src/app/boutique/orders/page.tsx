@@ -157,6 +157,7 @@ export default function BoutiqueOrders() {
   const [retryDispatchOrderId, setRetryDispatchOrderId] = React.useState<string | null>(null);
   const [cancelReason, setCancelReason] = React.useState<string>("");
   const [declineReasonType, setDeclineReasonType] = React.useState<string>("Out of stock");
+  const [declineStep, setDeclineStep] = React.useState<"confirm" | "reason">("confirm");
   const [declineError, setDeclineError] = React.useState<boolean>(false);
   const [acceptedOrderIds, setAcceptedOrderIds] = React.useState<Record<string, boolean>>({});
 
@@ -302,7 +303,10 @@ export default function BoutiqueOrders() {
                                     Accept Order
                                   </button>
                                   <button
-                                    onClick={() => setOrderToDecline(order._id)}
+                                    onClick={() => {
+                                      setOrderToDecline(order._id);
+                                      setDeclineStep("confirm");
+                                    }}
                                     disabled={pendingActionId === order._id}
                                     className="w-full py-1.5 bg-transparent hover:bg-[#FAF6F0] active:bg-[#F3ECE1] text-[#8C806D] hover:text-rose-600 rounded-lg text-[13px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
                                   >
@@ -431,96 +435,166 @@ export default function BoutiqueOrders() {
         </CardContent>
       </Card>
 
-      {/* Full-Screen Decline Modal */}
+      {/* Full-Screen Decline Modal (Apple restraint + Aesop warmth + Linear clarity) */}
       {orderToDecline !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
-            <div>
-              <h3 className="text-lg font-black text-hive-dark">Decline Order</h3>
-              <p className="text-xs font-bold text-rose-600 mt-1">
-                Declining this order will initiate a refund to the customer and cannot be undone.
-              </p>
-            </div>
-            
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="cancelReason" className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-                Reason for declining
-              </label>
-              <select
-                value={declineReasonType}
-                onChange={(e) => {
-                  setDeclineReasonType(e.target.value);
-                  setDeclineError(false);
-                }}
-                className="px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400 bg-slate-50 transition-colors"
-              >
-                <option value="Out of stock">Out of stock</option>
-                <option value="Store is too busy / SLA risk">Store is too busy / SLA risk</option>
-                <option value="Closing early">Closing early</option>
-                <option value="Other (Type reason)">Other (Type reason)</option>
-              </select>
-              
-              {declineReasonType === "Other (Type reason)" && (
-                <input 
-                  id="cancelReason"
-                  type="text" 
-                  placeholder="e.g. System glitch, Manager away" 
-                  value={cancelReason}
-                  onChange={(e) => {
-                    setCancelReason(e.target.value);
-                    setDeclineError(false);
-                  }}
-                  className={`mt-2 px-3 py-2.5 border ${declineError ? 'border-rose-400 bg-rose-50 placeholder:text-rose-300 focus:ring-rose-400' : 'border-slate-200 bg-slate-50 focus:border-slate-400 focus:ring-slate-400'} rounded-xl text-sm focus:outline-none focus:ring-1 transition-colors`}
-                  autoFocus
-                />
-              )}
-            </div>
-            
-            <div className="flex gap-3 mt-2">
-              <button
-                onClick={async () => {
-                  const finalReason = declineReasonType === "Other (Type reason)" ? cancelReason.trim() : declineReasonType;
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2C261E]/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-[#FFFCF8] rounded-3xl p-6 md:p-7 w-full max-w-md shadow-[0_20px_60px_-15px_rgba(44,38,30,0.25)] border border-[#EBE3D5] flex flex-col gap-5 animate-in zoom-in-95 duration-200">
+            {declineStep === "confirm" ? (
+              <>
+                <div>
+                  <h3 className="text-xl font-serif font-black text-[#2C261E]">Are you sure you can&apos;t fulfil this order?</h3>
+                  <p className="text-[13px] font-medium text-[#7A6F5D] mt-2 leading-relaxed">
+                    This helps keep delivery times reliable for customers and protects your boutique rating.
+                  </p>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setOrderToDecline(null);
+                      setDeclineStep("confirm");
+                      setCancelReason("");
+                      setDeclineReasonType("Out of stock");
+                      setDeclineError(false);
+                    }}
+                    className="flex-1 py-3 bg-[#C89653] hover:bg-[#B88643] active:bg-[#A67533] text-white rounded-xl text-[14px] font-extrabold tracking-wide transition-all shadow-xs cursor-pointer text-center"
+                  >
+                    Continue with order
+                  </button>
+                  <button
+                    onClick={() => setDeclineStep("reason")}
+                    className="py-3 px-5 bg-transparent hover:bg-[#FAF6F0] text-[#8C806D] hover:text-rose-600 rounded-xl text-[13px] font-bold tracking-wide transition-all cursor-pointer text-center"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <h3 className="text-xl font-serif font-black text-[#2C261E]">Decline order</h3>
+                  <p className="text-[13px] font-medium text-[#5C5346] mt-1">
+                    This order will be cancelled and the customer will be notified.
+                  </p>
+                  <p className="text-[11px] font-medium text-[#8C806D] mt-0.5">
+                    Refunds, if applicable, will be processed automatically.
+                  </p>
+                </div>
+                
+                <div className="flex flex-col gap-2 pt-1">
+                  <span className="text-[13px] font-extrabold text-[#2C261E] pb-1">
+                    Why can&apos;t you fulfil this order?
+                  </span>
                   
-                  if (declineReasonType === "Other (Type reason)" && !finalReason) {
-                    setDeclineError(true);
-                    return;
-                  }
+                  {[
+                    "Out of stock",
+                    "Unable to prepare in time",
+                    "Store closing",
+                    "Other"
+                  ].map((option) => {
+                    const isSelected = declineReasonType === (option === "Other" ? "Other (Type reason)" : option);
+                    return (
+                      <div
+                        key={option}
+                        onClick={() => {
+                          const val = option === "Other" ? "Other (Type reason)" : option;
+                          setDeclineReasonType(val);
+                          setDeclineError(false);
+                        }}
+                        className={`p-3.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer select-none ${
+                          isSelected
+                            ? "border-[#C89653] bg-[#FAF6F0] text-[#2C261E] font-extrabold shadow-2xs"
+                            : "border-[#EBE3D5] bg-white text-[#5C5346] font-semibold hover:border-[#C89653]/50 hover:bg-[#FAF6F0]/40"
+                        }`}
+                      >
+                        <span className="text-[13px]">{option}</span>
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
+                          isSelected
+                            ? "bg-[#C89653] text-white"
+                            : "border border-[#EBE3D5] text-transparent"
+                        }`}>
+                          ✓
+                        </span>
+                      </div>
+                    );
+                  })}
                   
-                  setPendingActionId(orderToDecline);
-                  try {
-                    await updateStatus({
-                      orderId: orderToDecline as Id<"orders">,
-                      status: "cancelled",
-                      cancelReason: finalReason,
-                    });
-                  } catch (err: any) {
-                    alert("Failed to decline order: " + err.message);
-                  } finally {
-                    setPendingActionId(null);
-                    setOrderToDecline(null);
-                    setCancelReason("");
-                    setDeclineReasonType("Out of stock");
-                    setDeclineError(false);
-                  }
-                }}
-                disabled={pendingActionId === orderToDecline}
-                className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black hover:bg-rose-700 disabled:opacity-50 transition-colors"
-              >
-                {pendingActionId === orderToDecline ? "Processing..." : "Confirm Decline"}
-              </button>
-              <button
-                onClick={() => {
-                  setOrderToDecline(null);
-                  setCancelReason("");
-                  setDeclineReasonType("Out of stock");
-                  setDeclineError(false);
-                }}
-                disabled={pendingActionId === orderToDecline}
-                className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 disabled:opacity-50 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
+                  {declineReasonType === "Other (Type reason)" && (
+                    <input 
+                      id="cancelReason"
+                      type="text" 
+                      placeholder="e.g. System glitch, Manager away" 
+                      value={cancelReason}
+                      onChange={(e) => {
+                        setCancelReason(e.target.value);
+                        setDeclineError(false);
+                      }}
+                      className={`mt-1 px-3.5 py-3 border ${
+                        declineError 
+                          ? "border-rose-400 bg-rose-50 placeholder:text-rose-300 focus:ring-rose-400" 
+                          : "border-[#EBE3D5] bg-white focus:border-[#C89653] focus:ring-[#C89653]"
+                      } rounded-xl text-sm font-medium text-[#2C261E] focus:outline-none focus:ring-1 transition-colors w-full`}
+                      autoFocus
+                    />
+                  )}
+
+                  {declineReasonType === "Out of stock" && (
+                    <div className="p-3 bg-[#FAF6F0] border border-[#EBE3D5] rounded-xl text-[12px] font-medium text-[#7A6F5D] flex items-start gap-2 mt-1">
+                      <span>💡</span>
+                      <span>Consider updating your inventory after declining this order.</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-[#EBE3D5]/60">
+                  <button
+                    onClick={() => {
+                      setOrderToDecline(null);
+                      setDeclineStep("confirm");
+                      setCancelReason("");
+                      setDeclineReasonType("Out of stock");
+                      setDeclineError(false);
+                    }}
+                    disabled={pendingActionId === orderToDecline}
+                    className="flex-1 py-3 bg-[#C89653] hover:bg-[#B88643] active:bg-[#A67533] text-white rounded-xl text-[14px] font-extrabold tracking-wide transition-all shadow-xs cursor-pointer text-center"
+                  >
+                    Keep Order
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const finalReason = declineReasonType === "Other (Type reason)" ? cancelReason.trim() : declineReasonType;
+                      
+                      if (declineReasonType === "Other (Type reason)" && !finalReason) {
+                        setDeclineError(true);
+                        return;
+                      }
+                      
+                      setPendingActionId(orderToDecline);
+                      try {
+                        await updateStatus({
+                          orderId: orderToDecline as Id<"orders">,
+                          status: "cancelled",
+                          cancelReason: finalReason,
+                        });
+                      } catch (err: any) {
+                        alert("Failed to decline order: " + err.message);
+                      } finally {
+                        setPendingActionId(null);
+                        setOrderToDecline(null);
+                        setDeclineStep("confirm");
+                        setCancelReason("");
+                        setDeclineReasonType("Out of stock");
+                        setDeclineError(false);
+                      }
+                    }}
+                    disabled={pendingActionId === orderToDecline}
+                    className="py-3 px-5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 rounded-xl text-[13px] font-bold tracking-wide transition-all cursor-pointer text-center disabled:opacity-50"
+                  >
+                    {pendingActionId === orderToDecline ? "Processing..." : "Decline order"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
