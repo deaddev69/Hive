@@ -92,9 +92,9 @@ export default function BoutiqueProducts() {
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
 
-  // Modal State
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [showMoreActions, setShowMoreActions] = useState(false);
 
   const handleOpenCreate = () => {
     setEditingProduct(null);
@@ -217,111 +217,99 @@ export default function BoutiqueProducts() {
 
   return (
     <div className="flex flex-col gap-5 text-left h-full min-h-[calc(100vh-64px)] overflow-x-hidden bg-transparent -m-4 md:-m-10 p-4 md:p-10 font-sans">
-      <div className="max-w-2xl mx-auto w-full flex flex-col gap-5 pt-2 pb-10">
+      <div className="max-w-4xl mx-auto w-full flex flex-col gap-6 pt-2 pb-12">
         
-        {/* Header Section */}
-        <div className="flex flex-col gap-2">
-          <h1 className="text-4xl leading-none font-serif font-bold text-[#232B2B]">Products</h1>
-          <p className="text-[13px] font-medium text-slate-500 max-w-sm leading-relaxed">
-            Manage your product listings, stock levels, and catalog.
+        {/* Header Section (#10) */}
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-3xl font-serif font-black text-[#2C261E] tracking-tight">Products</h1>
+          <p className="text-sm font-medium text-[#8C806D]">
+            Manage products, pricing and stocks.
           </p>
         </div>
 
-        {/* Needs Attention Panel */}
-        {(stats.low > 0 || stats.missingImages > 0 || stats.draft > 0) && (
-          <div className="bg-rose-50 border border-rose-100 rounded-3xl p-5 flex flex-col gap-3 shadow-sm select-none">
-            <h3 className="text-xs font-black text-rose-800 uppercase tracking-widest flex items-center gap-1.5 leading-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-              Needs Attention
-            </h3>
-            <div className="flex flex-col gap-2.5 mt-0.5">
-              {stats.low > 0 && (
-                <button
-                  onClick={() => { setStatusFilter("low"); setCurrentPage(1); }}
-                  className={`flex items-center justify-between px-4 py-2.5 bg-white hover:bg-rose-50/20 border border-rose-100 rounded-2xl text-xs font-bold text-slate-700 transition-all select-none active:scale-[0.98] cursor-pointer ${
-                    statusFilter === "low" ? "ring-2 ring-rose-500/20 bg-rose-50/20" : ""
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    🚨 <span>{stats.low} {stats.low === 1 ? "Product is" : "Products are"} Low Stock</span>
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Filter →</span>
-                </button>
-              )}
-              {stats.missingImages > 0 && (
-                <button
-                  onClick={() => { setStatusFilter("missing_images"); setCurrentPage(1); }}
-                  className={`flex items-center justify-between px-4 py-2.5 bg-white hover:bg-rose-50/20 border border-rose-100 rounded-2xl text-xs font-bold text-slate-700 transition-all select-none active:scale-[0.98] cursor-pointer ${
-                    statusFilter === "missing_images" ? "ring-2 ring-rose-500/20 bg-rose-50/20" : ""
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    🖼️ <span>{stats.missingImages} {stats.missingImages === 1 ? "Product is" : "Products are"} Missing Images</span>
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Filter →</span>
-                </button>
-              )}
-              {stats.draft > 0 && (
-                <button
-                  onClick={() => { setStatusFilter("draft"); setCurrentPage(1); }}
-                  className={`flex items-center justify-between px-4 py-2.5 bg-white hover:bg-rose-50/20 border border-rose-100 rounded-2xl text-xs font-bold text-slate-700 transition-all select-none active:scale-[0.98] cursor-pointer ${
-                    statusFilter === "draft" ? "ring-2 ring-rose-500/20 bg-rose-50/20" : ""
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    📄 <span>{stats.draft} {stats.draft === 1 ? "Product is in" : "Products are in"} Draft</span>
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Filter →</span>
-                </button>
-              )}
+        {/* Dashboard Bar + Attention Banner (#1, #11, & 'The biggest thing missing') */}
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-4 bg-[#FFFCF8] border border-[#EBE3D5]/80 rounded-2xl p-4 shadow-[0_4px_20px_-4px_rgba(168,154,126,0.08)]">
+            <div className="flex flex-col items-center sm:items-start px-2 border-r border-[#EBE3D5]/60">
+              <span className="text-[11px] font-semibold text-[#8C806D] uppercase tracking-wider">Total</span>
+              <span className="text-xl sm:text-2xl font-black text-[#2C261E] font-mono leading-tight">{stats.all}</span>
+            </div>
+            <div className="flex flex-col items-center sm:items-start px-3 sm:px-4 border-r border-[#EBE3D5]/60">
+              <span className="text-[11px] font-semibold text-[#8C806D] uppercase tracking-wider">Live</span>
+              <span className="text-xl sm:text-2xl font-black text-[#10B981] font-mono leading-tight">{stats.live}</span>
+            </div>
+            <div className="flex flex-col items-center sm:items-start px-3 sm:px-4 border-r border-[#EBE3D5]/60">
+              <span className="text-[11px] font-semibold text-[#8C806D] uppercase tracking-wider">Low Stock</span>
+              <span className="text-xl sm:text-2xl font-black text-[#C89653] font-mono leading-tight">{stats.low}</span>
+            </div>
+            <div className="flex flex-col items-center sm:items-start px-2 sm:px-4">
+              <span className="text-[11px] font-semibold text-[#8C806D] uppercase tracking-wider">Drafts</span>
+              <span className="text-xl sm:text-2xl font-black text-[#7A6F5D] font-mono leading-tight">{stats.draft}</span>
             </div>
           </div>
-        )}
 
-        {/* Premium Interactive Filter Tabs */}
-        <div className="flex border-b border-[#E6D5B8]/20 overflow-x-auto no-scrollbar gap-5 text-xs font-bold font-sans mt-1 select-none">
+          {(stats.low > 0 || stats.missingImages > 0) && (
+            <div className="bg-[#FAF6F0] border border-[#C89653]/40 rounded-xl px-4 py-3 flex items-center justify-between text-[12px] text-[#2C261E] shadow-2xs select-none">
+              <span className="flex items-center gap-2 font-semibold">
+                <span className="text-[#C89653] font-bold">⚠</span>
+                <span>
+                  {stats.low + stats.missingImages} {stats.low + stats.missingImages === 1 ? "product needs" : "products need"} attention ({stats.low} low stock, {stats.missingImages} missing images)
+                </span>
+              </span>
+              <button
+                onClick={() => { setStatusFilter(stats.low > 0 ? "low" : "missing_images"); setCurrentPage(1); }}
+                className="text-[#C89653] font-bold hover:underline tracking-wide uppercase text-[11px] shrink-0 ml-2 cursor-pointer"
+              >
+                View →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Streamlined Tabs (#2) */}
+        <div className="flex border-b border-[#EBE3D5] gap-6 text-[13px] font-bold font-sans mt-1 select-none overflow-x-auto no-scrollbar">
           {[
-            { id: "all", label: "ALL", count: stats.all },
-            { id: "live", label: "LIVE", count: stats.live },
-            { id: "pending", label: "PENDING REVIEW", count: stats.pending },
-            { id: "draft", label: "DRAFTS", count: stats.draft },
-            { id: "low", label: "LOW STOCK", count: stats.low },
+            { id: "all", label: "All", count: null },
+            { id: "live", label: "Live", count: null },
+            { id: "draft", label: "Drafts", count: stats.draft > 0 ? stats.draft : null },
+            { id: "pending", label: "Review", count: stats.pending > 0 ? stats.pending : null, isAlert: stats.pending > 0 },
+            { id: "low", label: "Low Stock", count: stats.low > 0 ? stats.low : null, isAlert: stats.low > 0 },
           ].map((tab) => {
             const isActive = statusFilter === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => { setStatusFilter(tab.id as any); setCurrentPage(1); }}
-                className={`pb-3 border-b-2 transition-all whitespace-nowrap active:scale-95 flex items-center gap-1.5 ${
+                className={`pb-3 border-b-2 transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                   isActive 
-                    ? "border-[#C89653] text-[#1A1D1D]" 
-                    : "border-transparent text-slate-400 hover:text-slate-700"
+                    ? "border-[#C89653] text-[#2C261E]" 
+                    : "border-transparent text-[#8C806D] hover:text-[#2C261E]"
                 }`}
               >
                 <span>{tab.label}</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono leading-none ${
-                  isActive ? "bg-[#C89653]/10 text-[#C89653]" : "bg-slate-100 text-slate-500"
-                }`}>
-                  {tab.count}
-                </span>
+                {tab.count !== null && (
+                  <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold leading-none ${
+                    tab.isAlert ? "bg-rose-50 text-rose-600 border border-rose-200/50" : "bg-[#FAF6F0] text-[#7A6F5D] border border-[#EBE3D5]"
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Filter and Search Bar */}
-        <div className="flex flex-col gap-4 mt-1">
-          
-          {/* Search Input and Category Selector Dropdown */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        {/* Search Input, Categories & Action Buttons (#3, #4, #12) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mt-1">
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8C806D] stroke-[1.75]" />
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Search by product name"
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                className="w-full pl-10 pr-4 py-3 bg-white border border-[#E6D5B8]/30 rounded-2xl text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-[#C89653] shadow-sm placeholder:text-slate-400 text-slate-800 font-sans"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#FFFCF8] border border-[#EBE3D5] rounded-xl text-[13px] font-medium focus:outline-none focus:border-[#C89653] focus:ring-1 focus:ring-[#C89653] shadow-2xs placeholder:text-[#8C806D] text-[#2C261E] font-sans"
               />
             </div>
             
@@ -332,34 +320,52 @@ export default function BoutiqueProducts() {
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-3 w-full mt-1">
-            <Button 
-              variant="outline" 
-              className="flex-1 bg-white border border-slate-200 text-slate-700 font-bold text-[11px] uppercase tracking-widest py-3.5 rounded-2xl shadow-sm hover:bg-slate-50 flex items-center justify-center gap-2"
-            >
-              <Upload className="w-3.5 h-3.5" /> BULK UPLOAD
-            </Button>
-            <Button 
+          {/* Action Buttons (#4) */}
+          <div className="flex items-center gap-2.5 shrink-0 relative">
+            <button 
               onClick={handleOpenCreate}
-              className="flex-1 bg-[#C89653] hover:bg-[#b08143] text-white font-bold text-[11px] uppercase tracking-widest py-3.5 rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all select-none active:scale-95"
+              className="px-5 py-2.5 bg-[#C89653] hover:bg-[#B88643] active:bg-[#A67533] text-white font-extrabold text-[13px] rounded-xl shadow-[0_4px_14px_-3px_rgba(200,150,83,0.35)] flex items-center gap-2 transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4" /> ADD PRODUCT
-            </Button>
+              <Plus className="w-4 h-4 stroke-[2.5]" /> Add Product
+            </button>
+            
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowMoreActions(!showMoreActions)}
+                className="px-3.5 py-2.5 bg-[#FFFCF8] hover:bg-[#FAF6F0] border border-[#EBE3D5] text-[#7A6F5D] font-bold text-[13px] rounded-xl transition-all cursor-pointer flex items-center gap-1 shadow-2xs select-none"
+              >
+                <span>⋯</span> More
+              </button>
+              
+              {showMoreActions && (
+                <div className="absolute right-0 top-[110%] bg-[#FFFCF8] border border-[#EBE3D5] rounded-xl shadow-lg z-50 w-44 py-1.5 animate-in fade-in slide-in-from-top-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMoreActions(false);
+                      alert("Bulk upload / CSV import: Select your catalog file to ingest.");
+                    }}
+                    className="w-full px-4 py-2 text-[12px] font-bold text-left text-[#5C5346] hover:bg-[#FAF6F0] hover:text-[#2C261E] transition-colors flex items-center gap-2 cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> Bulk upload CSV
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-
         </div>
 
-        {/* Listings Grid */}
-        <div className="flex flex-col gap-4 mt-4">
+        {/* Listings Grid (#6, #7, #9, Quick Actions) */}
+        <div className="flex flex-col gap-3 mt-2">
           {paginatedProducts.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center justify-center">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                <Search className="w-6 h-6 text-slate-300" />
+            <div className="text-center py-16 bg-[#FFFCF8] rounded-3xl border border-[#EBE3D5]/80 shadow-2xs flex flex-col items-center justify-center">
+              <div className="w-16 h-16 bg-[#FAF6F0] rounded-full flex items-center justify-center mb-4 border border-[#EBE3D5]">
+                <Search className="w-6 h-6 text-[#8C806D] stroke-[1.5]" />
               </div>
-              <h3 className="text-sm font-black uppercase tracking-widest text-slate-700 mb-1">NO PRODUCTS FOUND</h3>
-              <p className="text-xs text-slate-400 max-w-[200px] leading-relaxed">
-                Adjust your filters or create a new product to get started.
+              <h3 className="text-base font-serif font-black text-[#2C261E] mb-1">No products found</h3>
+              <p className="text-[13px] text-[#7A6F5D] max-w-xs leading-relaxed">
+                Adjust your filters or click Add Product to build your catalog.
               </p>
             </div>
           ) : (
@@ -368,77 +374,97 @@ export default function BoutiqueProducts() {
               const isPending = prod.approvalStatus === "pending";
               const isChangesRequested = prod.approvalStatus === "changes_requested";
 
+              const totalStock = Object.values(prod.stockBySize || {}).reduce((a: any, b: any) => a + (b || 0), 0) as number;
+
               return (
-                <Card 
+                <div 
                   key={prod._id} 
                   onClick={() => handleEdit(prod)}
-                  className="overflow-hidden border-none shadow-sm rounded-3xl bg-white hover:shadow-md transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] select-none"
+                  className="p-4 sm:p-5 bg-[#FFFCF8] border border-[#EBE3D5]/80 shadow-[0_4px_20px_-4px_rgba(168,154,126,0.08)] rounded-2xl hover:shadow-[0_8px_24px_-4px_rgba(168,154,126,0.14)] transition-all cursor-pointer flex flex-col sm:flex-row gap-4 sm:items-center select-none"
                 >
-                  <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:items-center">
-                    
-                    {/* Thumbnail Image / Monogram Fallback Placeholder */}
-                    <div className="w-24 h-24 sm:w-20 sm:h-20 shrink-0 bg-[#FAF9F5] rounded-2xl overflow-hidden relative border border-[#E6D5B8]/30 flex items-center justify-center">
-                      {getProductImage(prod) ? (
-                        <img src={getProductImage(prod) || ""} alt={prod.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-[#C89653] font-bold text-lg font-serif leading-none select-none">
-                          {prod.name ? prod.name.charAt(0).toUpperCase() : "H"}
-                        </span>
-                      )}
-                      {!prod.active && (
-                        <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px]" />
-                      )}
-                    </div>
+                  {/* Thumbnail Image (Restrained 56x56px POS Sizing) */}
+                  <div className="w-[56px] h-[56px] shrink-0 bg-[#FAF6F0] rounded-[14px] overflow-hidden relative border border-[#EBE3D5] flex items-center justify-center shadow-2xs">
+                    {getProductImage(prod) ? (
+                      <img src={getProductImage(prod) || ""} alt={prod.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[#C89653] font-bold text-base font-serif leading-none select-none">
+                        {prod.name ? prod.name.charAt(0).toUpperCase() : "H"}
+                      </span>
+                    )}
+                    {!prod.active && (
+                      <div className="absolute inset-0 bg-[#FFFCF8]/50 backdrop-blur-[1px]" />
+                    )}
+                  </div>
 
-                    {/* Info */}
-                    <div className="flex-1 flex flex-col min-w-0 font-sans">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="text-base font-black text-slate-800 truncate pr-2 uppercase font-sans tracking-tight">
+                  {/* Info (#7, #9) */}
+                  <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0 font-sans">
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-2.5">
+                        <h3 className="text-[17px] font-extrabold text-[#2C261E] tracking-[-0.02em] truncate leading-tight">
                           {prod.name}
                         </h3>
+                        {/* Live / Status Badge (#6) */}
                         {!prod.active ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-widest uppercase px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-200/50 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                            DRAFT
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF6F0] text-[#7A6F5D] border border-[#EBE3D5]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#8C806D]" /> Draft
                           </span>
                         ) : isApproved ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-widest uppercase px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/40 shadow-[0_1px_2px_rgba(16,185,129,0.04)]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            LIVE
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF6F0] text-[#2C261E] border border-[#EBE3D5]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Live
                           </span>
                         ) : isPending ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-widest uppercase px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200/40 shadow-[0_1px_2px_rgba(245,158,11,0.04)]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                            PENDING
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF6F0] text-[#B88643] border border-[#C89653]/40">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#C89653] animate-pulse" /> Review
                           </span>
                         ) : isChangesRequested ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-widest uppercase px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200/40 shadow-[0_1px_2px_rgba(239,68,68,0.04)]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-                            CHANGES REQ
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/60">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Changes req
                           </span>
                         ) : (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-widest uppercase px-2.5 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-200/50 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                            INACTIVE
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-[#FAF6F0] text-[#7A6F5D] border border-[#EBE3D5]">
+                            Draft
                           </span>
                         )}
                       </div>
                       
-                      <div className="flex items-center gap-2 text-xs font-sans mt-0.5">
-                        <span className="font-bold text-slate-700 font-mono">₹{(prod.basePrice || prod.price).toLocaleString()}</span>
-                        <span className="w-1 h-1 rounded-full bg-slate-300" />
-                        <span className="text-slate-500 font-medium truncate max-w-[120px]">
-                          {categories?.find((c: any) => c._id === prod.categoryId)?.name || "Unknown"}
+                      <div className="flex items-center gap-2 text-[13px] font-sans mt-1 text-[#7A6F5D]">
+                        <span className="font-bold text-[#2C261E] font-mono">₹{(prod.basePrice || prod.price).toLocaleString("en-IN")}</span>
+                        <span className="w-1 h-1 rounded-full bg-[#EBE3D5]" />
+                        <span className="font-medium text-[#8C806D] truncate max-w-[140px]">
+                          {categories?.find((c: any) => c._id === prod.categoryId)?.name || "Boutique Item"}
                         </span>
-                        <span className="w-1 h-1 rounded-full bg-slate-300" />
-                        <span className="text-slate-700 font-bold">
-                          {(Object.values(prod.stockBySize).reduce((a: any, b: any) => a + (b || 0), 0) as any)}{" "}
-                          <span className="text-slate-500 font-medium">units</span>
+                        <span className="w-1 h-1 rounded-full bg-[#EBE3D5]" />
+                        <span className="font-bold text-[#2C261E]">
+                          {totalStock}{" "}
+                          <span className="font-medium text-[#8C806D]">in stock</span>
                         </span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+
+                    {/* Quick Action Buttons ('One feature I would definitely add') */}
+                    <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#EBE3D5]/60 justify-end sm:justify-start">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEdit(prod); }}
+                        className="px-3 py-1.5 bg-[#FAF6F0] hover:bg-[#F3ECE1] border border-[#EBE3D5] rounded-xl text-[12px] font-bold text-[#2C261E] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> Edit
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEdit(prod); }}
+                        className="px-3 py-1.5 bg-[#FAF6F0] hover:bg-[#F3ECE1] border border-[#EBE3D5] rounded-xl text-[12px] font-bold text-[#2C261E] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                      >
+                        <span>📦</span> Stock
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(prod._id); }}
+                        className="p-1.5 bg-transparent hover:bg-rose-50 text-[#8C806D] hover:text-rose-600 rounded-xl transition-all cursor-pointer"
+                        title="Delete Product"
+                      >
+                        <Trash2 className="w-4 h-4 stroke-[1.75]" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               );
             })
           )}
