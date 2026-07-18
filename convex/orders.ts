@@ -2,7 +2,7 @@
 // Order placement, list, and detail queries for the HIVE customer app.
 // All operations are auth-gated with ownership checks.
 
-import { mutation, query, internalMutation, action } from "./_generated/server";
+import { mutation, query, internalMutation, action, internalQuery } from "./_generated/server";
 import { triggerNotification } from "./lib/notifications";
 import { v, ConvexError } from "convex/values";
 import { getAuthenticatedUser, getMyBoutique, getCurrentUserOrNull, requireRole } from "./lib/auth";
@@ -863,20 +863,25 @@ export const getBoutiqueOrders = query({
 
     if (orders.length === 0) return [];
 
-    // Batch load order items, invoices, and shipments
-    const [itemsList, invoicesList, shipmentsList] = await Promise.all([
+    // Batch load order items, invoices, shipments, customerProfiles, and users
+    const [itemsList, invoicesList, shipmentsList, profilesList, usersList] = await Promise.all([
       Promise.all(orders.map((o) => ctx.db.query("orderItems").withIndex("by_orderId", (q) => q.eq("orderId", o._id)).collect())),
       Promise.all(orders.map((o) => ctx.db.query("invoices").withIndex("by_order_id", (q) => q.eq("orderId", o._id)).unique())),
-      Promise.all(orders.map((o) => o.shipmentId ? ctx.db.get(o.shipmentId) : null))
+      Promise.all(orders.map((o) => o.shipmentId ? ctx.db.get(o.shipmentId) : null)),
+      Promise.all(orders.map((o) => ctx.db.query("customerProfiles").withIndex("by_userId", (q) => q.eq("userId", o.customerId)).unique())),
+      Promise.all(orders.map((o) => ctx.db.get(o.customerId)))
     ]);
 
     return orders.map((order, i) => {
       const items = itemsList[i] || [];
       const invoice = invoicesList[i];
       const shipment = shipmentsList[i];
+      const profile = profilesList[i];
+      const user = usersList[i];
       return {
         ...order,
         items,
+        customerName: profile?.displayName || user?.email?.split('@')[0] || "Customer",
         invoiceNumber: invoice?.invoiceNumber || null,
         invoicePdfUrl: invoice?.pdfUrl || null,
         shipmentStatus: shipment?.status || null,
@@ -885,10 +890,23 @@ export const getBoutiqueOrders = query({
   },
 });
 
+export const getOrderByIdInternal = internalQuery({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId);
+    if (!order) return null;
+    const profile = await ctx.db.query("customerProfiles").withIndex("by_userId", (q) => q.eq("userId", order.customerId)).unique();
+    return {
+      ...order,
+      customerName: profile?.displayName || "Customer",
+    };
+  }
+});
+
 export const retryBoutiqueOrderDispatch = action({
   args: { orderId: v.id("orders") },
   handler: async (ctx, args): Promise<any> => {
-    const order = await ctx.runQuery(api.orders.getOrderById, { orderId: args.orderId });
+    const order = await ctx.runQuery(internal.orders.getOrderByIdInternal, { orderId: args.orderId });
     if (!order || !order.shipmentId) {
       throw new Error("Order or shipment not found.");
     }
@@ -897,10 +915,38 @@ export const retryBoutiqueOrderDispatch = action({
       throw new Error("Unauthorized");
     }
     
-    // Call the shiprocket dispatch action
-    const result = await ctx.runAction(internal.lib.shiprocket.dispatchOrder, {
+    // Call the Porter createOrder action
+    const result = await ctx.runAction(internal.lib.porter.createOrder, {
       orderId: args.orderId,
       shipmentId: order.shipmentId,
+      pickupAddress: {
+        street_address1: boutique.address || "Store",
+        city: boutique.addressDetails?.city || boutique.city || "",
+        state: boutique.addressDetails?.state || boutique.state || "",
+        pincode: boutique.addressDetails?.pincode || boutique.pincode || "",
+        country: "India",
+        lat: boutique.latitude || 0,
+        lng: boutique.longitude || 0,
+        contact_details: {
+          name: boutique.boutiqueName || "Boutique",
+          phone_number: boutique.phone ? `+91${boutique.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
+        }
+      },
+      dropAddress: {
+        street_address1: order.deliveryAddress.line1 || "",
+        street_address2: order.deliveryAddress.line2 || "",
+        city: order.deliveryAddress.city,
+        state: order.deliveryAddress.state,
+        pincode: order.deliveryAddress.pincode,
+        country: "India",
+        lat: order.deliveryAddress.lat,
+        lng: order.deliveryAddress.lng,
+        contact_details: {
+          name: order.customerName || "Customer",
+          phone_number: order.deliveryAddress.phone ? `+91${order.deliveryAddress.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
+        }
+      },
+      orderNumber: order.orderNumber,
     });
     
     return result;

@@ -1438,18 +1438,48 @@ export const bookShipmentAdmin = mutation({
 export const dispatchShiprocketOrderAdmin = action({
   args: { orderId: v.id("orders") },
   handler: async (ctx, args): Promise<any> => {
-    // 1. We assume admin authentication is done via standard mechanism (if we can inside an action)
-    // For actions, checking admin role usually requires an internal query.
+    // 1. We assume admin authentication is done via standard mechanism
     const isAdmin = await ctx.runQuery(internal.adminOrders.checkIsAdminInternal);
     if (!isAdmin) throw new Error("Unauthorized: Admin only");
 
-    // 2. We need an internal mutation to prepare the shipment row since actions can't use ctx.db directly
-    const shipmentId = await ctx.runMutation(internal.adminLogistics.prepareShiprocketShipmentInternal, { orderId: args.orderId });
+    // 2. Prepare the shipment row and retrieve all necessary details
+    const prep = await ctx.runMutation(internal.adminLogistics.prepareShiprocketShipmentInternal, { orderId: args.orderId });
 
-    // 3. Chain Shiprocket calls
-    const result = await ctx.runAction(internal.lib.shiprocket.dispatchOrder, { orderId: args.orderId, shipmentId });
+    // 3. Chain Porter call
+    const result = await ctx.runAction(internal.lib.porter.createOrder, {
+      orderId: args.orderId,
+      shipmentId: prep.shipmentId,
+      pickupAddress: {
+        street_address1: prep.boutique.address || "Store",
+        city: prep.boutique.city,
+        state: prep.boutique.state,
+        pincode: prep.boutique.pincode,
+        country: "India",
+        lat: prep.boutique.latitude || 0,
+        lng: prep.boutique.longitude || 0,
+        contact_details: {
+          name: prep.boutique.boutiqueName || "Boutique",
+          phone_number: prep.boutique.phone ? `+91${prep.boutique.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
+        }
+      },
+      dropAddress: {
+        street_address1: prep.order.deliveryAddress.line1 || "",
+        street_address2: prep.order.deliveryAddress.line2 || "",
+        city: prep.order.deliveryAddress.city,
+        state: prep.order.deliveryAddress.state,
+        pincode: prep.order.deliveryAddress.pincode,
+        country: "India",
+        lat: prep.order.deliveryAddress.lat,
+        lng: prep.order.deliveryAddress.lng,
+        contact_details: {
+          name: prep.order.deliveryAddress.name || "Customer",
+          phone_number: prep.order.deliveryAddress.phone ? `+91${prep.order.deliveryAddress.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
+        }
+      },
+      orderNumber: prep.order.orderNumber,
+    });
 
-    return { success: true, shipmentId, ...result };
+    return { success: true, shipmentId: prep.shipmentId, ...result };
   }
 });
 
@@ -1460,21 +1490,24 @@ export const prepareShiprocketShipmentInternal = internalMutation({
     if (!order) throw new Error("Order not found");
     if (order.shipmentId) throw new Error("Order already has a shipment");
 
+    const boutique = await ctx.db.get(order.boutiqueId);
+    if (!boutique) throw new Error("Boutique not found");
+
     const now = Date.now();
     const shipmentId = await ctx.db.insert("shipments", {
       orderId: order._id,
-      provider: "shiprocket",
+      provider: "porter",
       awbNumber: "PENDING", // Will be patched by the action
       status: "booking_requested",
       createdAt: now,
       updatedAt: now,
       pickupAddress: { 
-        name: order.pickupAddress?.boutiqueName || "Pending", 
-        line1: order.pickupAddress?.address || "Pending", 
-        city: order.pickupAddress?.city || "Pending", 
-        state: order.pickupAddress?.state || "Pending", 
-        pincode: order.pickupAddress?.pincode || "Pending", 
-        phone: order.pickupAddress?.phone || "Pending" 
+        name: order.pickupAddress?.boutiqueName || boutique.boutiqueName || "Pending", 
+        line1: order.pickupAddress?.address || boutique.address || "Pending", 
+        city: order.pickupAddress?.city || boutique.addressDetails?.city || boutique.city || "Pending", 
+        state: order.pickupAddress?.state || boutique.addressDetails?.state || boutique.state || "Pending", 
+        pincode: order.pickupAddress?.pincode || boutique.addressDetails?.pincode || boutique.pincode || "Pending", 
+        phone: order.pickupAddress?.phone || boutique.phone || "Pending" 
       },
       deliveryAddress: {
         name: order.deliveryAddress.label || "Customer",
@@ -1487,7 +1520,7 @@ export const prepareShiprocketShipmentInternal = internalMutation({
       rawWebhookEvents: [{
         timestamp: now,
         status: "booking_requested",
-        remarks: "Initiated Shiprocket automated dispatch",
+        remarks: "Initiated automated dispatch",
       }]
     });
 
@@ -1497,7 +1530,23 @@ export const prepareShiprocketShipmentInternal = internalMutation({
       updatedAt: now,
     });
 
-    return shipmentId;
+    return {
+      shipmentId,
+      boutique: {
+        boutiqueName: boutique.boutiqueName,
+        address: boutique.address,
+        phone: boutique.phone,
+        latitude: boutique.latitude,
+        longitude: boutique.longitude,
+        city: boutique.addressDetails?.city || boutique.city || "",
+        state: boutique.addressDetails?.state || boutique.state || "",
+        pincode: boutique.addressDetails?.pincode || boutique.pincode || "",
+      },
+      order: {
+        orderNumber: order.orderNumber,
+        deliveryAddress: order.deliveryAddress,
+      }
+    };
   }
 });
 
