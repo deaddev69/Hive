@@ -21,7 +21,8 @@ import {
   Check,
   Medal,
   Shield,
-  Star
+  Star,
+  ChevronDown
 } from "lucide-react";
 import Link from "next/link";
 
@@ -79,6 +80,7 @@ export default function BoutiqueDashboard() {
   const updateStatus = useMutation(api.boutiques.updateStoreStatus);
 
   const [isPending, setIsPending] = useState(false);
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
   const handleToggleAvailability = async () => {
     if (!boutique) return;
@@ -169,6 +171,10 @@ export default function BoutiqueDashboard() {
 
   const toPackCount = useMemo(() => {
     return orders?.filter((o: any) => o.status === "confirmed").length ?? 0;
+  }, [orders]);
+
+  const pendingConfirmationCount = useMemo(() => {
+    return orders?.filter((o: any) => o.status === "pending_confirmation").length ?? 0;
   }, [orders]);
 
   const salesHistory7Days = useMemo(() => {
@@ -290,23 +296,183 @@ export default function BoutiqueDashboard() {
   const completionPercentage = Math.round((completedCount / totalSteps) * 100);
   const hasProducts = products && products.length > 0;
 
+  const currentHour = new Date().getHours();
+  let greetingPrefix = "Good Morning";
+  if (currentHour >= 12 && currentHour < 17) {
+    greetingPrefix = "Good Afternoon";
+  } else if (currentHour >= 17) {
+    greetingPrefix = "Good Evening";
+  }
+
   // Stacking order layout (Mobile first stack, Desktop 2-column layout)
   return (
     <div className="flex flex-col gap-6 text-left max-w-6xl w-full pt-2 pb-14 font-sans px-2 lg:px-6">
       
-      {/* Title block */}
-      <div className="flex flex-col gap-1.5 pt-4">
-        <h1 className="text-[32px] md:text-[38px] leading-tight font-serif font-bold text-hive-text">
-          Good Morning, {firstName}.
-        </h1>
-        <p className="text-sm font-semibold text-hive-text-muted font-sans">{currentDate}</p>
+      {/* 1. Operations Control Center Card */}
+      <div className="bg-hive-white border border-hive-border rounded-[32px] p-6 md:p-8 flex flex-col gap-6 shadow-[0_4px_20px_rgba(0,0,0,0.015)] select-none">
+        
+        {/* Top Row: Greeting & Status Dropdown Selector */}
+        <div className="flex flex-row items-start justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-[28px] md:text-[34px] leading-tight font-serif font-bold text-hive-text">
+              {greetingPrefix}, {firstName}.
+            </h1>
+            <p className="text-xs font-semibold text-hive-text-muted font-sans">{currentDate}</p>
+          </div>
+
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-wider transition-all duration-150 shadow-sm active:scale-[0.98] cursor-pointer ${
+                boutique.storeStatus === "open"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-250/50"
+                  : boutique.storeStatus === "busy"
+                  ? "bg-amber-50 text-amber-800 border-amber-250/50"
+                  : "bg-rose-50 text-rose-700 border-rose-250/50"
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full ${
+                boutique.storeStatus === "open"
+                  ? "bg-emerald-500 animate-pulse"
+                  : boutique.storeStatus === "busy"
+                  ? "bg-amber-500"
+                  : "bg-rose-500"
+              }`} />
+              <span>{boutique.storeStatus}</span>
+              <ChevronDown className="w-3.5 h-3.5 opacity-70" />
+            </button>
+
+            {isStatusDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)} />
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-hive-border rounded-2xl shadow-lg py-2 z-20 animate-in fade-in slide-in-from-top-2 duration-100">
+                  {(["open", "busy", "closed"] as const).map((status) => (
+                    <button
+                      key={status}
+                      disabled={isPending}
+                      onClick={() => {
+                        handleUpdateStatus(status);
+                        setIsStatusDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-700 hover:bg-[#FAF6F0] transition-colors flex items-center gap-2 cursor-pointer ${
+                        boutique.storeStatus === status ? "bg-[#FAF6F0]" : ""
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${
+                        status === "open" ? "bg-emerald-500 animate-pulse" : status === "busy" ? "bg-amber-500" : "bg-rose-500"
+                      }`} />
+                      {status}
+                    </button>
+                  ))}
+                  <div className="border-t border-hive-border/40 my-1" />
+                  <div className="px-4 py-2 flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold text-hive-text-muted uppercase">Accepting Orders</span>
+                    <button
+                      disabled={isPending || boutique.storeStatus === "closed"}
+                      onClick={() => {
+                        handleToggleAvailability();
+                        setIsStatusDropdownOpen(false);
+                      }}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        boutique.storeStatus !== "closed" && boutique.isAcceptingOrders
+                          ? "bg-emerald-500"
+                          : "bg-slate-200"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          boutique.storeStatus !== "closed" && boutique.isAcceptingOrders
+                            ? "translate-x-4"
+                            : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Dynamic Alerts List */}
+        <div className="flex flex-col gap-3 py-1">
+          {/* New Orders Item */}
+          <div className="flex items-center gap-3">
+            {pendingConfirmationCount > 0 ? (
+              <>
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+                <span className="text-lg font-bold text-slate-800">
+                  {pendingConfirmationCount} New {pendingConfirmationCount === 1 ? "Order" : "Orders"}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="h-3 w-3 rounded-full bg-slate-300" />
+                <span className="text-lg font-semibold text-slate-400">
+                  No New Orders
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Low Stock Item */}
+          <div className="flex items-center gap-3">
+            {lowStockCount > 0 ? (
+              <>
+                <span className="h-3 w-3 rounded-full bg-amber-500" />
+                <span className="text-lg font-bold text-slate-800">
+                  {lowStockCount} {lowStockCount === 1 ? "Product" : "Products"} Low Stock
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="h-3 w-3 rounded-full bg-slate-300" />
+                <span className="text-lg font-semibold text-slate-400">
+                  All Stock Okay
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <hr className="border-t border-hive-border/60 my-1" />
+
+        {/* Immediate CTA Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 w-full">
+          <Link href="/boutique/orders" className="flex-1">
+            <Button 
+              className={`w-full py-4 rounded-2xl font-extrabold text-xs uppercase tracking-widest transition-all duration-150 active:scale-[0.98] shadow-sm cursor-pointer ${
+                pendingConfirmationCount > 0
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+              }`}
+            >
+              {pendingConfirmationCount > 0 ? `Accept Orders (${pendingConfirmationCount})` : "View Orders"}
+            </Button>
+          </Link>
+          <Link href="/boutique/inventory" className="flex-1">
+            <Button 
+              className={`w-full py-4 rounded-2xl font-extrabold text-xs uppercase tracking-widest transition-all duration-150 active:scale-[0.98] shadow-sm cursor-pointer ${
+                lowStockCount > 0 || !isStockVerifiedToday
+                  ? "bg-hive-gold hover:bg-hive-amber text-white"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+              }`}
+            >
+              Update Stock
+            </Button>
+          </Link>
+        </div>
+
       </div>
 
-      {/* Main Layout Grid */}
+      {/* 2. Secondary Sections Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mt-2">
         
-        {/* Left Column (Stats, Snapshot, Recent Orders, Low Stock Alerts) */}
-        <div className="flex flex-col gap-6 order-2 lg:order-1 w-full">
+        {/* Left Column (Snapshot & Recent Orders) */}
+        <div className="flex flex-col gap-6 w-full">
           
           {/* Today's Snapshot Card */}
           <div className="bg-hive-white border border-hive-border rounded-[28px] p-6 flex flex-col gap-4.5 shadow-[0_4px_16px_rgba(0,0,0,0.01)]">
@@ -359,24 +525,6 @@ export default function BoutiqueDashboard() {
             </div>
           </div>
 
-          {/* Low Stock Alert Widget (Visible only if lowStockCount > 0) */}
-          {lowStockCount > 0 && (
-            <div className="bg-brand-50 border border-brand-100 rounded-[28px] p-5.5 flex items-start gap-4 shadow-sm">
-              <div className="p-2.5 bg-hive-white rounded-xl text-brand-600 shrink-0 shadow-sm border border-brand-100/50">
-                <AlertCircle className="w-5 h-5" />
-              </div>
-              <div className="flex flex-col gap-1.5 text-left">
-                <h4 className="text-xs font-bold text-brand-800 leading-none">Low Stock Alert</h4>
-                <p className="text-[11px] font-semibold text-hive-text-muted leading-normal max-w-sm mt-0.5">
-                  {lowStockCount} {lowStockCount === 1 ? 'item is' : 'items are'} running low on stock. Please update your quantities to avoid cancellation.
-                </p>
-                <Link href="/boutique/inventory" className="text-[11px] font-extrabold text-hive-gold hover:text-hive-amber hover:underline mt-1 flex items-center gap-0.5">
-                  Update Stock Levels <ArrowRight className="w-3 h-3" />
-                </Link>
-              </div>
-            </div>
-          )}
-
           {/* Recent Orders Card */}
           <div className="bg-hive-white border border-hive-border rounded-[28px] p-6 flex flex-col gap-4 shadow-[0_4px_16px_rgba(0,0,0,0.01)]">
             <div className="flex items-center justify-between">
@@ -415,13 +563,16 @@ export default function BoutiqueDashboard() {
             )}
           </div>
 
+        </div>
+
+        {/* Right Column (Shop Standing & Onboarding) */}
+        <div className="flex flex-col gap-6 w-full">
+          
           {/* Shop Standing Card */}
           <div className="bg-hive-white border border-hive-border rounded-[28px] p-6 flex flex-col gap-4 shadow-[0_4px_16px_rgba(0,0,0,0.01)]">
             <span className="text-[10px] text-hive-text-muted font-bold tracking-wider uppercase">Shop Standing</span>
             
             <div className="flex flex-col gap-3.5 mt-2">
-              
-              {/* Item 1: Store status */}
               <StatusRow
                 title="Store status"
                 description="Ready for selling"
@@ -432,7 +583,6 @@ export default function BoutiqueDashboard() {
                 badge={<StatusBadge variant="success" label="Approved" icon={Check} />}
               />
 
-              {/* Item 2: Delivery rating */}
               <StatusRow
                 title="Delivery rating"
                 description={`${deliveryRatingData.percentage}% Order Fulfillment Rate`}
@@ -452,7 +602,6 @@ export default function BoutiqueDashboard() {
                 badge={<StatusBadge variant={deliveryRatingData.variant} label={deliveryRatingData.label} icon={deliveryRatingData.icon} />}
               />
 
-              {/* Item 3: Seller tier */}
               <StatusRow
                 title="Seller tier"
                 description={
@@ -484,127 +633,14 @@ export default function BoutiqueDashboard() {
                   />
                 }
               />
-
             </div>
           </div>
-
-        </div>
-
-        {/* Right Column (Alerts, Shop Setup) */}
-        <div className="flex flex-col gap-6 order-1 lg:order-2 w-full">
-          
-          {/* Store Operations Quick Controls Card */}
-          <div className="bg-hive-white border border-hive-border rounded-[32px] p-6 flex flex-col gap-5 shadow-[0_4px_16px_rgba(0,0,0,0.01)] select-none">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-hive-text font-sans tracking-wide">Store Operations</h3>
-              {isPending && <Loader2 className="w-4 h-4 animate-spin text-hive-amber" />}
-            </div>
-
-            {/* Segmented Button Group (Open | Busy | Closed) */}
-            <div className="flex flex-col gap-2">
-              <span className="text-[10px] text-hive-text-muted font-bold uppercase tracking-wider text-left">
-                Operational Status
-              </span>
-              <div className="grid grid-cols-3 bg-[#FAF6F0] p-1.5 rounded-2xl border border-hive-border/40 gap-1.5">
-                {(["open", "busy", "closed"] as const).map((status) => {
-                  const isActive = boutique.storeStatus === status;
-                  const colors = {
-                    open: {
-                      active: "bg-emerald-50 text-emerald-700 border-emerald-200/50 shadow-[0_2px_8px_rgba(16,185,129,0.08)] font-extrabold",
-                      inactive: "text-slate-500 hover:text-emerald-700 hover:bg-emerald-50/30 border-transparent",
-                    },
-                    busy: {
-                      active: "bg-amber-50 text-amber-800 border-amber-200/50 shadow-[0_2px_8px_rgba(245,158,11,0.08)] font-extrabold",
-                      inactive: "text-slate-500 hover:text-amber-800 hover:bg-amber-50/30 border-transparent",
-                    },
-                    closed: {
-                      active: "bg-rose-50 text-rose-700 border-rose-200/50 shadow-[0_2px_8px_rgba(239,68,68,0.08)] font-extrabold",
-                      inactive: "text-slate-500 hover:text-rose-700 hover:bg-rose-50/30 border-transparent",
-                    },
-                  };
-
-                  return (
-                    <button
-                      key={status}
-                      disabled={isPending}
-                      onClick={() => handleUpdateStatus(status)}
-                      className={`py-2 px-4 rounded-full text-[10px] sm:text-xs font-bold transition-all duration-150 uppercase tracking-wider border focus:outline-none cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
-                        isActive ? colors[status].active : colors[status].inactive
-                      } disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      {status}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Accepting Orders Toggle Switch */}
-            <div className="flex items-center justify-between border-t border-hive-border/40 pt-4.5">
-              <div className="flex flex-col text-left gap-0.5">
-                <span className="text-xs font-bold text-hive-text">Accepting New Orders</span>
-                <span className="text-[10px] text-hive-text-muted font-medium">
-                  {boutique.storeStatus === "closed"
-                    ? "Orders paused (Store is Closed)"
-                    : boutique.isAcceptingOrders
-                    ? "Live & accepting orders from customer app"
-                    : "Orders temporarily paused"}
-                </span>
-              </div>
-
-              {/* Toggle Switch */}
-              <button
-                disabled={isPending || boutique.storeStatus === "closed"}
-                onClick={handleToggleAvailability}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  boutique.storeStatus !== "closed" && boutique.isAcceptingOrders
-                    ? "bg-emerald-500"
-                    : "bg-slate-200"
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    boutique.storeStatus !== "closed" && boutique.isAcceptingOrders
-                      ? "translate-x-5"
-                      : "translate-x-0"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* Check Your Stock Card (Urgent Warning - Hidden if verified today) */}
-          {!isStockVerifiedToday && (
-            <div className="bg-brand-50 border border-brand-100 rounded-[32px] p-6 flex flex-col gap-5 relative overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.01)]">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-hive-white rounded-2xl text-hive-gold shrink-0 shadow-sm border border-hive-border">
-                  <AlertTriangle className="w-5 h-5 text-hive-gold" />
-                </div>
-                <div className="flex flex-col gap-1 text-left">
-                  <h2 className="text-xl font-serif font-extrabold text-hive-text leading-tight">Check Your Stock</h2>
-                  <p className="text-xs md:text-sm font-semibold text-hive-text-muted leading-relaxed max-w-lg mt-0.5">
-                    You have stock counts pending check. Confirm your counts to keep your storefront active and prevent selling out-of-stock items.
-                  </p>
-                </div>
-              </div>
-              <div className="w-full">
-                <Link href="/boutique/inventory" className="w-full">
-                  <Button className="w-full bg-hive-gold hover:bg-hive-amber text-hive-white rounded-full py-3.5 font-bold text-xs uppercase tracking-widest transition-all duration-150 active:scale-[0.98] shadow-sm">
-                    CHECK STOCK
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
 
           {/* Get Your Shop Ready Card (Routine Setup Onboarding) */}
           {!hasProducts && (
             <div className="bg-hive-white border border-hive-border rounded-[32px] p-6 flex flex-row items-center gap-6 shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
-              
-              {/* Circular progress SVG */}
               <div className="relative w-24 h-24 flex items-center justify-center shrink-0">
                 <svg className="w-full h-full transform -rotate-90">
-                  {/* Background circle */}
                   <circle
                     cx="48"
                     cy="48"
@@ -613,7 +649,6 @@ export default function BoutiqueDashboard() {
                     strokeWidth="6"
                     fill="transparent"
                   />
-                  {/* Foreground circle */}
                   <circle
                     cx="48"
                     cy="48"
@@ -633,7 +668,6 @@ export default function BoutiqueDashboard() {
                 </div>
               </div>
 
-              {/* Text & Button */}
               <div className="flex flex-col gap-1.5 justify-center text-left w-full">
                 <h2 className="text-lg md:text-xl font-serif font-extrabold text-hive-text leading-tight">Get Your Shop Ready</h2>
                 <p className="text-[11px] md:text-xs font-semibold text-hive-text-muted leading-normal max-w-xs">
