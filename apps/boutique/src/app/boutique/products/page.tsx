@@ -95,6 +95,9 @@ export default function BoutiqueProducts() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [showMoreActions, setShowMoreActions] = useState(false);
+  
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleOpenCreate = () => {
     setEditingProduct(null);
@@ -106,13 +109,20 @@ export default function BoutiqueProducts() {
     setIsOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to permanently delete this product? All image files will be cleaned from storage.")) {
-      try {
-        await deleteProduct({ id: id as any });
-      } catch (err: any) {
-        alert("Failed to delete product: " + err.message);
-      }
+  const handleDelete = (id: string) => {
+    setDeletingProductId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingProductId) return;
+    setIsDeleting(true);
+    try {
+      await deleteProduct({ id: deletingProductId as any });
+      setDeletingProductId(null);
+    } catch (err: any) {
+      alert("Failed to delete product: " + err.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -476,6 +486,35 @@ export default function BoutiqueProducts() {
           productToEdit={editingProduct}
           categories={categories}
         />
+      )}
+
+      {deletingProductId && (
+        <div className="fixed inset-0 bg-[#2C261E]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FFFCF8] rounded-[24px] p-6 sm:p-7 max-w-sm w-full shadow-[0_20px_60px_-15px_rgba(44,38,30,0.3)] border border-[#EBE3D5] animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-[18px] font-extrabold text-[#2C261E] mb-2 tracking-tight">Delete Product?</h3>
+            <p className="text-[14px] text-[#7A6F5D] leading-relaxed mb-6">
+              Are you sure you want to permanently delete this product? All image files will be cleaned from storage.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingProductId(null)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 bg-white border border-[#EBE3D5] hover:bg-[#FAF6F0] text-[#5C5346] font-bold text-[14px] rounded-[14px] transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-extrabold text-[14px] rounded-[14px] shadow-[0_4px_14px_-3px_rgba(225,29,72,0.35)] transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
