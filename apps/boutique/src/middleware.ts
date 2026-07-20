@@ -24,8 +24,18 @@ export default clerkMiddleware(async (auth, req) => {
   requestHeaders.set("x-hive-portal", "seller");
 
   // 1. Seller edge auth protection
-  const isAuthPath = pathname.includes("/sign-in") || pathname.includes("/sign-up");
-  const isInvitePath = pathname.startsWith("/seller/invite") || pathname.startsWith("/invite") || pathname.startsWith("/apply") || pathname.startsWith("/unauthorized") || pathname.startsWith("/boutique/unauthorized");
+  const isAuthPath =
+    pathname.includes("/sign-in") ||
+    pathname.includes("/sign-up") ||
+    pathname.includes("/sso-callback") ||
+    pathname.includes("/oauth") ||
+    pathname.includes("/callback");
+  const isInvitePath =
+    pathname.startsWith("/seller/invite") ||
+    pathname.startsWith("/invite") ||
+    pathname.startsWith("/apply") ||
+    pathname.startsWith("/unauthorized") ||
+    pathname.startsWith("/boutique/unauthorized");
 
   if (!isAuthPath && !isInvitePath) {
     const session = await auth.protect();

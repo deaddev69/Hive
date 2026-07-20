@@ -1779,17 +1779,44 @@ export const reconcileBoutiquePayouts = mutation({
 });
 
 export const debugOrder = query({
-  args: { orderNumber: v.string() },
+  args: { orderNumber: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    const order = await ctx.db
-      .query("orders")
-      .withIndex("by_orderNumber", (q) => q.eq("orderNumber", args.orderNumber))
-      .unique();
-    if (!order) return null;
-    const items = await ctx.db
-      .query("orderItems")
-      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
-      .collect();
-    return { order, items };
+    let ordersList: any[] = [];
+    if (args.orderNumber) {
+      const order = await ctx.db
+        .query("orders")
+        .withIndex("by_orderNumber", (q) => q.eq("orderNumber", args.orderNumber!))
+        .unique();
+      if (order) ordersList = [order];
+    }
+    if (ordersList.length === 0) {
+      ordersList = await ctx.db.query("orders").order("desc").take(500);
+    }
+    const results = await Promise.all(
+      ordersList.map(async (order) => {
+        const items = await ctx.db
+          .query("orderItems")
+          .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+          .collect();
+        return {
+          _id: order._id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          boutiqueId: order.boutiqueId,
+          totalAmount: order.totalAmount,
+          orderSnapshot: order.orderSnapshot,
+          itemsCount: items.length,
+          items: items.map(it => ({
+            _id: it._id,
+            productName: it.productName,
+            quantity: it.quantity,
+            basePriceAtPurchase: it.basePriceAtPurchase,
+            priceAtPurchase: it.priceAtPurchase,
+            platformFeeAmount: it.platformFeeAmount
+          }))
+        };
+      })
+    );
+    return results;
   }
 });
