@@ -30,6 +30,12 @@ function RootPageContent() {
       return;
     }
 
+    if (me.role === "boutique" || me.role === "boutique_owner" || me.role === "admin") {
+      console.log("[AUTH DEBUG] Seller/Admin detected, routing directly to /boutique");
+      window.location.href = "/boutique";
+      return;
+    }
+
     const landingPage = getUserLandingPage(me.role);
     
     console.log("[AUTH DEBUG] User ID:", me._id);

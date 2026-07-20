@@ -1,7 +1,23 @@
-import Link from "next/link";
+"use client";
+
+import React, { useEffect } from "react";
 import { Store, ArrowLeft, ShieldAlert } from "lucide-react";
 
 export default function NotFound() {
+  useEffect(() => {
+    // Self-heal mobile PWA by purging stale Workbox Cache Storage when 404 is hit
+    if (typeof window !== "undefined" && "caches" in window) {
+      window.caches.keys().then((names) => {
+        names.forEach((name) => window.caches.delete(name));
+      });
+    }
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => reg.update());
+      });
+    }
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-slate-100 p-6 text-center">
       <div className="max-w-md w-full bg-slate-800/80 border border-amber-500/20 rounded-2xl p-8 backdrop-blur-md shadow-2xl flex flex-col items-center">
@@ -23,19 +39,27 @@ export default function NotFound() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full">
-          <Link
-            href="/"
-            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition-colors shadow-lg shadow-amber-500/20"
+          <a
+            href="/boutique"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.href = "/boutique";
+            }}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition-colors shadow-lg shadow-amber-500/20 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             Go to Dashboard
-          </Link>
-          <Link
+          </a>
+          <a
             href="/sign-in"
-            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-600/80 transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.href = "/sign-in";
+            }}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-600/80 transition-colors cursor-pointer"
           >
             Sign In
-          </Link>
+          </a>
         </div>
       </div>
     </div>

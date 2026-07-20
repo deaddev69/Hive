@@ -1,9 +1,17 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { usePWAInstallation } from "../../hooks/usePWAInstallation";
 
 export function InstallPrompt() {
   const { showPrompt, handleDismiss, handleInstall, isIOS } = usePWAInstallation();
+
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => reg.update());
+      });
+    }
+  }, []);
 
   if (!showPrompt) return null;
 
