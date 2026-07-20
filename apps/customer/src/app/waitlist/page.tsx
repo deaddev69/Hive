@@ -1,12 +1,9 @@
+"use client";
+
 import React from 'react';
-import type { Metadata } from 'next';
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, Input } from '@hive/ui';
 import { Scissors, Truck, IndianRupee, Hexagon } from 'lucide-react';
 
-export const metadata: Metadata = {
-  title: "Join the Waitlist | Hive by TailorBee",
-  description: "Experience premium hyper-local tailoring with doorstep delivery. Join our waitlist today.",
-};
 
 export default function WaitlistPage() {
   return (
