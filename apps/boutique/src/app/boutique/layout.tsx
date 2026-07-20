@@ -39,15 +39,11 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
     }
   }, [isLoaded, isSignedIn, router]);
 
-  // Role-based redirect: admin goes to /admin, customer goes to customer app
+  // Role-based redirect: customer goes to unauthorized portal
   useEffect(() => {
     if (me === undefined || myBoutiqueSafe === undefined) return;
 
     if (me) {
-      if (me.role === "admin") {
-        router.push("/admin");
-        return;
-      }
       if (me.role === "customer") {
         if (pathname !== "/boutique/unauthorized" && pathname !== "/unauthorized") {
           router.push("/boutique/unauthorized");
