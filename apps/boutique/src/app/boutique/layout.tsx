@@ -96,12 +96,22 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
 
   // Not signed in
   if (!isSignedIn) {
-    return null; // Hook redirects to sign-in
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
+        <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
+        <span className="text-sm font-serif font-bold text-hive-dark">Redirecting to sign in...</span>
+      </div>
+    );
   }
 
-  // Non-boutique signed in
-  if ((me && me.role !== "boutique" && me.role !== "boutique_owner" && pathname !== "/boutique/unauthorized")) {
-    return null; // Redirects to unauthorized
+  // Non-boutique / Non-admin signed in
+  if (me && me.role !== "boutique" && me.role !== "boutique_owner" && me.role !== "admin" && pathname !== "/boutique/unauthorized") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
+        <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
+        <span className="text-sm font-serif font-bold text-hive-dark">Redirecting...</span>
+      </div>
+    );
   }
 
   // Legal Gating Check
