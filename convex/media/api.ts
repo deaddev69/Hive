@@ -63,7 +63,7 @@ export const generateUploadUrl = action({
       throw new Error("File exceeds the 10MB maximum limit.");
     }
 
-    const bucket = process.env.R2_BUCKET_NAME || "hive-media";
+    const bucket = (process.env.R2_BUCKET_NAME || "hive-media").trim();
     const uuid = crypto.randomUUID();
     const version = "v1";
     const extension = args.mimeType.split("/")[1] || "bin";

@@ -22,6 +22,7 @@ const getR2Client = () => {
       accessKeyId,
       secretAccessKey,
     },
+    forcePathStyle: true,
   });
 };
 
@@ -64,7 +65,7 @@ export const generateUploadUrl = action({
     }
 
     // 4. Generate unique keys and versions
-    const bucket = process.env.R2_BUCKET_NAME || "hive-media";
+    const bucket = (process.env.R2_BUCKET_NAME || "hive-media").trim();
     const uuid = crypto.randomUUID();
     const version = "v1";
     const extension = args.mimeType.split("/")[1] || "bin";
@@ -105,7 +106,7 @@ export const deleteObjectInternal = internalAction({
     objectKey: v.string(),
   },
   handler: async (ctx, args) => {
-    const bucket = process.env.R2_BUCKET_NAME || "hive-media";
+    const bucket = (process.env.R2_BUCKET_NAME || "hive-media").trim();
     const client = getR2Client();
 
     const command = new DeleteObjectCommand({

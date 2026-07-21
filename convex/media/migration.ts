@@ -24,7 +24,7 @@ export const migrateLegacyMediaBatched = action({
     }
 
     const client = getR2Client();
-    const bucket = process.env.R2_BUCKET_NAME || "hive-media";
+    const bucket = (process.env.R2_BUCKET_NAME || "hive-media").trim();
 
     for (const boutique of batch) {
       try {
@@ -155,7 +155,7 @@ export const migrateLegacyProductsBatched = action({
     }
 
     const client = getR2Client();
-    const bucket = process.env.R2_BUCKET_NAME || "hive-media";
+    const bucket = (process.env.R2_BUCKET_NAME || "hive-media").trim();
 
     // Simple concurrency limiter (max 5 in-flight uploads globally for the batch)
     const MAX_CONCURRENCY = 5;
