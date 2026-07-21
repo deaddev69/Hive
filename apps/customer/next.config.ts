@@ -7,13 +7,28 @@ const withPWA = withPWAInit({
   dynamicStartUrl: false,
   cacheStartUrl: false,
   workboxOptions: {
+    cacheId: "hive-v2",
     cleanupOutdatedCaches: true,
     runtimeCaching: [
+      {
+        urlPattern: /\/_next\/image\?url=.+$/i,
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "next-image-v2",
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
       {
         urlPattern: /^https:\/\/(?:cdn\.hivenow\.in|.*\.convex\.cloud|images\.unsplash\.com)\/.*/i,
         handler: "NetworkFirst",
         options: {
-          cacheName: "external-media-cache",
+          cacheName: "external-media-v2",
           networkTimeoutSeconds: 3,
           expiration: {
             maxEntries: 32,
@@ -28,10 +43,25 @@ const withPWA = withPWAInit({
         urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
         handler: "StaleWhileRevalidate",
         options: {
-          cacheName: "static-image-assets",
+          cacheName: "static-image-assets-v2",
           expiration: {
             maxEntries: 64,
             maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      {
+        urlPattern: /^https:\/\/.*/i,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "cross-origin-v2",
+          networkTimeoutSeconds: 3,
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60,
           },
           cacheableResponse: {
             statuses: [0, 200],
