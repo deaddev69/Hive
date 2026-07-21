@@ -12,9 +12,20 @@ import { logSystemAlert } from "./lib/alerts";
  */
 async function calculateHealthScoreHelper(ctx: any) {
   const now = Date.now();
-  const orders = await ctx.db.query("orders").collect();
-  const claims = await ctx.db.query("claims").collect();
-  const shipments = await ctx.db.query("shipments").collect();
+  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+
+  const orders = await ctx.db
+    .query("orders")
+    .withIndex("by_createdAt", (q: any) => q.gte("createdAt", thirtyDaysAgo))
+    .collect();
+  const claims = await ctx.db
+    .query("claims")
+    .withIndex("by_createdAt", (q: any) => q.gte("createdAt", thirtyDaysAgo))
+    .collect();
+  const shipments = await ctx.db
+    .query("shipments")
+    .withIndex("by_createdAt", (q: any) => q.gte("createdAt", thirtyDaysAgo))
+    .collect();
   const boutiques = await ctx.db.query("boutiques").collect();
   
   const pendingDocs = await ctx.db

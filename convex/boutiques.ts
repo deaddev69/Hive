@@ -796,7 +796,7 @@ export const getBoutiquePublicProfile = query({
   handler: async (ctx, args) => {
     let boutique = await ctx.db
       .query("boutiques")
-      .filter((q) => q.eq(q.field("slug"), args.slug))
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
 
     if (!boutique) {

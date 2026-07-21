@@ -318,12 +318,11 @@ export const getAdminCombinedDashboardData = query({
         ]);
         const courierExceptionsCount = failedShipments.length + bookingFailedShipments.length + lostShipments.length;
 
-        const refundQueuePending = await ctx.db
-          .query("refundQueue")
-          .filter((q) =>
-            q.or(q.eq(q.field("status"), "pending"), q.eq(q.field("status"), "processing"))
-          )
-          .collect();
+        const [pendingRefunds, processingRefunds] = await Promise.all([
+          ctx.db.query("refundQueue").withIndex("by_status", (q) => q.eq("status", "pending")).collect(),
+          ctx.db.query("refundQueue").withIndex("by_status", (q) => q.eq("status", "processing")).collect(),
+        ]);
+        const refundQueuePending = [...pendingRefunds, ...processingRefunds];
         const refundPendingCount = refundQueuePending.length;
 
         const pipelineCounts = {

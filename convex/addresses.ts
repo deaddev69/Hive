@@ -147,7 +147,7 @@ export const checkAddressVerification = query({
     // 1. Fetch all active serviceable pincodes
     const activePincodes = await ctx.db
       .query("serviceablePincodes")
-      .filter((q) => q.eq(q.field("active"), true))
+      .withIndex("by_active", (q) => q.eq("active", true))
       .collect();
 
     if (activePincodes.length === 0) {
@@ -179,7 +179,7 @@ export const checkAddressVerification = query({
     // 3. Resolve regionId. Let's find an active region that has this pincode, or the closest pincode
     const regions = await ctx.db
       .query("regions")
-      .filter((q) => q.eq(q.field("isActive"), true))
+      .withIndex("by_isActive", (q) => q.eq("isActive", true))
       .collect();
 
     // Try finding by geocoded/input pincode first

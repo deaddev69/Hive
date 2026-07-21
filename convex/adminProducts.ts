@@ -272,12 +272,17 @@ export const getCatalogDashboardMetricsAdmin = query({
   handler: async (ctx) => {
     await requireRole(ctx, "admin");
 
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
     // TODO: Maintain a counter or table of active counts to avoid full scan for allProducts/orders
     const allProducts = await ctx.db.query("products").withIndex("by_active", q => q.eq("active", true)).collect();
     const categories = await ctx.db.query("categories").withIndex("by_active_and_sortOrder", q => q.eq("active", true)).collect();
     const categoryMap = new Map(categories.map(c => [c._id, c]));
 
-    const orders = await ctx.db.query("orders").collect();
+    const orders = await ctx.db
+      .query("orders")
+      .withIndex("by_createdAt", (q) => q.gte("createdAt", thirtyDaysAgo))
+      .collect();
     const activeClaimsStatuses = ["submitted", "under_review", "evidence_requested", "refund_approved", "refunded", "return_received"];
     const activeClaimsLists = await Promise.all(
       activeClaimsStatuses.map(status =>
@@ -311,7 +316,6 @@ export const getCatalogDashboardMetricsAdmin = query({
     const catalogHealthScore = Math.max(0, Math.min(100, Math.round(rawScore)));
 
     // Revenue at Risk (Delivered or Paid in last 30 days from inactive/moderated/quality < 60 products)
-    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const recentOrders = await ctx.db
       .query("orders")
       .withIndex("by_createdAt", q => q.gte("createdAt", thirtyDaysAgo))

@@ -22,13 +22,13 @@ export const getFinanceDashboardMetricsAdmin = query({
     const orders = await ctx.db.query("orders").collect();
     const refunds = await ctx.db
       .query("refundLedger")
-      .filter((q) => q.eq(q.field("status"), "processed"))
+      .withIndex("by_status", (q) => q.eq("status", "processed"))
       .collect();
     const commissions = await ctx.db.query("commissionLedger").collect();
     const settlements = await ctx.db.query("settlementLedger").collect();
     const payouts = await ctx.db
       .query("payoutLedger")
-      .filter((q) => q.eq(q.field("status"), "success"))
+      .withIndex("by_status", (q) => q.eq("status", "success"))
       .collect();
 
     // 1. Gross GMV: Total value of all paid/completed orders (excluding cancelled)

@@ -890,7 +890,8 @@ export default defineSchema({
   })
     .index("by_orderId",   ["orderId"])
     .index("by_awbNumber", ["awbNumber"])
-    .index("by_status",    ["status"]),
+    .index("by_status",    ["status"])
+    .index("by_createdAt", ["createdAt"]),
 
   // ─── PAYMENTS ─────────────────────────────────────────────────────────────
   payments: defineTable({
@@ -1624,7 +1625,8 @@ export default defineSchema({
     notes:            v.string(),
     createdAt:        v.number(),
   })
-    .index("by_orderId", ["orderId"]),
+    .index("by_orderId", ["orderId"])
+    .index("by_status", ["status"]),
 
   systemAlerts: defineTable({
     code: v.union(

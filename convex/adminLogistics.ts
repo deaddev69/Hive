@@ -185,16 +185,12 @@ export const getLogisticsQueueAdmin = query({
     }
 
     // Now pull all orders that do NOT have shipments yet but require merchant/admin action
-    const activeOrdersWithoutShipments = await ctx.db
-      .query("orders")
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("status"), "pending_confirmation"),
-          q.eq(q.field("status"), "confirmed"),
-          q.eq(q.field("status"), "packed")
-        )
-      )
-      .collect();
+    const [pending, confirmed, packed] = await Promise.all([
+      ctx.db.query("orders").withIndex("by_status", (q) => q.eq("status", "pending_confirmation")).collect(),
+      ctx.db.query("orders").withIndex("by_status", (q) => q.eq("status", "confirmed")).collect(),
+      ctx.db.query("orders").withIndex("by_status", (q) => q.eq("status", "packed")).collect(),
+    ]);
+    const activeOrdersWithoutShipments = [...pending, ...confirmed, ...packed];
 
     for (const o of activeOrdersWithoutShipments) {
       if (o.shipmentId) continue; // safety check
