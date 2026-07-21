@@ -44,12 +44,20 @@ export function FirebaseAuthCard({
     }
   }, [isAuthenticated, router, redirectUrl, onSuccess]);
 
+  useEffect(() => {
+    return () => {
+      if ((window as any).recaptchaVerifier) {
+        try {
+          (window as any).recaptchaVerifier.clear();
+        } catch (err) {}
+        (window as any).recaptchaVerifier = null;
+      }
+    };
+  }, []);
+
   const setupRecaptcha = () => {
     if ((window as any).recaptchaVerifier) {
-      try {
-        (window as any).recaptchaVerifier.clear();
-      } catch (err) {}
-      (window as any).recaptchaVerifier = null;
+      return (window as any).recaptchaVerifier;
     }
     const container = document.getElementById("recaptcha-container");
     if (container) {
