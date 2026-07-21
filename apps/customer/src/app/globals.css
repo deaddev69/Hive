@@ -49,13 +49,13 @@ body {
   animation: soft-pulse 3s infinite ease-in-out;
 }
 
-/* Premium Gold Border-Only Pulse (Zero Glow) for location pill */
+/* Premium Minimalist Border-Only Pulse (Zero Glow) for location pill */
 @keyframes gold-glow-pulse {
   0%, 100% {
-    border-color: rgba(212, 175, 55, 0.25);
+    border-color: rgba(226, 232, 240, 0.85);
   }
   50% {
-    border-color: rgba(212, 175, 55, 0.85);
+    border-color: rgba(168, 162, 158, 0.85);
   }
 }
 
