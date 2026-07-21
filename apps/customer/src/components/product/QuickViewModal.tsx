@@ -401,10 +401,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         onTouchEnd={onTouchEnd}
         className={cn(
           "bg-white shadow-2xl flex flex-col transition-all duration-300 w-full z-10 relative overflow-hidden",
-          // Mobile: bottom aligned, takes full width, capped height
-          "h-auto max-h-[85vh] rounded-t-[24px]",
+          // Mobile: bottom aligned, takes full width, stable sheet height
+          "h-[75dvh] rounded-t-[24px]",
           // Desktop: centered lightbox 50/50 split
-          "md:flex-row md:max-w-4xl md:max-h-[80vh] md:rounded-3xl md:aspect-[2/1]",
+          "md:flex-row md:max-w-4xl md:h-auto md:max-h-[80vh] md:rounded-3xl md:aspect-[2/1]",
           // Hide completely when cross boutique modal is open to fix dual-open bug
           crossBoutiqueModalOpen ? "hidden" : "flex"
         )}
@@ -422,7 +422,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         </button>
 
         {/* ── LEFT SIDE (Desktop) / TOP (Mobile): IMAGE CAROUSEL ── */}
-        <div className="w-full md:w-1/2 h-[35vh] md:h-full relative bg-stone-50 flex-shrink-0 group">
+        <div className="w-full md:w-1/2 h-[35dvh] md:h-full relative bg-stone-50 flex-shrink-0 group">
           <div className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-none" style={{ scrollBehavior: 'smooth' }}>
             {images.length > 0 ? (
               images.map((img: string, idx: number) => (
@@ -495,7 +495,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         </div>
 
         {/* ── RIGHT SIDE (Desktop) / BOTTOM (Mobile): DETAILS ── */}
-        <div className="w-full md:w-1/2 flex flex-col max-h-[50vh] md:max-h-full">
+        <div className="w-full md:w-1/2 flex flex-col flex-1 min-h-0 md:max-h-full">
           <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-6 scrollbar-none flex flex-col">
             <div className="space-y-1 mb-4">
               <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700">
@@ -562,11 +562,19 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               </div>
             </div>
 
-            {/* Optional Description Snippet */}
-            {(rawProduct as any)?.description && (
-              <div className="mt-auto pt-6 pb-2 text-sm text-stone-600 line-clamp-3 leading-relaxed">
-                {(rawProduct as any).description}
+            {/* Optional Description Snippet with Hydration Skeleton */}
+            {isStillLoading ? (
+              <div className="mt-auto pt-6 pb-2 space-y-2 animate-pulse">
+                <div className="h-3 bg-stone-100 rounded w-full" />
+                <div className="h-3 bg-stone-100 rounded w-[90%]" />
+                <div className="h-3 bg-stone-100 rounded w-[75%]" />
               </div>
+            ) : (
+              displayProduct.description && (
+                <div className="mt-auto pt-6 pb-2 text-sm text-stone-600 line-clamp-3 leading-relaxed">
+                  {displayProduct.description}
+                </div>
+              )
             )}
           </div>
 
