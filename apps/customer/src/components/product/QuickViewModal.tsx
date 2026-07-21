@@ -571,7 +571,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               </div>
             ) : (
               displayProduct.description && (
-                <div className="mt-auto pt-6 pb-2 text-sm text-stone-600 line-clamp-3 leading-relaxed">
+                <div className="mt-auto pt-6 pb-2 text-sm text-stone-600 leading-relaxed">
                   {displayProduct.description}
                 </div>
               )
