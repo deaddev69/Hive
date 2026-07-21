@@ -570,9 +570,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 <div className="h-3 bg-stone-100 rounded w-[75%]" />
               </div>
             ) : (
-              displayProduct.description && (
+              (rawProduct as any)?.description && (
                 <div className="mt-auto pt-6 pb-2 text-sm text-stone-600 leading-relaxed">
-                  {displayProduct.description}
+                  {(rawProduct as any).description}
                 </div>
               )
             )}
