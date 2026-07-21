@@ -6,6 +6,38 @@ import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { validateUploadedFile } from "./lib/uploads";
 import { ImageAsset } from "./schema";
+import { getPublicUrl } from "./media/api";
+
+/**
+ * Helper to resolve R2 ImageAsset URLs into fully-qualified public HTTP strings.
+ */
+async function resolveBannerUrls(ctx: any, banner: any) {
+  let desktopImageUrl = "";
+  if (banner.desktopImageUrl) {
+    if (typeof banner.desktopImageUrl === "object") {
+      desktopImageUrl = getPublicUrl(banner.desktopImageUrl as any) || "";
+    } else if (typeof banner.desktopImageUrl === "string" && banner.desktopImageUrl.startsWith("http")) {
+      desktopImageUrl = banner.desktopImageUrl;
+    } else if (typeof banner.desktopImageUrl === "string") {
+      desktopImageUrl = (await ctx.storage.getUrl(banner.desktopImageUrl as any)) || banner.desktopImageUrl;
+    }
+  }
+  let mobileImageUrl = "";
+  if (banner.mobileImageUrl) {
+    if (typeof banner.mobileImageUrl === "object") {
+      mobileImageUrl = getPublicUrl(banner.mobileImageUrl as any) || "";
+    } else if (typeof banner.mobileImageUrl === "string" && banner.mobileImageUrl.startsWith("http")) {
+      mobileImageUrl = banner.mobileImageUrl;
+    } else if (typeof banner.mobileImageUrl === "string") {
+      mobileImageUrl = (await ctx.storage.getUrl(banner.mobileImageUrl as any)) || banner.mobileImageUrl;
+    }
+  }
+  return {
+    ...banner,
+    desktopImageUrl,
+    mobileImageUrl,
+  };
+}
 
 /**
  * Fetch all active banners sorted by sortOrder.
@@ -14,10 +46,11 @@ import { ImageAsset } from "./schema";
 export const getActiveBanners = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db
+    const banners = await ctx.db
       .query("banners")
       .withIndex("by_active_and_sortOrder", (q) => q.eq("active", true))
       .collect();
+    return await Promise.all(banners.map((b) => resolveBannerUrls(ctx, b)));
   },
 });
 
@@ -29,7 +62,8 @@ export const getBanners = query({
   args: {},
   handler: async (ctx) => {
     await requireRole(ctx, "admin");
-    return await ctx.db.query("banners").collect();
+    const banners = await ctx.db.query("banners").collect();
+    return await Promise.all(banners.map((b) => resolveBannerUrls(ctx, b)));
   },
 });
 
