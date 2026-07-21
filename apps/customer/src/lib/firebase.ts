@@ -1,6 +1,6 @@
 // apps/customer/src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyB1Qn8xKgOA_mYOLfCNZagS9QEMO0u0Ud8",
@@ -12,8 +12,8 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase only on client or during SSR if not already initialized
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider();
-
-export { app, auth, googleProvider };
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const auth = initializeAuth(app, {
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+});
+export const googleProvider = new GoogleAuthProvider();

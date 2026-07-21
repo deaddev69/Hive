@@ -5,7 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { signInWithPopup, signOut } from "firebase/auth";
+import { signInWithPopup, signOut, browserPopupRedirectResolver } from "firebase/auth";
 
 export interface SessionUser {
   _id: string;
@@ -86,7 +86,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const loginWithGoogle = async (credential?: string): Promise<any> => {
     try {
-      const res = await signInWithPopup(auth, googleProvider);
+      const res = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
       setIsGuest(false);
       localStorage.removeItem("hive_guest");
       return { token: "firebase", userId: res.user.uid, role: "customer" };
