@@ -201,6 +201,7 @@ export const EmptyCartState: React.FC<EmptyCartStateProps> = ({ onClose }) => {
           isOpen={!!activeQuickViewSlug}
           onClose={() => setActiveQuickViewSlug(null)}
           productSlug={activeQuickViewSlug}
+          initialProduct={recommendedProducts.find((p: any) => p.slug === activeQuickViewSlug)}
         />
       )}
 

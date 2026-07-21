@@ -44,12 +44,24 @@ interface QuickViewModalProps {
   isOpen: boolean;
   onClose: () => void;
   productSlug: string;
+  initialProduct?: {
+    name: string;
+    imageUrl: string;
+    price: number;
+    compareAtPrice?: number;
+    boutiqueName?: string;
+    sizes?: string[];
+    stockBySize?: Record<string, number>;
+    images?: string[];
+    [key: string]: any;
+  };
 }
 
 export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   isOpen,
   onClose,
-  productSlug
+  productSlug,
+  initialProduct
 }) => {
   const router = useRouter();
   const rawProduct = useQuery(api.products.getProduct, { slug: productSlug });
@@ -136,10 +148,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     };
   }, [isOpen]);
 
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(typeof window !== "undefined");
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (!mounted) setMounted(true);
+  }, [mounted]);
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchEndY.current = null;
@@ -158,18 +170,14 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     }
   };
 
-  console.log("QuickViewModal render called: ", { isOpen, productSlug, mounted, product });
-
   if (!isOpen || !mounted) {
-    console.log("QuickViewModal returning null because !isOpen or !mounted", { isOpen, mounted });
     return null;
   }
 
   const modalRoot = document.getElementById("modal-root") || document.body;
-  console.log("QuickViewModal modalRoot:", modalRoot);
   if (!modalRoot) return null;
 
-  if (product === undefined) {
+  if (product === undefined && !initialProduct) {
     return createPortal(
       <div 
         className="fixed inset-0 z-50 flex items-end md:items-center justify-center overflow-hidden"
@@ -209,18 +217,58 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
       modalRoot
     );
   }
+  // Use enriched product from Convex if available, otherwise fall back to initialProduct from card
+  const displayProduct = product || (initialProduct ? {
+    ...initialProduct,
+    id: initialProduct.id || "",
+    slug: productSlug,
+    name: initialProduct.name || "",
+    imageUrl: initialProduct.imageUrl || "",
+    price: initialProduct.price || 0,
+    compareAtPrice: initialProduct.compareAtPrice,
+    boutiqueName: initialProduct.boutiqueName || "",
+    boutiqueId: initialProduct.boutiqueId || "",
+    sizes: initialProduct.sizes || [],
+    stockBySize: initialProduct.stockBySize || {},
+    images: initialProduct.images || (initialProduct.imageUrl ? [initialProduct.imageUrl] : []),
+    discountPercent: initialProduct.compareAtPrice 
+      ? Math.round(((initialProduct.compareAtPrice - initialProduct.price) / initialProduct.compareAtPrice) * 100) 
+      : 0,
+    boutique: initialProduct.boutique || null,
+  } : null) as any;
 
-  const stockMap: Record<string, number> = product.stockBySize ?? {};
+  if (!displayProduct) {
+    return createPortal(
+      <div 
+        className="fixed inset-0 z-50 flex items-end md:items-center justify-center overflow-hidden"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
+        <div className="bg-white shadow-2xl flex flex-col w-full border border-stone-100 z-10 h-full max-h-[40vh] md:h-auto md:max-w-md md:rounded-[24px] rounded-t-[24px] overflow-hidden justify-center items-center p-10 relative">
+          <Loader2 className="w-8 h-8 animate-spin text-stone-850" />
+          <span className="text-xs text-stone-500 font-medium tracking-wide mt-3">
+            Retrieving product...
+          </span>
+        </div>
+      </div>,
+      modalRoot
+    );
+  }
+
+  const isStillLoading = product === undefined;
+
+  const stockMap: Record<string, number> = displayProduct.stockBySize ?? {};
   const currentStock = selectedSize ? (stockMap[selectedSize] ?? 0) : 0;
   const isOutOfStock = selectedSize ? currentStock === 0 : false;
 
   const isLocationServiceable = (() => {
     if (latitude === null || longitude === null) return true;
-    return checkServiceability(latitude, longitude, product.boutique as any).serviceable;
+    return checkServiceability(latitude, longitude, displayProduct.boutique as any).serviceable;
   })();
 
-  const boutiqueStatus = product.boutique
-    ? getBoutiqueStatus(product.boutique, Date.now())
+  const boutiqueStatus = displayProduct.boutique
+    ? getBoutiqueStatus(displayProduct.boutique, Date.now())
     : { type: "OPEN" as const };
   const isStoreOffline = boutiqueStatus.type === "PAUSED";
   const isPreorderMode = boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED";
@@ -231,8 +279,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     // Log replacement event
     logFunnelEvent({
       eventType: "cross_boutique_replace_selected",
-      productId: product.slug as any,
-      boutiqueId: product.boutiqueId as any,
+      productId: displayProduct.slug as any,
+      boutiqueId: displayProduct.boutiqueId as any,
     }).catch(err => console.error("Failed to log analytics:", err));
     
     const clearCartZustand = useCartStore.getState().clearCart;
@@ -247,13 +295,13 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     }
     
     addItem({
-      productId: product.slug,
+      productId: displayProduct.slug,
       size: selectedSize,
-      price: product.price,
-      name: product.name,
-      imageUrl: product.imageUrl,
-      boutiqueName: product.boutiqueName,
-      boutiqueId: product.boutiqueId,
+      price: displayProduct.price,
+      name: displayProduct.name,
+      imageUrl: displayProduct.imageUrl,
+      boutiqueName: displayProduct.boutiqueName,
+      boutiqueId: displayProduct.boutiqueId,
       availableStock: currentStock,
       isPreorder: isPreorderMode,
       scheduledProcessingDate: isPreorderMode ? (boutiqueStatus as any).nextOperatingDay : undefined,
@@ -265,22 +313,22 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
   const handleSaveToWishlist = () => {
     logFunnelEvent({
       eventType: "cross_boutique_wishlist_selected",
-      productId: product.slug as any,
-      boutiqueId: product.boutiqueId as any,
+      productId: displayProduct.slug as any,
+      boutiqueId: displayProduct.boutiqueId as any,
     }).catch(err => console.error("Failed to log analytics:", err));
 
     const toggleItem = useWishlistStore.getState().toggleItem;
     const hasItem = useWishlistStore.getState().hasItem;
     
-    if (product.slug) {
-      if (!hasItem(product.slug)) {
+    if (displayProduct.slug) {
+      if (!hasItem(displayProduct.slug)) {
         toggleItem({
-          id: product.id,
-          slug: product.slug,
-          name: product.name,
-          price: product.price,
-          imageUrl: product.imageUrl,
-          boutiqueName: product.boutiqueName,
+          id: displayProduct.id,
+          slug: displayProduct.slug,
+          name: displayProduct.name,
+          price: displayProduct.price,
+          imageUrl: displayProduct.imageUrl,
+          boutiqueName: displayProduct.boutiqueName,
         });
       }
       setCrossBoutiqueModalOpen(false);
@@ -304,7 +352,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 
     const currentCartItems = useCartStore.getState().items;
     const firstItem = currentCartItems[0];
-    if (firstItem && firstItem.boutiqueName !== product.boutiqueName) {
+    if (firstItem && firstItem.boutiqueName !== displayProduct.boutiqueName) {
       setCrossBoutiqueModalOpen(true);
       return;
     }
@@ -312,13 +360,13 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     setAdding(true);
     setTimeout(() => {
       addItem({
-        productId: product.slug,
+        productId: displayProduct.slug,
         size: selectedSize,
-        price: product.price,
-        name: product.name,
-        imageUrl: product.imageUrl,
-        boutiqueName: product.boutiqueName,
-        boutiqueId: product.boutiqueId,
+        price: displayProduct.price,
+        name: displayProduct.name,
+        imageUrl: displayProduct.imageUrl,
+        boutiqueName: displayProduct.boutiqueName,
+        boutiqueId: displayProduct.boutiqueId,
         availableStock: currentStock,
         isPreorder: isPreorderMode,
         scheduledProcessingDate: isPreorderMode ? (boutiqueStatus as any).nextOperatingDay : undefined,
@@ -330,8 +378,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
     }, 600);
   };
 
-  const images = rawProduct?.images?.length ? rawProduct.images : (product.imageUrl ? [product.imageUrl] : []);
-  const discountPercent = product.discountPercent || 0;
+  const images = rawProduct?.images?.length ? rawProduct.images : (displayProduct.images?.length ? displayProduct.images : (displayProduct.imageUrl ? [displayProduct.imageUrl] : []));
+  const discountPercent = displayProduct.discountPercent || 0;
 
   return createPortal(
     <div 
@@ -381,7 +429,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 <div key={idx} className="w-full h-full flex-shrink-0 snap-center relative">
                   <Image
                     src={img}
-                    alt={`${product.name} - View ${idx + 1}`}
+                    alt={`${displayProduct.name} - View ${idx + 1}`}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
@@ -451,21 +499,21 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
           <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-6 scrollbar-none flex flex-col">
             <div className="space-y-1 mb-4">
               <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700">
-                {product.boutiqueName}
+                {displayProduct.boutiqueName}
               </span>
               <h2 className="text-xl md:text-2xl font-serif font-semibold text-stone-900 leading-tight line-clamp-2">
-                {cleanProductTitle(product.name)}
+                {cleanProductTitle(displayProduct.name)}
               </h2>
             </div>
 
             <div className="flex flex-wrap items-baseline gap-2 mb-6">
               <span className="text-xl font-bold text-stone-900">
-                ₹{product.price.toLocaleString("en-IN")}
+                ₹{displayProduct.price.toLocaleString("en-IN")}
               </span>
-              {product.compareAtPrice && product.compareAtPrice > product.price && (
+              {displayProduct.compareAtPrice && displayProduct.compareAtPrice > displayProduct.price && (
                 <>
                   <span className="text-sm text-stone-400 line-through">
-                    ₹{product.compareAtPrice.toLocaleString("en-IN")}
+                    ₹{displayProduct.compareAtPrice.toLocaleString("en-IN")}
                   </span>
                   <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 px-2 py-1 rounded-full border border-amber-200/50">
                     {discountPercent}% OFF
@@ -480,8 +528,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               </div>
               
               <div className="flex flex-wrap gap-2">
-                {product.sizes && product.sizes.length > 0 ? (
-                  product.sizes.map((size: string) => {
+                {displayProduct.sizes && displayProduct.sizes.length > 0 ? (
+                  displayProduct.sizes.map((size: string) => {
                     const stock = stockMap[size] ?? 0;
                     const isAvail = stock > 0;
                     const isSel = selectedSize === size;
@@ -573,7 +621,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
             <button
               onClick={() => {
                 onClose();
-                router.push(`/products/${product.slug}`);
+                router.push(`/products/${displayProduct.slug}`);
               }}
               className="w-full md:mt-3 h-12 md:h-auto text-sm md:text-xs bg-stone-900 text-white md:bg-transparent md:text-stone-500 hover:text-stone-900 rounded-xl md:rounded-none font-medium tracking-wide flex items-center justify-center transition-all shadow-sm md:shadow-none"
             >
@@ -589,8 +637,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         onClose={() => {
           logFunnelEvent({
             eventType: "cross_boutique_dismissed",
-            productId: product.slug as any,
-            boutiqueId: product.boutiqueId as any,
+            productId: displayProduct.slug as any,
+            boutiqueId: displayProduct.boutiqueId as any,
           }).catch(err => console.error("Failed to log analytics:", err));
           setCrossBoutiqueModalOpen(false);
         }}

@@ -327,6 +327,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           isOpen={quickViewModal.open}
           onClose={() => setQuickViewModal({ open: false, productId: null })}
           productSlug={quickViewModal.productId}
+          initialProduct={products.find(p => p.slug === quickViewModal.productId)}
         />
       )}
     </div>

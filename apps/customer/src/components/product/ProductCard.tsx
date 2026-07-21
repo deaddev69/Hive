@@ -116,14 +116,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
   };
 
   const handleQuickViewOpen = (e: React.MouseEvent) => {
-    console.log("Quick Look clicked for product slug:", product.slug);
     e.stopPropagation();
     e.preventDefault();
     if (onQuickView) {
-      console.log("Calling parent onQuickView handler...");
       onQuickView(product.slug);
     } else {
-      console.log("No parent handler, falling back to local QuickViewModal state...");
       setLocalQuickViewOpen(true);
     }
   };
@@ -268,6 +265,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
           isOpen={localQuickViewOpen}
           onClose={() => setLocalQuickViewOpen(false)}
           productSlug={product.slug}
+          initialProduct={product}
         />
       )}
 
