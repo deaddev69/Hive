@@ -6,6 +6,40 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   dynamicStartUrl: false,
   cacheStartUrl: false,
+  workboxOptions: {
+    cleanupOutdatedCaches: true,
+    runtimeCaching: [
+      {
+        urlPattern: /^https:\/\/(?:cdn\.hivenow\.in|.*\.convex\.cloud|images\.unsplash\.com)\/.*/i,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "external-media-cache",
+          networkTimeoutSeconds: 3,
+          expiration: {
+            maxEntries: 32,
+            maxAgeSeconds: 24 * 60 * 60, // 24 hours
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      {
+        urlPattern: /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "static-image-assets",
+          expiration: {
+            maxEntries: 64,
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+    ],
+  },
 });
 
 const nextConfig: NextConfig = {
