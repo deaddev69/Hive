@@ -248,10 +248,10 @@ export const Navbar: React.FC = () => {
             <div className="relative">
               <button
                 onClick={handleLocationClick}
-                className={`flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-white border text-[8.5px] sm:text-[10px] font-medium transition-all duration-200 min-w-0 max-w-[115px] sm:max-w-[200px] select-none cursor-pointer ${
+                className={`flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-white border text-[8.5px] sm:text-[10px] font-medium transition-all duration-200 min-w-0 max-w-[115px] sm:max-w-[200px] select-none cursor-pointer shadow-sm ${
                   hydrated && !(locality || city)
-                    ? "animate-location-glow ring-2 ring-hive-gold/10"
-                    : "border-slate-200 text-hive-dark/95 shadow-sm hover:bg-slate-50"
+                    ? "animate-location-glow text-hive-gold font-bold"
+                    : "border-slate-200 text-hive-dark/95 hover:bg-slate-50"
                 }`}
               >
                 <MapPin className="w-2.5 h-2.5 sm:w-3 h-3 text-hive-gold flex-shrink-0" />
