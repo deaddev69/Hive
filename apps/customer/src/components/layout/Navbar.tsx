@@ -250,7 +250,7 @@ export const Navbar: React.FC = () => {
                 onClick={handleLocationClick}
                 className={`flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-white border text-[8.5px] sm:text-[10px] font-medium transition-all duration-200 min-w-0 max-w-[115px] sm:max-w-[200px] select-none cursor-pointer ${
                   hydrated && !(locality || city)
-                    ? "border-hive-gold/50 shadow-[0_0_12px_rgba(217,119,6,0.3)] hover:shadow-[0_0_16px_rgba(217,119,6,0.4)] animate-[pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] ring-1 ring-hive-gold/20"
+                    ? "animate-location-glow ring-2 ring-hive-gold/10"
                     : "border-slate-200 text-hive-dark/95 shadow-sm hover:bg-slate-50"
                 }`}
               >
