@@ -39,6 +39,13 @@ export const seedServiceZones = mutation({
       { city: "Aluva", state: "Kerala" },
       { city: "Thrippunithura", state: "Kerala" },
       { city: "Edappally", state: "Kerala" },
+      { city: "Ernakulam", state: "Kerala" },
+      { city: "Maradu", state: "Kerala" },
+      { city: "Nettoor", state: "Kerala" },
+      { city: "Cheranallur", state: "Kerala" },
+      { city: "Chittoor", state: "Kerala" },
+      { city: "Kaloor", state: "Kerala" },
+      { city: "Panampilly Nagar", state: "Kerala" },
     ];
 
     const now = Date.now();
@@ -69,11 +76,38 @@ export const seedServiceZones = mutation({
  * Check if a given city is serviceable (case-insensitive).
  */
 export const checkServiceability = query({
-  args: { city: v.string() },
+  args: {
+    city: v.string(),
+    lat: v.optional(v.number()),
+    lng: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
-    const searchCity = args.city.trim().toLowerCase();
+    // 1. PRIMARY CHECK: If GPS coordinates are provided, evaluate Haversine distance
+    if (args.lat !== undefined && args.lng !== undefined && args.lat !== 0 && args.lng !== 0) {
+      const approvedBoutiques = await ctx.db
+        .query("boutiques")
+        .withIndex("by_status", (q) => q.eq("status", "APPROVED"))
+        .collect();
 
-    // Fetch active service zones and match in JS for case-insensitivity
+      const nearbyBoutiques = approvedBoutiques.filter((b) => {
+        const distance = haversineKm(args.lat!, args.lng!, b.latitude, b.longitude);
+        const maxRadius = b.deliveryRadiusKm ?? 15;
+        return distance <= maxRadius;
+      });
+
+      // If at least 1 boutique can fulfill to these coordinates, pass immediately
+      if (nearbyBoutiques.length > 0) {
+        return {
+          isServiceable: true,
+          city: args.city,
+          state: "",
+          reason: "BOUTIQUE_IN_RANGE",
+        };
+      }
+    }
+
+    // 2. SECONDARY FALLBACK: Check macro serviceZones string match
+    const searchCity = args.city.trim().toLowerCase();
     const activeZones = await ctx.db
       .query("serviceZones")
       .withIndex("by_isActive", (q) => q.eq("isActive", true))
@@ -87,6 +121,7 @@ export const checkServiceability = query({
       isServiceable: !!matched,
       city: matched?.city || args.city,
       state: matched?.state || "",
+      reason: matched ? "ZONE_ACTIVE" : "OUT_OF_RANGE",
     };
   },
 });
