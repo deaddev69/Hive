@@ -20,17 +20,41 @@ export const getCustomerHomeData = query({
         .withIndex("by_active_and_sortOrder", (q) => q.eq("active", true))
         .collect();
 
-      return bannersRaw.slice(0, 10).map((b) => ({
-        _id: b._id,
-        title: b.title,
-        subtitle: b.subtitle,
-        desktopImageUrl: b.desktopImageUrl,
-        mobileImageUrl: b.mobileImageUrl || b.desktopImageUrl,
-        ctaText: b.ctaText,
-        ctaLink: b.ctaLink,
-        targetType: "category",
-        targetValue: "all",
-      }));
+      return await Promise.all(
+        bannersRaw.slice(0, 10).map(async (b) => {
+          let desktopImageUrl = "";
+          if (b.desktopImageUrl) {
+            if (typeof b.desktopImageUrl === "object") {
+              desktopImageUrl = getPublicUrl(b.desktopImageUrl as any) || "";
+            } else if (typeof b.desktopImageUrl === "string" && b.desktopImageUrl.startsWith("http")) {
+              desktopImageUrl = b.desktopImageUrl;
+            } else if (typeof b.desktopImageUrl === "string") {
+              desktopImageUrl = (await ctx.storage.getUrl(b.desktopImageUrl as any)) || b.desktopImageUrl;
+            }
+          }
+          let mobileImageUrl = "";
+          if (b.mobileImageUrl) {
+            if (typeof b.mobileImageUrl === "object") {
+              mobileImageUrl = getPublicUrl(b.mobileImageUrl as any) || "";
+            } else if (typeof b.mobileImageUrl === "string" && b.mobileImageUrl.startsWith("http")) {
+              mobileImageUrl = b.mobileImageUrl;
+            } else if (typeof b.mobileImageUrl === "string") {
+              mobileImageUrl = (await ctx.storage.getUrl(b.mobileImageUrl as any)) || b.mobileImageUrl;
+            }
+          }
+          return {
+            _id: b._id,
+            title: b.title,
+            subtitle: b.subtitle,
+            desktopImageUrl: desktopImageUrl || "",
+            mobileImageUrl: mobileImageUrl || desktopImageUrl || "",
+            ctaText: b.ctaText,
+            ctaLink: b.ctaLink,
+            targetType: "category",
+            targetValue: "all",
+          };
+        })
+      );
     })();
 
     // 2. Fetch active homepage configuration (Promise 2)

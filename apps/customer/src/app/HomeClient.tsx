@@ -406,8 +406,7 @@ export function HomeClient() {
             </div>
           ) : dbBanners.length === 0 ? (
             // Falling back to 3 premium static campaign cards
-            <>
-              {/* Desktop Fallback */}
+                    {/* Desktop Fallback */}
               <div className="hidden md:grid grid-cols-3 gap-6 w-full">
                 {staticFallbackCampaigns.map((banner, idx) => (
                   <Link
@@ -416,10 +415,12 @@ export function HomeClient() {
                     className="banner-card group relative aspect-[16/10] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm hover:shadow-md cursor-pointer block bg-slate-50 transform hover:-translate-y-0.5 transition-all duration-500"
                     style={{ animationDelay: `${idx * 150}ms` }}
                   >
-                    <img
-                      src={banner.img}
+                    <Image
+                      src={banner.img || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
                       alt={banner.title}
-                      className="absolute inset-0 w-full h-full object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                     <div className="sheen-glow" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent z-10" />
@@ -439,7 +440,7 @@ export function HomeClient() {
                 ))}
               </div>
 
-              {/* Mobile Fallback */}
+              {/* Mobile Fallback Carousel */}
               <div className="md:hidden flex flex-col gap-4 w-full">
                 <div
                   ref={mobileScrollRef}
@@ -458,10 +459,12 @@ export function HomeClient() {
                       className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[4/5] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
                       style={{ animationDelay: `${idx * 150}ms` }}
                     >
-                      <img
-                        src={banner.img}
+                      <Image
+                        src={banner.img || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
                         alt={banner.title}
-                        className="absolute inset-0 w-full h-full object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                       />
                       <div className="sheen-glow" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-10" />
@@ -513,10 +516,12 @@ export function HomeClient() {
                     className="banner-card group relative aspect-[16/10] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm hover:shadow-md cursor-pointer block bg-slate-50 transform hover:-translate-y-0.5 transition-all duration-500"
                     style={{ animationDelay: `${idx * 150}ms` }}
                   >
-                    <img
-                      src={banner.desktopImageUrl}
+                    <Image
+                      src={banner.desktopImageUrl || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
                       alt={banner.title}
-                      className="absolute inset-0 w-full h-full object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                     <div className="sheen-glow" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent z-10" />
@@ -557,10 +562,12 @@ export function HomeClient() {
                       className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[4/5] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
                       style={{ animationDelay: `${idx * 150}ms` }}
                     >
-                      <img
-                        src={banner.mobileImageUrl || banner.desktopImageUrl}
+                      <Image
+                        src={banner.mobileImageUrl || banner.desktopImageUrl || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
                         alt={banner.title}
-                        className="absolute inset-0 w-full h-full object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                       />
                       <div className="sheen-glow" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-10" />
