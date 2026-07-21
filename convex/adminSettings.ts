@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { requireRole } from "./lib/auth";
 
 export const getPlatformSettings = query({
   args: {},
@@ -19,7 +20,7 @@ export const updatePlatformSettings = mutation({
     platformFeeRate: v.number(),
   },
   handler: async (ctx, args) => {
-    // Note: Authentication/Authorization should be added here to restrict to admins
+    await requireRole(ctx, "admin");
     const settings = await ctx.db.query("platformSettings").first();
     
     if (settings) {

@@ -166,7 +166,7 @@ export const handleClerkWebhook = httpAction(async (ctx, request) => {
       const isPhoneVerified = phoneObj?.verification?.status === "verified";
 
       if (eventType === "user.created") {
-        await ctx.runMutation(api.users.syncUserFromWebhook, {
+        await ctx.runMutation(internal.users.syncUserFromWebhook, {
           clerkId,
           email,
           name,
@@ -175,7 +175,7 @@ export const handleClerkWebhook = httpAction(async (ctx, request) => {
           isPhoneVerified,
         });
       } else {
-        await ctx.runMutation(api.users.syncUserUpdateFromWebhook, {
+        await ctx.runMutation(internal.users.syncUserUpdateFromWebhook, {
           clerkId,
           email,
           name,
@@ -188,14 +188,14 @@ export const handleClerkWebhook = httpAction(async (ctx, request) => {
       const data = event.data;
       const clerkId = data.id;
 
-      await ctx.runMutation(api.users.syncUserDeleteFromWebhook, {
+      await ctx.runMutation(internal.users.syncUserDeleteFromWebhook, {
         clerkId,
       });
     } else if (eventType === "session.created") {
       const data = event.data;
       const clerkId = data.user_id;
       if (clerkId) {
-        await ctx.runMutation(api.users.logUserSessionEvent, {
+        await ctx.runMutation(internal.users.logUserSessionEvent, {
           clerkId,
           action: "user.signed_in",
         });
@@ -204,7 +204,7 @@ export const handleClerkWebhook = httpAction(async (ctx, request) => {
       const data = event.data;
       const clerkId = data.user_id;
       if (clerkId) {
-        await ctx.runMutation(api.users.logUserSessionEvent, {
+        await ctx.runMutation(internal.users.logUserSessionEvent, {
           clerkId,
           action: "user.signed_out",
         });

@@ -2201,6 +2201,7 @@ export const getCartDrawerRecommendations = query({
 export const runQualityScoreAudit = query({
   args: {},
   handler: async (ctx) => {
+    await requireRole(ctx, "admin");
     const products = await ctx.db.query("products").collect();
     
     let totalAudited = 0;

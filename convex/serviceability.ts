@@ -4,6 +4,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { haversineKm } from "./lib/serviceability";
+import { requireRole } from "./lib/auth";
 
 
 
@@ -32,6 +33,7 @@ export const getDeliverableBoutiques = query({
 export const seedServiceZones = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireRole(ctx, "admin");
     const defaultZones = [
       { city: "Kochi", state: "Kerala" },
       { city: "Kakkanad", state: "Kerala" },
@@ -190,6 +192,7 @@ export const requestService = mutation({
 export const getServiceRequests = query({
   args: {},
   handler: async (ctx) => {
+    await requireRole(ctx, "admin");
     return await ctx.db
       .query("serviceRequests")
       .order("desc")

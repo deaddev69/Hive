@@ -1781,6 +1781,7 @@ export const reconcileBoutiquePayouts = mutation({
 export const debugOrder = query({
   args: { orderNumber: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
     let ordersList: any[] = [];
     if (args.orderNumber) {
       const order = await ctx.db

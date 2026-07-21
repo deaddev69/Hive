@@ -1,7 +1,7 @@
 // convex/users.ts
 // User sync and profile queries for the HIVE customer app.
 
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUser, requireRole } from "./lib/auth";
 import { internal } from "./_generated/api";
@@ -538,7 +538,7 @@ export const approveAdminPromotion = mutation({
   },
 });
 
-export const syncUserFromWebhook = mutation({
+export const syncUserFromWebhook = internalMutation({
   args: {
     clerkId: v.string(),
     email: v.optional(v.string()),
@@ -733,7 +733,7 @@ export const syncUserFromWebhook = mutation({
 /**
  * Syncs Clerk user updates via Webhooks.
  */
-export const syncUserUpdateFromWebhook = mutation({
+export const syncUserUpdateFromWebhook = internalMutation({
   args: {
     clerkId: v.string(),
     email: v.optional(v.string()),
@@ -807,7 +807,7 @@ export const syncUserUpdateFromWebhook = mutation({
 /**
  * Syncs Clerk user deletions via Webhooks.
  */
-export const syncUserDeleteFromWebhook = mutation({
+export const syncUserDeleteFromWebhook = internalMutation({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -854,7 +854,7 @@ export const syncUserDeleteFromWebhook = mutation({
 /**
  * Logs user session events (signed in / signed out) from Clerk webhooks.
  */
-export const logUserSessionEvent = mutation({
+export const logUserSessionEvent = internalMutation({
   args: {
     clerkId: v.string(),
     action: v.union(v.literal("user.signed_in"), v.literal("user.signed_out")),

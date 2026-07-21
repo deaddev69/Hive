@@ -2201,6 +2201,13 @@ export const getBoutiqueTierAndStats = query({
       return { tier: "Bronze", totalOrders: 0, totalRevenue: 0 };
     }
 
+    const user = await getAuthenticatedUser(ctx);
+    if (user.role !== "admin") {
+      if (boutique.ownerUserId !== user._id) {
+        throw new Error("Unauthorized: Access denied to this boutique's tier stats.");
+      }
+    }
+
     // 2. Fetch completed records using the newly registered schema index
     const deliveredOrders = await ctx.db
       .query("orders")

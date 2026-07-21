@@ -3,7 +3,7 @@
 
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthenticatedUser } from "./lib/auth";
+import { getAuthenticatedUser, requireRole } from "./lib/auth";
 import { getPublicUrl } from "./media/api";
 
 /**
@@ -1117,6 +1117,10 @@ export const countAllDocuments = query({
 export const fixProductPrices = mutation({
   args: {},
   handler: async (ctx) => {
+    if (process.env.ENABLE_DEBUG_TOOLS !== "true") {
+      throw new Error("Debug tools disabled in this environment.");
+    }
+    await requireRole(ctx, "admin");
     const products = await ctx.db.query("products").collect();
     let updatedCount = 0;
     for (const p of products) {

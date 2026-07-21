@@ -219,6 +219,7 @@ export const getInvoiceByOrderId_admin = query({
 export const clearAllInvoicePdfUrls = mutation({
   args: {},
   handler: async (ctx) => {
+    await requireRole(ctx, "admin");
     const invoices = await ctx.db.query("invoices").collect();
     for (const inv of invoices) {
       await ctx.db.patch(inv._id, { pdfUrl: undefined });

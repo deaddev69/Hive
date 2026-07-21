@@ -1,6 +1,7 @@
 // convex/homepageConfig.ts
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { requireRole } from "./lib/auth";
 
 /**
  * Retrieve active homepage styling and section configuration.
@@ -39,6 +40,7 @@ export const updateConfig = mutation({
     enableTrendingSection: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
     const config = await ctx.db.query("homepageConfig").first();
     const updateData: Record<string, any> = {
       ...args,
