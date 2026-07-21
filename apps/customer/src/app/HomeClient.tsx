@@ -406,7 +406,8 @@ export function HomeClient() {
             </div>
           ) : dbBanners.length === 0 ? (
             // Falling back to 3 premium static campaign cards
-                    {/* Desktop Fallback */}
+            <>
+              {/* Desktop Fallback */}
               <div className="hidden md:grid grid-cols-3 gap-6 w-full">
                 {staticFallbackCampaigns.map((banner, idx) => (
                   <Link
