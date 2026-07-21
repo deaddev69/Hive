@@ -5,6 +5,7 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { validateUploadedFile } from "./lib/uploads";
+import { ImageAsset } from "./schema";
 
 /**
  * Fetch all active banners sorted by sortOrder.
@@ -40,8 +41,8 @@ export const createBanner = mutation({
   args: {
     title: v.string(),
     subtitle: v.string(),
-    desktopImageStorageId: v.optional(v.string()),
-    mobileImageStorageId: v.optional(v.string()),
+    desktopImageStorageId: v.optional(v.union(v.id("_storage"), v.string(), ImageAsset)),
+    mobileImageStorageId: v.optional(v.union(v.id("_storage"), v.string(), ImageAsset)),
     desktopImageUrl: v.optional(v.string()),
     mobileImageUrl: v.optional(v.string()),
     ctaText: v.string(),
@@ -62,16 +63,28 @@ export const createBanner = mutation({
       await validateUploadedFile(ctx, args.mobileImageStorageId, undefined, allowedImageMimes, maxImageBytes);
     }
 
-    let desktopUrl = args.desktopImageUrl || "";
+    let desktopUrl: any = args.desktopImageUrl || "";
     if (args.desktopImageStorageId) {
-      const resolved = await ctx.storage.getUrl(args.desktopImageStorageId);
-      if (resolved) desktopUrl = resolved;
+      if (typeof args.desktopImageStorageId === "object") {
+        desktopUrl = args.desktopImageStorageId;
+      } else if (typeof args.desktopImageStorageId === "string" && args.desktopImageStorageId.startsWith("http")) {
+        desktopUrl = args.desktopImageStorageId;
+      } else {
+        const resolved = await ctx.storage.getUrl(args.desktopImageStorageId as any);
+        if (resolved) desktopUrl = resolved;
+      }
     }
 
-    let mobileUrl = args.mobileImageUrl || "";
+    let mobileUrl: any = args.mobileImageUrl || "";
     if (args.mobileImageStorageId) {
-      const resolved = await ctx.storage.getUrl(args.mobileImageStorageId);
-      if (resolved) mobileUrl = resolved;
+      if (typeof args.mobileImageStorageId === "object") {
+        mobileUrl = args.mobileImageStorageId;
+      } else if (typeof args.mobileImageStorageId === "string" && args.mobileImageStorageId.startsWith("http")) {
+        mobileUrl = args.mobileImageStorageId;
+      } else {
+        const resolved = await ctx.storage.getUrl(args.mobileImageStorageId as any);
+        if (resolved) mobileUrl = resolved;
+      }
     }
 
     if (!desktopUrl || !mobileUrl) {
@@ -102,8 +115,8 @@ export const updateBanner = mutation({
     id: v.id("banners"),
     title: v.string(),
     subtitle: v.string(),
-    desktopImageStorageId: v.optional(v.string()),
-    mobileImageStorageId: v.optional(v.string()),
+    desktopImageStorageId: v.optional(v.union(v.id("_storage"), v.string(), ImageAsset)),
+    mobileImageStorageId: v.optional(v.union(v.id("_storage"), v.string(), ImageAsset)),
     desktopImageUrl: v.optional(v.string()),
     mobileImageUrl: v.optional(v.string()),
     ctaText: v.string(),
@@ -130,16 +143,28 @@ export const updateBanner = mutation({
       throw new Error("Banner not found");
     }
 
-    let desktopUrl = args.desktopImageUrl || existing.desktopImageUrl;
+    let desktopUrl: any = args.desktopImageUrl || existing.desktopImageUrl;
     if (args.desktopImageStorageId) {
-      const resolved = await ctx.storage.getUrl(args.desktopImageStorageId);
-      if (resolved) desktopUrl = resolved;
+      if (typeof args.desktopImageStorageId === "object") {
+        desktopUrl = args.desktopImageStorageId;
+      } else if (typeof args.desktopImageStorageId === "string" && args.desktopImageStorageId.startsWith("http")) {
+        desktopUrl = args.desktopImageStorageId;
+      } else {
+        const resolved = await ctx.storage.getUrl(args.desktopImageStorageId as any);
+        if (resolved) desktopUrl = resolved;
+      }
     }
 
-    let mobileUrl = args.mobileImageUrl || existing.mobileImageUrl;
+    let mobileUrl: any = args.mobileImageUrl || existing.mobileImageUrl;
     if (args.mobileImageStorageId) {
-      const resolved = await ctx.storage.getUrl(args.mobileImageStorageId);
-      if (resolved) mobileUrl = resolved;
+      if (typeof args.mobileImageStorageId === "object") {
+        mobileUrl = args.mobileImageStorageId;
+      } else if (typeof args.mobileImageStorageId === "string" && args.mobileImageStorageId.startsWith("http")) {
+        mobileUrl = args.mobileImageStorageId;
+      } else {
+        const resolved = await ctx.storage.getUrl(args.mobileImageStorageId as any);
+        if (resolved) mobileUrl = resolved;
+      }
     }
 
     await ctx.db.patch(args.id, {
