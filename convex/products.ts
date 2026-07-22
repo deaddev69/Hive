@@ -125,6 +125,8 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
           prepTimeMinutes: boutique.prepTimeMinutes,
           weeklyClosedDays: boutique.weeklyClosedDays,
           holidayDates: boutique.holidayDates,
+          description: boutique.description || "",
+          ownerName: boutique.ownerName || "",
         } : null,
       };
     })

@@ -8,6 +8,7 @@ import { SizeSelector } from "./SizeSelector";
 import { PurchaseActions } from "./PurchaseActions";
 import { useRouter } from "next/navigation";
 import { cleanProductTitle } from "./ProductCard";
+import Link from "next/link";
 
 export interface ProductInfoProps {
   product: ProductDetail;
@@ -297,22 +298,40 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       {/* ── SECTION 7: MERCHANT ── */}
-      <div className="border-t border-stone-200/80 pt-5 mt-4 select-none">
-        <div className="flex justify-between items-start">
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.12em] block">
-              Hive Partner
-            </span>
-            <h4 className="text-sm font-bold text-stone-900 leading-tight">
-              {product.boutique.name}
-            </h4>
-            <span className="text-[11px] text-stone-500 font-medium block">
-              Independent fashion partner in {product.boutique.city || "Kochi"}
-            </span>
-            <span className="text-[10px] text-emerald-600 font-semibold block">
-              Verified by Hive
-            </span>
+      <div className="border-t border-stone-200/80 pt-5 mt-4 select-none text-left">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[9px] font-extrabold text-stone-400 uppercase tracking-[0.12em] block">
+                Hive Partner
+              </span>
+              <Link 
+                href={`/shop/${product.boutique.slug}`} 
+                className="text-sm font-extrabold text-stone-900 hover:text-hive-amber transition-colors leading-tight block mt-0.5"
+              >
+                {product.boutique.name}
+              </Link>
+            </div>
+            {product.boutique.city && (
+              <span className="text-[10px] font-bold text-stone-500 bg-stone-100 px-2.5 py-1 rounded-md border border-stone-200">
+                {product.boutique.city}
+              </span>
+            )}
           </div>
+
+          {product.boutique.description && (
+            <div className="bg-[#FAF6F0]/70 border border-hive-border/60 rounded-2xl p-4 relative overflow-hidden shadow-sm">
+              <span className="absolute top-1 right-3 text-4xl font-serif text-hive-gold/25 select-none font-black leading-none pointer-events-none">“</span>
+              <p className="font-serif text-xs text-stone-850 leading-relaxed italic pr-4 whitespace-pre-line">
+                "{product.boutique.description}"
+              </p>
+              {product.boutique.ownerName && (
+                <p className="font-serif text-[10px] text-hive-amber/80 font-bold tracking-wide mt-2 text-right">
+                  — {product.boutique.ownerName}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
