@@ -691,7 +691,7 @@ export const Navbar: React.FC = () => {
 
           {/* Social Links */}
           <div className="px-5 pt-4 pb-2 flex justify-center">
-            <SocialTooltip />
+            <SocialTooltip variant="light" />
           </div>
 
           {/* ── Support | Terms | Privacy ──────────────────────────── */}

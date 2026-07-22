@@ -1,8 +1,12 @@
 import React from 'react';
 
-export const SocialTooltip = () => {
+interface SocialTooltipProps {
+  variant?: "dark" | "light";
+}
+
+export const SocialTooltip: React.FC<SocialTooltipProps> = ({ variant = "dark" }) => {
   return (
-    <div className="flex items-center justify-start py-2 select-none">
+    <div className={`flex items-center justify-start py-1 select-none ${variant === "light" ? "variant-light" : "variant-dark"}`}>
       {/* Self-contained styling for tooltip hover and filled animations */}
       <style dangerouslySetInnerHTML={{__html: `
         .social-list {
@@ -103,6 +107,37 @@ export const SocialTooltip = () => {
         .social-item a[data-social="whatsapp"] .filled-layer,
         .social-item a[data-social="whatsapp"] ~ .tooltip {
           background-color: #25d366;
+        }
+
+        /* Option B: Light theme defaults with brand colors inside soft tinted circles */
+        .variant-light .social-item a {
+          background-color: rgba(243, 244, 246, 0.75);
+          border-color: rgba(0, 0, 0, 0.04);
+        }
+        .variant-light .social-item a[data-social="linkedin"] {
+          color: #0077b5;
+          background-color: rgba(0, 119, 181, 0.08);
+        }
+        .variant-light .social-item a[data-social="instagram"] {
+          color: #e1306c;
+          background-color: rgba(225, 48, 108, 0.08);
+        }
+        .variant-light .social-item a[data-social="youtube"] {
+          color: #ff0000;
+          background-color: rgba(255, 0, 0, 0.08);
+        }
+        .variant-light .social-item a[data-social="whatsapp"] {
+          color: #25d366;
+          background-color: rgba(37, 211, 102, 0.08);
+        }
+        .variant-light .social-item a[data-social="reddit"] {
+          color: #ff4500;
+          background-color: rgba(255, 69, 0, 0.08);
+        }
+        
+        /* Light variant hover overrides */
+        .variant-light .social-item a:hover {
+          color: #ffffff;
         }
       `}} />
 
