@@ -6,6 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { Badge } from "@hive/ui";
 import { HiveLogo } from "@/components/shared/HiveLogo";
 import { PremiumShoppingBag } from "@/components/shared/PremiumShoppingBag";
+import { SocialTooltip } from "@/components/shared/SocialTooltip";
 import {
   MapPin,
   Search,
@@ -686,6 +687,11 @@ export const Navbar: React.FC = () => {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Social Links */}
+          <div className="px-5 pt-4 pb-2 flex justify-center">
+            <SocialTooltip />
           </div>
 
           {/* ── Support | Terms | Privacy ──────────────────────────── */}
