@@ -165,6 +165,15 @@ export function BecomeSellerClient() {
       return;
     }
 
+    if (latitude < 8.0 || latitude > 13.0) {
+      alert("Error: Store Latitude must be a valid coordinate within Kerala region (8.0 to 13.0).");
+      return;
+    }
+    if (longitude < 74.0 || longitude > 78.0) {
+      alert("Error: Store Longitude must be a valid coordinate within Kerala region (74.0 to 78.0).");
+      return;
+    }
+
     // Parse and validate keywords input
     const keywords = keywordsInput
       .split(",")
@@ -946,6 +955,8 @@ export function BecomeSellerClient() {
                 <input
                   type="number"
                   step="any"
+                  min="8.0"
+                  max="13.0"
                   required
                   placeholder="e.g. 9.9312"
                   value={latitude || ""}
@@ -961,6 +972,8 @@ export function BecomeSellerClient() {
                 <input
                   type="number"
                   step="any"
+                  min="74.0"
+                  max="78.0"
                   required
                   placeholder="e.g. 76.2673"
                   value={longitude || ""}
@@ -969,6 +982,9 @@ export function BecomeSellerClient() {
                 />
               </div>
             </div>
+            <span className="text-[9px] text-stone-400 italic block text-left">
+              * Store coordinates must be within the Kerala boundary region (Latitude: 8.0 to 13.0, Longitude: 74.0 to 78.0).
+            </span>
 
             <div className="flex gap-3 mt-4 pt-4 border-t border-hive-border/30">
               <Button

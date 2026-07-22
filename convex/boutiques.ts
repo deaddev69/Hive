@@ -143,6 +143,12 @@ function validateBoutiqueDetails(details: {
   ) {
     throw new Error("Boutique coordinates are mandatory and cannot be at Null Island (0, 0) or NaN.");
   }
+  if (details.latitude < 8.0 || details.latitude > 13.0) {
+    throw new Error("Store Latitude must be a valid coordinate within Kerala region (8.0 to 13.0).");
+  }
+  if (details.longitude < 74.0 || details.longitude > 78.0) {
+    throw new Error("Store Longitude must be a valid coordinate within Kerala region (74.0 to 78.0).");
+  }
   if (!details.deliveryRadiusKm || details.deliveryRadiusKm <= 0) {
     throw new Error("Delivery radius must be a positive number.");
   }
