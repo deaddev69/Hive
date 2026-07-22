@@ -986,11 +986,11 @@ export const updateBoutiqueProfile = mutation({
     const patchData: any = {
       phone: normalizedPhone,
       description: args.description,
-      logoUrl: args.logoUrl,
-      bannerUrl: args.bannerUrl,
+      logoUrl: args.logoUrl !== undefined ? args.logoUrl : boutique.logoUrl,
+      bannerUrl: args.bannerUrl !== undefined ? args.bannerUrl : boutique.bannerUrl,
       phoneNumber: normalizedPhone, // compatibility field
-      whatsAppNotificationsEnabled: args.whatsAppNotificationsEnabled,
-      notificationPhone: normalizedNotificationPhone,
+      whatsAppNotificationsEnabled: args.whatsAppNotificationsEnabled !== undefined ? args.whatsAppNotificationsEnabled : boutique.whatsAppNotificationsEnabled,
+      notificationPhone: normalizedNotificationPhone !== undefined ? normalizedNotificationPhone : boutique.notificationPhone,
       
       boutiqueName: args.boutiqueName ?? boutique.boutiqueName,
       ownerName: args.ownerName ?? boutique.ownerName,

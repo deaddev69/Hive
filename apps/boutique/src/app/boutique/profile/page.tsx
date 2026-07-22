@@ -301,10 +301,16 @@ export default function BoutiqueProfile() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Brand Story</label>
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Brand Story</label>
+                <span className={`text-[10px] font-bold ${description.length > 500 ? 'text-rose-500' : 'text-hive-text-muted/70'}`}>
+                  {description.length}/500
+                </span>
+              </div>
               <textarea
                 required
                 rows={4}
+                maxLength={500}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Share your boutique's story—your style philosophy, custom stitching heritage, fabric sourcing focus, and design choices..."
