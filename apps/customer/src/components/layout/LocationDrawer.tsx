@@ -334,8 +334,8 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
                         isSaving ? (
                           <div className="flex flex-col items-center justify-center py-4 text-center">
                             <BeeLoader />
-                            <p className="text-xs font-extrabold text-hive-dark tracking-wide animate-pulse mt-3 uppercase">
-                              Setting up your hyperlocal feed...
+                            <p className="text-xs font-bold text-hive-dark tracking-wide animate-pulse mt-3">
+                              Finding fashion near you...
                             </p>
                           </div>
                         ) : (
