@@ -109,35 +109,17 @@ export const SocialTooltip: React.FC<SocialTooltipProps> = ({ variant = "dark" }
           background-color: #25d366;
         }
 
-        /* Option B: Light theme defaults with brand colors inside soft tinted circles */
+        /* Option A: Light theme defaults with transparent backgrounds, gold borders, and dark grey icons */
         .variant-light .social-item a {
-          background-color: rgba(243, 244, 246, 0.75);
-          border-color: rgba(0, 0, 0, 0.04);
-        }
-        .variant-light .social-item a[data-social="linkedin"] {
-          color: #0077b5;
-          background-color: rgba(0, 119, 181, 0.08);
-        }
-        .variant-light .social-item a[data-social="instagram"] {
-          color: #e1306c;
-          background-color: rgba(225, 48, 108, 0.08);
-        }
-        .variant-light .social-item a[data-social="youtube"] {
-          color: #ff0000;
-          background-color: rgba(255, 0, 0, 0.08);
-        }
-        .variant-light .social-item a[data-social="whatsapp"] {
-          color: #25d366;
-          background-color: rgba(37, 211, 102, 0.08);
-        }
-        .variant-light .social-item a[data-social="reddit"] {
-          color: #ff4500;
-          background-color: rgba(255, 69, 0, 0.08);
+          background-color: transparent;
+          border-color: #F0E4C8;
+          color: #1A1200;
         }
         
         /* Light variant hover overrides */
         .variant-light .social-item a:hover {
           color: #ffffff;
+          border-color: transparent;
         }
       `}} />
 
