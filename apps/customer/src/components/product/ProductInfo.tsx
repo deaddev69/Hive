@@ -300,30 +300,22 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       {/* ── SECTION 7: MERCHANT ── */}
       <div className="border-t border-stone-200/80 pt-5 mt-4 select-none text-left">
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-[9px] font-extrabold text-stone-400 uppercase tracking-[0.12em] block">
-                Hive Partner
-              </span>
-              <Link 
-                href={`/shop/${product.boutique.slug}`} 
-                className="text-sm font-extrabold text-stone-900 hover:text-hive-amber transition-colors leading-tight block mt-0.5"
-              >
-                {product.boutique.name}
-              </Link>
-            </div>
-            {product.boutique.city && (
-              <span className="text-[10px] font-bold text-stone-500 bg-stone-100 px-2.5 py-1 rounded-md border border-stone-200">
-                {product.boutique.city}
-              </span>
-            )}
+          <div>
+            <span className="text-[9px] font-extrabold text-stone-400 uppercase tracking-[0.12em] block">
+              Hive Partner {product.boutique.city ? `• ${product.boutique.city.toUpperCase()}` : ""}
+            </span>
+            <Link 
+              href={`/shop/${product.boutique.slug}`} 
+              className="text-sm font-extrabold text-stone-900 hover:text-hive-amber transition-colors leading-tight inline-block mt-0.5"
+            >
+              {product.boutique.name}
+            </Link>
           </div>
 
           {product.boutique.description && (
-            <div className="bg-[#FAF6F0]/70 border border-hive-border/60 rounded-2xl p-4 relative overflow-hidden shadow-sm">
-              <span className="absolute top-1 right-3 text-4xl font-serif text-hive-gold/25 select-none font-black leading-none pointer-events-none">“</span>
-              <p className="font-serif text-xs text-stone-850 leading-relaxed italic pr-4 whitespace-pre-line">
-                "{product.boutique.description}"
+            <div className="bg-[#FAF6F0]/70 border-l-2 border-hive-gold p-3.5 pl-4 rounded-r-xl text-left">
+              <p className="font-serif text-xs text-stone-850 leading-relaxed italic whitespace-pre-line">
+                {product.boutique.description}
               </p>
               {product.boutique.ownerName && (
                 <p className="font-serif text-[10px] text-hive-amber/80 font-bold tracking-wide mt-2 text-right">
