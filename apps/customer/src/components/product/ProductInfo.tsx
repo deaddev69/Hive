@@ -308,14 +308,14 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
           </div>
 
           {product.boutique.description && (
-            <div className="relative group overflow-hidden rounded-xl">
-              {/* Blurred Gold Background Orb */}
-              <div className="absolute -right-4 -bottom-4 w-16 h-16 rounded-full bg-hive-gold/20 blur-xl pointer-events-none transition-transform duration-500 group-hover:scale-125" />
+            <div className="relative group mt-1">
+              {/* Ambient Glow Orb Behind Card */}
+              <div className="absolute -right-3 -bottom-3 w-20 h-20 rounded-full bg-hive-gold/25 blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
               
-              {/* Glassmorphic Card */}
-              <div className="relative z-10 bg-white/60 backdrop-blur-md border border-stone-200/50 border-l-2 border-l-hive-gold p-3.5 pl-4 rounded-r-xl text-left flex gap-3.5 items-start shadow-sm hover:shadow-[0_0_20px_rgba(240,194,67,0.12)] hover:border-hive-gold/30 transition-all duration-300">
+              {/* Editorial Glass Card */}
+              <div className="relative z-10 bg-[#FAF6F0]/40 backdrop-blur-md border border-stone-200/60 border-l-4 border-l-hive-gold p-4 rounded-r-xl text-left flex gap-3.5 items-start hover:shadow-[0_8px_30px_rgba(240,194,67,0.18)] hover:-translate-y-0.5 transition-all duration-300">
                 {product.boutique.logoUrl && (
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border border-hive-border/60 bg-white shadow-inner mt-0.5">
+                  <div className="flex-shrink-0 w-11 h-11 rounded-full overflow-hidden border-2 border-white bg-stone-100 shadow-md mt-0.5">
                     <img 
                       src={product.boutique.logoUrl} 
                       alt={`${product.boutique.name} Logo`} 
@@ -324,11 +324,11 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-serif text-xs text-stone-850 leading-relaxed italic whitespace-pre-line">
+                  <p className="font-serif text-[12.5px] text-stone-850 leading-relaxed italic whitespace-pre-line">
                     {product.boutique.description}
                   </p>
                   {product.boutique.ownerName && (
-                    <p className="font-serif text-[10px] text-hive-amber/80 font-bold tracking-wide mt-2 text-right">
+                    <p className="font-serif text-[11px] text-hive-amber font-bold tracking-wide mt-2.5 text-right">
                       — {product.boutique.ownerName}
                     </p>
                   )}
