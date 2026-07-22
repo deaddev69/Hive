@@ -111,12 +111,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
 
         {/* Brand attribution */}
         <div className="text-xs text-stone-600 font-medium leading-none pt-0.5">
-          from <span 
-            className="font-bold underline cursor-pointer hover:text-stone-950"
-            onClick={() => router.push(`/shop/${(product.boutique as any).slug || product.boutique.id}`)}
-          >
-            {product.boutique.name}
-          </span>
+          from <span className="font-bold">{product.boutique.name}</span>
         </div>
 
         {/* Fulfillment line */}

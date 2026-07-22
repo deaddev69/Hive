@@ -118,28 +118,6 @@ export default function BoutiqueStorefrontPage() {
           </div>
         </div>
 
-        {/* Brand Story Editorial Card */}
-        {boutique.description && (
-          <div className="w-full max-w-3xl mx-auto bg-[#FAF6F0]/70 border border-hive-border/60 rounded-3xl p-6 md:p-8 text-center relative overflow-hidden select-none shadow-sm">
-            <div className="flex justify-center mb-1">
-              <span className="font-serif text-5xl md:text-6xl text-hive-gold/45 leading-none select-none pointer-events-none">“</span>
-            </div>
-            
-            <p className="font-serif text-sm md:text-base text-stone-800 leading-relaxed italic max-w-2xl mx-auto whitespace-pre-line">
-              {boutique.description}
-            </p>
-
-            {boutique.ownerName && (
-              <div className="mt-4 flex items-center justify-center gap-2">
-                <span className="w-6 h-px bg-hive-gold/40" />
-                <span className="font-serif text-xs md:text-sm text-hive-amber/80 font-bold tracking-wide">
-                  — {boutique.ownerName}, Founder
-                </span>
-                <span className="w-6 h-px bg-hive-gold/40" />
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Product Grid */}
         <div className="w-full">
