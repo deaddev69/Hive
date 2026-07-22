@@ -99,14 +99,9 @@ export default function BoutiqueStorefrontPage() {
                 <h1 className="text-xl md:text-2xl font-serif font-semibold text-stone-900 leading-tight">
                   {boutique.boutiqueName}
                 </h1>
-                {boutique.trustTier && (
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
-                    Verified Designer
-                  </span>
-                )}
               </div>
               <p className="text-xs text-stone-500 max-w-xl font-medium tracking-wide">
-                Verified Boutique • {boutique.city || "Kochi"}
+                {boutique.city || "Kochi"}
               </p>
             </div>
           </div>
