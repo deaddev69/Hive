@@ -309,15 +309,26 @@ export function MobileProductDetails({
           </div>
 
           {product.boutique.description && (
-            <div className="bg-[#FAF6F0]/70 border-l-2 border-hive-gold p-3.5 pl-4 rounded-r-xl text-left">
-              <p className="font-serif text-xs text-stone-850 leading-relaxed italic whitespace-pre-line">
-                {product.boutique.description}
-              </p>
-              {product.boutique.ownerName && (
-                <p className="font-serif text-[10px] text-hive-amber/80 font-bold tracking-wide mt-2 text-right">
-                  — {product.boutique.ownerName}
-                </p>
+            <div className="bg-[#FAF6F0]/70 border-l-2 border-hive-gold p-3.5 pl-4 rounded-r-xl text-left flex gap-3.5 items-start shadow-sm">
+              {product.boutique.logoUrl && (
+                <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border border-hive-border/60 bg-white shadow-inner mt-0.5">
+                  <img 
+                    src={product.boutique.logoUrl} 
+                    alt={`${product.boutique.name} Logo`} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               )}
+              <div className="flex-1 min-w-0">
+                <p className="font-serif text-xs text-stone-850 leading-relaxed italic whitespace-pre-line">
+                  {product.boutique.description}
+                </p>
+                {product.boutique.ownerName && (
+                  <p className="font-serif text-[10px] text-hive-amber/80 font-bold tracking-wide mt-2 text-right">
+                    — {product.boutique.ownerName}
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>

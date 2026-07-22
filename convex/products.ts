@@ -95,6 +95,8 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
       const merchantTier = enrichedData?.merchantTier || "Bronze";
       const statusRes = enrichedData?.statusRes || null;
 
+      const logoUrl = boutique?.logoUrl ? getPublicUrl(boutique.logoUrl, "thumbnail") : undefined;
+
       return {
         ...product,
         imageStorageIds: product.images,
@@ -127,6 +129,7 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
           holidayDates: boutique.holidayDates,
           description: boutique.description || "",
           ownerName: boutique.ownerName || "",
+          logoUrl,
         } : null,
       };
     })
