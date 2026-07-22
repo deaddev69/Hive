@@ -1,6 +1,7 @@
 import React from "react";
 import { HiveLogo } from "@/components/shared/HiveLogo";
 import Link from "next/link";
+import { SocialTooltip } from "@/components/shared/SocialTooltip";
 
 export const Footer: React.FC = () => {
   const SELLER_PORTAL_URL = process.env.NEXT_PUBLIC_SELLER_PORTAL_URL || "https://seller.hivenow.in";
@@ -17,9 +18,10 @@ export const Footer: React.FC = () => {
             {/* Column 1: Brand Info */}
             <div className="flex flex-col items-start gap-2 col-span-1">
               <HiveLogo size="sm" className="justify-start text-hive-gold scale-90 origin-left" />
-              <p className="text-[10.5px] text-hive-cream/45 max-w-sm leading-relaxed hidden sm:block">
+              <p className="text-[10.5px] text-hive-cream/45 max-w-sm leading-relaxed hidden sm:block mb-2">
                 Discover local fashion. Delivered in hours, not days.
               </p>
+              <SocialTooltip />
             </div>
 
             {/* Column 2 & 3 wrapper for mobile side-by-side grid */}
