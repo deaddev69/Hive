@@ -309,25 +309,31 @@ export function MobileProductDetails({
           </div>
 
           {product.boutique.description && (
-            <div className="bg-[#FAF6F0]/70 border-l-2 border-hive-gold p-3.5 pl-4 rounded-r-xl text-left flex gap-3.5 items-start shadow-sm">
-              {product.boutique.logoUrl && (
-                <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border border-hive-border/60 bg-white shadow-inner mt-0.5">
-                  <img 
-                    src={product.boutique.logoUrl} 
-                    alt={`${product.boutique.name} Logo`} 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-serif text-xs text-stone-850 leading-relaxed italic whitespace-pre-line">
-                  {product.boutique.description}
-                </p>
-                {product.boutique.ownerName && (
-                  <p className="font-serif text-[10px] text-hive-amber/80 font-bold tracking-wide mt-2 text-right">
-                    — {product.boutique.ownerName}
-                  </p>
+            <div className="relative group overflow-hidden rounded-xl">
+              {/* Blurred Gold Background Orb */}
+              <div className="absolute -right-4 -bottom-4 w-16 h-16 rounded-full bg-hive-gold/20 blur-xl pointer-events-none transition-transform duration-500 group-hover:scale-125" />
+              
+              {/* Glassmorphic Card */}
+              <div className="relative z-10 bg-white/60 backdrop-blur-md border border-stone-200/50 border-l-2 border-l-hive-gold p-3.5 pl-4 rounded-r-xl text-left flex gap-3.5 items-start shadow-sm hover:shadow-[0_0_20px_rgba(240,194,67,0.12)] hover:border-hive-gold/30 transition-all duration-300">
+                {product.boutique.logoUrl && (
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden border border-hive-border/60 bg-white shadow-inner mt-0.5">
+                    <img 
+                      src={product.boutique.logoUrl} 
+                      alt={`${product.boutique.name} Logo`} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-serif text-xs text-stone-850 leading-relaxed italic whitespace-pre-line">
+                    {product.boutique.description}
+                  </p>
+                  {product.boutique.ownerName && (
+                    <p className="font-serif text-[10px] text-hive-amber/80 font-bold tracking-wide mt-2 text-right">
+                      — {product.boutique.ownerName}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           )}
