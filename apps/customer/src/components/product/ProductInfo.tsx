@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Scissors, Compass, Ruler, FileText, Shirt } from "lucide-react";
+import { Scissors, Compass, Ruler, FileText, Shirt, CheckCircle2 } from "lucide-react";
 import { cn } from "@hive/ui";
 import { PRODUCT_SPEC_KEYS } from "@hive/types";
 import { ProductDetail } from "@/lib/mockProductDetails";
@@ -15,6 +15,11 @@ export interface ProductInfoProps {
   selectedSize: string;
   setSelectedSize: (size: string) => void;
 }
+
+const truncateText = (text: string, limit: number = 180) => {
+  if (text.length <= limit) return text;
+  return text.slice(0, limit).trim() + "...";
+};
 
 export const ProductInfo: React.FC<ProductInfoProps> = ({ 
   product, 
@@ -296,15 +301,20 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       <div className="border-t border-stone-200/80 pt-5 mt-4 select-none text-left">
         <div className="space-y-3">
           <div>
-            <span className="text-[9px] font-extrabold text-stone-400 uppercase tracking-[0.12em] block">
+            <div className="flex items-center gap-1.5">
+              <Link 
+                href={`/shop/${product.boutique.slug}`} 
+                className="text-sm font-extrabold text-stone-900 hover:text-hive-amber transition-colors leading-none"
+              >
+                {product.boutique.name}
+              </Link>
+              {product.boutique.verified && (
+                <CheckCircle2 className="w-3.5 h-3.5 text-hive-gold fill-hive-gold/10 flex-shrink-0" />
+              )}
+            </div>
+            <span className="text-[9px] font-extrabold text-stone-400 uppercase tracking-[0.12em] block mt-1.5">
               Hive Partner {product.boutique.city ? `• ${product.boutique.city.toUpperCase()}` : ""}
             </span>
-            <Link 
-              href={`/shop/${product.boutique.slug}`} 
-              className="text-sm font-extrabold text-stone-900 hover:text-hive-amber transition-colors leading-tight inline-block mt-0.5"
-            >
-              {product.boutique.name}
-            </Link>
           </div>
 
           {product.boutique.description && (
@@ -324,8 +334,11 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold text-hive-amber uppercase tracking-wider block mb-1">
+                    Brand Story
+                  </span>
                   <p className="font-serif text-[12.5px] text-stone-850 leading-relaxed italic whitespace-pre-line">
-                    {product.boutique.description}
+                    {truncateText(product.boutique.description, 180)}
                   </p>
                   {product.boutique.ownerName && (
                     <p className="font-serif text-[11px] text-hive-amber font-bold tracking-wide mt-2.5 text-right">
