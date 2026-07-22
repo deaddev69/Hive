@@ -105,8 +105,8 @@ export default function BoutiqueStorefrontPage() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-stone-500 max-w-xl">
-                {boutique.description || "Exclusive pieces from this verified local designer."}
+              <p className="text-xs text-stone-500 max-w-xl font-medium tracking-wide">
+                Verified Boutique • {boutique.city || "Kochi"}
               </p>
             </div>
           </div>
@@ -117,6 +117,17 @@ export default function BoutiqueStorefrontPage() {
             </span>
           </div>
         </div>
+
+        {/* Brand Story Editorial Card */}
+        {boutique.description && (
+          <div className="bg-[#FAF6F0]/70 border border-hive-border/60 rounded-3xl p-6 text-left relative overflow-hidden select-none">
+            <span className="absolute top-2 right-6 text-7xl font-serif text-hive-gold/15 select-none font-black leading-none pointer-events-none">“</span>
+            <h3 className="text-xs font-bold uppercase tracking-widest text-hive-amber mb-2 font-serif">Our Brand Story</h3>
+            <p className="font-serif text-sm md:text-base text-stone-800 leading-relaxed max-w-3xl italic pr-6 whitespace-pre-line">
+              "{boutique.description}"
+            </p>
+          </div>
+        )}
 
         {/* Product Grid */}
         <div className="w-full">

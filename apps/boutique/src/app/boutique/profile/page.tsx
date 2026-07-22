@@ -277,13 +277,13 @@ export default function BoutiqueProfile() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Shop Description</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Brand Story</label>
               <textarea
                 required
                 rows={4}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Share your brand story, fabric sourcing focus, and design choices..."
+                placeholder="Share your boutique's story—your style philosophy, custom stitching heritage, fabric sourcing focus, and design choices..."
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 resize-none"
               />
             </div>
