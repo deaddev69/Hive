@@ -116,7 +116,6 @@ export function BecomeSellerClient() {
     }
   }, [isReapplying, boutiqueSafe]);
 
-  const [activeTab, setActiveTab] = useState<"orders" | "products" | "performance" | "finance" | "compliance">("orders");
   const formRef = useRef<HTMLDivElement>(null);
 
   // Get category/model from query param if any on load
@@ -195,14 +194,8 @@ export function BecomeSellerClient() {
       return;
     }
 
-    if (!isLocationConfirmed) {
-      alert("Error: Location is not confirmed. Please actively pin your store location on the map by using the Search bar, GPS detection, or dragging the orange pin to your store's physical entrance.");
-      return;
-    }
-    if (latitude === 0 || longitude === 0) {
-      alert("Please select your store location on the map.");
-      return;
-    }
+    const finalLat = latitude === 0 ? (userLat || 9.9312) : latitude;
+    const finalLng = longitude === 0 ? (userLng || 76.2673) : longitude;
 
     // Parse and validate keywords input
     const keywords = keywordsInput
@@ -231,8 +224,8 @@ export function BecomeSellerClient() {
         city,
         state: stateName,
         pincode,
-        latitude,
-        longitude,
+        latitude: finalLat,
+        longitude: finalLng,
         deliveryRadiusKm,
         description,
         storeCategory,
@@ -554,19 +547,9 @@ export function BecomeSellerClient() {
               <Button
                 onClick={() => formRef.current?.scrollIntoView({ behavior: "smooth" })}
                 variant="primary"
-                className="px-8 h-12 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 font-semibold tracking-[0.2em] text-[10px] uppercase rounded-xl shadow-sm transition-all duration-300 active:scale-[0.98]"
+                className="px-8 h-12 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 font-semibold tracking-[0.2em] text-[10px] uppercase rounded-xl shadow-sm transition-all duration-300 active:scale-[0.98] w-full sm:w-auto"
               >
                 Register Store Now
-              </Button>
-              <Button
-                onClick={() => {
-                  const el = document.getElementById("portal-preview");
-                  el?.scrollIntoView({ behavior: "smooth" });
-                }}
-                variant="outline"
-                className="px-8 h-12 border border-hive-gold text-hive-dark hover:bg-hive-cream tracking-[0.2em] text-[10px] font-semibold uppercase rounded-xl transition-all duration-300 active:scale-[0.98]"
-              >
-                Explore Portal Preview
               </Button>
             </div>
 
@@ -816,246 +799,7 @@ export function BecomeSellerClient() {
         </div>
       </section>
 
-      {/* ──────────────────────────────────────────────────
-          6. MERCHANT PORTAL PREVIEW (Interactive Dashboard HTML Mockup)
-          ────────────────────────────────────────────────── */}
-      <section id="portal-preview" className="w-full bg-[#FAF6F0] border-y border-hive-border/40 py-20">
-        <div className="max-w-6xl mx-auto px-6 lg:px-8 space-y-10">
-          <div className="text-center space-y-2">
-            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-hive-gold">LIVE OPERATIONS</span>
-            <h2 className="text-3xl font-serif font-light text-hive-dark uppercase tracking-tight">Merchant Portal Preview</h2>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">
-              Take a look inside the active merchant console. Fully authentic controls for products, dispatch, and payouts.
-            </p>
-          </div>
 
-          {/* Interactive Mock Container */}
-          <div className="bg-white border border-hive-border/60 rounded-3xl shadow-[0_8px_30px_rgba(140,122,90,0.06)] overflow-hidden text-left flex flex-col md:flex-row h-[500px]">
-            {/* Sidebar Controls */}
-            <div className="w-full md:w-56 bg-hive-dark text-stone-300 p-4 flex flex-row md:flex-col gap-1 border-r border-hive-border/10 overflow-x-auto md:overflow-x-visible">
-              <div className="hidden md:flex items-center gap-2 px-3 py-4 border-b border-hive-border/10 mb-4 text-white">
-                <Store className="w-5 h-5 text-hive-gold" />
-                <span className="font-bold text-xs uppercase tracking-[0.15em] text-hive-gold">Hive Partner</span>
-              </div>
-              {[
-                { id: "orders", label: "Orders Tracking", icon: Package },
-                { id: "products", label: "Product Catalog", icon: Store },
-                { id: "performance", label: "Performance", icon: TrendingUp },
-                { id: "finance", label: "Payouts Details", icon: DollarSign },
-                { id: "compliance", label: "KYC & Compliance", icon: FileText },
-              ].map((tab) => {
-                const Icon = tab.icon;
-                const isTabActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all w-full flex-shrink-0 cursor-pointer text-left justify-start",
-                      isTabActive
-                        ? "bg-hive-gold text-hive-dark font-bold shadow-sm"
-                        : "hover:bg-white/5 hover:text-white"
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Display Screen */}
-            <div className="flex-1 bg-white p-6 overflow-y-auto font-sans relative">
-              {/* Tab: Orders */}
-              {activeTab === "orders" && (
-                <div className="space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center border-b border-hive-border/30 pb-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-hive-dark">Incoming Customer Orders</h3>
-                      <p className="text-[10px] text-stone-400">Real-time hyperlocal fashion demand radius (15km)</p>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-50/50 border border-emerald-250 text-[9px] font-bold text-emerald-700 uppercase tracking-wider animate-pulse">
-                      Live Stream
-                    </span>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {[
-                      { id: "#HV-8924", title: "Handwoven Cotton Kurti (Size M)", dest: "Kakkanad, Kochi", time: "18 mins ago", price: "₹2,450", status: "Delivered", statusColor: "bg-emerald-50/50 text-emerald-700 border-emerald-200/50", elapsed: "Delivered in 1h 15m" },
-                      { id: "#HV-8925", title: "Silk Zari Border Saree (Red)", dest: "Edappally, Kochi", time: "42 mins ago", price: "₹6,200", status: "In Transit", statusColor: "bg-blue-50/50 text-blue-700 border-blue-200/50", elapsed: "Courier dispatched 15m ago" },
-                      { id: "#HV-8926", title: "Designer Linen Co-ord (Size L)", dest: "Palarivattom, Kochi", time: "1h 10m ago", price: "₹2,890", status: "Pending Pickup", statusColor: "bg-hive-comb/30 text-hive-gold border-hive-gold/30 animate-pulse", elapsed: "Courier arriving in 8 mins" },
-                    ].map((order, idx) => (
-                      <div key={idx} className="p-3 border border-hive-border/40 bg-[#FAF8F5]/30 rounded-xl flex items-center justify-between gap-4 text-xs hover:border-hive-gold/30 hover:bg-[#FAF8F5]/80 transition-all duration-300">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-hive-dark">{order.id}</span>
-                            <span className="text-[9px] text-stone-400 font-semibold">{order.time}</span>
-                          </div>
-                          <p className="font-bold text-hive-dark">{order.title}</p>
-                          <p className="text-[10px] text-stone-500 font-medium flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-stone-400" /> {order.dest}
-                          </p>
-                        </div>
-                        <div className="text-right space-y-1 flex-shrink-0">
-                          <span className="font-extrabold text-hive-dark block">{order.price}</span>
-                          <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold border block text-center", order.statusColor)}>
-                            {order.status}
-                          </span>
-                          <span className="text-[9px] text-stone-400 block italic">{order.elapsed}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Tab: Products */}
-              {activeTab === "products" && (
-                <div className="space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center border-b border-hive-border/30 pb-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-hive-dark">Active Catalog Inventory</h3>
-                      <p className="text-[10px] text-stone-400">Configure sizing stock and active store visibilities</p>
-                    </div>
-                    <button className="px-3 py-1.5 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 border border-hive-gold/30 font-semibold tracking-[0.2em] text-[9px] rounded-lg uppercase transition-colors cursor-pointer">
-                      + Add Product
-                    </button>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {[
-                      { img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=150&q=80", name: "Floral Printed Georgette Kurti", sizes: "S, M, L, XL", stock: 14, price: "₹2,450", active: true },
-                      { img: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=150&q=80", name: "Designer Linen Co-ord Set", sizes: "S, M, L", stock: 6, price: "₹2,890", active: true },
-                      { img: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=150&q=80", name: "Handcrafted Choker Necklace", sizes: "O/S", stock: 0, price: "₹950", active: false },
-                    ].map((prod, idx) => (
-                      <div key={idx} className="p-3 border border-hive-border/40 bg-[#FAF8F5]/30 rounded-xl flex items-center justify-between gap-4 text-xs hover:border-hive-gold/30 hover:bg-[#FAF8F5]/80 transition-all duration-300">
-                        <div className="flex items-center gap-3">
-                          <img src={prod.img} alt={prod.name} className="w-10 h-10 rounded-lg object-cover bg-stone-50 border border-hive-border/40 flex-shrink-0" />
-                          <div className="space-y-0.5">
-                            <p className="font-bold text-hive-dark">{prod.name}</p>
-                            <div className="flex items-center gap-3 text-[10px] text-stone-400 font-semibold">
-                              <span>Sizes: <b className="text-stone-600 font-bold">{prod.sizes}</b></span>
-                              <span>•</span>
-                              <span>Stock: <b className={prod.stock > 0 ? "text-hive-gold font-bold" : "text-red-500 font-bold"}>{prod.stock}</b></span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right flex items-center gap-4 flex-shrink-0">
-                          <span className="font-extrabold text-hive-dark">{prod.price}</span>
-                          <span className={cn(
-                            "w-8 h-4.5 rounded-full p-0.5 transition-colors duration-200 cursor-pointer flex items-center",
-                            prod.active ? "bg-hive-gold justify-end" : "bg-stone-200 justify-start"
-                          )}>
-                            <span className="w-3.5 h-3.5 rounded-full bg-white shadow-sm" />
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Tab: Performance */}
-              {activeTab === "performance" && (
-                <div className="space-y-4 animate-fadeIn">
-                  <div className="border-b border-hive-border/30 pb-3">
-                    <h3 className="text-sm font-bold text-hive-dark">Store Operational Performance</h3>
-                    <p className="text-[10px] text-stone-400">Metrics measured over past 30 active days</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 border border-hive-border/40 bg-[#FAF8F5]/30 rounded-xl space-y-1 hover:border-hive-gold/30 hover:bg-[#FAF8F5]/80 transition-all duration-300">
-                      <span className="text-[9px] font-bold text-stone-400 tracking-[0.1em] uppercase block">Fulfillment SLA</span>
-                      <span className="text-2xl font-bold text-hive-dark block">99.4%</span>
-                      <p className="text-[9px] text-emerald-700 font-bold">✓ Exceeds platform benchmark</p>
-                    </div>
-
-                    <div className="p-4 border border-hive-border/40 bg-[#FAF8F5]/30 rounded-xl space-y-1 hover:border-hive-gold/30 hover:bg-[#FAF8F5]/80 transition-all duration-300">
-                      <span className="text-[9px] font-bold text-stone-400 tracking-[0.1em] uppercase block">Avg Dispatch Time</span>
-                      <span className="text-2xl font-bold text-hive-dark block">18 mins</span>
-                      <p className="text-[9px] text-stone-400 font-semibold">From order alert to ready</p>
-                    </div>
-
-                    <div className="p-4 border border-hive-border/40 bg-[#FAF8F5]/30 rounded-xl space-y-1 hover:border-hive-gold/30 hover:bg-[#FAF8F5]/80 transition-all duration-300">
-                      <span className="text-[9px] font-bold text-stone-400 tracking-[0.1em] uppercase block">Customer Rating</span>
-                      <span className="text-2xl font-bold text-hive-dark block">4.9★</span>
-                      <p className="text-[9px] text-stone-400 font-semibold">Based on 124 ratings</p>
-                    </div>
-
-                    <div className="p-4 border border-hive-border/40 bg-[#FAF8F5]/30 rounded-xl space-y-1 hover:border-hive-gold/30 hover:bg-[#FAF8F5]/80 transition-all duration-300">
-                      <span className="text-[9px] font-bold text-stone-400 tracking-[0.1em] uppercase block">Active Zone Radius</span>
-                      <span className="text-2xl font-bold text-hive-dark block">15 km</span>
-                      <p className="text-[9px] text-stone-400 font-semibold">Centered on GPS coordinates</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Tab: Finance */}
-              {activeTab === "finance" && (
-                <div className="space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center border-b border-hive-border/30 pb-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-hive-dark">Settlement Payout Schedule</h3>
-                      <p className="text-[10px] text-stone-400">Weekly payouts deposited directly to verified merchant account</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {[
-                      { id: "Payout #PO-021", date: "June 18, 2026", amount: "₹18,450", status: "Settled to Bank", statusColor: "bg-emerald-50/50 text-emerald-700 border-emerald-200/50" },
-                      { id: "Payout #PO-022", date: "June 11, 2026", amount: "₹12,120", status: "Settled to Bank", statusColor: "bg-emerald-50/50 text-emerald-700 border-emerald-200/50" },
-                      { id: "Next Payout", date: "June 25, 2026 (Scheduled)", amount: "₹8,930", status: "Processing", statusColor: "bg-hive-comb/30 text-hive-gold border-hive-gold/30 animate-pulse" },
-                    ].map((pay, idx) => (
-                      <div key={idx} className="p-3 border border-hive-border/40 bg-[#FAF8F5]/30 rounded-xl flex items-center justify-between gap-4 text-xs hover:border-hive-gold/30 hover:bg-[#FAF8F5]/80 transition-all duration-300">
-                        <div className="space-y-0.5">
-                          <p className="font-bold text-hive-dark">{pay.id}</p>
-                          <p className="text-[10px] text-stone-400 font-semibold">{pay.date}</p>
-                        </div>
-                        <div className="text-right space-y-1 flex-shrink-0">
-                          <span className="font-extrabold text-hive-dark block">{pay.amount}</span>
-                          <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold border", pay.statusColor)}>
-                            {pay.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Tab: Compliance */}
-              {activeTab === "compliance" && (
-                <div className="space-y-4 animate-fadeIn">
-                  <div className="border-b border-hive-border/30 pb-3">
-                    <h3 className="text-sm font-bold text-hive-dark">KYC Verification & Agreement Check</h3>
-                    <p className="text-[10px] text-stone-400">Verifying administrative details for same-day logistics</p>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {[
-                      { title: "GSTIN Tax Registration Check", status: "Verified ✓", desc: "Tax compliance verified against national GST registration portals." },
-                      { title: "Physical Outlet GPS Pinned", status: "Verified ✓", desc: "Coordinates checked against delivery zones for logistics courier dispatches." },
-                      { title: "Store Account Linking", status: "Verified ✓", desc: "Bank details saved for scheduled weekly merchant payouts." },
-                      { title: "Merchant SLA Agreement", status: "Signed & Active ✓", desc: "Accepted terms regarding hourly packaging dispatch parameters." },
-                    ].map((comp, idx) => (
-                      <div key={idx} className="p-3 border border-hive-border/40 bg-[#FAF8F5]/30 rounded-xl flex items-center justify-between gap-4 text-xs hover:border-hive-gold/30 hover:bg-[#FAF8F5]/80 transition-all duration-300">
-                        <div className="space-y-0.5 text-left">
-                          <p className="font-bold text-hive-dark">{comp.title}</p>
-                          <p className="text-[10px] text-stone-400 leading-normal">{comp.desc}</p>
-                        </div>
-                        <span className="px-2.5 py-1 rounded bg-[#FAF8F5] border border-hive-border/40 text-[10px] font-bold text-emerald-700 flex-shrink-0">
-                          {comp.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ──────────────────────────────────────────────────
           7. REGISTRATION SUBMIT FORM (OR SIGN IN CTA)
@@ -1334,23 +1078,7 @@ export function BecomeSellerClient() {
                 showCurrentLocation={true}
                 height="300px"
               />
-              {!isLocationConfirmed ? (
-                <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-hive-comb/15 border border-hive-gold/30 text-xs text-hive-text animate-pulse text-left mt-2">
-                  <AlertCircle className="w-4 h-4 text-hive-gold flex-shrink-0 mt-0.5" />
-                  <div className="space-y-0.5">
-                    <span className="font-extrabold block text-hive-dark">Location Not Confirmed</span>
-                    <span className="text-[10px] text-hive-text-muted leading-normal block">Use Search Location, Detect GPS, or drag the map pin to verify your store's exact physical entrance.</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-emerald-50/20 border border-emerald-200/50 text-xs text-emerald-800 text-left mt-2">
-                  <Check className="w-4 h-4 text-emerald-700 flex-shrink-0 mt-0.5" />
-                  <div className="space-y-0.5">
-                    <span className="font-bold block text-emerald-950">Location Pinned & Confirmed</span>
-                    <span className="text-[10px] text-emerald-850 leading-normal block">Your coordinates have been pinned. Serviceability zone radius will be calculated from this point.</span>
-                  </div>
-                </div>
-              )}
+
               <span className="text-[9px] text-stone-400 italic">
                 * The map marker determines which regions we consider serviceable for same-day delivery. Double-click or drag to pin.
               </span>
@@ -1359,7 +1087,7 @@ export function BecomeSellerClient() {
             <div className="flex gap-3 mt-4 pt-4 border-t border-hive-border/30">
               <Button
                 type="submit"
-                disabled={submitting || latitude === 0}
+                disabled={submitting}
                 className="w-full h-12 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 font-semibold tracking-[0.2em] text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 shadow-sm shadow-hive-gold/10 hover:shadow-hive-gold/25 transition-all duration-300"
               >
                 {submitting ? (
