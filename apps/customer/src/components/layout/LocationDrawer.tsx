@@ -8,6 +8,7 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
 import { toast } from "@hive/utils";
+import BeeLoader from "@/components/shared/BeeLoader";
 
 // Load map without SSR — Leaflet needs window
 const LocationMapPicker = dynamic(
@@ -140,6 +141,7 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
   const handleConfirmLocation = async () => {
     if (!pendingResult) return;
     setIsSaving(true);
+    const startTime = Date.now();
     
     if (!isPendingServiceable) {
       try {
@@ -153,12 +155,18 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
       } catch (e) {
         console.error(e);
       }
-      setIsSaving(false);
-      setSaved(true);
+
+      const elapsed = Date.now() - startTime;
+      const remainingTime = Math.max(1200 - elapsed, 0);
+
       setTimeout(() => {
-        setSaved(false);
-        onClose();
-      }, 1500);
+        setIsSaving(false);
+        setSaved(true);
+        setTimeout(() => {
+          setSaved(false);
+          onClose();
+        }, 1500);
+      }, remainingTime);
       return;
     }
 
@@ -168,21 +176,31 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
       console.error("Async context routing pre-cache execution failure:", err);
     });
 
-    await updateLocationDetails({
-      latitude: mapLat,
-      longitude: mapLng,
-      locality: pendingResult.locality,
-      city: pendingResult.city,
-      state: pendingResult.state,
-      country: pendingResult.country || "India",
-      postcode: pendingResult.pincode,
-    });
-    setIsSaving(false);
-    setSaved(true);
+    try {
+      await updateLocationDetails({
+        latitude: mapLat,
+        longitude: mapLng,
+        locality: pendingResult.locality,
+        city: pendingResult.city,
+        state: pendingResult.state,
+        country: pendingResult.country || "India",
+        postcode: pendingResult.pincode,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+
+    const elapsed = Date.now() - startTime;
+    const remainingTime = Math.max(1200 - elapsed, 0);
+
     setTimeout(() => {
-      setSaved(false);
-      onClose();
-    }, 400);
+      setIsSaving(false);
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        onClose();
+      }, 400);
+    }, remainingTime);
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -313,61 +331,65 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
                   <div className="overflow-hidden">
                     <div className="px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
                       {pendingResult && (
-                        <>
-                          {/* Address Details */}
-                          <div className="flex items-start gap-4 mb-6">
-                            <div className="w-10 h-10 rounded-full bg-hive-gold/10 border border-hive-gold/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <MapPin className="w-5 h-5 text-hive-amber" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-extrabold text-hive-dark truncate">
-                                {pendingResult.locality || pendingResult.city || "Location Selected"}
-                              </p>
-                              <p className="text-xs text-hive-text-muted mt-1 leading-relaxed line-clamp-2 pr-4">
-                                {pendingResult.formattedAddress}
-                              </p>
-                            </div>
+                        isSaving ? (
+                          <div className="flex flex-col items-center justify-center py-4 text-center">
+                            <BeeLoader />
+                            <p className="text-xs font-extrabold text-hive-dark tracking-wide animate-pulse mt-3 uppercase">
+                              Setting up your hyperlocal feed...
+                            </p>
                           </div>
+                        ) : (
+                          <>
+                            {/* Address Details */}
+                            <div className="flex items-start gap-4 mb-6">
+                              <div className="w-10 h-10 rounded-full bg-hive-gold/10 border border-hive-gold/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <MapPin className="w-5 h-5 text-hive-amber" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-extrabold text-hive-dark truncate">
+                                  {pendingResult.locality || pendingResult.city || "Location Selected"}
+                                </p>
+                                <p className="text-xs text-hive-text-muted mt-1 leading-relaxed line-clamp-2 pr-4">
+                                  {pendingResult.formattedAddress}
+                                </p>
+                              </div>
+                            </div>
 
-                          {/* Confirm Button */}
-                          <button
-                            type="button"
-                            disabled={!pendingResult || isSaving || saved}
-                            onClick={handleConfirmLocation}
-                            aria-label={saved ? "Location saved" : isSaving ? "Saving location" : "Confirm location selection"}
-                            className={`w-full h-14 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 rounded-xl transition-all duration-200 active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold ${
-                              pendingResult && !isPendingServiceable 
-                                ? "bg-[#D97706] hover:bg-[#B45309] text-white" 
-                                : "bg-hive-dark hover:bg-neutral-800 text-hive-gold"
-                            }`}
-                          >
-                            {saved ? (
-                              <>
-                                <CheckCircle2 className="w-4 h-4" />
-                                {pendingResult && !isPendingServiceable ? "Added to waitlist" : "Location saved"}
-                              </>
-                            ) : isSaving ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                {pendingResult && !isPendingServiceable ? "Submitting..." : "Saving..."}
-                              </>
-                            ) : pendingResult && !isPendingServiceable ? (
-                              <>
-                                <MapPin className="w-4 h-4" />
-                                Notify Me When Available
-                              </>
-                            ) : pendingResult?.precisionLevel === "area" ? (
-                              <>
-                                <MapPin className="w-4 h-4" />
-                                Browse {pendingResult.locality || pendingResult.city || "this area"}
-                              </>
-                            ) : (
-                              <>
-                                Confirm Location
-                              </>
-                            )}
-                          </button>
-                        </>
+                            {/* Confirm Button */}
+                            <button
+                              type="button"
+                              disabled={!pendingResult || isSaving || saved}
+                              onClick={handleConfirmLocation}
+                              aria-label={saved ? "Location saved" : isSaving ? "Saving location" : "Confirm location selection"}
+                              className={`w-full h-14 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 rounded-xl transition-all duration-200 active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold ${
+                                pendingResult && !isPendingServiceable 
+                                  ? "bg-[#D97706] hover:bg-[#B45309] text-white" 
+                                  : "bg-hive-dark hover:bg-neutral-800 text-hive-gold"
+                              }`}
+                            >
+                              {saved ? (
+                                <>
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  {pendingResult && !isPendingServiceable ? "Added to waitlist" : "Location saved"}
+                                </>
+                              ) : pendingResult && !isPendingServiceable ? (
+                                <>
+                                  <MapPin className="w-4 h-4" />
+                                  Notify Me When Available
+                                </>
+                              ) : pendingResult?.precisionLevel === "area" ? (
+                                <>
+                                  <MapPin className="w-4 h-4" />
+                                  Browse {pendingResult.locality || pendingResult.city || "this area"}
+                                </>
+                              ) : (
+                                <>
+                                  Confirm Location
+                                </>
+                              )}
+                            </button>
+                          </>
+                        )
                       )}
                     </div>
                   </div>
