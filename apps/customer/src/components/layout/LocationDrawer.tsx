@@ -361,10 +361,10 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
                               disabled={!pendingResult || isSaving || saved}
                               onClick={handleConfirmLocation}
                               aria-label={saved ? "Location saved" : isSaving ? "Saving location" : "Confirm location selection"}
-                              className={`w-full h-14 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 rounded-xl transition-all duration-200 active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold ${
+                              className={`w-full h-14 text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 rounded-xl transition-all duration-200 active:scale-[0.98] disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold ${
                                 pendingResult && !isPendingServiceable 
                                   ? "bg-[#D97706] hover:bg-[#B45309] text-white" 
-                                  : "bg-hive-dark hover:bg-neutral-800 text-hive-gold"
+                                  : "bg-[#F0C243] hover:bg-[#E5B533] text-[#181511]"
                               }`}
                             >
                               {saved ? (
