@@ -29,6 +29,7 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { useSessionStore } from "@/context/SessionContext";
 import { formatCurrency } from "@hive/utils";
+import Loader from "@/components/shared/Loader";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /orders/[orderId] — Order Tracking & Details Page
@@ -50,7 +51,11 @@ export default function OrderDetailPage() {
   }, []);
 
   if (!mounted || order === undefined) {
-    return <OrderDetailSkeleton />;
+    return (
+      <div className="min-h-screen bg-hive-cream/30 dark:bg-neutral-950 flex flex-col items-center justify-center">
+        <Loader />
+      </div>
+    );
   }
 
   // ── Order not found ───────────────────────────────────────────────────────

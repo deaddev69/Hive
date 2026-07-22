@@ -20,6 +20,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { useOrderStore, Order } from "@/store/order-store";
+import Loader from "@/components/shared/Loader";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dynamic Order Tracking Details Page
@@ -37,7 +38,11 @@ export default function OrderTrackingPage() {
   }, []);
 
   if (!mounted) {
-    return <OrderTrackingSkeleton />;
+    return (
+      <div className="min-h-screen bg-hive-cream/30 dark:bg-neutral-950 flex flex-col items-center justify-center">
+        <Loader />
+      </div>
+    );
   }
 
   // Find the requested order
