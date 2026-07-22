@@ -120,12 +120,24 @@ export default function BoutiqueStorefrontPage() {
 
         {/* Brand Story Editorial Card */}
         {boutique.description && (
-          <div className="bg-[#FAF6F0]/70 border border-hive-border/60 rounded-3xl p-6 text-left relative overflow-hidden select-none">
-            <span className="absolute top-2 right-6 text-7xl font-serif text-hive-gold/15 select-none font-black leading-none pointer-events-none">“</span>
-            <h3 className="text-xs font-bold uppercase tracking-widest text-hive-amber mb-2 font-serif">Our Brand Story</h3>
-            <p className="font-serif text-sm md:text-base text-stone-800 leading-relaxed max-w-3xl italic pr-6 whitespace-pre-line">
-              "{boutique.description}"
+          <div className="w-full max-w-3xl mx-auto bg-[#FAF6F0]/70 border border-hive-border/60 rounded-3xl p-6 md:p-8 text-center relative overflow-hidden select-none shadow-sm">
+            <div className="flex justify-center mb-1">
+              <span className="font-serif text-5xl md:text-6xl text-hive-gold/45 leading-none select-none pointer-events-none">“</span>
+            </div>
+            
+            <p className="font-serif text-sm md:text-base text-stone-800 leading-relaxed italic max-w-2xl mx-auto whitespace-pre-line">
+              {boutique.description}
             </p>
+
+            {boutique.ownerName && (
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <span className="w-6 h-px bg-hive-gold/40" />
+                <span className="font-serif text-xs md:text-sm text-hive-amber/80 font-bold tracking-wide">
+                  — {boutique.ownerName}, Founder
+                </span>
+                <span className="w-6 h-px bg-hive-gold/40" />
+              </div>
+            )}
           </div>
         )}
 
