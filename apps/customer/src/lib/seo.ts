@@ -5,6 +5,7 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://hivenow.in"
 
 type MetadataProps = {
   title: string;
+  absoluteTitle?: boolean;
   description: string;
   path: string;
   image?: string;
@@ -13,6 +14,7 @@ type MetadataProps = {
 
 export function constructMetadata({
   title,
+  absoluteTitle = false,
   description,
   path,
   image = "/og-image.jpg",
@@ -21,7 +23,7 @@ export function constructMetadata({
   const url = `${SITE_URL}${path}`;
 
   return {
-    title,
+    title: absoluteTitle ? { absolute: title } : title,
     description,
     alternates: {
       canonical: url,
@@ -57,8 +59,9 @@ export function constructMetadata({
 
 export function getHomeMetadata(): Metadata {
   return constructMetadata({
-    title: "Premium Fashion Delivery in Ernakulam",
-    description: "Your city's premium fashion stores, unified in one place. Shop local boutiques in Ernakulam, delivered in hours.",
+    title: "Fashion Delivered in Hours | Hive Kochi",
+    absoluteTitle: true,
+    description: "Why wait days? Shop fashion online and get your next outfit delivered in hours across Kochi. Experience a faster, more convenient way to shop with Hive.",
     path: "/",
   });
 }

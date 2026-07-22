@@ -14,9 +14,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://hivenow.in"),
   title: {
     template: "%s | Hive",
-    default: "Hive | Premium Fashion Delivery in Ernakulam",
+    default: "Fashion Delivered in Hours | Hive Kochi",
   },
-  description: "Your city's premium fashion stores, unified in one place. Shop local, delivered in hours.",
+  description: "Why wait days? Shop fashion online and get your next outfit delivered in hours across Kochi. Experience a faster, more convenient way to shop with Hive.",
   icons: {
     icon: "/logo.png",
     apple: "/apple-touch-icon.png?v=2",
