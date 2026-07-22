@@ -338,7 +338,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
                     Brand Story
                   </span>
                   <p className="font-serif text-[12.5px] text-stone-850 leading-relaxed italic whitespace-pre-line">
-                    {truncateText(product.boutique.description, 180)}
+                    {truncateText(product.boutique.description, 360)}
                   </p>
                   {product.boutique.ownerName && (
                     <p className="font-serif text-[11px] text-hive-amber font-bold tracking-wide mt-2.5 text-right">
