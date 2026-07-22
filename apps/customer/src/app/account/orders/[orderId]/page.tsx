@@ -20,7 +20,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { useOrderStore, Order } from "@/store/order-store";
-import Loader from "@/components/shared/Loader";
+import BeeLoader from "@/components/shared/BeeLoader";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Dynamic Order Tracking Details Page
@@ -40,7 +40,7 @@ export default function OrderTrackingPage() {
   if (!mounted) {
     return (
       <div className="min-h-screen bg-hive-cream/30 dark:bg-neutral-950 flex flex-col items-center justify-center">
-        <Loader />
+        <BeeLoader />
       </div>
     );
   }

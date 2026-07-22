@@ -18,7 +18,7 @@ import {
   ShieldCheck,
   Loader2
 } from "lucide-react";
-import Loader from "@/components/shared/Loader";
+import BeeLoader from "@/components/shared/BeeLoader";
 import { useCartStore } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useOrderStore } from "@/store/order-store";
@@ -609,7 +609,7 @@ export default function OrderReviewPage() {
     <div className="min-h-screen bg-hive-cream/30 py-6 sm:py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
       {isPlacingOrder && (
         <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-md flex flex-col items-center justify-center gap-4 text-white">
-          <Loader />
+          <BeeLoader />
           <p className="font-serif text-lg font-bold tracking-wide text-hive-cream">Processing your payment...</p>
           <p className="text-xs text-hive-cream/60">Please do not refresh the page or click back.</p>
         </div>
