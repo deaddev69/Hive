@@ -12,19 +12,7 @@ import { useLocation } from "@/context/LocationContext";
 import Link from "next/link";
 import { getSignInUrl, getSignUpUrl } from "@/lib/auth-redirect";
 
-// Load LocationMapPicker dynamically with SSR disabled to prevent Leaflet window reference errors during builds.
-const LocationMapPicker = dynamic(
-  () => import("@/components/location/LocationMapPicker"),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="h-[250px] w-full rounded-2xl bg-hive-cream/30 border border-hive-border flex items-center justify-center gap-2">
-        <Loader2 className="w-5 h-5 animate-spin text-hive-amber" />
-        <span className="text-xs text-hive-text-muted font-bold">Loading interactive map container...</span>
-      </div>
-    ),
-  }
-);
+
 
 export function BecomeSellerClient() {
   const { user, isAuthenticated, isLoading, token } = useSessionStore();
@@ -50,9 +38,8 @@ export function BecomeSellerClient() {
   const [area, setArea] = useState("");
   const [keywordsInput, setKeywordsInput] = useState("");
   const [serviceType, setServiceType] = useState<"ready_to_ship" | "made_to_order" | "alterations" | "custom_design">("ready_to_ship");
-  const [latitude, setLatitude] = useState<number>(0);
-  const [longitude, setLongitude] = useState<number>(0);
-  const [isLocationConfirmed, setIsLocationConfirmed] = useState(false);
+  const [latitude, setLatitude] = useState<number>(9.9312);
+  const [longitude, setLongitude] = useState<number>(76.2673);
   const [deliveryRadiusKm, setDeliveryRadiusKm] = useState(15);
   const [description, setDescription] = useState("");
   const [storeCategory, setStoreCategory] = useState<"women_fashion" | "mens_fashion" | "jewellery" | "multi_category">("women_fashion");
@@ -161,25 +148,7 @@ export function BecomeSellerClient() {
     }
   }, [user, ownerName]);
 
-  const handleMapChange = (lat: number, lng: number) => {
-    setLatitude(lat);
-    setLongitude(lng);
-    setIsLocationConfirmed(true);
-  };
 
-  const handleReverseGeocode = useCallback(
-    (result: { formattedAddress: string; locality: string; city: string; state: string; pincode: string; country: string }) => {
-      setAddress(result.formattedAddress);
-      setCity(result.city || "Kochi");
-      setStateName(result.state || "Kerala");
-      setPincode(result.pincode || "682001");
-      if (result.locality) {
-        setArea(result.locality);
-      }
-      setIsLocationConfirmed(true);
-    },
-    []
-  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,9 +162,6 @@ export function BecomeSellerClient() {
       setTouched({ boutiqueName: true, sellerModel: true, address: true, phone: true });
       return;
     }
-
-    const finalLat = latitude === 0 ? (userLat || 9.9312) : latitude;
-    const finalLng = longitude === 0 ? (userLng || 76.2673) : longitude;
 
     // Parse and validate keywords input
     const keywords = keywordsInput
@@ -224,8 +190,8 @@ export function BecomeSellerClient() {
         city,
         state: stateName,
         pincode,
-        latitude: finalLat,
-        longitude: finalLng,
+        latitude,
+        longitude,
         deliveryRadiusKm,
         description,
         storeCategory,
@@ -299,7 +265,7 @@ export function BecomeSellerClient() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-hive-border/40">
               <div className="space-y-1">
                 <h1 className="text-2xl font-serif font-black text-hive-dark">Partner Portal Status</h1>
-                <p className="text-[10px] uppercase font-bold tracking-[0.15em] text-hive-text-muted">Registered merchant application tracking console</p>
+                <p className="text-[10px] uppercase font-bold tracking-[0.15em] text-hive-text-muted">Registered partnership request tracking console</p>
               </div>
               
               {/* Badges */}
@@ -340,7 +306,7 @@ export function BecomeSellerClient() {
                 </div>
                 <div className="space-y-0.5">
                   <span className="text-[10px] font-bold text-stone-800 uppercase block tracking-[0.1em]">Submitted</span>
-                  <span className="text-[9px] text-stone-400 block font-medium">Form received</span>
+                  <span className="text-[9px] text-stone-400 block font-medium">Request received</span>
                 </div>
               </div>
 
@@ -380,7 +346,7 @@ export function BecomeSellerClient() {
 
             {/* Profile Overview Card */}
             <div className="bg-[#FAF8F5] border border-hive-border/60 rounded-2xl p-5 flex flex-col gap-4">
-              <span className="text-[9px] font-bold uppercase text-hive-text-muted tracking-[0.2em]">Application Summary</span>
+              <span className="text-[9px] font-bold uppercase text-hive-text-muted tracking-[0.2em]">Partnership Request Summary</span>
               <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-xs">
                 <div>
                   <span className="text-[9px] font-bold text-stone-400 tracking-[0.15em] uppercase block">Merchant Name</span>
@@ -453,7 +419,7 @@ export function BecomeSellerClient() {
               {isRejected && (
                 <div className="space-y-4">
                   <p className="text-xs text-stone-500 leading-relaxed max-w-md mx-auto">
-                    You can submit a corrected application request once you resolve the verification criteria.
+                    You can submit a corrected partnership request once you resolve the verification criteria.
                   </p>
                   <div className="flex justify-center">
                     <Button 
@@ -463,7 +429,7 @@ export function BecomeSellerClient() {
                       variant="primary" 
                       className="px-8 h-12 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 font-semibold tracking-[0.2em] text-[10px] uppercase rounded-xl flex items-center gap-2 shadow-sm shadow-hive-gold/10 hover:shadow-hive-gold/25 transition-all"
                     >
-                      Resubmit Application <ArrowRight className="w-4 h-4" />
+                      Resubmit Partnership Request <ArrowRight className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -484,148 +450,83 @@ export function BecomeSellerClient() {
       <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-hive-amber/3 rounded-full blur-[100px] pointer-events-none" />
 
       {/* ──────────────────────────────────────────────────
-          1. MARKETING HERO & EDITORIAL COLLAGE
+          1. MARKETING HERO
           ────────────────────────────────────────────────── */}
-      <section className="w-full max-w-7xl mx-auto px-6 lg:px-8 pt-12 md:pt-16 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          
-          {/* Left Text Column */}
-          <div className="lg:col-span-7 text-left space-y-6">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-hive-gold/10 border border-hive-gold/25 text-[10px] font-bold text-hive-dark uppercase tracking-widest">
-              <Store className="w-3.5 h-3.5 text-hive-gold" /> Hive Merchant Hub
+      <section className="w-full max-w-4xl mx-auto px-6 pt-12 md:pt-16 pb-16 text-center">
+        <div className="space-y-6 flex flex-col items-center">
+          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-hive-gold/10 border border-hive-gold/25 text-[10px] font-bold text-hive-dark uppercase tracking-widest">
+            <Store className="w-3.5 h-3.5 text-hive-gold" /> Hive Merchant Hub
+          </span>
+          <h1 className="text-4xl sm:text-5xl lg:text-6.5xl font-serif font-light text-hive-dark tracking-tight leading-[1.1] text-center">
+            Sell Fashion Locally. <br />
+            <span className="font-serif italic font-normal text-hive-gold">
+              Deliver in Hours.
             </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-light text-hive-dark tracking-tight leading-[1.1]">
-              Sell Fashion Locally. <br />
-              <span className="font-serif italic font-normal text-hive-gold">
-                Deliver in Hours.
-              </span>
-            </h1>
-            <p className="text-sm sm:text-base text-stone-500 max-w-xl leading-relaxed">
-              Join Kerala's hyperlocal fashion marketplace. From boutiques to independent designers, Hive helps partners reach nearby customers with same-day logistics.
-            </p>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-              <div className="flex items-start gap-2.5">
-                <div className="p-1.5 rounded-lg bg-hive-gold/10 border border-hive-gold/20 text-hive-gold">
-                  <User className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-hive-dark uppercase tracking-wider">Reach Nearby Customers</h4>
-                  <p className="text-[10px] text-stone-500">Sell within your local radius</p>
-                </div>
+          </h1>
+          <p className="text-sm sm:text-base text-stone-500 max-w-2xl leading-relaxed text-center">
+            Join Kerala's hyperlocal fashion marketplace. From boutiques to independent designers, Hive helps partners reach nearby customers with same-day logistics.
+          </p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 max-w-2xl w-full text-left">
+            <div className="flex items-start gap-2.5">
+              <div className="p-1.5 rounded-lg bg-hive-gold/10 border border-hive-gold/20 text-hive-gold">
+                <User className="w-4 h-4" />
               </div>
-              <div className="flex items-start gap-2.5">
-                <div className="p-1.5 rounded-lg bg-hive-gold/10 border border-hive-gold/20 text-hive-gold">
-                  <Truck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-hive-dark uppercase tracking-wider">Same-Day Delivery</h4>
-                  <p className="text-[10px] text-stone-500">Orders dispatched in hours</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <div className="p-1.5 rounded-lg bg-hive-gold/10 border border-hive-gold/20 text-hive-gold">
-                  <Store className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-hive-dark uppercase tracking-wider">Managed Logistics</h4>
-                  <p className="text-[10px] text-stone-500">Fully integrated dispatch</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2.5">
-                <div className="p-1.5 rounded-lg bg-hive-gold/10 border border-hive-gold/20 text-hive-gold">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-semibold text-hive-dark uppercase tracking-wider">Trusted Partner Platform</h4>
-                  <p className="text-[10px] text-stone-500">Frictionless settlements & tracking</p>
-                </div>
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-hive-dark">Reach Nearby Shoppers</h4>
+                <p className="text-[10px] text-stone-500">Sell within your local radius</p>
               </div>
             </div>
+            <div className="flex items-start gap-2.5">
+              <div className="p-1.5 rounded-lg bg-hive-gold/10 border border-hive-gold/20 text-hive-gold">
+                <Truck className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-hive-dark">Same-Day Delivery</h4>
+                <p className="text-[10px] text-stone-500">Orders dispatched in hours</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <div className="p-1.5 rounded-lg bg-hive-gold/10 border border-hive-gold/20 text-hive-gold">
+                <Store className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-hive-dark">Managed Logistics</h4>
+                <p className="text-[10px] text-stone-500">Fully integrated courier network</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <div className="p-1.5 rounded-lg bg-hive-gold/10 border border-hive-gold/20 text-hive-gold">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-hive-dark">Partnership Access</h4>
+                <p className="text-[10px] text-stone-500">Frictionless settlements & order tracking</p>
+              </div>
+            </div>
+          </div>
 
-            <div className="pt-4 flex flex-col sm:flex-row gap-4">
-              <Button
-                onClick={() => formRef.current?.scrollIntoView({ behavior: "smooth" })}
-                variant="primary"
-                className="px-8 h-12 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 font-semibold tracking-[0.2em] text-[10px] uppercase rounded-xl shadow-sm transition-all duration-300 active:scale-[0.98] w-full sm:w-auto"
+          <div className="pt-6 flex flex-col sm:flex-row gap-4 items-center justify-center w-full">
+            <Button
+              onClick={() => formRef.current?.scrollIntoView({ behavior: "smooth" })}
+              variant="primary"
+              className="px-8 h-12 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 font-bold tracking-[0.2em] text-[10px] uppercase rounded-xl shadow-sm transition-all duration-300 active:scale-[0.98] w-full sm:w-auto"
+            >
+              Request Store Partnership
+            </Button>
+          </div>
+
+          <div className="pt-2">
+            <p className="text-xs text-stone-500 font-medium">
+              Already a Hive Partner?{" "}
+              <a
+                href={SELLER_PORTAL_URL}
+                className="text-hive-gold hover:underline font-semibold"
               >
-                Register Store Now
-              </Button>
-            </div>
-
-            <div className="pt-3">
-              <p className="text-xs text-stone-500 font-medium">
-                Already a Hive Partner?{" "}
-                <a
-                  href={SELLER_PORTAL_URL}
-                  className="text-hive-gold hover:underline font-semibold"
-                >
-                  Open Partner Portal →
-                </a>
-              </p>
-            </div>
+                Open Partner Portal →
+              </a>
+            </p>
           </div>
-
-          {/* Right Column: Editorial Collage with Delivery Stamp */}
-          <div className="lg:col-span-5 flex items-center justify-center relative">
-            <div className="relative w-full max-w-[380px] aspect-[4/5] bg-stone-50/30 rounded-3xl border border-hive-border/40 p-4">
-              
-              {/* Image 1: Kurti (Main) */}
-              <div className="absolute top-4 left-4 w-[60%] aspect-[3/4] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm transform -rotate-3 hover:rotate-0 hover:scale-105 transition-all duration-500 z-20">
-                <img
-                  src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=400&q=80"
-                  alt="Kurti Design"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-2 left-2 bg-hive-dark/85 backdrop-blur-md text-hive-gold border border-hive-gold/25 px-2 py-0.5 rounded text-[8px] font-bold tracking-widest uppercase">
-                  Kurti
-                </div>
-              </div>
-
-              {/* Image 2: Men's Wear */}
-              <div className="absolute bottom-4 right-4 w-[50%] aspect-square rounded-2xl overflow-hidden border border-hive-border/40 shadow-md transform rotate-6 hover:rotate-0 hover:scale-105 transition-all duration-500 z-30">
-                <img
-                  src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=400&q=80"
-                  alt="Men's Fashion"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-2 left-2 bg-hive-dark/85 backdrop-blur-md text-hive-gold border border-hive-gold/25 px-2 py-0.5 rounded text-[8px] font-bold tracking-widest uppercase">
-                  Men's Fashion
-                </div>
-              </div>
-
-              {/* Image 3: Dress */}
-              <div className="absolute top-8 right-4 w-[45%] aspect-[4/3] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm transform rotate-3 hover:rotate-0 hover:scale-105 transition-all duration-500 z-10">
-                <img
-                  src="https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=400&q=80"
-                  alt="Dress"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-2 left-2 bg-hive-dark/85 backdrop-blur-md text-hive-gold border border-hive-gold/25 px-2 py-0.5 rounded text-[8px] font-bold tracking-widest uppercase">
-                  Dress
-                </div>
-              </div>
-
-              {/* Image 4: Jewellery (small badge/accent) */}
-              <div className="absolute bottom-[35%] left-4 w-[35%] aspect-square rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm transform -rotate-12 hover:rotate-0 hover:scale-105 transition-all duration-500 z-40">
-                <img
-                  src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=400&q=80"
-                  alt="Jewellery"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-2 left-2 bg-hive-dark/85 backdrop-blur-md text-hive-gold border border-hive-gold/25 px-2 py-0.5 rounded text-[8px] font-bold tracking-widest uppercase">
-                  Jewellery
-                </div>
-              </div>
-
-              {/* Kakkanad to Edappally delivered stamp */}
-              <div className="absolute -bottom-4 left-8 z-50 bg-hive-dark text-hive-cream py-2.5 px-4 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-hive-border/20 flex flex-col items-start gap-0.5 text-left pointer-events-none transform -rotate-2">
-                <span className="text-[10px] font-extrabold font-sans text-hive-gold">Kakkanad ➔ Edappally</span>
-                <span className="text-[9px] text-stone-400 font-semibold font-mono">Dispatched & delivered in 1h 42m</span>
-              </div>
-            </div>
-          </div>
-
         </div>
       </section>
 
@@ -739,33 +640,7 @@ export function BecomeSellerClient() {
         </div>
       </section>
 
-      {/* ──────────────────────────────────────────────────
-          4. SOCIAL PROOF LOGO LINEUP
-          ────────────────────────────────────────────────── */}
-      <section className="w-full bg-hive-dark text-white py-12">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="text-left md:max-w-md">
-            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-hive-gold">COMMUNITY HUB</span>
-            <p className="text-xs text-stone-300 mt-1 font-semibold leading-relaxed">
-              Trusted by boutiques, independent labels, designers, and jewellery curators across Kochi.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 items-center">
-            <div className="text-sm font-serif font-bold text-stone-400 tracking-wider hover:text-hive-gold transition-colors text-center uppercase">
-              ✨ Boutiques
-            </div>
-            <div className="text-sm font-serif font-bold text-stone-400 tracking-wider hover:text-hive-gold transition-colors text-center uppercase">
-              👑 Labels
-            </div>
-            <div className="text-sm font-serif font-bold text-stone-400 tracking-wider hover:text-hive-gold transition-colors text-center uppercase">
-              👗 Apparel
-            </div>
-            <div className="text-sm font-serif font-bold text-stone-400 tracking-wider hover:text-hive-gold transition-colors text-center uppercase">
-              💎 Jewellery
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* ──────────────────────────────────────────────────
           5. HOW HIVE WORKS (4 STEPS)
@@ -812,9 +687,9 @@ export function BecomeSellerClient() {
               <Store className="w-8 h-8" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-serif font-light text-hive-dark uppercase tracking-tight">Ready to Sell Locally?</h2>
+              <h2 className="text-2xl font-serif font-light text-hive-dark uppercase tracking-tight">Ready to Request Partnership?</h2>
               <p className="text-xs text-stone-500 max-w-sm mx-auto leading-relaxed">
-                Sign in to your Hive account to submit your application details, configure custom delivery options, and select your store coordinates.
+                Sign in to your Hive account to submit your partnership request details, configure custom delivery options, and specify your store coordinates.
               </p>
             </div>
             <div className="pt-2 flex flex-col sm:flex-row justify-center gap-4 max-w-xs mx-auto">
@@ -825,7 +700,7 @@ export function BecomeSellerClient() {
               </Link>
               <Link href={getSignUpUrl(`/become-seller?storeCategory=${storeCategory}&model=${sellerModel}`)} className="w-full">
                 <Button variant="outline" className="w-full h-11 border border-hive-gold text-hive-dark hover:bg-hive-cream tracking-[0.2em] text-[10px] font-semibold uppercase rounded-xl transition-all">
-                  Register Account
+                  Create Account
                 </Button>
               </Link>
             </div>
@@ -835,9 +710,9 @@ export function BecomeSellerClient() {
           <form onSubmit={handleSubmit} className="bg-white border border-hive-border/60 rounded-3xl p-6 md:p-10 shadow-[0_8px_30px_rgba(140,122,90,0.05)] flex flex-col gap-6">
             <div>
               <h2 className="text-xl font-serif font-light text-hive-dark pb-3 border-b border-hive-border/30 flex items-center gap-2">
-                <Store className="w-5 h-5 text-hive-gold" /> Create Merchant Store Profile
+                <Store className="w-5 h-5 text-hive-gold" /> Partnership Request Form
               </h2>
-              <p className="text-xs text-stone-400 mt-1">Complete your registration details to start dispatching locally.</p>
+              <p className="text-xs text-stone-400 mt-1">Complete your request details to apply for store partnership on Hive.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1060,43 +935,52 @@ export function BecomeSellerClient() {
               </span>
             </div>
 
-            {/* Interactive Map Picker */}
-            <div className="flex flex-col gap-1.5 border-t border-hive-border/30 pt-4">
-              <label className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-400 flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-hive-gold" /> Pin Merchant Location Coordinates
-                </span>
-                <span className="text-[9px] text-hive-gold font-mono font-bold bg-hive-gold/5 px-2.5 py-1 rounded-lg border border-hive-gold/25">
-                  Lat: {latitude.toFixed(6)}, Lng: {longitude.toFixed(6)}
-                </span>
-              </label>
-              <LocationMapPicker
-                lat={latitude}
-                lng={longitude}
-                onChange={handleMapChange}
-                onReverseGeocode={handleReverseGeocode}
-                showCurrentLocation={true}
-                height="300px"
-              />
+            {/* Store Location Coordinates Inputs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-hive-border/30 pt-4">
+              <div className="flex flex-col gap-1.5 text-left">
+                <label className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-400 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-hive-gold" /> Store Latitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  required
+                  placeholder="e.g. 9.9312"
+                  value={latitude || ""}
+                  onChange={(e) => setLatitude(parseFloat(e.target.value) || 0)}
+                  className="w-full h-11 px-4 rounded-xl border border-hive-border/50 text-hive-dark bg-white text-xs placeholder-stone-400 transition-all duration-200 outline-none focus:border-hive-gold focus:ring-1 focus:ring-hive-gold"
+                />
+              </div>
 
-              <span className="text-[9px] text-stone-400 italic">
-                * The map marker determines which regions we consider serviceable for same-day delivery. Double-click or drag to pin.
-              </span>
+              <div className="flex flex-col gap-1.5 text-left">
+                <label className="text-[9px] font-bold uppercase tracking-[0.15em] text-stone-400 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-hive-gold" /> Store Longitude
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  required
+                  placeholder="e.g. 76.2673"
+                  value={longitude || ""}
+                  onChange={(e) => setLongitude(parseFloat(e.target.value) || 0)}
+                  className="w-full h-11 px-4 rounded-xl border border-hive-border/50 text-hive-dark bg-white text-xs placeholder-stone-400 transition-all duration-200 outline-none focus:border-hive-gold focus:ring-1 focus:ring-hive-gold"
+                />
+              </div>
             </div>
 
             <div className="flex gap-3 mt-4 pt-4 border-t border-hive-border/30">
               <Button
                 type="submit"
                 disabled={submitting}
-                className="w-full h-12 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 font-semibold tracking-[0.2em] text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 shadow-sm shadow-hive-gold/10 hover:shadow-hive-gold/25 transition-all duration-300"
+                className="w-full h-12 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 font-bold tracking-[0.2em] text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 shadow-sm shadow-hive-gold/10 hover:shadow-hive-gold/25 transition-all duration-300 animate-fadeIn"
               >
                 {submitting ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Submitting application...
+                    <Loader2 className="w-4 h-4 animate-spin" /> Submitting request...
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="w-4 h-4" /> Submit Application
+                    <ShieldCheck className="w-4 h-4" /> Submit Partnership Request
                   </>
                 )}
               </Button>
