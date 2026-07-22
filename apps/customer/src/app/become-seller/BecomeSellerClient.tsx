@@ -47,6 +47,7 @@ export function BecomeSellerClient() {
   const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [isReapplying, setIsReapplying] = useState(false);
+  const [hasPrefilledOwner, setHasPrefilledOwner] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -85,6 +86,7 @@ export function BecomeSellerClient() {
       const b = boutiqueSafe.boutique as any;
       setBoutiqueName(b.boutiqueName || "");
       setOwnerName(b.ownerName || "");
+      setHasPrefilledOwner(true);
       setPhone(b.phone || "");
       setAddress(b.address || "");
       setCity(b.city || "Kochi");
@@ -93,9 +95,8 @@ export function BecomeSellerClient() {
       setArea(b.area || "");
       setKeywordsInput(b.searchKeywords ? b.searchKeywords.join(", ") : "");
       setServiceType(b.serviceType || "ready_to_ship");
-      setLatitude(b.latitude || 0);
-      setLongitude(b.longitude || 0);
-      setIsLocationConfirmed(!!(b.latitude && b.longitude));
+      setLatitude(b.latitude || 9.9312);
+      setLongitude(b.longitude || 76.2673);
       setDeliveryRadiusKm(b.deliveryRadiusKm || 15);
       setDescription(b.description || "");
       setStoreCategory(b.storeCategory || "women_fashion");
@@ -143,10 +144,11 @@ export function BecomeSellerClient() {
 
   // Set default owner name from session
   useEffect(() => {
-    if (user && !ownerName) {
-      setOwnerName(user.name || "");
+    if (user && user.name && !hasPrefilledOwner) {
+      setOwnerName(user.name);
+      setHasPrefilledOwner(true);
     }
-  }, [user, ownerName]);
+  }, [user, hasPrefilledOwner]);
 
 
 
