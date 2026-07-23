@@ -17,6 +17,7 @@ import { navigateToSignIn } from "@/lib/auth-redirect";
 export interface ProductCardProps {
   product: ProductCardData;
   onQuickView?: (slug: string) => void;
+  isRecommendation?: boolean;
 }
 
 // Clean database/AI suffixes from product titles
@@ -29,7 +30,7 @@ export function cleanProductTitle(name: string): string {
     .trim();
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, isRecommendation }) => {
   const { toggleItem, hasItem } = useWishlistStore();
   const [hydrated, setHydrated] = useState(false);
   const [pulse, setPulse] = useState(false);
@@ -142,11 +143,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
       {/* ── Image area (4:5 Aspect Ratio, reduced height) ── */}
       <div className="relative w-full aspect-[4/5] overflow-hidden bg-stone-50 rounded-t-xl transform translate-z-0" style={{ aspectRatio: "4/5" }}>
         
-        {isSoldOut && (
-          <div className="absolute top-2.5 left-2.5 bg-black/80 backdrop-blur-md text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 rounded-sm z-20 pointer-events-none">
-            Sold Out
-          </div>
-        )}
+        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-20 pointer-events-none">
+          {isSoldOut && (
+            <div className="bg-black/80 backdrop-blur-md text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 rounded-sm">
+              Sold Out
+            </div>
+          )}
+          {isRecommendation && (
+            <div className="bg-[#FAF7F0]/90 backdrop-blur-sm text-[#7A6030] border border-[#EAE4D9]/85 text-[8px] font-extrabold uppercase tracking-widest px-2 py-1 rounded-md shadow-sm">
+              Recommended
+            </div>
+          )}
+        </div>
         
         {/* Product image link */}
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block w-full h-full z-10">

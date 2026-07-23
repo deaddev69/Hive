@@ -127,6 +127,12 @@ function SearchContent() {
   const [searchResult, setSearchResult] = useState<{ products: any[]; totalMatchedCount: number } | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
+  const popularProductsData = useQuery(api.products.getMostLovedProducts, {
+    userLat: browseAnyway ? undefined : (latitude ?? undefined),
+    userLng: browseAnyway ? undefined : (longitude ?? undefined),
+    limit: 12,
+  });
+
   useEffect(() => {
     if (!q) {
       setSearchResult(null);
@@ -151,10 +157,17 @@ function SearchContent() {
       });
   }, [q, browseAnyway, latitude, longitude, searchProductsAction]);
 
+  const isFallback = searchResult !== null && searchResult.products.length === 0;
+
+  const isLoading = isSearching || (q && !searchResult) || (isFallback && !popularProductsData);
+
   const products = useMemo(() => {
     if (!searchResult) return [];
+    if (searchResult.products.length === 0) {
+      return (popularProductsData || []).map(mapDbProduct);
+    }
     return searchResult.products.map(mapDbProduct);
-  }, [searchResult]);
+  }, [searchResult, popularProductsData]);
 
   const hiddenCount = useMemo(() => {
     if (!searchResult) return 0;
@@ -243,7 +256,7 @@ function SearchContent() {
               Go to Home Page
             </Button>
           </div>
-        ) : (isSearching || (q && !searchResult)) ? (
+        ) : isLoading ? (
           // Loading Skeletons
           <div className="flex flex-col gap-6">
             <div className="flex justify-between items-baseline border-b border-hive-border/40 pb-4">
@@ -254,58 +267,78 @@ function SearchContent() {
           </div>
         ) : products.length > 0 ? (
           <>
-            {/* Header info bar */}
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-hive-border/40 pb-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg md:text-xl font-bold font-serif text-hive-dark">
-                  {products.length} {products.length === 1 ? "Product" : "Products"} Found
-                </h2>
-                {city && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 shadow-sm">
-                    <MapPin className="w-3 h-3 text-hive-gold" />
-                    Delivering to {city}
-                  </span>
-                )}
-              </div>
-              <span className="text-xs font-semibold text-hive-text-muted">
-                Showing matching items
-              </span>
-            </div>
-
-            {/* Location Filter Banner if items are hidden */}
-            {hiddenCount > 0 && !browseAnyway && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-[slideIn_0.3s_ease]">
+            {/* Conditional header: regular search summary OR compact fallback banner */}
+            {isFallback ? (
+              <div className="bg-amber-50/80 border border-amber-200/60 text-amber-800 p-4 rounded-2xl text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-[slideIn_0.3s_ease] mb-4">
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center justify-center bg-amber-200 text-amber-800 rounded-full w-5 h-5 font-extrabold text-[10px]">!</span>
                   <span>
-                    We found {searchResult?.totalMatchedCount || 0} matches, but {hiddenCount} products are outside your partner delivery radius.
+                    No exact matches found for <strong className="font-extrabold">"{q}"</strong>. Check out some popular styles below instead:
                   </span>
                 </div>
                 <button
-                  onClick={() => setBrowseAnyway(true)}
-                  className="text-xs font-extrabold uppercase tracking-wider text-hive-amber hover:text-hive-gold border border-hive-gold/30 hover:border-hive-gold rounded-xl px-3.5 py-1.5 bg-white shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all"
+                  onClick={handleClear}
+                  className="text-xs font-extrabold uppercase tracking-wider text-amber-800 hover:text-amber-900 border border-amber-300 rounded-xl px-3.5 py-1.5 bg-white shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all self-end sm:self-auto"
                 >
-                  Browse anyway
+                  Clear search
                 </button>
               </div>
-            )}
+            ) : (
+              <>
+                {/* Header info bar */}
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-hive-border/40 pb-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-lg md:text-xl font-bold font-serif text-hive-dark">
+                      {products.length} {products.length === 1 ? "Product" : "Products"} Found
+                    </h2>
+                    {city && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 shadow-sm">
+                        <MapPin className="w-3 h-3 text-hive-gold" />
+                        Delivering to {city}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs font-semibold text-hive-text-muted">
+                    Showing matching items
+                  </span>
+                </div>
 
-            {/* browseAnyway toggle reset banner if they are bypassing location */}
-            {browseAnyway && city && (
-              <div className="bg-slate-50 border border-slate-200 text-slate-700 p-4 rounded-2xl text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-[slideIn_0.3s_ease]">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center bg-slate-200 text-slate-700 rounded-full w-5 h-5 font-extrabold text-[10px]">✓</span>
-                  <span>
-                    Showing all {products.length} matches (including non-deliverable items).
-                  </span>
-                </div>
-                <button
-                  onClick={() => setBrowseAnyway(false)}
-                  className="text-xs font-extrabold uppercase tracking-wider text-slate-700 hover:text-slate-900 border border-slate-300 rounded-xl px-3.5 py-1.5 bg-white shadow-sm transition-all"
-                >
-                  Filter by my location
-                </button>
-              </div>
+                {/* Location Filter Banner if items are hidden */}
+                {hiddenCount > 0 && !browseAnyway && (
+                  <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-[slideIn_0.3s_ease]">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center bg-amber-200 text-amber-800 rounded-full w-5 h-5 font-extrabold text-[10px]">!</span>
+                      <span>
+                        We found {searchResult?.totalMatchedCount || 0} matches, but {hiddenCount} products are outside your partner delivery radius.
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setBrowseAnyway(true)}
+                      className="text-xs font-extrabold uppercase tracking-wider text-hive-amber hover:text-hive-gold border border-hive-gold/30 hover:border-hive-gold rounded-xl px-3.5 py-1.5 bg-white shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all"
+                    >
+                      Browse anyway
+                    </button>
+                  </div>
+                )}
+
+                {/* browseAnyway toggle reset banner if they are bypassing location */}
+                {browseAnyway && city && (
+                  <div className="bg-slate-50 border border-slate-200 text-slate-700 p-4 rounded-2xl text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-[slideIn_0.3s_ease]">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center bg-slate-200 text-slate-700 rounded-full w-5 h-5 font-extrabold text-[10px]">✓</span>
+                      <span>
+                        Showing all {products.length} matches (including non-deliverable items).
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setBrowseAnyway(false)}
+                      className="text-xs font-extrabold uppercase tracking-wider text-slate-700 hover:text-slate-900 border border-slate-300 rounded-xl px-3.5 py-1.5 bg-white shadow-sm transition-all"
+                    >
+                      Filter by my location
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Search Grid */}
@@ -316,41 +349,14 @@ function SearchContent() {
                   className="animate-[cardIn_0.5s_cubic-bezier(0.215,0.61,0.355,1)_forwards] opacity-0"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <ProductCard product={product} />
+                  <ProductCard product={product} isRecommendation={isFallback} />
                 </div>
               ))}
             </div>
           </>
         ) : (
-          /* Empty state for search */
-          <div className="flex flex-col items-center justify-center py-20 px-6 border border-dashed border-hive-border/60 rounded-[32px] bg-hive-cream/5 text-center max-w-2xl mx-auto w-full animate-[cardIn_0.4s_ease-out]">
-            <div className="p-4 rounded-full bg-hive-comb/20 border border-hive-border/40 text-hive-amber mb-4">
-              <AlertCircle className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-bold font-serif text-hive-dark">
-              No products found
-            </h3>
-            <p className="text-sm text-hive-text-muted mt-2 max-w-sm leading-relaxed">
-              We couldn't find any products matching "{q}". Try a different keyword or check spelling.
-            </p>
-            
-            <div className="flex flex-wrap items-center justify-center gap-3.5 mt-8 w-full max-w-md">
-              <Button
-                variant="outline"
-                onClick={handleClear}
-                className="flex-1 min-w-[140px] font-extrabold uppercase tracking-wider text-xs py-3.5 rounded-2xl flex items-center justify-center gap-1.5"
-              >
-                Clear Search
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => router.push("/")}
-                className="flex-1 min-w-[140px] font-extrabold uppercase tracking-wider text-xs py-3.5 rounded-2xl flex items-center justify-center gap-1.5"
-              >
-                Continue Shopping
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
+          <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto w-full">
+            <p className="text-sm text-hive-text-muted">No products available at the moment.</p>
           </div>
         )}
       </div>
