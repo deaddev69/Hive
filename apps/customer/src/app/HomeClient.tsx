@@ -392,46 +392,8 @@ export function HomeClient() {
   return (
     <div className="flex flex-col items-center bg-white min-h-screen text-hive-text w-full select-none">
       
-      {/* ── HERO HEADER SECTION ── */}
-      <header className="w-full bg-gradient-to-b from-[#FFFDF5] to-white pt-10 pb-8 md:pt-14 md:pb-10 border-b border-hive-border/20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col items-center text-center">
-          {/* Subtitle Badge */}
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-hive-comb/60 border border-hive-border/70 text-[10px] md:text-xs font-bold text-hive-amber uppercase tracking-wider mb-6 animate-pulse-soft">
-            <Zap className="w-3.5 h-3.5 fill-current" />
-            <span>1-2 Hour Express Delivery across Ernakulam & Kakkanad</span>
-          </div>
-          
-          {/* Hero H1 */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-black text-hive-dark tracking-tight leading-[1.15] mb-4 max-w-4xl">
-            Instant Clothes Delivery <span className="text-hive-amber">in Kochi</span>
-          </h1>
-          
-          {/* Body description */}
-          <p className="text-xs md:text-sm text-hive-text-muted max-w-2xl font-medium leading-relaxed mb-8">
-            Shop the latest fashion collections from Kochi's finest local boutiques. Get stunning dresses, ready-to-wear outfits, and clothes delivered to your doorstep in 1 to 2 hours across Ernakulam.
-          </p>
-          
-          {/* Hero Search Box */}
-          <div className="w-full max-w-md px-2">
-            <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-              <input
-                type="text"
-                placeholder="Search styles, boutiques, or outfits..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-11 md:h-12 pl-4 pr-12 rounded-2xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-hive-amber focus:border-transparent text-xs md:text-sm font-semibold text-hive-dark placeholder-slate-400 shadow-sm"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 p-2 rounded-xl bg-hive-dark text-white hover:bg-neutral-800 transition-colors cursor-pointer"
-                aria-label="Search"
-              >
-                <Search className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
-        </div>
-      </header>
+      {/* Visually hidden H1 for SEO compliance */}
+      <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
 
       {/* ── 1. HYPERLOCAL CAMPAIGN SHOWCASE GRID (AT TOP) ── */}
       <section className="w-full bg-white pt-6 pb-2">
