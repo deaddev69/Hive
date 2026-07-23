@@ -234,11 +234,12 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <nav className="sticky top-0 z-40 w-full bg-white/95 dark:bg-hive-dark/95 backdrop-blur-md border-b border-slate-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          {/* ── Desktop & Mobile Header Layout ─────────────────────────── */}
-          <div className="flex flex-col sm:flex-row sm:h-16 justify-between gap-2.5 sm:gap-4 py-2 sm:py-0">
+      <nav className="relative sm:sticky sm:top-0 z-40 w-full bg-transparent sm:bg-white/95 sm:dark:bg-hive-dark/95 sm:backdrop-blur-md border-none sm:border-b border-slate-200/80">
+        
+        {/* ── Row 1: Logo, Location, and Desktop Actions (Sticky on Mobile, standard flow on Desktop) ── */}
+        <div className="sticky sm:relative top-0 z-40 w-full bg-white/95 dark:bg-hive-dark/95 backdrop-blur-md border-b sm:border-none border-slate-200/80">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="h-14 sm:h-16 flex items-center justify-between gap-3 sm:gap-4 w-full">
             
             {/* Top row on Mobile / Left side on Desktop containing Logo & Location Selector */}
             <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
@@ -360,18 +361,16 @@ export const Navbar: React.FC = () => {
 
             </div>
 
-            {/* Zone 3: Search bar (Desktop: inline in Row 1; Mobile: Row 2) */}
-            <div className="w-full sm:flex-1 sm:max-w-md relative min-w-0 pb-1 sm:pb-0">
+            {/* Zone 3: Search bar (Desktop only) */}
+            <div className="hidden sm:block flex-1 max-w-md relative min-w-0">
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="w-full h-8 sm:h-10 px-3 rounded-xl bg-[#FAF9F5] border border-stone-200/60 text-[9.5px] sm:text-xs font-semibold text-stone-500 text-left flex items-center gap-2 cursor-pointer hover:bg-stone-100/40 transition-all duration-200 shadow-sm"
+                className="w-full h-10 px-3 rounded-xl bg-[#FAF9F5] border border-stone-200/60 text-xs font-semibold text-stone-500 text-left flex items-center gap-2 cursor-pointer hover:bg-stone-100/40 transition-all duration-200 shadow-sm"
               >
                 <Search className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
                 <span className="truncate flex-1">
-                  {hydrated && typeof window !== "undefined" && window.innerWidth < 640
-                    ? "Search styles, boutiques, or outfits..."
-                    : placeholders[placeholderIdx]}
+                  {placeholders[placeholderIdx]}
                 </span>
               </button>
             </div>
@@ -523,7 +522,25 @@ export const Navbar: React.FC = () => {
 
           </div>
         </div>
-      </nav>
+      </div>
+
+      {/* ── Row 2: Mobile Search Bar (Non-sticky, scrolls away on Mobile) ── */}
+      <div className="w-full bg-white dark:bg-hive-dark py-2.5 px-4 border-b border-slate-200/80 sm:hidden">
+        <button
+          type="button"
+          onClick={() => setSearchOpen(true)}
+          className="w-full h-8 px-3 rounded-xl bg-[#FAF9F5] border border-stone-200/60 text-[9.5px] font-semibold text-stone-500 text-left flex items-center gap-2 cursor-pointer hover:bg-stone-100/40 transition-all duration-200 shadow-sm"
+        >
+          <Search className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
+          <span className="truncate flex-1">
+            {hydrated && typeof window !== "undefined" && window.innerWidth < 640
+              ? "Search styles, boutiques, or outfits..."
+              : placeholders[placeholderIdx]}
+          </span>
+        </button>
+      </div>
+
+    </nav>
 
       {/* ── Mobile drawer backdrop ──────────────────────────────────── */}
       {mobileMenuOpen && (
