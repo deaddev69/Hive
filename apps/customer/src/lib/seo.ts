@@ -59,9 +59,9 @@ export function constructMetadata({
 
 export function getHomeMetadata(): Metadata {
   return constructMetadata({
-    title: "Fashion Delivered in Hours | Hive Kochi",
+    title: "Instant Clothes Delivery in Kochi (1-2 Hours) | Hive",
     absoluteTitle: true,
-    description: "Why wait days? Shop fashion online and get your next outfit delivered in hours across Kochi. Experience a faster, more convenient way to shop with Hive.",
+    description: "Need instant clothes delivery in Kochi? Shop local stores online and get clothes, dresses, and outfits delivered to your door in 1-2 hours across Ernakulam.",
     path: "/",
   });
 }

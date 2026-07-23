@@ -14,9 +14,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://hivenow.in"),
   title: {
     template: "%s | Hive",
-    default: "Fashion Delivered in Hours | Hive Kochi",
+    default: "Instant Clothes Delivery in Kochi (1-2 Hours) | Hive",
   },
-  description: "Why wait days? Shop fashion online and get your next outfit delivered in hours across Kochi. Experience a faster, more convenient way to shop with Hive.",
+  description: "Need instant clothes delivery in Kochi? Shop local stores online and get clothes, dresses, and outfits delivered to your door in 1-2 hours across Ernakulam.",
   icons: {
     icon: "/logo.png",
     apple: "/apple-touch-icon.png?v=2",

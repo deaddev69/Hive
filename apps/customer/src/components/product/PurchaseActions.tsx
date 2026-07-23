@@ -339,31 +339,10 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
   const [crossBoutiqueModalOpen, setCrossBoutiqueModalOpen] = useState(false);
-  const [showStickyBar, setShowStickyBar] = useState(false);
-  const sentinelRef = React.useRef<HTMLDivElement>(null);
-
-  // Observer to show bottom sticky CTA after trust section scrolls out
-  useEffect(() => {
-    const target = sentinelRef.current;
-    if (!target) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry) {
-          const isAboveViewport = entry.boundingClientRect.top < 0;
-          // Only show sticky bar after the trigger element has scrolled above viewport
-          setShowStickyBar(!entry.isIntersecting && isAboveViewport);
-        }
-      },
-      { threshold: 0 }
-    );
-
-    observer.observe(target);
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
+  const handleSelectSizePrompt = () => {
+    const el = document.getElementById("size-selector-section");
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   const router = useRouter();
   const items = useCartStore((state) => state.items);
@@ -691,7 +670,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
 
       {/* 2. CTAs (Add to Cart / Buy Now / Out Of Stock form) */}
       {isStoreOffline ? (
-        <div className="flex w-full h-12 rounded-2xl items-stretch opacity-60">
+        <div className="hidden lg:flex w-full h-12 rounded-2xl items-stretch opacity-60">
           <AddToCartButton
             variant="unified"
             disabled={true}
@@ -740,13 +719,13 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       ) : !selectedSize ? (
         <button
           type="button"
-          onClick={onOpenSizeGuide}
-          className="h-12 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:shadow cursor-pointer flex items-center justify-center"
+          onClick={handleSelectSizePrompt}
+          className="hidden lg:flex h-12 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:shadow cursor-pointer items-center justify-center"
         >
           Select Size
         </button>
       ) : (
-        <div className="flex w-full h-12 rounded-2xl shadow-sm transition-all duration-300 items-stretch">
+        <div className="hidden lg:flex w-full h-12 rounded-2xl shadow-sm transition-all duration-300 items-stretch">
           <AddToCartButton
             variant="unified"
             disabled={!selectedSize}
@@ -769,12 +748,8 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         </div>
       )}
 
-
-
       {/* Sentinel for Scroll Observer */}
-      <div ref={sentinelRef} className="w-full h-px pointer-events-none" />
-
-
+      <div className="w-full h-px pointer-events-none" />
 
       {/* 4. Self-Contained Success/Feedback Toast */}
       {toast && (
@@ -793,23 +768,21 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       )}
 
       {/* 5. Sticky Mobile purchase bar */}
-      {showStickyBar && (
-        <StickyMobilePurchaseBar
-          productName={product.name}
-          price={product.price}
-          selectedSize={selectedSize}
-          inventoryCount={inventoryCount}
-          onAddToCart={handleAddToCart}
-          onBuyNow={handleBuyNow}
-          onSelectSizePrompt={onOpenSizeGuide}
-          loading={loading}
-          isServiceable={isLocationServiceable && !isStoreOffline}
-          resolvedStatus={resolvedStatus}
-          isPreorder={isPreorderMode}
-          preorderType={(boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED") ? boutiqueStatus.type : undefined}
-          nextDayLabel={boutiqueStatus.type === "CLOSED_EXTENDED" ? formatNextDayLabel((boutiqueStatus as any).nextOperatingDay) : ""}
-        />
-      )}
+      <StickyMobilePurchaseBar
+        productName={product.name}
+        price={product.price}
+        selectedSize={selectedSize}
+        inventoryCount={inventoryCount}
+        onAddToCart={handleAddToCart}
+        onBuyNow={handleBuyNow}
+        onSelectSizePrompt={handleSelectSizePrompt}
+        loading={loading}
+        isServiceable={isLocationServiceable && !isStoreOffline}
+        resolvedStatus={resolvedStatus}
+        isPreorder={isPreorderMode}
+        preorderType={(boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED") ? boutiqueStatus.type : undefined}
+        nextDayLabel={boutiqueStatus.type === "CLOSED_EXTENDED" ? formatNextDayLabel((boutiqueStatus as any).nextOperatingDay) : ""}
+      />
 
       <style>{`
         @keyframes toastInCenter {
