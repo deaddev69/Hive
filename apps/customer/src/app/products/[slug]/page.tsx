@@ -26,6 +26,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const client = new ConvexHttpClient(convexUrl);
   try {
+    // 1. Check if slug belongs to a database category
+    const dbCategory = await client.query(api.categories.getCategoryBySlug, { slug });
+    if (dbCategory) {
+      return getCategoryMetadata(slug);
+    }
+
     const product = await client.query(api.products.getProduct, { slug });
     if (!product) return {};
 
@@ -67,6 +73,31 @@ export default async function ProductOrCategoryPage({ params }: Props) {
   }
 
   const client = new ConvexHttpClient(convexUrl);
+  
+  // 1. Check if slug belongs to a database category
+  let dbCategory = null;
+  try {
+    dbCategory = await client.query(api.categories.getCategoryBySlug, { slug });
+  } catch (error) {
+    console.error("Failed to fetch database category:", error);
+  }
+
+  if (dbCategory) {
+    const formattedCategory = dbCategory.name;
+    return (
+      <>
+        <BreadcrumbSchema 
+          items={[
+            { name: "Home", url: "/" },
+            { name: "Products", url: "/products" },
+            { name: formattedCategory, url: `/products/${slug}` },
+          ]} 
+        />
+        <ProductsClient initialCategorySlug={slug} />
+      </>
+    );
+  }
+
   let initialProduct = null;
   try {
     initialProduct = await client.query(api.products.getProduct, { slug });

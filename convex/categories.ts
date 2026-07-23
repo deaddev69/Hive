@@ -246,3 +246,16 @@ export const deleteCategory = mutation({
     return args.id;
   },
 });
+
+/**
+ * Fetch a single category by its slug.
+ */
+export const getCategoryBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("categories")
+      .filter((q) => q.eq(q.field("slug"), args.slug))
+      .first();
+  },
+});
