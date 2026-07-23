@@ -237,108 +237,145 @@ export const Navbar: React.FC = () => {
       <nav className="sticky top-0 z-40 w-full bg-white/95 dark:bg-hive-dark/95 backdrop-blur-md border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          {/* ── Shared single-row bar ─────────────────────────────────── */}
-          <div className="h-16 flex items-center justify-between gap-4">
+          {/* ── Desktop & Mobile Header Layout ─────────────────────────── */}
+          <div className="flex flex-col sm:flex-row sm:h-16 justify-between gap-2.5 sm:gap-4 py-2 sm:py-0">
+            
+            {/* Top row on Mobile / Left side on Desktop containing Logo & Location Selector */}
+            <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
+              
+              {/* Zone 1: Logo */}
+              <div className="flex-shrink-0 mr-1 sm:mr-6 lg:mr-8">
+                <HiveLogo />
+              </div>
 
-            {/* ── Zone 1: Logo (fixed, left anchor) ─────────────────── */}
-            <div className="flex-shrink-0 mr-2 sm:mr-6 lg:mr-8">
-              <HiveLogo />
-            </div>
-
-            {/* ── Zone 2: Location pill with popover dropdown ───────── */}
-            <div className="relative">
-              <button
-                onClick={handleLocationClick}
-                className={`flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-white border text-[8.5px] sm:text-[10px] font-medium transition-all duration-200 min-w-0 max-w-[115px] sm:max-w-[200px] select-none cursor-pointer shadow-sm ${
-                  hydrated && !(locality || city)
-                    ? "animate-location-glow text-stone-600 font-semibold"
-                    : "border-slate-200 text-hive-dark/95 hover:bg-slate-50"
-                }`}
-              >
-                <MapPin className={`w-2.5 h-2.5 sm:w-3 h-3 flex-shrink-0 ${hydrated && !(locality || city) ? "text-stone-400" : "text-hive-gold"}`} />
-                <div className="flex flex-col items-start text-left min-w-0 leading-none">
-                  <span className={`truncate w-full max-w-[70px] sm:max-w-[140px] font-medium ${hydrated && !(locality || city) ? "text-stone-600 font-semibold" : "text-hive-dark/95"}`}>
-                    {hydrated && (locality || city) ? `${locality || city} ▾` : "Set Location"}
-                  </span>
-                  {hydrated && city && !isServiceable && (
-                    <span className="text-[7.5px] text-amber-700 bg-amber-50/50 border border-amber-200/30 px-0.5 py-0.2 rounded font-extrabold mt-0.5 tracking-wide whitespace-nowrap leading-none scale-90 origin-left">
-                      Launching Soon
+              {/* Zone 2: Location pill with popover dropdown */}
+              <div className="relative">
+                <button
+                  onClick={handleLocationClick}
+                  className={`flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-white border text-[8.5px] sm:text-[10px] font-medium transition-all duration-200 min-w-0 max-w-[115px] sm:max-w-[200px] select-none cursor-pointer shadow-sm ${
+                    hydrated && !(locality || city)
+                      ? "animate-location-glow text-stone-600 font-semibold"
+                      : "border-slate-200 text-hive-dark/95 hover:bg-slate-50"
+                  }`}
+                >
+                  <MapPin className={`w-2.5 h-2.5 sm:w-3 h-3 flex-shrink-0 ${hydrated && !(locality || city) ? "text-stone-400" : "text-hive-gold"}`} />
+                  <div className="flex flex-col items-start text-left min-w-0 leading-none">
+                    <span className={`truncate w-full max-w-[70px] sm:max-w-[140px] font-medium ${hydrated && !(locality || city) ? "text-stone-600 font-semibold" : "text-hive-dark/95"}`}>
+                      {hydrated && (locality || city) ? `${locality || city} ▾` : "Set Location"}
                     </span>
-                  )}
-                </div>
-              </button>
-
-              {locationDropdownOpen && (
-                <>
-                  <div className="fixed inset-0 z-40 bg-transparent hidden sm:block" onClick={() => setLocationDropdownOpen(false)} />
-                  <div className="absolute left-0 mt-2.5 w-64 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl shadow-xl py-2 z-50 text-left font-sans animate-in fade-in slide-in-from-top-1 duration-150 hidden sm:block">
-                    <div className="px-4 py-2 border-b border-slate-100 dark:border-neutral-800/60">
-                      <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-white">Delivering To</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setLocationDropdownOpen(false);
-                        setDrawerOpen(true);
-                      }}
-                      className="w-full text-left px-4 py-2.5 text-xs text-hive-gold hover:bg-slate-50 dark:hover:bg-neutral-800/40 hover:text-hive-dark transition-all font-bold flex items-center gap-2"
-                    >
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>Change Location</span>
-                    </button>
-                    {isAuthenticated && token && savedAddresses.length > 0 && (
-                      <div className="border-t border-slate-100 dark:border-neutral-800/60 mt-1 pt-1">
-                        <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          Saved Addresses
-                        </div>
-                        <div className="max-h-40 overflow-y-auto">
-                          {savedAddresses.map((addr: any) => (
-                            <button
-                              key={addr._id}
-                              onClick={async () => {
-                                setLocationDropdownOpen(false);
-                                await updateLocationDetails({
-                                  latitude: addr.lat,
-                                  longitude: addr.lng,
-                                  city: addr.city,
-                                  state: addr.state,
-                                  country: "India",
-                                  postcode: addr.pincode,
-                                });
-                              }}
-                              className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-neutral-800/40 transition-all text-xs font-semibold text-slate-700 dark:text-slate-300 flex flex-col gap-0.5"
-                            >
-                              <span className="font-bold text-slate-900 dark:text-white">{addr.label}</span>
-                              <span className="truncate text-[10px] text-slate-500 dark:text-neutral-400">{addr.formattedAddress || `${addr.houseNumber ? addr.houseNumber + ', ' : ''}${addr.landmark ? addr.landmark + ', ' : ''}${addr.city}`}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                    {hydrated && city && !isServiceable && (
+                      <span className="text-[7.5px] text-amber-700 bg-amber-50/50 border border-amber-200/30 px-0.5 py-0.2 rounded font-extrabold mt-0.5 tracking-wide whitespace-nowrap leading-none scale-90 origin-left">
+                        Launching Soon
+                      </span>
                     )}
                   </div>
-                </>
-              )}
+                </button>
+
+                {locationDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40 bg-transparent hidden sm:block" onClick={() => setLocationDropdownOpen(false)} />
+                    <div className="absolute left-0 mt-2.5 w-64 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl shadow-xl py-2 z-50 text-left font-sans animate-in fade-in slide-in-from-top-1 duration-150 hidden sm:block">
+                      <div className="px-4 py-2 border-b border-slate-100 dark:border-neutral-800/60">
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-white">Delivering To</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setLocationDropdownOpen(false);
+                          setDrawerOpen(true);
+                        }}
+                        className="w-full text-left px-4 py-2.5 text-xs text-hive-gold hover:bg-slate-50 dark:hover:bg-neutral-800/40 hover:text-hive-dark transition-all font-bold flex items-center gap-2"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>Change Location</span>
+                      </button>
+                      {isAuthenticated && token && savedAddresses.length > 0 && (
+                        <div className="border-t border-slate-100 dark:border-neutral-800/60 mt-1 pt-1">
+                          <div className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            Saved Addresses
+                          </div>
+                          <div className="max-h-40 overflow-y-auto">
+                            {savedAddresses.map((addr: any) => (
+                              <button
+                                key={addr._id}
+                                onClick={async () => {
+                                  setLocationDropdownOpen(false);
+                                  await updateLocationDetails({
+                                    latitude: addr.lat,
+                                    longitude: addr.lng,
+                                    city: addr.city,
+                                    state: addr.state,
+                                    country: "India",
+                                    postcode: addr.pincode,
+                                  });
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-slate-50 dark:hover:bg-neutral-800/40 transition-all text-xs font-semibold text-slate-700 dark:text-slate-300 flex flex-col gap-0.5"
+                              >
+                                <span className="font-bold text-slate-900 dark:text-white">{addr.label}</span>
+                                <span className="truncate text-[10px] text-slate-500 dark:text-neutral-400">{addr.formattedAddress || `${addr.houseNumber ? addr.houseNumber + ', ' : ''}${addr.landmark ? addr.landmark + ', ' : ''}${addr.city}`}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Mobile-only Action Icons (Cart & Hamburger) on top row */}
+              <div className="flex sm:hidden items-center gap-1.5 flex-shrink-0">
+                {/* Cart bag */}
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="relative p-1.5 text-hive-dark hover:text-hive-gold transition-colors duration-150 outline-none"
+                  aria-label="Open cart"
+                >
+                  <PremiumShoppingBag className="w-5 h-5" strokeWidth={1.8} />
+                  {itemsCount > 0 && (
+                    <Badge
+                      variant="primary"
+                      className="absolute top-0 right-0 scale-90 min-w-5 h-5 flex items-center justify-center font-bold px-1.5 bg-hive-dark text-hive-gold border border-white rounded-full"
+                    >
+                      {itemsCount}
+                    </Badge>
+                  )}
+                </button>
+
+                {/* Mobile hamburger */}
+                <button
+                  onClick={() => setMobileMenuOpen((v) => !v)}
+                  className="p-1.5 text-hive-dark hover:text-hive-gold transition-colors duration-150 outline-none"
+                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                >
+                  {mobileMenuOpen ? (
+                    <X className="w-5 h-5" />
+                  ) : (
+                    <Menu className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+
             </div>
 
-            {/* ── Zone 3: Desktop/Mobile search bar (button trigger for full-screen overlay) ── */}
-            <div className="flex-1 max-w-md relative min-w-0">
+            {/* Zone 3: Search bar (Desktop: inline in Row 1; Mobile: Row 2) */}
+            <div className="w-full sm:flex-1 sm:max-w-md relative min-w-0 pb-1 sm:pb-0">
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="w-full h-8 md:h-10 pl-3 md:pl-4 pr-8 md:pr-10 rounded-xl bg-slate-50 md:bg-white border border-slate-200 text-[10px] md:text-xs font-semibold text-hive-text-muted text-left flex items-center justify-between shadow-sm cursor-pointer hover:bg-slate-100/50 transition-all duration-250"
+                className="w-full h-9 sm:h-10 pl-3 md:pl-4 pr-8 md:pr-10 rounded-xl bg-slate-50 md:bg-white border border-slate-200 text-[10px] md:text-xs font-semibold text-hive-text-muted text-left flex items-center justify-between shadow-sm cursor-pointer hover:bg-slate-100/50 transition-all duration-250"
               >
                 <span className="truncate">
                   {hydrated && typeof window !== "undefined" && window.innerWidth < 640
-                    ? "Search..."
+                    ? "Search styles, boutiques, or outfits..."
                     : placeholders[placeholderIdx]}
                 </span>
                 <Search className="w-3.5 h-3.5 md:w-4 h-4 text-slate-400" />
               </button>
             </div>
 
-            {/* ── Zone 4: Action icons (right anchor) ───────────────── */}
-            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-
-              {/* My Orders — desktop only */}
+            {/* Zone 4: Action icons (Desktop only, hidden on mobile) */}
+            <div className="hidden sm:flex items-center gap-3 sm:gap-4 flex-shrink-0">
+              {/* My Orders */}
               <Link
                 href="/orders"
                 prefetch={false}
@@ -351,7 +388,7 @@ export const Navbar: React.FC = () => {
               {/* Wishlist */}
               <Link
                 href="/wishlist"
-                className="hidden sm:flex relative p-2 text-hive-dark hover:text-hive-gold transition-colors duration-150 outline-none"
+                className="relative p-2 text-hive-dark hover:text-hive-gold transition-colors duration-150 outline-none"
                 aria-label="Open wishlist"
               >
                 <Heart className="w-5 h-5 stroke-[1.8]" />
@@ -382,8 +419,8 @@ export const Navbar: React.FC = () => {
                 )}
               </button>
 
-              {/* ── Auth zone — same width slot regardless of state ──── */}
-              <div className="hidden sm:flex items-center border-l border-slate-200 pl-3 sm:pl-4 relative">
+              {/* Auth Zone */}
+              <div className="flex items-center border-l border-slate-200 pl-3 sm:pl-4 relative">
                 {!hydrated ? (
                   <div className="h-10 w-24 bg-slate-50 animate-pulse rounded-xl" />
                 ) : isAuthenticated && user ? (
@@ -462,8 +499,7 @@ export const Navbar: React.FC = () => {
                   </div>
                 ) : (
                   <>
-                    {/* Desktop: Sign In + Create Account */}
-                    <div className="hidden sm:flex items-center gap-3">
+                    <div className="flex items-center gap-3">
                       <button 
                         onClick={() => navigateToSignIn(router)}
                         className="h-10 px-5 rounded-xl border border-slate-200 text-xs font-medium text-hive-dark hover:bg-slate-50 transition-colors duration-200 cursor-pointer shadow-sm"
@@ -477,36 +513,12 @@ export const Navbar: React.FC = () => {
                         Create Account
                       </button>
                     </div>
-
-                    {/* Mobile: compact Sign In button only */}
-                    <button 
-                      onClick={() => navigateToSignIn(router)}
-                      className="sm:hidden h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-medium text-hive-dark hover:bg-slate-50 transition-colors duration-200 whitespace-nowrap cursor-pointer shadow-sm"
-                    >
-                      Sign In
-                    </button>
                   </>
                 )}
               </div>
-
-              {/* Mobile hamburger — opens slide-out menu */}
-              <button
-                onClick={() => setMobileMenuOpen((v) => !v)}
-                className="md:hidden p-2 text-hive-dark hover:text-hive-gold transition-colors duration-150 outline-none"
-                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-5 h-5" />
-                ) : (
-                  <Menu className="w-5 h-5" />
-                )}
-              </button>
             </div>
+
           </div>
-
-
-
-
         </div>
       </nav>
 

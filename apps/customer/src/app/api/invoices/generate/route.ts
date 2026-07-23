@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 1. Fetch invoice from Convex (ownership-checked by the query)
-    let invoice = null;
+    let invoice: any = null;
     try {
       invoice = await convexQuery(
         "invoices:getInvoiceByOrderId",
