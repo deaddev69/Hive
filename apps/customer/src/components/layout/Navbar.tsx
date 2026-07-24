@@ -99,20 +99,7 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [searchOpen]);
 
-  // Search placeholder animation loop
-  const placeholders = [
-    "Search 'Kurtis', 'Label M', or boutiques...",
-    "Search 'Sarees', 'Anarkalis', or designers...",
-    "Search styles, outfits, or local boutiques...",
-  ];
-  const [placeholderIdx, setPlaceholderIdx] = useState(0);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPlaceholderIdx((idx) => (idx + 1) % placeholders.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Recent searches cache
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -392,7 +379,7 @@ export const Navbar: React.FC = () => {
               >
                 <Search className="w-5 h-5 text-slate-400 flex-shrink-0" />
                 <span className="truncate flex-1 text-sm font-medium text-slate-400">
-                  {placeholders[placeholderIdx]}
+                  Search...
                 </span>
               </button>
             </div>
@@ -547,17 +534,15 @@ export const Navbar: React.FC = () => {
       </nav>
 
       {/* ── Mobile Search Bar (Non-sticky, scrolls away on Mobile) ── */}
-      <div className="w-full bg-white dark:bg-hive-dark py-2.5 px-4 border-b border-slate-200/80 sm:hidden">
+      <div className="w-full bg-white dark:bg-hive-dark py-1.5 px-4 border-b border-slate-200/80 sm:hidden">
         <button
           type="button"
           onClick={() => setSearchOpen(true)}
-          className="w-full h-10 px-3.5 rounded-xl bg-white border border-slate-200/80 text-left flex items-center gap-2.5 cursor-pointer hover:bg-slate-50/50 transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+          className="w-full h-9 px-3.5 rounded-xl bg-white border border-slate-200/80 text-left flex items-center gap-2.5 cursor-pointer hover:bg-slate-50/50 transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
         >
-          <Search className="w-4.5 h-4.5 text-slate-400 flex-shrink-0" />
+          <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
           <span className="truncate flex-1 text-xs font-medium text-slate-400">
-            {hydrated && typeof window !== "undefined" && window.innerWidth < 640
-              ? "Search 'Kurtis', 'Label M', or boutiques..."
-              : placeholders[placeholderIdx]}
+            Search...
           </span>
         </button>
       </div>
@@ -817,7 +802,7 @@ export const Navbar: React.FC = () => {
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search 'Kurtis', 'Label M', or boutiques..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {

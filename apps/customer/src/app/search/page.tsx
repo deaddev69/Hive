@@ -214,7 +214,7 @@ function SearchContent() {
           <div className="w-full max-w-xl relative">
              <input
               type="text"
-              placeholder="Search 'Kurtis', 'Label M', or boutiques..."
+              placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full h-12 pl-12 pr-12 rounded-xl bg-white border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200"

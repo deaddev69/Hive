@@ -429,19 +429,19 @@ export function HomeClient() {
       <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
 
       {/* ⚡ Full-Width Yellow Ticker Banner (Marquee) */}
-      <div className="w-full overflow-hidden bg-[#F5C22B] py-2.5 border-b border-[#E0B120] whitespace-nowrap select-none shadow-sm relative leading-none min-h-[32px] sm:min-h-[36px] flex items-center">
+      <div className="w-full overflow-hidden bg-[#F5C22B] py-1.5 border-b border-[#E0B120] whitespace-nowrap select-none shadow-sm relative leading-none min-h-[32px] sm:min-h-[36px] flex items-center">
         <div className="inline-block animate-marquee text-[10px] sm:text-xs font-medium text-slate-800">
           <span className="mx-4 font-bold text-slate-900">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="pr-16">{urgencyBannerDetails.text}</span>
+          <span className="pr-8">{urgencyBannerDetails.text}</span>
           
           <span className="mx-4 font-bold text-slate-900" aria-hidden="true">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="pr-16" aria-hidden="true">{urgencyBannerDetails.text}</span>
+          <span className="pr-8" aria-hidden="true">{urgencyBannerDetails.text}</span>
 
           <span className="mx-4 font-bold text-slate-900" aria-hidden="true">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="pr-16" aria-hidden="true">{urgencyBannerDetails.text}</span>
+          <span className="pr-8" aria-hidden="true">{urgencyBannerDetails.text}</span>
 
           <span className="mx-4 font-bold text-slate-900" aria-hidden="true">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="pr-16" aria-hidden="true">{urgencyBannerDetails.text}</span>
+          <span className="pr-8" aria-hidden="true">{urgencyBannerDetails.text}</span>
         </div>
       </div>
 
