@@ -477,19 +477,6 @@ export function HomeClient() {
                       className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                     <div className="sheen-glow" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent z-10" />
-                    <div className="absolute inset-0 p-6 flex flex-col justify-end text-left z-20 text-white space-y-1 select-none">
-                      <h3 className="text-lg md:text-xl font-serif font-bold tracking-tight leading-tight">
-                        {banner.title}
-                      </h3>
-                      <p className="text-[11px] font-medium text-slate-200">
-                        {banner.subtitle}
-                      </p>
-                      <div className="pt-2 flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-hive-gold group-hover:text-white transition-colors">
-                        <span>{banner.cta}</span>
-                        <ArrowRight className="w-3 h-3 transform group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
                   </Link>
                 ))}
               </div>
@@ -521,19 +508,6 @@ export function HomeClient() {
                         className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                       />
                       <div className="sheen-glow" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-10" />
-                      <div className="absolute inset-0 p-5 flex flex-col justify-end text-left z-20 text-white space-y-1 select-none">
-                        <h3 className="text-lg font-serif font-bold tracking-tight leading-tight">
-                          {banner.title}
-                        </h3>
-                        <p className="text-xs font-medium text-slate-200">
-                          {banner.subtitle}
-                        </p>
-                        <div className="pt-1.5 flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-hive-gold">
-                          <span>{banner.cta}</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </div>
-                      </div>
                     </Link>
                   ))}
                 </div>
@@ -578,21 +552,6 @@ export function HomeClient() {
                       className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                     <div className="sheen-glow" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent z-10" />
-                    <div className="absolute inset-0 p-6 flex flex-col justify-end text-left z-20 text-white space-y-1 select-none">
-                      <h3 className="text-lg md:text-xl font-serif font-black tracking-tight leading-tight">
-                        {banner.title}
-                      </h3>
-                      {banner.subtitle && (
-                        <p className="text-[11px] font-medium text-slate-200">
-                          {banner.subtitle}
-                        </p>
-                      )}
-                      <div className="pt-2 flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-hive-gold group-hover:text-white transition-colors">
-                        <span>{banner.ctaText}</span>
-                        <ArrowRight className="w-3 h-3 transform group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
                   </Link>
                 ))}
               </div>
@@ -624,21 +583,6 @@ export function HomeClient() {
                         className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                       />
                       <div className="sheen-glow" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-10" />
-                      <div className="absolute inset-0 p-5 flex flex-col justify-end text-left z-20 text-white space-y-1 select-none">
-                        <h3 className="text-lg font-serif font-black tracking-tight leading-tight">
-                          {banner.title}
-                        </h3>
-                        {banner.subtitle && (
-                          <p className="text-xs font-medium text-slate-200">
-                            {banner.subtitle}
-                          </p>
-                        )}
-                        <div className="pt-1.5 flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-hive-gold">
-                          <span>{banner.ctaText}</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </div>
-                      </div>
                     </Link>
                   ))}
                 </div>
