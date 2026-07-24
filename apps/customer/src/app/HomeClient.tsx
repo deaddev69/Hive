@@ -429,26 +429,19 @@ export function HomeClient() {
       <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
 
       {/* ⚡ Full-Width Yellow Ticker Banner (Marquee) */}
-      <div className="w-full overflow-hidden bg-[#F5C22B] py-2 border-b border-[#E0B120] whitespace-nowrap select-none shadow-sm relative leading-none min-h-[32px] sm:min-h-[36px] flex items-center">
-        <div className="inline-block animate-marquee text-[10px] sm:text-xs">
+      <div className="w-full overflow-hidden bg-[#F5C22B] py-2.5 border-b border-[#E0B120] whitespace-nowrap select-none shadow-sm relative leading-none min-h-[32px] sm:min-h-[36px] flex items-center">
+        <div className="inline-block animate-marquee text-[10px] sm:text-xs font-medium text-slate-800">
           <span className="mx-4 font-bold text-slate-900">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="text-slate-800 pr-16">{urgencyBannerDetails.text}</span>
+          <span className="pr-16">{urgencyBannerDetails.text}</span>
           
           <span className="mx-4 font-bold text-slate-900" aria-hidden="true">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="text-slate-800 pr-16" aria-hidden="true">{urgencyBannerDetails.text}</span>
+          <span className="pr-16" aria-hidden="true">{urgencyBannerDetails.text}</span>
 
           <span className="mx-4 font-bold text-slate-900" aria-hidden="true">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="text-slate-800 pr-16" aria-hidden="true">{urgencyBannerDetails.text}</span>
-        </div>
-        <div className="inline-block animate-marquee absolute left-full top-1/2 -translate-y-1/2 text-[10px] sm:text-xs animate-in fade-in duration-300" aria-hidden="true">
-          <span className="mx-4 font-bold text-slate-900">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="text-slate-800 pr-16">{urgencyBannerDetails.text}</span>
-          
-          <span className="mx-4 font-bold text-slate-900">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="text-slate-800 pr-16">{urgencyBannerDetails.text}</span>
+          <span className="pr-16" aria-hidden="true">{urgencyBannerDetails.text}</span>
 
-          <span className="mx-4 font-bold text-slate-900">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="text-slate-800 pr-16">{urgencyBannerDetails.text}</span>
+          <span className="mx-4 font-bold text-slate-900" aria-hidden="true">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+          <span className="pr-16" aria-hidden="true">{urgencyBannerDetails.text}</span>
         </div>
       </div>
 
@@ -872,7 +865,7 @@ export function HomeClient() {
         }
         @keyframes marquee {
           0% { transform: translate3d(0, 0, 0); }
-          100% { transform: translate3d(-100%, 0, 0); }
+          100% { transform: translate3d(-25%, 0, 0); }
         }
         .animate-marquee {
           animation: marquee 16s linear infinite;
