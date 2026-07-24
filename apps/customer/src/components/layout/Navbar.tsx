@@ -98,7 +98,7 @@ export const Navbar: React.FC = () => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [searchOpen]);
-  // Dynamic 1-second placeholder keywords loop
+  // Dynamic 2-second placeholder keywords loop
   const keywords = [
     'Search "Kurtis"',
     'Search "Sarees"',
@@ -107,12 +107,20 @@ export const Navbar: React.FC = () => {
     'Search "Western Wear"',
     'Search "Local Boutiques"'
   ];
-  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const [placeholderText, setPlaceholderText] = useState(keywords[0]);
+  const [placeholderFade, setPlaceholderFade] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setPlaceholderIdx((prev) => (prev + 1) % keywords.length);
-    }, 1000);
+      setPlaceholderFade(false);
+      setTimeout(() => {
+        setPlaceholderText((current) => {
+          const nextIdx = (keywords.indexOf(current) + 1) % keywords.length;
+          return keywords[nextIdx];
+        });
+        setPlaceholderFade(true);
+      }, 300);
+    }, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -121,11 +129,19 @@ export const Navbar: React.FC = () => {
     "⚡ 3-HR DELIVERY",
     "🛍️ LOCAL STORES"
   ];
-  const [uspIdx, setUspIdx] = useState(0);
+  const [uspText, setUspText] = useState(uspPoints[0]);
+  const [uspFade, setUspFade] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setUspIdx((prev) => (prev + 1) % uspPoints.length);
+      setUspFade(false);
+      setTimeout(() => {
+        setUspText((current) => {
+          const nextIdx = (uspPoints.indexOf(current) + 1) % uspPoints.length;
+          return uspPoints[nextIdx];
+        });
+        setUspFade(true);
+      }, 350);
     }, 2000);
     return () => clearInterval(interval);
   }, []);
@@ -409,19 +425,23 @@ export const Navbar: React.FC = () => {
                 <Search className="w-5 h-5 text-slate-500 flex-shrink-0" />
                 <span className="relative flex-1 h-5 overflow-hidden flex items-center">
                   <span
-                    key={placeholderIdx}
-                    className="absolute inset-0 truncate text-sm font-medium text-slate-400 flex items-center animate-placeholder-fade"
+                    className={cn(
+                      "absolute inset-0 truncate text-sm font-medium text-slate-400 flex items-center transition-all duration-300 ease-in-out transform",
+                      placeholderFade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1.5"
+                    )}
                   >
-                    {keywords[placeholderIdx]}
+                    {placeholderText}
                   </span>
                 </span>
               </button>
               <div className="h-11 w-32 bg-[#F5C22B] rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 select-none shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                 <span
-                  key={uspIdx}
-                  className="text-slate-900 font-extrabold text-xs tracking-wide animate-usp-fade whitespace-nowrap"
+                  className={cn(
+                    "text-slate-900 font-extrabold text-xs tracking-wide transition-all duration-300 ease-in-out transform whitespace-nowrap",
+                    uspFade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1.5"
+                  )}
                 >
-                  {uspPoints[uspIdx]}
+                  {uspText}
                 </span>
               </div>
             </div>
@@ -585,19 +605,23 @@ export const Navbar: React.FC = () => {
           <Search className="w-5 h-5 text-slate-500 flex-shrink-0" />
           <span className="relative flex-1 h-5 overflow-hidden flex items-center">
             <span
-              key={placeholderIdx}
-              className="absolute inset-0 truncate text-sm font-medium text-slate-400 flex items-center animate-placeholder-fade"
+              className={cn(
+                "absolute inset-0 truncate text-sm font-medium text-slate-400 flex items-center transition-all duration-300 ease-in-out transform",
+                placeholderFade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1.5"
+              )}
             >
-              {keywords[placeholderIdx]}
+              {placeholderText}
             </span>
           </span>
         </button>
         <div className="h-11 w-32 bg-[#F5C22B] rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 select-none shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <span
-            key={uspIdx}
-            className="text-slate-900 font-extrabold text-xs tracking-wide animate-usp-fade whitespace-nowrap"
+            className={cn(
+              "text-slate-900 font-extrabold text-xs tracking-wide transition-all duration-300 ease-in-out transform whitespace-nowrap",
+              uspFade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1.5"
+            )}
           >
-            {uspPoints[uspIdx]}
+            {uspText}
           </span>
         </div>
       </div>
@@ -998,24 +1022,6 @@ export const Navbar: React.FC = () => {
             /* Ensure mobile bottom nav sits above the search overlay */
             div.fixed.bottom-0.inset-x-0.z-40 {
               z-index: 60 !important;
-            }
-            @keyframes placeholderFade {
-              0% { opacity: 0; transform: translateY(4px); }
-              15% { opacity: 1; transform: translateY(0); }
-              85% { opacity: 1; transform: translateY(0); }
-              100% { opacity: 0; transform: translateY(-4px); }
-            }
-            .animate-placeholder-fade {
-              animation: placeholderFade 1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-            }
-            @keyframes uspFade {
-              0% { opacity: 0; transform: translateY(8px); }
-              10% { opacity: 1; transform: translateY(0); }
-              90% { opacity: 1; transform: translateY(0); }
-              100% { opacity: 0; transform: translateY(-8px); }
-            }
-            .animate-usp-fade {
-              animation: uspFade 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
             }
           `}</style>
         </div>
