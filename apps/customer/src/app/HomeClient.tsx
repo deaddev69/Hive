@@ -575,7 +575,7 @@ export function HomeClient() {
 
       {/* ── 3. SHOP BY CATEGORY (circular cards, children only) ── */}
       {homepageSubcategories.length > 0 && (
-        <section className="w-full bg-white pt-1.5 pb-3 border-b border-hive-border/20">
+        <section className="w-full bg-white pt-1.5 pb-1.5 border-b border-hive-border/20">
           <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-3 text-left">
             <div className="flex flex-col gap-1">
               <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
@@ -608,7 +608,7 @@ export function HomeClient() {
 
               <div
                 ref={categoryScrollRef}
-                className="flex gap-6 pb-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start -mx-6 px-6 sm:mx-0 sm:px-0 pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8"
+                className="flex gap-6 pb-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start -mx-6 px-6 sm:mx-0 sm:px-0 pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8"
                 onMouseEnter={() => setIsCategoryHovered(true)}
                 onMouseLeave={() => setIsCategoryHovered(false)}
                 onTouchStart={() => setIsCategoryHovered(true)}
@@ -642,12 +642,9 @@ export function HomeClient() {
 
       {/* ── 4. CURATED FOR KOCHI (denser 6-column grid) ── */}
       {products.length > 0 && (homepageConfig?.enableTrendingSection !== false) && (
-        <section className="w-full bg-white pt-4 pb-8">
+        <section className="w-full bg-white pt-1.5 pb-8">
           <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
-                CURATED FOR KOCHI
-              </span>
               <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
                 {homepageConfig?.trendingSectionTitle || 'Curated for Kochi'}
               </h2>
