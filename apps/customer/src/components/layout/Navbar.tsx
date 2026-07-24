@@ -98,8 +98,37 @@ export const Navbar: React.FC = () => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [searchOpen]);
+  // Dynamic 1-second placeholder keywords loop
+  const keywords = [
+    'Search "Kurtis"',
+    'Search "Sarees"',
+    'Search "Lehengas"',
+    'Search "Salwar Sets"',
+    'Search "Western Wear"',
+    'Search "Local Boutiques"'
+  ];
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIdx((prev) => (prev + 1) % keywords.length);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
+  // Dynamic 2-second rotating USP badge logic
+  const uspPoints = [
+    "⚡ 3-HR DELIVERY",
+    "🛍️ LOCAL STORES"
+  ];
+  const [uspIdx, setUspIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setUspIdx((prev) => (prev + 1) % uspPoints.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Recent searches cache
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -371,17 +400,30 @@ export const Navbar: React.FC = () => {
             </div>
 
             {/* Zone 3: Search bar (Desktop only) */}
-            <div className="hidden sm:block flex-grow flex-1 max-w-md relative min-w-0">
+            <div className="hidden sm:flex flex-grow flex-1 max-w-lg relative min-w-0 items-center gap-2.5">
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="w-full h-11 px-4 rounded-xl bg-white border border-slate-200/80 hover:border-slate-350 hover:bg-slate-50/50 text-left flex items-center gap-2.5 cursor-pointer transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+                className="flex-1 h-11 px-4 rounded-xl bg-slate-100 hover:bg-slate-200/70 text-left flex items-center gap-2.5 cursor-pointer transition-all duration-200"
               >
-                <Search className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                <span className="truncate flex-1 text-sm font-medium text-slate-400">
-                  Search...
+                <Search className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                <span className="relative flex-1 h-5 overflow-hidden flex items-center">
+                  <span
+                    key={placeholderIdx}
+                    className="absolute inset-0 truncate text-sm font-medium text-slate-400 flex items-center animate-placeholder-fade"
+                  >
+                    {keywords[placeholderIdx]}
+                  </span>
                 </span>
               </button>
+              <div className="h-11 w-32 bg-[#F5C22B] rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 select-none shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                <span
+                  key={uspIdx}
+                  className="text-slate-900 font-extrabold text-xs tracking-wide animate-usp-fade whitespace-nowrap"
+                >
+                  {uspPoints[uspIdx]}
+                </span>
+              </div>
             </div>
 
             {/* Zone 4: Action icons (Desktop only, hidden on mobile) */}
@@ -534,17 +576,30 @@ export const Navbar: React.FC = () => {
       </nav>
 
       {/* ── Mobile Search Bar (Non-sticky, scrolls away on Mobile) ── */}
-      <div className="w-full bg-white dark:bg-hive-dark py-1.5 px-4 border-b border-slate-200/80 sm:hidden">
+      <div className="w-full bg-white dark:bg-hive-dark h-14 px-4 border-b border-slate-200/80 sm:hidden flex items-center gap-2.5">
         <button
           type="button"
           onClick={() => setSearchOpen(true)}
-          className="w-full h-9 px-3.5 rounded-xl bg-white border border-slate-200/80 text-left flex items-center gap-2.5 cursor-pointer hover:bg-slate-50/50 transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+          className="flex-1 h-11 px-3.5 rounded-xl bg-slate-100 border border-transparent text-left flex items-center gap-2.5 cursor-pointer hover:bg-slate-200/70 transition-all duration-200"
         >
-          <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
-          <span className="truncate flex-1 text-xs font-medium text-slate-400">
-            Search...
+          <Search className="w-5 h-5 text-slate-500 flex-shrink-0" />
+          <span className="relative flex-1 h-5 overflow-hidden flex items-center">
+            <span
+              key={placeholderIdx}
+              className="absolute inset-0 truncate text-sm font-medium text-slate-400 flex items-center animate-placeholder-fade"
+            >
+              {keywords[placeholderIdx]}
+            </span>
           </span>
         </button>
+        <div className="h-11 w-32 bg-[#F5C22B] rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 select-none shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <span
+            key={uspIdx}
+            className="text-slate-900 font-extrabold text-xs tracking-wide animate-usp-fade whitespace-nowrap"
+          >
+            {uspPoints[uspIdx]}
+          </span>
+        </div>
       </div>
 
       {/* ── Mobile drawer backdrop ──────────────────────────────────── */}
@@ -943,6 +998,24 @@ export const Navbar: React.FC = () => {
             /* Ensure mobile bottom nav sits above the search overlay */
             div.fixed.bottom-0.inset-x-0.z-40 {
               z-index: 60 !important;
+            }
+            @keyframes placeholderFade {
+              0% { opacity: 0; transform: translateY(4px); }
+              15% { opacity: 1; transform: translateY(0); }
+              85% { opacity: 1; transform: translateY(0); }
+              100% { opacity: 0; transform: translateY(-4px); }
+            }
+            .animate-placeholder-fade {
+              animation: placeholderFade 1s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+            }
+            @keyframes uspFade {
+              0% { opacity: 0; transform: translateY(8px); }
+              10% { opacity: 1; transform: translateY(0); }
+              90% { opacity: 1; transform: translateY(0); }
+              100% { opacity: 0; transform: translateY(-8px); }
+            }
+            .animate-usp-fade {
+              animation: uspFade 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
             }
           `}</style>
         </div>
