@@ -118,7 +118,7 @@ function HomePageSkeleton() {
 }
 
 export function HomeClient() {
-  const { latitude, longitude, city, serviceableBoutiqueCount } = useLocation();
+  const { latitude, longitude, locality, city, serviceableBoutiqueCount } = useLocation();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -128,6 +128,39 @@ export function HomeClient() {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
+
+  const urgencyBannerDetails = useMemo(() => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const userLocation = locality || city || "your area";
+
+    // Same-day cutoff: 6:00 PM (18:00)
+    if (currentHour >= 8 && currentHour < 18) {
+      const remainingMinutes = (18 * 60) - (currentHour * 60 + currentMinutes);
+      const remainingHours = Math.floor(remainingMinutes / 60);
+      const remainingMinsPart = remainingMinutes % 60;
+      
+      let timeStr = "";
+      if (remainingHours > 0) {
+        timeStr += `${remainingHours} hr${remainingHours > 1 ? "s" : ""}`;
+      }
+      if (remainingMinsPart > 0) {
+        if (timeStr) timeStr += " ";
+        timeStr += `${remainingMinsPart} min${remainingMinsPart > 1 ? "s" : ""}`;
+      }
+      
+      return {
+        text: `Order within the next ${timeStr || "2 hrs"} for same-day delivery in ${userLocation}`,
+        isToday: true
+      };
+    } else {
+      return {
+        text: `Order now for next-day delivery in ${userLocation}`,
+        isToday: false
+      };
+    }
+  }, [locality, city]);
 
   // Fetch from Convex using consolidated query
   const homeData = useQuery(
@@ -394,6 +427,35 @@ export function HomeClient() {
       
       {/* Visually hidden H1 for SEO compliance */}
       <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
+
+      {/* ⚡ Sleek, slim same-day delivery urgency banner / pill container */}
+      <div className="w-full bg-[#FFFDF9]/60 dark:bg-hive-dark/40 py-2.5 border-b border-hive-border/40 flex justify-center">
+        <div className="max-w-7xl w-full px-6 lg:px-8 flex justify-center">
+          <div className={cn(
+            "inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold shadow-sm transition-all duration-300",
+            urgencyBannerDetails.isToday
+              ? "bg-amber-50/80 border-amber-200/50 text-amber-800"
+              : "bg-stone-50 border-stone-200/50 text-stone-700"
+          )}>
+            <span className={cn("flex-shrink-0 font-bold", urgencyBannerDetails.isToday ? "text-hive-amber animate-pulse" : "text-stone-400")}>⚡</span>
+            <span className="tracking-wide text-left">
+              {urgencyBannerDetails.isToday ? (
+                <>
+                  <span className="font-extrabold uppercase tracking-wide text-amber-900 mr-1.5">Get it Today</span>
+                  <span className="text-amber-300 mr-1.5">|</span>
+                  {urgencyBannerDetails.text}
+                </>
+              ) : (
+                <>
+                  <span className="font-extrabold uppercase tracking-wide text-stone-800 mr-1.5">Get it Tomorrow</span>
+                  <span className="text-stone-300 mr-1.5">|</span>
+                  {urgencyBannerDetails.text}
+                </>
+              )}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* ── 1. HYPERLOCAL CAMPAIGN SHOWCASE GRID (AT TOP) ── */}
       <section className="w-full bg-white pt-6 pb-2">

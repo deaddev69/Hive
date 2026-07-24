@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "@/context/LocationContext";
 import { useCart } from "@/context/CartContext";
-import { Badge } from "@hive/ui";
+import { Badge, cn } from "@hive/ui";
 import { HiveLogo } from "@/components/shared/HiveLogo";
 import { PremiumShoppingBag } from "@/components/shared/PremiumShoppingBag";
 import { SocialTooltip } from "@/components/shared/SocialTooltip";
@@ -38,6 +38,27 @@ export const Navbar: React.FC = () => {
   const { itemsCount, setSidebarOpen } = useCart();
   const wishlistCount = useWishlistStore((state) => state.items.length);
   const [hydrated, setHydrated] = useState(false);
+  
+  const estimatedTimeDetails = useMemo(() => {
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    if (currentHour >= 8 && currentHour < 18) {
+      const deliveryHour = currentHour + 2;
+      const ampm = deliveryHour >= 12 ? "PM" : "AM";
+      const displayHour = deliveryHour > 12 ? deliveryHour - 12 : (deliveryHour === 0 ? 12 : deliveryHour);
+      return {
+        label: `Today by ${displayHour} ${ampm}`,
+        isToday: true,
+      };
+    } else {
+      return {
+        label: "Tomorrow by 11 AM",
+        isToday: false,
+      };
+    }
+  }, []);
+
   const [redirectUrl, setRedirectUrl] = useState("/");
   useEffect(() => {
     setHydrated(true);
@@ -247,18 +268,36 @@ export const Navbar: React.FC = () => {
             <div className="relative shrink min-w-0">
               <button
                 onClick={handleLocationClick}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full bg-stone-50 hover:bg-stone-100/80 border border-stone-200/60 text-[9.5px] sm:text-[10px] font-semibold transition-all duration-200 min-w-0 max-w-[140px] xs:max-w-[180px] sm:max-w-[200px] select-none cursor-pointer shadow-none sm:shadow-sm ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-50 hover:bg-stone-100/80 border border-stone-200/60 text-[9px] sm:text-[10px] font-semibold transition-all duration-200 min-w-0 max-w-[170px] min-[400px]:max-w-[220px] sm:max-w-[280px] md:max-w-[340px] lg:max-w-[380px] select-none cursor-pointer shadow-none sm:shadow-sm ${
                   hydrated && !(locality || city)
                     ? "animate-location-glow text-stone-600"
-                    : "text-stone-855"
+                    : "text-stone-800"
                 }`}
                 aria-label="Change location"
               >
-                <MapPin className={`w-3 h-3 flex-shrink-0 shrink-0 ${hydrated && !(locality || city) ? "text-stone-400" : "text-hive-gold"}`} />
-                <span className={`truncate flex-1 font-semibold ${hydrated && !(locality || city) ? "text-stone-600" : "text-stone-800"}`}>
-                  {hydrated && (locality || city) ? `${locality || city}` : "Set Location"}
-                </span>
-                <ChevronDown className="w-3 h-3 text-stone-400 shrink-0 ml-0.5" />
+                <MapPin className={`w-3.5 h-3.5 flex-shrink-0 shrink-0 ${hydrated && !(locality || city) ? "text-stone-400" : "text-hive-gold"}`} />
+                {hydrated && (locality || city) ? (
+                  <span className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <span className="font-semibold text-stone-800 truncate flex-shrink min-w-[30px]">
+                      <span className="hidden min-[400px]:inline">Delivering to </span>{locality || city}
+                    </span>
+                    <span className="text-stone-400 flex-shrink-0 font-normal">•</span>
+                    <span className={cn(
+                      "flex items-center gap-0.5 border px-1.5 py-0.5 rounded-md text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-wide flex-shrink-0 shadow-sm transition-all",
+                      estimatedTimeDetails.isToday
+                        ? "text-amber-700 bg-amber-50/80 border-amber-200/40"
+                        : "text-slate-600 bg-slate-50 border-slate-200/40"
+                    )}>
+                      <Zap className={cn("w-2.5 h-2.5", estimatedTimeDetails.isToday ? "text-hive-amber fill-hive-amber animate-pulse" : "text-slate-400 fill-slate-400")} />
+                      {estimatedTimeDetails.label}
+                    </span>
+                  </span>
+                ) : (
+                  <span className={`truncate flex-1 font-semibold ${hydrated && !(locality || city) ? "text-stone-600" : "text-stone-800"}`}>
+                    Set Location
+                  </span>
+                )}
+                <ChevronDown className="w-3.5 h-3.5 text-stone-400 shrink-0 ml-0.5" />
               </button>
 
               {locationDropdownOpen && (
