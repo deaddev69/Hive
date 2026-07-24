@@ -510,7 +510,7 @@ export function HomeClient() {
                     <Link
                       key={idx}
                       href={banner.href}
-                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[4/5] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
+                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
                       style={{ animationDelay: `${idx * 150}ms` }}
                     >
                       <Image
@@ -522,14 +522,14 @@ export function HomeClient() {
                       />
                       <div className="sheen-glow" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-10" />
-                      <div className="absolute inset-0 p-6 flex flex-col justify-end text-left z-20 text-white space-y-1 select-none">
-                        <h3 className="text-xl font-serif font-bold tracking-tight leading-tight">
+                      <div className="absolute inset-0 p-5 flex flex-col justify-end text-left z-20 text-white space-y-1 select-none">
+                        <h3 className="text-lg font-serif font-bold tracking-tight leading-tight">
                           {banner.title}
                         </h3>
                         <p className="text-xs font-medium text-slate-200">
                           {banner.subtitle}
                         </p>
-                        <div className="pt-2 flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-hive-gold">
+                        <div className="pt-1.5 flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-hive-gold">
                           <span>{banner.cta}</span>
                           <ArrowRight className="w-3 h-3" />
                         </div>
@@ -613,7 +613,7 @@ export function HomeClient() {
                     <Link
                       key={banner._id}
                       href={(banner as any).ctaLink || getBannerHref(banner.targetType, banner.targetValue)}
-                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[4/5] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
+                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
                       style={{ animationDelay: `${idx * 150}ms` }}
                     >
                       <Image
@@ -625,8 +625,8 @@ export function HomeClient() {
                       />
                       <div className="sheen-glow" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent z-10" />
-                      <div className="absolute inset-0 p-6 flex flex-col justify-end text-left z-20 text-white space-y-1 select-none">
-                        <h3 className="text-xl font-serif font-black tracking-tight leading-tight">
+                      <div className="absolute inset-0 p-5 flex flex-col justify-end text-left z-20 text-white space-y-1 select-none">
+                        <h3 className="text-lg font-serif font-black tracking-tight leading-tight">
                           {banner.title}
                         </h3>
                         {banner.subtitle && (
@@ -634,7 +634,7 @@ export function HomeClient() {
                             {banner.subtitle}
                           </p>
                         )}
-                        <div className="pt-2 flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-hive-gold">
+                        <div className="pt-1.5 flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-hive-gold">
                           <span>{banner.ctaText}</span>
                           <ArrowRight className="w-3 h-3" />
                         </div>
@@ -672,12 +672,9 @@ export function HomeClient() {
 
       {/* ── 3. SHOP BY CATEGORY (circular cards, children only) ── */}
       {homepageSubcategories.length > 0 && (
-        <section className="w-full bg-white pt-8 pb-4 border-b border-hive-border/20">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
+        <section className="w-full bg-white pt-3 pb-3 border-b border-hive-border/20">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-3 text-left">
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
-                DISCOVER BY STYLE
-              </span>
               <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
                 Shop by Category
               </h2>
