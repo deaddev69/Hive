@@ -446,13 +446,13 @@ export function HomeClient() {
       </div>
 
       {/* ── 1. HYPERLOCAL CAMPAIGN SHOWCASE GRID (AT TOP) ── */}
-      <section className="w-full bg-white pt-0 pb-2">
+      <section className="w-full bg-white pt-0 pb-1">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {dbBanners === undefined ? (
             // Skeleton loading
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="aspect-[16/10] rounded-3xl bg-slate-100 animate-pulse flex items-center justify-center border border-hive-border/30">
+                <div key={i} className="aspect-[16/10] rounded-xl bg-slate-100 animate-pulse flex items-center justify-center border border-hive-border/30">
                   <Sparkles className="w-6 h-6 text-hive-amber/20 animate-spin" />
                 </div>
               ))}
@@ -466,7 +466,7 @@ export function HomeClient() {
                   <Link
                     key={idx}
                     href={banner.href}
-                    className="banner-card group relative aspect-[16/10] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm hover:shadow-md cursor-pointer block bg-slate-50 transform hover:-translate-y-0.5 transition-all duration-500"
+                    className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm hover:shadow-md cursor-pointer block bg-slate-50 transform hover:-translate-y-0.5 transition-all duration-500"
                     style={{ animationDelay: `${idx * 150}ms` }}
                   >
                     <Image
@@ -482,7 +482,7 @@ export function HomeClient() {
               </div>
 
               {/* Mobile Fallback Carousel */}
-              <div className="md:hidden flex flex-col gap-4 w-full">
+              <div className="md:hidden flex flex-col w-full pb-1">
                 <div
                   ref={mobileScrollRef}
                   onScroll={handleMobileScroll}
@@ -491,13 +491,13 @@ export function HomeClient() {
                   onMouseDown={() => setIsCarouselPaused(true)}
                   onMouseUp={() => setTimeout(() => setIsCarouselPaused(false), 2000)}
                   onMouseLeave={() => setIsCarouselPaused(false)}
-                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-2 -mx-6 px-6"
+                  className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6"
                 >
                   {staticFallbackCampaigns.map((banner, idx) => (
                     <Link
                       key={idx}
                       href={banner.href}
-                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
+                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
                       style={{ animationDelay: `${idx * 150}ms` }}
                     >
                       <Image
@@ -511,25 +511,6 @@ export function HomeClient() {
                     </Link>
                   ))}
                 </div>
-                <div className="flex justify-center gap-1.5 py-1">
-                  {staticFallbackCampaigns.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        if (mobileScrollRef.current) {
-                          const width = mobileScrollRef.current.clientWidth;
-                          mobileScrollRef.current.scrollTo({
-                            left: idx * width,
-                            behavior: "smooth"
-                          });
-                        }
-                      }}
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        idx === activeMobileIdx ? "w-8 bg-hive-amber" : "w-2 bg-slate-350"
-                      }`}
-                    />
-                  ))}
-                </div>
               </div>
             </>
           ) : (
@@ -541,7 +522,7 @@ export function HomeClient() {
                   <Link
                     key={banner._id}
                     href={(banner as any).ctaLink || getBannerHref(banner.targetType, banner.targetValue)}
-                    className="banner-card group relative aspect-[16/10] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm hover:shadow-md cursor-pointer block bg-slate-50 transform hover:-translate-y-0.5 transition-all duration-500"
+                    className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm hover:shadow-md cursor-pointer block bg-slate-50 transform hover:-translate-y-0.5 transition-all duration-500"
                     style={{ animationDelay: `${idx * 150}ms` }}
                   >
                     <Image
@@ -557,7 +538,7 @@ export function HomeClient() {
               </div>
 
               {/* Mobile Carousel Swipe */}
-              <div className="md:hidden flex flex-col gap-4 w-full">
+              <div className="md:hidden flex flex-col w-full pb-1">
                 <div
                   ref={mobileScrollRef}
                   onScroll={handleMobileScroll}
@@ -566,13 +547,13 @@ export function HomeClient() {
                   onMouseDown={() => setIsCarouselPaused(true)}
                   onMouseUp={() => setTimeout(() => setIsCarouselPaused(false), 2000)}
                   onMouseLeave={() => setIsCarouselPaused(false)}
-                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-2 -mx-6 px-6"
+                  className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6"
                 >
                   {dbBanners.map((banner, idx) => (
                     <Link
                       key={banner._id}
                       href={(banner as any).ctaLink || getBannerHref(banner.targetType, banner.targetValue)}
-                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
+                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
                       style={{ animationDelay: `${idx * 150}ms` }}
                     >
                       <Image
@@ -586,28 +567,6 @@ export function HomeClient() {
                     </Link>
                   ))}
                 </div>
-                
-                {dbBanners.length > 1 && (
-                  <div className="flex justify-center gap-1.5 py-1">
-                    {dbBanners.map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          if (mobileScrollRef.current) {
-                            const width = mobileScrollRef.current.clientWidth;
-                            mobileScrollRef.current.scrollTo({
-                              left: idx * width,
-                              behavior: "smooth"
-                            });
-                          }
-                        }}
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          idx === activeMobileIdx ? "w-8 bg-hive-amber" : "w-2 bg-slate-350"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
             </>
           )}
@@ -616,7 +575,7 @@ export function HomeClient() {
 
       {/* ── 3. SHOP BY CATEGORY (circular cards, children only) ── */}
       {homepageSubcategories.length > 0 && (
-        <section className="w-full bg-white pt-3 pb-3 border-b border-hive-border/20">
+        <section className="w-full bg-white pt-1.5 pb-3 border-b border-hive-border/20">
           <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-3 text-left">
             <div className="flex flex-col gap-1">
               <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
