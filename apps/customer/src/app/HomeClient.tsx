@@ -428,37 +428,42 @@ export function HomeClient() {
       {/* Visually hidden H1 for SEO compliance */}
       <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
 
-      {/* ⚡ Sleek, slim same-day delivery urgency banner / pill container */}
-      <div className="w-full bg-[#FFFDF9]/60 dark:bg-hive-dark/40 py-2.5 border-b border-hive-border/40 flex justify-center">
-        <div className="max-w-7xl w-full px-6 lg:px-8 flex justify-center">
-          <div className={cn(
-            "inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full border text-[10px] sm:text-xs font-semibold shadow-sm transition-all duration-300",
-            urgencyBannerDetails.isToday
-              ? "bg-amber-50/80 border-amber-200/50 text-amber-800"
-              : "bg-stone-50 border-stone-200/50 text-stone-700"
-          )}>
-            <span className={cn("flex-shrink-0 font-bold", urgencyBannerDetails.isToday ? "text-hive-amber animate-pulse" : "text-stone-400")}>⚡</span>
-            <span className="tracking-wide text-left">
-              {urgencyBannerDetails.isToday ? (
-                <>
-                  <span className="font-extrabold uppercase tracking-wide text-amber-900 mr-1.5">Get it Today</span>
-                  <span className="text-amber-300 mr-1.5">|</span>
-                  {urgencyBannerDetails.text}
-                </>
-              ) : (
-                <>
-                  <span className="font-extrabold uppercase tracking-wide text-stone-800 mr-1.5">Get it Tomorrow</span>
-                  <span className="text-stone-300 mr-1.5">|</span>
-                  {urgencyBannerDetails.text}
-                </>
-              )}
+      {/* ⚡ Full-Width Yellow Ticker Banner */}
+      <div className="w-full bg-[#F5C22B] text-[#1A1200] py-2.5 border-b border-[#E0B120] flex justify-center select-none shadow-sm">
+        <div className="max-w-7xl w-full px-6 lg:px-8 flex items-center justify-center text-center">
+          <div className="text-[10px] sm:text-xs tracking-wide leading-none flex items-center justify-center flex-wrap py-0.5">
+            <span className="font-bold mr-1">
+              {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}
+            </span>
+            <span className="font-normal">
+              {urgencyBannerDetails.text}
             </span>
           </div>
         </div>
       </div>
+      {/* Sleek, scrollable horizontal category filter pills */}
+      {homepageSubcategories.length > 0 && (
+        <div className="w-full bg-white border-b border-hive-border/30 py-3 flex justify-center">
+          <div className="max-w-7xl w-full px-6 lg:px-8 flex items-center gap-2.5 overflow-x-auto scrollbar-none pl-6 pr-6">
+            <span className="text-[9px] font-bold text-hive-amber uppercase tracking-wider flex-shrink-0 mr-1.5 self-center hidden sm:inline">
+              Quick Filter:
+            </span>
+            {homepageSubcategories.map((subcat) => (
+              <Link
+                key={subcat._id}
+                href={`/products/${subcat.slug}`}
+                className="inline-flex items-center px-3.5 py-1.5 rounded-full border border-stone-200 bg-stone-50/50 hover:bg-hive-comb/30 hover:border-hive-gold text-[10px] sm:text-xs font-bold text-slate-800 hover:text-hive-amber transition-all whitespace-nowrap select-none cursor-pointer"
+              >
+                {subcat.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
 
       {/* ── 1. HYPERLOCAL CAMPAIGN SHOWCASE GRID (AT TOP) ── */}
-      <section className="w-full bg-white pt-6 pb-2">
+      <section className="w-full bg-white pt-4 pb-2">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {dbBanners === undefined ? (
             // Skeleton loading
@@ -682,82 +687,14 @@ export function HomeClient() {
         </div>
       </section>
 
-      {/* ── 3. SHOP BY CATEGORY (circular cards, children only) ── */}
-      {homepageSubcategories.length > 0 && (
-        <section className="w-full bg-white pt-8 pb-4 border-b border-hive-border/20">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
-                DISCOVER BY STYLE
-              </span>
-              <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
-                Shop by Category
-              </h2>
-            </div>
-            
-            <div className="relative group/rail w-full">
-              {/* Left Scroll Arrow */}
-              {homepageSubcategories.length > 6 && (
-                <button
-                  onClick={() => scrollCategories("left")}
-                  className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-10 h-10 rounded-full bg-white/90 border border-hive-border/40 shadow-md text-hive-text hover:bg-hive-amber hover:text-white transition-all duration-300 opacity-0 group-hover/rail:opacity-100 cursor-pointer"
-                  aria-label="Scroll left"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-              )}
 
-              {/* Right Scroll Arrow */}
-              {homepageSubcategories.length > 6 && (
-                <button
-                  onClick={() => scrollCategories("right")}
-                  className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-10 h-10 rounded-full bg-white/90 border border-hive-border/40 shadow-md text-hive-text hover:bg-hive-amber hover:text-white transition-all duration-300 opacity-0 group-hover/rail:opacity-100 cursor-pointer"
-                  aria-label="Scroll right"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              )}
-
-              <div
-                ref={categoryScrollRef}
-                className="flex gap-6 pb-4 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start -mx-6 px-6 sm:mx-0 sm:px-0 pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8"
-                onMouseEnter={() => setIsCategoryHovered(true)}
-                onMouseLeave={() => setIsCategoryHovered(false)}
-                onTouchStart={() => setIsCategoryHovered(true)}
-                onTouchEnd={() => setIsCategoryHovered(false)}
-              >
-                {homepageSubcategories.map((subcat) => (
-                  <button
-                    key={subcat._id}
-                    onClick={() => router.push(`/products/${subcat.slug}`)}
-                    className="flex flex-col items-center gap-3 w-24 sm:w-28 flex-shrink-0 group cursor-pointer"
-                  >
-                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border border-hive-border/40 bg-slate-50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-md">
-                      <Image
-                        src={subcat.homepageImageUrl || subcat.imageUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80"}
-                        alt={subcat.name}
-                        fill
-                        sizes="96px"
-                        className="object-cover pointer-events-none"
-                      />
-                    </div>
-                    <span className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white text-center leading-tight truncate w-full">
-                      {subcat.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
 
 
 
 
       {/* ── 4. CURATED FOR KOCHI (denser 6-column grid) ── */}
       {products.length > 0 && (homepageConfig?.enableTrendingSection !== false) && (
-        <section className="w-full bg-white pt-6 pb-10">
+        <section className="w-full bg-white pt-4 pb-8">
           <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
@@ -779,7 +716,7 @@ export function HomeClient() {
 
       {/* ── 5. NEW ARRIVALS (Sorted by creationTime desc, take 8) ── */}
       {newArrivalsProducts.length > 0 && (
-        <section className="w-full bg-white py-10 border-b border-hive-border/20">
+        <section className="w-full bg-white py-6 border-b border-hive-border/20">
           <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
@@ -802,7 +739,7 @@ export function HomeClient() {
 
       {/* ── 5.5 MOST LOVED (Performance-based / curated sorting, compact cards) ── */}
       {mostLovedProducts.length > 0 && (
-        <section className="w-full bg-[#FAF6F0] py-10 border-b border-hive-border/20">
+        <section className="w-full bg-[#FAF6F0] py-6 border-b border-hive-border/20">
           <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
@@ -824,7 +761,7 @@ export function HomeClient() {
       )}
 
       {/* ── 6. ALL COLLECTIONS ── */}
-      <section className="w-full bg-white py-10 border-b border-hive-border/20">
+      <section className="w-full bg-white py-6 border-b border-hive-border/20">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 text-left">
           <h3 className="text-xs font-extrabold text-hive-amber tracking-widest uppercase mb-4 border-b border-hive-border/40 pb-2">
             All Collections
