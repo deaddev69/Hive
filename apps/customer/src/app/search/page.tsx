@@ -212,14 +212,14 @@ function SearchContent() {
 
           {/* Large Search Box in page */}
           <div className="w-full max-w-xl relative">
-            <input
+             <input
               type="text"
-              placeholder="Search products, descriptions, categories or brands..."
+              placeholder="Search 'Kurtis', 'Label M', or boutiques..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-12 pr-12 rounded-2xl bg-white border border-hive-border/60 shadow-sm focus:outline-none focus:ring-2 focus:ring-hive-gold/50 focus:border-hive-gold text-sm font-semibold text-hive-text placeholder-hive-text-muted transition-all duration-200"
+              className="w-full h-12 pl-12 pr-12 rounded-xl bg-white border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200"
             />
-            <Search className="w-5 h-5 text-hive-text-muted absolute left-4 top-1/2 -translate-y-1/2" />
+            <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             {searchTerm && (
               <button
                 onClick={handleClear}

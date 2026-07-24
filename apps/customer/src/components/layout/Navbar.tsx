@@ -101,10 +101,9 @@ export const Navbar: React.FC = () => {
 
   // Search placeholder animation loop
   const placeholders = [
-    "Search sarees, kurtis, lehengas...",
-    "Search Kochi's local boutiques...",
-    "Search designer wedding wear...",
-    "Search same-day delivery outfits...",
+    "Search 'Kurtis', 'Label M', or boutiques...",
+    "Search 'Sarees', 'Anarkalis', or designers...",
+    "Search styles, outfits, or local boutiques...",
   ];
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
 
@@ -389,10 +388,10 @@ export const Navbar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="w-full h-10 px-3 rounded-xl bg-[#FAF9F5] border border-stone-200/60 text-xs font-semibold text-stone-500 text-left flex items-center gap-2 cursor-pointer hover:bg-stone-100/40 transition-all duration-200 shadow-sm"
+                className="w-full h-11 px-4 rounded-xl bg-white border border-slate-200/80 hover:border-slate-350 hover:bg-slate-50/50 text-left flex items-center gap-2.5 cursor-pointer transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
               >
-                <Search className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
-                <span className="truncate flex-1">
+                <Search className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                <span className="truncate flex-1 text-sm font-medium text-slate-400">
                   {placeholders[placeholderIdx]}
                 </span>
               </button>
@@ -552,12 +551,12 @@ export const Navbar: React.FC = () => {
         <button
           type="button"
           onClick={() => setSearchOpen(true)}
-          className="w-full h-8 px-3 rounded-xl bg-[#FAF9F5] border border-stone-200/60 text-[9.5px] font-semibold text-stone-500 text-left flex items-center gap-2 cursor-pointer hover:bg-stone-100/40 transition-all duration-200 shadow-sm"
+          className="w-full h-10 px-3.5 rounded-xl bg-white border border-slate-200/80 text-left flex items-center gap-2.5 cursor-pointer hover:bg-slate-50/50 transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
         >
-          <Search className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
-          <span className="truncate flex-1">
+          <Search className="w-4.5 h-4.5 text-slate-400 flex-shrink-0" />
+          <span className="truncate flex-1 text-xs font-medium text-slate-400">
             {hydrated && typeof window !== "undefined" && window.innerWidth < 640
-              ? "Search styles, boutiques, or outfits..."
+              ? "Search 'Kurtis', 'Label M', or boutiques..."
               : placeholders[placeholderIdx]}
           </span>
         </button>
@@ -818,7 +817,7 @@ export const Navbar: React.FC = () => {
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search sarees, kurtis, lehengas..."
+                placeholder="Search 'Kurtis', 'Label M', or boutiques..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -828,7 +827,7 @@ export const Navbar: React.FC = () => {
                     setSearchOpen(false);
                   }
                 }}
-                className="w-full h-10 pl-4 pr-10 rounded-xl bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 focus:outline-none focus:ring-1.5 focus:ring-hive-gold focus:border-transparent text-xs font-semibold text-hive-dark dark:text-white placeholder-hive-text-muted"
+                className="w-full h-11 pl-4 pr-10 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium text-slate-800 dark:text-white placeholder-slate-400"
               />
               {searchQuery && (
                 <button
