@@ -428,42 +428,42 @@ export function HomeClient() {
       {/* Visually hidden H1 for SEO compliance */}
       <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
 
-      {/* ⚡ Full-Width Yellow Ticker Banner */}
-      <div className="w-full bg-[#F5C22B] text-[#1A1200] py-2.5 border-b border-[#E0B120] flex justify-center select-none shadow-sm">
-        <div className="max-w-7xl w-full px-6 lg:px-8 flex items-center justify-center text-center">
-          <div className="text-[10px] sm:text-xs tracking-wide leading-none flex items-center justify-center flex-wrap py-0.5">
-            <span className="font-bold mr-1">
-              {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}
+      {/* ⚡ Full-Width Yellow Ticker Banner (Marquee) */}
+      <div className="w-full bg-[#F5C22B] text-[#1A1200] py-2 border-b border-[#E0B120] overflow-hidden select-none shadow-sm relative flex items-center min-h-[32px] sm:min-h-[36px]">
+        <div className="flex whitespace-nowrap min-w-full relative">
+          <div className="animate-marquee flex items-center gap-16 pr-16 text-[10px] sm:text-xs py-0.5">
+            <span className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+              <span className="font-normal">{urgencyBannerDetails.text}</span>
             </span>
-            <span className="font-normal">
-              {urgencyBannerDetails.text}
+            <span className="flex items-center gap-1.5 flex-shrink-0" aria-hidden="true">
+              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+              <span className="font-normal">{urgencyBannerDetails.text}</span>
+            </span>
+            <span className="flex items-center gap-1.5 flex-shrink-0" aria-hidden="true">
+              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+              <span className="font-normal">{urgencyBannerDetails.text}</span>
+            </span>
+          </div>
+          <div className="animate-marquee flex items-center gap-16 pr-16 text-[10px] sm:text-xs absolute top-0 bottom-0 left-full" aria-hidden="true">
+            <span className="flex items-center gap-1.5 flex-shrink-0">
+              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+              <span className="font-normal">{urgencyBannerDetails.text}</span>
+            </span>
+            <span className="flex items-center gap-1.5 flex-shrink-0" aria-hidden="true">
+              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+              <span className="font-normal">{urgencyBannerDetails.text}</span>
+            </span>
+            <span className="flex items-center gap-1.5 flex-shrink-0" aria-hidden="true">
+              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+              <span className="font-normal">{urgencyBannerDetails.text}</span>
             </span>
           </div>
         </div>
       </div>
-      {/* Sleek, scrollable horizontal category filter pills */}
-      {homepageSubcategories.length > 0 && (
-        <div className="w-full bg-white border-b border-hive-border/30 py-3 flex justify-center">
-          <div className="max-w-7xl w-full px-6 lg:px-8 flex items-center gap-2.5 overflow-x-auto scrollbar-none pl-6 pr-6">
-            <span className="text-[9px] font-bold text-hive-amber uppercase tracking-wider flex-shrink-0 mr-1.5 self-center hidden sm:inline">
-              Quick Filter:
-            </span>
-            {homepageSubcategories.map((subcat) => (
-              <Link
-                key={subcat._id}
-                href={`/products/${subcat.slug}`}
-                className="inline-flex items-center px-3.5 py-1.5 rounded-full border border-stone-200 bg-stone-50/50 hover:bg-hive-comb/30 hover:border-hive-gold text-[10px] sm:text-xs font-bold text-slate-800 hover:text-hive-amber transition-all whitespace-nowrap select-none cursor-pointer"
-              >
-                {subcat.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
 
       {/* ── 1. HYPERLOCAL CAMPAIGN SHOWCASE GRID (AT TOP) ── */}
-      <section className="w-full bg-white pt-4 pb-2">
+      <section className="w-full bg-white pt-0 pb-2">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {dbBanners === undefined ? (
             // Skeleton loading
@@ -815,7 +815,16 @@ export function HomeClient() {
         .group:hover .sheen-glow {
           transform: skewX(-20deg) translateX(150%);
         }
-
+        @keyframes marquee {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-100%, 0, 0); }
+        }
+        .animate-marquee {
+          animation: marquee 16s linear infinite;
+        }
+        .animate-marquee:hover {
+          animation-play-state: paused;
+        }
       `}</style>
     </div>
   );
