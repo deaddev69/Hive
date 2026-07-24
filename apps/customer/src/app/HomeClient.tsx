@@ -429,36 +429,26 @@ export function HomeClient() {
       <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
 
       {/* ⚡ Full-Width Yellow Ticker Banner (Marquee) */}
-      <div className="w-full bg-[#F5C22B] text-[#1A1200] py-2 border-b border-[#E0B120] overflow-hidden select-none shadow-sm relative flex items-center min-h-[32px] sm:min-h-[36px]">
-        <div className="flex whitespace-nowrap min-w-full relative">
-          <div className="animate-marquee flex items-center gap-16 pr-16 text-[10px] sm:text-xs py-0.5">
-            <span className="flex items-center gap-1.5 flex-shrink-0">
-              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-              <span className="font-normal">{urgencyBannerDetails.text}</span>
-            </span>
-            <span className="flex items-center gap-1.5 flex-shrink-0" aria-hidden="true">
-              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-              <span className="font-normal">{urgencyBannerDetails.text}</span>
-            </span>
-            <span className="flex items-center gap-1.5 flex-shrink-0" aria-hidden="true">
-              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-              <span className="font-normal">{urgencyBannerDetails.text}</span>
-            </span>
-          </div>
-          <div className="animate-marquee flex items-center gap-16 pr-16 text-[10px] sm:text-xs absolute top-0 bottom-0 left-full" aria-hidden="true">
-            <span className="flex items-center gap-1.5 flex-shrink-0">
-              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-              <span className="font-normal">{urgencyBannerDetails.text}</span>
-            </span>
-            <span className="flex items-center gap-1.5 flex-shrink-0" aria-hidden="true">
-              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-              <span className="font-normal">{urgencyBannerDetails.text}</span>
-            </span>
-            <span className="flex items-center gap-1.5 flex-shrink-0" aria-hidden="true">
-              <span className="font-bold">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-              <span className="font-normal">{urgencyBannerDetails.text}</span>
-            </span>
-          </div>
+      <div className="w-full overflow-hidden bg-[#F5C22B] py-2 border-b border-[#E0B120] whitespace-nowrap select-none shadow-sm relative leading-none min-h-[32px] sm:min-h-[36px] flex items-center">
+        <div className="inline-block animate-marquee text-[10px] sm:text-xs">
+          <span className="mx-4 font-bold text-slate-900">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+          <span className="text-slate-800 pr-16">{urgencyBannerDetails.text}</span>
+          
+          <span className="mx-4 font-bold text-slate-900" aria-hidden="true">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+          <span className="text-slate-800 pr-16" aria-hidden="true">{urgencyBannerDetails.text}</span>
+
+          <span className="mx-4 font-bold text-slate-900" aria-hidden="true">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+          <span className="text-slate-800 pr-16" aria-hidden="true">{urgencyBannerDetails.text}</span>
+        </div>
+        <div className="inline-block animate-marquee absolute left-full top-1/2 -translate-y-1/2 text-[10px] sm:text-xs animate-in fade-in duration-300" aria-hidden="true">
+          <span className="mx-4 font-bold text-slate-900">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+          <span className="text-slate-800 pr-16">{urgencyBannerDetails.text}</span>
+          
+          <span className="mx-4 font-bold text-slate-900">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+          <span className="text-slate-800 pr-16">{urgencyBannerDetails.text}</span>
+
+          <span className="mx-4 font-bold text-slate-900">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
+          <span className="text-slate-800 pr-16">{urgencyBannerDetails.text}</span>
         </div>
       </div>
 
