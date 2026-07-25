@@ -446,7 +446,7 @@ export function HomeClient() {
       </div>
 
       {/* ── 1. HYPERLOCAL CAMPAIGN SHOWCASE GRID (AT TOP) ── */}
-      <section className="w-full bg-white pt-0 pb-1">
+      <section className="w-full bg-white pt-2 pb-1">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {dbBanners === undefined ? (
             // Skeleton loading
