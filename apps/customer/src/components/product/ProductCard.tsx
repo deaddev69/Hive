@@ -162,18 +162,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           )}
         </Link>
 
-        {/* Wishlist heart overlay (Top-right, minimal circle) */}
+        {/* Wishlist heart overlay (Top-right, circular button) */}
         <button
           onClick={toggleFavorite}
           aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
           className={cn(
-            "absolute top-2 right-2 w-7 h-7 rounded-full bg-white/60 backdrop-blur-md flex items-center justify-center border border-white/10 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+            "absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300",
             pulse && "scale-110"
           )}
         >
           <Heart
             className={cn(
-              "w-3.5 h-3.5 transition-all duration-300",
+              "w-4 h-4 transition-all duration-300",
               isFavorite
                 ? "fill-hive-gold stroke-hive-gold scale-110"
                 : "stroke-current fill-none"
@@ -181,13 +181,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           />
         </button>
 
-        {/* Quick View eye icon overlay (Top-right, stacked neatly below heart) */}
+        {/* Quick View eye icon overlay (Top-right, stacked neatly below heart with vertical gap) */}
         <button
           onClick={handleQuickViewOpen}
           aria-label="Quick look"
-          className="absolute top-[34px] right-2 w-7 h-7 rounded-full bg-white/60 backdrop-blur-md flex items-center justify-center border border-white/10 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          className="absolute top-14 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         >
-          <Eye className="w-3.5 h-3.5 text-hive-dark stroke-[2]" />
+          <Eye className="w-4 h-4 text-hive-dark stroke-[2]" />
         </button>
       </div>
 
