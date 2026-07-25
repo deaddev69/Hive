@@ -243,26 +243,11 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
 
   return (
     <CatalogLayout breadcrumbs={[{ label: "All Products" }]}>
-      {/* Page header */}
-      <div className="relative w-full">
-        <div className="absolute inset-0 -z-10 pointer-events-none opacity-[0.06] bg-gradient-to-br from-white via-[#FFFDF5] to-[#FFF3CC]/20">
-          <svg className="w-full h-full" aria-hidden="true">
-            <defs>
-              <pattern id="products-hc" patternUnits="userSpaceOnUse" width="52" height="90">
-                <path fill="none" stroke="#F5A623" strokeWidth="1.5"
-                  d="m0,15 26-15 26,15v30l-26,15-26-15z M26,60v30" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#products-hc)" />
-          </svg>
-        </div>
-        <CatalogHeader
-          title={activeBoutique ? `Collections from ${activeBoutique.boutiqueName}` : "All Products"}
-          description={activeBoutique ? "Exclusive pieces from this verified local designer." : "Every piece, every occasion — handpicked from verified local designers near you."}
-          resultCount={sortedProducts.length}
-          activeFilterCount={activeFilterCount}
-          accentColor="#C9A84C"
-        />
+      {/* Minimal Category Heading */}
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 w-full mt-2">
+        <h1 className="text-base font-bold text-slate-900 tracking-tight my-1 px-1">
+          {activeBoutique ? activeBoutique.boutiqueName : (selectedCategoryNames.length > 0 ? selectedCategoryNames.join(", ") : "All Products")}
+        </h1>
       </div>
 
       {/* Designer exclusive collections banner */}
@@ -297,8 +282,8 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
         </div>
       )}
 
-      {/* Body: sidebar + grid */}
-      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 w-full flex flex-col gap-4 sm:gap-6 py-4 sm:py-6">
+      {/* Body: sidebar + grid (Tight margins above the fold) */}
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 w-full flex flex-col mt-2 mb-3 gap-3">
         {/* Toolbar */}
         <CatalogToolbar
           activeFilterCount={activeFilterCount}

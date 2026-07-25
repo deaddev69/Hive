@@ -205,19 +205,15 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
       {/* 3. Collection Showcase */}
       <CollectionShowcase details={details} />
 
-      {/* 4. Catalog Header */}
-      <div id="collection-grid" className="scroll-mt-6">
-        <CatalogHeader
-          title={`${details.title} Collection`}
-          description={details.editorialCopy}
-          resultCount={sortedProducts.length}
-          activeFilterCount={activeCount}
-          accentColor={details.accentColor}
-        />
+      {/* 4. Minimal Category Heading */}
+      <div id="collection-grid" className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-12 w-full mt-2 scroll-mt-6">
+        <h2 className="text-base font-bold text-slate-900 tracking-tight my-1 px-1">
+          {details.title}
+        </h2>
       </div>
 
-      {/* 5. Sidebar + Grid */}
-      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-12 w-full flex flex-col gap-4 sm:gap-6 py-4 sm:py-6">
+      {/* 5. Sidebar + Grid (Tight margins above the fold) */}
+      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-12 w-full flex flex-col mt-2 mb-3 gap-3">
         <CatalogToolbar
           activeFilterCount={activeCount}
           resultCount={sortedProducts.length}
