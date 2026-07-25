@@ -138,23 +138,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   const isSoldOut = hydrated && product.stockBySize && Object.values(product.stockBySize).reduce((sum, val) => sum + (val || 0), 0) <= 0;
 
   return (
-    <div className="relative w-full h-full flex flex-col group select-none bg-white rounded-xl border border-black/[0.06] overflow-hidden transition-all duration-300">
+    <div className="relative w-full h-full flex flex-col group select-none transition-all duration-300 bg-transparent border-none">
       
-      {/* ── Image area (4:5 Aspect Ratio, reduced height) ── */}
-      <div className="relative w-full aspect-[4/5] overflow-hidden bg-stone-50 rounded-t-xl transform translate-z-0" style={{ aspectRatio: "4/5" }}>
-        
-        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5 z-20 pointer-events-none">
-          {isSoldOut && (
-            <div className="bg-black/80 backdrop-blur-md text-white text-[9px] font-extrabold uppercase tracking-widest px-2 py-1 rounded-sm">
-              Sold Out
-            </div>
-          )}
-          {isRecommendation && (
-            <div className="bg-[#FAF7F0]/90 backdrop-blur-sm text-[#7A6030] border border-[#EAE4D9]/85 text-[8px] font-extrabold uppercase tracking-widest px-2 py-1 rounded-md shadow-sm">
-              Recommended
-            </div>
-          )}
-        </div>
+      {/* ── Image area (3:4 Aspect Ratio, rounded-2xl) ── */}
+      <div className="relative w-full aspect-[3/4] overflow-hidden bg-stone-50 rounded-2xl transform translate-z-0" style={{ aspectRatio: "3/4" }}>
         
         {/* Product image link */}
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block w-full h-full z-10">
@@ -175,7 +162,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           )}
         </Link>
 
-        {/* Wishlist heart overlay */}
+        {/* Wishlist heart overlay (Top-right) */}
         <button
           onClick={toggleFavorite}
           aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
@@ -194,77 +181,43 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           />
         </button>
 
-        {/* Quick View Button overlay (Desktop) */}
-        <button
-          onClick={handleQuickViewOpen}
-          className="absolute bottom-0 left-0 right-0 bg-white text-hive-dark text-[10px] font-extrabold tracking-widest uppercase py-3.5 border-t border-hive-border/20 rounded-none z-20 transition-all duration-300 translate-y-full group-hover:translate-y-0 active:bg-slate-100 hover:bg-hive-dark hover:text-white hover:border-t-hive-dark hidden md:flex items-center justify-center gap-2 select-none"
-        >
-          <Eye className="w-3.5 h-3.5 stroke-[2]" />
-          <span>Quick Look</span>
-        </button>
-
-        {/* Mobile Quick Look Button overlay */}
+        {/* Quick View eye icon overlay (Top-right, stacked below heart) */}
         <button
           onClick={handleQuickViewOpen}
           aria-label="Quick look"
-          className="absolute top-[46px] right-2.5 w-8 h-8 rounded-full bg-white/70 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 md:hidden z-20 active:scale-90 shadow-sm hover:bg-white"
+          className="absolute top-[46px] right-2.5 w-8 h-8 rounded-full bg-white/70 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         >
           <Eye className="w-4 h-4 text-hive-dark stroke-[2]" />
         </button>
       </div>
 
-      {/* ── Card content (Compressed) ── */}
-      <div className="p-3 flex flex-col text-left flex-1 justify-between gap-2 bg-white">
-        <div className="flex flex-col gap-1">
-          {/* Logistics / Delivery Badge (First thing seen after photo) */}
-          {(logisticsText === "Delivers Today" || logisticsText === "Delivers Tomorrow") && (
-            <div className={cn(
-              "inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full w-fit mb-1.5",
-              "bg-amber-50 text-amber-800 border border-amber-200/30"
-            )}>
-              <span className="w-1 h-1 rounded-full bg-current animate-pulse" />
-              {logisticsText}
-            </div>
+      {/* ── Card content (Compressed, sits immediately below the image) ── */}
+      <div className="py-0 my-0 px-0.5 flex flex-col text-left justify-start gap-0.5">
+        {/* Category / Collection Tag */}
+        <span className="text-[10px] uppercase font-semibold text-amber-700 leading-tight block">
+          {collectionLabel}
+        </span>
+
+        {/* Product Title */}
+        <Link href={`/products/${product.slug}`} className="hover:text-stone-600 transition-colors block leading-tight">
+          <h3 className="text-sm font-medium text-slate-900 truncate">
+            {cleanProductTitle(product.name)}
+          </h3>
+        </Link>
+
+        {/* Price (Single line, packed tightly) */}
+        <div className="text-sm font-bold text-slate-900 leading-tight flex items-center flex-wrap gap-1.5 mt-0.5">
+          <span>₹{product.price.toLocaleString("en-IN")}</span>
+          {product.compareAtPrice && product.compareAtPrice > product.price && (
+            <>
+              <span className="text-xs text-stone-400 line-through font-normal" style={{ textDecoration: "line-through" }}>
+                ₹{product.compareAtPrice.toLocaleString("en-IN")}
+              </span>
+              <span className="text-[9px] font-bold text-[#7A6030] bg-[#FAF7F0] border border-[#EAE4D9]/80 px-1 py-0.5 rounded">
+                Save ₹{Math.round(product.compareAtPrice - product.price).toLocaleString("en-IN")}
+              </span>
+            </>
           )}
-
-          {/* Category / Collection Tag */}
-          <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-amber-700 leading-none mb-1">
-            {collectionLabel}
-          </span>
-
-          <Link href={`/products/${product.slug}`} className="hover:text-stone-600 transition-colors block">
-            <h3 className="text-sm md:text-base font-normal leading-snug text-stone-900 line-clamp-2 break-words">
-              {cleanProductTitle(product.name)}
-            </h3>
-          </Link>
-
-          {/* Merchant attribution */}
-          <div className="text-[12px] text-stone-500 font-normal leading-none mt-0.5 relative z-20">
-            from{" "}
-            <Link 
-              href={`/shop/${boutique?.slug || (product as any).boutiqueId || (product as any).boutique?.id || ""}`}
-              className="hover:text-stone-900 hover:underline transition-colors cursor-pointer"
-            >
-              {product.boutiqueName || boutique?.name || boutique?.boutiqueName || "Hive Boutique"}
-            </Link>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1 pt-2 border-t border-stone-50">
-          {/* Price (Own row, breathing room) */}
-          <div className="text-base md:text-lg font-medium text-stone-900 leading-none flex items-center flex-wrap gap-1">
-            <span>₹{product.price.toLocaleString("en-IN")}</span>
-            {product.compareAtPrice && product.compareAtPrice > product.price && (
-              <>
-                <span className="text-xs text-stone-400 line-through font-normal ml-1" style={{ textDecoration: "line-through" }}>
-                  ₹{product.compareAtPrice.toLocaleString("en-IN")}
-                </span>
-                <span className="text-[9px] font-bold text-[#7A6030] bg-[#FAF7F0] border border-[#EAE4D9]/80 px-1.5 py-0.5 rounded-md">
-                  Save ₹{Math.round(product.compareAtPrice - product.price).toLocaleString("en-IN")}
-                </span>
-              </>
-            )}
-          </div>
         </div>
       </div>
 
