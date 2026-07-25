@@ -463,10 +463,9 @@ export function HomeClient() {
               {/* Desktop Fallback */}
               <div className="hidden md:grid grid-cols-3 gap-6 w-full">
                 {staticFallbackCampaigns.map((banner, idx) => (
-                  <Link
+                  <div
                     key={idx}
-                    href={banner.href}
-                    className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm hover:shadow-md cursor-pointer block bg-slate-50 transform hover:-translate-y-0.5 transition-all duration-500"
+                    className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
                     style={{ animationDelay: `${idx * 150}ms` }}
                   >
                     <Image
@@ -477,7 +476,7 @@ export function HomeClient() {
                       className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                     <div className="sheen-glow" />
-                  </Link>
+                  </div>
                 ))}
               </div>
 
@@ -494,10 +493,9 @@ export function HomeClient() {
                   className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6"
                 >
                   {staticFallbackCampaigns.map((banner, idx) => (
-                    <Link
+                    <div
                       key={idx}
-                      href={banner.href}
-                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
+                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
                       style={{ animationDelay: `${idx * 150}ms` }}
                     >
                       <Image
@@ -508,7 +506,7 @@ export function HomeClient() {
                         className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                       />
                       <div className="sheen-glow" />
-                    </Link>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -519,10 +517,9 @@ export function HomeClient() {
               {/* Desktop Grid (3 columns) */}
               <div className="hidden md:grid grid-cols-3 gap-6 w-full">
                 {dbBanners.slice(0, 3).map((banner, idx) => (
-                  <Link
+                  <div
                     key={banner._id}
-                    href={(banner as any).ctaLink || getBannerHref(banner.targetType, banner.targetValue)}
-                    className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm hover:shadow-md cursor-pointer block bg-slate-50 transform hover:-translate-y-0.5 transition-all duration-500"
+                    className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
                     style={{ animationDelay: `${idx * 150}ms` }}
                   >
                     <Image
@@ -533,7 +530,7 @@ export function HomeClient() {
                       className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                     <div className="sheen-glow" />
-                  </Link>
+                  </div>
                 ))}
               </div>
 
@@ -550,10 +547,9 @@ export function HomeClient() {
                   className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6"
                 >
                   {dbBanners.map((banner, idx) => (
-                    <Link
+                    <div
                       key={banner._id}
-                      href={(banner as any).ctaLink || getBannerHref(banner.targetType, banner.targetValue)}
-                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 block transform hover:-translate-y-0.5 transition-all duration-500"
+                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
                       style={{ animationDelay: `${idx * 150}ms` }}
                     >
                       <Image
@@ -564,7 +560,7 @@ export function HomeClient() {
                         className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                       />
                       <div className="sheen-glow" />
-                    </Link>
+                    </div>
                   ))}
                 </div>
               </div>
