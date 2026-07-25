@@ -162,18 +162,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           )}
         </Link>
 
-        {/* Wishlist heart overlay (Top-right) */}
+        {/* Wishlist heart overlay (Top-right, minimal circle) */}
         <button
           onClick={toggleFavorite}
           aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
           className={cn(
-            "absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/70 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+            "absolute top-2 right-2 w-7 h-7 rounded-full bg-white/60 backdrop-blur-md flex items-center justify-center border border-white/10 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300",
             pulse && "scale-110"
           )}
         >
           <Heart
             className={cn(
-              "w-4 h-4 transition-all duration-300",
+              "w-3.5 h-3.5 transition-all duration-300",
               isFavorite
                 ? "fill-hive-gold stroke-hive-gold scale-110"
                 : "stroke-current fill-none"
@@ -181,22 +181,25 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           />
         </button>
 
-        {/* Quick View eye icon overlay (Top-right, stacked below heart) */}
+        {/* Quick View eye icon overlay (Top-right, stacked neatly below heart) */}
         <button
           onClick={handleQuickViewOpen}
           aria-label="Quick look"
-          className="absolute top-[46px] right-2.5 w-8 h-8 rounded-full bg-white/70 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          className="absolute top-[34px] right-2 w-7 h-7 rounded-full bg-white/60 backdrop-blur-md flex items-center justify-center border border-white/10 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         >
-          <Eye className="w-4 h-4 text-hive-dark stroke-[2]" />
+          <Eye className="w-3.5 h-3.5 text-hive-dark stroke-[2]" />
         </button>
       </div>
 
-      {/* ── Card content (Compressed, sits immediately below the image) ── */}
-      <div className="py-0 my-0 px-0.5 flex flex-col text-left justify-start gap-0.5">
-        {/* Category / Collection Tag */}
-        <span className="text-[10px] uppercase font-semibold text-amber-700 leading-tight block">
-          {collectionLabel}
-        </span>
+      {/* ── Card content (Compressed, sits tightly below the image) ── */}
+      <div className="pt-1 pb-0 px-0.5 flex flex-col text-left justify-start gap-0.5">
+        {/* Boutique Name */}
+        <Link 
+          href={`/shop/${boutique?.slug || (product as any).boutiqueId || (product as any).boutique?.id || ""}`}
+          className="text-[10px] uppercase font-semibold text-slate-500 hover:text-slate-700 transition-colors leading-tight block truncate"
+        >
+          {product.boutiqueName || boutique?.name || boutique?.boutiqueName || "Hive Boutique"}
+        </Link>
 
         {/* Product Title */}
         <Link href={`/products/${product.slug}`} className="hover:text-stone-600 transition-colors block leading-tight">
@@ -206,15 +209,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         </Link>
 
         {/* Price (Single line, packed tightly) */}
-        <div className="text-sm font-bold text-slate-900 leading-tight flex items-center flex-wrap gap-1.5 mt-0.5">
+        <div className="text-base font-extrabold text-slate-900 leading-tight flex items-center flex-wrap gap-1.5 mt-0.5">
           <span>₹{product.price.toLocaleString("en-IN")}</span>
           {product.compareAtPrice && product.compareAtPrice > product.price && (
             <>
-              <span className="text-xs text-stone-400 line-through font-normal" style={{ textDecoration: "line-through" }}>
+              <span className="text-xs text-slate-400 line-through font-normal" style={{ textDecoration: "line-through" }}>
                 ₹{product.compareAtPrice.toLocaleString("en-IN")}
               </span>
-              <span className="text-[9px] font-bold text-[#7A6030] bg-[#FAF7F0] border border-[#EAE4D9]/80 px-1 py-0.5 rounded">
-                Save ₹{Math.round(product.compareAtPrice - product.price).toLocaleString("en-IN")}
+              <span className="text-xs font-bold text-green-600">
+                {Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}% OFF
               </span>
             </>
           )}

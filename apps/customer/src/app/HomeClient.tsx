@@ -575,7 +575,7 @@ export function HomeClient() {
 
       {/* ── 3. SHOP BY CATEGORY (circular cards, children only) ── */}
       {homepageSubcategories.length > 0 && (
-        <section className="w-full bg-white pt-1.5 pb-1.5 border-b border-hive-border/20">
+        <section className="w-full bg-white pt-0.5 pb-0 border-b border-hive-border/20">
           <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-3 text-left">
             <div className="flex flex-col gap-1">
               <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
@@ -642,7 +642,7 @@ export function HomeClient() {
 
       {/* ── 4. CURATED FOR KOCHI (denser 6-column grid) ── */}
       {products.length > 0 && (homepageConfig?.enableTrendingSection !== false) && (
-        <section className="w-full bg-white pt-1.5 pb-8">
+        <section className="w-full bg-white pt-1 pb-6">
           <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
             <div className="flex flex-col gap-1">
               <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
