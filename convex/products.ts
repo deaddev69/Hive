@@ -864,8 +864,15 @@ export const getProduct = query({
       let isOwner = false;
       if (currentUser && (currentUser.role === "boutique" || currentUser.role === "boutique_owner")) {
         const boutique = await ctx.db.get(product.boutiqueId);
-        if (boutique && (boutique.ownerUserId === currentUser._id || boutique.userId === currentUser._id)) {
-          isOwner = true;
+        if (boutique) {
+          const isPrimaryOwner = boutique.ownerUserId === currentUser._id || boutique.userId === currentUser._id;
+          const isStaffMember = currentUser.email ? (
+            (boutique.staffEmail1 && boutique.staffEmail1.toLowerCase() === currentUser.email.toLowerCase()) ||
+            (boutique.staffEmail2 && boutique.staffEmail2.toLowerCase() === currentUser.email.toLowerCase())
+          ) : false;
+          if (isPrimaryOwner || isStaffMember) {
+            isOwner = true;
+          }
         }
       }
 

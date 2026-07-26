@@ -35,6 +35,8 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [staffEmail1, setStaffEmail1] = useState("");
+  const [staffEmail2, setStaffEmail2] = useState("");
   const [latitude, setLatitude] = useState(17.385044);
   const [longitude, setLongitude] = useState(78.486671);
   const [deliveryRadiusKm, setDeliveryRadiusKm] = useState(10);
@@ -54,6 +56,8 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
       setEmail(boutique.email);
       setPhone(boutique.phone);
       setAddress(boutique.address);
+      setStaffEmail1(boutique.staffEmail1 || "");
+      setStaffEmail2(boutique.staffEmail2 || "");
       setLatitude(boutique.latitude);
       setLongitude(boutique.longitude);
       setDeliveryRadiusKm(boutique.deliveryRadiusKm);
@@ -97,6 +101,8 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
       deliveryRadiusKm,
       description,
       status,
+      staffEmail1,
+      staffEmail2,
     });
 
     try {
@@ -115,6 +121,8 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
         deliveryRadiusKm,
         description,
         status,
+        staffEmail1: staffEmail1 || undefined,
+        staffEmail2: staffEmail2 || undefined,
       });
       console.log("[EditBoutiquePage] Update successful!");
       alert("Boutique profile updated successfully!");
@@ -227,6 +235,29 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
                 min={1}
                 value={deliveryRadiusKm}
                 onChange={(e) => setDeliveryRadiusKm(parseInt(e.target.value) || 10)}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff Email 1 (Optional)</label>
+              <input
+                type="email"
+                placeholder="staff1@boutique.com"
+                value={staffEmail1}
+                onChange={(e) => setStaffEmail1(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff Email 2 (Optional)</label>
+              <input
+                type="email"
+                placeholder="staff2@boutique.com"
+                value={staffEmail2}
+                onChange={(e) => setStaffEmail2(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
               />
             </div>

@@ -34,15 +34,28 @@ function StatusBadge({ variant, label }: { variant: "success" | "info" | "warnin
 }
 
 export default function BoutiqueFinance() {
+  const me = useQuery(api.users.getMe);
   const finance = useQuery(api.boutiques.getBoutiqueFinance);
   const boutique = useQuery(api.boutiques.getMyBoutiqueDetails);
   const [activeTab, setActiveTab] = useState<"settlements" | "payouts">("settlements");
 
-  if (finance === undefined || boutique === undefined) {
+  if (me === undefined || finance === undefined || boutique === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
         <p className="text-sm text-hive-text-muted font-medium">Loading finance records...</p>
+      </div>
+    );
+  }
+
+  if (me && me.role === "boutique") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">
+        <AlertCircle className="w-10 h-10 text-amber-500" />
+        <h2 className="text-lg font-serif font-bold text-hive-dark">Access Denied</h2>
+        <p className="text-xs text-hive-text-muted max-w-sm">
+          Financial metrics and payout details are restricted to boutique owners.
+        </p>
       </div>
     );
   }

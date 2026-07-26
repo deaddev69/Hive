@@ -162,12 +162,34 @@ export async function requireBoutiqueOwnership(
     });
   }
 
-  const boutique = (user.role === "admin"
-    ? await ctx.db.get(boutiqueId as Id<"boutiques">)
-    : await ctx.db
+  let boutique = null;
+  if (user.role === "admin") {
+    boutique = await ctx.db.get(boutiqueId as Id<"boutiques">);
+  } else {
+    // 1. Try ownerUserId
+    boutique = await ctx.db
+      .query("boutiques")
+      .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
+      .unique();
+
+    // 2. If not found, try email matching
+    const userEmail = user.email;
+    if (!boutique && userEmail) {
+      boutique = await ctx.db
         .query("boutiques")
-        .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
-        .unique()) as any;
+        .withIndex("by_email", (q) => q.eq("email", userEmail))
+        .unique();
+    }
+
+    // 3. If still not found, try staff email match
+    if (!boutique && userEmail) {
+      const allBoutiques = await ctx.db.query("boutiques").collect();
+      boutique = allBoutiques.find((b: any) =>
+        (b.staffEmail1 && b.staffEmail1.toLowerCase() === userEmail.toLowerCase()) ||
+        (b.staffEmail2 && b.staffEmail2.toLowerCase() === userEmail.toLowerCase())
+      ) as any;
+    }
+  }
 
   if (!boutique || (user.role !== "admin" && (boutique._id as string) !== boutiqueId)) {
     throw new ConvexError(HiveError.BOUTIQUE_ACCESS_DENIED);
@@ -204,6 +226,15 @@ export async function getMyBoutique(ctx: AuthCtx, token?: string, allowSuspended
       .query("boutiques")
       .withIndex("by_email", (q) => q.eq("email", userEmail))
       .unique();
+  }
+
+  // Look for staff email match
+  if (!boutique && userEmail) {
+    const allBoutiques = await ctx.db.query("boutiques").collect();
+    boutique = allBoutiques.find((b: any) =>
+      (b.staffEmail1 && b.staffEmail1.toLowerCase() === userEmail.toLowerCase()) ||
+      (b.staffEmail2 && b.staffEmail2.toLowerCase() === userEmail.toLowerCase())
+    ) as any;
   }
 
   if (!boutique && user.role === "admin") {

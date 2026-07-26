@@ -71,6 +71,7 @@ function StatusRow({ title, description, icon: Icon, badge, iconColorClass, icon
 
 export default function BoutiqueDashboard() {
   const { isLoading: convexAuthLoading } = useConvexAuth();
+  const me = useQuery(api.users.getMe);
   const boutique = useQuery(api.boutiques.getMyBoutiqueDetails);
   const products = useQuery(api.products.getBoutiqueProducts);
   const orders = useQuery(api.orders.getBoutiqueOrders);
@@ -277,7 +278,7 @@ export default function BoutiqueDashboard() {
     return { label: "Needs Attention", percentage: rate, variant: "warning" as const, icon: AlertTriangle };
   }, [orders]);
 
-  if (boutique === undefined || products === undefined || orders === undefined || tierStats === undefined) {
+  if (me === undefined || boutique === undefined || products === undefined || orders === undefined || tierStats === undefined) {
     if (waitedLong && boutique === null) {
       return (
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center">
@@ -493,12 +494,21 @@ export default function BoutiqueDashboard() {
           <div className="bg-white border border-slate-200/60 rounded-[24px] p-6 flex flex-col gap-6 shadow-none">
             
             <div className="grid grid-cols-3 gap-4 select-none">
-              <div className="flex flex-col gap-0.5 text-left">
-                <span className="text-[28px] font-extrabold text-slate-800 tracking-tight">
-                  {salesToday === 0 ? "₹0" : formatCurrency(salesToday).replace(".00", "")}
-                </span>
-                <span className="text-[13px] text-slate-500 font-medium">Today's Sales</span>
-              </div>
+              {me?.role !== "boutique" ? (
+                <div className="flex flex-col gap-0.5 text-left">
+                  <span className="text-[28px] font-extrabold text-slate-800 tracking-tight">
+                    {salesToday === 0 ? "₹0" : formatCurrency(salesToday).replace(".00", "")}
+                  </span>
+                  <span className="text-[13px] text-slate-500 font-medium">Today's Sales</span>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-0.5 text-left">
+                  <span className="text-[28px] font-extrabold text-slate-800 tracking-tight">
+                    {lowStockCount}
+                  </span>
+                  <span className="text-[13px] text-slate-500 font-medium">Low Stock Items</span>
+                </div>
+              )}
               <div className="flex flex-col gap-0.5 text-left">
                 <span className="text-[28px] font-extrabold text-slate-800 tracking-tight">
                   {ordersNewToday}

@@ -196,6 +196,29 @@ export const syncUser = mutation({
           metadata: JSON.stringify({ userId: targetUserId, email: originalEmail, normalizedEmail: emailNormalized }),
           createdAt: now,
         });
+      } else if (!boutique && targetUserId) {
+        // Check if user is staff for any approved boutique
+        const allBoutiques = await ctx.db.query("boutiques").collect();
+        const staffBoutique = allBoutiques.find(b => 
+          b.status === "APPROVED" && (
+            (b.staffEmail1 && b.staffEmail1.toLowerCase() === emailNormalized) || 
+            (b.staffEmail2 && b.staffEmail2.toLowerCase() === emailNormalized)
+          )
+        );
+
+        if (staffBoutique) {
+          await ctx.db.patch(targetUserId, { role: "boutique", updatedAt: now });
+          targetUserRole = "boutique";
+
+          await ctx.db.insert("auditLogs", {
+            actorRole: "system",
+            action: "boutique_staff.linked",
+            entityType: "boutiques",
+            entityId: staffBoutique._id,
+            metadata: JSON.stringify({ userId: targetUserId, email: originalEmail, normalizedEmail: emailNormalized }),
+            createdAt: now,
+          });
+        }
       }
     }
 

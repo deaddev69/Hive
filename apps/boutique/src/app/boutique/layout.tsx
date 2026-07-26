@@ -30,6 +30,10 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const navItems = me?.role === "boutique"
+    ? BOUTIQUE_NAV_ITEMS.filter(item => item.label !== "Money")
+    : BOUTIQUE_NAV_ITEMS;
+
   console.log("[BoutiqueLayout] isLoaded:", isLoaded, "isSignedIn:", isSignedIn, "me:", me, "boutique:", myBoutiqueSafe);
 
   // Unauthenticated redirect
@@ -158,7 +162,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
 
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1">
-            {BOUTIQUE_NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
               return (
@@ -216,7 +220,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
 
       {/* Mobile Bottom Navigation Footer */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-[#FAF6F0] border-t border-[#EBE3D0] z-50 flex items-center justify-around px-2 shadow-[0_-4px_12px_rgba(0,0,0,0.02)] pb-safe">
-        {BOUTIQUE_NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
           return (

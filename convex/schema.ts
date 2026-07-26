@@ -192,6 +192,8 @@ export default defineSchema({
     description:      v.string(),
     status:           v.string(), // PENDING, APPROVED, REJECTED, SUSPENDED
     createdAt:        v.number(),
+    staffEmail1:      v.optional(v.string()),
+    staffEmail2:      v.optional(v.string()),
     hasAcceptedLegalTerms: v.optional(v.boolean()),
     isAcceptingOrders: v.optional(v.boolean()),
     whatsAppNotificationsEnabled: v.optional(v.boolean()),

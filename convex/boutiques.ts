@@ -220,6 +220,8 @@ export const createBoutique = mutation({
                           v.literal("custom_design")
                         )
                       ),
+    staffEmail1:      v.optional(v.string()),
+    staffEmail2:      v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const adminUser = await requireRole(ctx, "admin");
@@ -256,6 +258,9 @@ export const createBoutique = mutation({
 
       ownerEmail:       args.email,
       ownerUserId:      undefined, // Set to undefined so onboarding starts at "invited"
+      
+      staffEmail1:      args.staffEmail1 ? args.staffEmail1.toLowerCase() : undefined,
+      staffEmail2:      args.staffEmail2 ? args.staffEmail2.toLowerCase() : undefined,
 
       // Invite metadata
       inviteTokenHash:  hashed,
@@ -370,6 +375,8 @@ export const updateBoutique = mutation({
                           v.literal("custom_design")
                         )
                       ),
+    staffEmail1:      v.optional(v.string()),
+    staffEmail2:      v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
@@ -404,6 +411,9 @@ export const updateBoutique = mutation({
       area:             args.area,
       searchKeywords:    args.searchKeywords,
       serviceType:       args.serviceType,
+      
+      staffEmail1:      args.staffEmail1 ? args.staffEmail1.toLowerCase() : undefined,
+      staffEmail2:      args.staffEmail2 ? args.staffEmail2.toLowerCase() : undefined,
       
       // Update compatibility fields
       name:             args.boutiqueName,
@@ -1063,6 +1073,10 @@ export const getMyBoutiqueDetails = query({
 export const getBoutiqueFinance = query({
   args: {},
   handler: async (ctx) => {
+    const user = await getCurrentUserOrNull(ctx);
+    if (user && user.role === "boutique") {
+      throw new Error("Forbidden: Staff users do not have access to financial metrics.");
+    }
     const boutique = await getMyBoutique(ctx, undefined, true);
     if (!boutique) {
       throw new Error("Boutique not found");

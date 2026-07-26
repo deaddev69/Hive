@@ -35,6 +35,8 @@ export default function AdminBoutiquesPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [staffEmail1, setStaffEmail1] = useState("");
+  const [staffEmail2, setStaffEmail2] = useState("");
   
   // Coordinates (latitude and longitude) are mandatory
   const [latitude, setLatitude] = useState<number>(9.9816);
@@ -58,6 +60,8 @@ export default function AdminBoutiquesPage() {
     setEmail("");
     setPhone("");
     setAddress("");
+    setStaffEmail1("");
+    setStaffEmail2("");
     setCity("Ernakulam");
     setState("Kerala");
     setPincode("682011");
@@ -105,6 +109,8 @@ export default function AdminBoutiquesPage() {
         deliveryRadiusKm,
         description,
         status,
+        staffEmail1: staffEmail1 || undefined,
+        staffEmail2: staffEmail2 || undefined,
       });
       alert("Boutique created and registered successfully!");
       resetForm();
@@ -228,6 +234,29 @@ export default function AdminBoutiquesPage() {
                 placeholder="e.g. +919876543210"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff Email 1 (Optional)</label>
+              <input
+                type="email"
+                placeholder="staff1@boutique.com"
+                value={staffEmail1}
+                onChange={(e) => setStaffEmail1(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff Email 2 (Optional)</label>
+              <input
+                type="email"
+                placeholder="staff2@boutique.com"
+                value={staffEmail2}
+                onChange={(e) => setStaffEmail2(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
               />
             </div>
@@ -410,6 +439,13 @@ export default function AdminBoutiquesPage() {
                           <span className="text-[10px] font-bold text-slate-400 uppercase">Contact Info</span>
                           <span className="text-slate-700 truncate">{boutique.email}</span>
                           <span className="text-slate-700">{boutique.phone}</span>
+                          {(boutique.staffEmail1 || boutique.staffEmail2) && (
+                            <div className="mt-1 pt-1 border-t border-slate-200/50 flex flex-col gap-0.5">
+                              <span className="text-[9px] font-bold text-slate-400 uppercase">Staff Emails</span>
+                              {boutique.staffEmail1 && <span className="text-slate-600 truncate">{boutique.staffEmail1}</span>}
+                              {boutique.staffEmail2 && <span className="text-slate-600 truncate">{boutique.staffEmail2}</span>}
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-col gap-1">
                           <span className="text-[10px] font-bold text-slate-400 uppercase">Serviceability</span>
