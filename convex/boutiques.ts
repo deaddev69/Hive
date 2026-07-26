@@ -4,7 +4,7 @@
 
 import { mutation, query, internalQuery, internalAction } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
-import { requireRole, getMyBoutique, getCurrentUserOrNull, getAuthenticatedUser } from "./lib/auth";
+import { requireRole, getMyBoutique, getCurrentUserOrNull, getAuthenticatedUser, requireBoutiqueOwnership } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 import { api, internal } from "./_generated/api";
 import { encryptData, decryptData } from "./lib/encryption";
@@ -2221,11 +2221,11 @@ export const getBoutiqueTierAndStats = query({
       return { tier: "Bronze", totalOrders: 0, totalRevenue: 0 };
     }
 
-    const user = await getAuthenticatedUser(ctx);
-    if (user.role !== "admin") {
-      if (boutique.ownerUserId !== user._id) {
-        throw new Error("Unauthorized: Access denied to this boutique's tier stats.");
-      }
+    const { user } = await requireBoutiqueOwnership(ctx, args.boutiqueId);
+
+    // If staff user, return safe fallback values (omit sales/financial details)
+    if (user.role === "boutique") {
+      return { tier: "Bronze" as const, totalOrders: 0, totalRevenue: 0 };
     }
 
     // 2. Fetch completed records using the newly registered schema index
