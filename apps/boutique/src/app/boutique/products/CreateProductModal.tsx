@@ -8,7 +8,11 @@ import { Upload, X, ArrowRight, ArrowLeft, Check, ImageIcon, AlertCircle, Chevro
 import { toast } from "@hive/utils";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "FREE"];
-const MATERIAL_OPTIONS = ["Cotton", "Silk", "Linen", "Polyester", "Blend", "Crepe", "Georgette", "Chiffon"];
+const MATERIAL_OPTIONS = [
+  "Cotton", "Silk", "Linen", "Polyester", "Blend", "Crepe", "Georgette",
+  "Chiffon", "Rayon", "Viscose", "Organza", "Satin", "Velvet", "Brocade",
+  "Wool", "Khadi", "Banarasi", "Chanderi", "Modal"
+];
 const CARE_OPTIONS = ["Dry Clean Only", "Machine Wash Cold", "Hand Wash", "Do Not Bleach"];
 const OCCASION_OPTIONS = ["Casual", "Festive", "Wedding", "Workwear", "Party"];
 
@@ -69,6 +73,89 @@ function CustomSelect({ label, value, onChange, options, placeholder, required }
               {opt}
             </button>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface CustomMultiSelectProps {
+  label: string;
+  selectedValues: string[];
+  onChange: (vals: string[]) => void;
+  options: string[];
+  placeholder: string;
+  required?: boolean;
+}
+
+function CustomMultiSelect({
+  label,
+  selectedValues,
+  onChange,
+  options,
+  placeholder,
+  required,
+}: CustomMultiSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleOption = (opt: string) => {
+    if (selectedValues.includes(opt)) {
+      onChange(selectedValues.filter((v) => v !== opt));
+    } else {
+      onChange([...selectedValues, opt]);
+    }
+  };
+
+  const displayText = selectedValues.length > 0 ? selectedValues.join(", ") : placeholder;
+
+  return (
+    <div className="flex flex-col gap-1.5 relative w-full font-sans" ref={containerRef}>
+      <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-left text-slate-700 bg-white shadow-sm flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#F5C22B] select-none"
+      >
+        <span className={selectedValues.length > 0 ? "text-slate-800 font-medium truncate pr-2" : "text-slate-400 font-medium"}>
+          {displayText}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#f1f5f9]/30 rounded-xl shadow-lg z-50 max-h-56 overflow-y-auto py-1.5 animate-in fade-in slide-in-from-top-1">
+          {options.map((opt) => {
+            const isChecked = selectedValues.includes(opt);
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => toggleOption(opt)}
+                className={`w-full px-4 py-2 flex items-center gap-3 hover:bg-slate-50 transition-colors text-[13px] text-slate-700`}
+              >
+                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
+                  isChecked ? "bg-[#F5C22B] border-[#F5C22B] text-slate-900" : "border-slate-300 bg-white"
+                }`}>
+                  {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <span className={isChecked ? "font-bold text-slate-900" : "font-medium"}>{opt}</span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -154,6 +241,7 @@ export default function CreateProductModal({
   const platformSettings = useQuery(api.adminSettings.getPlatformSettings);
   const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
   const commitUpload = useAction(api.media.api.commitUpload);
+  const myBoutiqueSafe = useQuery(api.boutiques.getMyBoutiqueSafe);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -181,9 +269,62 @@ export default function CreateProductModal({
   const [description, setDescription] = useState("");
   const [story, setStory] = useState("");
   const [materialType, setMaterialType] = useState("");
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [care, setCare] = useState("");
   const [occasion, setOccasion] = useState("");
   const [craft, setCraft] = useState("");
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [generatingStory, setGeneratingStory] = useState(false);
+
+  const handleGenerateAI = async (type: "description" | "story") => {
+    const rough = type === "description" ? description : story;
+    if (!rough || !rough.trim()) {
+      toast.error(`Please write a few rough words or phrases in the ${type === "description" ? "description" : "design story"} field first.`);
+      return;
+    }
+
+    if (type === "description") setGeneratingDesc(true);
+    else setGeneratingStory(true);
+
+    try {
+      const boutiqueName = (myBoutiqueSafe?.boutique as any)?.boutiqueName || "";
+      const boutiqueDescription = (myBoutiqueSafe?.boutique as any)?.description || "";
+
+      const res = await fetch("/api/generate-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roughText: rough,
+          type,
+          boutiqueName,
+          boutiqueDescription,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`API responded with status: ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (type === "description") {
+        setDescription(data.text);
+        toast.success("Description polished with AI successfully!");
+      } else {
+        setStory(data.text);
+        toast.success("Design story polished with AI successfully!");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to generate AI copy: " + err.message);
+    } finally {
+      if (type === "description") setGeneratingDesc(false);
+      else setGeneratingStory(false);
+    }
+  };
   const [step2Error, setStep2Error] = useState("");
 
   const [specs, setSpecs] = useState({
@@ -256,6 +397,8 @@ export default function CreateProductModal({
         setDescription(productToEdit.description || "");
         setStory(productToEdit.story || "");
         setMaterialType(productToEdit.materialType || "");
+        const mat = productToEdit.materialType || productToEdit.material || "";
+        setSelectedMaterials(mat.split(",").map((s: string) => s.trim()).filter(Boolean));
         setCare(productToEdit.care || "");
         setOccasion(productToEdit.occasion || "");
         setCraft(productToEdit.details?.craft || "");
@@ -303,6 +446,7 @@ export default function CreateProductModal({
         setDescription("");
         setStory("");
         setMaterialType("");
+        setSelectedMaterials([]);
         setCare("");
         setOccasion("");
         setCraft("");
@@ -419,6 +563,10 @@ export default function CreateProductModal({
       toast.error("Please select at least one size.");
       return;
     }
+    if (selectedMaterials.length === 0) {
+      toast.error("Please select at least one material.");
+      return;
+    }
     if (localPreviews.length < 3) {
       toast.error("Please upload at least 3 high-resolution images for your product.");
       return;
@@ -467,7 +615,8 @@ export default function CreateProductModal({
         featured,
         active,
         story,
-        materialType,
+        materialType: selectedMaterials.join(", "),
+        material: selectedMaterials.join(", "),
         care,
         occasion,
         details: { ...(craft ? { craft } : {}), ...specs },
@@ -649,7 +798,17 @@ export default function CreateProductModal({
             </div>
             
             <div className="flex flex-col gap-1 mt-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">PRODUCT DESCRIPTION <span className="text-red-500">*</span></label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">PRODUCT DESCRIPTION <span className="text-red-500">*</span></label>
+                <button
+                  type="button"
+                  disabled={generatingDesc}
+                  onClick={() => handleGenerateAI("description")}
+                  className="text-[11px] font-bold text-[#D9A71E] hover:text-[#020617] disabled:opacity-50 transition-colors flex items-center gap-1 select-none cursor-pointer"
+                >
+                  {generatingDesc ? "Generating..." : "✨ Generate with AI"}
+                </button>
+              </div>
               <textarea
                 placeholder="Provide a detailed description of fabrics, stitching style, design aesthetics..."
                 value={description}
@@ -660,7 +819,17 @@ export default function CreateProductModal({
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">DESIGN STORY</label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">DESIGN STORY</label>
+                <button
+                  type="button"
+                  disabled={generatingStory}
+                  onClick={() => handleGenerateAI("story")}
+                  className="text-[11px] font-bold text-[#D9A71E] hover:text-[#020617] disabled:opacity-50 transition-colors flex items-center gap-1 select-none cursor-pointer"
+                >
+                  {generatingStory ? "Generating..." : "✨ Generate with AI"}
+                </button>
+              </div>
               <textarea
                 placeholder="Tell customers about the inspiration, craftsmanship, or what makes this piece special..."
                 value={story}
@@ -670,10 +839,10 @@ export default function CreateProductModal({
               />
             </div>
 
-            <CustomSelect
+            <CustomMultiSelect
               label="MATERIAL TYPE"
-              value={materialType}
-              onChange={setMaterialType}
+              selectedValues={selectedMaterials}
+              onChange={setSelectedMaterials}
               options={MATERIAL_OPTIONS}
               placeholder="Select material..."
               required
