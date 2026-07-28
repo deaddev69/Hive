@@ -221,7 +221,7 @@ export default function BoutiqueProfile() {
             {/* Logo Upload */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Logo Representation</label>
-              <div className="relative w-28 h-28 rounded-full border-2 border-dashed border-hive-border hover:border-hive-gold flex items-center justify-center overflow-hidden bg-slate-50 cursor-pointer group">
+              <div className="relative w-28 h-28 rounded-full border-2 border-dashed border-hive-border hover:border-[#F5C22B] flex items-center justify-center overflow-hidden bg-slate-50 cursor-pointer group">
                 <input
                   type="file"
                   accept="image/*"
@@ -248,7 +248,7 @@ export default function BoutiqueProfile() {
                   required
                   value={boutiqueName}
                   onChange={(e) => setBoutiqueName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] text-sm bg-hive-cream/10"
                 />
               </div>
 
@@ -259,7 +259,7 @@ export default function BoutiqueProfile() {
                   required
                   value={ownerName}
                   onChange={(e) => setOwnerName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] text-sm bg-hive-cream/10"
                 />
               </div>
             </div>
@@ -272,7 +272,7 @@ export default function BoutiqueProfile() {
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] text-sm bg-hive-cream/10"
                 />
               </div>
 
@@ -284,7 +284,7 @@ export default function BoutiqueProfile() {
                   min={1}
                   value={deliveryRadiusKm}
                   onChange={(e) => setDeliveryRadiusKm(parseInt(e.target.value) || 1)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] text-sm bg-hive-cream/10"
                 />
               </div>
             </div>
@@ -296,7 +296,7 @@ export default function BoutiqueProfile() {
                 required
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] text-sm bg-hive-cream/10"
               />
             </div>
 
@@ -314,7 +314,7 @@ export default function BoutiqueProfile() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Share your boutique's story—your style philosophy, custom stitching heritage, fabric sourcing focus, and design choices..."
-                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 resize-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] text-sm bg-hive-cream/10 resize-none"
               />
             </div>
 

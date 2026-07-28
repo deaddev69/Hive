@@ -415,7 +415,7 @@ export default function BoutiqueInventory() {
   if (products === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 bg-transparent">
-        <Loader2 className="w-8 h-8 animate-spin text-[#C89653]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#D9A71E]" />
         <p className="text-xs text-slate-400 font-medium font-manrope">Loading...</p>
       </div>
     );
@@ -472,21 +472,21 @@ export default function BoutiqueInventory() {
         <div className="flex items-center gap-2.5 font-manrope">
           <button
             onClick={() => setIsBulkModalOpen(true)}
-            className="bg-white border border-[#C89653]/30 text-[#C89653] hover:bg-[#C89653]/5 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-sm font-manrope"
+            className="bg-white border border-[#F5C22B]/30 text-[#D9A71E] hover:bg-[#F5C22B]/5 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-sm font-manrope"
           >
             Bulk Restock
           </button>
 
           {isStockVerifiedToday ? (
             <span className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 select-none font-manrope">
-              <Check className="w-3.5 h-3.5 text-[#C89653] stroke-[3]" />
+              <Check className="w-3.5 h-3.5 text-[#D9A71E] stroke-[3]" />
               Shelf check complete {lastVerifiedTimeStr && `• ${lastVerifiedTimeStr}`}
             </span>
           ) : (
             <button
               onClick={handleGlobalVerify}
               disabled={saving || verifySuccess}
-              className={`bg-white border border-[#C89653]/30 text-[#C89653] hover:bg-[#C89653]/5 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-sm font-manrope`}
+              className={`bg-white border border-[#F5C22B]/30 text-[#D9A71E] hover:bg-[#F5C22B]/5 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-sm font-manrope`}
             >
               {saving ? "VERIFYING..." : verifySuccess ? "✓ VERIFIED" : "CONFIRM SHELF"}
             </button>
@@ -506,7 +506,7 @@ export default function BoutiqueInventory() {
           {/* Action chip: FILTER */}
           <button
             onClick={() => setFilterMode(filterMode === "attention" ? "all" : "attention")}
-            className="bg-[#f8fafc] border border-[#C89653]/30 text-[#C89653] hover:bg-[#C89653]/5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98]"
+            className="bg-[#f8fafc] border border-[#F5C22B]/30 text-[#D9A71E] hover:bg-[#F5C22B]/5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98]"
           >
             {filterMode === "attention" ? "SHOW ALL" : "FILTER"}
           </button>
@@ -522,7 +522,7 @@ export default function BoutiqueInventory() {
             placeholder="Search catalog..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9.5 pr-4 py-2 bg-white border border-[#f1f5f9]/40 rounded-full text-xs focus:outline-none focus:ring-1.5 focus:ring-[#C89653] font-manrope text-slate-800 placeholder:text-slate-400 transition-all duration-150"
+            className="w-full pl-9.5 pr-4 py-2 bg-white border border-[#f1f5f9]/40 rounded-full text-xs focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] font-manrope text-slate-800 placeholder:text-slate-400 transition-all duration-150"
           />
         </div>
 
@@ -578,7 +578,7 @@ export default function BoutiqueInventory() {
                   {getProductImage(prod) ? (
                     <img src={getProductImage(prod) || ""} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-[#C89653] font-bold text-xs font-serif leading-none select-none">
+                    <span className="text-[#D9A71E] font-bold text-xs font-serif leading-none select-none">
                       {prod.name ? prod.name.charAt(0).toUpperCase() : "H"}
                     </span>
                   )}
@@ -591,7 +591,7 @@ export default function BoutiqueInventory() {
                       {prod.name}
                     </h3>
                     {hasUnsavedChanges && (
-                      <span className="bg-[#f8fafc] border border-[#C89653]/30 text-[#C89653] text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider leading-none select-none">
+                      <span className="bg-[#f8fafc] border border-[#F5C22B]/30 text-[#D9A71E] text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider leading-none select-none">
                         Edited
                       </span>
                     )}
@@ -642,7 +642,7 @@ export default function BoutiqueInventory() {
 
               {/* Visually grouped child size list and add size options */}
               {isExpanded && (
-                <div className="mt-1 ml-11 pl-3 border-l-2 border-[#C89653]/30 space-y-2.5 animate-in fade-in duration-100">
+                <div className="mt-1 ml-11 pl-3 border-l-2 border-[#F5C22B]/30 space-y-2.5 animate-in fade-in duration-100">
                   {localProdSizes.slice(1).map((sz: string) => {
                     const stock = localStock[prod._id]?.[sz] ?? prod.stockBySize[sz] ?? 0;
                     const isOut = stock === 0;
@@ -689,7 +689,7 @@ export default function BoutiqueInventory() {
                       placeholder="Add Size (e.g. XL)"
                       value={addSizeFields[prod._id]?.label || ""}
                       onChange={(e) => handleAddSizeChange(prod._id, "label", e.target.value)}
-                      className="flex-1 min-w-[120px] px-2.5 py-1.5 bg-white border border-[#f1f5f9]/30 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#C89653] font-manrope text-slate-800 placeholder:text-slate-400"
+                      className="flex-1 min-w-[120px] px-2.5 py-1.5 bg-white border border-[#f1f5f9]/30 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#F5C22B] font-manrope text-slate-800 placeholder:text-slate-400"
                     />
                     <div className="flex items-center rounded-lg bg-white border border-[#f1f5f9]/20">
                       <span className="px-2 text-[10px] font-bold uppercase text-slate-400 select-none">Qty</span>
@@ -705,7 +705,7 @@ export default function BoutiqueInventory() {
                     <button
                       type="button"
                       onClick={() => handleAddSizeSubmit(prod._id)}
-                      className="bg-[#C89653] hover:bg-[#b08143] text-white px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-95 shadow-sm"
+                      className="bg-[#F5C22B] hover:bg-[#E0B024] text-slate-900 font-extrabold px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-95 shadow-sm"
                     >
                       Add
                     </button>
@@ -731,7 +731,7 @@ export default function BoutiqueInventory() {
       {isDirty && (
         <div className="fixed bottom-16 md:bottom-0 md:left-64 left-0 right-0 bg-white border-t border-[#f1f5f9]/30 px-4 py-3 flex items-center justify-between z-50 h-[56px] shadow-[0_-4px_12px_rgba(0,0,0,0.03)] font-manrope animate-in fade-in slide-in-from-bottom-2 duration-300">
           {/* Premium Count chip */}
-          <span className="bg-[#f8fafc] border border-[#f1f5f9]/40 text-[#C89653] rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider font-mono">
+          <span className="bg-[#f8fafc] border border-[#f1f5f9]/40 text-[#D9A71E] rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider font-mono">
             {changedProducts.length} Product{changedProducts.length > 1 ? "s" : ""} Updated
           </span>
           <div className="flex items-center gap-3">
@@ -750,7 +750,7 @@ export default function BoutiqueInventory() {
               className={`px-3.5 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all shadow-sm active:scale-95 font-manrope ${
                 saveSuccess
                   ? "bg-[#f8fafc] border border-[#f1f5f9]/30 text-[#0F9D58]"
-                  : "bg-[#C89653] hover:bg-[#b08143] text-white"
+                  : "bg-[#F5C22B] hover:bg-[#E0B024] text-slate-900 font-extrabold"
               }`}
             >
               {saving ? "SAVING..." : saveSuccess ? "✓ Saved" : "SAVE CHANGES"}
@@ -762,7 +762,7 @@ export default function BoutiqueInventory() {
       {/* Bulk Restock Modal Overlay */}
       {isBulkModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl border border-[#C89653]/30 shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 font-manrope">
+          <div className="bg-white rounded-3xl border border-[#F5C22B]/30 shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 font-manrope">
             {/* Header */}
             <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between">
               <div>
@@ -790,7 +790,7 @@ export default function BoutiqueInventory() {
                         {getProductImage(prod) ? (
                           <img src={getProductImage(prod) || ""} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-[#C89653] font-bold text-xs font-serif leading-none">
+                          <span className="text-[#D9A71E] font-bold text-xs font-serif leading-none">
                             {prod.name ? prod.name.charAt(0).toUpperCase() : "H"}
                           </span>
                         )}
@@ -825,7 +825,7 @@ export default function BoutiqueInventory() {
                               placeholder="+0"
                               value={restockVal}
                               onChange={(e) => handleBulkAdjustmentChange(prod._id, sz, e.target.value)}
-                              className="w-12 px-1.5 py-1 text-center font-mono font-bold text-xs border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#C89653] rounded-lg text-slate-800"
+                              className="w-12 px-1.5 py-1 text-center font-mono font-bold text-xs border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] rounded-lg text-slate-800"
                             />
                           </div>
                         );
@@ -845,7 +845,7 @@ export default function BoutiqueInventory() {
                   placeholder="Optional notes (e.g. Received shipment from warehouse)"
                   value={bulkRestockNotes}
                   onChange={(e) => setBulkRestockNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#C89653] rounded-xl text-slate-800 placeholder:text-slate-400 font-manrope resize-none"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] rounded-xl text-slate-800 placeholder:text-slate-400 font-manrope resize-none"
                 />
               </div>
 
@@ -860,7 +860,7 @@ export default function BoutiqueInventory() {
                 <button
                   onClick={handleBulkRestockSubmit}
                   disabled={saving}
-                  className="flex-1 bg-[#C89653] hover:bg-[#b08143] text-white py-3 rounded-2xl text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-95 shadow-md flex items-center justify-center gap-2 font-manrope"
+                  className="flex-1 bg-[#F5C22B] hover:bg-[#E0B024] text-slate-900 font-extrabold py-3 rounded-2xl text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-95 shadow-md flex items-center justify-center gap-2 font-manrope"
                 >
                   {saving ? (
                     <>

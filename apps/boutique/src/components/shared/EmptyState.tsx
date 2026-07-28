@@ -34,12 +34,12 @@ export function EmptyState({
       </p>
       {actionLabel && (
         onClick ? (
-          <Button onClick={onClick} variant="primary" className="py-2.5 px-6 rounded-xl text-xs font-bold shadow-md shadow-hive-gold/15">
+          <Button onClick={onClick} variant="primary" className="py-2.5 px-6 rounded-xl text-xs font-bold shadow-md shadow-[#F5C22B]/15">
             {actionLabel}
           </Button>
         ) : actionHref ? (
           <a href={actionHref}>
-            <Button variant="primary" className="py-2.5 px-6 rounded-xl text-xs font-bold shadow-md shadow-hive-gold/15">
+            <Button variant="primary" className="py-2.5 px-6 rounded-xl text-xs font-bold shadow-md shadow-[#F5C22B]/15">
               {actionLabel}
             </Button>
           </a>

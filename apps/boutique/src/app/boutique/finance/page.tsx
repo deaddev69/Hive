@@ -149,13 +149,13 @@ export default function BoutiqueFinance() {
 
       {/* Bank Account Settings Info box */}
       <div className="bg-hive-cream/40 border border-[#f1f5f9]/60 rounded-3xl p-5 mt-2 flex items-start gap-4 select-none">
-        <div className="p-2 bg-white rounded-2xl text-hive-gold border border-[#f1f5f9] shadow-sm shrink-0">
+        <div className="p-2 bg-white rounded-2xl text-[#D9A71E] border border-[#f1f5f9] shadow-sm shrink-0">
           <Building className="w-4.5 h-4.5" />
         </div>
         <div className="flex flex-col gap-1 text-left">
           <h4 className="text-xs font-bold text-hive-dark">Settlement Destination</h4>
           <p className="text-[11px] font-medium text-hive-text-muted leading-relaxed">
-            Payouts are processed manually to your registered business bank account on a weekly basis. To change or register your settlement bank details, please contact the platform administration or email support directly at <a href="mailto:support@hivenow.in" className="underline font-bold text-hive-gold">support@hivenow.in</a>.
+            Payouts are processed manually to your registered business bank account on a weekly basis. To change or register your settlement bank details, please contact the platform administration or email support directly at <a href="mailto:support@hivenow.in" className="underline font-bold text-[#D9A71E]">support@hivenow.in</a>.
           </p>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function BoutiqueFinance() {
           onClick={() => setActiveTab("settlements")}
           className={`px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
             activeTab === "settlements"
-              ? "border-hive-gold text-hive-gold"
+              ? "border-[#F5C22B] text-[#D9A71E]"
               : "border-transparent text-hive-text-muted hover:text-hive-text"
           }`}
         >
@@ -176,7 +176,7 @@ export default function BoutiqueFinance() {
           onClick={() => setActiveTab("payouts")}
           className={`px-4 py-2.5 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
             activeTab === "payouts"
-              ? "border-hive-gold text-hive-gold"
+              ? "border-[#F5C22B] text-[#D9A71E]"
               : "border-transparent text-hive-text-muted hover:text-hive-text"
           }`}
         >
@@ -214,7 +214,7 @@ export default function BoutiqueFinance() {
                           <td className="py-4 px-6">
                             <div className="flex flex-col gap-0.5">
                               {s.orderNumber ? (
-                                <span className="font-mono font-bold text-hive-gold">{s.orderNumber}</span>
+                                <span className="font-mono font-bold text-[#D9A71E]">{s.orderNumber}</span>
                               ) : (
                                 <span className="text-slate-500 font-semibold text-[11px] italic">System Adj</span>
                               )}

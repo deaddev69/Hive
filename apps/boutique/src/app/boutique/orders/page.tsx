@@ -84,10 +84,10 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
   return (
     <button
       onClick={() => window.open(invoice.pdfUrl!, "_blank")}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-hive-border bg-white text-[9px] font-bold text-hive-dark hover:bg-slate-50 hover:border-hive-gold transition-colors whitespace-nowrap"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-hive-border bg-white text-[9px] font-bold text-hive-dark hover:bg-slate-50 hover:border-[#F5C22B] transition-colors whitespace-nowrap"
       title={`Download ${invoice.invoiceNumber}`}
     >
-      <FileDown className="w-3.5 h-3.5 text-hive-gold" />
+      <FileDown className="w-3.5 h-3.5 text-[#D9A71E]" />
       Invoice
     </button>
   );
@@ -276,7 +276,7 @@ export default function BoutiqueOrders() {
                             <div className="pt-2.5 border-t border-[#f1f5f9]/60 flex flex-col items-center gap-1">
                               {isAcceptedOptimistically ? (
                                 <div className="w-full py-2.5 bg-slate-50 border border-[#f1f5f9] text-[#334155] rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
-                                  <Check className="w-4 h-4 text-[#C89653] stroke-[2.5]" />
+                                  <Check className="w-4 h-4 text-[#D9A71E] stroke-[2.5]" />
                                   <span className="font-bold text-[13px]">Order Accepted — Assigning Rider...</span>
                                 </div>
                               ) : (
@@ -298,7 +298,7 @@ export default function BoutiqueOrders() {
                                       }
                                     }}
                                     disabled={pendingActionId === order._id}
-                                    className="w-full py-2.5 bg-[#C89653] hover:bg-[#B88643] active:bg-[#A67533] text-white rounded-xl text-[14px] font-extrabold tracking-wide disabled:opacity-50 transition-all shadow-[0_4px_14px_-3px_rgba(200,150,83,0.35)] cursor-pointer text-center"
+                                    className="w-full py-2.5 bg-[#F5C22B] hover:bg-[#E0B024] active:bg-[#D9A71E] text-slate-900 font-extrabold rounded-xl text-[14px] font-extrabold tracking-wide disabled:opacity-50 transition-all shadow-[0_4px_14px_-3px_rgba(200,150,83,0.35)] cursor-pointer text-center"
                                   >
                                     Accept Order
                                   </button>
@@ -457,7 +457,7 @@ export default function BoutiqueOrders() {
                       setDeclineReasonType("Out of stock");
                       setDeclineError(false);
                     }}
-                    className="flex-1 py-3 bg-[#C89653] hover:bg-[#B88643] active:bg-[#A67533] text-white rounded-xl text-[14px] font-extrabold tracking-wide transition-all shadow-xs cursor-pointer text-center"
+                    className="flex-1 py-3 bg-[#F5C22B] hover:bg-[#E0B024] active:bg-[#D9A71E] text-slate-900 font-extrabold rounded-xl text-[14px] font-extrabold tracking-wide transition-all shadow-xs cursor-pointer text-center"
                   >
                     Continue with order
                   </button>
@@ -503,14 +503,14 @@ export default function BoutiqueOrders() {
                         }}
                         className={`p-3.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer select-none ${
                           isSelected
-                            ? "border-[#C89653] bg-slate-50 text-[#0f172a] font-extrabold shadow-2xs"
-                            : "border-[#f1f5f9] bg-white text-[#334155] font-semibold hover:border-[#C89653]/50 hover:bg-slate-50/40"
+                            ? "border-[#F5C22B] bg-slate-50 text-[#0f172a] font-extrabold shadow-2xs"
+                            : "border-[#f1f5f9] bg-white text-[#334155] font-semibold hover:border-[#F5C22B]/50 hover:bg-slate-50/40"
                         }`}
                       >
                         <span className="text-[13px]">{option}</span>
                         <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
                           isSelected
-                            ? "bg-[#C89653] text-white"
+                            ? "bg-[#F5C22B] text-slate-900 font-bold"
                             : "border border-[#f1f5f9] text-transparent"
                         }`}>
                           ✓
@@ -532,7 +532,7 @@ export default function BoutiqueOrders() {
                       className={`mt-1 px-3.5 py-3 border ${
                         declineError 
                           ? "border-rose-400 bg-rose-50 placeholder:text-rose-300 focus:ring-rose-400" 
-                          : "border-[#f1f5f9] bg-white focus:border-[#C89653] focus:ring-[#C89653]"
+                          : "border-[#f1f5f9] bg-white focus:border-[#F5C22B] focus:ring-[#F5C22B]"
                       } rounded-xl text-sm font-medium text-[#0f172a] focus:outline-none focus:ring-1 transition-colors w-full`}
                       autoFocus
                     />
@@ -556,7 +556,7 @@ export default function BoutiqueOrders() {
                       setDeclineError(false);
                     }}
                     disabled={pendingActionId === orderToDecline}
-                    className="flex-1 py-3 bg-[#C89653] hover:bg-[#B88643] active:bg-[#A67533] text-white rounded-xl text-[14px] font-extrabold tracking-wide transition-all shadow-xs cursor-pointer text-center"
+                    className="flex-1 py-3 bg-[#F5C22B] hover:bg-[#E0B024] active:bg-[#D9A71E] text-slate-900 font-extrabold rounded-xl text-[14px] font-extrabold tracking-wide transition-all shadow-xs cursor-pointer text-center"
                   >
                     Keep Order
                   </button>

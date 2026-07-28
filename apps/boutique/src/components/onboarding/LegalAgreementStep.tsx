@@ -50,7 +50,7 @@ export default function LegalAgreementStep() {
     <div className="flex flex-col items-center justify-center min-h-[90vh] p-4 bg-slate-50">
       <div className="w-full max-w-2xl mx-auto bg-white p-8 rounded-[32px] border border-hive-border">
         {/* Title Segment */}
-        <span className="text-[10px] uppercase tracking-widest text-hive-gold font-bold">Step 3 of 4</span>
+        <span className="text-[10px] uppercase tracking-widest text-[#D9A71E] font-bold">Step 3 of 4</span>
         <h2 className="font-serif font-extrabold text-2xl text-hive-malt mt-1 mb-6">Review Merchant Partnership Agreement</h2>
         
         {/* Premium Controlled Scroll Container */}
@@ -67,7 +67,7 @@ export default function LegalAgreementStep() {
             <p className="text-red-500 text-sm">Error: Partnership Agreement document not found.</p>
           )}
 
-          <p className="mb-4 text-center font-mono text-xs text-hive-gold pt-4 border-t border-dashed border-hive-border mt-8">
+          <p className="mb-4 text-center font-mono text-xs text-[#D9A71E] pt-4 border-t border-dashed border-hive-border mt-8">
             --- End of Document Structure ---
           </p>
         </div>
@@ -76,7 +76,7 @@ export default function LegalAgreementStep() {
         <div className="mt-6 flex flex-col gap-4">
           <label 
             className={`flex items-start gap-3 p-4 rounded-[18px] border transition-all duration-200 cursor-pointer ${
-              !hasReadToBottom ? "opacity-40 cursor-not-allowed bg-transparent border-transparent" : "bg-hive-white border-hive-border hover:border-hive-gold/50"
+              !hasReadToBottom ? "opacity-40 cursor-not-allowed bg-transparent border-transparent" : "bg-hive-white border-hive-border hover:border-[#F5C22B]/50"
             }`}
           >
             <input 
@@ -87,7 +87,7 @@ export default function LegalAgreementStep() {
               onChange={(e) => setAgreed(e.target.checked)}
             />
             <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-all ${
-              agreed ? "bg-hive-gold border-hive-gold text-hive-white" : "border-hive-border bg-hive-white"
+              agreed ? "bg-[#F5C22B] border-[#F5C22B] text-hive-white" : "border-hive-border bg-hive-white"
             }`}>
               {agreed && <Check className="h-3 w-3 stroke-[3]" />}
             </div>
@@ -106,7 +106,7 @@ export default function LegalAgreementStep() {
             onClick={handleComplete}
             className={`w-full py-4 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 ${
               agreed 
-                ? "bg-hive-gold text-hive-white shadow-md hover:bg-hive-gold/90" 
+                ? "bg-[#F5C22B] text-slate-900 font-extrabold shadow-md hover:bg-[#E0B024]" 
                 : "bg-[#E6E1DA] text-hive-muted cursor-not-allowed"
             }`}
           >

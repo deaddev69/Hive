@@ -37,7 +37,7 @@ function CategoryFilterSelect({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-white border border-[#f1f5f9] px-3.5 py-2.5 rounded-[16px] text-[13px] font-bold text-[#0f172a] focus:outline-none focus:border-[#C89653] focus:ring-1 focus:ring-[#C89653] shadow-2xs flex items-center justify-between cursor-pointer select-none transition-colors"
+        className="w-full bg-white border border-[#f1f5f9] px-3.5 py-2.5 rounded-[16px] text-[13px] font-bold text-[#0f172a] focus:outline-none focus:border-[#F5C22B] focus:ring-1 focus:ring-[#F5C22B] shadow-2xs flex items-center justify-between cursor-pointer select-none transition-colors"
       >
         <span className="truncate pr-1">{activeCategory ? activeCategory.name : "All Categories"}</span>
         <ChevronDown className={`w-4 h-4 text-[#64748b] transition-transform duration-200 shrink-0 ${isOpen ? "rotate-180" : ""}`} />
@@ -52,7 +52,7 @@ function CategoryFilterSelect({
               setIsOpen(false);
             }}
             className={`w-full px-4 py-2.5 text-[13px] font-bold text-left hover:bg-slate-50 transition-colors ${
-              value === "all" ? "text-[#C89653]" : "text-[#0f172a]"
+              value === "all" ? "text-[#D9A71E]" : "text-[#0f172a]"
             }`}
           >
             All Categories
@@ -66,7 +66,7 @@ function CategoryFilterSelect({
                 setIsOpen(false);
               }}
               className={`w-full px-4 py-2.5 text-[13px] font-bold text-left hover:bg-slate-50 transition-colors truncate ${
-                value === c._id ? "text-[#C89653]" : "text-[#0f172a]"
+                value === c._id ? "text-[#D9A71E]" : "text-[#0f172a]"
               }`}
             >
               {c.name}
@@ -239,16 +239,16 @@ export default function BoutiqueProducts() {
 
         {/* Short, Direct Attention Banner (#8 & #1 - no stats box container!) */}
         {(stats.low > 0 || stats.missingImages > 0) && (
-          <div className="bg-slate-50 border border-[#C89653]/40 rounded-[14px] px-4 py-2.5 flex items-center justify-between text-[13px] text-[#0f172a] shadow-2xs select-none">
+          <div className="bg-slate-50 border border-[#F5C22B]/40 rounded-[14px] px-4 py-2.5 flex items-center justify-between text-[13px] text-[#0f172a] shadow-2xs select-none">
             <span className="flex items-center gap-2 font-semibold">
-              <span className="text-[#C89653] font-bold">⚠</span>
+              <span className="text-[#D9A71E] font-bold">⚠</span>
               <span>
                 {stats.low + stats.missingImages} {stats.low + stats.missingImages === 1 ? "product needs" : "products need"} attention
               </span>
             </span>
             <button
               onClick={() => { setStatusFilter(stats.low > 0 ? "low" : "missing_images"); setCurrentPage(1); }}
-              className="text-[#C89653] font-bold hover:underline tracking-wide uppercase text-[11px] shrink-0 ml-2 cursor-pointer"
+              className="text-[#D9A71E] font-bold hover:underline tracking-wide uppercase text-[11px] shrink-0 ml-2 cursor-pointer"
             >
               View →
             </button>
@@ -271,7 +271,7 @@ export default function BoutiqueProducts() {
                 onClick={() => { setStatusFilter(tab.id as any); setCurrentPage(1); }}
                 className={`pb-2.5 border-b-2 transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                   isActive 
-                    ? "border-[#C89653] text-[#0f172a] font-extrabold" 
+                    ? "border-[#F5C22B] text-[#0f172a] font-extrabold" 
                     : "border-transparent text-[#64748b] font-bold hover:text-[#0f172a]"
                 }`}
               >
@@ -298,7 +298,7 @@ export default function BoutiqueProducts() {
                 placeholder="Search by product name..."
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#f1f5f9] rounded-[16px] text-[13px] font-medium focus:outline-none focus:border-[#C89653] focus:ring-1 focus:ring-[#C89653] shadow-2xs placeholder:text-[#64748b] text-[#0f172a] font-sans transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#f1f5f9] rounded-[16px] text-[13px] font-medium focus:outline-none focus:border-[#F5C22B] focus:ring-1 focus:ring-[#F5C22B] shadow-2xs placeholder:text-[#64748b] text-[#0f172a] font-sans transition-colors"
               />
             </div>
             
@@ -312,7 +312,7 @@ export default function BoutiqueProducts() {
           <div className="flex items-center gap-2 shrink-0 relative">
             <button 
               onClick={handleOpenCreate}
-              className="px-5 py-2.5 bg-[#C89653] hover:bg-[#B88643] active:bg-[#A67533] text-white font-extrabold text-[13px] rounded-[14px] shadow-[0_4px_14px_-3px_rgba(200,150,83,0.35)] flex items-center gap-2 transition-all cursor-pointer select-none"
+              className="px-5 py-2.5 bg-[#F5C22B] hover:bg-[#E0B024] active:bg-[#D9A71E] text-slate-900 font-extrabold font-extrabold text-[13px] rounded-[14px] shadow-[0_4px_14px_-3px_rgba(200,150,83,0.35)] flex items-center gap-2 transition-all cursor-pointer select-none"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" /> Add Product
             </button>
@@ -377,7 +377,7 @@ export default function BoutiqueProducts() {
                       {getProductImage(prod) ? (
                         <img src={getProductImage(prod) || ""} alt={prod.name} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-[#C89653] font-bold text-base font-serif leading-none select-none">
+                        <span className="text-[#D9A71E] font-bold text-base font-serif leading-none select-none">
                           {prod.name ? prod.name.charAt(0).toUpperCase() : "H"}
                         </span>
                       )}
@@ -401,8 +401,8 @@ export default function BoutiqueProducts() {
                             <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Live
                           </span>
                         ) : isPending ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#B88643] border border-[#C89653]/40">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#C89653] animate-pulse" /> Review
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#B88643] border border-[#F5C22B]/40">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#F5C22B] animate-pulse" /> Review
                           </span>
                         ) : isChangesRequested ? (
                           <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/60">

@@ -32,7 +32,7 @@ export function HiveLogo({ roleLabel, href = "/", className = "", size = "md" }:
       />
       {displayLabel && (
         <div className="flex flex-col border-l border-hive-border/40 pl-3 py-1">
-          <span className="text-[10px] sm:text-xs font-bold tracking-[0.2em] text-hive-gold whitespace-nowrap leading-none font-sans">
+          <span className="text-[10px] sm:text-xs font-bold tracking-[0.2em] text-[#D9A71E] whitespace-nowrap leading-none font-sans">
             {displayLabel}
           </span>
         </div>

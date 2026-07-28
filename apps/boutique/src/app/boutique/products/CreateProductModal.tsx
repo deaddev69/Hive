@@ -44,7 +44,7 @@ function CustomSelect({ label, value, onChange, options, placeholder, required }
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-left text-slate-700 bg-white shadow-sm flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#C89653] select-none"
+        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-left text-slate-700 bg-white shadow-sm flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#F5C22B] select-none"
       >
         <span className={value ? "text-slate-800 font-medium" : "text-slate-400 font-medium"}>
           {value || placeholder}
@@ -63,7 +63,7 @@ function CustomSelect({ label, value, onChange, options, placeholder, required }
                 setIsOpen(false);
               }}
               className={`w-full px-4 py-2.5 text-[13px] text-left hover:bg-slate-50 transition-colors ${
-                value === opt ? "bg-[#C89653]/10 text-[#C89653] font-bold" : "text-slate-700"
+                value === opt ? "bg-[#F5C22B]/10 text-[#D9A71E] font-bold" : "text-slate-700"
               }`}
             >
               {opt}
@@ -107,7 +107,7 @@ function CategorySelect({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-left text-slate-700 bg-white shadow-sm flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#C89653] select-none"
+        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-left text-slate-700 bg-white shadow-sm flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#F5C22B] select-none"
       >
         <span className={activeCategory ? "text-slate-800 font-medium" : "text-slate-400 font-medium"}>
           {activeCategory ? activeCategory.name : "Select category..."}
@@ -126,7 +126,7 @@ function CategorySelect({
                 setIsOpen(false);
               }}
               className={`w-full px-4 py-2.5 text-[13px] text-left hover:bg-slate-50 transition-colors ${
-                value === c._id ? "bg-[#C89653]/10 text-[#C89653] font-bold" : "text-slate-700"
+                value === c._id ? "bg-[#F5C22B]/10 text-[#D9A71E] font-bold" : "text-slate-700"
               }`}
             >
               {c.name}
@@ -496,12 +496,12 @@ export default function CreateProductModal({
     return (
       <div className="flex flex-col mb-8">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[11px] font-black tracking-widest text-[#C89653] uppercase">STEP {step} OF 3</span>
+          <span className="text-[11px] font-black tracking-widest text-[#D9A71E] uppercase">STEP {step} OF 3</span>
           <span className="text-[11px] font-black tracking-widest text-slate-800 uppercase">{titles[step - 1]}</span>
         </div>
         <div className="flex gap-2 w-full mb-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className={`h-1 rounded-full flex-1 ${i <= step ? "bg-[#C89653]" : "bg-[#F0F0F0]"}`} />
+            <div key={i} className={`h-1 rounded-full flex-1 ${i <= step ? "bg-[#F5C22B]" : "bg-[#F0F0F0]"}`} />
           ))}
         </div>
         
@@ -513,7 +513,7 @@ export default function CreateProductModal({
                 <span>Listing Completeness: 50%</span>
                 <span className="px-2 py-0.5 border border-slate-200 text-slate-600 rounded-md text-[9px] uppercase tracking-wider bg-slate-50">NEEDS DETAILS</span>
               </div>
-              <span className="text-[#C89653] cursor-pointer text-[10px] uppercase tracking-widest">▼ VIEW CHECKLIST</span>
+              <span className="text-[#D9A71E] cursor-pointer text-[10px] uppercase tracking-widest">▼ VIEW CHECKLIST</span>
             </div>
           </>
         )}
@@ -567,7 +567,7 @@ export default function CreateProductModal({
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
               />
               {price && platformSettings && (
                 <div className="text-[11px] font-medium text-slate-500 mt-1">
@@ -585,9 +585,9 @@ export default function CreateProductModal({
 
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="mt-2 border-[1.5px] border-dashed border-[#C89653] bg-[#f8fafc] rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-amber-50/50 transition-colors"
+              className="mt-2 border-[1.5px] border-dashed border-[#F5C22B] bg-[#f8fafc] rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-amber-50/50 transition-colors"
             >
-              <Upload className="w-5 h-5 text-[#C89653] mb-2" />
+              <Upload className="w-5 h-5 text-[#D9A71E] mb-2" />
               <span className="text-[11px] font-black tracking-widest uppercase text-slate-600">UPLOAD PHOTOS</span>
               <span className="text-[9px] font-bold tracking-widest text-slate-400 mt-1 uppercase">3-5 IMAGES</span>
               <input
@@ -613,7 +613,7 @@ export default function CreateProductModal({
                       <X className="w-3 h-3" />
                     </button>
                     {idx === 0 ? (
-                      <div className="absolute top-2 left-2 bg-[#C89653] text-white text-[9px] font-black uppercase px-2 py-1 rounded-full shadow flex items-center gap-1"><span className="text-[8px]">✨</span> COVER</div>
+                      <div className="absolute top-2 left-2 bg-[#F5C22B] text-slate-900 font-bold text-[9px] font-black uppercase px-2 py-1 rounded-full shadow flex items-center gap-1"><span className="text-[8px]">✨</span> COVER</div>
                     ) : (
                       <button
                         type="button"
@@ -655,7 +655,7 @@ export default function CreateProductModal({
                 value={description}
                 onChange={(e) => { setDescription(e.target.value); setStep2Error(""); }}
                 rows={3}
-                className={`w-full px-4 py-3 border ${step2Error ? "border-red-400 ring-1 ring-red-400" : "border-slate-200"} rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm resize-none`}
+                className={`w-full px-4 py-3 border ${step2Error ? "border-red-400 ring-1 ring-red-400" : "border-slate-200"} rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm resize-none`}
               />
             </div>
 
@@ -666,7 +666,7 @@ export default function CreateProductModal({
                 value={story}
                 onChange={(e) => setStory(e.target.value)}
                 rows={2}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm resize-none"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm resize-none"
               />
             </div>
 
@@ -704,7 +704,7 @@ export default function CreateProductModal({
                 placeholder="e.g. Handloom Kasavu, Chikankari, Shibori"
                 value={craft}
                 onChange={(e) => setCraft(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm"
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
               />
             </div>
 
@@ -716,7 +716,7 @@ export default function CreateProductModal({
               <div className="flex flex-col gap-2 bg-[#f8fafc] p-4 rounded-2xl border border-[#f1f5f9]">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">PRODUCT SIZE</label>
                 <div className="text-xs font-semibold text-slate-800 flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#C89653]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#F5C22B]" />
                   Sarees are Free Size. Size "FREE" has been automatically set for this product.
                 </div>
               </div>
@@ -732,7 +732,7 @@ export default function CreateProductModal({
                         key={sz}
                         onClick={() => toggleSize(sz)}
                         className={`h-12 w-12 sm:h-14 sm:w-14 rounded-2xl border font-black text-xs transition-colors flex items-center justify-center ${
-                          isSelected ? "bg-[#252323] text-white border-[#252323]" : "bg-white text-slate-800 border-slate-200 hover:border-[#C89653]"
+                          isSelected ? "bg-[#252323] text-white border-[#252323]" : "bg-white text-slate-800 border-slate-200 hover:border-[#F5C22B]"
                         }`}
                       >
                         {sz}
@@ -745,7 +745,7 @@ export default function CreateProductModal({
 
             {selectedSizes.length > 0 && (
               <div className="flex flex-col gap-1 animate-in fade-in zoom-in-95 mt-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[#C89653]">STOCK PER SIZE</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-[#D9A71E]">STOCK PER SIZE</label>
                 <div className="border border-[#f1f5f9] rounded-2xl overflow-hidden">
                   <div className="bg-[#f8fafc] px-4 py-3 flex justify-between border-b border-[#f1f5f9]">
                     <span className="text-[10px] font-black tracking-widest text-slate-500">SIZE</span>
@@ -759,7 +759,7 @@ export default function CreateProductModal({
                         min="0"
                         value={stockBySize[sz] || ""}
                         onChange={(e) => setStockBySize({ ...stockBySize, [sz]: parseInt(e.target.value) || 0 })}
-                        className="w-20 px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-right focus:outline-none focus:ring-1 focus:ring-[#C89653]"
+                        className="w-20 px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-right focus:outline-none focus:ring-1 focus:ring-[#F5C22B]"
                         placeholder="0"
                       />
                     </div>
@@ -784,7 +784,7 @@ export default function CreateProductModal({
                 <button
                   type="button"
                   onClick={() => setFitRecommendation("true_to_size")}
-                  className={`flex-1 py-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-xl transition-all ${fitRecommendation === "true_to_size" ? "bg-white shadow-sm border border-[#f1f5f9] text-[#C89653]" : "text-slate-400 hover:text-slate-600"}`}
+                  className={`flex-1 py-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-xl transition-all ${fitRecommendation === "true_to_size" ? "bg-white shadow-sm border border-[#f1f5f9] text-[#D9A71E]" : "text-slate-400 hover:text-slate-600"}`}
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span className="text-[9px] font-black tracking-widest uppercase text-center leading-tight text-slate-800">TRUE TO<br/>SIZE</span>
@@ -837,62 +837,62 @@ export default function CreateProductModal({
             <div className="grid grid-cols-2 gap-x-4 gap-y-5">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">COLOUR <span className="text-red-500">*</span></label>
-                <input type="text" value={specs.color} onChange={e => setSpecs({...specs, color: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. White" />
+                <input type="text" value={specs.color} onChange={e => setSpecs({...specs, color: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. White" />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">FABRIC CONTENT</label>
-                <input type="text" value={specs.fabricContent} onChange={e => setSpecs({...specs, fabricContent: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. 100% Cotton" />
+                <input type="text" value={specs.fabricContent} onChange={e => setSpecs({...specs, fabricContent: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. 100% Cotton" />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">FABRIC DETAIL</label>
-                <input type="text" value={specs.fabricDetail} onChange={e => setSpecs({...specs, fabricDetail: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. Pure Cotton" />
+                <input type="text" value={specs.fabricDetail} onChange={e => setSpecs({...specs, fabricDetail: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Pure Cotton" />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">NECK TYPE</label>
-                <input type="text" value={specs.neckType} onChange={e => setSpecs({...specs, neckType: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. Mandarin Collar" />
+                <input type="text" value={specs.neckType} onChange={e => setSpecs({...specs, neckType: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Mandarin Collar" />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">CLOSURE</label>
-                <input type="text" value={specs.closure} onChange={e => setSpecs({...specs, closure: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. Slip on" />
+                <input type="text" value={specs.closure} onChange={e => setSpecs({...specs, closure: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Slip on" />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">SLEEVE</label>
-                <input type="text" value={specs.sleeve} onChange={e => setSpecs({...specs, sleeve: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. Three-Quarter" />
+                <input type="text" value={specs.sleeve} onChange={e => setSpecs({...specs, sleeve: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Three-Quarter" />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">SLEEVE STYLING</label>
-                <input type="text" value={specs.sleeveStyling} onChange={e => setSpecs({...specs, sleeveStyling: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. Regular" />
+                <input type="text" value={specs.sleeveStyling} onChange={e => setSpecs({...specs, sleeveStyling: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Regular" />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">SHAPE</label>
-                <input type="text" value={specs.shape} onChange={e => setSpecs({...specs, shape: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. Straight" />
+                <input type="text" value={specs.shape} onChange={e => setSpecs({...specs, shape: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Straight" />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">HEMLINE</label>
-                <input type="text" value={specs.hemline} onChange={e => setSpecs({...specs, hemline: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. Straight" />
+                <input type="text" value={specs.hemline} onChange={e => setSpecs({...specs, hemline: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Straight" />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">LENGTH</label>
-                <input type="text" value={specs.length} onChange={e => setSpecs({...specs, length: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. Calf Length" />
+                <input type="text" value={specs.length} onChange={e => setSpecs({...specs, length: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Calf Length" />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">PATTERN</label>
-                <input type="text" value={specs.pattern} onChange={e => setSpecs({...specs, pattern: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. Floral Print" />
+                <input type="text" value={specs.pattern} onChange={e => setSpecs({...specs, pattern: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Floral Print" />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">FABRIC FAMILY</label>
-              <input type="text" value={specs.fabricFamily} onChange={e => setSpecs({...specs, fabricFamily: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#C89653] shadow-sm" placeholder="e.g. Pure Cotton" />
+              <input type="text" value={specs.fabricFamily} onChange={e => setSpecs({...specs, fabricFamily: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Pure Cotton" />
               </div>
 
             </div>
@@ -922,7 +922,7 @@ export default function CreateProductModal({
             <button
               type="submit"
               disabled={submitting || uploadingImages}
-              className="px-8 py-3 bg-[#C89653] hover:bg-[#b08143] text-white rounded-2xl text-[12px] font-bold uppercase tracking-wider shadow-md transition-all active:scale-95 duration-150 flex items-center gap-2 disabled:opacity-50 select-none"
+              className="px-8 py-3 bg-[#F5C22B] hover:bg-[#E0B024] text-slate-900 font-extrabold rounded-2xl text-[12px] font-bold uppercase tracking-wider shadow-md transition-all active:scale-95 duration-150 flex items-center gap-2 disabled:opacity-50 select-none"
             >
               <span className="flex items-center gap-2 relative z-10">
                 {submitting || uploadingImages ? "Saving..." : (

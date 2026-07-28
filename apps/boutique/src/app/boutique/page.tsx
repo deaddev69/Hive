@@ -474,7 +474,7 @@ export default function BoutiqueDashboard() {
             <Button 
               className={`w-full py-5 rounded-[16px] font-semibold text-[15px] transition-all duration-200 active:scale-[0.98] cursor-pointer ${
                 lowStockCount > 0 || !isStockVerifiedToday
-                  ? "bg-white border border-[#C89653] text-[#C89653] hover:bg-[#ffffff] shadow-none"
+                  ? "bg-white border border-[#F5C22B] text-[#D9A71E] hover:bg-[#ffffff] shadow-none"
                   : "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/60 shadow-none"
               }`}
             >
@@ -528,7 +528,7 @@ export default function BoutiqueDashboard() {
           <div className="bg-white border border-slate-200/60 rounded-[24px] p-6 flex flex-col gap-4 shadow-none">
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-[15px] font-extrabold text-slate-800 tracking-tight">Recent Orders</h3>
-              <Link href="/boutique/orders" className="text-[13px] font-bold text-[#C89653] hover:text-[#B88643] transition-colors flex items-center gap-1">
+              <Link href="/boutique/orders" className="text-[13px] font-bold text-[#D9A71E] hover:text-[#B88643] transition-colors flex items-center gap-1">
                 View All <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
@@ -631,7 +631,7 @@ export default function BoutiqueDashboard() {
                     cx="48"
                     cy="48"
                     r="38"
-                    className="stroke-hive-gold"
+                    className="stroke-[#D9A71E]"
                     strokeWidth="6"
                     fill="transparent"
                     strokeDasharray="238.76"
@@ -655,7 +655,7 @@ export default function BoutiqueDashboard() {
                 </p>
                 <div className="mt-3.5 w-full">
                   <Link href="/boutique/products" className="w-full">
-                    <Button className="w-full border-2 border-hive-gold bg-transparent text-hive-gold hover:bg-hive-cream rounded-full py-3.5 font-bold text-xs uppercase tracking-widest transition-all duration-150 active:scale-[0.98]">
+                    <Button className="w-full border-2 border-[#F5C22B] bg-transparent text-[#D9A71E] hover:bg-[#F5C22B]/10 rounded-full py-3.5 font-bold text-xs uppercase tracking-widest transition-all duration-150 active:scale-[0.98]">
                       ADD FIRST PRODUCT
                     </Button>
                   </Link>
