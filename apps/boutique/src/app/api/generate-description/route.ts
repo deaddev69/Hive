@@ -60,7 +60,7 @@ Guidelines:
 - Keep the tone upscale, editorial, elegant, and polished.
 - Subtly weave in Hive's branding context (e.g. mention that it's handpicked from a premium local boutique, or highlight Hive's seamless same-day courier delivery service during business hours where appropriate).
 - Do not make up fake features (like pockets or linings) unless they are hinted at in the rough input.
-- ${isDescription ? 'Do NOT mention the boutique\'s specific name or designer name (keep it focused strictly on the product features and qualities).' : 'You may mention the boutique\'s name or designer name to tell their design heritage story.'}
+- Do NOT mention the boutique's specific name or designer name (keep it focused strictly on the product features, qualities, craft heritage, and Hive platform guarantees).
 - Return ONLY the final generated copy. Do not include any intro, outro, conversational text, or wrapper quotes.
 
 ${boutiqueContext}
@@ -137,9 +137,7 @@ Polished Output:`;
       if (isDescription) {
         generatedText = `Exquisitely designed and handpicked from our curated partner boutique collection. Featuring premium craftsmanship with highlights of ${formattedInput}. Tailored for modern elegance and high comfort, this exclusive piece is available for immediate same-day delivery during business hours via Hive's express courier service.`;
       } else {
-        generatedText = `Inspired by timeless aesthetics and local heritage, this design story from ${
-          boutiqueName || "our boutique"
-        } celebrates hand-selected quality. Drawing inspiration from elements of ${formattedInput}, every stitch tells a story of dedicated craftsmanship. Curated for the discerning wardrobe, delivered to your doorstep same-day during business hours.`;
+        generatedText = `Inspired by timeless aesthetics and local heritage, this design story celebrates hand-selected quality. Drawing inspiration from elements of ${formattedInput}, every stitch tells a story of dedicated craftsmanship. Curated for the discerning wardrobe, delivered to your doorstep same-day during business hours.`;
       }
     }
 
