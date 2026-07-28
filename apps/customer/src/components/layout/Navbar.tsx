@@ -24,7 +24,7 @@ import {
   Zap,
   ArrowLeft,
   ArrowRight,
-  Truck,
+  Bike,
   Check,
 } from "lucide-react";
 import Link from "next/link";
@@ -412,13 +412,13 @@ export const Navbar: React.FC = () => {
                 </span>
               </button>
               {hydrated && (locality || city) && (
-                <HeaderStatusPill className="hover:bg-black dark:hover:bg-neutral-950 hover:shadow-[0_2px_8px_rgba(245,194,43,0.12)] cursor-default">
-                  <Truck className="w-3.5 h-3.5 text-[#F5C22B] shrink-0" strokeWidth={1.8} />
+                <HeaderStatusPill className="hover:bg-[#FFFDF9] dark:hover:bg-neutral-900/70 hover:shadow-[0_2px_8px_rgba(183,131,36,0.06)] cursor-default">
+                  <Bike className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={1.8} />
                   <span className="text-[11px] tracking-wide font-sans flex items-center gap-1.5">
-                    <span className="text-white/70 font-medium">
+                    <span className="text-stone-500 dark:text-neutral-400 font-medium">
                       {deliveryPromise.prefix}
                     </span>
-                    <span className="text-white/30 select-none">•</span>
+                    <span className="text-stone-300 dark:text-neutral-700 select-none">•</span>
                     <span className="bg-[#F5C22B] text-[#111111] px-2 py-0.5 rounded-lg font-bold text-[10px] tracking-normal select-none">
                       {deliveryPromise.suffix}
                     </span>
@@ -599,12 +599,12 @@ export const Navbar: React.FC = () => {
           </button>
           {hydrated && (locality || city) && (
             <HeaderStatusPill className="px-3 cursor-default">
-              <Truck className="w-3.5 h-3.5 text-[#F5C22B] shrink-0" strokeWidth={1.8} />
+              <Bike className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={1.8} />
               <span className="text-[10px] tracking-wide font-sans flex items-center gap-1.5">
-                <span className="text-white/70 font-medium">
+                <span className="text-stone-500 dark:text-neutral-400 font-medium">
                   {deliveryPromise.prefix}
                 </span>
-                <span className="text-white/30 select-none">•</span>
+                <span className="text-stone-300 dark:text-neutral-700 select-none">•</span>
                 <span className="bg-[#F5C22B] text-[#111111] px-1.5 py-0.5 rounded-lg font-bold text-[9.5px] tracking-normal select-none">
                   {deliveryPromise.suffix}
                 </span>
