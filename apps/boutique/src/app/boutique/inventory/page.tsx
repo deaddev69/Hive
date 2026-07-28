@@ -462,31 +462,31 @@ export default function BoutiqueInventory() {
       <div className="flex items-end justify-between border-b border-[#f1f5f9]/30 pb-3 pt-3">
         <div>
           <h1 className="text-[24px] font-bold tracking-tight text-[#1A1D1D] font-manrope leading-none">
-            Stock Operations
+            Stock List
           </h1>
           <p className="text-[11px] text-slate-400 mt-2 font-medium font-manrope">
-            Last checked {formatLastUpdatedTime(products)} • {stats.verifiedToday} of {products.length} products confirmed
+            Checked: {formatLastUpdatedTime(products)} • {stats.verifiedToday}/{products.length} verified
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 font-manrope">
           <button
             onClick={() => setIsBulkModalOpen(true)}
-            className="bg-white border border-[#F5C22B]/30 text-[#D9A71E] hover:bg-[#F5C22B]/5 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-sm font-manrope"
+            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-sm font-manrope"
           >
             Bulk Restock
           </button>
 
           {isStockVerifiedToday ? (
             <span className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-500 select-none font-manrope">
-              <Check className="w-3.5 h-3.5 text-[#D9A71E] stroke-[3]" />
+              <Check className="w-3.5 h-3.5 text-slate-600 stroke-[3]" />
               Shelf check complete {lastVerifiedTimeStr && `• ${lastVerifiedTimeStr}`}
             </span>
           ) : (
             <button
               onClick={handleGlobalVerify}
               disabled={saving || verifySuccess}
-              className={`bg-white border border-[#F5C22B]/30 text-[#D9A71E] hover:bg-[#F5C22B]/5 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-sm font-manrope`}
+              className={`bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-sm font-manrope`}
             >
               {saving ? "VERIFYING..." : verifySuccess ? "✓ VERIFIED" : "CONFIRM SHELF"}
             </button>
@@ -500,13 +500,13 @@ export default function BoutiqueInventory() {
           <div className="flex items-center gap-2 text-slate-600 font-medium">
             <span className="inline-flex items-center gap-1.5 text-[#D93025] font-semibold text-[11px]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#D93025] animate-pulse" /> 
-              {stats.outOfStock + stats.lowStock} SKUs need attention
+              {stats.outOfStock + stats.lowStock} items need attention
             </span>
           </div>
           {/* Action chip: FILTER */}
           <button
             onClick={() => setFilterMode(filterMode === "attention" ? "all" : "attention")}
-            className="bg-[#f8fafc] border border-[#F5C22B]/30 text-[#D9A71E] hover:bg-[#F5C22B]/5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98]"
+            className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98]"
           >
             {filterMode === "attention" ? "SHOW ALL" : "FILTER"}
           </button>
@@ -522,7 +522,7 @@ export default function BoutiqueInventory() {
             placeholder="Search catalog..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9.5 pr-4 py-2 bg-white border border-[#f1f5f9]/40 rounded-full text-xs focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] font-manrope text-slate-800 placeholder:text-slate-400 transition-all duration-150"
+            className="w-full pl-10 pr-4 py-2 bg-white border border-[#f1f5f9]/40 rounded-full text-xs focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] font-manrope text-slate-800 placeholder:text-slate-400 transition-all duration-150"
           />
         </div>
 
