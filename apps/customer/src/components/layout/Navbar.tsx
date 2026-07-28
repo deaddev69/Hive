@@ -42,28 +42,42 @@ const DeliveryRiderIcon: React.FC<{ className?: string }> = ({ className }) => (
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     stroke="currentColor"
-    strokeWidth="1.8"
+    strokeWidth="1.6"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
     {/* Wheels */}
-    <circle cx="5.5" cy="18.5" r="2.5" />
-    <circle cx="18.5" cy="18.5" r="2.5" />
-    {/* Bike Frame & Handlebars */}
-    <path d="M5.5 18.5l4-7h5.5l3.5 7" />
-    <path d="M15 11.5l1.5-3.5h2.5" />
-    {/* Seat */}
-    <path d="M9.5 11.5L9 9h2" />
-    {/* Rider Body & Torso leaning forward */}
-    <path d="M10 9l3-4.5" />
-    {/* Head */}
-    <circle cx="14" cy="3" r="1" fill="currentColor" />
+    <circle cx="5" cy="18" r="2.2" />
+    <circle cx="19" cy="18" r="2.2" />
+    
+    {/* Bicycle Frame */}
+    <path d="M5 18h6.5" /> {/* Chainstay */}
+    <path d="M5 18l4.5-7" /> {/* Seatstay */}
+    <path d="M11.5 18l-2-7" /> {/* Seat tube */}
+    <path d="M9.5 11h5.5" /> {/* Top tube */}
+    <path d="M11.5 18l3.5-7" /> {/* Down tube */}
+    <path d="M15 11l3 7" /> {/* Fork */}
+    
+    {/* Handlebars */}
+    <path d="M15 11l-0.5-3h2.5" />
+    
+    {/* Seat & Seatpost */}
+    <path d="M9.5 11v-1h2" />
+    
     {/* Courier Backpack */}
-    <rect x="8.5" y="4.5" width="3" height="4.5" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
-    {/* Arms to handlebars */}
-    <path d="M13 4.5l2.5 3.5" />
-    {/* Leg to pedal */}
-    <path d="M11.5 6.8l.5 4.7 1.5.5" />
+    <rect x="6.8" y="5.8" width="3" height="4.2" rx="0.8" strokeWidth="1.3" />
+    
+    {/* Rider Torso */}
+    <path d="M9.5 10l3.5-4" />
+    
+    {/* Rider Head */}
+    <circle cx="13.5" cy="4.2" r="1.1" fill="currentColor" />
+    
+    {/* Rider Arm */}
+    <path d="M13 6l2.5 2.5" />
+    
+    {/* Rider Leg */}
+    <path d="M9.5 10l1.5 4.5" />
   </svg>
 );
 
