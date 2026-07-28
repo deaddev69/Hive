@@ -24,6 +24,8 @@ import {
   Zap,
   ArrowLeft,
   ArrowRight,
+  Truck,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,6 +34,9 @@ import { useWishlistStore } from "@/store/wishlist-store";
 import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { getSignInUrl, getSignUpUrl, navigateToSignIn, navigateToSignUp } from "@/lib/auth-redirect";
+import { HeaderStatusPill } from "@/components/shared/HeaderStatusPill";
+
+
 
 export const Navbar: React.FC = () => {
   const { locality, city, setDrawerOpen, isServiceable, updateLocationDetails } = useLocation();
@@ -39,21 +44,23 @@ export const Navbar: React.FC = () => {
   const wishlistCount = useWishlistStore((state) => state.items.length);
   const [hydrated, setHydrated] = useState(false);
   
-  const estimatedTimeDetails = useMemo(() => {
+  const deliveryPromise = useMemo(() => {
     const now = new Date();
     const currentHour = now.getHours();
 
-    if (currentHour >= 8 && currentHour < 18) {
+    if (currentHour >= 10 && currentHour < 19) {
       const deliveryHour = currentHour + 2;
       const ampm = deliveryHour >= 12 ? "PM" : "AM";
       const displayHour = deliveryHour > 12 ? deliveryHour - 12 : (deliveryHour === 0 ? 12 : deliveryHour);
       return {
-        label: `Today by ${displayHour} ${ampm}`,
+        prefix: "Today",
+        suffix: `${displayHour} ${ampm}`,
         isToday: true,
       };
     } else {
       return {
-        label: "Tomorrow by 11 AM",
+        prefix: "Tomorrow",
+        suffix: "11 AM",
         isToday: false,
       };
     }
@@ -124,27 +131,7 @@ export const Navbar: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Dynamic 2-second rotating USP badge logic
-  const uspPoints = [
-    "⚡ 3-HR DELIVERY",
-    "🛍️ LOCAL STORES"
-  ];
-  const [uspText, setUspText] = useState(uspPoints[0]);
-  const [uspFade, setUspFade] = useState(true);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setUspFade(false);
-      setTimeout(() => {
-        setUspText((current) => {
-          const nextIdx = (uspPoints.indexOf(current) + 1) % uspPoints.length;
-          return uspPoints[nextIdx];
-        });
-        setUspFade(true);
-      }, 350);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
+  // Static micro trust indicator strip is displayed below search input on desktop and mobile views.
 
   // Recent searches cache
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -309,18 +296,8 @@ export const Navbar: React.FC = () => {
                 <MapPin className={`w-3.5 h-3.5 flex-shrink-0 shrink-0 ${hydrated && !(locality || city) ? "text-stone-400" : "text-hive-gold"}`} />
                 {hydrated && (locality || city) ? (
                   <span className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="font-semibold text-stone-800 truncate flex-shrink min-w-[30px]">
+                    <span className="font-semibold text-stone-800 truncate">
                       <span className="hidden min-[400px]:inline">Delivering to </span>{locality || city}
-                    </span>
-                    <span className="text-stone-400 flex-shrink-0 font-normal">•</span>
-                    <span className={cn(
-                      "flex items-center gap-0.5 border px-1.5 py-0.5 rounded-md text-[8.5px] sm:text-[9px] font-extrabold uppercase tracking-wide flex-shrink-0 shadow-sm transition-all",
-                      estimatedTimeDetails.isToday
-                        ? "text-amber-700 bg-amber-50/80 border-amber-200/40"
-                        : "text-slate-600 bg-slate-50 border-slate-200/40"
-                    )}>
-                      <Zap className={cn("w-2.5 h-2.5", estimatedTimeDetails.isToday ? "text-hive-amber fill-hive-amber animate-pulse" : "text-slate-400 fill-slate-400")} />
-                      {estimatedTimeDetails.label}
                     </span>
                   </span>
                 ) : (
@@ -434,16 +411,20 @@ export const Navbar: React.FC = () => {
                   </span>
                 </span>
               </button>
-              <div className="h-11 w-32 bg-[#F5C22B] rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 select-none shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-                <span
-                  className={cn(
-                    "text-slate-900 font-extrabold text-xs tracking-wide transition-all duration-300 ease-in-out transform whitespace-nowrap",
-                    uspFade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1.5"
-                  )}
-                >
-                  {uspText}
-                </span>
-              </div>
+              {hydrated && (locality || city) && (
+                <HeaderStatusPill className="hover:bg-[#FFFDF9] dark:hover:bg-neutral-900/70 hover:shadow-[0_2px_8px_rgba(183,131,36,0.08)] cursor-default">
+                  <Truck className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={1.8} />
+                  <span className="text-[11px] tracking-wide font-sans flex items-center gap-1.5">
+                    <span className="text-stone-500 dark:text-neutral-400 font-medium">
+                      {deliveryPromise.prefix}
+                    </span>
+                    <span className="text-stone-300 dark:text-neutral-700 select-none">•</span>
+                    <span className="bg-[#F8F1DD] dark:bg-amber-950/20 border border-[#E6D5A5]/40 dark:border-amber-900/30 text-[#8A5B00] dark:text-[#EADBB7] px-2 py-0.5 rounded-lg font-semibold text-[10px] tracking-normal select-none">
+                      {deliveryPromise.suffix}
+                    </span>
+                  </span>
+                </HeaderStatusPill>
+              )}
             </div>
 
             {/* Zone 4: Action icons (Desktop only, hidden on mobile) */}
@@ -593,35 +574,76 @@ export const Navbar: React.FC = () => {
 
           </div>
         </div>
+        {/* Sub-navbar Trust Strip (Desktop only, hidden on mobile) */}
+        <div className="hidden sm:block border-t border-slate-100 dark:border-neutral-800/60 bg-stone-50/50 dark:bg-neutral-900/30 py-1.5 w-full">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center gap-5 text-[10.5px] font-medium text-stone-500 dark:text-neutral-400 select-none tracking-[0.03em]">
+            <span className="flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={2} />
+              <span>Same-Day Delivery</span>
+            </span>
+            <span className="text-[#E8D9AF] dark:text-[#E8D9AF]/40 font-medium">·</span>
+            <span className="flex items-center gap-1.5">
+              <Store className="w-3.5 h-3.5 text-[#B78324] dark:text-[#E3A330]/80 shrink-0" />
+              <span>Handpicked Stores</span>
+            </span>
+            <span className="text-[#E8D9AF] dark:text-[#E8D9AF]/40 font-medium">·</span>
+            <span className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-[#B78324] dark:text-[#E3A330]/80 shrink-0" />
+              <span>Kochi</span>
+            </span>
+          </div>
+        </div>
       </nav>
 
       {/* ── Mobile Search Bar (Non-sticky, scrolls away on Mobile) ── */}
-      <div className="w-full bg-white dark:bg-hive-dark h-14 px-4 border-b border-slate-200/80 sm:hidden flex items-center gap-2.5">
-        <button
-          type="button"
-          onClick={() => setSearchOpen(true)}
-          className="flex-1 h-11 px-3.5 rounded-xl bg-slate-100 border border-transparent text-left flex items-center gap-2.5 cursor-pointer hover:bg-slate-200/70 transition-all duration-200"
-        >
-          <Search className="w-5 h-5 text-slate-500 flex-shrink-0" />
-          <span className="relative flex-1 h-5 overflow-hidden flex items-center">
-            <span
-              className={cn(
-                "absolute inset-0 truncate text-sm font-medium text-slate-400 flex items-center transition-all duration-300 ease-in-out transform",
-                placeholderFade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1.5"
-              )}
-            >
-              {placeholderText}
-            </span>
-          </span>
-        </button>
-        <div className="h-11 w-32 bg-[#F5C22B] rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 select-none shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-          <span
-            className={cn(
-              "text-slate-900 font-extrabold text-xs tracking-wide transition-all duration-300 ease-in-out transform whitespace-nowrap",
-              uspFade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1.5"
-            )}
+      <div className="w-full bg-white dark:bg-hive-dark border-b border-slate-200/80 sm:hidden flex flex-col gap-2 px-4 py-3">
+        <div className="w-full flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="flex-1 h-11 px-3.5 rounded-xl bg-slate-100 border border-transparent text-left flex items-center gap-2.5 cursor-pointer hover:bg-slate-200/70 transition-all duration-200"
           >
-            {uspText}
+            <Search className="w-5 h-5 text-slate-500 flex-shrink-0" />
+            <span className="relative flex-1 h-5 overflow-hidden flex items-center">
+              <span
+                className={cn(
+                  "absolute inset-0 truncate text-sm font-medium text-slate-400 flex items-center transition-all duration-300 ease-in-out transform",
+                  placeholderFade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1.5"
+                )}
+              >
+                {placeholderText}
+              </span>
+            </span>
+          </button>
+          {hydrated && (locality || city) && (
+            <HeaderStatusPill className="px-2.5 cursor-default">
+              <Truck className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={1.8} />
+              <span className="text-[10px] tracking-wide font-sans flex items-center gap-1">
+                <span className="text-stone-500 dark:text-neutral-400 font-medium">
+                  {deliveryPromise.prefix}
+                </span>
+                <span className="text-stone-300 dark:text-neutral-700 select-none">•</span>
+                <span className="bg-[#F8F1DD] dark:bg-amber-950/20 border border-[#E6D5A5]/40 dark:border-amber-900/30 text-[#8A5B00] dark:text-[#EADBB7] px-1.5 py-0.5 rounded-lg font-semibold text-[9.5px] tracking-normal select-none">
+                  {deliveryPromise.suffix}
+                </span>
+              </span>
+            </HeaderStatusPill>
+          )}
+        </div>
+        <div className="flex items-center justify-center gap-3 text-[10px] font-medium text-stone-500 dark:text-neutral-400 select-none tracking-[0.03em] mt-0.5">
+          <span className="flex items-center gap-1">
+            <Check className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={2} />
+            <span>Same-Day Delivery</span>
+          </span>
+          <span className="text-[#E8D9AF] dark:text-[#E8D9AF]/40 select-none font-medium">·</span>
+          <span className="flex items-center gap-1">
+            <Store className="w-3.5 h-3.5 text-[#B78324] dark:text-[#E3A330]/80 shrink-0" />
+            <span>Handpicked Stores</span>
+          </span>
+          <span className="text-[#E8D9AF] dark:text-[#E8D9AF]/40 select-none font-medium">·</span>
+          <span className="flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5 text-[#B78324] dark:text-[#E3A330]/80 shrink-0" />
+            <span>Kochi</span>
           </span>
         </div>
       </div>
