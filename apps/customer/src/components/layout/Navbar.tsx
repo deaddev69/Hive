@@ -427,7 +427,7 @@ export const Navbar: React.FC = () => {
               </button>
               {hydrated && (locality || city) && (
                 <HeaderStatusPill className="hover:bg-[#FFFDF9] dark:hover:bg-neutral-900/70 hover:shadow-[0_2px_8px_rgba(183,131,36,0.06)] cursor-default">
-                  <DeliveryScooterIcon className="h-[22px] w-[11px] shrink-0" />
+                  <DeliveryScooterIcon className="h-[22px] w-[11px] text-hive-gold dark:text-hive-gold shrink-0" />
                   <span className="text-[11px] tracking-wide font-sans flex items-center gap-1.5">
                     <span className="text-stone-500 dark:text-neutral-400 font-medium">
                       {deliveryPromise.prefix}
@@ -613,7 +613,7 @@ export const Navbar: React.FC = () => {
           </button>
           {hydrated && (locality || city) && (
             <HeaderStatusPill className="px-3 cursor-default">
-              <DeliveryScooterIcon className="h-[22px] w-[11px] shrink-0" />
+              <DeliveryScooterIcon className="h-[22px] w-[11px] text-hive-gold dark:text-hive-gold shrink-0" />
               <span className="text-[10px] tracking-wide font-sans flex items-center gap-1.5">
                 <span className="text-stone-500 dark:text-neutral-400 font-medium">
                   {deliveryPromise.prefix}
