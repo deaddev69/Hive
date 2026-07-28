@@ -148,8 +148,8 @@ export default function BoutiqueFinance() {
       </div>
 
       {/* Bank Account Settings Info box */}
-      <div className="bg-hive-cream/40 border border-[#e2e8f0]/60 rounded-3xl p-5 mt-2 flex items-start gap-4 select-none">
-        <div className="p-2 bg-white rounded-2xl text-hive-gold border border-[#e2e8f0] shadow-sm shrink-0">
+      <div className="bg-hive-cream/40 border border-[#f1f5f9]/60 rounded-3xl p-5 mt-2 flex items-start gap-4 select-none">
+        <div className="p-2 bg-white rounded-2xl text-hive-gold border border-[#f1f5f9] shadow-sm shrink-0">
           <Building className="w-4.5 h-4.5" />
         </div>
         <div className="flex flex-col gap-1 text-left">

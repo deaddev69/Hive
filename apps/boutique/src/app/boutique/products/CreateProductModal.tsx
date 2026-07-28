@@ -53,7 +53,7 @@ function CustomSelect({ label, value, onChange, options, placeholder, required }
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#e2e8f0]/30 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
+        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#f1f5f9]/30 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
           {options.map((opt) => (
             <button
               key={opt}
@@ -116,7 +116,7 @@ function CategorySelect({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#e2e8f0]/30 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
+        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#f1f5f9]/30 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
           {categories.map((c) => (
             <button
               key={c._id}

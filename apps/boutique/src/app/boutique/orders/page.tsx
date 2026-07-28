@@ -173,8 +173,8 @@ export default function BoutiqueOrders() {
   return (
     <div className="flex flex-col gap-6 text-left pb-24">
       <div className="flex flex-col gap-1 pt-1">
-        <h1 className="text-3xl font-serif font-black text-[#2C261E] tracking-tight">Orders</h1>
-        <p className="text-sm font-medium text-[#8C806D]">Review incoming orders.</p>
+        <h1 className="text-3xl font-serif font-black text-[#0f172a] tracking-tight">Orders</h1>
+        <p className="text-sm font-medium text-[#64748b]">Review incoming orders.</p>
       </div>
 
       <Card className="border border-hive-border bg-white shadow-sm overflow-hidden rounded-3xl">
@@ -182,7 +182,7 @@ export default function BoutiqueOrders() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead className="hidden md:table-header-group">
-                <tr className="bg-slate-50/60 border-b border-hive-border/30 text-[10px] font-extrabold uppercase tracking-wider text-[#A89A7E] select-none">
+                <tr className="bg-slate-50/60 border-b border-hive-border/30 text-[10px] font-extrabold uppercase tracking-wider text-[#94a3b8] select-none">
                   <th className="px-6 py-4">Order No.</th>
                   <th className="px-6 py-4">Delivery Slot / Date</th>
                   <th className="px-6 py-4">Customer Details</th>
@@ -212,31 +212,31 @@ export default function BoutiqueOrders() {
                     const distanceStr = order.distanceKm ? `${order.distanceKm} km` : "3.2 km";
 
                     return (
-                      <tr key={order._id} className="flex flex-col md:table-row bg-[#ffffff] border border-[#e2e8f0]/80 shadow-[0_4px_20px_-4px_rgba(168,154,126,0.08)] rounded-2xl mb-3.5 hover:shadow-[0_8px_24px_-4px_rgba(168,154,126,0.14)] transition-all p-4 md:p-5">
+                      <tr key={order._id} className="flex flex-col md:table-row bg-[#ffffff] border border-[#f1f5f9]/80 shadow-[0_4px_20px_-4px_rgba(168,154,126,0.08)] rounded-2xl mb-3.5 hover:shadow-[0_8px_24px_-4px_rgba(168,154,126,0.14)] transition-all p-4 md:p-5">
                         <td colSpan={7} className="p-0">
                           <div className="flex flex-col text-left font-sans gap-2.5">
                             {/* 1. Top Header: Status Capsule (Warm cream & green dot) & Real Timestamp */}
-                            <div className="flex items-center justify-between pb-2 border-b border-[#e2e8f0]/60">
-                              <span className="inline-flex items-center gap-1.5 bg-slate-50 text-[#5C5346] px-2.5 py-0.5 rounded-full text-[12px] font-semibold tracking-normal border border-[#e2e8f0]/80">
+                            <div className="flex items-center justify-between pb-2 border-b border-[#f1f5f9]/60">
+                              <span className="inline-flex items-center gap-1.5 bg-slate-50 text-[#334155] px-2.5 py-0.5 rounded-full text-[12px] font-semibold tracking-normal border border-[#f1f5f9]/80">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
                                 New order
                               </span>
-                              <span className="text-[12px] text-[#8C806D] font-medium font-mono">
+                              <span className="text-[12px] text-[#64748b] font-medium font-mono">
                                 {timeText}
                               </span>
                             </div>
 
                             {/* 2. Compact Product Row (Exact 56x56px thumbnail + dominant title & muted gold category) */}
                             <div className="flex items-center gap-3.5">
-                              <div className="w-[56px] h-[56px] rounded-[14px] border border-[#e2e8f0] overflow-hidden bg-slate-50 flex-shrink-0 shadow-2xs relative">
+                              <div className="w-[56px] h-[56px] rounded-[14px] border border-[#f1f5f9] overflow-hidden bg-slate-50 flex-shrink-0 shadow-2xs relative">
                                 {order.items?.[0]?.imageUrl ? (
                                   <img src={order.items[0].imageUrl} alt="" className="w-full h-full object-cover" />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-[#A89A7E]">No Image</div>
+                                  <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-[#94a3b8]">No Image</div>
                                 )}
                               </div>
                               <div className="flex flex-col min-w-0 justify-center">
-                                <h3 className="text-[17px] font-extrabold text-[#2C261E] tracking-[-0.02em] leading-tight truncate">
+                                <h3 className="text-[17px] font-extrabold text-[#0f172a] tracking-[-0.02em] leading-tight truncate">
                                   {order.items?.[0]?.productName || "Product Order"}
                                 </h3>
                                 {order.items?.[0]?.category && (
@@ -244,7 +244,7 @@ export default function BoutiqueOrders() {
                                     {order.items[0].category}
                                   </span>
                                 )}
-                                <p className="text-[13px] font-medium text-[#7A6F5D] mt-0.5">
+                                <p className="text-[13px] font-medium text-[#64748b] mt-0.5">
                                   Size {order.items?.[0]?.variantSize || "Free"} • Qty {order.items?.[0]?.quantity || 1}
                                   {order.items?.length > 1 ? ` (+${order.items.length - 1} more)` : ""}
                                 </p>
@@ -252,30 +252,30 @@ export default function BoutiqueOrders() {
                             </div>
 
                             {/* 3. Money & Lucide Customer Row */}
-                            <div className="pt-2 border-t border-[#e2e8f0]/60 flex flex-col gap-1">
-                              <span className="text-[12px] font-medium text-[#8C806D] block">
+                            <div className="pt-2 border-t border-[#f1f5f9]/60 flex flex-col gap-1">
+                              <span className="text-[12px] font-medium text-[#64748b] block">
                                 You&apos;ll receive
                               </span>
                               <div className="flex items-baseline justify-between -mt-0.5">
-                                <span className="text-[26px] font-black text-[#2C261E] tracking-tight leading-none">
+                                <span className="text-[26px] font-black text-[#0f172a] tracking-tight leading-none">
                                   ₹{payoutRupees.toLocaleString("en-IN")}
                                 </span>
-                                <span className="text-[12px] font-medium text-[#8C806D]">
+                                <span className="text-[12px] font-medium text-[#64748b]">
                                   Hive fee ₹{feeRupees.toLocaleString("en-IN")}
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-3 text-[12px] text-[#5C5346] font-medium pt-2 border-t border-[#e2e8f0]/50 mt-1">
-                                <span className="inline-flex items-center gap-1"><User className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> {firstCustName}</span>
-                                <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> {locality}</span>
-                                <span className="text-[#8C806D] font-mono">{distanceStr}</span>
+                              <div className="flex items-center gap-3 text-[12px] text-[#334155] font-medium pt-2 border-t border-[#f1f5f9]/50 mt-1">
+                                <span className="inline-flex items-center gap-1"><User className="w-3.5 h-3.5 text-[#64748b] stroke-[1.75]" /> {firstCustName}</span>
+                                <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[#64748b] stroke-[1.75]" /> {locality}</span>
+                                <span className="text-[#64748b] font-mono">{distanceStr}</span>
                               </div>
                             </div>
 
                             {/* 4. Action Stack (~46px Warm Gold Accept Order CTA + subtle warm Decline button) */}
-                            <div className="pt-2.5 border-t border-[#e2e8f0]/60 flex flex-col items-center gap-1">
+                            <div className="pt-2.5 border-t border-[#f1f5f9]/60 flex flex-col items-center gap-1">
                               {isAcceptedOptimistically ? (
-                                <div className="w-full py-2.5 bg-slate-50 border border-[#e2e8f0] text-[#5C5346] rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
+                                <div className="w-full py-2.5 bg-slate-50 border border-[#f1f5f9] text-[#334155] rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
                                   <Check className="w-4 h-4 text-[#C89653] stroke-[2.5]" />
                                   <span className="font-bold text-[13px]">Order Accepted — Assigning Rider...</span>
                                 </div>
@@ -308,7 +308,7 @@ export default function BoutiqueOrders() {
                                       setDeclineStep("confirm");
                                     }}
                                     disabled={pendingActionId === order._id}
-                                    className="w-full py-1.5 bg-transparent hover:bg-slate-50 active:bg-slate-100 text-[#8C806D] hover:text-rose-600 rounded-lg text-[13px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
+                                    className="w-full py-1.5 bg-transparent hover:bg-slate-50 active:bg-slate-100 text-[#64748b] hover:text-rose-600 rounded-lg text-[13px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
                                   >
                                     Decline
                                   </button>
@@ -327,7 +327,7 @@ export default function BoutiqueOrders() {
                       {/* Order Number */}
                       <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
                         <div className="flex flex-col gap-1">
-                          <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Order No.</span>
+                          <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider">Order No.</span>
                           <span className="font-mono font-bold text-sm text-slate-700">{order.orderNumber}</span>
                         </div>
                       </td>
@@ -335,7 +335,7 @@ export default function BoutiqueOrders() {
                       {/* Date */}
                       <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
                         <div className="flex flex-col gap-1.5 text-slate-700">
-                          <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Delivery Slot / Date</span>
+                          <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider">Delivery Slot / Date</span>
                           <div className="flex items-center gap-1.5">
                             <Calendar className="w-4 h-4 text-hive-amber flex-shrink-0" />
                             <span>{new Date(order.createdAt).toLocaleDateString()}</span>
@@ -351,7 +351,7 @@ export default function BoutiqueOrders() {
                       {/* Customer Details (delivery address as proxy) */}
                       <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
                         <div className="flex flex-col gap-1">
-                          <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Customer Details</span>
+                          <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider">Customer Details</span>
                           <span className="font-bold text-hive-dark">
                             {(() => {
                               const name = order.customerName || order.deliveryAddress.name || order.deliveryAddress.label || "Customer";
@@ -370,7 +370,7 @@ export default function BoutiqueOrders() {
                       {/* Items */}
                       <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 text-left border-t md:border-t-0 border-hive-border/10">
                         <div className="flex flex-col gap-2">
-                          <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider">Purchased Items</span>
+                          <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider">Purchased Items</span>
                           {order.items.map((it: any) => (
                             <div key={it._id} className="flex items-center gap-2">
                               <div className="relative w-8 h-10 rounded border border-slate-100 overflow-hidden bg-slate-50 flex-shrink-0">
@@ -391,19 +391,19 @@ export default function BoutiqueOrders() {
 
                       {/* Total */}
                       <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 font-bold text-sm border-t md:border-t-0 border-hive-border/10">
-                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-1">Total Amount</span>
+                        <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider block mb-1">Total Amount</span>
                         <span>{formatCurrency(order.total)}</span>
                       </td>
 
                       {/* Invoice */}
                       <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 border-t md:border-t-0 border-hive-border/10">
-                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-1">Invoice</span>
+                        <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider block mb-1">Invoice</span>
                         <BoutiqueInvoiceCell orderId={order._id} />
                       </td>
 
                       {/* Status updater */}
                       <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 min-w-[160px] border-t md:border-t-0 border-hive-border/10">
-                        <span className="md:hidden text-[10px] font-extrabold text-[#A89A7E] uppercase tracking-wider block mb-2">Order Status</span>
+                        <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider block mb-2">Order Status</span>
                         <OrderStatusBadge status={order.status} />
                         
                         {(order.status === "confirmed" || order.status === "packed") && order.shipmentStatus === "booking_failed" && (
@@ -437,13 +437,13 @@ export default function BoutiqueOrders() {
 
       {/* Full-Screen Decline Modal (Apple restraint + Aesop warmth + Linear clarity) */}
       {orderToDecline !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2C261E]/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-[#ffffff] rounded-3xl p-6 md:p-7 w-full max-w-md shadow-[0_20px_60px_-15px_rgba(44,38,30,0.25)] border border-[#e2e8f0] flex flex-col gap-5 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f172a]/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-[#ffffff] rounded-3xl p-6 md:p-7 w-full max-w-md shadow-[0_20px_60px_-15px_rgba(44,38,30,0.25)] border border-[#f1f5f9] flex flex-col gap-5 animate-in zoom-in-95 duration-200">
             {declineStep === "confirm" ? (
               <>
                 <div>
-                  <h3 className="text-xl font-serif font-black text-[#2C261E]">Are you sure you can&apos;t fulfil this order?</h3>
-                  <p className="text-[13px] font-medium text-[#7A6F5D] mt-2 leading-relaxed">
+                  <h3 className="text-xl font-serif font-black text-[#0f172a]">Are you sure you can&apos;t fulfil this order?</h3>
+                  <p className="text-[13px] font-medium text-[#64748b] mt-2 leading-relaxed">
                     This helps keep delivery times reliable for customers and protects your boutique rating.
                   </p>
                 </div>
@@ -463,7 +463,7 @@ export default function BoutiqueOrders() {
                   </button>
                   <button
                     onClick={() => setDeclineStep("reason")}
-                    className="py-3 px-5 bg-transparent hover:bg-slate-50 text-[#8C806D] hover:text-rose-600 rounded-xl text-[13px] font-bold tracking-wide transition-all cursor-pointer text-center"
+                    className="py-3 px-5 bg-transparent hover:bg-slate-50 text-[#64748b] hover:text-rose-600 rounded-xl text-[13px] font-bold tracking-wide transition-all cursor-pointer text-center"
                   >
                     Decline
                   </button>
@@ -472,17 +472,17 @@ export default function BoutiqueOrders() {
             ) : (
               <>
                 <div>
-                  <h3 className="text-xl font-serif font-black text-[#2C261E]">Decline order</h3>
-                  <p className="text-[13px] font-medium text-[#5C5346] mt-1">
+                  <h3 className="text-xl font-serif font-black text-[#0f172a]">Decline order</h3>
+                  <p className="text-[13px] font-medium text-[#334155] mt-1">
                     This order will be cancelled and the customer will be notified.
                   </p>
-                  <p className="text-[11px] font-medium text-[#8C806D] mt-0.5">
+                  <p className="text-[11px] font-medium text-[#64748b] mt-0.5">
                     Refunds, if applicable, will be processed automatically.
                   </p>
                 </div>
                 
                 <div className="flex flex-col gap-2 pt-1">
-                  <span className="text-[13px] font-extrabold text-[#2C261E] pb-1">
+                  <span className="text-[13px] font-extrabold text-[#0f172a] pb-1">
                     Why can&apos;t you fulfil this order?
                   </span>
                   
@@ -503,15 +503,15 @@ export default function BoutiqueOrders() {
                         }}
                         className={`p-3.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer select-none ${
                           isSelected
-                            ? "border-[#C89653] bg-slate-50 text-[#2C261E] font-extrabold shadow-2xs"
-                            : "border-[#e2e8f0] bg-white text-[#5C5346] font-semibold hover:border-[#C89653]/50 hover:bg-slate-50/40"
+                            ? "border-[#C89653] bg-slate-50 text-[#0f172a] font-extrabold shadow-2xs"
+                            : "border-[#f1f5f9] bg-white text-[#334155] font-semibold hover:border-[#C89653]/50 hover:bg-slate-50/40"
                         }`}
                       >
                         <span className="text-[13px]">{option}</span>
                         <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
                           isSelected
                             ? "bg-[#C89653] text-white"
-                            : "border border-[#e2e8f0] text-transparent"
+                            : "border border-[#f1f5f9] text-transparent"
                         }`}>
                           ✓
                         </span>
@@ -532,21 +532,21 @@ export default function BoutiqueOrders() {
                       className={`mt-1 px-3.5 py-3 border ${
                         declineError 
                           ? "border-rose-400 bg-rose-50 placeholder:text-rose-300 focus:ring-rose-400" 
-                          : "border-[#e2e8f0] bg-white focus:border-[#C89653] focus:ring-[#C89653]"
-                      } rounded-xl text-sm font-medium text-[#2C261E] focus:outline-none focus:ring-1 transition-colors w-full`}
+                          : "border-[#f1f5f9] bg-white focus:border-[#C89653] focus:ring-[#C89653]"
+                      } rounded-xl text-sm font-medium text-[#0f172a] focus:outline-none focus:ring-1 transition-colors w-full`}
                       autoFocus
                     />
                   )}
 
                   {declineReasonType === "Out of stock" && (
-                    <div className="p-3 bg-slate-50 border border-[#e2e8f0] rounded-xl text-[12px] font-medium text-[#7A6F5D] flex items-start gap-2 mt-1">
+                    <div className="p-3 bg-slate-50 border border-[#f1f5f9] rounded-xl text-[12px] font-medium text-[#64748b] flex items-start gap-2 mt-1">
                       <span>💡</span>
                       <span>Consider updating your inventory after declining this order.</span>
                     </div>
                   )}
                 </div>
                 
-                <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-[#e2e8f0]/60">
+                <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-[#f1f5f9]/60">
                   <button
                     onClick={() => {
                       setOrderToDecline(null);

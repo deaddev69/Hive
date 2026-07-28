@@ -37,14 +37,14 @@ function CategoryFilterSelect({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-white border border-[#e2e8f0] px-3.5 py-2.5 rounded-[16px] text-[13px] font-bold text-[#2C261E] focus:outline-none focus:border-[#C89653] focus:ring-1 focus:ring-[#C89653] shadow-2xs flex items-center justify-between cursor-pointer select-none transition-colors"
+        className="w-full bg-white border border-[#f1f5f9] px-3.5 py-2.5 rounded-[16px] text-[13px] font-bold text-[#0f172a] focus:outline-none focus:border-[#C89653] focus:ring-1 focus:ring-[#C89653] shadow-2xs flex items-center justify-between cursor-pointer select-none transition-colors"
       >
         <span className="truncate pr-1">{activeCategory ? activeCategory.name : "All Categories"}</span>
-        <ChevronDown className={`w-4 h-4 text-[#8C806D] transition-transform duration-200 shrink-0 ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-4 h-4 text-[#64748b] transition-transform duration-200 shrink-0 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[106%] bg-[#ffffff] border border-[#e2e8f0] rounded-[16px] shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
+        <div className="absolute left-0 right-0 top-[106%] bg-[#ffffff] border border-[#f1f5f9] rounded-[16px] shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
           <button
             type="button"
             onClick={() => {
@@ -52,7 +52,7 @@ function CategoryFilterSelect({
               setIsOpen(false);
             }}
             className={`w-full px-4 py-2.5 text-[13px] font-bold text-left hover:bg-slate-50 transition-colors ${
-              value === "all" ? "text-[#C89653]" : "text-[#2C261E]"
+              value === "all" ? "text-[#C89653]" : "text-[#0f172a]"
             }`}
           >
             All Categories
@@ -66,7 +66,7 @@ function CategoryFilterSelect({
                 setIsOpen(false);
               }}
               className={`w-full px-4 py-2.5 text-[13px] font-bold text-left hover:bg-slate-50 transition-colors truncate ${
-                value === c._id ? "text-[#C89653]" : "text-[#2C261E]"
+                value === c._id ? "text-[#C89653]" : "text-[#0f172a]"
               }`}
             >
               {c.name}
@@ -231,15 +231,15 @@ export default function BoutiqueProducts() {
         
         {/* Header Section (#10) */}
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-serif font-black text-[#2C261E] tracking-tight">Products</h1>
-          <p className="text-sm font-medium text-[#8C806D]">
+          <h1 className="text-3xl font-serif font-black text-[#0f172a] tracking-tight">Products</h1>
+          <p className="text-sm font-medium text-[#64748b]">
             Manage products, pricing and stocks.
           </p>
         </div>
 
         {/* Short, Direct Attention Banner (#8 & #1 - no stats box container!) */}
         {(stats.low > 0 || stats.missingImages > 0) && (
-          <div className="bg-slate-50 border border-[#C89653]/40 rounded-[14px] px-4 py-2.5 flex items-center justify-between text-[13px] text-[#2C261E] shadow-2xs select-none">
+          <div className="bg-slate-50 border border-[#C89653]/40 rounded-[14px] px-4 py-2.5 flex items-center justify-between text-[13px] text-[#0f172a] shadow-2xs select-none">
             <span className="flex items-center gap-2 font-semibold">
               <span className="text-[#C89653] font-bold">⚠</span>
               <span>
@@ -256,7 +256,7 @@ export default function BoutiqueProducts() {
         )}
 
         {/* Streamlined Tabs (#11 & #7) */}
-        <div className="flex border-b border-[#e2e8f0] gap-6 text-[13px] font-sans mt-0 select-none overflow-x-auto no-scrollbar">
+        <div className="flex border-b border-[#f1f5f9] gap-6 text-[13px] font-sans mt-0 select-none overflow-x-auto no-scrollbar">
           {[
             { id: "all", label: "All", count: null },
             { id: "live", label: "Live", count: null },
@@ -271,14 +271,14 @@ export default function BoutiqueProducts() {
                 onClick={() => { setStatusFilter(tab.id as any); setCurrentPage(1); }}
                 className={`pb-2.5 border-b-2 transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                   isActive 
-                    ? "border-[#C89653] text-[#2C261E] font-extrabold" 
-                    : "border-transparent text-[#8C806D] font-bold hover:text-[#2C261E]"
+                    ? "border-[#C89653] text-[#0f172a] font-extrabold" 
+                    : "border-transparent text-[#64748b] font-bold hover:text-[#0f172a]"
                 }`}
               >
                 <span>{tab.label}</span>
                 {tab.count !== null && (
                   <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold leading-none ${
-                    tab.isAlert ? "bg-rose-50 text-rose-600 border border-rose-200/60" : "bg-slate-50 text-[#7A6F5D] border border-[#e2e8f0]"
+                    tab.isAlert ? "bg-rose-50 text-rose-600 border border-rose-200/60" : "bg-slate-50 text-[#64748b] border border-[#f1f5f9]"
                   }`}>
                     {tab.count}
                   </span>
@@ -292,13 +292,13 @@ export default function BoutiqueProducts() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 mt-0.5">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <div className="relative flex-1 min-w-0">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8C806D] stroke-[1.75]" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748b] stroke-[1.75]" />
               <input
                 type="text"
                 placeholder="Search by product name..."
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#e2e8f0] rounded-[16px] text-[13px] font-medium focus:outline-none focus:border-[#C89653] focus:ring-1 focus:ring-[#C89653] shadow-2xs placeholder:text-[#8C806D] text-[#2C261E] font-sans transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#f1f5f9] rounded-[16px] text-[13px] font-medium focus:outline-none focus:border-[#C89653] focus:ring-1 focus:ring-[#C89653] shadow-2xs placeholder:text-[#64748b] text-[#0f172a] font-sans transition-colors"
               />
             </div>
             
@@ -321,23 +321,23 @@ export default function BoutiqueProducts() {
               <button
                 type="button"
                 onClick={() => setShowMoreActions(!showMoreActions)}
-                className="w-10 h-10 bg-white hover:bg-slate-50 border border-[#e2e8f0] text-[#7A6F5D] hover:text-[#2C261E] rounded-[14px] font-bold text-base transition-all cursor-pointer flex items-center justify-center shadow-2xs select-none"
+                className="w-10 h-10 bg-white hover:bg-slate-50 border border-[#f1f5f9] text-[#64748b] hover:text-[#0f172a] rounded-[14px] font-bold text-base transition-all cursor-pointer flex items-center justify-center shadow-2xs select-none"
                 title="More options"
               >
                 ⋯
               </button>
               
               {showMoreActions && (
-                <div className="absolute right-0 top-[110%] bg-[#ffffff] border border-[#e2e8f0] rounded-[16px] shadow-lg z-50 w-44 py-1.5 animate-in fade-in slide-in-from-top-1">
+                <div className="absolute right-0 top-[110%] bg-[#ffffff] border border-[#f1f5f9] rounded-[16px] shadow-lg z-50 w-44 py-1.5 animate-in fade-in slide-in-from-top-1">
                   <button
                     type="button"
                     onClick={() => {
                       setShowMoreActions(false);
                       alert("Bulk upload / CSV import: Select your catalog file to ingest.");
                     }}
-                    className="w-full px-4 py-2.5 text-[12px] font-bold text-left text-[#5C5346] hover:bg-slate-50 hover:text-[#2C261E] transition-colors flex items-center gap-2 cursor-pointer"
+                    className="w-full px-4 py-2.5 text-[12px] font-bold text-left text-[#334155] hover:bg-slate-50 hover:text-[#0f172a] transition-colors flex items-center gap-2 cursor-pointer"
                   >
-                    <Upload className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> Bulk upload CSV
+                    <Upload className="w-3.5 h-3.5 text-[#64748b] stroke-[1.75]" /> Bulk upload CSV
                   </button>
                 </div>
               )}
@@ -348,12 +348,12 @@ export default function BoutiqueProducts() {
         {/* Listings Grid (#5, #6, #7, #10) */}
         <div className="flex flex-col gap-2.5 mt-1">
           {paginatedProducts.length === 0 ? (
-            <div className="text-center py-16 bg-[#ffffff] rounded-[20px] border border-[#e2e8f0] shadow-2xs flex flex-col items-center justify-center">
-              <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mb-3 border border-[#e2e8f0]">
-                <Search className="w-5 h-5 text-[#8C806D] stroke-[1.5]" />
+            <div className="text-center py-16 bg-[#ffffff] rounded-[20px] border border-[#f1f5f9] shadow-2xs flex flex-col items-center justify-center">
+              <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mb-3 border border-[#f1f5f9]">
+                <Search className="w-5 h-5 text-[#64748b] stroke-[1.5]" />
               </div>
-              <h3 className="text-base font-serif font-black text-[#2C261E] mb-1">No products found</h3>
-              <p className="text-[13px] text-[#7A6F5D] max-w-xs leading-relaxed">
+              <h3 className="text-base font-serif font-black text-[#0f172a] mb-1">No products found</h3>
+              <p className="text-[13px] text-[#64748b] max-w-xs leading-relaxed">
                 Adjust your filters or click Add Product to build your catalog.
               </p>
             </div>
@@ -369,11 +369,11 @@ export default function BoutiqueProducts() {
                 <div 
                   key={prod._id} 
                   onClick={() => handleEdit(prod)}
-                  className="p-4 bg-[#ffffff] border border-[#e2e8f0]/90 shadow-[0_4px_16px_-4px_rgba(168,154,126,0.08)] rounded-[20px] hover:shadow-[0_8px_24px_-4px_rgba(168,154,126,0.14)] transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 select-none"
+                  className="p-4 bg-[#ffffff] border border-[#f1f5f9]/90 shadow-[0_4px_16px_-4px_rgba(168,154,126,0.08)] rounded-[20px] hover:shadow-[0_8px_24px_-4px_rgba(168,154,126,0.14)] transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 select-none"
                 >
                   {/* Left: Thumbnail (Restrained 56x56px POS Sizing) & Core Info (#5) */}
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    <div className="w-[56px] h-[56px] shrink-0 bg-slate-50 rounded-[14px] overflow-hidden relative border border-[#e2e8f0] flex items-center justify-center shadow-2xs">
+                    <div className="w-[56px] h-[56px] shrink-0 bg-slate-50 rounded-[14px] overflow-hidden relative border border-[#f1f5f9] flex items-center justify-center shadow-2xs">
                       {getProductImage(prod) ? (
                         <img src={getProductImage(prod) || ""} alt={prod.name} className="w-full h-full object-cover" />
                       ) : (
@@ -388,16 +388,16 @@ export default function BoutiqueProducts() {
 
                     <div className="flex flex-col min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="text-[16px] font-extrabold text-[#2C261E] tracking-[-0.01em] truncate leading-tight">
+                        <h3 className="text-[16px] font-extrabold text-[#0f172a] tracking-[-0.01em] truncate leading-tight">
                           {prod.name}
                         </h3>
                         {/* Soft Capsule Status Badge (#7) */}
                         {!prod.active ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#7A6F5D] border border-[#e2e8f0]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#8C806D]" /> Draft
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#64748b] border border-[#f1f5f9]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#64748b]" /> Draft
                           </span>
                         ) : isApproved ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#2C261E] border border-[#e2e8f0]">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#0f172a] border border-[#f1f5f9]">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Live
                           </span>
                         ) : isPending ? (
@@ -409,38 +409,38 @@ export default function BoutiqueProducts() {
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Changes req
                           </span>
                         ) : (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#7A6F5D] border border-[#e2e8f0]">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#64748b] border border-[#f1f5f9]">
                             Draft
                           </span>
                         )}
                       </div>
                       
-                      <span className="text-[13px] font-medium text-[#8C806D] truncate mt-0.5">
+                      <span className="text-[13px] font-medium text-[#64748b] truncate mt-0.5">
                         {categories?.find((c: any) => c._id === prod.categoryId)?.name || "Boutique Item"}
                       </span>
 
                       {/* Stock & Price Hierarchy (#5): Stock first, then Price */}
                       <div className="flex items-center gap-2 text-[13px] font-sans mt-1">
-                        <span className={`font-extrabold ${totalStock <= 2 ? "text-rose-600 font-mono" : "text-[#2C261E]"}`}>
-                          {totalStock} <span className="font-medium text-[#7A6F5D]">in stock</span>
+                        <span className={`font-extrabold ${totalStock <= 2 ? "text-rose-600 font-mono" : "text-[#0f172a]"}`}>
+                          {totalStock} <span className="font-medium text-[#64748b]">in stock</span>
                         </span>
-                        <span className="w-1 h-1 rounded-full bg-[#e2e8f0]" />
-                        <span className="font-bold text-[#2C261E] font-mono">₹{(prod.basePrice || prod.price).toLocaleString("en-IN")}</span>
+                        <span className="w-1 h-1 rounded-full bg-[#f1f5f9]" />
+                        <span className="font-bold text-[#0f172a] font-mono">₹{(prod.basePrice || prod.price).toLocaleString("en-IN")}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Right: Clean, Tactile Action Buttons (#6 & #10) */}
-                  <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#e2e8f0]/60 sm:border-transparent w-full sm:w-auto justify-end">
+                  <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#f1f5f9]/60 sm:border-transparent w-full sm:w-auto justify-end">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleEdit(prod); }}
-                      className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-[#e2e8f0] rounded-[14px] text-[12px] font-bold text-[#2C261E] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                      className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-[#f1f5f9] rounded-[14px] text-[12px] font-bold text-[#0f172a] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> Edit
+                      <Edit3 className="w-3.5 h-3.5 text-[#64748b] stroke-[1.75]" /> Edit
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(prod._id); }}
-                      className="w-8 h-8 flex items-center justify-center bg-transparent hover:bg-rose-50 text-[#8C806D] hover:text-rose-600 rounded-[14px] transition-all cursor-pointer"
+                      className="w-8 h-8 flex items-center justify-center bg-transparent hover:bg-rose-50 text-[#64748b] hover:text-rose-600 rounded-[14px] transition-all cursor-pointer"
                       title="Delete Product"
                     >
                       <Trash2 className="w-4 h-4 stroke-[1.75]" />
@@ -489,10 +489,10 @@ export default function BoutiqueProducts() {
       )}
 
       {deletingProductId && (
-        <div className="fixed inset-0 bg-[#2C261E]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#ffffff] rounded-[24px] p-6 sm:p-7 max-w-sm w-full shadow-[0_20px_60px_-15px_rgba(44,38,30,0.3)] border border-[#e2e8f0] animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-[18px] font-extrabold text-[#2C261E] mb-2 tracking-tight">Delete Product?</h3>
-            <p className="text-[14px] text-[#7A6F5D] leading-relaxed mb-6">
+        <div className="fixed inset-0 bg-[#0f172a]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#ffffff] rounded-[24px] p-6 sm:p-7 max-w-sm w-full shadow-[0_20px_60px_-15px_rgba(44,38,30,0.3)] border border-[#f1f5f9] animate-in fade-in zoom-in-95 duration-200">
+            <h3 className="text-[18px] font-extrabold text-[#0f172a] mb-2 tracking-tight">Delete Product?</h3>
+            <p className="text-[14px] text-[#64748b] leading-relaxed mb-6">
               Are you sure you want to permanently delete this product? All image files will be cleaned from storage.
             </p>
             <div className="flex gap-3">
@@ -500,7 +500,7 @@ export default function BoutiqueProducts() {
                 type="button"
                 onClick={() => setDeletingProductId(null)}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2.5 bg-white border border-[#e2e8f0] hover:bg-slate-50 text-[#5C5346] font-bold text-[14px] rounded-[14px] transition-all cursor-pointer"
+                className="flex-1 px-4 py-2.5 bg-white border border-[#f1f5f9] hover:bg-slate-50 text-[#334155] font-bold text-[14px] rounded-[14px] transition-all cursor-pointer"
               >
                 Cancel
               </button>

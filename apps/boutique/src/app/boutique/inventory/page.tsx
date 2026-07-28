@@ -439,7 +439,7 @@ export default function BoutiqueInventory() {
       {/* Branded Premium Toast Overlay (Frosted glass designer style) */}
       {toast && (
         <div className="fixed top-20 md:top-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 duration-300">
-          <div className="flex items-center gap-3 px-5 py-3 rounded-full bg-slate-50/95 backdrop-blur-md text-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[#e2e8f0] select-none">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-full bg-slate-50/95 backdrop-blur-md text-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[#f1f5f9] select-none">
             <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${
               toast.type === "error" 
                 ? "bg-red-50 border-red-200 text-red-500" 
@@ -459,7 +459,7 @@ export default function BoutiqueInventory() {
       )}
 
       {/* Brand-Aligned Title Section */}
-      <div className="flex items-end justify-between border-b border-[#e2e8f0]/30 pb-3 pt-3">
+      <div className="flex items-end justify-between border-b border-[#f1f5f9]/30 pb-3 pt-3">
         <div>
           <h1 className="text-[24px] font-bold tracking-tight text-[#1A1D1D] font-manrope leading-none">
             Stock Operations
@@ -496,7 +496,7 @@ export default function BoutiqueInventory() {
 
       {/* Needs Attention Warning Bar */}
       {hasAttentionAlerts && (
-        <div className="flex items-center justify-between text-xs py-1.5 border-b border-[#e2e8f0]/20 font-manrope">
+        <div className="flex items-center justify-between text-xs py-1.5 border-b border-[#f1f5f9]/20 font-manrope">
           <div className="flex items-center gap-2 text-slate-600 font-medium">
             <span className="inline-flex items-center gap-1.5 text-[#D93025] font-semibold text-[11px]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#D93025] animate-pulse" /> 
@@ -522,11 +522,11 @@ export default function BoutiqueInventory() {
             placeholder="Search catalog..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9.5 pr-4 py-2 bg-white border border-[#e2e8f0]/40 rounded-full text-xs focus:outline-none focus:ring-1.5 focus:ring-[#C89653] font-manrope text-slate-800 placeholder:text-slate-400 transition-all duration-150"
+            className="w-full pl-9.5 pr-4 py-2 bg-white border border-[#f1f5f9]/40 rounded-full text-xs focus:outline-none focus:ring-1.5 focus:ring-[#C89653] font-manrope text-slate-800 placeholder:text-slate-400 transition-all duration-150"
           />
         </div>
 
-        <div className="flex bg-slate-50 p-1 border border-[#e2e8f0]/20 rounded-full text-[9px] font-extrabold uppercase tracking-wider shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.01)] select-none">
+        <div className="flex bg-slate-50 p-1 border border-[#f1f5f9]/20 rounded-full text-[9px] font-extrabold uppercase tracking-wider shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.01)] select-none">
           {[
             { id: "all", label: "ALL" },
             { id: "attention", label: "LOW/OUT" }
@@ -535,7 +535,7 @@ export default function BoutiqueInventory() {
               key={t.id}
               onClick={() => setFilterMode(t.id as any)}
               className={`px-3 py-1.5 rounded-full transition-all select-none cursor-pointer ${
-                filterMode === t.id ? "bg-white text-[#1A1D1D] shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#e2e8f0]/30 font-black" : "text-slate-500 hover:text-slate-700"
+                filterMode === t.id ? "bg-white text-[#1A1D1D] shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-[#f1f5f9]/30 font-black" : "text-slate-500 hover:text-slate-700"
               }`}
             >
               {t.label}
@@ -545,7 +545,7 @@ export default function BoutiqueInventory() {
       </div>
 
       {/* Product List */}
-      <div className="flex flex-col border-t border-[#e2e8f0]/20 divide-y divide-slate-100 mt-1">
+      <div className="flex flex-col border-t border-[#f1f5f9]/20 divide-y divide-slate-100 mt-1">
         {filteredProducts.map((prod: any) => {
           const isExpanded = expandedProductIds.has(prod._id);
           const localProdSizes = localSizes[prod._id] ?? prod.sizes ?? [];
@@ -574,7 +574,7 @@ export default function BoutiqueInventory() {
               {/* Product Core Row */}
               <div className="flex items-center gap-3 py-1.5 h-[62px]">
                 {/* Thumbnail Image / Monogram Placeholder */}
-                <div className="w-8 h-10 shrink-0 bg-[#f8fafc] rounded overflow-hidden relative border border-[#e2e8f0]/30 flex items-center justify-center">
+                <div className="w-8 h-10 shrink-0 bg-[#f8fafc] rounded overflow-hidden relative border border-[#f1f5f9]/30 flex items-center justify-center">
                   {getProductImage(prod) ? (
                     <img src={getProductImage(prod) || ""} alt="" className="w-full h-full object-cover" />
                   ) : (
@@ -603,7 +603,7 @@ export default function BoutiqueInventory() {
 
                 {/* First Size controls inline */}
                 {firstSize && (
-                  <div className="flex items-center rounded-lg p-0.5 shrink-0 bg-[#f8fafc] border border-[#e2e8f0]/20">
+                  <div className="flex items-center rounded-lg p-0.5 shrink-0 bg-[#f8fafc] border border-[#f1f5f9]/20">
                     <span className={`px-2 text-[10px] font-bold uppercase select-none ${isFirstOut ? "text-[#D93025]" : isFirstLow ? "text-[#E68A00]" : "text-slate-500"}`}>
                       {firstSize}
                     </span>
@@ -656,7 +656,7 @@ export default function BoutiqueInventory() {
                         </span>
                         
                         {/* Right Column: stepper pill */}
-                        <div className="flex items-center rounded-lg p-0.5 bg-white border border-[#e2e8f0]/20 shrink-0">
+                        <div className="flex items-center rounded-lg p-0.5 bg-white border border-[#f1f5f9]/20 shrink-0">
                           <span className={`px-2 text-[10px] font-bold uppercase select-none ${isOut ? "text-[#D93025]" : isLow ? "text-[#E68A00]" : "text-slate-500"}`}>
                             {sz}
                           </span>
@@ -683,15 +683,15 @@ export default function BoutiqueInventory() {
                   })}
 
                   {/* Inline Form to Add a Size */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-[#e2e8f0]/20 mt-1 flex-wrap">
+                  <div className="flex items-center gap-2 pt-2 border-t border-[#f1f5f9]/20 mt-1 flex-wrap">
                     <input
                       type="text"
                       placeholder="Add Size (e.g. XL)"
                       value={addSizeFields[prod._id]?.label || ""}
                       onChange={(e) => handleAddSizeChange(prod._id, "label", e.target.value)}
-                      className="flex-1 min-w-[120px] px-2.5 py-1.5 bg-white border border-[#e2e8f0]/30 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#C89653] font-manrope text-slate-800 placeholder:text-slate-400"
+                      className="flex-1 min-w-[120px] px-2.5 py-1.5 bg-white border border-[#f1f5f9]/30 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#C89653] font-manrope text-slate-800 placeholder:text-slate-400"
                     />
-                    <div className="flex items-center rounded-lg bg-white border border-[#e2e8f0]/20">
+                    <div className="flex items-center rounded-lg bg-white border border-[#f1f5f9]/20">
                       <span className="px-2 text-[10px] font-bold uppercase text-slate-400 select-none">Qty</span>
                       <input
                         type="number"
@@ -729,9 +729,9 @@ export default function BoutiqueInventory() {
 
       {/* Floating Save/Discard edits action bar */}
       {isDirty && (
-        <div className="fixed bottom-16 md:bottom-0 md:left-64 left-0 right-0 bg-white border-t border-[#e2e8f0]/30 px-4 py-3 flex items-center justify-between z-50 h-[56px] shadow-[0_-4px_12px_rgba(0,0,0,0.03)] font-manrope animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="fixed bottom-16 md:bottom-0 md:left-64 left-0 right-0 bg-white border-t border-[#f1f5f9]/30 px-4 py-3 flex items-center justify-between z-50 h-[56px] shadow-[0_-4px_12px_rgba(0,0,0,0.03)] font-manrope animate-in fade-in slide-in-from-bottom-2 duration-300">
           {/* Premium Count chip */}
-          <span className="bg-[#f8fafc] border border-[#e2e8f0]/40 text-[#C89653] rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider font-mono">
+          <span className="bg-[#f8fafc] border border-[#f1f5f9]/40 text-[#C89653] rounded-lg px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider font-mono">
             {changedProducts.length} Product{changedProducts.length > 1 ? "s" : ""} Updated
           </span>
           <div className="flex items-center gap-3">
@@ -749,7 +749,7 @@ export default function BoutiqueInventory() {
               disabled={saving || saveSuccess}
               className={`px-3.5 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all shadow-sm active:scale-95 font-manrope ${
                 saveSuccess
-                  ? "bg-[#f8fafc] border border-[#e2e8f0]/30 text-[#0F9D58]"
+                  ? "bg-[#f8fafc] border border-[#f1f5f9]/30 text-[#0F9D58]"
                   : "bg-[#C89653] hover:bg-[#b08143] text-white"
               }`}
             >
@@ -786,7 +786,7 @@ export default function BoutiqueInventory() {
                   <div key={prod._id} className="p-3 bg-slate-50/50 border border-slate-100 rounded-2xl flex flex-col gap-3">
                     <div className="flex items-center gap-3">
                       {/* Image Thumbnail */}
-                      <div className="w-8 h-10 shrink-0 bg-white border border-[#e2e8f0]/20 rounded overflow-hidden flex items-center justify-center relative">
+                      <div className="w-8 h-10 shrink-0 bg-white border border-[#f1f5f9]/20 rounded overflow-hidden flex items-center justify-center relative">
                         {getProductImage(prod) ? (
                           <img src={getProductImage(prod) || ""} alt="" className="w-full h-full object-cover" />
                         ) : (
