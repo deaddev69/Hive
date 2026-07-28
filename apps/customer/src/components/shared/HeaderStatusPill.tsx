@@ -11,9 +11,9 @@ export const HeaderStatusPill: React.FC<HeaderStatusPillProps> = ({ children, cl
   return (
     <div
       className={cn(
-        "relative h-9 px-3 rounded-xl flex items-center justify-center select-none transition-all duration-300",
-        "bg-[#FBF8F1] dark:bg-neutral-900/50 border border-[#E8D9AF]/33 dark:border-neutral-800/40",
-        "shadow-[0_1px_2px_rgba(0,0,0,0.04)]",
+        "relative h-11 px-4 rounded-xl flex items-center justify-center select-none transition-all duration-300",
+        "bg-[#111111] dark:bg-black border border-neutral-800 dark:border-neutral-900/60",
+        "shadow-[0_1px_2px_rgba(0,0,0,0.05)]",
         className
       )}
     >
