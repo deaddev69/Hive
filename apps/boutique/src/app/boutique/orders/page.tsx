@@ -30,7 +30,7 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
   const [generating, setGenerating] = React.useState(false);
 
   if (invoice === undefined) {
-    return <span className="inline-block w-14 h-4 bg-[#FAF6F0] rounded animate-pulse" />;
+    return <span className="inline-block w-14 h-4 bg-slate-50 rounded animate-pulse" />;
   }
 
   if (!invoice) {
@@ -84,7 +84,7 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
   return (
     <button
       onClick={() => window.open(invoice.pdfUrl!, "_blank")}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-hive-border bg-white text-[9px] font-bold text-hive-dark hover:bg-[#FAF6F0] hover:border-hive-gold transition-colors whitespace-nowrap"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-hive-border bg-white text-[9px] font-bold text-hive-dark hover:bg-slate-50 hover:border-hive-gold transition-colors whitespace-nowrap"
       title={`Download ${invoice.invoiceNumber}`}
     >
       <FileDown className="w-3.5 h-3.5 text-hive-gold" />
@@ -182,7 +182,7 @@ export default function BoutiqueOrders() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead className="hidden md:table-header-group">
-                <tr className="bg-[#FAF6F0]/60 border-b border-hive-border/30 text-[10px] font-extrabold uppercase tracking-wider text-[#A89A7E] select-none">
+                <tr className="bg-slate-50/60 border-b border-hive-border/30 text-[10px] font-extrabold uppercase tracking-wider text-[#A89A7E] select-none">
                   <th className="px-6 py-4">Order No.</th>
                   <th className="px-6 py-4">Delivery Slot / Date</th>
                   <th className="px-6 py-4">Customer Details</th>
@@ -217,7 +217,7 @@ export default function BoutiqueOrders() {
                           <div className="flex flex-col text-left font-sans gap-2.5">
                             {/* 1. Top Header: Status Capsule (Warm cream & green dot) & Real Timestamp */}
                             <div className="flex items-center justify-between pb-2 border-b border-[#EBE3D5]/60">
-                              <span className="inline-flex items-center gap-1.5 bg-[#FAF6F0] text-[#5C5346] px-2.5 py-0.5 rounded-full text-[12px] font-semibold tracking-normal border border-[#EBE3D5]/80">
+                              <span className="inline-flex items-center gap-1.5 bg-slate-50 text-[#5C5346] px-2.5 py-0.5 rounded-full text-[12px] font-semibold tracking-normal border border-[#EBE3D5]/80">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
                                 New order
                               </span>
@@ -228,7 +228,7 @@ export default function BoutiqueOrders() {
 
                             {/* 2. Compact Product Row (Exact 56x56px thumbnail + dominant title & muted gold category) */}
                             <div className="flex items-center gap-3.5">
-                              <div className="w-[56px] h-[56px] rounded-[14px] border border-[#EBE3D5] overflow-hidden bg-[#FAF6F0] flex-shrink-0 shadow-2xs relative">
+                              <div className="w-[56px] h-[56px] rounded-[14px] border border-[#EBE3D5] overflow-hidden bg-slate-50 flex-shrink-0 shadow-2xs relative">
                                 {order.items?.[0]?.imageUrl ? (
                                   <img src={order.items[0].imageUrl} alt="" className="w-full h-full object-cover" />
                                 ) : (
@@ -275,7 +275,7 @@ export default function BoutiqueOrders() {
                             {/* 4. Action Stack (~46px Warm Gold Accept Order CTA + subtle warm Decline button) */}
                             <div className="pt-2.5 border-t border-[#EBE3D5]/60 flex flex-col items-center gap-1">
                               {isAcceptedOptimistically ? (
-                                <div className="w-full py-2.5 bg-[#FAF6F0] border border-[#EBE3D5] text-[#5C5346] rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
+                                <div className="w-full py-2.5 bg-slate-50 border border-[#EBE3D5] text-[#5C5346] rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
                                   <Check className="w-4 h-4 text-[#C89653] stroke-[2.5]" />
                                   <span className="font-bold text-[13px]">Order Accepted — Assigning Rider...</span>
                                 </div>
@@ -308,7 +308,7 @@ export default function BoutiqueOrders() {
                                       setDeclineStep("confirm");
                                     }}
                                     disabled={pendingActionId === order._id}
-                                    className="w-full py-1.5 bg-transparent hover:bg-[#FAF6F0] active:bg-[#F3ECE1] text-[#8C806D] hover:text-rose-600 rounded-lg text-[13px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
+                                    className="w-full py-1.5 bg-transparent hover:bg-slate-50 active:bg-slate-100 text-[#8C806D] hover:text-rose-600 rounded-lg text-[13px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
                                   >
                                     Decline
                                   </button>
@@ -463,7 +463,7 @@ export default function BoutiqueOrders() {
                   </button>
                   <button
                     onClick={() => setDeclineStep("reason")}
-                    className="py-3 px-5 bg-transparent hover:bg-[#FAF6F0] text-[#8C806D] hover:text-rose-600 rounded-xl text-[13px] font-bold tracking-wide transition-all cursor-pointer text-center"
+                    className="py-3 px-5 bg-transparent hover:bg-slate-50 text-[#8C806D] hover:text-rose-600 rounded-xl text-[13px] font-bold tracking-wide transition-all cursor-pointer text-center"
                   >
                     Decline
                   </button>
@@ -503,8 +503,8 @@ export default function BoutiqueOrders() {
                         }}
                         className={`p-3.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer select-none ${
                           isSelected
-                            ? "border-[#C89653] bg-[#FAF6F0] text-[#2C261E] font-extrabold shadow-2xs"
-                            : "border-[#EBE3D5] bg-white text-[#5C5346] font-semibold hover:border-[#C89653]/50 hover:bg-[#FAF6F0]/40"
+                            ? "border-[#C89653] bg-slate-50 text-[#2C261E] font-extrabold shadow-2xs"
+                            : "border-[#EBE3D5] bg-white text-[#5C5346] font-semibold hover:border-[#C89653]/50 hover:bg-slate-50/40"
                         }`}
                       >
                         <span className="text-[13px]">{option}</span>
@@ -539,7 +539,7 @@ export default function BoutiqueOrders() {
                   )}
 
                   {declineReasonType === "Out of stock" && (
-                    <div className="p-3 bg-[#FAF6F0] border border-[#EBE3D5] rounded-xl text-[12px] font-medium text-[#7A6F5D] flex items-start gap-2 mt-1">
+                    <div className="p-3 bg-slate-50 border border-[#EBE3D5] rounded-xl text-[12px] font-medium text-[#7A6F5D] flex items-start gap-2 mt-1">
                       <span>💡</span>
                       <span>Consider updating your inventory after declining this order.</span>
                     </div>

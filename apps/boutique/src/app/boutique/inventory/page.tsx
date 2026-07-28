@@ -439,7 +439,7 @@ export default function BoutiqueInventory() {
       {/* Branded Premium Toast Overlay (Frosted glass designer style) */}
       {toast && (
         <div className="fixed top-20 md:top-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4 duration-300">
-          <div className="flex items-center gap-3 px-5 py-3 rounded-full bg-[#FAF6F0]/95 backdrop-blur-md text-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[#E6D5B8] select-none">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-full bg-slate-50/95 backdrop-blur-md text-slate-800 shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-[#E6D5B8] select-none">
             <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${
               toast.type === "error" 
                 ? "bg-red-50 border-red-200 text-red-500" 
@@ -526,7 +526,7 @@ export default function BoutiqueInventory() {
           />
         </div>
 
-        <div className="flex bg-[#FAF6F0] p-1 border border-[#E6D5B8]/20 rounded-full text-[9px] font-extrabold uppercase tracking-wider shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.01)] select-none">
+        <div className="flex bg-slate-50 p-1 border border-[#E6D5B8]/20 rounded-full text-[9px] font-extrabold uppercase tracking-wider shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.01)] select-none">
           {[
             { id: "all", label: "ALL" },
             { id: "attention", label: "LOW/OUT" }

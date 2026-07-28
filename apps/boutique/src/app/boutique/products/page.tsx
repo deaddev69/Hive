@@ -51,7 +51,7 @@ function CategoryFilterSelect({
               onChange("all");
               setIsOpen(false);
             }}
-            className={`w-full px-4 py-2.5 text-[13px] font-bold text-left hover:bg-[#FAF6F0] transition-colors ${
+            className={`w-full px-4 py-2.5 text-[13px] font-bold text-left hover:bg-slate-50 transition-colors ${
               value === "all" ? "text-[#C89653]" : "text-[#2C261E]"
             }`}
           >
@@ -65,7 +65,7 @@ function CategoryFilterSelect({
                 onChange(c._id);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2.5 text-[13px] font-bold text-left hover:bg-[#FAF6F0] transition-colors truncate ${
+              className={`w-full px-4 py-2.5 text-[13px] font-bold text-left hover:bg-slate-50 transition-colors truncate ${
                 value === c._id ? "text-[#C89653]" : "text-[#2C261E]"
               }`}
             >
@@ -239,7 +239,7 @@ export default function BoutiqueProducts() {
 
         {/* Short, Direct Attention Banner (#8 & #1 - no stats box container!) */}
         {(stats.low > 0 || stats.missingImages > 0) && (
-          <div className="bg-[#FAF6F0] border border-[#C89653]/40 rounded-[14px] px-4 py-2.5 flex items-center justify-between text-[13px] text-[#2C261E] shadow-2xs select-none">
+          <div className="bg-slate-50 border border-[#C89653]/40 rounded-[14px] px-4 py-2.5 flex items-center justify-between text-[13px] text-[#2C261E] shadow-2xs select-none">
             <span className="flex items-center gap-2 font-semibold">
               <span className="text-[#C89653] font-bold">⚠</span>
               <span>
@@ -278,7 +278,7 @@ export default function BoutiqueProducts() {
                 <span>{tab.label}</span>
                 {tab.count !== null && (
                   <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold leading-none ${
-                    tab.isAlert ? "bg-rose-50 text-rose-600 border border-rose-200/60" : "bg-[#FAF6F0] text-[#7A6F5D] border border-[#EBE3D5]"
+                    tab.isAlert ? "bg-rose-50 text-rose-600 border border-rose-200/60" : "bg-slate-50 text-[#7A6F5D] border border-[#EBE3D5]"
                   }`}>
                     {tab.count}
                   </span>
@@ -321,7 +321,7 @@ export default function BoutiqueProducts() {
               <button
                 type="button"
                 onClick={() => setShowMoreActions(!showMoreActions)}
-                className="w-10 h-10 bg-white hover:bg-[#FAF6F0] border border-[#EBE3D5] text-[#7A6F5D] hover:text-[#2C261E] rounded-[14px] font-bold text-base transition-all cursor-pointer flex items-center justify-center shadow-2xs select-none"
+                className="w-10 h-10 bg-white hover:bg-slate-50 border border-[#EBE3D5] text-[#7A6F5D] hover:text-[#2C261E] rounded-[14px] font-bold text-base transition-all cursor-pointer flex items-center justify-center shadow-2xs select-none"
                 title="More options"
               >
                 ⋯
@@ -335,7 +335,7 @@ export default function BoutiqueProducts() {
                       setShowMoreActions(false);
                       alert("Bulk upload / CSV import: Select your catalog file to ingest.");
                     }}
-                    className="w-full px-4 py-2.5 text-[12px] font-bold text-left text-[#5C5346] hover:bg-[#FAF6F0] hover:text-[#2C261E] transition-colors flex items-center gap-2 cursor-pointer"
+                    className="w-full px-4 py-2.5 text-[12px] font-bold text-left text-[#5C5346] hover:bg-slate-50 hover:text-[#2C261E] transition-colors flex items-center gap-2 cursor-pointer"
                   >
                     <Upload className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> Bulk upload CSV
                   </button>
@@ -349,7 +349,7 @@ export default function BoutiqueProducts() {
         <div className="flex flex-col gap-2.5 mt-1">
           {paginatedProducts.length === 0 ? (
             <div className="text-center py-16 bg-[#FFFCF8] rounded-[20px] border border-[#EBE3D5] shadow-2xs flex flex-col items-center justify-center">
-              <div className="w-14 h-14 bg-[#FAF6F0] rounded-full flex items-center justify-center mb-3 border border-[#EBE3D5]">
+              <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mb-3 border border-[#EBE3D5]">
                 <Search className="w-5 h-5 text-[#8C806D] stroke-[1.5]" />
               </div>
               <h3 className="text-base font-serif font-black text-[#2C261E] mb-1">No products found</h3>
@@ -373,7 +373,7 @@ export default function BoutiqueProducts() {
                 >
                   {/* Left: Thumbnail (Restrained 56x56px POS Sizing) & Core Info (#5) */}
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    <div className="w-[56px] h-[56px] shrink-0 bg-[#FAF6F0] rounded-[14px] overflow-hidden relative border border-[#EBE3D5] flex items-center justify-center shadow-2xs">
+                    <div className="w-[56px] h-[56px] shrink-0 bg-slate-50 rounded-[14px] overflow-hidden relative border border-[#EBE3D5] flex items-center justify-center shadow-2xs">
                       {getProductImage(prod) ? (
                         <img src={getProductImage(prod) || ""} alt={prod.name} className="w-full h-full object-cover" />
                       ) : (
@@ -393,15 +393,15 @@ export default function BoutiqueProducts() {
                         </h3>
                         {/* Soft Capsule Status Badge (#7) */}
                         {!prod.active ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#FAF6F0] text-[#7A6F5D] border border-[#EBE3D5]">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#7A6F5D] border border-[#EBE3D5]">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#8C806D]" /> Draft
                           </span>
                         ) : isApproved ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#FAF6F0] text-[#2C261E] border border-[#EBE3D5]">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#2C261E] border border-[#EBE3D5]">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Live
                           </span>
                         ) : isPending ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#FAF6F0] text-[#B88643] border border-[#C89653]/40">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#B88643] border border-[#C89653]/40">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#C89653] animate-pulse" /> Review
                           </span>
                         ) : isChangesRequested ? (
@@ -409,7 +409,7 @@ export default function BoutiqueProducts() {
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Changes req
                           </span>
                         ) : (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#FAF6F0] text-[#7A6F5D] border border-[#EBE3D5]">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#7A6F5D] border border-[#EBE3D5]">
                             Draft
                           </span>
                         )}
@@ -434,7 +434,7 @@ export default function BoutiqueProducts() {
                   <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#EBE3D5]/60 sm:border-transparent w-full sm:w-auto justify-end">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleEdit(prod); }}
-                      className="px-3 py-1.5 bg-white hover:bg-[#FAF6F0] border border-[#EBE3D5] rounded-[14px] text-[12px] font-bold text-[#2C261E] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                      className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-[#EBE3D5] rounded-[14px] text-[12px] font-bold text-[#2C261E] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
                     >
                       <Edit3 className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> Edit
                     </button>
@@ -500,7 +500,7 @@ export default function BoutiqueProducts() {
                 type="button"
                 onClick={() => setDeletingProductId(null)}
                 disabled={isDeleting}
-                className="flex-1 px-4 py-2.5 bg-white border border-[#EBE3D5] hover:bg-[#FAF6F0] text-[#5C5346] font-bold text-[14px] rounded-[14px] transition-all cursor-pointer"
+                className="flex-1 px-4 py-2.5 bg-white border border-[#EBE3D5] hover:bg-slate-50 text-[#5C5346] font-bold text-[14px] rounded-[14px] transition-all cursor-pointer"
               >
                 Cancel
               </button>

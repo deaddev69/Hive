@@ -48,7 +48,7 @@ export default function LegalAgreementStep() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[90vh] p-4 bg-slate-50">
-      <div className="w-full max-w-2xl mx-auto bg-[#FAF6F0] p-8 rounded-[32px] border border-hive-border">
+      <div className="w-full max-w-2xl mx-auto bg-white p-8 rounded-[32px] border border-hive-border">
         {/* Title Segment */}
         <span className="text-[10px] uppercase tracking-widest text-hive-gold font-bold">Step 3 of 4</span>
         <h2 className="font-serif font-extrabold text-2xl text-hive-malt mt-1 mb-6">Review Merchant Partnership Agreement</h2>
