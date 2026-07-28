@@ -24,7 +24,6 @@ import {
   Zap,
   ArrowLeft,
   ArrowRight,
-  Bike,
   Check,
 } from "lucide-react";
 import Link from "next/link";
@@ -36,7 +35,37 @@ import { api } from "../../../../../convex/_generated/api";
 import { getSignInUrl, getSignUpUrl, navigateToSignIn, navigateToSignUp } from "@/lib/auth-redirect";
 import { HeaderStatusPill } from "@/components/shared/HeaderStatusPill";
 
-
+const DeliveryRiderIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={className}
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Wheels */}
+    <circle cx="5.5" cy="18.5" r="2.5" />
+    <circle cx="18.5" cy="18.5" r="2.5" />
+    {/* Bike Frame & Handlebars */}
+    <path d="M5.5 18.5l4-7h5.5l3.5 7" />
+    <path d="M15 11.5l1.5-3.5h2.5" />
+    {/* Seat */}
+    <path d="M9.5 11.5L9 9h2" />
+    {/* Rider Body & Torso leaning forward */}
+    <path d="M10 9l3-4.5" />
+    {/* Head */}
+    <circle cx="14" cy="3" r="1" fill="currentColor" />
+    {/* Courier Backpack */}
+    <rect x="8.5" y="4.5" width="3" height="4.5" rx="0.5" stroke="currentColor" strokeWidth="1.5" />
+    {/* Arms to handlebars */}
+    <path d="M13 4.5l2.5 3.5" />
+    {/* Leg to pedal */}
+    <path d="M11.5 6.8l.5 4.7 1.5.5" />
+  </svg>
+);
 
 export const Navbar: React.FC = () => {
   const { locality, city, setDrawerOpen, isServiceable, updateLocationDetails } = useLocation();
@@ -413,7 +442,7 @@ export const Navbar: React.FC = () => {
               </button>
               {hydrated && (locality || city) && (
                 <HeaderStatusPill className="hover:bg-[#FFFDF9] dark:hover:bg-neutral-900/70 hover:shadow-[0_2px_8px_rgba(183,131,36,0.06)] cursor-default">
-                  <Bike className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={1.8} />
+                  <DeliveryRiderIcon className="w-4 h-4 text-[#B78324] shrink-0" />
                   <span className="text-[11px] tracking-wide font-sans flex items-center gap-1.5">
                     <span className="text-stone-500 dark:text-neutral-400 font-medium">
                       {deliveryPromise.prefix}
@@ -599,7 +628,7 @@ export const Navbar: React.FC = () => {
           </button>
           {hydrated && (locality || city) && (
             <HeaderStatusPill className="px-3 cursor-default">
-              <Bike className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={1.8} />
+              <DeliveryRiderIcon className="w-4 h-4 text-[#B78324] shrink-0" />
               <span className="text-[10px] tracking-wide font-sans flex items-center gap-1.5">
                 <span className="text-stone-500 dark:text-neutral-400 font-medium">
                   {deliveryPromise.prefix}
