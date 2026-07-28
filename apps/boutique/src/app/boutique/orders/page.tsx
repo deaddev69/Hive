@@ -432,6 +432,28 @@ export default function BoutiqueOrders() {
                         <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider block mb-2">Order Status</span>
                         <OrderStatusBadge status={order.status} />
                         
+                        {order.status === "confirmed" && (
+                          <button
+                            onClick={async () => {
+                              setPendingActionId(order._id);
+                              try {
+                                await updateStatus({
+                                  orderId: order._id as Id<"orders">,
+                                  status: "packed",
+                                });
+                              } catch (err: any) {
+                                alert("Failed to update status to packed: " + err.message);
+                              } finally {
+                                setPendingActionId(null);
+                              }
+                            }}
+                            disabled={pendingActionId === order._id}
+                            className="mt-2 block w-full px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 text-[11px] font-extrabold uppercase tracking-wider rounded-xl border border-blue-200/40 transition-all duration-150 text-center select-none cursor-pointer disabled:opacity-50"
+                          >
+                            {pendingActionId === order._id ? "Packing..." : "📦 Mark as Packed"}
+                          </button>
+                        )}
+
                         {(order.status === "packed" || order.status === "booking_failed") && (
                           <button
                             onClick={async () => {
@@ -462,7 +484,7 @@ export default function BoutiqueOrders() {
                               ? "Dispatching..."
                               : order.status === "booking_failed"
                                 ? "↻ Retry Pickup"
-                                : "📦 Ready for Pickup"}
+                                : "🚚 Request Pickup"}
                           </button>
                         )}
                       </td>
