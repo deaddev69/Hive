@@ -212,12 +212,12 @@ export default function BoutiqueOrders() {
                     const distanceStr = order.distanceKm ? `${order.distanceKm} km` : "3.2 km";
 
                     return (
-                      <tr key={order._id} className="flex flex-col md:table-row bg-[#FFFCF8] border border-[#EBE3D5]/80 shadow-[0_4px_20px_-4px_rgba(168,154,126,0.08)] rounded-2xl mb-3.5 hover:shadow-[0_8px_24px_-4px_rgba(168,154,126,0.14)] transition-all p-4 md:p-5">
+                      <tr key={order._id} className="flex flex-col md:table-row bg-[#ffffff] border border-[#e2e8f0]/80 shadow-[0_4px_20px_-4px_rgba(168,154,126,0.08)] rounded-2xl mb-3.5 hover:shadow-[0_8px_24px_-4px_rgba(168,154,126,0.14)] transition-all p-4 md:p-5">
                         <td colSpan={7} className="p-0">
                           <div className="flex flex-col text-left font-sans gap-2.5">
                             {/* 1. Top Header: Status Capsule (Warm cream & green dot) & Real Timestamp */}
-                            <div className="flex items-center justify-between pb-2 border-b border-[#EBE3D5]/60">
-                              <span className="inline-flex items-center gap-1.5 bg-slate-50 text-[#5C5346] px-2.5 py-0.5 rounded-full text-[12px] font-semibold tracking-normal border border-[#EBE3D5]/80">
+                            <div className="flex items-center justify-between pb-2 border-b border-[#e2e8f0]/60">
+                              <span className="inline-flex items-center gap-1.5 bg-slate-50 text-[#5C5346] px-2.5 py-0.5 rounded-full text-[12px] font-semibold tracking-normal border border-[#e2e8f0]/80">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
                                 New order
                               </span>
@@ -228,7 +228,7 @@ export default function BoutiqueOrders() {
 
                             {/* 2. Compact Product Row (Exact 56x56px thumbnail + dominant title & muted gold category) */}
                             <div className="flex items-center gap-3.5">
-                              <div className="w-[56px] h-[56px] rounded-[14px] border border-[#EBE3D5] overflow-hidden bg-slate-50 flex-shrink-0 shadow-2xs relative">
+                              <div className="w-[56px] h-[56px] rounded-[14px] border border-[#e2e8f0] overflow-hidden bg-slate-50 flex-shrink-0 shadow-2xs relative">
                                 {order.items?.[0]?.imageUrl ? (
                                   <img src={order.items[0].imageUrl} alt="" className="w-full h-full object-cover" />
                                 ) : (
@@ -252,7 +252,7 @@ export default function BoutiqueOrders() {
                             </div>
 
                             {/* 3. Money & Lucide Customer Row */}
-                            <div className="pt-2 border-t border-[#EBE3D5]/60 flex flex-col gap-1">
+                            <div className="pt-2 border-t border-[#e2e8f0]/60 flex flex-col gap-1">
                               <span className="text-[12px] font-medium text-[#8C806D] block">
                                 You&apos;ll receive
                               </span>
@@ -265,7 +265,7 @@ export default function BoutiqueOrders() {
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-3 text-[12px] text-[#5C5346] font-medium pt-2 border-t border-[#EBE3D5]/50 mt-1">
+                              <div className="flex items-center gap-3 text-[12px] text-[#5C5346] font-medium pt-2 border-t border-[#e2e8f0]/50 mt-1">
                                 <span className="inline-flex items-center gap-1"><User className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> {firstCustName}</span>
                                 <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-[#8C806D] stroke-[1.75]" /> {locality}</span>
                                 <span className="text-[#8C806D] font-mono">{distanceStr}</span>
@@ -273,9 +273,9 @@ export default function BoutiqueOrders() {
                             </div>
 
                             {/* 4. Action Stack (~46px Warm Gold Accept Order CTA + subtle warm Decline button) */}
-                            <div className="pt-2.5 border-t border-[#EBE3D5]/60 flex flex-col items-center gap-1">
+                            <div className="pt-2.5 border-t border-[#e2e8f0]/60 flex flex-col items-center gap-1">
                               {isAcceptedOptimistically ? (
-                                <div className="w-full py-2.5 bg-slate-50 border border-[#EBE3D5] text-[#5C5346] rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
+                                <div className="w-full py-2.5 bg-slate-50 border border-[#e2e8f0] text-[#5C5346] rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
                                   <Check className="w-4 h-4 text-[#C89653] stroke-[2.5]" />
                                   <span className="font-bold text-[13px]">Order Accepted — Assigning Rider...</span>
                                 </div>
@@ -438,7 +438,7 @@ export default function BoutiqueOrders() {
       {/* Full-Screen Decline Modal (Apple restraint + Aesop warmth + Linear clarity) */}
       {orderToDecline !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2C261E]/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-[#FFFCF8] rounded-3xl p-6 md:p-7 w-full max-w-md shadow-[0_20px_60px_-15px_rgba(44,38,30,0.25)] border border-[#EBE3D5] flex flex-col gap-5 animate-in zoom-in-95 duration-200">
+          <div className="bg-[#ffffff] rounded-3xl p-6 md:p-7 w-full max-w-md shadow-[0_20px_60px_-15px_rgba(44,38,30,0.25)] border border-[#e2e8f0] flex flex-col gap-5 animate-in zoom-in-95 duration-200">
             {declineStep === "confirm" ? (
               <>
                 <div>
@@ -504,14 +504,14 @@ export default function BoutiqueOrders() {
                         className={`p-3.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer select-none ${
                           isSelected
                             ? "border-[#C89653] bg-slate-50 text-[#2C261E] font-extrabold shadow-2xs"
-                            : "border-[#EBE3D5] bg-white text-[#5C5346] font-semibold hover:border-[#C89653]/50 hover:bg-slate-50/40"
+                            : "border-[#e2e8f0] bg-white text-[#5C5346] font-semibold hover:border-[#C89653]/50 hover:bg-slate-50/40"
                         }`}
                       >
                         <span className="text-[13px]">{option}</span>
                         <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
                           isSelected
                             ? "bg-[#C89653] text-white"
-                            : "border border-[#EBE3D5] text-transparent"
+                            : "border border-[#e2e8f0] text-transparent"
                         }`}>
                           ✓
                         </span>
@@ -532,21 +532,21 @@ export default function BoutiqueOrders() {
                       className={`mt-1 px-3.5 py-3 border ${
                         declineError 
                           ? "border-rose-400 bg-rose-50 placeholder:text-rose-300 focus:ring-rose-400" 
-                          : "border-[#EBE3D5] bg-white focus:border-[#C89653] focus:ring-[#C89653]"
+                          : "border-[#e2e8f0] bg-white focus:border-[#C89653] focus:ring-[#C89653]"
                       } rounded-xl text-sm font-medium text-[#2C261E] focus:outline-none focus:ring-1 transition-colors w-full`}
                       autoFocus
                     />
                   )}
 
                   {declineReasonType === "Out of stock" && (
-                    <div className="p-3 bg-slate-50 border border-[#EBE3D5] rounded-xl text-[12px] font-medium text-[#7A6F5D] flex items-start gap-2 mt-1">
+                    <div className="p-3 bg-slate-50 border border-[#e2e8f0] rounded-xl text-[12px] font-medium text-[#7A6F5D] flex items-start gap-2 mt-1">
                       <span>💡</span>
                       <span>Consider updating your inventory after declining this order.</span>
                     </div>
                   )}
                 </div>
                 
-                <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-[#EBE3D5]/60">
+                <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-[#e2e8f0]/60">
                   <button
                     onClick={() => {
                       setOrderToDecline(null);

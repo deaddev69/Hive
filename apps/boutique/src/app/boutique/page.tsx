@@ -474,7 +474,7 @@ export default function BoutiqueDashboard() {
             <Button 
               className={`w-full py-5 rounded-[16px] font-semibold text-[15px] transition-all duration-200 active:scale-[0.98] cursor-pointer ${
                 lowStockCount > 0 || !isStockVerifiedToday
-                  ? "bg-white border border-[#C89653] text-[#C89653] hover:bg-[#FAF7F2] shadow-none"
+                  ? "bg-white border border-[#C89653] text-[#C89653] hover:bg-[#ffffff] shadow-none"
                   : "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/60 shadow-none"
               }`}
             >

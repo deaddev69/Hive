@@ -525,7 +525,7 @@ export default function BoutiqueProfile() {
             <SignOutButton redirectUrl="/sign-in">
               <Button 
                 variant="outline" 
-                className="w-full justify-center gap-2 border-[#EBE3D0] bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-800 rounded-2xl py-3 text-xs font-bold shadow-sm"
+                className="w-full justify-center gap-2 border-[#e2e8f0] bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-800 rounded-2xl py-3 text-xs font-bold shadow-sm"
               >
                 <LogOut className="w-4 h-4 text-slate-400" />
                 <span>Sign Out</span>

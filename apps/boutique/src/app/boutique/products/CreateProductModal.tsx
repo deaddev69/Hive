@@ -53,7 +53,7 @@ function CustomSelect({ label, value, onChange, options, placeholder, required }
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#E6D5B8]/30 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
+        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#e2e8f0]/30 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
           {options.map((opt) => (
             <button
               key={opt}
@@ -116,7 +116,7 @@ function CategorySelect({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#E6D5B8]/30 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
+        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#e2e8f0]/30 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
           {categories.map((c) => (
             <button
               key={c._id}
@@ -585,7 +585,7 @@ export default function CreateProductModal({
 
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="mt-2 border-[1.5px] border-dashed border-[#C89653] bg-[#FCFAF7] rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-amber-50/50 transition-colors"
+              className="mt-2 border-[1.5px] border-dashed border-[#C89653] bg-[#f8fafc] rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-amber-50/50 transition-colors"
             >
               <Upload className="w-5 h-5 text-[#C89653] mb-2" />
               <span className="text-[11px] font-black tracking-widest uppercase text-slate-600">UPLOAD PHOTOS</span>
@@ -713,7 +713,7 @@ export default function CreateProductModal({
             <hr className="border-slate-100 -my-3" />
 
             {isSareeCategory ? (
-              <div className="flex flex-col gap-2 bg-[#FCFAF7] p-4 rounded-2xl border border-[#F2EFEA]">
+              <div className="flex flex-col gap-2 bg-[#f8fafc] p-4 rounded-2xl border border-[#f1f5f9]">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">PRODUCT SIZE</label>
                 <div className="text-xs font-semibold text-slate-800 flex items-center gap-2">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#C89653]" />
@@ -746,13 +746,13 @@ export default function CreateProductModal({
             {selectedSizes.length > 0 && (
               <div className="flex flex-col gap-1 animate-in fade-in zoom-in-95 mt-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-[#C89653]">STOCK PER SIZE</label>
-                <div className="border border-[#F2EFEA] rounded-2xl overflow-hidden">
-                  <div className="bg-[#FAF9F7] px-4 py-3 flex justify-between border-b border-[#F2EFEA]">
+                <div className="border border-[#f1f5f9] rounded-2xl overflow-hidden">
+                  <div className="bg-[#f8fafc] px-4 py-3 flex justify-between border-b border-[#f1f5f9]">
                     <span className="text-[10px] font-black tracking-widest text-slate-500">SIZE</span>
                     <span className="text-[10px] font-black tracking-widest text-slate-500">STOCK</span>
                   </div>
                   {selectedSizes.map((sz) => (
-                    <div key={sz} className="bg-white px-4 py-3 flex justify-between items-center border-b border-[#F2EFEA] last:border-0">
+                    <div key={sz} className="bg-white px-4 py-3 flex justify-between items-center border-b border-[#f1f5f9] last:border-0">
                       <span className="text-sm font-black text-slate-800">{sz}</span>
                       <input
                         type="number"
@@ -772,11 +772,11 @@ export default function CreateProductModal({
 
             <div className="flex flex-col gap-2">
               <label className="text-[11px] font-black uppercase tracking-widest text-slate-600">1. COMPARED TO A STANDARD SIZE, HOW DOES THIS PRODUCT FIT?</label>
-              <div className="flex bg-[#FCFAF7] p-1.5 rounded-2xl border border-[#F2EFEA] gap-1">
+              <div className="flex bg-[#f8fafc] p-1.5 rounded-2xl border border-[#f1f5f9] gap-1">
                 <button
                   type="button"
                   onClick={() => setFitRecommendation("runs_small")}
-                  className={`flex-1 py-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-xl transition-all ${fitRecommendation === "runs_small" ? "bg-white shadow-sm border border-[#F2EFEA] text-slate-800" : "text-slate-400 hover:text-slate-600"}`}
+                  className={`flex-1 py-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-xl transition-all ${fitRecommendation === "runs_small" ? "bg-white shadow-sm border border-[#f1f5f9] text-slate-800" : "text-slate-400 hover:text-slate-600"}`}
                 >
                   <ChevronDown className="w-3.5 h-3.5" />
                   <span className="text-[9px] font-black tracking-widest uppercase text-center leading-tight">RUNS<br/>SMALL</span>
@@ -784,7 +784,7 @@ export default function CreateProductModal({
                 <button
                   type="button"
                   onClick={() => setFitRecommendation("true_to_size")}
-                  className={`flex-1 py-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-xl transition-all ${fitRecommendation === "true_to_size" ? "bg-white shadow-sm border border-[#F2EFEA] text-[#C89653]" : "text-slate-400 hover:text-slate-600"}`}
+                  className={`flex-1 py-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-xl transition-all ${fitRecommendation === "true_to_size" ? "bg-white shadow-sm border border-[#f1f5f9] text-[#C89653]" : "text-slate-400 hover:text-slate-600"}`}
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span className="text-[9px] font-black tracking-widest uppercase text-center leading-tight text-slate-800">TRUE TO<br/>SIZE</span>
@@ -792,7 +792,7 @@ export default function CreateProductModal({
                 <button
                   type="button"
                   onClick={() => setFitRecommendation("runs_large")}
-                  className={`flex-1 py-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-xl transition-all ${fitRecommendation === "runs_large" ? "bg-white shadow-sm border border-[#F2EFEA] text-slate-800" : "text-slate-400 hover:text-slate-600"}`}
+                  className={`flex-1 py-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-xl transition-all ${fitRecommendation === "runs_large" ? "bg-white shadow-sm border border-[#f1f5f9] text-slate-800" : "text-slate-400 hover:text-slate-600"}`}
                 >
                   <ChevronUp className="w-3.5 h-3.5" />
                   <span className="text-[9px] font-black tracking-widest uppercase text-center leading-tight">RUNS<br/>LARGE</span>
@@ -803,7 +803,7 @@ export default function CreateProductModal({
 
             <div className="flex flex-col gap-2 mt-2">
               <label className="text-[11px] font-black uppercase tracking-widest text-slate-600">2. OVERALL FIT OF THE GARMENT</label>
-              <div className="flex bg-[#FCFAF7] p-1.5 rounded-2xl border border-[#F2EFEA] gap-1">
+              <div className="flex bg-[#f8fafc] p-1.5 rounded-2xl border border-[#f1f5f9] gap-1">
                 {[
                   { value: "slim_fit", label: "SLIM FIT" },
                   { value: "regular_fit", label: "REGULAR FIT" },
@@ -814,7 +814,7 @@ export default function CreateProductModal({
                     key={opt.value}
                     type="button"
                     onClick={() => setSilhouette(opt.value as any)}
-                    className={`flex-1 py-3 text-[9px] font-black tracking-widest rounded-xl transition-all ${silhouette === opt.value ? "bg-white shadow-sm border border-[#F2EFEA] text-slate-800" : "text-slate-500 hover:text-slate-600"}`}
+                    className={`flex-1 py-3 text-[9px] font-black tracking-widest rounded-xl transition-all ${silhouette === opt.value ? "bg-white shadow-sm border border-[#f1f5f9] text-slate-800" : "text-slate-500 hover:text-slate-600"}`}
                   >
                     {opt.label}
                   </button>

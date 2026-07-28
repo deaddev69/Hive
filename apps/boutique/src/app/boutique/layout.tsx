@@ -127,7 +127,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
     <div className="min-h-[100dvh] flex flex-col md:flex-row bg-white text-slate-800">
       
       {/* Mobile Header */}
-      <header className="md:hidden h-16 bg-white border-b border-[#F0E4C8] flex items-center justify-between px-6 sticky top-0 z-30 shadow-sm">
+      <header className="md:hidden h-16 bg-white border-b border-[#e2e8f0] flex items-center justify-between px-6 sticky top-0 z-30 shadow-sm">
         <div className="flex items-center">
           <Link href="/boutique" className="flex items-center hover:opacity-85 active:scale-[0.98] transition-all">
             <Image
@@ -143,11 +143,11 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
       </header>
 
       {/* Desktop Sidebar Navigation */}
-      <aside className="hidden md:flex flex-col justify-between fixed inset-y-0 left-0 z-40 w-64 bg-white text-slate-700 border-r border-[#EBE3D0] p-6 md:static md:h-screen md:sticky md:top-0">
+      <aside className="hidden md:flex flex-col justify-between fixed inset-y-0 left-0 z-40 w-64 bg-white text-slate-700 border-r border-[#e2e8f0] p-6 md:static md:h-screen md:sticky md:top-0">
         <div className="flex flex-col gap-8">
           
           {/* Header Brand */}
-          <div className="hidden md:flex items-center pb-6 border-b border-[#EBE3D0] w-full justify-start shrink-0">
+          <div className="hidden md:flex items-center pb-6 border-b border-[#e2e8f0] w-full justify-start shrink-0">
             <Link href="/boutique" className="flex items-center hover:opacity-85 active:scale-[0.98] transition-all">
               <Image
                 src="/logo.png"
@@ -184,9 +184,9 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
         </div>
 
         {/* Footer User Info & Logout */}
-        <div className="flex flex-col gap-4 border-t border-[#EBE3D0] pt-4">
+        <div className="flex flex-col gap-4 border-t border-[#e2e8f0] pt-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[#EED2B1] flex items-center justify-center text-slate-800 font-bold text-xs uppercase border border-[#EBE3D0]">
+            <div className="w-8 h-8 rounded-full bg-[#EED2B1] flex items-center justify-center text-slate-800 font-bold text-xs uppercase border border-[#e2e8f0]">
               {clerkUser?.firstName?.charAt(0) || "B"}
             </div>
             <div className="flex flex-col min-w-0 text-left">
@@ -202,7 +202,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
           <SignOutButton redirectUrl="/sign-in">
             <Button 
               variant="outline" 
-              className="w-full justify-start gap-2.5 border-[#EBE3D0]/60 bg-white text-slate-600 hover:bg-white hover:text-[#BFA36F] hover:border-[#BFA36F]/40 rounded-xl text-xs py-2.5 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-150"
+              className="w-full justify-start gap-2.5 border-[#e2e8f0]/60 bg-white text-slate-600 hover:bg-white hover:text-[#BFA36F] hover:border-[#BFA36F]/40 rounded-xl text-xs py-2.5 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-150"
             >
               <LogOut className="w-3.5 h-3.5 text-slate-400" />
               <span>Log out</span>
@@ -219,7 +219,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
       </main>
 
       {/* Mobile Bottom Navigation Footer */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-white border-t border-[#EBE3D0] z-50 flex items-center justify-around px-2 shadow-[0_-4px_12px_rgba(0,0,0,0.02)] pb-safe">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-white border-t border-[#e2e8f0] z-50 flex items-center justify-around px-2 shadow-[0_-4px_12px_rgba(0,0,0,0.02)] pb-safe">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
