@@ -988,7 +988,7 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   picked_up: ["in_transit", "out_for_delivery", "delivered", "cancelled"],
   in_transit: ["out_for_delivery", "delivered", "cancelled"],
   out_for_delivery: ["delivered", "cancelled"],
-  booking_failed: ["pickup_scheduled", "cancelled"],
+  booking_failed: ["packed", "pickup_scheduled", "cancelled"],
   delivered: ["claim_submitted", "refund_requested", "refunded"],
   cancelled: [],
   claim_submitted: ["refund_requested", "replacement_requested"],
@@ -1284,74 +1284,8 @@ export const updateBoutiqueOrderStatus = mutation({
       await handleOrderStatusChangeLedgerUpdates(ctx, updatedOrder, args.status, now);
     }
 
-    // Wire Shiprocket booking here
-    // TODO: Swap to Porter integration once migration is complete. Shifted to 'confirmed' for 3-hour SLA buffer.
-    if (args.status === "confirmed" && !order.shipmentId) {
-      const customer = await ctx.db.get(order.customerId);
-      const shipmentId = await ctx.db.insert("shipments", {
-        orderId: args.orderId,
-        provider: "porter",
-        status: "created",
-        awbNumber: "",
-        trackingUrl: "",
-        rawWebhookEvents: [],
-        pickupAddress: {
-          name: boutique?.boutiqueName || "Boutique",
-          line1: boutique?.address || "",
-          city: boutique?.addressDetails?.city || "",
-          state: boutique?.addressDetails?.state || "",
-          pincode: boutique?.addressDetails?.pincode || "",
-          phone: boutique?.phone || "",
-        },
-        deliveryAddress: {
-          name: (order.deliveryAddress as any)?.name || customer?.email || "Customer",
-          line1: order.deliveryAddress?.line1 || (order.deliveryAddress as any)?.formattedAddress || "",
-          line2: order.deliveryAddress?.line2 || (order.deliveryAddress as any)?.houseNumber || "",
-          city: (order.deliveryAddress as any)?.city || "",
-          state: (order.deliveryAddress as any)?.state || "",
-          pincode: (order.deliveryAddress as any)?.pincode || "",
-          phone: order.deliveryAddress?.phone || customer?.phone || "",
-        },
-        createdAt: now,
-        updatedAt: now,
-      });
-
-      await ctx.db.patch(args.orderId, { shipmentId });
-
-      await ctx.scheduler.runAfter(0, internal.lib.porter.createOrder, {
-        orderId: args.orderId,
-        shipmentId: shipmentId,
-        pickupAddress: {
-          street_address1: boutique?.address || "Store",
-          city: boutique?.addressDetails?.city || boutique?.city || "",
-          state: boutique?.addressDetails?.state || boutique?.state || "",
-          pincode: boutique?.addressDetails?.pincode || boutique?.pincode || "",
-          country: "India",
-          lat: boutique?.latitude || 0,
-          lng: boutique?.longitude || 0,
-          contact_details: {
-            name: boutique?.boutiqueName || "Boutique",
-            phone_number: boutique?.phone ? `+91${boutique.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
-          }
-        },
-        dropAddress: {
-          street_address1: order.deliveryAddress.line1 || order.deliveryAddress.formattedAddress || "Home",
-          street_address2: order.deliveryAddress.line2 || order.deliveryAddress.houseNumber || "",
-          landmark: order.deliveryAddress.landmark || "",
-          city: order.deliveryAddress.city || "",
-          state: order.deliveryAddress.state || "",
-          pincode: order.deliveryAddress.pincode || "",
-          country: "India",
-          lat: order.deliveryAddress.lat || 0,
-          lng: order.deliveryAddress.lng || 0,
-          contact_details: {
-            name: (customer as any)?.name || customer?.email || "Customer",
-            phone_number: order.deliveryAddress.phone || customer?.phone ? `+91${(order.deliveryAddress.phone || customer?.phone || "").replace(/\D/g, '').slice(-10)}` : "+910000000000",
-          }
-        },
-        orderNumber: order.orderNumber,
-      });
-    }
+    // Porter booking is now deferred to readyForPickupAction.
+    // Shipment + createOrder are triggered only when the seller clicks "Ready for Pickup".
 
     const targetStatuses = ["confirmed", "packed", "out_for_delivery", "delivered"];
     if (targetStatuses.includes(args.status)) {
@@ -1820,4 +1754,168 @@ export const debugOrder = query({
     );
     return results;
   }
+});
+
+// ─── SHIPMENT CREATION (internal, called from readyForPickupAction) ──────────
+export const createShipmentForOrder = internalMutation({
+  args: {
+    orderId: v.id("orders"),
+    boutiqueName: v.string(),
+    boutiqueAddress: v.string(),
+    boutiqueCity: v.string(),
+    boutiqueState: v.string(),
+    boutiquePincode: v.string(),
+    boutiquePhone: v.string(),
+    customerName: v.string(),
+    customerLine1: v.string(),
+    customerLine2: v.string(),
+    customerCity: v.string(),
+    customerState: v.string(),
+    customerPincode: v.string(),
+    customerPhone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const shipmentId = await ctx.db.insert("shipments", {
+      orderId: args.orderId,
+      provider: "porter",
+      status: "created",
+      awbNumber: "",
+      trackingUrl: "",
+      rawWebhookEvents: [],
+      pickupAddress: {
+        name: args.boutiqueName,
+        line1: args.boutiqueAddress,
+        city: args.boutiqueCity,
+        state: args.boutiqueState,
+        pincode: args.boutiquePincode,
+        phone: args.boutiquePhone,
+      },
+      deliveryAddress: {
+        name: args.customerName,
+        line1: args.customerLine1,
+        line2: args.customerLine2,
+        city: args.customerCity,
+        state: args.customerState,
+        pincode: args.customerPincode,
+        phone: args.customerPhone,
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await ctx.db.patch(args.orderId, { shipmentId });
+    return shipmentId;
+  },
+});
+
+// ─── READY FOR PICKUP (seller action → Porter booking) ─────────────────────
+export const readyForPickupAction = action({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args): Promise<any> => {
+    // 1. Fetch order
+    const order = await ctx.runQuery(internal.orders.getOrderByIdInternal, { orderId: args.orderId });
+    if (!order) throw new Error("Order not found.");
+
+    // 2. Validate boutique ownership
+    const boutique = await ctx.runQuery(api.boutiques.getMyBoutiqueDetails);
+    if (!boutique || boutique._id !== order.boutiqueId) {
+      throw new Error("Unauthorized: Order does not belong to your boutique.");
+    }
+
+    // 3. Assert valid status
+    if (order.status !== "packed" && order.status !== "booking_failed") {
+      throw new Error(`Cannot dispatch: order is in '${order.status}' status. Must be 'packed' or 'booking_failed'.`);
+    }
+
+    // 4. Create shipment if one doesn't exist
+    let shipmentId = order.shipmentId;
+    if (!shipmentId) {
+      const customer = await ctx.runQuery(internal.orders.getOrderByIdInternal, { orderId: args.orderId });
+      shipmentId = await ctx.runMutation(internal.orders.createShipmentForOrder, {
+        orderId: args.orderId,
+        boutiqueName: boutique.boutiqueName || "Boutique",
+        boutiqueAddress: boutique.address || "",
+        boutiqueCity: boutique.addressDetails?.city || boutique.city || "",
+        boutiqueState: boutique.addressDetails?.state || boutique.state || "",
+        boutiquePincode: boutique.addressDetails?.pincode || boutique.pincode || "",
+        boutiquePhone: boutique.phone || "",
+        customerName: order.customerName || "Customer",
+        customerLine1: order.deliveryAddress?.line1 || order.deliveryAddress?.formattedAddress || "",
+        customerLine2: order.deliveryAddress?.line2 || order.deliveryAddress?.houseNumber || "",
+        customerCity: order.deliveryAddress?.city || "",
+        customerState: order.deliveryAddress?.state || "",
+        customerPincode: order.deliveryAddress?.pincode || "",
+        customerPhone: order.deliveryAddress?.phone || "",
+      });
+    }
+
+    // 5. Call Porter createOrder
+    try {
+      console.log(`[PORTER] Booking rider for order ${order.orderNumber}...`);
+
+      const result = await ctx.runAction(internal.lib.porter.createOrder, {
+        orderId: args.orderId,
+        shipmentId: shipmentId,
+        pickupAddress: {
+          street_address1: boutique.address || "Store",
+          city: boutique.addressDetails?.city || boutique.city || "",
+          state: boutique.addressDetails?.state || boutique.state || "",
+          pincode: boutique.addressDetails?.pincode || boutique.pincode || "",
+          country: "India",
+          lat: boutique.latitude || 0,
+          lng: boutique.longitude || 0,
+          contact_details: {
+            name: boutique.boutiqueName || "Boutique",
+            phone_number: boutique.phone ? `+91${boutique.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
+          }
+        },
+        dropAddress: {
+          street_address1: order.deliveryAddress.line1 || order.deliveryAddress.formattedAddress || "Home",
+          street_address2: order.deliveryAddress.line2 || order.deliveryAddress.houseNumber || "",
+          landmark: order.deliveryAddress.landmark || "",
+          city: order.deliveryAddress.city || "",
+          state: order.deliveryAddress.state || "",
+          pincode: order.deliveryAddress.pincode || "",
+          country: "India",
+          lat: order.deliveryAddress.lat || 0,
+          lng: order.deliveryAddress.lng || 0,
+          contact_details: {
+            name: order.customerName || "Customer",
+            phone_number: order.deliveryAddress.phone ? `+91${order.deliveryAddress.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
+          }
+        },
+        orderNumber: order.orderNumber,
+      });
+
+      console.log(`[PORTER] Booking success for ${order.orderNumber} — CRN: ${result.crn}`);
+
+      // 6. On success → pickup_scheduled
+      await ctx.runMutation(api.orders.updateBoutiqueOrderStatus, {
+        orderId: args.orderId,
+        status: "pickup_scheduled",
+      });
+
+      return { success: true, crn: result.crn, trackingUrl: result.trackingUrl };
+
+    } catch (err: any) {
+      console.error(`[PORTER] Booking failed for ${order.orderNumber}:`, err);
+
+      // 7. On failure → booking_failed, save error
+      await ctx.runMutation(api.orders.updateBoutiqueOrderStatus, {
+        orderId: args.orderId,
+        status: "booking_failed",
+      });
+
+      // Record failure details on shipment
+      await ctx.runMutation(internal.adminLogistics.updateShipmentDetails, {
+        shipmentId: shipmentId,
+        awbNumber: "",
+        trackingUrl: "",
+        status: "booking_failed",
+      });
+
+      throw new Error(`Porter booking failed: ${err.message}`);
+    }
+  },
 });

@@ -99,7 +99,7 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
 // ── Order Status Badge Component ───────────────────────────────────────────────
 const OrderStatusBadge = ({ status }: { status: string }) => {
   // 1. Active Logistics States (Pulsing Dot)
-  if (["waiting_for_rider", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery"].includes(status) || status === "confirmed" || status === "packed") {
+  if (["waiting_for_rider", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery"].includes(status) || status === "confirmed") {
     return (
       <div className="flex items-center justify-center w-full py-3 bg-white border border-gray-200 rounded-full shadow-sm">
         <span className="relative flex h-2.5 w-2.5 mr-3">
@@ -107,7 +107,31 @@ const OrderStatusBadge = ({ status }: { status: string }) => {
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
         </span>
         <span className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
-          {(status === 'confirmed' || status === 'packed') ? 'Waiting for Rider' : status.replace(/_/g, " ")}
+          {status === 'confirmed' ? 'Confirmed' : status.replace(/_/g, " ")}
+        </span>
+      </div>
+    );
+  }
+
+  // 1b. Packed State (solid blue dot)
+  if (status === "packed") {
+    return (
+      <div className="flex items-center justify-center w-full py-3 bg-white border border-gray-200 rounded-full shadow-sm">
+        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500 mr-3"></span>
+        <span className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
+          Packed
+        </span>
+      </div>
+    );
+  }
+
+  // 1c. Booking Failed State (red warning)
+  if (status === "booking_failed") {
+    return (
+      <div className="flex items-center justify-center w-full py-3 bg-rose-50 border border-rose-200 rounded-full shadow-sm">
+        <XCircle className="w-4 h-4 mr-2 text-rose-500" strokeWidth={2.5} />
+        <span className="text-sm font-semibold text-rose-700 tracking-wide uppercase">
+          Booking Failed
         </span>
       </div>
     );
@@ -151,7 +175,9 @@ export default function BoutiqueOrders() {
   const orders = useQuery(api.orders.getBoutiqueOrders);
   const updateStatus = useMutation(api.orders.updateBoutiqueOrderStatus);
   const retryDispatch = useAction(api.orders.retryBoutiqueOrderDispatch);
+  const readyForPickup = useAction(api.orders.readyForPickupAction);
   const [retryingOrderId, setRetryingOrderId] = React.useState<string | null>(null);
+  const [dispatchingOrderId, setDispatchingOrderId] = React.useState<string | null>(null);
   const [pendingActionId, setPendingActionId] = React.useState<string | null>(null);
   const [orderToDecline, setOrderToDecline] = React.useState<string | null>(null);
   const [retryDispatchOrderId, setRetryDispatchOrderId] = React.useState<string | null>(null);
@@ -406,12 +432,37 @@ export default function BoutiqueOrders() {
                         <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider block mb-2">Order Status</span>
                         <OrderStatusBadge status={order.status} />
                         
-                        {(order.status === "confirmed" || order.status === "packed") && order.shipmentStatus === "booking_failed" && (
+                        {(order.status === "packed" || order.status === "booking_failed") && (
                           <button
-                            onClick={() => setRetryDispatchOrderId(order._id)}
-                            className="mt-2 block w-full px-2.5 py-1.5 bg-rose-50 text-rose-700 text-[9px] font-extrabold uppercase tracking-wider rounded-xl border border-rose-200/40 hover:bg-rose-100/40 transition-all duration-150 text-center select-none"
+                            onClick={async () => {
+                              setDispatchingOrderId(order._id);
+                              try {
+                                await readyForPickup({ orderId: order._id as Id<"orders"> });
+                              } catch (err: any) {
+                                const msg = (err.message || "").toLowerCase();
+                                let friendlyMessage = "Delivery partner network is currently busy. Please try again in a moment.";
+                                if (msg.includes("address") || msg.includes("pincode") || msg.includes("location")) {
+                                  friendlyMessage = "There is an issue with the delivery address. Please contact Hive support.";
+                                } else if (msg.includes("unauthorized") || msg.includes("token")) {
+                                  friendlyMessage = "Session expired. Please refresh the page and try again.";
+                                }
+                                alert(friendlyMessage);
+                              } finally {
+                                setDispatchingOrderId(null);
+                              }
+                            }}
+                            disabled={dispatchingOrderId === order._id}
+                            className={`mt-2 block w-full px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider rounded-xl border transition-all duration-150 text-center select-none cursor-pointer disabled:opacity-50 ${
+                              order.status === "booking_failed"
+                                ? "bg-rose-50 text-rose-700 border-rose-200/40 hover:bg-rose-100/40"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200/40 hover:bg-emerald-100/40"
+                            }`}
                           >
-                            Retry Booking
+                            {dispatchingOrderId === order._id
+                              ? "Dispatching..."
+                              : order.status === "booking_failed"
+                                ? "↻ Retry Pickup"
+                                : "📦 Ready for Pickup"}
                           </button>
                         )}
                       </td>
