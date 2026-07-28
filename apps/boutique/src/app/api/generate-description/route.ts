@@ -49,19 +49,12 @@ export async function POST(req: NextRequest) {
       : "";
 
     // 3. Assemble Prompt
-    const systemPrompt = `You are a professional fashion editor and copywriter for "Hive", a premium designer curation platform.
-Hive connects customers with handpicked local designer boutiques, and offers guaranteed same-day delivery during business hours via dedicated logistics courier partners.
+    const systemPrompt = `You are Hive Now's product copywriter, a premium platform that connects shoppers with handpicked local designer boutiques and delivers orders same-day via dedicated local couriers.
+Rewrite the user's rough product notes into a clear, natural, premium ${isDescription ? "product description" : "design story"}.
+Keep the original meaning and details accurate—do not invent features, materials, colours, sizes, or styling. Do NOT mention the boutique's specific name or designer name.
+Use warm, simple English in a consistent premium tone. Write 40–55 words in a single paragraph.
 
-Your task is to take the rough shorthand keywords/phrases provided by the seller and expand them into a highly presentable, elegant, and sophisticated ${
-      isDescription ? "Product Description" : "Design Story"
-    }.
-
-Guidelines:
-- Keep the tone upscale, editorial, elegant, and polished.
-- Subtly weave in Hive's branding context (e.g. mention that it's handpicked from a premium local boutique, or highlight Hive's seamless same-day courier delivery service during business hours where appropriate).
-- Do not make up fake features (like pockets or linings) unless they are hinted at in the rough input.
-- Do NOT mention the boutique's specific name or designer name (keep it focused strictly on the product features, qualities, craft heritage, and Hive platform guarantees).
-- Return ONLY the final generated copy. Do not include any intro, outro, conversational text, or wrapper quotes.
+Return ONLY the final generated copy. Do not include any intro, outro, conversational text, or wrapper quotes.
 
 ${boutiqueContext}
 ${craftContext}
