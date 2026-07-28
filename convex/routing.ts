@@ -277,6 +277,7 @@ export async function calculateDeliveryQuoteAction(
   // 1. Try Live Porter quoting if credentials exist
   const hasPorterKeys = !!(process.env.PORTER_API_URL && process.env.PORTER_API_KEY);
   if (hasPorterKeys) {
+    const porterStartMs = Date.now();
     try {
       let customerName = "Customer";
       let customerPhone = "9999999999";
@@ -287,10 +288,12 @@ export async function calculateDeliveryQuoteAction(
           if (user.email) customerName = user.email.split("@")[0];
         }
       } catch (userErr) {
-        console.warn("[routing] Could not fetch user details for Porter quote:", userErr);
+        console.warn("[PORTER] Could not fetch user details for quote:", userErr);
       }
 
-      // Invoke Porter getQuote with a strict 800ms timeout
+      console.log("[PORTER] Quote requested →", boutique.boutiqueName || boutique.name);
+
+      // Invoke Porter getQuote with a 3000ms timeout (proxy relays to Porter UAT)
       const porterQuotePromise = ctx.runAction(internal.lib.porter.getQuote, {
         pickup_lat: boutique.latitude,
         pickup_lng: boutique.longitude,
@@ -302,9 +305,11 @@ export async function calculateDeliveryQuoteAction(
 
       const quoteResult = (await withTimeout(
         porterQuotePromise,
-        800,
-        "Porter quote request timed out after 800ms"
+        3000,
+        "Porter quote request timed out after 3000ms"
       )) as any;
+
+      const porterElapsedMs = Date.now() - porterStartMs;
 
       const vehicles = quoteResult?.vehicles || quoteResult?.Vehicles;
       if (vehicles && vehicles.length > 0) {
@@ -326,6 +331,8 @@ export async function calculateDeliveryQuoteAction(
           const distanceKm = haversineKm(args.userLat, args.userLng, boutique.latitude, boutique.longitude);
           const durationMin = (distanceKm / 25) * 60; // 25 km/h driving speed approximation
 
+          console.log(`[PORTER] Response received in ${porterElapsedMs}ms | Using ${vehicle.type} | Fare ₹${(porterFeePaise / 100).toFixed(2)} | Final ₹${(finalFeePaise / 100).toFixed(2)}`);
+
           return {
             serviceable: true,
             distanceKm,
@@ -339,8 +346,12 @@ export async function calculateDeliveryQuoteAction(
           };
         }
       }
+
+      // Porter responded but no usable fare
+      console.warn(`[PORTER] Response received in ${porterElapsedMs}ms but no usable 2 Wheeler fare. Vehicles:`, JSON.stringify(vehicles?.map((v: any) => v.type)));
     } catch (porterErr) {
-      console.error("[routing] Live Porter quoting failed/timed out, falling back to local tiered calculation:", porterErr);
+      const porterElapsedMs = Date.now() - porterStartMs;
+      console.error(`[PORTER] Failed after ${porterElapsedMs}ms — using fallback pricing.`, porterErr);
     }
   }
 
