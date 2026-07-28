@@ -574,25 +574,7 @@ export const Navbar: React.FC = () => {
 
           </div>
         </div>
-        {/* Sub-navbar Trust Strip (Desktop only, hidden on mobile) */}
-        <div className="hidden sm:block border-t border-slate-100 dark:border-neutral-800/60 bg-stone-50/50 dark:bg-neutral-900/30 py-1.5 w-full">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center gap-5 text-[10.5px] font-medium text-stone-500 dark:text-neutral-400 select-none tracking-[0.03em]">
-            <span className="flex items-center gap-1.5">
-              <Check className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={2} />
-              <span>Same-Day Delivery</span>
-            </span>
-            <span className="text-[#E8D9AF] dark:text-[#E8D9AF]/40 font-medium">·</span>
-            <span className="flex items-center gap-1.5">
-              <Store className="w-3.5 h-3.5 text-[#B78324] dark:text-[#E3A330]/80 shrink-0" />
-              <span>Handpicked Stores</span>
-            </span>
-            <span className="text-[#E8D9AF] dark:text-[#E8D9AF]/40 font-medium">·</span>
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-[#B78324] dark:text-[#E3A330]/80 shrink-0" />
-              <span>Kochi</span>
-            </span>
-          </div>
-        </div>
+
       </nav>
 
       {/* ── Mobile Search Bar (Non-sticky, scrolls away on Mobile) ── */}
@@ -630,22 +612,7 @@ export const Navbar: React.FC = () => {
             </HeaderStatusPill>
           )}
         </div>
-        <div className="flex items-center justify-center gap-3 text-[10px] font-medium text-stone-500 dark:text-neutral-400 select-none tracking-[0.03em] mt-0.5">
-          <span className="flex items-center gap-1">
-            <Check className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={2} />
-            <span>Same-Day Delivery</span>
-          </span>
-          <span className="text-[#E8D9AF] dark:text-[#E8D9AF]/40 select-none font-medium">·</span>
-          <span className="flex items-center gap-1">
-            <Store className="w-3.5 h-3.5 text-[#B78324] dark:text-[#E3A330]/80 shrink-0" />
-            <span>Handpicked Stores</span>
-          </span>
-          <span className="text-[#E8D9AF] dark:text-[#E8D9AF]/40 select-none font-medium">·</span>
-          <span className="flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-[#B78324] dark:text-[#E3A330]/80 shrink-0" />
-            <span>Kochi</span>
-          </span>
-        </div>
+
       </div>
 
       {/* ── Mobile drawer backdrop ──────────────────────────────────── */}

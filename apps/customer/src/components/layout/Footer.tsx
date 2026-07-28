@@ -2,6 +2,7 @@ import React from "react";
 import { HiveLogo } from "@/components/shared/HiveLogo";
 import Link from "next/link";
 import { SocialTooltip } from "@/components/shared/SocialTooltip";
+import { Check, Store, MapPin } from "lucide-react";
 
 export const Footer: React.FC = () => {
   const SELLER_PORTAL_URL = process.env.NEXT_PUBLIC_SELLER_PORTAL_URL || "https://seller.hivenow.in";
@@ -9,7 +10,24 @@ export const Footer: React.FC = () => {
   return (
     <>
       {/* Hyperlocal warm ivory footer transition strip */}
-      <div className="w-full bg-[#FAF6F0] h-8 border-t border-hive-border/20" />
+      <div className="w-full bg-[#FAF6F0] border-t border-b border-stone-200/50 dark:border-neutral-800/30 py-3.5 px-4">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-center gap-x-6 sm:gap-x-10 md:gap-x-14 gap-y-2 text-[10.5px] sm:text-[11px] font-semibold text-stone-600 dark:text-neutral-300 select-none tracking-[0.03em]">
+          <span className="flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={2} />
+            <span>Same-Day Delivery</span>
+          </span>
+          <span className="text-[#EADBB7] dark:text-[#EADBB7]/30 select-none font-medium">·</span>
+          <span className="flex items-center gap-1.5">
+            <Store className="w-3.5 h-3.5 text-[#B78324] shrink-0" />
+            <span>Handpicked Stores</span>
+          </span>
+          <span className="text-[#EADBB7] dark:text-[#EADBB7]/30 select-none font-medium">·</span>
+          <span className="flex items-center gap-1.5">
+            <MapPin className="w-3.5 h-3.5 text-[#B78324] shrink-0" />
+            <span>Kochi</span>
+          </span>
+        </div>
+      </div>
       
       <footer className="w-full bg-[#181511] text-hive-cream/90 border-t border-[#25211B] pt-6 pb-[calc(4rem+0.5rem)] md:pt-12 md:pb-[calc(4rem+1.5rem)] px-5 sm:px-8 lg:px-12 mt-auto">
         <div className="max-w-7xl mx-auto flex flex-col gap-6 md:gap-12">
