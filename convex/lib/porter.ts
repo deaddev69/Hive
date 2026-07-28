@@ -145,19 +145,50 @@ export const createOrder = internalAction({
 
     const data = await res.json();
     
+    const crn = data.order_id || "";
+    const rawTrackingUrl = data.tracking_url || "";
+    const trackingUrl = (rawTrackingUrl && rawTrackingUrl !== "http://test.com") ? rawTrackingUrl : undefined;
+
     // Save the CRN and tracking URL immediately to avoid async data loss
     await ctx.runMutation(internal.adminLogistics.updateShipmentDetails, {
       shipmentId: args.shipmentId,
-      awbNumber: data.order_id,
-      trackingUrl: data.tracking_url,
+      awbNumber: crn,
+      providerBookingId: crn,
+      trackingUrl: trackingUrl,
       status: "booking_requested",
     });
 
     return {
-      crn: data.order_id,
-      trackingUrl: data.tracking_url,
+      crn: crn,
+      trackingUrl: trackingUrl,
       estimatedPickupTime: data.estimated_pickup_time,
     };
+  },
+});
+
+export const getOrder = internalAction({
+  args: {
+    crn: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!process.env.PORTER_API_URL || !process.env.PORTER_API_KEY) {
+      throw new Error("Missing PORTER_API_URL or PORTER_API_KEY environment variable.");
+    }
+
+    const res = await fetch(`${process.env.PORTER_API_URL}/v1/orders/${args.crn}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.PORTER_API_KEY,
+      },
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Porter getOrder failed: ${res.status} - ${errText}`);
+    }
+
+    return await res.json();
   },
 });
 

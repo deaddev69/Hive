@@ -1553,6 +1553,7 @@ export const updateShipmentDetails = internalMutation({
   args: {
     shipmentId: v.id("shipments"),
     awbNumber: v.string(),
+    providerBookingId: v.optional(v.string()),
     trackingUrl: v.optional(v.string()),
     status: v.string(),
   },
@@ -1560,11 +1561,16 @@ export const updateShipmentDetails = internalMutation({
     const shipment = await ctx.db.get(args.shipmentId);
     if (!shipment) throw new Error("Shipment not found");
 
-    await ctx.db.patch(args.shipmentId, {
+    const patch: Record<string, any> = {
       awbNumber: args.awbNumber,
       trackingUrl: args.trackingUrl,
       status: args.status as any,
       updatedAt: Date.now(),
-    });
+    };
+    if (args.providerBookingId !== undefined) {
+      patch.providerBookingId = args.providerBookingId;
+    }
+
+    await ctx.db.patch(args.shipmentId, patch);
   },
 });

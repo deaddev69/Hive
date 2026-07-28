@@ -431,6 +431,29 @@ export default function BoutiqueOrders() {
                       <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 min-w-[160px] border-t md:border-t-0 border-hive-border/10">
                         <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider block mb-2">Order Status</span>
                         <OrderStatusBadge status={order.status} />
+
+                        {order.shipment && (order.shipment.providerBookingId || order.shipment.awbNumber) && (
+                          <div className="mt-2.5 p-2.5 bg-slate-50 border border-slate-200/60 rounded-xl text-left flex flex-col gap-1 text-[11px]">
+                            <div className="flex items-center justify-between text-slate-700">
+                              <span className="uppercase text-[9px] text-slate-400 tracking-wider font-extrabold">Provider</span>
+                              <span className="capitalize font-bold text-slate-800">{order.shipment.provider || "Porter"}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-slate-600 font-mono text-[10px]">
+                              <span className="uppercase text-[9px] text-slate-400 font-sans tracking-wider font-extrabold">Booking ID</span>
+                              <span className="font-bold text-slate-900">{order.shipment.providerBookingId || order.shipment.awbNumber}</span>
+                            </div>
+                            {order.shipment.trackingUrl && order.shipment.trackingUrl !== "http://test.com" && (
+                              <a
+                                href={order.shipment.trackingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-1 text-center py-1 px-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold transition-all"
+                              >
+                                Track Delivery ↗
+                              </a>
+                            )}
+                          </div>
+                        )}
                         
                         {order.status === "confirmed" && (
                           <button

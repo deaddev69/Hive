@@ -909,6 +909,14 @@ export const getBoutiqueOrders = query({
         invoiceNumber: invoice?.invoiceNumber || null,
         invoicePdfUrl: invoice?.pdfUrl || null,
         shipmentStatus: shipment?.status || null,
+        shipment: shipment ? {
+          _id: shipment._id,
+          provider: shipment.provider,
+          providerBookingId: shipment.providerBookingId || shipment.awbNumber || null,
+          awbNumber: shipment.awbNumber || null,
+          status: shipment.status,
+          trackingUrl: shipment.trackingUrl || null,
+        } : null,
         totalBasePrice,
         totalPayout,
       };
