@@ -35,49 +35,32 @@ import { api } from "../../../../../convex/_generated/api";
 import { getSignInUrl, getSignUpUrl, navigateToSignIn, navigateToSignUp } from "@/lib/auth-redirect";
 import { HeaderStatusPill } from "@/components/shared/HeaderStatusPill";
 
-const DeliveryRiderIcon: React.FC<{ className?: string }> = ({ className }) => (
+const DeliveryScooterIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg
     viewBox="0 0 24 24"
     className={className}
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     stroke="currentColor"
-    strokeWidth="1.6"
+    strokeWidth="1.65"
     strokeLinecap="round"
     strokeLinejoin="round"
   >
     {/* Wheels */}
-    <circle cx="5" cy="18" r="2.2" />
-    <circle cx="19" cy="18" r="2.2" />
+    <circle cx="6" cy="18" r="2.2" />
+    <circle cx="18" cy="18" r="2.2" />
     
-    {/* Bicycle Frame */}
-    <path d="M5 18h6.5" /> {/* Chainstay */}
-    <path d="M5 18l4.5-7" /> {/* Seatstay */}
-    <path d="M11.5 18l-2-7" /> {/* Seat tube */}
-    <path d="M9.5 11h5.5" /> {/* Top tube */}
-    <path d="M11.5 18l3.5-7" /> {/* Down tube */}
-    <path d="M15 11l3 7" /> {/* Fork */}
+    {/* Scooter Frame & Front Fairing */}
+    <path d="M8.2 18h6.8c0.8 0 1.5-0.7 1.5-1.5V10.5" />
+    <path d="M16.5 10.5H19" />
+    <path d="M16.5 10.5L15 7.5" /> {/* Handlebars */}
     
-    {/* Handlebars */}
-    <path d="M15 11l-0.5-3h2.5" />
+    {/* Seat & Engine Chassis */}
+    <path d="M6 15.5h6.5c0.8 0 1.5-0.7 1.5-1.5v-1c0-0.8-0.7-1.5-1.5-1.5H8.2" />
     
-    {/* Seat & Seatpost */}
-    <path d="M9.5 11v-1h2" />
-    
-    {/* Courier Backpack */}
-    <rect x="6.8" y="5.8" width="3" height="4.2" rx="0.8" strokeWidth="1.3" />
-    
-    {/* Rider Torso */}
-    <path d="M9.5 10l3.5-4" />
-    
-    {/* Rider Head */}
-    <circle cx="13.5" cy="4.2" r="1.1" fill="currentColor" />
-    
-    {/* Rider Arm */}
-    <path d="M13 6l2.5 2.5" />
-    
-    {/* Rider Leg */}
-    <path d="M9.5 10l1.5 4.5" />
+    {/* Delivery Courier Box on Rear Rack */}
+    <rect x="4" y="6" width="6" height="5.5" rx="1" strokeWidth="1.5" />
+    <path d="M4 8.5h6" /> {/* Box lid line */}
   </svg>
 );
 
@@ -456,7 +439,7 @@ export const Navbar: React.FC = () => {
               </button>
               {hydrated && (locality || city) && (
                 <HeaderStatusPill className="hover:bg-[#FFFDF9] dark:hover:bg-neutral-900/70 hover:shadow-[0_2px_8px_rgba(183,131,36,0.06)] cursor-default">
-                  <DeliveryRiderIcon className="w-4 h-4 text-[#B78324] shrink-0" />
+                  <DeliveryScooterIcon className="w-4 h-4 text-[#B78324] shrink-0" />
                   <span className="text-[11px] tracking-wide font-sans flex items-center gap-1.5">
                     <span className="text-stone-500 dark:text-neutral-400 font-medium">
                       {deliveryPromise.prefix}
@@ -642,7 +625,7 @@ export const Navbar: React.FC = () => {
           </button>
           {hydrated && (locality || city) && (
             <HeaderStatusPill className="px-3 cursor-default">
-              <DeliveryRiderIcon className="w-4 h-4 text-[#B78324] shrink-0" />
+              <DeliveryScooterIcon className="w-4 h-4 text-[#B78324] shrink-0" />
               <span className="text-[10px] tracking-wide font-sans flex items-center gap-1.5">
                 <span className="text-stone-500 dark:text-neutral-400 font-medium">
                   {deliveryPromise.prefix}
