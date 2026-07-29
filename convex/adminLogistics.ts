@@ -595,12 +595,15 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
     location: v.optional(v.string()),
     driverDetails: v.optional(
       v.object({
-        name: v.string(),
-        phone: v.string(),
+        name: v.optional(v.string()),
+        phone: v.optional(v.string()),
         vehiclePlate: v.optional(v.string()),
         liveTrackingUrl: v.optional(v.string()),
+        trackingUrl: v.optional(v.string()),
+        etaMinutes: v.optional(v.number()),
       })
     ),
+    porterRawOrder: v.optional(v.any()),
     scans: v.optional(v.array(v.any())),
   },
   handler: async (ctx, args) => {
@@ -662,7 +665,14 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
       if (args.driverDetails.phone) patchData.driverPhone = args.driverDetails.phone;
       if (args.driverDetails.vehiclePlate) patchData.vehiclePlate = args.driverDetails.vehiclePlate;
       if (args.driverDetails.liveTrackingUrl) patchData.liveTrackingUrl = args.driverDetails.liveTrackingUrl;
+      if (args.driverDetails.trackingUrl) patchData.trackingUrl = args.driverDetails.trackingUrl;
+      if (args.driverDetails.etaMinutes !== undefined) patchData.etaMinutes = args.driverDetails.etaMinutes;
       patchData.bookingStatus = "booked";
+    }
+
+    if (args.porterRawOrder !== undefined) {
+      patchData.porterRawOrder = args.porterRawOrder;
+      patchData.porterLastSyncAt = now;
     }
 
     // Record exception type if failure is recorded

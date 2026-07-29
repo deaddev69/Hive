@@ -68,6 +68,36 @@ export const handlePorterWebhook = httpAction(async (ctx, request) => {
     return new Response(JSON.stringify({ success: true, message: "Unmapped status ignored" }), { status: 200 });
   }
 
+  let driverDetails: any = payload.order_details?.driver_details ? {
+    name: payload.order_details.driver_details.driver_name,
+    phone: payload.order_details.driver_details.mobile,
+    vehiclePlate: payload.order_details.driver_details.vehicle_number,
+  } : undefined;
+
+  let porterRawOrder: any = undefined;
+
+  if (rawStatus === "order_accepted") {
+    console.log(`[PorterSync] Fetching order details for CRN: ${orderId}`);
+    try {
+      const syncResult = await ctx.runAction(internal.lib.porter.syncOrderDetails, { crn: orderId });
+      
+      driverDetails = {
+        ...(driverDetails || {}),
+        name: syncResult.name || driverDetails?.name,
+        phone: syncResult.phone || driverDetails?.phone,
+        vehiclePlate: syncResult.vehiclePlate || driverDetails?.vehiclePlate,
+        trackingUrl: syncResult.trackingUrl,
+        liveTrackingUrl: syncResult.liveTrackingUrl,
+        etaMinutes: syncResult.etaMinutes,
+      };
+      
+      porterRawOrder = syncResult.rawOrder;
+      console.log(`[PorterSync] Successfully enriched shipment for CRN: ${orderId}`);
+    } catch (err) {
+      console.warn(`[PorterSync] Failed to enrich shipment for CRN: ${orderId}:`, err);
+    }
+  }
+
   // Dispatch background mutation immediately to guarantee 15s fast response
   await ctx.runMutation(internal.adminLogistics.processLogisticsStatusUpdateInternal, {
     awbNumber: orderId, // Our DB uses awbNumber to store the CRN
@@ -78,11 +108,8 @@ export const handlePorterWebhook = httpAction(async (ctx, request) => {
     location: payload.order_details?.partner_location?.lat 
       ? `${payload.order_details.partner_location.lat},${payload.order_details.partner_location.long}`
       : undefined,
-    driverDetails: payload.order_details?.driver_details ? {
-      name: payload.order_details.driver_details.driver_name,
-      phone: payload.order_details.driver_details.mobile,
-      vehiclePlate: payload.order_details.driver_details.vehicle_number,
-    } : undefined,
+    driverDetails,
+    porterRawOrder,
   }).catch((err) => {
     console.error("[PorterWebhook] Background mutation error:", err);
   });

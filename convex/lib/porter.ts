@@ -166,29 +166,54 @@ export const createOrder = internalAction({
   },
 });
 
+export async function fetchOrderFromPorter(crn: string) {
+  if (!process.env.PORTER_API_URL || !process.env.PORTER_API_KEY) {
+    throw new Error("Missing PORTER_API_URL or PORTER_API_KEY environment variable.");
+  }
+
+  const res = await fetch(`${process.env.PORTER_API_URL}/v1/orders/${crn}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.PORTER_API_KEY,
+    },
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Porter getOrder failed: ${res.status} - ${errText}`);
+  }
+
+  return await res.json();
+}
+
 export const getOrder = internalAction({
   args: {
     crn: v.string(),
   },
   handler: async (ctx, args) => {
-    if (!process.env.PORTER_API_URL || !process.env.PORTER_API_KEY) {
-      throw new Error("Missing PORTER_API_URL or PORTER_API_KEY environment variable.");
-    }
+    return await fetchOrderFromPorter(args.crn);
+  },
+});
 
-    const res = await fetch(`${process.env.PORTER_API_URL}/v1/orders/${args.crn}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.PORTER_API_KEY,
-      },
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Porter getOrder failed: ${res.status} - ${errText}`);
-    }
-
-    return await res.json();
+export const syncOrderDetails = internalAction({
+  args: {
+    crn: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const data = await fetchOrderFromPorter(args.crn);
+    
+    const result: any = {};
+    if (data.driver_details?.driver_name) result.name = data.driver_details.driver_name;
+    if (data.driver_details?.mobile) result.phone = data.driver_details.mobile;
+    if (data.driver_details?.vehicle_number) result.vehiclePlate = data.driver_details.vehicle_number;
+    if (data.tracking_url && data.tracking_url !== "http://test.com") result.trackingUrl = data.tracking_url;
+    if (data.live_tracking_url) result.liveTrackingUrl = data.live_tracking_url;
+    if (data.estimated_pickup_time !== undefined) result.etaMinutes = data.estimated_pickup_time;
+    
+    result.rawOrder = data;
+    
+    return result;
   },
 });
 

@@ -860,6 +860,9 @@ export default defineSchema({
     deliveredAt:        v.optional(v.number()),
     pickedUpAt:         v.optional(v.number()),
     lastWebhookAt:      v.optional(v.number()),
+    porterLastSyncAt:   v.optional(v.number()),
+    etaMinutes:         v.optional(v.number()),
+    porterRawOrder:     v.optional(v.any()),
     scans:              v.optional(v.array(v.any())),
     rawWebhookEvents:   v.array(v.object({          // append-only log
       timestamp:   v.number(),

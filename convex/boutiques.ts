@@ -235,51 +235,15 @@ export const createBoutique = mutation({
 
     const emailNormalized = args.email.trim().toLowerCase();
     
-    // Create or upgrade user so they appear in User Management immediately
-    let existingUser = await ctx.db
-      .query("users")
-      .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", emailNormalized))
-      .unique();
-      
-    let ownerUserId = existingUser?._id;
+    // Check for duplicates before proceeding
+    await checkForDuplicateBoutique(ctx, emailNormalized, normalizedPhone);
 
-    if (!existingUser) {
-      ownerUserId = await ctx.db.insert("users", {
-        email: args.email,
-        originalEmail: args.email,
-        normalizedEmail: emailNormalized,
-        phone: normalizedPhone,
-        role: "boutique_owner",
-        isActive: true,
-        isPhoneVerified: false,
-        createdAt: now,
-        updatedAt: now,
-      });
-      
-      await ctx.db.insert("customerProfiles", {
-        userId: ownerUserId,
-        displayName: args.ownerName,
-        hiveScore: 100,
-        totalOrders: 0,
-        totalClaimsSubmitted: 0,
-        updatedAt: now,
-      });
-    } else {
-      // Upgrade role to boutique_owner if they are a standard customer
-      const patchData: any = { updatedAt: now };
-      if (existingUser.role === "customer" || existingUser.role === "seller_pending" || existingUser.role === "seller_rejected") {
-        patchData.role = "boutique_owner";
-      }
-      if (!existingUser.phone) {
-        patchData.phone = normalizedPhone;
-      }
-      await ctx.db.patch(existingUser._id, patchData);
-    }
+    const defaults = getDefaultBoutiqueConfig();
 
     const insertData: any = {
       boutiqueName:     args.boutiqueName,
       ownerName:        args.ownerName,
-      email:            args.email,
+      email:            emailNormalized,
       phone:            normalizedPhone,
       address:          args.address,
       latitude:         args.latitude,
@@ -290,17 +254,17 @@ export const createBoutique = mutation({
       deliveryRadiusKm: args.deliveryRadiusKm,
       description:      args.description,
       status:           args.status,
-      storeCategory:    args.storeCategory || "women_fashion",
-      sellerModel:      args.sellerModel || "boutique",
-      merchantTier:     "Bronze",
+      storeCategory:    args.storeCategory || defaults.storeCategory,
+      sellerModel:      args.sellerModel || defaults.sellerModel,
+      merchantTier:     defaults.merchantTier,
       createdAt:        now,
       
       area:             args.area,
       searchKeywords:    args.searchKeywords,
       serviceType:       args.serviceType,
 
-      ownerEmail:       args.email,
-      ownerUserId:      ownerUserId, // Set immediately so it links properly
+      ownerEmail:       emailNormalized,
+      ownerUserId:      undefined, // Unclaimed until invite is claimed
       
       staffEmail1:      args.staffEmail1 ? args.staffEmail1.toLowerCase() : undefined,
       staffEmail2:      args.staffEmail2 ? args.staffEmail2.toLowerCase() : undefined,
@@ -311,10 +275,10 @@ export const createBoutique = mutation({
       inviteSentAt:     now,
       inviteExpiresAt:  now + 14 * 24 * 60 * 60 * 1000,
       inviteCreatedBy:  adminUser._id,
-      activeApprovedProductCount: 0,
+      activeApprovedProductCount: defaults.activeApprovedProductCount,
 
       // WhatsApp preferences
-      whatsAppNotificationsEnabled: true,
+      whatsAppNotificationsEnabled: defaults.whatsAppNotificationsEnabled,
       notificationPhone:            normalizedPhone,
 
       // Seed backward-compatibility properties if needed
@@ -345,6 +309,20 @@ export const createBoutique = mutation({
     }
 
     const boutiqueId = await ctx.db.insert("boutiques", insertData);
+
+    await ctx.db.insert("auditLogs", {
+      actorId: adminUser._id,
+      actorRole: "admin",
+      action: "boutique.created",
+      entityType: "boutiques",
+      entityId: boutiqueId,
+      metadata: JSON.stringify({
+        inviteEmail: emailNormalized,
+        boutiqueId: boutiqueId,
+        status: args.status,
+      }),
+      createdAt: now,
+    });
 
     // Schedule background invitation dispatch
     await ctx.scheduler.runAfter(0, internal.boutiques.sendMerchantInviteAction, {
@@ -636,6 +614,23 @@ export const rejectBoutique = mutation({
       rejectionReason: args.reason || "Rejection by Admin",
     });
 
+    const now = Date.now();
+    await ctx.db.insert("auditLogs", {
+      actorId: ctx.auth ? (await getAuthenticatedUser(ctx))._id : undefined,
+      actorRole: "admin",
+      action: "boutique.rejected",
+      entityType: "boutiqueApplications",
+      entityId: args.id,
+      metadata: JSON.stringify({
+        applicationId: args.id,
+        email: app.email,
+        reason: args.reason || "Rejection by Admin",
+        previousStatus: app.status,
+        newStatus: "REJECTED",
+      }),
+      createdAt: now,
+    });
+
     // Downgrade user role to seller_rejected (preserves application history)
     const appUser = await ctx.db.get(app.userId);
     if (appUser && (appUser.role === "seller_pending" || appUser.role === "customer")) {
@@ -676,6 +671,11 @@ export const suspendBoutique = mutation({
   handler: async (ctx, args) => {
     const adminUser = await requireRole(ctx, "admin");
     const now = Date.now();
+    
+    const boutique = await ctx.db.get(args.id);
+    if (!boutique) throw new Error("Boutique not found");
+    const previousStatus = boutique.status;
+
     await ctx.db.patch(args.id, {
       status: "SUSPENDED",
       suspensionReason: args.suspensionReason,
@@ -683,21 +683,19 @@ export const suspendBoutique = mutation({
       suspendedAt: now,
       suspendedBy: adminUser._id,
     });
-    // Schedule background cart cleanup job
-    await ctx.scheduler.runAfter(0, internal.cart.onBoutiqueSuspended, {
-      boutiqueId: args.id,
-    });
 
-    // Write audit logs
     await ctx.db.insert("auditLogs", {
-      actorRole: "admin",
       actorId: adminUser._id,
+      actorRole: "admin",
       action: "boutique.suspended",
       entityType: "boutiques",
       entityId: args.id,
       metadata: JSON.stringify({
+        boutiqueId: args.id,
         reason: args.suspensionReason,
         notes: args.suspensionNotes,
+        previousStatus,
+        newStatus: "SUSPENDED",
       }),
       createdAt: now,
     });
@@ -1964,6 +1962,19 @@ export const resendBoutiqueInvite = mutation({
       rawToken,
     });
 
+    await ctx.db.insert("auditLogs", {
+      actorId: admin._id,
+      actorRole: "admin",
+      action: "boutique.invite_resent",
+      entityType: "boutiques",
+      entityId: args.id,
+      metadata: JSON.stringify({
+        inviteEmail: boutique.email,
+        boutiqueId: args.id,
+      }),
+      createdAt: now,
+    });
+
     return { success: true, rawToken };
   },
 });
@@ -2085,6 +2096,15 @@ export const claimBoutiqueInvite = mutation({
       throw new Error("This invite link has expired");
     }
 
+    const existingBoutique = await ctx.db
+      .query("boutiques")
+      .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
+      .unique();
+
+    if (existingBoutique) {
+      throw new Error("You already own a boutique and cannot claim another one.");
+    }
+
     const now = Date.now();
 
     // 1. Assign ownership
@@ -2095,7 +2115,6 @@ export const claimBoutiqueInvite = mutation({
       claimedAt: now,
       inviteTokenHash: undefined,
       inviteRequestedAt: undefined,
-      status: "APPROVED", // Ensure approved
     });
 
     // 2. Upgrade user role
@@ -2114,13 +2133,14 @@ export const claimBoutiqueInvite = mutation({
     // 3. Log Claim Event
     await ctx.db.insert("auditLogs", {
       actorId: user._id,
-      actorRole: "boutique",
+      actorRole: "boutique_owner",
       action: "boutique.claimed",
       entityType: "boutiques",
       entityId: boutique._id,
       metadata: JSON.stringify({
-        email: user.email,
-        claimedAt: now,
+        inviteEmail: boutique.email,
+        boutiqueId: boutique._id,
+        status: boutique.status,
       }),
       createdAt: now,
     });
@@ -2304,3 +2324,37 @@ export const acceptLegalTerms = mutation({
     return { success: true };
   },
 });
+
+async function checkForDuplicateBoutique(ctx: any, email: string, phone: string) {
+  const existingByEmail = await ctx.db
+    .query("boutiques")
+    .withIndex("by_email", (q: any) => q.eq("email", email))
+    .collect();
+
+  for (const b of existingByEmail) {
+    if (b.status !== "REJECTED" && b.status !== "SUSPENDED") {
+      throw new Error(`A boutique with email ${email} already exists (Status: ${b.status}).`);
+    }
+  }
+
+  const existingByPhone = await ctx.db
+    .query("boutiques")
+    .filter((q: any) => q.eq(q.field("phone"), phone))
+    .collect();
+
+  for (const b of existingByPhone) {
+    if (b.status !== "REJECTED" && b.status !== "SUSPENDED") {
+      throw new Error(`A boutique with phone ${phone} already exists (Status: ${b.status}).`);
+    }
+  }
+}
+
+function getDefaultBoutiqueConfig() {
+  return {
+    merchantTier: "Bronze" as const,
+    storeCategory: "women_fashion" as const,
+    sellerModel: "boutique" as const,
+    activeApprovedProductCount: 0,
+    whatsAppNotificationsEnabled: true,
+  };
+}
