@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ArrowRight, Loader2, Sparkles, Tag, Percent, RefreshCcw, PackageX, AlertTriangle, Settings, Wallet, Box, Info } from "lucide-react";
+import { Check, ArrowRight, Loader2, Sparkles, Tag, Percent, RefreshCcw, AlertTriangle, Settings, Wallet, Box, Info } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
@@ -62,7 +62,7 @@ export default function LegalAgreementStep() {
           <span>You can either:</span>
           <div className="flex flex-col gap-1 ml-2">
             <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-600" /> Enable returns for all products</span>
-            <span className="flex items-center gap-1.5"><PackageX className="w-3.5 h-3.5 text-red-500" /> Disable returns for all products</span>
+            <span className="flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-red-500" /> Disable returns for all products</span>
           </div>
           <span className="text-hive-text-muted mt-1 italic">This setting applies to your entire store, not individual products.</span>
         </div>

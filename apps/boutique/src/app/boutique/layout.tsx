@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAuth, SignOutButton, useUser } from "@clerk/nextjs";
+import { useAuth, SignOutButton, useUser, useClerk } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
@@ -29,6 +29,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { signOut } = useClerk();
 
   const navItems = me?.role === "boutique"
     ? BOUTIQUE_NAV_ITEMS.filter(item => item.label !== "Money")
@@ -89,10 +90,10 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
           <code className="bg-slate-100 px-1 rounded">role: &quot;boutique_owner&quot;</code> and a linked boutique.
         </p>
         <button
-          onClick={() => router.push("/sign-in")}
+          onClick={() => signOut({ redirectUrl: "/sign-in" })}
           className="text-xs underline text-hive-amber mt-2"
         >
-          Sign in again
+          Sign out and sign in again
         </button>
       </div>
     );
