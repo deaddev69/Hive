@@ -43,9 +43,13 @@ export async function POST(req: NextRequest) {
     // 2. Perform RAG - Pull Local Craft Context
     const craftContext = getLocalCraftDetails(roughText);
 
-    // 3. Assemble Prompt (Product-focused, no boutique context)
+    // 3. Assemble Prompt (Strictly product-focused, no boutique/delivery/platform mentions)
     const targetType = isDescription ? "product description" : "design story";
-    const systemPrompt = `You are Hive Now's product copywriter. Rewrite the user's rough product notes into a clear, natural, premium ${targetType}. Keep the original meaning and details accurate—do not invent features, materials, colours, sizes, or styling. Use warm, simple English in a consistent premium tone. Write 40–55 words in a single paragraph. Make sure the output is strictly focused on the product itself with NO context or references related to the boutique, merchant, store, or brand.
+    const systemPrompt = `You are Hive Now's product copywriter. Rewrite the user's rough product notes into a clear, natural, premium ${targetType}. Keep the original meaning and details accurate—do not invent features, materials, colours, sizes, or styling. Use warm, simple English in a consistent premium tone. Write 40–55 words in a single paragraph.
+
+CRITICAL RULES:
+- Focus ONLY on the product itself (fabric, weave, silhouette, tailoring, fit, elegance, and comfort).
+- NEVER mention "boutique", "partner collection", "curated collection", "store", "merchant", "Hive", "delivery", "express service", or "courier".
 
 Return ONLY the final generated copy. Do not include any intro, outro, conversational text, or wrapper quotes.
 
@@ -109,7 +113,7 @@ Polished Output:`;
       console.warn("[Hive AI Warning] No GEMINI_API_KEY or GEMINI_API_KEYS defined in env. Using rules-based fallback.");
     }
 
-    // 5. Rules-based Fallback if all keys fail
+    // 5. Rules-based Fallback if all API keys fail (Strictly Product-Focused)
     if (!success) {
       console.log("[Hive AI] Using rules-based template fallback.");
       
@@ -120,9 +124,9 @@ Polished Output:`;
         .join(", ");
 
       if (isDescription) {
-        generatedText = `Exquisitely designed and handpicked from our curated partner boutique collection. Featuring premium craftsmanship with highlights of ${formattedInput}. Tailored for modern elegance and high comfort, this exclusive piece is available for immediate same-day delivery during business hours via Hive's express courier service.`;
+        generatedText = `Crafted with refined elegance, this ${formattedInput} features premium tailoring and careful attention to detail. Designed for comfort and modern style, it offers a sophisticated silhouette that transitions effortlessly across occasions, ensuring an elevated look with lasting quality and timeless appeal.`;
       } else {
-        generatedText = `Inspired by timeless aesthetics and local heritage, this design story celebrates hand-selected quality. Drawing inspiration from elements of ${formattedInput}, every stitch tells a story of dedicated craftsmanship. Curated for the discerning wardrobe, delivered to your doorstep same-day during business hours.`;
+        generatedText = `Inspired by timeless craftsmanship and graceful aesthetics, this ${formattedInput} celebrates fine textile art and thoughtful design. Every detail reflects dedicated craftsmanship, created to bring subtle luxury and effortless charm to your wardrobe.`;
       }
     }
 
