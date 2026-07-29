@@ -330,7 +330,7 @@ export const createBoutique = mutation({
       rawToken,
     });
 
-    return boutiqueId;
+    return { boutiqueId, rawToken };
   },
 });
 
@@ -1891,6 +1891,9 @@ export const sendMerchantInviteAction = internalAction({
     }
 
     const claimLink = `https://seller.hive.in/invite/${args.rawToken}`;
+    
+    // Log the claim link so developers can easily test locally without emails
+    console.log(`[sendMerchantInviteAction] Claim Link: ${claimLink}`);
 
     // 1. WhatsApp Template Notification
     console.log(`[sendMerchantInviteAction] Sending WhatsApp to ${boutique.phone}`);

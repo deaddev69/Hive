@@ -95,7 +95,7 @@ export default function AdminBoutiquesPage() {
 
     setSubmitting(true);
     try {
-      await createBoutique({
+      const result = await createBoutique({
         boutiqueName,
         ownerName,
         email,
@@ -112,7 +112,11 @@ export default function AdminBoutiquesPage() {
         staffEmail1: staffEmail1 || undefined,
         staffEmail2: staffEmail2 || undefined,
       });
-      alert("Boutique created and registered successfully!");
+      const claimLink = `https://seller.hive.in/invite/${result.rawToken}`;
+      prompt(
+        "Boutique created successfully!\n\nCopy this Invite Link to send to the merchant manually:",
+        claimLink
+      );
       resetForm();
     } catch (err: any) {
       alert("Failed to save boutique profile: " + err.message);
