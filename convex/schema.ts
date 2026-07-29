@@ -435,6 +435,7 @@ export default defineSchema({
     fitNote:          v.optional(v.string()),
     story:            v.optional(v.string()),
     occasion:         v.optional(v.string()),
+    returnsAccepted:  v.optional(v.boolean()),
     approvalStatus:   v.optional(
                         v.union(
                           v.literal("pending"),

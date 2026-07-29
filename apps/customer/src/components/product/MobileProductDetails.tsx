@@ -197,30 +197,19 @@ export function MobileProductDetails({
 
       {/* ── SECTION 5: TRUST REASSURANCE ── */}
       <div className="border-t border-stone-100 pt-4 mt-3 py-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase select-none">
-        <span>Easy exchanges</span>
+        <span className={product.returnsAccepted === false ? "text-amber-800 font-extrabold" : ""}>
+          {product.returnsAccepted === false ? "Final Sale — No Returns" : "Easy exchanges"}
+        </span>
         <span className="text-stone-300">•</span>
         <span>{product.sameDayEligible ? "Same-Day Delivery" : "Express Delivery"}</span>
         <span className="text-stone-300">•</span>
         <span>Secure checkout</span>
       </div>
 
-
-      {/* ── SECTION 6: PRODUCT STORY ── */}
-      {hasDescription && (
-        <div className="border-t border-stone-100 pt-4 mt-3 space-y-2">
-          <h3 className="text-[10px] font-bold uppercase tracking-[0.12em] text-stone-400 mb-1">
-            Why you'll love it
-          </h3>
-          <p className="text-sm text-stone-600 leading-relaxed font-medium">
-            {(product as any).story ?? product.description}
-          </p>
-        </div>
-      )}
-
-      {/* ── SECTION 6.5: ACCORDIONS (Product Details, Wash & Care, Delivery & Returns) ── */}
+      {/* ── SECTION 6: ACCORDIONS (Product Details, Wash & Care, Delivery & Returns) ── */}
       <div className="border-t border-stone-100 pt-2.5 mt-2 space-y-1">
-        {/* Product Details (Specifications) Area */}
-        {hasDetails && (
+        {/* Product Details (Description + Specifications) Area */}
+        {(hasDescription || hasDetails) && (
           <div className="border-b border-stone-100/60 pb-3">
             <div className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900">
               <span className="flex items-center gap-1.5">
@@ -228,18 +217,29 @@ export function MobileProductDetails({
                 <span>Product Details</span>
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-3.5 pt-1.5 pb-1 text-left">
-              {renderedSpecs.map((item, idx) => (
-                <div key={idx} className="space-y-0.5">
-                  <span className="text-[9px] font-extrabold text-[#78716C] uppercase tracking-wider block">
-                    {item.label}
-                  </span>
-                  <span className="text-xs font-semibold text-[#1C1917] block leading-tight">
-                    {item.value}
-                  </span>
-                </div>
-              ))}
-            </div>
+
+            {/* AI Generated Product Description Paragraph */}
+            {hasDescription && (
+              <p className="text-xs text-stone-700 leading-relaxed font-medium pt-1 pb-3 text-left">
+                {(product as any).story ?? product.description}
+              </p>
+            )}
+
+            {/* Specifications Grid */}
+            {hasDetails && (
+              <div className="grid grid-cols-2 gap-x-8 gap-y-3.5 pt-1.5 pb-1 text-left border-t border-stone-100/60">
+                {renderedSpecs.map((item, idx) => (
+                  <div key={idx} className="space-y-0.5">
+                    <span className="text-[9px] font-extrabold text-[#78716C] uppercase tracking-wider block">
+                      {item.label}
+                    </span>
+                    <span className="text-xs font-semibold text-[#1C1917] block leading-tight">
+                      {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -278,9 +278,15 @@ export function MobileProductDetails({
           </button>
           {openAccordion === "returns" && (
             <div className="text-xs text-stone-600 leading-relaxed font-medium pt-1 space-y-2 text-left animate-fade-in">
-              <p>
-                • <strong>1-Day Return Window</strong>: Return requests must be initiated within 24 hours of delivery.
-              </p>
+              {product.returnsAccepted === false ? (
+                <p>
+                  • <strong className="text-amber-800">Final Sale Item</strong>: This product is non-returnable and non-refundable unless physically damaged, defective, or incorrect item received.
+                </p>
+              ) : (
+                <p>
+                  • <strong>1-Day Return Window</strong>: Return requests must be initiated within 24 hours of delivery.
+                </p>
+              )}
               <p>
                 • <strong>No Change-of-Mind</strong>: Returns are eligible for physically damaged, defective, or wrong items only.
               </p>

@@ -50,6 +50,7 @@ export interface ProductDetail {
   fitNote: string;
   deliveryInfo: string;
   sameDayEligible: boolean;
+  returnsAccepted?: boolean;
   inventory: Record<string, number>; // size to stock count
   featuredReviews: ProductReview[];
 }

@@ -478,6 +478,7 @@ export default function CreateProductModal({
   const [price, setPrice] = useState("");
   const [discountPrice, setDiscountPrice] = useState("");
   const [sameDayEligible, setSameDayEligible] = useState(false);
+  const [returnsAccepted, setReturnsAccepted] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [active, setActive] = useState(true);
 
@@ -580,6 +581,7 @@ export default function CreateProductModal({
         setDiscountPrice(productToEdit.baseDiscountPrice?.toString() || productToEdit.discountPrice?.toString() || "");
 
         setSameDayEligible(productToEdit.sameDayEligible || false);
+        setReturnsAccepted(productToEdit.returnsAccepted !== false);
         setFeatured(productToEdit.featured || false);
         setActive(productToEdit.active !== false);
 
@@ -615,6 +617,7 @@ export default function CreateProductModal({
         setPrice("");
         setDiscountPrice("");
         setSameDayEligible(false);
+        setReturnsAccepted(true);
         setFeatured(false);
         setActive(true);
         setImages([]);
@@ -796,6 +799,7 @@ export default function CreateProductModal({
         sizes: selectedSizes,
         stockBySize,
         sameDayEligible,
+        returnsAccepted,
         featured,
         active,
         story,
@@ -1173,6 +1177,56 @@ export default function CreateProductModal({
                 </div>
               </div>
             )}
+
+            <hr className="border-slate-100 my-1" />
+
+            {/* RETURN & EXCHANGE POLICY CONTROL */}
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+                RETURN & EXCHANGE POLICY
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setReturnsAccepted(true)}
+                  className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
+                    returnsAccepted
+                      ? "border-[#F5C22B] bg-[#FFFBEB] shadow-xs"
+                      : "border-slate-200 bg-white hover:border-slate-300 opacity-70"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <span className="text-emerald-500 text-xs">●</span> Accepts Returns
+                    </span>
+                    {returnsAccepted && <Check className="w-4 h-4 text-amber-600 stroke-[3]" />}
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-medium leading-normal">
+                    Standard 1-Day Return Window for customers.
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReturnsAccepted(false)}
+                  className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer ${
+                    !returnsAccepted
+                      ? "border-red-400 bg-red-50/50 shadow-xs"
+                      : "border-slate-200 bg-white hover:border-slate-300 opacity-70"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <span className="text-red-500 text-xs">●</span> Final Sale — No Returns
+                    </span>
+                    {!returnsAccepted && <Check className="w-4 h-4 text-red-600 stroke-[3]" />}
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-medium leading-normal">
+                    Custom tailored or delicate item; non-returnable.
+                  </span>
+                </button>
+              </div>
+            </div>
 
             <hr className="border-slate-100 -my-3" />
 
