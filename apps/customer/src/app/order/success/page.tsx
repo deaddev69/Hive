@@ -26,7 +26,6 @@ import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
-import { DeliveryStatus } from "@/components/shared/DeliveryStatus";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Redesigned Success Page Route Implementation
@@ -339,12 +338,11 @@ function DeliveryConfirmationCard({
 }) {
   return (
     <div className="bg-white border border-hive-border/20 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4 text-left">
-      <div className="border-b border-hive-border/40 pb-3 flex items-center justify-between">
+      <div className="border-b border-hive-border/40 pb-3">
         <h3 className="text-[11px] font-extrabold text-hive-dark uppercase tracking-wider flex items-center gap-2">
           <Calendar className="w-4 h-4 text-hive-gold" />
-          <span>Delivery & Fitting Schedule</span>
+          <span>Delivery & Fitting Window</span>
         </h3>
-        <DeliveryStatus promise={date || "Today"} time={slot || "12 PM"} animate={true} />
       </div>
 
       <div className="grid grid-cols-2 gap-4 text-xs font-bold text-hive-dark pt-1">
