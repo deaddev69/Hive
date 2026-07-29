@@ -266,8 +266,15 @@ export const createBoutique = mutation({
       });
     } else {
       // Upgrade role to boutique_owner if they are a standard customer
+      const patchData: any = { updatedAt: now };
       if (existingUser.role === "customer" || existingUser.role === "seller_pending" || existingUser.role === "seller_rejected") {
-        await ctx.db.patch(existingUser._id, { role: "boutique_owner", updatedAt: now });
+        patchData.role = "boutique_owner";
+      }
+      if (!existingUser.phone) {
+        patchData.phone = normalizedPhone;
+      }
+      if (Object.keys(patchData).length > 1) { // more than just updatedAt
+        await ctx.db.patch(existingUser._id, patchData);
       }
     }
 
