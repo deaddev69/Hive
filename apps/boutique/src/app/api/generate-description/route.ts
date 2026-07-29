@@ -126,28 +126,28 @@ Polished Output:`;
               if (text && text.trim()) {
                 generatedText = text.trim();
                 success = true;
-                console.log(`[Hive AI] Generation succeeded with key index ${i} (${modelId}).`);
+                console.log(`[Hive AI SUCCESS ✨] Real Gemini AI generated output returned using key ${i} (${modelId})!`);
                 break keyLoop;
               }
             } else {
               const errorBody = await response.text();
               console.warn(
-                `[Hive AI Failover Warning] Key index ${i} model ${modelId} failed with status ${response.status}:`,
+                `[Hive AI FAILOVER WARNING ⚠️] Key ${i} model ${modelId} returned HTTP ${response.status}:`,
                 errorBody
               );
             }
           } catch (err) {
-            console.error(`[Hive AI Failover Error] Exception with key index ${i} model ${modelId}:`, err);
+            console.error(`[Hive AI FAILOVER ERROR ❌] Exception with key ${i} model ${modelId}:`, err);
           }
         }
       }
     } else {
-      console.warn("[Hive AI Warning] No GEMINI_API_KEY or GEMINI_API_KEYS defined in env. Using rules-based fallback.");
+      console.warn("[Hive AI WARNING ⚠️] No valid GEMINI_API_KEY found in .env.local.");
     }
 
     // 5. Dynamic Rules-based Fallback if API keys fail
     if (!success) {
-      console.log("[Hive AI] Using dynamic rules-based template fallback.");
+      console.log("[Hive AI FALLBACK 🔄] Gemini API call failed. Using dynamic rules-based template fallback.");
       generatedText = generateDynamicFallback(roughText, isDescription);
     }
 
