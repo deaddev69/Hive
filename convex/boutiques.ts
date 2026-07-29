@@ -2094,7 +2094,7 @@ export const requestNewInvite = mutation({
 export const claimBoutiqueInvite = mutation({
   args: { inviteToken: v.string() },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
+    const user = await getAuthenticatedUser(ctx, undefined, { skipIssuerGating: true });
     const hashed = await hashInviteToken(args.inviteToken);
     const boutique = await ctx.db
       .query("boutiques")

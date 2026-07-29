@@ -16,7 +16,7 @@ export type UserRole = "customer" | "seller_pending" | "seller_rejected" | "bout
  * Resolves the authenticated user from the Convex users table.
  * Throws if unauthenticated, user not found, or account disabled.
  */
-export async function getAuthenticatedUser(ctx: AuthCtx, token?: string) {
+export async function getAuthenticatedUser(ctx: AuthCtx, token?: string, options?: { skipIssuerGating?: boolean }) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     // Dev-only fallback for chaos tests
@@ -43,7 +43,9 @@ export async function getAuthenticatedUser(ctx: AuthCtx, token?: string) {
     throw new ConvexError(HiveError.ACCOUNT_DISABLED);
   }
 
-  assertRoleIssuerGating(user, identity, true);
+  if (!options?.skipIssuerGating) {
+    assertRoleIssuerGating(user, identity, true);
+  }
 
   return user;
 }
