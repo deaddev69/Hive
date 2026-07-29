@@ -112,7 +112,7 @@ export default function AdminBoutiquesPage() {
         staffEmail1: staffEmail1 || undefined,
         staffEmail2: staffEmail2 || undefined,
       });
-      const claimLink = `https://seller.hive.in/invite/${result.rawToken}`;
+      const claimLink = `https://seller.hivenow.in/invite/${result.rawToken}`;
       prompt(
         "Boutique created successfully!\n\nCopy this Invite Link to send to the merchant manually:",
         claimLink

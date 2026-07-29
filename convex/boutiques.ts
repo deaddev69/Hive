@@ -226,111 +226,119 @@ export const createBoutique = mutation({
   handler: async (ctx, args) => {
     const adminUser = await requireRole(ctx, "admin");
 
-    const normalizedPhone = normalizePhoneNumber(args.phone);
-    validateBoutiqueDetails({ ...args, phone: normalizedPhone });
+    try {
+      const normalizedPhone = normalizePhoneNumber(args.phone);
+      validateBoutiqueDetails({ ...args, phone: normalizedPhone });
 
-    const rawToken = generateInviteToken();
-    const hashed = await hashInviteToken(rawToken);
-    const now = Date.now();
+      const rawToken = generateInviteToken();
+      const hashed = await hashInviteToken(rawToken);
+      const now = Date.now();
 
-    const emailNormalized = args.email.trim().toLowerCase();
-    
-    // Check for duplicates before proceeding
-    await checkForDuplicateBoutique(ctx, emailNormalized, normalizedPhone);
-
-    const defaults = getDefaultBoutiqueConfig();
-
-    const insertData: any = {
-      boutiqueName:     args.boutiqueName,
-      ownerName:        args.ownerName,
-      email:            emailNormalized,
-      phone:            normalizedPhone,
-      address:          args.address,
-      latitude:         args.latitude,
-      longitude:        args.longitude,
-      city:             args.city,
-      state:            args.state,
-      pincode:          args.pincode,
-      deliveryRadiusKm: args.deliveryRadiusKm,
-      description:      args.description,
-      status:           args.status,
-      storeCategory:    args.storeCategory || defaults.storeCategory,
-      sellerModel:      args.sellerModel || defaults.sellerModel,
-      merchantTier:     defaults.merchantTier,
-      createdAt:        now,
+      const emailNormalized = args.email.trim().toLowerCase();
       
-      area:             args.area,
-      searchKeywords:    args.searchKeywords,
-      serviceType:       args.serviceType,
+      // Check for duplicates before proceeding
+      await checkForDuplicateBoutique(ctx, emailNormalized, normalizedPhone);
 
-      ownerEmail:       emailNormalized,
-      ownerUserId:      undefined, // Unclaimed until invite is claimed
-      
-      staffEmail1:      args.staffEmail1 ? args.staffEmail1.toLowerCase() : undefined,
-      staffEmail2:      args.staffEmail2 ? args.staffEmail2.toLowerCase() : undefined,
+      const defaults = getDefaultBoutiqueConfig();
 
-      // Invite metadata
-      inviteTokenHash:  hashed,
-      inviteStatus:     "sent",
-      inviteSentAt:     now,
-      inviteExpiresAt:  now + 14 * 24 * 60 * 60 * 1000,
-      inviteCreatedBy:  adminUser._id,
-      activeApprovedProductCount: defaults.activeApprovedProductCount,
+      const insertData: any = {
+        boutiqueName:     args.boutiqueName,
+        ownerName:        args.ownerName,
+        email:            emailNormalized,
+        phone:            normalizedPhone,
+        address:          args.address,
+        latitude:         args.latitude,
+        longitude:        args.longitude,
+        city:             args.city,
+        state:            args.state,
+        pincode:          args.pincode,
+        deliveryRadiusKm: args.deliveryRadiusKm,
+        description:      args.description,
+        status:           args.status,
+        storeCategory:    args.storeCategory || defaults.storeCategory,
+        sellerModel:      args.sellerModel || defaults.sellerModel,
+        merchantTier:     defaults.merchantTier,
+        createdAt:        now,
+        
+        area:             args.area,
+        searchKeywords:    args.searchKeywords,
+        serviceType:       args.serviceType,
 
-      // WhatsApp preferences
-      whatsAppNotificationsEnabled: defaults.whatsAppNotificationsEnabled,
-      notificationPhone:            normalizedPhone,
+        ownerEmail:       emailNormalized,
+        ownerUserId:      undefined, // Unclaimed until invite is claimed
+        
+        staffEmail1:      args.staffEmail1 ? args.staffEmail1.toLowerCase() : undefined,
+        staffEmail2:      args.staffEmail2 ? args.staffEmail2.toLowerCase() : undefined,
 
-      // Seed backward-compatibility properties if needed
-      name:             args.boutiqueName,
-      slug:             args.boutiqueName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
-      phoneNumber:      normalizedPhone,
-      addressDetails: {
-        line1:          args.address,
-        city:           args.city,
-        state:          args.state,
-        pincode:        args.pincode,
-        lat:            args.latitude,
-        lng:            args.longitude,
-      },
-    };
+        // Invite metadata
+        inviteTokenHash:  hashed,
+        inviteStatus:     "sent",
+        inviteSentAt:     now,
+        inviteExpiresAt:  now + 14 * 24 * 60 * 60 * 1000,
+        inviteCreatedBy:  adminUser._id,
+        activeApprovedProductCount: defaults.activeApprovedProductCount,
 
-    if (args.bankAccount) {
-      const secret = process.env.BANK_ENCRYPTION_KEY;
-      if (!secret) throw new ConvexError("FATAL: BANK_ENCRYPTION_KEY environment variable is not configured. Cannot process bank data.");
-      const encryptedAccountNo = await encryptData(args.bankAccount.accountNo, secret);
-      const accountNoLast4 = args.bankAccount.accountNo.slice(-4).padStart(args.bankAccount.accountNo.length, "X");
-      insertData.bankAccount = {
-        holderName: args.bankAccount.holderName,
-        accountNoLast4,
-        encryptedAccountNo,
-        ifsc: args.bankAccount.ifsc,
+        // WhatsApp preferences
+        whatsAppNotificationsEnabled: defaults.whatsAppNotificationsEnabled,
+        notificationPhone:            normalizedPhone,
+
+        // Seed backward-compatibility properties if needed
+        name:             args.boutiqueName,
+        slug:             args.boutiqueName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
+        phoneNumber:      normalizedPhone,
+        addressDetails: {
+          line1:          args.address,
+          city:           args.city,
+          state:          args.state,
+          pincode:        args.pincode,
+          lat:            args.latitude,
+          lng:            args.longitude,
+        },
       };
+
+      if (args.bankAccount) {
+        const secret = process.env.BANK_ENCRYPTION_KEY;
+        if (!secret) throw new ConvexError("FATAL: BANK_ENCRYPTION_KEY environment variable is not configured. Cannot process bank data.");
+        const encryptedAccountNo = await encryptData(args.bankAccount.accountNo, secret);
+        const accountNoLast4 = args.bankAccount.accountNo.slice(-4).padStart(args.bankAccount.accountNo.length, "X");
+        insertData.bankAccount = {
+          holderName: args.bankAccount.holderName,
+          accountNoLast4,
+          encryptedAccountNo,
+          ifsc: args.bankAccount.ifsc,
+        };
+      }
+
+      const boutiqueId = await ctx.db.insert("boutiques", insertData);
+
+      await ctx.db.insert("auditLogs", {
+        actorId: adminUser._id,
+        actorRole: "admin",
+        action: "boutique.created",
+        entityType: "boutiques",
+        entityId: boutiqueId as unknown as string,
+        metadata: JSON.stringify({
+          inviteEmail: emailNormalized,
+          boutiqueId: boutiqueId,
+          status: args.status,
+        }),
+        createdAt: now,
+      });
+
+      // Schedule background invitation dispatch
+      await ctx.scheduler.runAfter(0, internal.boutiques.sendMerchantInviteAction, {
+        boutiqueId,
+        rawToken,
+      });
+
+      return { boutiqueId, rawToken };
+    } catch (e: any) {
+      // Re-throw ConvexErrors as-is (they reach the client properly)
+      if (e instanceof ConvexError) throw e;
+      // Convert any other Error to ConvexError so the client sees the real message
+      console.error("[createBoutique] Uncaught error:", e.message, e.stack);
+      throw new ConvexError(`Boutique creation failed: ${e.message}`);
     }
-
-    const boutiqueId = await ctx.db.insert("boutiques", insertData);
-
-    await ctx.db.insert("auditLogs", {
-      actorId: adminUser._id,
-      actorRole: "admin",
-      action: "boutique.created",
-      entityType: "boutiques",
-      entityId: boutiqueId,
-      metadata: JSON.stringify({
-        inviteEmail: emailNormalized,
-        boutiqueId: boutiqueId,
-        status: args.status,
-      }),
-      createdAt: now,
-    });
-
-    // Schedule background invitation dispatch
-    await ctx.scheduler.runAfter(0, internal.boutiques.sendMerchantInviteAction, {
-      boutiqueId,
-      rawToken,
-    });
-
-    return { boutiqueId, rawToken };
   },
 });
 
@@ -1890,7 +1898,7 @@ export const sendMerchantInviteAction = internalAction({
       return;
     }
 
-    const claimLink = `https://seller.hive.in/invite/${args.rawToken}`;
+    const claimLink = `https://seller.hivenow.in/invite/${args.rawToken}`;
     
     // Log the claim link so developers can easily test locally without emails
     console.log(`[sendMerchantInviteAction] Claim Link: ${claimLink}`);

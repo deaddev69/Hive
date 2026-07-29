@@ -76,7 +76,7 @@ export const sendTemplateMessage = internalAction({
           bodyText = `Welcome to Hive 🎉\nYour merchant account is ready.\nClaim your account:\n${args.parameters[0] || ""}\nThis invite expires in 14 days.`;
           break;
         case "merchant_welcome":
-          bodyText = `Welcome to Hive 🎉\n\nYour store has been activated.\n\nComplete these steps:\n✓ Add logo\n✓ Add store hours\n✓ Add first product\n\nSeller Center:\nseller.hive.in`;
+          bodyText = `Welcome to Hive 🎉\n\nYour store has been activated.\n\nComplete these steps:\n✓ Add logo\n✓ Add store hours\n✓ Add first product\n\nSeller Center:\nseller.hivenow.in`;
           break;
         case "first_product_approved":
           bodyText = `Great news 🎉\n\nYour first product is now live on Hive.\n\nCustomers can now discover your store.`;
