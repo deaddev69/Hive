@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { useUser, SignInButton, useAuth } from "@clerk/nextjs";
-import { api } from "../../../../../../../convex/_generated/api";
+import { api } from "../../../../../../convex/_generated/api";
 import { Store, CheckCircle2, Loader2, AlertTriangle, LogIn, ArrowRight } from "lucide-react";
 
 export default function InviteClaimPage() {
