@@ -330,8 +330,9 @@ export const getUsers = query({
       throw new Error("Unauthorized: Only admins can view users.");
     }
 
-    // Since there's no updatedAt index, sort by default ID (chronological) and reverse
-    return await ctx.db.query("users").order("desc").collect();
+    // Sort by updatedAt descending so newly upgraded boutique owners jump to the top
+    const allUsers = await ctx.db.query("users").collect();
+    return allUsers.sort((a, b) => (b.updatedAt ?? b._creationTime) - (a.updatedAt ?? a._creationTime));
   },
 });
 
