@@ -2101,10 +2101,10 @@ export const claimBoutiqueInvite = mutation({
       .withIndex("by_inviteTokenHash", (q) => q.eq("inviteTokenHash", hashed))
       .unique();
 
-    if (!boutique) throw new Error("Invalid invite link");
-    if (boutique.ownerUserId) throw new Error("This merchant account has already been claimed");
+    if (!boutique) throw new ConvexError("Invalid invite link");
+    if (boutique.ownerUserId) throw new ConvexError("This merchant account has already been claimed");
     if (boutique.inviteExpiresAt && boutique.inviteExpiresAt < Date.now()) {
-      throw new Error("This invite link has expired");
+      throw new ConvexError("This invite link has expired");
     }
 
     const existingBoutique = await ctx.db
@@ -2113,20 +2113,28 @@ export const claimBoutiqueInvite = mutation({
       .unique();
 
     if (existingBoutique) {
-      throw new Error("You already own a boutique and cannot claim another one.");
+      throw new ConvexError("You already own a boutique and cannot claim another one.");
     }
 
     const now = Date.now();
 
-    // 1. Assign ownership
-    await ctx.db.patch(boutique._id, {
+    // 1. Assign ownership and auto-approve if PENDING
+    const patchData: any = {
       ownerUserId: user._id,
       userId: user._id, // Legacy compatibility
       inviteStatus: "claimed",
       claimedAt: now,
       inviteTokenHash: undefined,
       inviteRequestedAt: undefined,
-    });
+    };
+
+    // Auto-approve PENDING boutiques when claimed via valid invite
+    if (boutique.status === "PENDING") {
+      patchData.status = "APPROVED";
+      patchData.approvedAt = now;
+    }
+
+    await ctx.db.patch(boutique._id, patchData);
 
     // 2. Upgrade user role
     await ctx.db.patch(user._id, {
@@ -2147,11 +2155,12 @@ export const claimBoutiqueInvite = mutation({
       actorRole: "boutique_owner",
       action: "boutique.claimed",
       entityType: "boutiques",
-      entityId: boutique._id,
+      entityId: boutique._id as unknown as string,
       metadata: JSON.stringify({
         inviteEmail: boutique.email,
         boutiqueId: boutique._id,
-        status: boutique.status,
+        previousStatus: boutique.status,
+        newStatus: boutique.status === "PENDING" ? "APPROVED" : boutique.status,
       }),
       createdAt: now,
     });

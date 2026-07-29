@@ -51,8 +51,8 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // 3. Rewrite path internally to /boutique/ if it doesn't already have it
-  // Ignore auth paths so they route directly to root /sign-in and /sign-up
-  if (!isAuthPath) {
+  // Ignore auth paths and invite paths so they route directly
+  if (!isAuthPath && !isInvitePath) {
     if (pathname === "/") {
       url.pathname = "/boutique";
       return NextResponse.rewrite(url, {
