@@ -781,6 +781,84 @@ export const syncUserUpdateFromWebhook = internalMutation({
       return null;
     }
 
+    // Handle duplicate resolution: if this clerk user now has a verified email,
+    // merge them into any existing credentials/admin-created user to prevent orphaned accounts.
+    if (emailNormalized && args.isEmailVerified && !user.isMerged) {
+      const credentialsUser = await ctx.db
+        .query("users")
+        .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", emailNormalized))
+        .first(); // Find any credentials record
+
+      if (credentialsUser && credentialsUser._id !== user._id && credentialsUser.role !== "admin") {
+        // Merge Clerk ID into credentials record
+        await ctx.db.patch(credentialsUser._id, {
+          clerkId: args.clerkId,
+          email: originalEmail ?? credentialsUser.email,
+          originalEmail: originalEmail ?? credentialsUser.originalEmail,
+          normalizedEmail: emailNormalized,
+          phone: args.phone ?? credentialsUser.phone,
+          isPhoneVerified: args.isPhoneVerified ?? credentialsUser.isPhoneVerified,
+          updatedAt: now,
+        });
+
+        // Soft-deactivate the duplicate Clerk-only user
+        await ctx.db.patch(user._id, {
+          isActive: false,
+          isMerged: true,
+          mergedIntoUserId: credentialsUser._id,
+          updatedAt: now,
+        });
+
+        // Re-associate any boutiques owned by the duplicate Clerk profile
+        const boutiques = await ctx.db
+          .query("boutiques")
+          .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
+          .collect();
+
+        for (const b of boutiques) {
+          await ctx.db.patch(b._id, {
+            ownerUserId: credentialsUser._id,
+            userId: credentialsUser._id,
+          });
+        }
+        
+        // Auto-link approved boutiques that match by email
+        const emailBoutique = await ctx.db
+          .query("boutiques")
+          .withIndex("by_email", (q) => q.eq("email", emailNormalized))
+          .unique();
+
+        if (emailBoutique && emailBoutique.status === "APPROVED" && (!emailBoutique.ownerUserId || emailBoutique.ownerUserId === credentialsUser._id)) {
+          await ctx.db.patch(emailBoutique._id, {
+            userId: credentialsUser._id,
+            ownerUserId: credentialsUser._id,
+          });
+          await ctx.db.patch(credentialsUser._id, {
+            role: "boutique_owner",
+            updatedAt: now,
+          });
+        }
+
+        // Audit merge creation
+        await ctx.db.insert("auditLogs", {
+          actorRole: "system",
+          action: "user.merged",
+          entityType: "users",
+          entityId: credentialsUser._id,
+          metadata: JSON.stringify({
+            oldUserId: user._id,
+            newUserId: credentialsUser._id,
+            email: originalEmail,
+            normalizedEmail: emailNormalized,
+            reason: "Webhook user update triggered merge",
+          }),
+          createdAt: now,
+        });
+
+        return credentialsUser._id;
+      }
+    }
+
     const updates: any = { updatedAt: now };
     if (originalEmail && user.email !== originalEmail) {
       updates.email = originalEmail;
