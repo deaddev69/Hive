@@ -13,7 +13,6 @@ const MATERIAL_OPTIONS = [
   "Velvet", "Rayon", "Satin", "Blend", "Other"
 ];
 const CARE_OPTIONS = ["Dry Clean Only", "Machine Wash Cold", "Hand Wash", "Do Not Bleach", "Other"];
-const OCCASION_OPTIONS = ["Casual", "Festive", "Wedding", "Workwear", "Party"];
 
 const DEFAULT_CATEGORY_TAGS = [
   { id: "womens-ethnic", name: "Women's Ethnic" },
@@ -371,7 +370,6 @@ export default function CreateProductModal({
   const [customMaterialType, setCustomMaterialType] = useState("");
   const [care, setCare] = useState("");
   const [customCare, setCustomCare] = useState("");
-  const [occasion, setOccasion] = useState("");
   const [craft, setCraft] = useState("");
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
@@ -547,7 +545,6 @@ export default function CreateProductModal({
           setCustomCare("");
         }
 
-        setOccasion(productToEdit.occasion || "");
         setCraft(productToEdit.details?.craft ? autoCorrectCapitalization(productToEdit.details.craft) : "");
         
         if (productToEdit.details) {
@@ -597,7 +594,6 @@ export default function CreateProductModal({
         setCustomMaterialType("");
         setCare("");
         setCustomCare("");
-        setOccasion("");
         setCraft("");
         setStep2Error("");
         setSpecs({
@@ -799,7 +795,6 @@ export default function CreateProductModal({
         materialType: finalMaterial,
         material: finalMaterial,
         care: finalCare,
-        occasion,
         details: {
           ...(craft ? { craft: autoCorrectCapitalization(craft) } : {}),
           ...specs,
@@ -1087,15 +1082,6 @@ export default function CreateProductModal({
                 </div>
               )}
             </div>
-
-            <CustomSelect
-              label="OCCASION"
-              value={occasion}
-              onChange={setOccasion}
-              options={OCCASION_OPTIONS}
-              placeholder="Select occasion..."
-              required
-            />
 
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">CRAFT</label>
