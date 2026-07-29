@@ -142,6 +142,7 @@ function validateBoutiqueDetails(details: {
     !Number.isFinite(details.longitude)
   ) {
     throw new ConvexError("Boutique coordinates are mandatory and cannot be at Null Island (0, 0) or NaN.");
+  }
   if (details.latitude < 8.0 || details.latitude > 13.0) {
     throw new ConvexError("Store Latitude must be a valid coordinate within Kerala region (8.0 to 13.0).");
   }
