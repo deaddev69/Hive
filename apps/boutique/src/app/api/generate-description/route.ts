@@ -40,23 +40,15 @@ export async function POST(req: NextRequest) {
     const keysString = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
     const apiKeys = keysString.split(",").map(k => k.trim()).filter(Boolean);
 
-    // 2. Perform RAG - Pull Local Glossary Context & Boutique Details
+    // 2. Perform RAG - Pull Local Craft Context
     const craftContext = getLocalCraftDetails(roughText);
-    const boutiqueContext = boutiqueName
-      ? `Boutique Context:\nThis product is offered by "${boutiqueName}"${
-          boutiqueDescription ? ` (${boutiqueDescription.trim()})` : ""
-        }.`
-      : "";
 
-    // 3. Assemble Prompt
-    const systemPrompt = `You are Hive Now's product copywriter, a premium platform that connects shoppers with handpicked local designer boutiques and delivers orders same-day via dedicated local couriers.
-Rewrite the user's rough product notes into a clear, natural, premium ${isDescription ? "product description" : "design story"}.
-Keep the original meaning and details accurate—do not invent features, materials, colours, sizes, or styling. Do NOT mention the boutique's specific name or designer name.
-Use warm, simple English in a consistent premium tone. Write 40–55 words in a single paragraph.
+    // 3. Assemble Prompt (Product-focused, no boutique context)
+    const targetType = isDescription ? "product description" : "design story";
+    const systemPrompt = `You are Hive Now's product copywriter. Rewrite the user's rough product notes into a clear, natural, premium ${targetType}. Keep the original meaning and details accurate—do not invent features, materials, colours, sizes, or styling. Use warm, simple English in a consistent premium tone. Write 40–55 words in a single paragraph. Make sure the output is strictly focused on the product itself with NO context or references related to the boutique, merchant, store, or brand.
 
 Return ONLY the final generated copy. Do not include any intro, outro, conversational text, or wrapper quotes.
 
-${boutiqueContext}
 ${craftContext}
 
 Rough Input:
