@@ -15,6 +15,7 @@
     "dev:customer": "turbo run dev --filter=@hive/customer",
     "dev:boutique": "turbo run dev --filter=@hive/boutique",
     "dev:admin": "turbo run dev --filter=@hive/admin",
+    "dev:api": "turbo run dev --filter=@hive/api",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean && rm -rf node_modules",
