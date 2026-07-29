@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { Card, CardContent, Button } from "@hive/ui";
+import { Card, CardContent, Button, TextEffect } from "@hive/ui";
 import { formatCurrency, toast } from "@hive/utils";
 import {
   Loader2,
@@ -333,9 +333,14 @@ export default function BoutiqueDashboard() {
         {/* Top Row: Greeting & Status Dropdown Selector */}
         <div className="flex flex-row items-center justify-between gap-4 mb-4">
           <div className="flex flex-col gap-0.5">
-            <h1 className="text-[24px] md:text-[28px] leading-tight font-extrabold text-slate-800 tracking-tight">
-              {greetingPrefix}, {firstName}.
-            </h1>
+            <TextEffect
+              as="h1"
+              per="word"
+              preset="fade"
+              className="text-[24px] md:text-[28px] leading-tight font-extrabold text-slate-800 tracking-tight"
+            >
+              {`${greetingPrefix}, ${firstName}.`}
+            </TextEffect>
             <p className="text-[13px] font-medium text-slate-500">{currentDate}</p>
           </div>
 

@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { ShoppingBag, ArrowRight, MapPin, Truck, ShieldCheck, Star } from "lucide-react";
+import { TextEffect } from "@hive/ui";
 
 export interface HeroStatItem {
   value: string;
@@ -72,9 +73,14 @@ export const HeroSection: React.FC = () => {
               </span>
             </h1>
 
-            <p className="text-base md:text-lg text-hive-text-muted font-sans max-w-xl leading-relaxed">
+            <TextEffect
+              per="word"
+              preset="fade"
+              stagger={40}
+              className="text-base md:text-lg text-hive-text-muted font-sans max-w-xl leading-relaxed"
+            >
               Discover unique pieces from local designers near you. Experience the charm of curated boutique clothing delivered straight to your doorstep on the exact same day.
-            </p>
+            </TextEffect>
 
             <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-4 mt-2">
               <Link

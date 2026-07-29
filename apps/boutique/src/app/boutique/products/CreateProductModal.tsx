@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { Button, Modal } from "@hive/ui";
+import { Button, Modal, TextEffect } from "@hive/ui";
 import { Upload, X, ArrowRight, ArrowLeft, Check, ImageIcon, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "@hive/utils";
 
@@ -397,6 +397,9 @@ export default function CreateProductModal({
     return list;
   }, [categories]);
 
+  const [justPolishedDesc, setJustPolishedDesc] = useState(false);
+  const [justPolishedStory, setJustPolishedStory] = useState(false);
+
   const handleGenerateAI = async (type: "description" | "story") => {
     const rough = type === "description" ? description : story;
     if (!rough || !rough.trim()) {
@@ -433,9 +436,13 @@ export default function CreateProductModal({
 
       if (type === "description") {
         setDescription(data.text);
+        setJustPolishedDesc(true);
+        setTimeout(() => setJustPolishedDesc(false), 5000);
         toast.success("Description polished with AI successfully!");
       } else {
         setStory(data.text);
+        setJustPolishedStory(true);
+        setTimeout(() => setJustPolishedStory(false), 5000);
         toast.success("Design story polished with AI successfully!");
       }
     } catch (err: any) {
@@ -991,6 +998,13 @@ export default function CreateProductModal({
                   {generatingDesc ? "Generating..." : "✨ Generate with AI"}
                 </button>
               </div>
+              {justPolishedDesc && description ? (
+                <div className="p-3 bg-amber-50/70 border border-amber-200/70 rounded-xl">
+                  <TextEffect key={description} per="word" preset="fade" className="text-[13px] text-slate-800 font-medium leading-relaxed">
+                    {description}
+                  </TextEffect>
+                </div>
+              ) : null}
               <textarea
                 placeholder="Provide a detailed description of fabrics, stitching style, design aesthetics..."
                 value={description}
@@ -1012,6 +1026,13 @@ export default function CreateProductModal({
                   {generatingStory ? "Generating..." : "✨ Generate with AI"}
                 </button>
               </div>
+              {justPolishedStory && story ? (
+                <div className="p-3 bg-amber-50/70 border border-amber-200/70 rounded-xl">
+                  <TextEffect key={story} per="word" preset="fade" className="text-[13px] text-slate-800 font-medium leading-relaxed">
+                    {story}
+                  </TextEffect>
+                </div>
+              ) : null}
               <textarea
                 placeholder="Tell customers about the inspiration, craftsmanship, or what makes this piece special..."
                 value={story}
