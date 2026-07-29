@@ -124,15 +124,15 @@ function validateBoutiqueDetails(details: {
   description: string;
   searchKeywords?: string[];
 }) {
-  if (!details.boutiqueName.trim()) throw new Error("Boutique name is required.");
-  if (!details.ownerName.trim()) throw new Error("Owner name is required.");
+  if (!details.boutiqueName.trim()) throw new ConvexError("Boutique name is required.");
+  if (!details.ownerName.trim()) throw new ConvexError("Owner name is required.");
   if (!details.phone.trim() || details.phone.replace(/[^0-9]/g, "").length < 10) {
-    throw new Error("Valid contact phone number (at least 10 digits) is required.");
+    throw new ConvexError("Valid contact phone number (at least 10 digits) is required.");
   }
-  if (!details.address.trim()) throw new Error("Store physical address is required.");
-  if (!details.city.trim()) throw new Error("Store city is required.");
-  if (!details.state.trim()) throw new Error("Store state is required.");
-  if (!details.pincode.trim()) throw new Error("Store pincode is required.");
+  if (!details.address.trim()) throw new ConvexError("Store physical address is required.");
+  if (!details.city.trim()) throw new ConvexError("Store city is required.");
+  if (!details.state.trim()) throw new ConvexError("Store state is required.");
+  if (!details.pincode.trim()) throw new ConvexError("Store pincode is required.");
   if (
     details.latitude === 0 ||
     details.longitude === 0 ||
@@ -141,29 +141,28 @@ function validateBoutiqueDetails(details: {
     !Number.isFinite(details.latitude) ||
     !Number.isFinite(details.longitude)
   ) {
-    throw new Error("Boutique coordinates are mandatory and cannot be at Null Island (0, 0) or NaN.");
-  }
+    throw new ConvexError("Boutique coordinates are mandatory and cannot be at Null Island (0, 0) or NaN.");
   if (details.latitude < 8.0 || details.latitude > 13.0) {
-    throw new Error("Store Latitude must be a valid coordinate within Kerala region (8.0 to 13.0).");
+    throw new ConvexError("Store Latitude must be a valid coordinate within Kerala region (8.0 to 13.0).");
   }
   if (details.longitude < 74.0 || details.longitude > 78.0) {
-    throw new Error("Store Longitude must be a valid coordinate within Kerala region (74.0 to 78.0).");
+    throw new ConvexError("Store Longitude must be a valid coordinate within Kerala region (74.0 to 78.0).");
   }
   if (!details.deliveryRadiusKm || details.deliveryRadiusKm <= 0) {
-    throw new Error("Delivery radius must be a positive number.");
+    throw new ConvexError("Delivery radius must be a positive number.");
   }
   if (details.deliveryRadiusKm > 17) {
-    throw new Error("Delivery radius cannot exceed 17 km. Please contact support if you need a larger coverage area.");
+    throw new ConvexError("Delivery radius cannot exceed 17 km. Please contact support if you need a larger coverage area.");
   }
-  if (!details.description.trim()) throw new Error("Boutique description is required.");
+  if (!details.description.trim()) throw new ConvexError("Boutique description is required.");
 
   if (details.searchKeywords) {
     if (details.searchKeywords.length > 10) {
-      throw new Error("Maximum of 10 search keywords allowed.");
+      throw new ConvexError("Maximum of 10 search keywords allowed.");
     }
     for (const kw of details.searchKeywords) {
       if (kw.trim().length > 40) {
-        throw new Error(`Keyword "${kw}" exceeds maximum length of 40 characters.`);
+        throw new ConvexError(`Keyword "${kw}" exceeds maximum length of 40 characters.`);
       }
     }
   }
@@ -297,7 +296,7 @@ export const createBoutique = mutation({
 
     if (args.bankAccount) {
       const secret = process.env.BANK_ENCRYPTION_KEY;
-      if (!secret) throw new Error("FATAL: BANK_ENCRYPTION_KEY environment variable is not configured. Cannot process bank data.");
+      if (!secret) throw new ConvexError("FATAL: BANK_ENCRYPTION_KEY environment variable is not configured. Cannot process bank data.");
       const encryptedAccountNo = await encryptData(args.bankAccount.accountNo, secret);
       const accountNoLast4 = args.bankAccount.accountNo.slice(-4).padStart(args.bankAccount.accountNo.length, "X");
       insertData.bankAccount = {
@@ -2336,7 +2335,7 @@ async function checkForDuplicateBoutique(ctx: any, email: string, phone: string)
 
   for (const b of existingByEmail) {
     if (b.status !== "REJECTED" && b.status !== "SUSPENDED") {
-      throw new Error(`A boutique with email ${email} already exists (Status: ${b.status}).`);
+      throw new ConvexError(`A boutique with email ${email} already exists (Status: ${b.status}).`);
     }
   }
 
@@ -2347,7 +2346,7 @@ async function checkForDuplicateBoutique(ctx: any, email: string, phone: string)
 
   for (const b of existingByPhone) {
     if (b.status !== "REJECTED" && b.status !== "SUSPENDED") {
-      throw new Error(`A boutique with phone ${phone} already exists (Status: ${b.status}).`);
+      throw new ConvexError(`A boutique with phone ${phone} already exists (Status: ${b.status}).`);
     }
   }
 }
