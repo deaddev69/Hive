@@ -26,9 +26,36 @@ function getLocalCraftDetails(text: string): string {
     : "";
 }
 
+function generateDynamicFallback(roughText: string, isDescription: boolean): string {
+  const raw = roughText.trim();
+  const capitalized = raw.charAt(0).toUpperCase() + raw.slice(1);
+  const lowercase = raw.toLowerCase();
+
+  if (isDescription) {
+    const descTemplates = [
+      `${capitalized}. Designed with modern elegance and fine tailoring, this piece offers a flattering fit and comfortable feel, making it an essential addition for effortless, sophisticated styling.`,
+      `Featuring ${lowercase}, this garment highlights refined craftsmanship and thoughtful design. Tailored for comfort and timeless appeal, it brings subtle grace to any wardrobe.`,
+      `A classic expression of style, this piece showcases ${lowercase}. Crafted for comfort and versatility, its clean lines and premium finish ensure a standout look across occasions.`,
+      `${capitalized}. Carefully tailored to deliver both comfort and sophistication, this versatile garment combines rich texture with an effortless silhouette.`,
+      `Exquisitely detailed with ${lowercase}, this garment combines high comfort with contemporary flair, ideal for elevated everyday wear or special gatherings.`
+    ];
+    const index = Math.floor(Math.random() * descTemplates.length);
+    return descTemplates[index]!;
+  } else {
+    const storyTemplates = [
+      `Inspired by traditional artistry and modern aesthetics, this piece celebrates ${lowercase}. Every detail is thoughtfully designed to highlight delicate textures and lasting quality.`,
+      `Drawing inspiration from timeless heritage, this creation brings together ${lowercase}. Crafted with dedication, it reflects a passion for fine textiles and authentic style.`,
+      `Rooted in graceful craftsmanship, this design highlights ${lowercase}. Created to bring subtle luxury and effortless charm to your wardrobe, it tells a story of refined elegance.`,
+      `A tribute to artisanal craftsmanship, this garment expresses ${lowercase}. Designed to be cherished across seasons, it combines heritage techniques with contemporary styling.`
+    ];
+    const index = Math.floor(Math.random() * storyTemplates.length);
+    return storyTemplates[index]!;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { roughText, type, boutiqueName, boutiqueDescription } = await req.json();
+    const { roughText, type } = await req.json();
 
     if (!roughText || !roughText.trim()) {
       return NextResponse.json({ error: "Rough text input is required" }, { status: 400 });
@@ -118,18 +145,10 @@ Polished Output:`;
       console.warn("[Hive AI Warning] No GEMINI_API_KEY or GEMINI_API_KEYS defined in env. Using rules-based fallback.");
     }
 
-    // 5. Rules-based Fallback if all API keys fail (Grammatically Refined & Product-Focused)
+    // 5. Dynamic Rules-based Fallback if API keys fail
     if (!success) {
-      console.log("[Hive AI] Using rules-based template fallback.");
-      
-      const cleanText = roughText.trim();
-      const lowerInput = cleanText.toLowerCase();
-
-      if (isDescription) {
-        generatedText = `Crafted with refined precision and careful attention to detail, this piece is ${lowerInput}. Designed for modern elegance and high comfort, it offers a sophisticated silhouette that transitions effortlessly across occasions, ensuring an elevated look with lasting quality and timeless appeal.`;
-      } else {
-        generatedText = `Inspired by timeless craftsmanship and graceful aesthetics, this piece embodies ${lowerInput}. Every detail reflects dedicated artistry and thoughtful design, created to bring subtle luxury, distinct character, and effortless charm to your wardrobe.`;
-      }
+      console.log("[Hive AI] Using dynamic rules-based template fallback.");
+      generatedText = generateDynamicFallback(roughText, isDescription);
     }
 
     return NextResponse.json({ text: generatedText });
