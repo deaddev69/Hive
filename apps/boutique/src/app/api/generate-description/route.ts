@@ -63,70 +63,72 @@ Polished Output:`;
     let generatedText = "";
     let success = false;
 
-    // 4. Try API Keys in failover loop
-    if (apiKeys.length > 0) {
-      for (let i = 0; i < apiKeys.length; i++) {
-        const apiKey = apiKeys[i];
-        try {
-          console.log(`[Hive AI] Attempting generation with API key index ${i}...`);
-          
-          const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                contents: [
-                  {
-                    parts: [
-                      {
-                        text: systemPrompt
-                      }
-                    ]
-                  }
-                ]
-              })
-            }
-          );
+    // 4. Try API Keys and valid Gemini models in failover loop
+    const candidateModels = ["gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-pro"];
 
-          if (response.ok) {
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text && text.trim()) {
-              generatedText = text.trim();
-              success = true;
-              console.log(`[Hive AI] Generation succeeded with API key index ${i}.`);
-              break;
-            }
-          } else {
-            const errorBody = await response.text();
-            console.warn(
-              `[Hive AI Failover Warning] Key index ${i} failed with status ${response.status}:`,
-              errorBody
+    if (apiKeys.length > 0) {
+      keyLoop: for (let i = 0; i < apiKeys.length; i++) {
+        const apiKey = apiKeys[i];
+
+        for (const modelId of candidateModels) {
+          try {
+            console.log(`[Hive AI] Attempting generation with key index ${i} using model ${modelId}...`);
+            
+            const response = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [
+                    {
+                      parts: [
+                        {
+                          text: systemPrompt
+                        }
+                      ]
+                    }
+                  ]
+                })
+              }
             );
+
+            if (response.ok) {
+              const data = await response.json();
+              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text && text.trim()) {
+                generatedText = text.trim();
+                success = true;
+                console.log(`[Hive AI] Generation succeeded with key index ${i} (${modelId}).`);
+                break keyLoop;
+              }
+            } else {
+              const errorBody = await response.text();
+              console.warn(
+                `[Hive AI Failover Warning] Key index ${i} model ${modelId} failed with status ${response.status}:`,
+                errorBody
+              );
+            }
+          } catch (err) {
+            console.error(`[Hive AI Failover Error] Exception with key index ${i} model ${modelId}:`, err);
           }
-        } catch (err) {
-          console.error(`[Hive AI Failover Error] Exception with key index ${i}:`, err);
         }
       }
     } else {
       console.warn("[Hive AI Warning] No GEMINI_API_KEY or GEMINI_API_KEYS defined in env. Using rules-based fallback.");
     }
 
-    // 5. Rules-based Fallback if all API keys fail (Strictly Product-Focused)
+    // 5. Rules-based Fallback if all API keys fail (Grammatically Refined & Product-Focused)
     if (!success) {
       console.log("[Hive AI] Using rules-based template fallback.");
       
-      const formattedInput = roughText
-        .split(",")
-        .map((s: string) => s.trim())
-        .filter(Boolean)
-        .join(", ");
+      const cleanText = roughText.trim();
+      const lowerInput = cleanText.toLowerCase();
 
       if (isDescription) {
-        generatedText = `Crafted with refined elegance, this ${formattedInput} features premium tailoring and careful attention to detail. Designed for comfort and modern style, it offers a sophisticated silhouette that transitions effortlessly across occasions, ensuring an elevated look with lasting quality and timeless appeal.`;
+        generatedText = `Crafted with refined precision and careful attention to detail, this piece is ${lowerInput}. Designed for modern elegance and high comfort, it offers a sophisticated silhouette that transitions effortlessly across occasions, ensuring an elevated look with lasting quality and timeless appeal.`;
       } else {
-        generatedText = `Inspired by timeless craftsmanship and graceful aesthetics, this ${formattedInput} celebrates fine textile art and thoughtful design. Every detail reflects dedicated craftsmanship, created to bring subtle luxury and effortless charm to your wardrobe.`;
+        generatedText = `Inspired by timeless craftsmanship and graceful aesthetics, this piece embodies ${lowerInput}. Every detail reflects dedicated artistry and thoughtful design, created to bring subtle luxury, distinct character, and effortless charm to your wardrobe.`;
       }
     }
 
