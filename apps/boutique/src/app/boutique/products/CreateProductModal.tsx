@@ -9,12 +9,39 @@ import { toast } from "@hive/utils";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "FREE"];
 const MATERIAL_OPTIONS = [
-  "Cotton", "Silk", "Linen", "Polyester", "Blend", "Crepe", "Georgette",
-  "Chiffon", "Rayon", "Viscose", "Organza", "Satin", "Velvet", "Brocade",
-  "Wool", "Khadi", "Banarasi", "Chanderi", "Modal"
+  "Cotton", "Silk", "Linen", "Georgette", "Chiffon",
+  "Velvet", "Rayon", "Satin", "Blend", "Other"
 ];
-const CARE_OPTIONS = ["Dry Clean Only", "Machine Wash Cold", "Hand Wash", "Do Not Bleach"];
+const CARE_OPTIONS = ["Dry Clean Only", "Machine Wash Cold", "Hand Wash", "Do Not Bleach", "Other"];
 const OCCASION_OPTIONS = ["Casual", "Festive", "Wedding", "Workwear", "Party"];
+
+const DEFAULT_CATEGORY_TAGS = [
+  { id: "womens-ethnic", name: "Women's Ethnic" },
+  { id: "sarees", name: "Sarees" },
+  { id: "lehengas", name: "Lehengas" },
+  { id: "kurtis", name: "Kurtis" },
+  { id: "salwar-sets", name: "Salwar Sets" },
+  { id: "anarkalis", name: "Anarkalis" },
+  { id: "gowns", name: "Gowns" },
+  { id: "indo-western", name: "Indo-Western" },
+  { id: "dupattas", name: "Dupattas" },
+  { id: "blouses", name: "Blouses" },
+  { id: "co-ord-sets", name: "Co-ord Sets" },
+  { id: "fusion-wear", name: "Fusion Wear" },
+  { id: "dresses", name: "Dresses" },
+  { id: "tops-tunics", name: "Tops & Tunics" },
+  { id: "jewellery", name: "Jewellery" },
+  { id: "accessories", name: "Accessories" },
+  { id: "home-decor", name: "Home Decor" },
+  { id: "other", name: "Other" }
+];
+
+function autoCorrectCapitalization(str: string): string {
+  if (!str) return str;
+  return str.replace(/\b([a-z])([a-z]*)\b/gi, (match, p1, p2) => {
+    return p1.toUpperCase() + p2.toLowerCase();
+  });
+}
 
 interface CustomSelectProps {
   label: string;
@@ -48,7 +75,7 @@ function CustomSelect({ label, value, onChange, options, placeholder, required }
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-left text-slate-700 bg-white shadow-sm flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#F5C22B] select-none"
+        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-left text-slate-700 bg-white shadow-sm flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#F5C22B] select-none cursor-pointer"
       >
         <span className={value ? "text-slate-800 font-medium" : "text-slate-400 font-medium"}>
           {value || placeholder}
@@ -162,18 +189,21 @@ function CustomMultiSelect({
   );
 }
 
-function CategorySelect({
-  value,
+interface CategoryMultiSelectProps {
+  selectedValues: string[];
+  onChange: (vals: string[]) => void;
+  categories: { _id: string; name: string }[];
+  required?: boolean;
+}
+
+function CategoryMultiSelect({
+  selectedValues,
   onChange,
   categories,
-}: {
-  value: string;
-  onChange: (val: string) => void;
-  categories: any[];
-}) {
+  required,
+}: CategoryMultiSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const activeCategory = categories.find((c) => c._id === value);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -185,40 +215,109 @@ function CategorySelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const toggleCategory = (catId: string) => {
+    if (selectedValues.includes(catId)) {
+      onChange(selectedValues.filter((id) => id !== catId));
+    } else {
+      if (selectedValues.length >= 3) {
+        toast.error("You can select up to 3 categories only.");
+        return;
+      }
+      onChange([...selectedValues, catId]);
+    }
+  };
+
+  const getCategoryName = (id: string) => {
+    const found = categories.find((c) => c._id === id || c.name.toLowerCase() === id.toLowerCase());
+    return found ? found.name : id;
+  };
+
   return (
     <div className="flex flex-col gap-1.5 relative w-full font-sans" ref={containerRef}>
-      <label className="text-[11px] font-black uppercase tracking-widest text-slate-600">
-        CATEGORY TAG <span className="text-red-500">*</span>
-      </label>
-      
+      <div className="flex items-center justify-between">
+        <label className="text-[11px] font-black uppercase tracking-widest text-slate-600">
+          CATEGORY TAG {required && <span className="text-red-500">*</span>}
+        </label>
+        <span className="text-[10px] font-bold text-slate-400">
+          {selectedValues.length}/3 selected (Max 3)
+        </span>
+      </div>
+
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-left text-slate-700 bg-white shadow-sm flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#F5C22B] select-none"
+        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-left text-slate-700 bg-white shadow-sm flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#F5C22B] select-none cursor-pointer"
       >
-        <span className={activeCategory ? "text-slate-800 font-medium" : "text-slate-400 font-medium"}>
-          {activeCategory ? activeCategory.name : "Select category..."}
+        <span className={selectedValues.length > 0 ? "text-slate-800 font-medium truncate pr-2" : "text-slate-400 font-medium"}>
+          {selectedValues.length > 0
+            ? selectedValues.map(getCategoryName).join(", ")
+            : "Select categories (max 3)..."}
         </span>
-        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
+      {selectedValues.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          {selectedValues.map((catId) => {
+            const catName = getCategoryName(catId);
+            return (
+              <span
+                key={catId}
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#F5C22B]/15 text-[#9E7606] font-bold text-[11px] rounded-full border border-[#F5C22B]/30 shadow-2xs"
+              >
+                {catName}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChange(selectedValues.filter((id) => id !== catId));
+                  }}
+                  className="hover:text-red-600 p-0.5 rounded-full transition-colors cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#f1f5f9]/30 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
-          {categories.map((c) => (
-            <button
-              key={c._id}
-              type="button"
-              onClick={() => {
-                onChange(c._id);
-                setIsOpen(false);
-              }}
-              className={`w-full px-4 py-2.5 text-[13px] text-left hover:bg-slate-50 transition-colors ${
-                value === c._id ? "bg-[#F5C22B]/10 text-[#D9A71E] font-bold" : "text-slate-700"
-              }`}
-            >
-              {c.name}
-            </button>
-          ))}
+        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#f1f5f9]/30 rounded-xl shadow-xl z-50 max-h-60 overflow-y-auto py-1.5 animate-in fade-in slide-in-from-top-1">
+          {categories.map((c) => {
+            const isChecked = selectedValues.includes(c._id);
+            const isMaxReached = !isChecked && selectedValues.length >= 3;
+
+            return (
+              <button
+                key={c._id}
+                type="button"
+                onClick={() => toggleCategory(c._id)}
+                disabled={isMaxReached}
+                className={`w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-slate-50 transition-colors text-[13px] ${
+                  isMaxReached ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
+                      isChecked ? "bg-[#F5C22B] border-[#F5C22B] text-slate-900" : "border-slate-300 bg-white"
+                    }`}
+                  >
+                    {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                  </div>
+                  <span className={isChecked ? "font-bold text-slate-900" : "font-medium text-slate-700"}>
+                    {c.name}
+                  </span>
+                </div>
+                {isChecked && (
+                  <span className="text-[10px] font-black uppercase text-[#D9A71E] bg-[#F5C22B]/10 px-2 py-0.5 rounded-full">
+                    Selected
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -262,19 +361,43 @@ export default function CreateProductModal({
 
   // Form State
   const [name, setName] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [localPreviews, setLocalPreviews] = useState<{ url: string; file?: File; storageId?: string }[]>([]);
   
   const [description, setDescription] = useState("");
   const [story, setStory] = useState("");
   const [materialType, setMaterialType] = useState("");
-  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+  const [customMaterialType, setCustomMaterialType] = useState("");
   const [care, setCare] = useState("");
+  const [customCare, setCustomCare] = useState("");
   const [occasion, setOccasion] = useState("");
   const [craft, setCraft] = useState("");
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
+
+  // Combine DB categories with comprehensive default tags & fix typos like "Ethnic wer"
+  const allCategoriesList = React.useMemo(() => {
+    const list: { _id: string; name: string }[] = [];
+    const nameSet = new Set<string>();
+
+    (categories || []).forEach((c) => {
+      let cleanName = c.name;
+      if (cleanName.toLowerCase() === "ethnic wer") {
+        cleanName = "Ethnic Wear";
+      }
+      list.push({ _id: c._id, name: cleanName });
+      nameSet.add(cleanName.toLowerCase());
+    });
+
+    DEFAULT_CATEGORY_TAGS.forEach((tag) => {
+      if (!nameSet.has(tag.name.toLowerCase())) {
+        list.push({ _id: tag.id, name: tag.name });
+      }
+    });
+
+    return list;
+  }, [categories]);
 
   const handleGenerateAI = async (type: "description" | "story") => {
     const rough = type === "description" ? description : story;
@@ -356,67 +479,91 @@ export default function CreateProductModal({
   const [uploadingImages, setUploadingImages] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const activeCategory = categories?.find((c) => c._id === categoryId);
-  const isSareeCategory = activeCategory && (
-    activeCategory.name.toLowerCase().includes("saree") ||
-    activeCategory.name.toLowerCase().includes("sarree")
-  );
+  const isSareeCategory = React.useMemo(() => {
+    return selectedCategoryIds.some((catId) => {
+      const found = allCategoriesList.find((c) => c._id === catId || c.name.toLowerCase() === catId.toLowerCase());
+      if (!found) return false;
+      const lower = found.name.toLowerCase();
+      return lower.includes("saree") || lower.includes("sarree");
+    });
+  }, [selectedCategoryIds, allCategoriesList]);
 
   // Auto-set FREE size for Saree category
   useEffect(() => {
-    if (categoryId) {
-      const activeCategory = categories?.find((c) => c._id === categoryId);
-      const isSaree = activeCategory && (
-        activeCategory.name.toLowerCase().includes("saree") ||
-        activeCategory.name.toLowerCase().includes("sarree")
-      );
-      if (isSaree) {
-        setSelectedSizes(["FREE"]);
-        setStockBySize((prev) => {
-          if (prev["FREE"] !== undefined) return prev;
-          return { ...prev, FREE: 5 }; // default stock 5
-        });
-      } else {
-        // If it was auto-set to FREE size when switching, clear it.
-        setSelectedSizes((prev) => {
-          if (prev.length === 1 && prev[0] === "FREE") {
-            return [];
-          }
-          return prev;
-        });
-      }
+    if (isSareeCategory) {
+      setSelectedSizes(["FREE"]);
+      setStockBySize((prev) => {
+        if (prev["FREE"] !== undefined) return prev;
+        return { ...prev, FREE: 5 }; // default stock 5
+      });
+    } else {
+      setSelectedSizes((prev) => {
+        if (prev.length === 1 && prev[0] === "FREE") {
+          return [];
+        }
+        return prev;
+      });
     }
-  }, [categoryId, categories]);
+  }, [isSareeCategory]);
 
   useEffect(() => {
     if (isOpen) {
       setStep(1);
       if (productToEdit) {
         setName(productToEdit.name || "");
-        setCategoryId(productToEdit.categoryId || (categories?.[0]?._id || ""));
+
+        // Multi category init
+        const rawCatIds = productToEdit.details?.categoryIds
+          ? productToEdit.details.categoryIds.split(",")
+          : [productToEdit.categoryId];
+        setSelectedCategoryIds(rawCatIds.filter(Boolean));
+
         setDescription(productToEdit.description || "");
         setStory(productToEdit.story || "");
-        setMaterialType(productToEdit.materialType || "");
-        const mat = productToEdit.materialType || productToEdit.material || "";
-        setSelectedMaterials(mat.split(",").map((s: string) => s.trim()).filter(Boolean));
-        setCare(productToEdit.care || "");
+
+        // Material Type init
+        const existingMat = productToEdit.materialType || productToEdit.material || "";
+        if (MATERIAL_OPTIONS.includes(existingMat) && existingMat !== "Other") {
+          setMaterialType(existingMat);
+          setCustomMaterialType("");
+        } else if (existingMat) {
+          setMaterialType("Other");
+          setCustomMaterialType(autoCorrectCapitalization(existingMat));
+        } else {
+          setMaterialType("");
+          setCustomMaterialType("");
+        }
+
+        // Care init
+        const existingCare = productToEdit.care || "";
+        if (CARE_OPTIONS.includes(existingCare) && existingCare !== "Other") {
+          setCare(existingCare);
+          setCustomCare("");
+        } else if (existingCare) {
+          setCare("Other");
+          setCustomCare(autoCorrectCapitalization(existingCare));
+        } else {
+          setCare("");
+          setCustomCare("");
+        }
+
         setOccasion(productToEdit.occasion || "");
-        setCraft(productToEdit.details?.craft || "");
+        setCraft(productToEdit.details?.craft ? autoCorrectCapitalization(productToEdit.details.craft) : "");
         
         if (productToEdit.details) {
           setSpecs({
-            color: productToEdit.details.color || "",
-            fabricContent: productToEdit.details.fabricContent || "",
-            fabricDetail: productToEdit.details.fabricDetail || "",
-            neckType: productToEdit.details.neckType || "",
-            closure: productToEdit.details.closure || "",
-            sleeve: productToEdit.details.sleeve || "",
-            sleeveStyling: productToEdit.details.sleeveStyling || "",
-            shape: productToEdit.details.shape || "",
-            hemline: productToEdit.details.hemline || "",
-            length: productToEdit.details.length || "",
-            pattern: productToEdit.details.pattern || "",
-            fabricFamily: productToEdit.details.fabricFamily || ""
+            color: autoCorrectCapitalization(productToEdit.details.color || ""),
+            fabricContent: autoCorrectCapitalization(productToEdit.details.fabricContent || ""),
+            fabricDetail: autoCorrectCapitalization(productToEdit.details.fabricDetail || ""),
+            neckType: autoCorrectCapitalization(productToEdit.details.neckType || ""),
+            closure: autoCorrectCapitalization(productToEdit.details.closure || ""),
+            sleeve: autoCorrectCapitalization(productToEdit.details.sleeve || ""),
+            sleeveStyling: autoCorrectCapitalization(productToEdit.details.sleeveStyling || ""),
+            shape: autoCorrectCapitalization(productToEdit.details.shape || ""),
+            hemline: autoCorrectCapitalization(productToEdit.details.hemline || ""),
+            length: autoCorrectCapitalization(productToEdit.details.length || ""),
+            pattern: autoCorrectCapitalization(productToEdit.details.pattern || ""),
+            fabricFamily: autoCorrectCapitalization(productToEdit.details.fabricFamily || "")
           });
         }
         
@@ -442,12 +589,14 @@ export default function CreateProductModal({
       } else {
         // Reset form
         setName("");
-        setCategoryId(categories?.[0]?._id || "");
+        const defaultCatId = allCategoriesList[0]?._id || "";
+        setSelectedCategoryIds(defaultCatId ? [defaultCatId] : []);
         setDescription("");
         setStory("");
         setMaterialType("");
-        setSelectedMaterials([]);
+        setCustomMaterialType("");
         setCare("");
+        setCustomCare("");
         setOccasion("");
         setCraft("");
         setStep2Error("");
@@ -469,7 +618,7 @@ export default function CreateProductModal({
         setLocalPreviews([]);
       }
     }
-  }, [isOpen, productToEdit, categories]);
+  }, [isOpen, productToEdit, categories, allCategoriesList]);
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -514,6 +663,14 @@ export default function CreateProductModal({
 
     // Step 1 Validation
     if (step === 1) {
+      if (selectedCategoryIds.length === 0) {
+        toast.error("Please select at least one category tag.");
+        return;
+      }
+      if (selectedCategoryIds.length > 3) {
+        toast.error("You can select up to 3 categories only.");
+        return;
+      }
       if (!price) {
         toast.error("Please enter a price for your product.");
         return;
@@ -534,6 +691,22 @@ export default function CreateProductModal({
         setStep2Error("Please enter a product description.");
         return;
       }
+      if (!materialType) {
+        setStep2Error("Please select a material type.");
+        return;
+      }
+      if (materialType === "Other" && !customMaterialType.trim()) {
+        setStep2Error("Please specify the custom material type.");
+        return;
+      }
+      if (!care) {
+        setStep2Error("Please select care instructions.");
+        return;
+      }
+      if (care === "Other" && !customCare.trim()) {
+        setStep2Error("Please specify custom care instructions.");
+        return;
+      }
       if (selectedSizes.length === 0) {
         setStep2Error("Please select at least one size.");
         return;
@@ -543,7 +716,6 @@ export default function CreateProductModal({
 
     // Step 3 Validation
     if (step === 3) {
-      // Just basic check for at least one core detail
       if (!specs.color) {
         toast.error("Please provide at least a color for the product.");
         return;
@@ -555,16 +727,19 @@ export default function CreateProductModal({
       return;
     }
 
-    if (!name || !price || !categoryId) {
-      toast.error("Please fill required fields (Name, Price, Category).");
+    const finalMaterial = materialType === "Other" ? customMaterialType.trim() : materialType;
+    const finalCare = care === "Other" ? customCare.trim() : care;
+
+    if (!name || !price || selectedCategoryIds.length === 0) {
+      toast.error("Please fill required fields (Name, Price, Category Tag).");
       return;
     }
     if (selectedSizes.length === 0) {
       toast.error("Please select at least one size.");
       return;
     }
-    if (selectedMaterials.length === 0) {
-      toast.error("Please select at least one material.");
+    if (!finalMaterial) {
+      toast.error("Please select or specify a material type.");
       return;
     }
     if (localPreviews.length < 3) {
@@ -602,10 +777,16 @@ export default function CreateProductModal({
 
       setUploadingImages(false);
 
+      const primaryCatId = selectedCategoryIds[0] || (categories?.[0]?._id || "womens-ethnic");
+      const categoryTagNames = selectedCategoryIds.map((id) => {
+        const found = allCategoriesList.find((c) => c._id === id || c.name.toLowerCase() === id.toLowerCase());
+        return found ? found.name : id;
+      });
+
       const payload = {
         name,
         description,
-        categoryId: categoryId as any,
+        categoryId: primaryCatId as any,
         price: parseFloat(price),
         discountPrice: discountPrice ? parseFloat(discountPrice) : undefined,
         images: finalImages,
@@ -615,11 +796,16 @@ export default function CreateProductModal({
         featured,
         active,
         story,
-        materialType: selectedMaterials.join(", "),
-        material: selectedMaterials.join(", "),
-        care,
+        materialType: finalMaterial,
+        material: finalMaterial,
+        care: finalCare,
         occasion,
-        details: { ...(craft ? { craft } : {}), ...specs },
+        details: {
+          ...(craft ? { craft: autoCorrectCapitalization(craft) } : {}),
+          ...specs,
+          categoryIds: selectedCategoryIds.join(","),
+          categoryNames: categoryTagNames.join(","),
+        },
         fitRecommendation,
         silhouette,
       };
@@ -685,7 +871,7 @@ export default function CreateProductModal({
           <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4">
             <div className="flex flex-col gap-1">
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">PRODUCT INFO</h3>
-              <p className="text-[13px] text-slate-500 font-medium">Specify your product name and select its main category.</p>
+              <p className="text-[13px] text-slate-500 font-medium">Specify your product name and select up to 3 category tags.</p>
             </div>
 
             <div className="flex flex-col gap-1.5 mt-1">
@@ -700,10 +886,11 @@ export default function CreateProductModal({
               />
             </div>
 
-            <CategorySelect
-              value={categoryId}
-              onChange={setCategoryId}
-              categories={categories}
+            <CategoryMultiSelect
+              selectedValues={selectedCategoryIds}
+              onChange={setSelectedCategoryIds}
+              categories={allCategoriesList}
+              required
             />
 
             <div className="flex flex-col gap-1.5 mt-2">
@@ -839,23 +1026,67 @@ export default function CreateProductModal({
               />
             </div>
 
-            <CustomMultiSelect
-              label="MATERIAL TYPE"
-              selectedValues={selectedMaterials}
-              onChange={setSelectedMaterials}
-              options={MATERIAL_OPTIONS}
-              placeholder="Select material..."
-              required
-            />
+            <div className="flex flex-col gap-2">
+              <CustomSelect
+                label="MATERIAL TYPE"
+                value={materialType}
+                onChange={(val) => {
+                  setMaterialType(val);
+                  if (val !== "Other") setCustomMaterialType("");
+                  setStep2Error("");
+                }}
+                options={MATERIAL_OPTIONS}
+                placeholder="Select material..."
+                required
+              />
 
-            <CustomSelect
-              label="CARE INSTRUCTIONS"
-              value={care}
-              onChange={setCare}
-              options={CARE_OPTIONS}
-              placeholder="Select care instructions..."
-              required
-            />
+              {materialType === "Other" && (
+                <div className="flex flex-col gap-1 mt-1 animate-in fade-in slide-in-from-top-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+                    SPECIFY OTHER MATERIAL <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Organza, Mulmul, Jacquard"
+                    value={customMaterialType}
+                    onChange={(e) => setCustomMaterialType(autoCorrectCapitalization(e.target.value))}
+                    onBlur={(e) => setCustomMaterialType(autoCorrectCapitalization(e.target.value))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <CustomSelect
+                label="CARE INSTRUCTIONS"
+                value={care}
+                onChange={(val) => {
+                  setCare(val);
+                  if (val !== "Other") setCustomCare("");
+                  setStep2Error("");
+                }}
+                options={CARE_OPTIONS}
+                placeholder="Select care instructions..."
+                required
+              />
+
+              {care === "Other" && (
+                <div className="flex flex-col gap-1 mt-1 animate-in fade-in slide-in-from-top-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">
+                    SPECIFY OTHER CARE INSTRUCTIONS <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Gentle Hand Wash Separately in Cold Water"
+                    value={customCare}
+                    onChange={(e) => setCustomCare(autoCorrectCapitalization(e.target.value))}
+                    onBlur={(e) => setCustomCare(autoCorrectCapitalization(e.target.value))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  />
+                </div>
+              )}
+            </div>
 
             <CustomSelect
               label="OCCASION"
@@ -872,12 +1103,11 @@ export default function CreateProductModal({
                 type="text"
                 placeholder="e.g. Handloom Kasavu, Chikankari, Shibori"
                 value={craft}
-                onChange={(e) => setCraft(e.target.value)}
+                onChange={(e) => setCraft(autoCorrectCapitalization(e.target.value))}
+                onBlur={(e) => setCraft(autoCorrectCapitalization(e.target.value))}
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
               />
             </div>
-
-
 
             <hr className="border-slate-100 -my-3" />
 
@@ -1006,62 +1236,146 @@ export default function CreateProductModal({
             <div className="grid grid-cols-2 gap-x-4 gap-y-5">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">COLOUR <span className="text-red-500">*</span></label>
-                <input type="text" value={specs.color} onChange={e => setSpecs({...specs, color: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. White" />
+                <input
+                  type="text"
+                  value={specs.color}
+                  onChange={(e) => setSpecs({ ...specs, color: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, color: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. White"
+                />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">FABRIC CONTENT</label>
-                <input type="text" value={specs.fabricContent} onChange={e => setSpecs({...specs, fabricContent: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. 100% Cotton" />
+                <input
+                  type="text"
+                  value={specs.fabricContent}
+                  onChange={(e) => setSpecs({ ...specs, fabricContent: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, fabricContent: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. 100% Cotton"
+                />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">FABRIC DETAIL</label>
-                <input type="text" value={specs.fabricDetail} onChange={e => setSpecs({...specs, fabricDetail: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Pure Cotton" />
+                <input
+                  type="text"
+                  value={specs.fabricDetail}
+                  onChange={(e) => setSpecs({ ...specs, fabricDetail: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, fabricDetail: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. Pure Cotton"
+                />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">NECK TYPE</label>
-                <input type="text" value={specs.neckType} onChange={e => setSpecs({...specs, neckType: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Mandarin Collar" />
+                <input
+                  type="text"
+                  value={specs.neckType}
+                  onChange={(e) => setSpecs({ ...specs, neckType: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, neckType: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. Mandarin Collar"
+                />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">CLOSURE</label>
-                <input type="text" value={specs.closure} onChange={e => setSpecs({...specs, closure: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Slip on" />
+                <input
+                  type="text"
+                  value={specs.closure}
+                  onChange={(e) => setSpecs({ ...specs, closure: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, closure: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. Slip On"
+                />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">SLEEVE</label>
-                <input type="text" value={specs.sleeve} onChange={e => setSpecs({...specs, sleeve: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Three-Quarter" />
+                <input
+                  type="text"
+                  value={specs.sleeve}
+                  onChange={(e) => setSpecs({ ...specs, sleeve: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, sleeve: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. Three-Quarter"
+                />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">SLEEVE STYLING</label>
-                <input type="text" value={specs.sleeveStyling} onChange={e => setSpecs({...specs, sleeveStyling: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Regular" />
+                <input
+                  type="text"
+                  value={specs.sleeveStyling}
+                  onChange={(e) => setSpecs({ ...specs, sleeveStyling: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, sleeveStyling: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. Regular"
+                />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">SHAPE</label>
-                <input type="text" value={specs.shape} onChange={e => setSpecs({...specs, shape: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Straight" />
+                <input
+                  type="text"
+                  value={specs.shape}
+                  onChange={(e) => setSpecs({ ...specs, shape: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, shape: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. Straight"
+                />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">HEMLINE</label>
-                <input type="text" value={specs.hemline} onChange={e => setSpecs({...specs, hemline: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Straight" />
+                <input
+                  type="text"
+                  value={specs.hemline}
+                  onChange={(e) => setSpecs({ ...specs, hemline: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, hemline: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. Straight"
+                />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">LENGTH</label>
-                <input type="text" value={specs.length} onChange={e => setSpecs({...specs, length: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Calf Length" />
+                <input
+                  type="text"
+                  value={specs.length}
+                  onChange={(e) => setSpecs({ ...specs, length: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, length: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. Calf Length"
+                />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">PATTERN</label>
-                <input type="text" value={specs.pattern} onChange={e => setSpecs({...specs, pattern: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Floral Print" />
+                <input
+                  type="text"
+                  value={specs.pattern}
+                  onChange={(e) => setSpecs({ ...specs, pattern: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, pattern: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. Floral Print"
+                />
               </div>
               
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">FABRIC FAMILY</label>
-              <input type="text" value={specs.fabricFamily} onChange={e => setSpecs({...specs, fabricFamily: e.target.value})} className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm" placeholder="e.g. Pure Cotton" />
+                <input
+                  type="text"
+                  value={specs.fabricFamily}
+                  onChange={(e) => setSpecs({ ...specs, fabricFamily: autoCorrectCapitalization(e.target.value) })}
+                  onBlur={(e) => setSpecs({ ...specs, fabricFamily: autoCorrectCapitalization(e.target.value) })}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
+                  placeholder="e.g. Pure Cotton"
+                />
               </div>
 
             </div>
