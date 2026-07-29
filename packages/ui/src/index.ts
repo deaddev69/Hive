@@ -16,3 +16,4 @@ export * from "./components/LoadingState";
 export * from "./components/EmptyState";
 export * from "./components/Toaster";
 export * from "./components/TextEffect";
+export * from "./components/AnimatedBackground";

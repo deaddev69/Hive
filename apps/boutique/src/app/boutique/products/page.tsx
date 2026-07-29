@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { Button, Card, CardContent } from "@hive/ui";
+import { Button, Card, CardContent, AnimatedBackground } from "@hive/ui";
 import { Plus, Edit3, Trash2, Loader2, Upload, Search, Image as ImageIcon, ChevronDown } from "lucide-react";
 import CreateProductModal from "./CreateProductModal";
 
@@ -255,37 +255,43 @@ export default function BoutiqueProducts() {
           </div>
         )}
 
-        {/* Streamlined Tabs (#11 & #7) */}
-        <div className="flex border-b border-[#f1f5f9] gap-6 text-[13px] font-sans mt-0 select-none overflow-x-auto no-scrollbar">
-          {[
-            { id: "all", label: "All", count: null },
-            { id: "live", label: "Live", count: null },
-            { id: "draft", label: "Drafts", count: stats.draft > 0 ? stats.draft : null },
-            { id: "pending", label: "Review", count: stats.pending > 0 ? stats.pending : null, isAlert: stats.pending > 0 },
-            { id: "low", label: "Low Stock", count: stats.low > 0 ? stats.low : null, isAlert: stats.low > 0 },
-          ].map((tab) => {
-            const isActive = statusFilter === tab.id;
-            return (
+        {/* Streamlined Animated Tabs */}
+        <div className="overflow-x-auto no-scrollbar py-1">
+          <AnimatedBackground
+            value={statusFilter}
+            onValueChange={(val) => {
+              if (val) {
+                setStatusFilter(val as any);
+                setCurrentPage(1);
+              }
+            }}
+            className="p-1 rounded-2xl bg-slate-100/90 border border-slate-200/80"
+            activeClassName="bg-slate-900 text-white shadow-xs"
+          >
+            {[
+              { id: "all", label: "All", count: null },
+              { id: "live", label: "Live", count: null },
+              { id: "draft", label: "Drafts", count: stats.draft > 0 ? stats.draft : null },
+              { id: "pending", label: "Review", count: stats.pending > 0 ? stats.pending : null, isAlert: stats.pending > 0 },
+              { id: "low", label: "Low Stock", count: stats.low > 0 ? stats.low : null, isAlert: stats.low > 0 },
+            ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => { setStatusFilter(tab.id as any); setCurrentPage(1); }}
-                className={`pb-2.5 border-b-2 transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
-                  isActive 
-                    ? "border-[#F5C22B] text-[#0f172a] font-extrabold" 
-                    : "border-transparent text-[#64748b] font-bold hover:text-[#0f172a]"
-                }`}
+                data-id={tab.id}
+                type="button"
+                className="px-4 py-2 text-[13px] rounded-xl flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
                 <span>{tab.label}</span>
                 {tab.count !== null && (
                   <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold leading-none ${
-                    tab.isAlert ? "bg-rose-50 text-rose-600 border border-rose-200/60" : "bg-slate-50 text-[#64748b] border border-[#f1f5f9]"
+                    tab.isAlert ? "bg-rose-50 text-rose-600 border border-rose-200/60" : "bg-slate-200 text-slate-700"
                   }`}>
                     {tab.count}
                   </span>
                 )}
               </button>
-            );
-          })}
+            ))}
+          </AnimatedBackground>
         </div>
 
         {/* Streamlined Toolbar: Search, Category Dropdown, Add Product Hero, & More Icon (#3 & #4) */}
