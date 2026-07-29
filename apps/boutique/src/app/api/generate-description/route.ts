@@ -33,18 +33,16 @@ function generateDynamicFallback(roughText: string, isDescription: boolean): str
 
   if (isDescription) {
     const descTemplates = [
-      `${capitalized}. Made for daily comfort and easy styling, this piece fits true to size and feels soft on the skin. Great for casual outings or daily wear.`,
-      `A classic ${lowercase} designed with a clean fit and comfortable fabric. Easy to style and comfortable to wear all day long.`,
-      `${capitalized}. Features soft fabric and careful stitching for a neat, comfortable fit. A simple and versatile piece for your everyday wardrobe.`,
-      `Made with quality fabric and neat finishing, this ${lowercase} offers a comfortable fit that looks good for any occasion.`
+      `${capitalized}. Designed for daily comfort and easy styling, this piece fits true to size and feels soft against the skin. It features neat stitching and quality finishing throughout, making it a reliable and versatile choice for casual outings, work, or weekend wear.`,
+      `A classic ${lowercase} crafted with soft, breathable fabric and a clean fit. Easy to pair with your favorite accessories, it keeps you comfortable all day long while offering a neat, effortless look for any casual or festive occasion.`,
+      `${capitalized}. Features careful tailoring and quality fabric to give you a comfortable and flattering fit. Simple, versatile, and easy to care for, it makes a great addition to your everyday wardrobe rotation.`
     ];
     const index = Math.floor(Math.random() * descTemplates.length);
     return descTemplates[index]!;
   } else {
     const storyTemplates = [
-      `Made with care and attention to detail, this piece features ${lowercase}. Designed to combine traditional comfort with simple modern style.`,
-      `Inspired by classic design and good fabric quality, this piece showcases ${lowercase}. Made to feel comfortable and look neat every time you wear it.`,
-      `A simple, well-made creation featuring ${lowercase}. Crafted to bring together everyday comfort and authentic design.`
+      `Made with care and attention to detail, this piece features ${lowercase}. Designed to combine traditional comfort with simple modern styling, every stitch reflects a commitment to quality craftsmanship and effortless everyday wearability.`,
+      `Inspired by classic design and fine fabric texture, this creation highlights ${lowercase}. Created to feel light, comfortable, and neat every time you wear it, bringing simple charm to your wardrobe.`
     ];
     const index = Math.floor(Math.random() * storyTemplates.length);
     return storyTemplates[index]!;
@@ -74,10 +72,10 @@ export async function POST(req: NextRequest) {
 
 STRICT WRITING RULES:
 - Write in simple, everyday, warm English that sounds like a real person wrote it.
-- Keep the language clean and easy to read.
+- Keep the language clean, friendly, and easy to read.
 - NEVER use AI buzzwords or dramatic cliché phrases such as "exquisite", "lustrous", "timeless elegance", "meticulously crafted", "effortlessly", "sophisticated", "draped in", "testament to", "rich crimson", or "uniquely textured".
 - Keep all original details (color, fabric, comfort, pattern) 100% accurate. Do not invent extra features.
-- Write 25 to 40 words in one clean paragraph.
+- Write 45 to 60 words in one complete, natural paragraph (2 to 3 sentences).
 - Focus ONLY on the product itself. Do not mention any store, boutique, merchant, or delivery service.
 
 Return ONLY the plain text without intro, outro, or wrapper quotes.
