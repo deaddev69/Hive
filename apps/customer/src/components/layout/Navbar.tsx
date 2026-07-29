@@ -34,6 +34,7 @@ import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { getSignInUrl, getSignUpUrl, navigateToSignIn, navigateToSignUp } from "@/lib/auth-redirect";
 import { HeaderStatusPill } from "@/components/shared/HeaderStatusPill";
+import { DeliveryStatus } from "@/components/shared/DeliveryStatus";
 
 const DeliveryScooterIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg
@@ -443,17 +444,12 @@ export const Navbar: React.FC = () => {
                 </span>
               </button>
               {hydrated && (locality || city) && (
-                <HeaderStatusPill className="hover:bg-[#FFFDF9] dark:hover:bg-neutral-900/70 hover:shadow-[0_2px_8px_rgba(183,131,36,0.06)] cursor-default">
-                  <DeliveryScooterIcon className="h-[22px] w-[11px] shrink-0" />
-                  <span className="text-[11px] tracking-wide font-sans flex items-center gap-1.5">
-                    <span className="text-stone-500 dark:text-neutral-400 font-medium">
-                      {deliveryPromise.prefix}
-                    </span>
-                    <span className="text-stone-300 dark:text-neutral-700 select-none">•</span>
-                    <span className="bg-[#F5C22B] text-[#111111] px-2 py-0.5 rounded-lg font-bold text-[10px] tracking-normal select-none">
-                      {deliveryPromise.suffix}
-                    </span>
-                  </span>
+                <HeaderStatusPill className="hover:bg-[#FFFDF9] dark:hover:bg-neutral-900/70 hover:shadow-[0_2px_8px_rgba(183,131,36,0.06)] cursor-default px-3.5">
+                  <DeliveryStatus
+                    promise={deliveryPromise.prefix}
+                    time={deliveryPromise.suffix}
+                    animate={true}
+                  />
                 </HeaderStatusPill>
               )}
             </div>
