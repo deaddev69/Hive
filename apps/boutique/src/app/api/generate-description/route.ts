@@ -33,20 +33,18 @@ function generateDynamicFallback(roughText: string, isDescription: boolean): str
 
   if (isDescription) {
     const descTemplates = [
-      `${capitalized}. Designed with modern elegance and fine tailoring, this piece offers a flattering fit and comfortable feel, making it an essential addition for effortless, sophisticated styling.`,
-      `Featuring ${lowercase}, this garment highlights refined craftsmanship and thoughtful design. Tailored for comfort and timeless appeal, it brings subtle grace to any wardrobe.`,
-      `A classic expression of style, this piece showcases ${lowercase}. Crafted for comfort and versatility, its clean lines and premium finish ensure a standout look across occasions.`,
-      `${capitalized}. Carefully tailored to deliver both comfort and sophistication, this versatile garment combines rich texture with an effortless silhouette.`,
-      `Exquisitely detailed with ${lowercase}, this garment combines high comfort with contemporary flair, ideal for elevated everyday wear or special gatherings.`
+      `${capitalized}. Made for daily comfort and easy styling, this piece fits true to size and feels soft on the skin. Great for casual outings or daily wear.`,
+      `A classic ${lowercase} designed with a clean fit and comfortable fabric. Easy to style and comfortable to wear all day long.`,
+      `${capitalized}. Features soft fabric and careful stitching for a neat, comfortable fit. A simple and versatile piece for your everyday wardrobe.`,
+      `Made with quality fabric and neat finishing, this ${lowercase} offers a comfortable fit that looks good for any occasion.`
     ];
     const index = Math.floor(Math.random() * descTemplates.length);
     return descTemplates[index]!;
   } else {
     const storyTemplates = [
-      `Inspired by traditional artistry and modern aesthetics, this piece celebrates ${lowercase}. Every detail is thoughtfully designed to highlight delicate textures and lasting quality.`,
-      `Drawing inspiration from timeless heritage, this creation brings together ${lowercase}. Crafted with dedication, it reflects a passion for fine textiles and authentic style.`,
-      `Rooted in graceful craftsmanship, this design highlights ${lowercase}. Created to bring subtle luxury and effortless charm to your wardrobe, it tells a story of refined elegance.`,
-      `A tribute to artisanal craftsmanship, this garment expresses ${lowercase}. Designed to be cherished across seasons, it combines heritage techniques with contemporary styling.`
+      `Made with care and attention to detail, this piece features ${lowercase}. Designed to combine traditional comfort with simple modern style.`,
+      `Inspired by classic design and good fabric quality, this piece showcases ${lowercase}. Made to feel comfortable and look neat every time you wear it.`,
+      `A simple, well-made creation featuring ${lowercase}. Crafted to bring together everyday comfort and authentic design.`
     ];
     const index = Math.floor(Math.random() * storyTemplates.length);
     return storyTemplates[index]!;
@@ -70,15 +68,19 @@ export async function POST(req: NextRequest) {
     // 2. Perform RAG - Pull Local Craft Context
     const craftContext = getLocalCraftDetails(roughText);
 
-    // 3. Assemble Prompt (Strictly product-focused, no boutique/delivery/platform mentions)
+    // 3. Assemble Prompt (Simple, natural everyday human tone)
     const targetType = isDescription ? "product description" : "design story";
-    const systemPrompt = `You are Hive Now's product copywriter. Rewrite the user's rough product notes into a clear, natural, premium ${targetType}. Keep the original meaning and details accurate—do not invent features, materials, colours, sizes, or styling. Use warm, simple English in a consistent premium tone. Write 40–55 words in a single paragraph.
+    const systemPrompt = `You are a product writer for a local clothing store. Rewrite the user's rough notes into a clear, simple, and natural ${targetType}.
 
-CRITICAL RULES:
-- Focus ONLY on the product itself (fabric, weave, silhouette, tailoring, fit, elegance, and comfort).
-- NEVER mention "boutique", "partner collection", "curated collection", "store", "merchant", "Hive", "delivery", "express service", or "courier".
+STRICT WRITING RULES:
+- Write in simple, everyday, warm English that sounds like a real person wrote it.
+- Keep the language clean and easy to read.
+- NEVER use AI buzzwords or dramatic cliché phrases such as "exquisite", "lustrous", "timeless elegance", "meticulously crafted", "effortlessly", "sophisticated", "draped in", "testament to", "rich crimson", or "uniquely textured".
+- Keep all original details (color, fabric, comfort, pattern) 100% accurate. Do not invent extra features.
+- Write 25 to 40 words in one clean paragraph.
+- Focus ONLY on the product itself. Do not mention any store, boutique, merchant, or delivery service.
 
-Return ONLY the final generated copy. Do not include any intro, outro, conversational text, or wrapper quotes.
+Return ONLY the plain text without intro, outro, or wrapper quotes.
 
 ${craftContext}
 
