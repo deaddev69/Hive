@@ -90,8 +90,8 @@ Polished Output:`;
     let generatedText = "";
     let success = false;
 
-    // 4. Try API Keys and valid Gemini models in failover loop
-    const candidateModels = ["gemini-1.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-pro"];
+    // 4. Try API Keys and active Gemini models in failover loop
+    const candidateModels = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-2.0-flash"];
 
     if (apiKeys.length > 0) {
       keyLoop: for (let i = 0; i < apiKeys.length; i++) {
