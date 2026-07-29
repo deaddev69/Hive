@@ -273,9 +273,7 @@ export const createBoutique = mutation({
       if (!existingUser.phone) {
         patchData.phone = normalizedPhone;
       }
-      if (Object.keys(patchData).length > 1) { // more than just updatedAt
-        await ctx.db.patch(existingUser._id, patchData);
-      }
+      await ctx.db.patch(existingUser._id, patchData);
     }
 
     const insertData: any = {
