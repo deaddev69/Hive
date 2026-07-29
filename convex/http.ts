@@ -4,6 +4,7 @@ import { handleClerkWebhook } from "./webhooks/clerk";
 import { handleRazorpayWebhook } from "./webhooks/razorpay";
 import { handleLogisticsWebhook } from "./webhooks/logistics";
 import { handlePorterWebhook } from "./webhooks/porter";
+import * as whatsappWebhook from "./webhooks/whatsapp";
 
 const http = httpRouter();
 
@@ -37,6 +38,21 @@ http.route({
   path: "/webhooks/porter",
   method: "POST",
   handler: handlePorterWebhook,
+});
+
+// Meta WhatsApp Cloud API webhooks
+// GET /webhooks/whatsapp (Verification challenge)
+http.route({
+  path: "/webhooks/whatsapp",
+  method: "GET",
+  handler: whatsappWebhook.get,
+});
+
+// POST /webhooks/whatsapp (Message status updates)
+http.route({
+  path: "/webhooks/whatsapp",
+  method: "POST",
+  handler: whatsappWebhook.post,
 });
 
 // Health check

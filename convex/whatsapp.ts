@@ -7,7 +7,7 @@ export const createLog = internalMutation({
     channel: v.union(v.literal("email"), v.literal("whatsapp")),
     template: v.string(),
     recipient: v.string(),
-    status: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed")),
+    status: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed"), v.literal("delivered"), v.literal("read")),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("notificationLogs", {
@@ -20,13 +20,15 @@ export const createLog = internalMutation({
 export const updateLog = internalMutation({
   args: {
     id: v.id("notificationLogs"),
-    status: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed")),
+    status: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed"), v.literal("delivered"), v.literal("read")),
     response: v.optional(v.string()),
+    providerMessageId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, {
       status: args.status,
       response: args.response,
+      providerMessageId: args.providerMessageId,
       sentAt: args.status === "sent" ? Date.now() : undefined,
     });
   },
@@ -148,6 +150,7 @@ export const sendTemplateMessage = internalAction({
         id: logId,
         status: "sent",
         response: JSON.stringify(responseData),
+        providerMessageId: responseData.messages?.[0]?.id,
       });
       return { success: true, messageId: responseData.messages?.[0]?.id };
 

@@ -62,6 +62,8 @@ import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_serviceability from "../lib/serviceability.js";
 import type * as lib_uploads from "../lib/uploads.js";
 import type * as lib_utils from "../lib/utils.js";
+import type * as lib_whatsappClient from "../lib/whatsappClient.js";
+import type * as lib_whatsappTemplates from "../lib/whatsappTemplates.js";
 import type * as location from "../location.js";
 import type * as locationActions from "../locationActions.js";
 import type * as media from "../media.js";
@@ -115,6 +117,7 @@ import type * as webhooks_clerk from "../webhooks/clerk.js";
 import type * as webhooks_logistics from "../webhooks/logistics.js";
 import type * as webhooks_porter from "../webhooks/porter.js";
 import type * as webhooks_razorpay from "../webhooks/razorpay.js";
+import type * as webhooks_whatsapp from "../webhooks/whatsapp.js";
 import type * as whatsapp from "../whatsapp.js";
 
 import type {
@@ -178,6 +181,8 @@ declare const fullApi: ApiFromModules<{
   "lib/serviceability": typeof lib_serviceability;
   "lib/uploads": typeof lib_uploads;
   "lib/utils": typeof lib_utils;
+  "lib/whatsappClient": typeof lib_whatsappClient;
+  "lib/whatsappTemplates": typeof lib_whatsappTemplates;
   location: typeof location;
   locationActions: typeof locationActions;
   media: typeof media;
@@ -231,6 +236,7 @@ declare const fullApi: ApiFromModules<{
   "webhooks/logistics": typeof webhooks_logistics;
   "webhooks/porter": typeof webhooks_porter;
   "webhooks/razorpay": typeof webhooks_razorpay;
+  "webhooks/whatsapp": typeof webhooks_whatsapp;
   whatsapp: typeof whatsapp;
 }>;
 

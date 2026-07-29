@@ -1,7 +1,7 @@
 // convex/adminNotifications.ts
 // Admin management APIs for tracking, auditing, and resending system notifications.
 
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthenticatedUser } from "./lib/auth";
 import { triggerNotification } from "./lib/notifications";
@@ -56,5 +56,30 @@ export const resendNotification = mutation({
     );
 
     return { success: true, newEventId };
+  },
+});
+
+export const updateWhatsAppStatus = internalMutation({
+  args: {
+    wamid: v.string(),
+    status: v.union(v.literal("sent"), v.literal("delivered"), v.literal("read"), v.literal("failed")),
+    errorPayload: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // Find the log entry by wamid
+    const log = await ctx.db
+      .query("notificationLogs")
+      .filter((q) => q.eq(q.field("providerMessageId"), args.wamid))
+      .first();
+
+    if (log) {
+      await ctx.db.patch(log._id, {
+        status: args.status,
+        errorPayload: args.errorPayload,
+      });
+      console.log(`[updateWhatsAppStatus] Updated log ${log._id} to ${args.status}`);
+    } else {
+      console.warn(`[updateWhatsAppStatus] No log found for wamid ${args.wamid}`);
+    }
   },
 });

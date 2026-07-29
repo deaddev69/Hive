@@ -99,6 +99,7 @@ export default defineSchema({
     lastLoginAt:     v.optional(v.number()),
     pushEnabled:     v.optional(v.boolean()),      // for future push notifications activation
     fcmToken:        v.optional(v.string()),       // Firebase Cloud Messaging token for mobile push
+    whatsappOptIn:   v.optional(v.boolean()),      // Meta WhatsApp Cloud API opt-in
     createdAt:       v.number(),                   // epoch ms
     updatedAt:       v.number(),
   })
@@ -1737,8 +1738,10 @@ export default defineSchema({
     channel: v.union(v.literal("email"), v.literal("whatsapp"), v.literal("sms"), v.literal("push"), v.literal("in_app"), v.literal("slack")),
     template: v.string(),
     recipient: v.string(),
-    status: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed")),
+    status: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed"), v.literal("delivered"), v.literal("read")),
     response: v.optional(v.string()),
+    providerMessageId: v.optional(v.string()), // Meta wamid
+    errorPayload: v.optional(v.string()),      // For granular failure tracking
     createdAt: v.number(),
     sentAt: v.optional(v.number()),
   })

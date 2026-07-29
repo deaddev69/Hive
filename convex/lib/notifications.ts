@@ -4,6 +4,7 @@
 import { MutationCtx } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
+import { getWhatsAppTemplate } from "./whatsappTemplates";
 
 const formatCurrency = (paise: number) => {
   return `₹${(paise / 100).toFixed(2)}`;
@@ -363,8 +364,26 @@ export async function triggerNotification(
         status: "sent",
         sentAt: Date.now(),
       });
+    } else if (channel === "whatsapp") {
+      const phone = user.phone || payload.phone;
+      if (!phone) {
+        throw new Error(`No phone number found for user ${userId}`);
+      }
+
+      const { templateName, parameters } = getWhatsAppTemplate(template, payload);
+
+      await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+        recipient: phone,
+        templateName,
+        parameters,
+      });
+
+      await ctx.db.patch(eventId, {
+        status: "sent",
+        sentAt: Date.now(),
+      });
     } else {
-      // Mock SMS/WhatsApp/Push/in_app immediately
+      // Mock SMS/Push/in_app immediately
       console.log(`[triggerNotification] Sending mock ${channel} for template ${template} to user ${userId}`);
       await ctx.db.patch(eventId, {
         status: "sent",
