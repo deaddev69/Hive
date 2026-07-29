@@ -233,6 +233,44 @@ export const createBoutique = mutation({
     const hashed = await hashInviteToken(rawToken);
     const now = Date.now();
 
+    const emailNormalized = args.email.trim().toLowerCase();
+    
+    // Create or upgrade user so they appear in User Management immediately
+    let existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", emailNormalized))
+      .unique();
+      
+    let ownerUserId = existingUser?._id;
+
+    if (!existingUser) {
+      ownerUserId = await ctx.db.insert("users", {
+        email: args.email,
+        originalEmail: args.email,
+        normalizedEmail: emailNormalized,
+        phone: normalizedPhone,
+        role: "boutique_owner",
+        isActive: true,
+        isPhoneVerified: false,
+        createdAt: now,
+        updatedAt: now,
+      });
+      
+      await ctx.db.insert("customerProfiles", {
+        userId: ownerUserId,
+        displayName: args.ownerName,
+        hiveScore: 100,
+        totalOrders: 0,
+        totalClaimsSubmitted: 0,
+        updatedAt: now,
+      });
+    } else {
+      // Upgrade role to boutique_owner if they are a standard customer
+      if (existingUser.role === "customer" || existingUser.role === "seller_pending" || existingUser.role === "seller_rejected") {
+        await ctx.db.patch(existingUser._id, { role: "boutique_owner", updatedAt: now });
+      }
+    }
+
     const insertData: any = {
       boutiqueName:     args.boutiqueName,
       ownerName:        args.ownerName,
@@ -257,7 +295,7 @@ export const createBoutique = mutation({
       serviceType:       args.serviceType,
 
       ownerEmail:       args.email,
-      ownerUserId:      undefined, // Set to undefined so onboarding starts at "invited"
+      ownerUserId:      ownerUserId, // Set immediately so it links properly
       
       staffEmail1:      args.staffEmail1 ? args.staffEmail1.toLowerCase() : undefined,
       staffEmail2:      args.staffEmail2 ? args.staffEmail2.toLowerCase() : undefined,
