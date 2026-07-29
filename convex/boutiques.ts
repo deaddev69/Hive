@@ -104,7 +104,7 @@ export function normalizePhoneNumber(phone: string): string {
   
   // Validate final length: Meta Cloud API expects standard E.164 without '+'
   if (cleaned.length < 10 || cleaned.length > 15) {
-    throw new Error(`Invalid phone number format: "${phone}". It must be a valid phone number with country code.`);
+    throw new ConvexError(`Invalid phone number format: "${phone}". It must be a valid phone number with country code.`);
   }
   
   return cleaned;

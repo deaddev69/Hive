@@ -34,6 +34,7 @@ import type * as convex__generated_server from "../convex/_generated/server.js";
 import type * as crons from "../crons.js";
 import type * as customerHome from "../customerHome.js";
 import type * as debug from "../debug.js";
+import type * as debugBoutique from "../debugBoutique.js";
 import type * as debugUsers from "../debugUsers.js";
 import type * as emails from "../emails.js";
 import type * as fitFeedback from "../fitFeedback.js";
@@ -157,6 +158,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   customerHome: typeof customerHome;
   debug: typeof debug;
+  debugBoutique: typeof debugBoutique;
   debugUsers: typeof debugUsers;
   emails: typeof emails;
   fitFeedback: typeof fitFeedback;

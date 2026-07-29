@@ -119,7 +119,8 @@ export default function AdminBoutiquesPage() {
       );
       resetForm();
     } catch (err: any) {
-      alert("Failed to save boutique profile: " + err.message);
+      const errorMessage = err?.data || err?.message || "Unknown error";
+      alert("Failed to save boutique profile: " + errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -139,7 +140,8 @@ export default function AdminBoutiquesPage() {
         }
       }
     } catch (err: any) {
-      alert(`Failed to set boutique status to ${action}: ` + err.message);
+      const errorMessage = err?.data || err?.message || "Unknown error";
+      alert(`Failed to set boutique status to ${action}: ` + errorMessage);
     }
   };
 
