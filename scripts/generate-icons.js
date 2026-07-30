@@ -146,15 +146,15 @@ async function run() {
   
   // 1. Generate Web logo.png files (transparent gold)
   console.log("\nGenerating web logo.png files...");
-  await generateTransparentIcon(logoGold, path.join(customerPublic, 'logo.png'), 1024, 0.15);
-  await generateTransparentIcon(logoGold, path.join(boutiquePublic, 'logo.png'), 1024, 0.15);
-  await generateTransparentIcon(logoGold, path.join(adminPublic, 'logo.png'), 1024, 0.15);
+  await generateTransparentIcon(logoGold, path.join(customerPublic, 'logo.png'), 1024, 0.05);
+  await generateTransparentIcon(logoGold, path.join(boutiquePublic, 'logo.png'), 1024, 0.05);
+  await generateTransparentIcon(logoGold, path.join(adminPublic, 'logo.png'), 1024, 0.05);
   
   // 2. Generate Next.js app icons (transparent gold)
   console.log("\nGenerating Next.js app icon.png files...");
-  await generateTransparentIcon(logoGold, path.join(root, 'apps/customer/src/app/icon.png'), 512, 0.15);
-  await generateTransparentIcon(logoGold, path.join(root, 'apps/boutique/src/app/icon.png'), 512, 0.15);
-  await generateTransparentIcon(logoGold, path.join(root, 'apps/admin/src/app/icon.png'), 512, 0.15);
+  await generateTransparentIcon(logoGold, path.join(root, 'apps/customer/src/app/icon.png'), 512, 0.05);
+  await generateTransparentIcon(logoGold, path.join(root, 'apps/boutique/src/app/icon.png'), 512, 0.05);
+  await generateTransparentIcon(logoGold, path.join(root, 'apps/admin/src/app/icon.png'), 512, 0.05);
 
   // 3. Generate PWA standard transparent icons (transparent gold)
   console.log("\nGenerating customer PWA transparent icons...");
