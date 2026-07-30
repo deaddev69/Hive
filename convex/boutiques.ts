@@ -1919,23 +1919,46 @@ export const sendMerchantInviteAction = internalAction({
     const ownerTargetEmail = boutique.ownerEmail || boutique.email;
     console.log(`[sendMerchantInviteAction] Sending Owner Email to ${ownerTargetEmail}`);
     try {
+      const termsDocUrl = "https://seller.hivenow.in/docs/Hive_Seller_Terms_and_Conditions.html";
       const emailSubject = `Welcome to Hive 🎉 Your merchant account for ${boutique.boutiqueName} is ready`;
       const emailHtml = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
           <div style="text-align: center; margin-bottom: 24px;">
             <h1 style="color: #020617; font-size: 24px; font-weight: 800; margin: 0;">Hive Partners</h1>
-            <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Merchant Onboarding</p>
+            <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Merchant Onboarding & Agreement</p>
           </div>
-          <h2 style="color: #020617; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Welcome to Hive 🎉</h2>
+
+          <h2 style="color: #020617; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Welcome to Hive 👋</h2>
           <p style="color: #334155; font-size: 15px; line-height: 1.6;">Hi ${boutique.ownerName || "there"},</p>
           <p style="color: #334155; font-size: 15px; line-height: 1.6;">Your merchant account for <strong>${boutique.boutiqueName}</strong> has been created and is ready to claim!</p>
-          <p style="color: #334155; font-size: 15px; line-height: 1.6;">Click the button below to claim your storefront portal and access your dashboard:</p>
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${claimLink}" style="background-color: #fbbf24; color: #020617; padding: 14px 28px; text-decoration: none; font-weight: 700; border-radius: 12px; display: inline-block; font-size: 15px;">Claim Storefront Portal</a>
+          
+          <div style="text-align: center; margin: 28px 0;">
+            <a href="${claimLink}" style="background-color: #fbbf24; color: #020617; padding: 14px 32px; text-decoration: none; font-weight: 800; border-radius: 12px; display: inline-block; font-size: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">Claim Storefront Portal</a>
           </div>
+
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 24px; margin: 28px 0;">
+            <h3 style="margin-top: 0; color: #020617; font-size: 16px; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px;">📋 Seller Terms & Conditions Summary</h3>
+            <ol style="margin: 12px 0 0 0; padding-left: 20px; color: #334155; font-size: 13px; line-height: 1.7;">
+              <li><strong>You Set Your Own Price:</strong> You receive the exact price you list (₹1,000 listed = ₹1,000 received).</li>
+              <li><strong>0% Commission First 30 Days:</strong> Applicable on all products listed with returns enabled.</li>
+              <li><strong>2% Platform Fee:</strong> Deducted from orders if you choose to disable returns store-wide.</li>
+              <li><strong>Mandatory Wrong-Item Returns:</strong> Incorrect or defective items must be accepted back for full customer refund.</li>
+              <li><strong>Repeated Wrong Orders:</strong> 3 wrong dispatches in a week flags account; 3 separate weeks leads to store removal.</li>
+              <li><strong>Store-Wide Return Policy:</strong> Enable for all products (0% promo) or Disable for all (2% fee).</li>
+              <li><strong>Payment Release:</strong> Returns enabled = post return-window; Returns disabled = standard settlement schedule.</li>
+              <li><strong>Keep Stock Updated:</strong> Sync inventory before daily store closing & after offline sales.</li>
+              <li><strong>Sell Only Available Stock:</strong> Only list items in stock and ready to dispatch.</li>
+              <li><strong>Binding Agreement:</strong> Claiming your portal confirms agreement to Hive Merchant Terms.</li>
+            </ol>
+            
+            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed #cbd5e1; text-align: center;">
+              <a href="${termsDocUrl}" style="color: #d97706; font-size: 13px; font-weight: 700; text-decoration: underline;" target="_blank">📄 View / Download Official Hive_Seller_Terms_and_Conditions.pdf</a>
+            </div>
+          </div>
+
           <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
-            <strong>Note:</strong> This invite link is unique to you and will expire in 14 days.<br/>
-            If the button above doesn't work, copy and paste this link into your browser:<br/>
+            <strong>Note:</strong> This invite link is unique to you and valid for 14 days.<br/>
+            If the claim button doesn't work, copy and paste this URL into your browser:<br/>
             <a href="${claimLink}" style="color: #d97706; word-break: break-all;">${claimLink}</a>
           </p>
         </div>
