@@ -385,12 +385,14 @@ export const createProduct = mutation({
       }
     }
 
-    // Validate images (max 5MB, MIME: jpeg/png/webp)
+    // Validate images in parallel (max 5MB, MIME: jpeg/png/webp)
     const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
     const maxImageBytes = 5 * 1024 * 1024;
-    for (const img of args.images) {
-      await validateUploadedFile(ctx, img, undefined, allowedImageMimes, maxImageBytes);
-    }
+    await Promise.all(
+      args.images.map((img: any) =>
+        validateUploadedFile(ctx, img, undefined, allowedImageMimes, maxImageBytes)
+      )
+    );
 
     const slug = generateSlug(args.name);
     const now = Date.now();
@@ -604,12 +606,14 @@ export const updateProduct = mutation({
     // Validate quality gate if active — pass existing images to skip the URL guard for pre-existing URLs
     await validateProductQuality(ctx, args, product.images as any);
 
-    // Validate images (max 5MB, MIME: jpeg/png/webp)
+    // Validate images in parallel (max 5MB, MIME: jpeg/png/webp)
     const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
     const maxImageBytes = 5 * 1024 * 1024;
-    for (const img of args.images) {
-      await validateUploadedFile(ctx, img, undefined, allowedImageMimes, maxImageBytes);
-    }
+    await Promise.all(
+      args.images.map((img: any) =>
+        validateUploadedFile(ctx, img, undefined, allowedImageMimes, maxImageBytes)
+      )
+    );
 
     // Clean up replaced images from storage if necessary and they are not shared
     const removedImages = product.images.filter(img => !args.images.includes(img));
