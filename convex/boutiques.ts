@@ -1915,31 +1915,77 @@ export const sendMerchantInviteAction = internalAction({
       console.error("[sendMerchantInviteAction] Failed to dispatch WhatsApp invite message:", e);
     }
 
-    // 2. Email Notification
-    console.log(`[sendMerchantInviteAction] Sending Email to ${boutique.email}`);
+    // 2. Owner Email Notification
+    const ownerTargetEmail = boutique.ownerEmail || boutique.email;
+    console.log(`[sendMerchantInviteAction] Sending Owner Email to ${ownerTargetEmail}`);
     try {
-      const emailSubject = `Welcome to Hive 🎉 Your merchant account is ready`;
+      const emailSubject = `Welcome to Hive 🎉 Your merchant account for ${boutique.boutiqueName} is ready`;
       const emailHtml = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-          <h2 style="color: #111;">Welcome to Hive 🎉</h2>
-          <p>Hi ${boutique.ownerName || "there"},</p>
-          <p>Your merchant account for <strong>${boutique.boutiqueName}</strong> is ready.</p>
-          <p>Please claim your account by visiting the link below:</p>
-          <p style="margin: 24px 0;">
-            <a href="${claimLink}" style="background-color: #fbbf24; color: #111; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px;">Claim Your Account</a>
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h1 style="color: #020617; font-size: 24px; font-weight: 800; margin: 0;">Hive Partners</h1>
+            <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Merchant Onboarding</p>
+          </div>
+          <h2 style="color: #020617; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Welcome to Hive 🎉</h2>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6;">Hi ${boutique.ownerName || "there"},</p>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6;">Your merchant account for <strong>${boutique.boutiqueName}</strong> has been created and is ready to claim!</p>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6;">Click the button below to claim your storefront portal and access your dashboard:</p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${claimLink}" style="background-color: #fbbf24; color: #020617; padding: 14px 28px; text-decoration: none; font-weight: 700; border-radius: 12px; display: inline-block; font-size: 15px;">Claim Storefront Portal</a>
+          </div>
+          <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
+            <strong>Note:</strong> This invite link is unique to you and will expire in 14 days.<br/>
+            If the button above doesn't work, copy and paste this link into your browser:<br/>
+            <a href="${claimLink}" style="color: #d97706; word-break: break-all;">${claimLink}</a>
           </p>
-          <p style="color: #666; font-size: 13px;">This invite link will expire in 14 days.</p>
         </div>
       `;
 
       await ctx.runAction(internal.emails.sendNotificationEmail, {
-        to: boutique.email,
+        to: ownerTargetEmail,
         subject: emailSubject,
         html: emailHtml,
         templateName: "merchant_invite",
       });
     } catch (e) {
-      console.error("[sendMerchantInviteAction] Failed to dispatch Email invite:", e);
+      console.error("[sendMerchantInviteAction] Failed to dispatch Owner Email invite:", e);
+    }
+
+    // 3. Staff Email Notifications (if staff emails exist)
+    const staffEmails = [boutique.staffEmail1, boutique.staffEmail2].filter((e): e is string => Boolean(e && e.trim()));
+    
+    for (const staffEmail of staffEmails) {
+      console.log(`[sendMerchantInviteAction] Sending Staff Email to ${staffEmail}`);
+      try {
+        const staffSubject = `You've been added to ${boutique.boutiqueName} on Hive Partners! 🛍️`;
+        const staffHtml = `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <h1 style="color: #020617; font-size: 24px; font-weight: 800; margin: 0;">Hive Partners</h1>
+              <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Staff Welcome</p>
+            </div>
+            <h2 style="color: #020617; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Welcome to the Team! 🛍️</h2>
+            <p style="color: #334155; font-size: 15px; line-height: 1.6;">Hello,</p>
+            <p style="color: #334155; font-size: 15px; line-height: 1.6;">You have been added as a staff member for <strong>${boutique.boutiqueName}</strong> on the Hive Partners Portal.</p>
+            <p style="color: #334155; font-size: 15px; line-height: 1.6;">You can access inventory, orders, stock, and product management by logging into the seller portal with your email address (<strong>${staffEmail}</strong>):</p>
+            <div style="text-align: center; margin: 32px 0;">
+              <a href="https://seller.hivenow.in" style="background-color: #020617; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: 700; border-radius: 12px; display: inline-block; font-size: 15px;">Log In to Seller Portal</a>
+            </div>
+            <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
+              <strong>Getting Started:</strong> Visit <a href="https://seller.hivenow.in" style="color: #d97706;">seller.hivenow.in</a> and sign in with this email address. Your staff access will be auto-detected!
+            </p>
+          </div>
+        `;
+
+        await ctx.runAction(internal.emails.sendNotificationEmail, {
+          to: staffEmail,
+          subject: staffSubject,
+          html: staffHtml,
+          templateName: "staff_welcome",
+        });
+      } catch (e) {
+        console.error(`[sendMerchantInviteAction] Failed to dispatch Staff Email to ${staffEmail}:`, e);
+      }
     }
   },
 });
