@@ -120,6 +120,41 @@ async function generateSolidIcon(logoSharp, outputPath, size, paddingRatio = 0.1
   .toFile(outputPath);
 }
 
+// Helper to generate a landscape logo with correct aspect ratio and minimal padding
+async function generateLandscapeLogo(logoSharp, outputPath, targetHeight = 256, paddingRatio = 0.05) {
+  const trimmedBuffer = await logoSharp.clone().trim().png().toBuffer();
+  const trimmedMeta = await sharp(trimmedBuffer).metadata();
+  
+  const innerHeight = Math.round(targetHeight * (1 - 2 * paddingRatio));
+  const innerWidth = Math.round(innerHeight * (trimmedMeta.width / trimmedMeta.height));
+  
+  const resized = await sharp(trimmedBuffer)
+    .resize({
+      width: innerWidth,
+      height: innerHeight,
+      fit: 'fill',
+      kernel: 'lanczos3'
+    })
+    .toBuffer();
+    
+  const canvasWidth = Math.round(innerWidth / (1 - 2 * paddingRatio));
+  const canvasHeight = targetHeight;
+  
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+
+  await sharp({
+    create: {
+      width: canvasWidth,
+      height: canvasHeight,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
+    }
+  })
+  .composite([{ input: resized, gravity: 'center' }])
+  .png()
+  .toFile(outputPath);
+}
+
 async function run() {
   const root = 'e:\\HivebyTailorBee\\HivebyTailorBee';
   
@@ -144,11 +179,11 @@ async function run() {
   const adminPublic = path.join(root, 'apps/admin/public');
   const mobileAssets = path.join(root, 'apps/mobile/assets');
   
-  // 1. Generate Web logo.png files (transparent gold)
+  // 1. Generate Web logo.png files (transparent gold - landscape aspect ratio)
   console.log("\nGenerating web logo.png files...");
-  await generateTransparentIcon(logoGold, path.join(customerPublic, 'logo.png'), 1024, 0.05);
-  await generateTransparentIcon(logoGold, path.join(boutiquePublic, 'logo.png'), 1024, 0.05);
-  await generateTransparentIcon(logoGold, path.join(adminPublic, 'logo.png'), 1024, 0.05);
+  await generateLandscapeLogo(logoGold, path.join(customerPublic, 'logo.png'), 256, 0.02);
+  await generateLandscapeLogo(logoGold, path.join(boutiquePublic, 'logo.png'), 256, 0.02);
+  await generateLandscapeLogo(logoGold, path.join(adminPublic, 'logo.png'), 256, 0.02);
   
   // 2. Generate Next.js app icons (transparent gold)
   console.log("\nGenerating Next.js app icon.png files...");
