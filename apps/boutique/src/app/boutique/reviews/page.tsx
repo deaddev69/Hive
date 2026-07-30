@@ -60,7 +60,7 @@ export default function BoutiqueReviewsPage() {
       {/* Header */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#F5C22B]/15 text-amber-900 border border-[#F5C22B]/30">
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white border border-slate-800">
             CUSTOMER FEEDBACK
           </span>
         </div>
@@ -73,40 +73,40 @@ export default function BoutiqueReviewsPage() {
       {/* Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Rating Card */}
-        <div className="p-5 bg-gradient-to-br from-amber-50 to-orange-50/30 border border-amber-200/50 rounded-2xl flex flex-col gap-2">
-          <span className="text-[10px] font-black uppercase tracking-widest text-amber-800">AVERAGE RATING</span>
+        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl flex flex-col gap-2 shadow-xs">
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">AVERAGE RATING</span>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black text-slate-900">{metrics.averageRating}</span>
             <div className="flex items-center text-[#F5C22B]">
-              <Star className="w-5 h-5 fill-current" />
+              <Star className="w-5 h-5 fill-current text-[#F5C22B]" />
             </div>
             <span className="text-xs text-slate-500 font-semibold">({metrics.totalReviews} reviews)</span>
           </div>
-          <span className="text-[11px] text-amber-900/70 font-bold">Based on verified purchases</span>
+          <span className="text-[11px] text-slate-500 font-medium">Based on verified purchases</span>
         </div>
 
         {/* Fit Ratio */}
-        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl flex flex-col gap-2 shadow-sm">
+        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl flex flex-col gap-2 shadow-xs">
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">FIT ACCURACY</span>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black text-slate-900">{metrics.fitRatio}%</span>
             <ThumbsUp className="w-5 h-5 text-emerald-600" />
           </div>
-          <span className="text-[11px] text-slate-500 font-bold">Reported "Perfect Fit" by customers</span>
+          <span className="text-[11px] text-slate-500 font-medium">Reported "Perfect Fit" by customers</span>
         </div>
 
         {/* Response Rate */}
-        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl flex flex-col gap-2 shadow-sm">
+        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl flex flex-col gap-2 shadow-xs">
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">SELLER RESPONSE RATE</span>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black text-slate-900">{metrics.responseRate}%</span>
-            <MessageSquare className="w-5 h-5 text-blue-600" />
+            <MessageSquare className="w-5 h-5 text-slate-700" />
           </div>
-          <span className="text-[11px] text-slate-500 font-bold">Reviews replied by boutique</span>
+          <span className="text-[11px] text-slate-500 font-medium">Reviews replied by boutique</span>
         </div>
 
         {/* Breakdown */}
-        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl flex flex-col gap-2 shadow-sm justify-between">
+        <div className="p-5 bg-white border border-slate-200/80 rounded-2xl flex flex-col gap-2 shadow-xs justify-between">
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">RATING BREAKDOWN</span>
           <div className="flex flex-col gap-1">
             {[5, 4, 3, 2, 1].map((stars) => {
@@ -116,7 +116,7 @@ export default function BoutiqueReviewsPage() {
                 <div key={stars} className="flex items-center gap-2 text-[10px] font-bold text-slate-600">
                   <span className="w-3">{stars}★</span>
                   <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#F5C22B] rounded-full" style={{ width: `${percent}%` }} />
+                    <div className="h-full bg-slate-900 rounded-full" style={{ width: `${percent}%` }} />
                   </div>
                   <span className="w-6 text-right text-slate-400">{count}</span>
                 </div>
@@ -131,7 +131,7 @@ export default function BoutiqueReviewsPage() {
         <button
           onClick={() => setActiveTab("all")}
           className={`pb-3 border-b-2 transition-colors cursor-pointer ${
-            activeTab === "all" ? "border-[#D9A71E] text-slate-900" : "border-transparent text-slate-400 hover:text-slate-700"
+            activeTab === "all" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400 hover:text-slate-700"
           }`}
         >
           All Reviews ({reviews.length})
@@ -139,7 +139,7 @@ export default function BoutiqueReviewsPage() {
         <button
           onClick={() => setActiveTab("unreplied")}
           className={`pb-3 border-b-2 transition-colors cursor-pointer ${
-            activeTab === "unreplied" ? "border-[#D9A71E] text-slate-900" : "border-transparent text-slate-400 hover:text-slate-700"
+            activeTab === "unreplied" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400 hover:text-slate-700"
           }`}
         >
           Needs Reply ({reviews.filter((r) => !r.sellerReply).length})
@@ -147,7 +147,7 @@ export default function BoutiqueReviewsPage() {
         <button
           onClick={() => setActiveTab("low_ratings")}
           className={`pb-3 border-b-2 transition-colors cursor-pointer ${
-            activeTab === "low_ratings" ? "border-[#D9A71E] text-slate-900" : "border-transparent text-slate-400 hover:text-slate-700"
+            activeTab === "low_ratings" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400 hover:text-slate-700"
           }`}
         >
           Low Ratings (≤3★) ({reviews.filter((r) => r.rating <= 3).length})

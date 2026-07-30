@@ -5,7 +5,8 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { SignOutButton } from "@clerk/nextjs";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent, cn } from "@hive/ui";
-import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut } from "lucide-react";
+import Link from "next/link";
+import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut, Star, Wallet, ChevronRight } from "lucide-react";
 import { toast } from "@hive/utils";
 
 export default function BoutiqueProfile() {
@@ -205,8 +206,43 @@ export default function BoutiqueProfile() {
   return (
     <div className="flex flex-col gap-8 text-left">
       <div>
-        <h1 className="text-3xl font-serif font-black text-hive-dark">Profile</h1>
-        <p className="text-sm text-hive-text-muted">Manage your shop profile details, logo representation, and delivery parameters.</p>
+        <h1 className="text-3xl font-serif font-black text-hive-dark">More & Account Hub</h1>
+        <p className="text-sm text-hive-text-muted">Manage your store profile, customer feedback, and financial settlements.</p>
+      </div>
+
+      {/* Quick Management Hub Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Link
+          href="/boutique/reviews"
+          className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:border-slate-900 transition-all flex items-center justify-between group cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-[#F5C22B]">
+              <Star className="w-5 h-5 fill-current" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-slate-900 group-hover:text-slate-900">Customer Reviews & Ratings</span>
+              <span className="text-[11px] text-slate-500 font-medium">View product ratings & reply to buyers</span>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
+        </Link>
+
+        <Link
+          href="/boutique/finance"
+          className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:border-slate-900 transition-all flex items-center justify-between group cursor-pointer"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+              <Wallet className="w-5 h-5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-slate-900 group-hover:text-slate-900">Earnings & Settlements</span>
+              <span className="text-[11px] text-slate-500 font-medium">Track payouts, ledgers & revenue</span>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
