@@ -37,6 +37,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
         <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,300,400&display=swap" rel="stylesheet" />
+        <meta name="theme-color" content="#F5C22B" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="antialiased min-h-screen bg-white dark:bg-black text-slate-900 dark:text-slate-100 font-sans">
         <ConvexClientProvider>

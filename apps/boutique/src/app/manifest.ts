@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     id: "/boutique",
     display: "standalone",
     orientation: "any",
-    background_color: "#121212",
-    theme_color: "#121212",
+    background_color: "#F5C22B",
+    theme_color: "#F5C22B",
     icons: [
       {
         src: "/icon-192x192.png",
