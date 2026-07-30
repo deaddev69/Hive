@@ -23,18 +23,18 @@ crons.interval(
   { cronName: "performance_recalc" }
 );
 
-// Sweep expired checkout sessions every 5 minutes
+// Sweep expired checkout sessions every 15 minutes (was 5 — reduced to cut I/O)
 crons.interval(
   "clean_expired_checkout_sessions_every_5_minutes",
-  { minutes: 5 },
+  { minutes: 15 },
   internal.payments.cleanExpiredCheckoutSessions
 );
 
 
-// Process refund queue every 5 minutes (calls Razorpay Refund API)
+// Process refund queue every 15 minutes (was 5 — reduced to cut I/O)
 crons.interval(
   "process_refund_queue_every_5_minutes",
-  { minutes: 5 },
+  { minutes: 15 },
   internal.payments.processRefundQueue
 );
 

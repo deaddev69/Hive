@@ -17,16 +17,20 @@ async function calculateHealthScoreHelper(ctx: any) {
   const orders = await ctx.db
     .query("orders")
     .withIndex("by_createdAt", (q: any) => q.gte("createdAt", thirtyDaysAgo))
-    .collect();
+    .take(500);
   const claims = await ctx.db
     .query("claims")
     .withIndex("by_createdAt", (q: any) => q.gte("createdAt", thirtyDaysAgo))
-    .collect();
+    .take(500);
   const shipments = await ctx.db
     .query("shipments")
     .withIndex("by_createdAt", (q: any) => q.gte("createdAt", thirtyDaysAgo))
+    .take(500);
+  // Use indexed query instead of full table scan (was: ctx.db.query("boutiques").collect())
+  const approvedBoutiques = await ctx.db
+    .query("boutiques")
+    .withIndex("by_status", (q: any) => q.eq("status", "APPROVED"))
     .collect();
-  const boutiques = await ctx.db.query("boutiques").collect();
   
   const pendingDocs = await ctx.db
     .query("boutiqueDocuments")
@@ -38,7 +42,7 @@ async function calculateHealthScoreHelper(ctx: any) {
     .withIndex("by_resolved", (q: any) => q.eq("resolved", false))
     .collect();
 
-  const activeBoutiquesCount = boutiques.filter((b: any) => b.status === "APPROVED").length;
+  const activeBoutiquesCount = approvedBoutiques.length;
 
   // 1. Claims Rate
   const claimsRate = orders.length > 0 ? (claims.length / orders.length) * 100 : 0;
@@ -90,6 +94,7 @@ async function calculateHealthScoreHelper(ctx: any) {
     failedShipmentsCount,
     openCriticalAlertsCount,
     merchantsCount: activeBoutiquesCount,
+    // Only return lightweight metadata, not raw arrays (saves memory + payload size)
     unresolvedAlerts,
     pendingDocs,
     orders,

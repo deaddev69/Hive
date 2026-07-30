@@ -824,30 +824,25 @@ export const getApprovedBoutiques = query({
       b.isTestData !== true
     );
 
-    return Promise.all(
-      filtered.map(async (b) => {
-        let logoUrl = b.logoUrl ? getPublicUrl(b.logoUrl, "thumbnail") : undefined;
-        let bannerUrl = b.bannerUrl ? getPublicUrl(b.bannerUrl, "original") : undefined;
-        const merchantTier = await resolveBoutiqueMerchantTier(ctx, b);
+      return await Promise.all(
+        filtered.map(async (b) => {
+          let logoUrl = b.logoUrl ? getPublicUrl(b.logoUrl, "thumbnail") : undefined;
+          let bannerUrl = b.bannerUrl ? getPublicUrl(b.bannerUrl, "original") : undefined;
+          const merchantTier = await resolveBoutiqueMerchantTier(ctx, b);
 
-        const products = await ctx.db
-          .query("products")
-          .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", b._id))
-          .collect();
-        const activeApprovedProductCount = products.filter(
-          (p) => p.active === true && p.approvalStatus === "approved" && p.adminHidden !== true
-        ).length;
+          // Use pre-computed count instead of querying all products per boutique (N+1 elimination)
+          const activeApprovedProductCount = b.activeApprovedProductCount ?? 0;
 
-        return {
-          ...b,
-          logoUrl,
-          bannerUrl,
-          merchantTier,
-          trustTier: merchantTier,
-          activeApprovedProductCount,
-        };
-      })
-    );
+          return {
+            ...b,
+            logoUrl,
+            bannerUrl,
+            merchantTier,
+            trustTier: merchantTier,
+            activeApprovedProductCount,
+          };
+        })
+      );
   },
 });
 

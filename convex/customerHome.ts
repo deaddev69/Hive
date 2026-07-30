@@ -185,33 +185,29 @@ export const getCustomerHomeData = query({
 
     const approvedBoutiqueIds = new Set(boutiques.map((b) => b._id.toString()));
 
-    // 5. Concurrent database queries
-    const [activeProductsRaw, performances, newArrivalsRaw] = await Promise.all([
+    // 5. Single product query + performance data (eliminates redundant 2nd products scan)
+    const [allActiveProductsRaw, performances] = await Promise.all([
       ctx.db
         .query("products")
         .withIndex("by_active", (q) => q.eq("active", true))
+        .order("desc")
         .take(150),
       ctx.db
         .query("productPerformance")
         .withIndex("by_salesRevenue")
         .order("desc")
         .take(50),
-      ctx.db
-        .query("products")
-        .withIndex("by_active", (q) => q.eq("active", true))
-        .order("desc")
-        .take(50),
     ]);
 
-    // Filter and enrich active products
-    let activeProductsFiltered = activeProductsRaw
+    // Filter once — reuse for all sections
+    const allFiltered = allActiveProductsRaw
       .filter((p) => approvedBoutiqueIds.has(p.boutiqueId.toString()) && p.adminHidden !== true && (!p.approvalStatus || p.approvalStatus === "approved"));
-    let enrichedProducts = await enrichProducts(ctx, activeProductsFiltered, false);
 
-    // Filter and enrich new arrivals
-    let newArrivalsFiltered = newArrivalsRaw
-      .filter((p) => approvedBoutiqueIds.has(p.boutiqueId.toString()) && p.adminHidden !== true && (!p.approvalStatus || p.approvalStatus === "approved"));
-    const newArrivals = await enrichProducts(ctx, newArrivalsFiltered.slice(0, 12), false);
+    // Single enrichment pass for the entire filtered set (eliminates 2 redundant enrichProducts calls)
+    let enrichedProducts = await enrichProducts(ctx, allFiltered, false);
+
+    // Derive newArrivals from the same enriched set (already sorted desc by _creationTime)
+    const newArrivals = enrichedProducts.slice(0, 12);
 
     // Apply hyperlocal distance/ETA calculation if coordinates are provided
     if (args.userLat !== undefined && args.userLng !== undefined) {
@@ -297,23 +293,15 @@ export const getCustomerHomeData = query({
 
     const products = enrichedProducts.slice(0, 40);
 
-    // 6. Fetch most loved products
+    // 6. Most loved: use performance IDs to pick from already-enriched set (avoids 50× ctx.db.get)
     const sortedPerformances = [...performances].sort((a, b) => b.salesRevenue - a.salesRevenue);
-
-    const mostLovedProductIds = sortedPerformances.map((p) => p.productId);
-    let mostLovedRaw = (
-      await Promise.all(mostLovedProductIds.slice(0, 50).map((pid) => ctx.db.get(pid)))
-    ).filter(
-      (prod) =>
-        prod &&
-        prod.active &&
-        !prod.adminHidden &&
-        (!prod.approvalStatus || prod.approvalStatus === "approved") &&
-        approvedBoutiqueIds.has(prod.boutiqueId.toString())
-    ) as any[];
+    const performanceProductIdSet = new Set(sortedPerformances.map((p) => p.productId.toString()));
+    
+    // Try to pick most-loved from already-enriched products to avoid 50 extra db.get() calls
+    let mostLovedFromEnriched = enrichedProducts.filter((p) => performanceProductIdSet.has(p._id.toString()));
 
     if (args.userLat !== undefined && args.userLng !== undefined) {
-      mostLovedRaw = mostLovedRaw.filter((p) => {
+      mostLovedFromEnriched = mostLovedFromEnriched.filter((p) => {
         const b = boutiques.find((btq) => btq._id.toString() === p.boutiqueId.toString());
         if (!b || b.latitude === undefined || b.longitude === undefined) return false;
         const dist = haversineKm(args.userLat!, args.userLng!, b.latitude, b.longitude);
@@ -321,12 +309,12 @@ export const getCustomerHomeData = query({
       });
     }
 
-    // Fallback backfill if mostLovedRaw is empty
-    if (mostLovedRaw.length === 0) {
-      mostLovedRaw = activeProductsFiltered.slice(0, 12);
+    // Fallback: if no performance matches in enriched set, use first 12 enriched products
+    if (mostLovedFromEnriched.length === 0) {
+      mostLovedFromEnriched = enrichedProducts.slice(0, 12);
     }
 
-    const enrichedMostLoved = await enrichProducts(ctx, mostLovedRaw.slice(0, 12), false);
+    const enrichedMostLoved = mostLovedFromEnriched.slice(0, 12);
 
     return {
       banners,

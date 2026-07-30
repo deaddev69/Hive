@@ -467,6 +467,7 @@ export default defineSchema({
     .index("by_slug",       ["slug"])
     .index("by_adminHidden", ["adminHidden"])
     .index("by_approvalStatus", ["approvalStatus"])
+    .index("by_boutiqueId_active", ["boutiqueId", "active"])
     .searchIndex("search_products", {
       searchField: "name",
       filterFields: ["active", "categoryId", "boutiqueId"],
@@ -1595,7 +1596,9 @@ export default defineSchema({
     .index("by_boutiqueId", ["boutiqueId"])
     .index("by_status", ["status"])
     .index("by_payoutId", ["payoutId"])
-    .index("by_orderId", ["orderId"]),
+    .index("by_orderId", ["orderId"])
+    .index("by_boutiqueId_type", ["boutiqueId", "type"])
+    .index("by_orderId_type", ["orderId", "type"]),
 
   payoutLedger: defineTable({
     payoutNumber:   v.string(), // PAY-YYYYMMDD-XXXX
@@ -1749,7 +1752,8 @@ export default defineSchema({
     sentAt: v.optional(v.number()),
   })
     .index("by_recipient", ["recipient"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_providerMessageId", ["providerMessageId"]),
 
   orderEscalations: defineTable({
     orderId:             v.id("orders"),
@@ -1857,5 +1861,17 @@ export default defineSchema({
     .index("by_customerId",             ["customerId"])
     .index("by_orderItemId",            ["orderItemId"])
     .index("by_boutiqueId_categoryId",  ["boutiqueId", "categoryId"]),
+
+  // ─── DASHBOARD METRICS (Singleton) ────────────────────────────────────────
+  // Cached admin dashboard counts, updated incrementally on order status transitions.
+  // Eliminates 18+ parallel full-status table scans per admin dashboard load.
+  dashboardMetrics: defineTable({
+    orderCountByStatus: v.record(v.string(), v.number()),
+    totalRevenue: v.number(),
+    todayOrderCount: v.number(),
+    todayGmv: v.number(),
+    todayDate: v.string(),
+    updatedAt: v.number(),
+  }),
 
 });

@@ -958,7 +958,7 @@ export const getActiveProducts = query({
       products = await ctx.db
         .query("products")
         .withIndex("by_active", (q) => q.eq("active", true))
-        .collect();
+        .take(200);
     }
 
     // Optimize lookups by filtering approved boutiques early
@@ -2215,7 +2215,7 @@ export const runQualityScoreAudit = query({
   args: {},
   handler: async (ctx) => {
     await requireRole(ctx, "admin");
-    const products = await ctx.db.query("products").collect();
+    const products = await ctx.db.query("products").take(500);
     
     let totalAudited = 0;
     let corruptedCount = 0;
