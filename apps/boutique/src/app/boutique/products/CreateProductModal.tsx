@@ -484,6 +484,7 @@ export default function CreateProductModal({
 
   const [uploadingImages, setUploadingImages] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [uploadStatusText, setUploadStatusText] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -532,6 +533,7 @@ export default function CreateProductModal({
       return;
     }
 
+    setSubmitError("");
     setSubmitting(true);
     setUploadingImages(true);
     setUploadStatusText("Uploading product images...");
@@ -619,7 +621,8 @@ export default function CreateProductModal({
       }
       onClose();
     } catch (err: any) {
-      toast.error("Failed to save product: " + err.message);
+      console.error(err);
+      setSubmitError(err.message || "An unexpected error occurred.");
     } finally {
       setSubmitting(false);
       setUploadingImages(false);
@@ -1364,6 +1367,23 @@ export default function CreateProductModal({
               </div>
 
             </div>
+          </div>
+        )}
+
+        {/* Inline Error Display */}
+        {submitError && (
+          <div className="mt-6 flex items-center gap-3 p-4 border-l-[3px] border-red-500 bg-[#FCF8F8] rounded-xl relative shadow-sm">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <span className="text-[13px] font-bold text-slate-800">
+              Failed to save product: {submitError}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSubmitError("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         )}
 
