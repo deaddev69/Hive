@@ -10,11 +10,13 @@ import {
   ArrowRight,
   Package,
   Loader2,
+  Star,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { useSessionStore } from "@/context/SessionContext";
+import { ReviewModal } from "@/components/product/ReviewModal";
 import { formatCurrency } from "@hive/utils";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -34,6 +36,7 @@ export default function MyOrdersPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const { token } = useSessionStore();
+  const [reviewingOrder, setReviewingOrder] = useState<any | null>(null);
 
   const convexOrders = useQuery(api.orders.listMyOrders, { token: token || undefined });
 
@@ -77,6 +80,8 @@ export default function MyOrdersPage() {
     };
     return map[s] ?? "placed";
   };
+
+  const firstReviewItem = reviewingOrder?.items?.[0];
 
   return (
     <div className="min-h-screen bg-[#FAF8F4] py-12 px-4 sm:px-6 lg:px-8 select-none text-left antialiased">
@@ -126,9 +131,20 @@ export default function MyOrdersPage() {
         ) : (
           <div className="flex flex-col gap-4">
             {sortedOrders.map((order) => (
-              <OrderCard key={order._id} order={order} mapStatus={mapStatus} />
+              <OrderCard key={order._id} order={order} mapStatus={mapStatus} onOpenReview={(ord) => setReviewingOrder(ord)} />
             ))}
           </div>
+        )}
+
+        {reviewingOrder && firstReviewItem && (
+          <ReviewModal
+            isOpen={Boolean(reviewingOrder)}
+            onClose={() => setReviewingOrder(null)}
+            orderId={reviewingOrder._id}
+            orderItemId={firstReviewItem._id}
+            productName={firstReviewItem.productName || firstReviewItem.name}
+            productImage={firstReviewItem.imageUrl}
+          />
         )}
 
       </div>
@@ -141,13 +157,22 @@ export default function MyOrdersPage() {
 // ─────────────────────────────────────────────────────────────────────────────
 type ConvexOrder = NonNullable<ReturnType<typeof useQuery<typeof api.orders.listMyOrders>>>[number];
 
-function OrderCard({ order, mapStatus }: { order: ConvexOrder; mapStatus: (s: string) => string }) {
+function OrderCard({
+  order,
+  mapStatus,
+  onOpenReview,
+}: {
+  order: ConvexOrder;
+  mapStatus: (s: string) => string;
+  onOpenReview: (ord: ConvexOrder) => void;
+}) {
   const { downloadInvoiceByOrderId, isDownloading } = useInvoiceDownload();
   const downloading = isDownloading(order._id);
   const firstItem = order.items[0];
   const itemsCount = order.items.reduce((acc: number, item: any) => acc + item.quantity, 0);
   const uiStatus = mapStatus(order.status);
   const isActive = ["placed", "confirmed", "picked_up", "out_for_delivery"].includes(uiStatus);
+  const isDelivered = uiStatus === "delivered" || order.status === "delivered";
 
   const formatDate = (epochMs: number) => {
     try {
@@ -237,25 +262,60 @@ function OrderCard({ order, mapStatus }: { order: ConvexOrder; mapStatus: (s: st
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => downloadInvoiceByOrderId(order._id)}
-            disabled={downloading}
-            className="h-9 px-4 border border-[#1c1917]/[0.08] hover:border-[#1c1917]/35 text-[#78716C] hover:text-[#1C1917] bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
-          >
-            {downloading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#78716C]" />
-            ) : (
-              "Invoice"
-            )}
-          </button>
+          {isDelivered ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onOpenReview(order)}
+                className="h-9 px-4 bg-[#F5C22B] text-slate-900 hover:bg-[#E0B024] active:scale-[0.98] transition-all rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+              >
+                <Star className="w-3.5 h-3.5 fill-slate-900" />
+                <span>Rate & Review</span>
+              </button>
 
-          <Link
-            href={`/orders/${order._id}`}
-            className="h-9 px-4 bg-[#1C1917] text-[#FAF8F4] hover:bg-[#1C1917]/90 active:scale-[0.98] transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm"
-          >
-            <span>Track</span>
-            <ChevronRight className="w-3.5 h-3.5 text-[#F5A623]" />
-          </Link>
+              <button
+                onClick={() => downloadInvoiceByOrderId(order._id)}
+                disabled={downloading}
+                className="h-9 px-3 border border-[#1c1917]/[0.08] hover:border-[#1c1917]/35 text-[#78716C] hover:text-[#1C1917] bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                {downloading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#78716C]" />
+                ) : (
+                  "Invoice"
+                )}
+              </button>
+
+              <Link
+                href={`/orders/${order._id}`}
+                className="h-9 px-3 border border-[#1c1917]/[0.08] hover:border-[#1c1917]/35 text-[#78716C] hover:text-[#1C1917] transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1"
+              >
+                <span>Details</span>
+                <ChevronRight className="w-3 h-3 text-[#78716C]" />
+              </Link>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => downloadInvoiceByOrderId(order._id)}
+                disabled={downloading}
+                className="h-9 px-4 border border-[#1c1917]/[0.08] hover:border-[#1c1917]/35 text-[#78716C] hover:text-[#1C1917] bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                {downloading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#78716C]" />
+                ) : (
+                  "Invoice"
+                )}
+              </button>
+
+              <Link
+                href={`/orders/${order._id}`}
+                className="h-9 px-4 bg-[#1C1917] text-[#FAF8F4] hover:bg-[#1C1917]/90 active:scale-[0.98] transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm"
+              >
+                <span>Track</span>
+                <ChevronRight className="w-3.5 h-3.5 text-[#F5A623]" />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>
