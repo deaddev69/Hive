@@ -12,6 +12,7 @@ import {
   Package,
   Loader2,
   Star,
+  CheckCircle,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
@@ -265,14 +266,21 @@ function OrderCard({
         <div className="flex items-center gap-2 flex-wrap">
           {isDelivered ? (
             <>
-              <button
-                type="button"
-                onClick={() => onOpenReview(order)}
-                className="h-9 px-4 bg-[#F5C22B] text-slate-900 hover:bg-[#E0B024] active:scale-[0.98] transition-all rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-              >
-                <Star className="w-3.5 h-3.5 fill-slate-900" />
-                <span>Rate & Review</span>
-              </button>
+              {firstItem?.hasReview ? (
+                <div className="h-9 px-4 border border-green-200 text-green-700 bg-green-50/50 rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span>Reviewed</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onOpenReview(order)}
+                  className="h-9 px-4 bg-[#F5C22B] text-slate-900 hover:bg-[#E0B024] active:scale-[0.98] transition-all rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <Star className="w-3.5 h-3.5 fill-slate-900" />
+                  <span>Rate & Review</span>
+                </button>
+              )}
 
               <button
                 onClick={() => downloadInvoiceByOrderId(order._id)}

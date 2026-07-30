@@ -738,6 +738,22 @@ async function formatOrderForCustomer(ctx: any, order: any, items: any[]) {
       };
     }
   }
+
+  const itemsWithReviewStatus = await Promise.all(
+    items.map(async (item) => {
+      const existingReview = await ctx.db
+        .query("reviews")
+        .withIndex("by_orderItemId", (q: any) => q.eq("orderItemId", item._id))
+        .first();
+      return {
+        ...item,
+        priceAtPurchase: item.priceAtPurchase,
+        subtotal: item.subtotal,
+        hasReview: !!existingReview,
+      };
+    })
+  );
+
   return {
     ...order,
     subtotal: order.subtotal,
@@ -745,11 +761,7 @@ async function formatOrderForCustomer(ctx: any, order: any, items: any[]) {
     discount: order.discount,
     total: order.total,
     driverDetails,
-    items: items.map(item => ({
-      ...item,
-      priceAtPurchase: item.priceAtPurchase,
-      subtotal: item.subtotal,
-    })),
+    items: itemsWithReviewStatus,
   };
 }
 
