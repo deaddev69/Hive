@@ -167,17 +167,23 @@ export const syncUser = mutation({
         .withIndex("by_email", (q) => q.eq("email", emailNormalized))
         .unique();
 
-      // P1-8 FIX: Only auto-link APPROVED boutiques. PENDING boutiques must be admin-approved first.
-      if (boutique && boutique.status === "APPROVED" && targetUserId && (!boutique.ownerUserId || boutique.ownerUserId === targetUserId)) {
-        await ctx.db.patch(boutique._id, { 
+      // Auto-link boutique owner by email: if admin created a boutique with this email,
+      // the person signing in with it IS the intended owner — auto-approve and link.
+      if (boutique && boutique.status !== "DELETED" && boutique.status !== "REJECTED" && targetUserId && (!boutique.ownerUserId || boutique.ownerUserId === targetUserId)) {
+        const boutiqueUpdate: any = { 
           userId: targetUserId,
           ownerUserId: targetUserId,
           inviteStatus: "claimed",
           claimedAt: now,
           inviteTokenHash: undefined,
           inviteRequestedAt: undefined,
-          status: "APPROVED",
-        });
+        };
+        // Auto-approve PENDING boutiques when owner signs in
+        if (boutique.status === "PENDING") {
+          boutiqueUpdate.status = "APPROVED";
+          boutiqueUpdate.approvedAt = now;
+        }
+        await ctx.db.patch(boutique._id, boutiqueUpdate);
         await ctx.db.patch(targetUserId, { role: "boutique_owner", updatedAt: now });
         targetUserRole = "boutique_owner";
 
@@ -193,7 +199,7 @@ export const syncUser = mutation({
           action: "boutique.approved",
           entityType: "boutiques",
           entityId: boutique._id,
-          metadata: JSON.stringify({ userId: targetUserId, email: originalEmail, normalizedEmail: emailNormalized }),
+          metadata: JSON.stringify({ userId: targetUserId, email: originalEmail, normalizedEmail: emailNormalized, previousStatus: boutique.status }),
           createdAt: now,
         });
       } else if (!boutique && targetUserId) {
@@ -611,18 +617,23 @@ export const syncUserFromWebhook = internalMutation({
           createdAt: now,
         });
 
-        // Auto-link approved boutiques
+        // Auto-link boutiques by owner email
         const boutique = await ctx.db
           .query("boutiques")
           .withIndex("by_email", (q) => q.eq("email", emailNormalized))
           .unique();
 
-        // Secure Clerk Takeover: only auto-link if the boutique doesn't already have an assigned owner or if it already matches
-        if (boutique && boutique.status === "APPROVED" && (!boutique.ownerUserId || boutique.ownerUserId === existingEmailUser._id)) {
-          await ctx.db.patch(boutique._id, {
+        // Auto-link if boutique is not deleted/rejected and doesn't have a different owner
+        if (boutique && boutique.status !== "DELETED" && boutique.status !== "REJECTED" && (!boutique.ownerUserId || boutique.ownerUserId === existingEmailUser._id)) {
+          const boutiqueUpdate: any = {
             userId: existingEmailUser._id,
             ownerUserId: existingEmailUser._id,
-          });
+          };
+          if (boutique.status === "PENDING") {
+            boutiqueUpdate.status = "APPROVED";
+            boutiqueUpdate.approvedAt = now;
+          }
+          await ctx.db.patch(boutique._id, boutiqueUpdate);
           await ctx.db.patch(existingEmailUser._id, {
             role: "boutique_owner",
             updatedAt: now,
@@ -633,7 +644,7 @@ export const syncUserFromWebhook = internalMutation({
             action: "boutique.approved",
             entityType: "boutiques",
             entityId: boutique._id,
-            metadata: JSON.stringify({ userId: existingEmailUser._id, email: originalEmail, normalizedEmail: emailNormalized }),
+            metadata: JSON.stringify({ userId: existingEmailUser._id, email: originalEmail, normalizedEmail: emailNormalized, previousStatus: boutique.status }),
             createdAt: now,
           });
         }
