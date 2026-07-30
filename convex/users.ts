@@ -197,10 +197,10 @@ export const syncUser = mutation({
           createdAt: now,
         });
       } else if (!boutique && targetUserId) {
-        // Check if user is staff for any approved boutique
+        // Check if user is staff for any boutique (no status guard — admin entered the email)
         const allBoutiques = await ctx.db.query("boutiques").collect();
         const staffBoutique = allBoutiques.find(b => 
-          b.status === "APPROVED" && (
+          b.status !== "DELETED" && (
             (b.staffEmail1 && b.staffEmail1.toLowerCase() === emailNormalized) || 
             (b.staffEmail2 && b.staffEmail2.toLowerCase() === emailNormalized)
           )
@@ -749,6 +749,30 @@ export const syncUserFromWebhook = internalMutation({
       metadata: JSON.stringify({ clerkId: args.clerkId, email: originalEmail, normalizedEmail: emailNormalized }),
       createdAt: now,
     });
+
+    // Auto-detect staff: if this email matches a boutique's staffEmail, upgrade role
+    if (emailNormalized) {
+      const allBoutiques = await ctx.db.query("boutiques").collect();
+      const staffBoutique = allBoutiques.find(b =>
+        b.status !== "DELETED" && (
+          (b.staffEmail1 && b.staffEmail1.toLowerCase() === emailNormalized) ||
+          (b.staffEmail2 && b.staffEmail2.toLowerCase() === emailNormalized)
+        )
+      );
+
+      if (staffBoutique) {
+        await ctx.db.patch(userId, { role: "boutique", updatedAt: now });
+
+        await ctx.db.insert("auditLogs", {
+          actorRole: "system",
+          action: "boutique_staff.linked",
+          entityType: "boutiques",
+          entityId: staffBoutique._id,
+          metadata: JSON.stringify({ userId, email: originalEmail, normalizedEmail: emailNormalized }),
+          createdAt: now,
+        });
+      }
+    }
 
     return userId;
   },
