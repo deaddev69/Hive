@@ -418,6 +418,8 @@ export default defineSchema({
     adminHiddenAt:    v.optional(v.number()),
     adminHiddenBy:    v.optional(v.id("users")),
     moderationCategory: v.optional(v.string()),
+    averageRating:    v.optional(v.number()),
+    reviewCount:      v.optional(v.number()),
     createdAt:        v.number(),
     updatedAt:        v.number(),
     lastVerifiedAt:   v.optional(v.number()),
