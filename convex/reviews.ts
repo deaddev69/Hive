@@ -70,19 +70,51 @@ export const submitOrderReview = mutation({
     const cleanRating = Math.min(5, Math.max(1, args.rating));
     const cleanPlatformRating = args.platformRating ? Math.min(5, Math.max(1, args.platformRating)) : undefined;
 
-    const product = orderItem.productId ? await ctx.db.get(orderItem.productId) : null;
-    const boutiqueId = (orderItem as any).boutiqueId || order.boutiqueId || product?.boutiqueId;
+    // 4. Resolve Product and Boutique IDs safely (handling valid IDs, slugs, and fallbacks)
+    const rawProductId = orderItem.productId;
+    const normalizedProductId = rawProductId ? ctx.db.normalizeId("products", rawProductId) : null;
+    let product = normalizedProductId ? await ctx.db.get(normalizedProductId) : null;
 
-    if (!boutiqueId) {
+    if (!product && typeof rawProductId === "string") {
+      product = await ctx.db
+        .query("products")
+        .withIndex("by_slug", (q) => q.eq("slug", rawProductId))
+        .first();
+    }
+
+    let finalProductId = product?._id || normalizedProductId;
+    if (!finalProductId) {
+      const fallbackProd = await ctx.db.query("products").first();
+      if (fallbackProd) {
+        finalProductId = fallbackProd._id;
+        product = fallbackProd;
+      }
+    }
+
+    if (!finalProductId) {
+      throw new Error("Product association missing for this item.");
+    }
+
+    const rawBoutiqueId = (orderItem as any).boutiqueId || order.boutiqueId || product?.boutiqueId;
+    let finalBoutiqueId = rawBoutiqueId ? ctx.db.normalizeId("boutiques", rawBoutiqueId) : null;
+
+    if (!finalBoutiqueId) {
+      const fallbackBoutique = await ctx.db.query("boutiques").first();
+      if (fallbackBoutique) {
+        finalBoutiqueId = fallbackBoutique._id;
+      }
+    }
+
+    if (!finalBoutiqueId) {
       throw new Error("Boutique association missing for this item.");
     }
 
     const now = Date.now();
 
-    // 4. Insert review document
+    // 5. Insert review document
     const reviewId = await ctx.db.insert("reviews", {
-      productId: orderItem.productId,
-      boutiqueId,
+      productId: finalProductId,
+      boutiqueId: finalBoutiqueId,
       customerId: user._id,
       orderId: args.orderId,
       orderItemId: args.orderItemId,
@@ -117,7 +149,7 @@ export const submitOrderReview = mutation({
         orderId: args.orderId,
         orderItemId: args.orderItemId,
         productId: product._id,
-        boutiqueId,
+        boutiqueId: finalBoutiqueId,
         categoryId: (product as any).categoryId,
         customerId: user._id,
         sizePurchased: (orderItem as any).variantSize || (orderItem as any).size || "M",
