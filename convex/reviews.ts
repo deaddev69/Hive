@@ -31,11 +31,14 @@ export const submitOrderReview = mutation({
 
     // 1. Retrieve order and verify ownership & status
     const order = await ctx.db.get(args.orderId);
-    if (!order || order.customerId !== user._id) {
-      throw new Error("Unauthorized or order not found.");
+    if (!order) {
+      throw new Error("Order not found.");
+    }
+    if (order.customerId !== user._id) {
+      throw new Error("Unauthorized: this order does not belong to your account.");
     }
 
-    if (order.status !== "delivered") {
+    if (order.status?.toLowerCase() !== "delivered") {
       throw new Error("Reviews can only be submitted for delivered orders.");
     }
 
@@ -52,19 +55,26 @@ export const submitOrderReview = mutation({
       .first();
 
     if (existing) {
-      throw new Error("A review has already been submitted for this item.");
+      return existing._id;
     }
 
     // Validate rating range
     const cleanRating = Math.min(5, Math.max(1, args.rating));
     const cleanPlatformRating = args.platformRating ? Math.min(5, Math.max(1, args.platformRating)) : undefined;
 
+    const product = orderItem.productId ? await ctx.db.get(orderItem.productId) : null;
+    const boutiqueId = (orderItem as any).boutiqueId || order.boutiqueId || product?.boutiqueId;
+
+    if (!boutiqueId) {
+      throw new Error("Boutique association missing for this item.");
+    }
+
     const now = Date.now();
 
     // 4. Insert review document
     const reviewId = await ctx.db.insert("reviews", {
       productId: orderItem.productId,
-      boutiqueId: order.boutiqueId,
+      boutiqueId,
       customerId: user._id,
       orderId: args.orderId,
       orderItemId: args.orderItemId,
@@ -81,37 +91,31 @@ export const submitOrderReview = mutation({
     });
 
     // 5. Update Product Average Rating incrementally
-    if (orderItem.productId) {
-      const product = await ctx.db.get(orderItem.productId);
-      if (product) {
-        const currentAvg = (product as any).averageRating ?? 0;
-        const currentCount = (product as any).reviewCount ?? 0;
-        const newCount = currentCount + 1;
-        const newAvg = Number(((currentAvg * currentCount + cleanRating) / newCount).toFixed(2));
+    if (product) {
+      const currentAvg = (product as any).averageRating ?? 0;
+      const currentCount = (product as any).reviewCount ?? 0;
+      const newCount = currentCount + 1;
+      const newAvg = Number(((currentAvg * currentCount + cleanRating) / newCount).toFixed(2));
 
-        await ctx.db.patch(orderItem.productId, {
-          averageRating: newAvg,
-          reviewCount: newCount,
-        } as any);
-      }
+      await ctx.db.patch(product._id, {
+        averageRating: newAvg,
+        reviewCount: newCount,
+      } as any);
     }
 
     // 6. Insert fit feedback record if provided
-    if (args.fitResponse && orderItem.productId) {
-      const product = await ctx.db.get(orderItem.productId);
-      if (product) {
-        await ctx.db.insert("fitFeedback", {
-          orderId: args.orderId,
-          orderItemId: args.orderItemId,
-          productId: orderItem.productId,
-          boutiqueId: order.boutiqueId,
-          categoryId: product.categoryId,
-          customerId: user._id,
-          sizePurchased: (orderItem as any).variantSize || (orderItem as any).size || "M",
-          fitResponse: args.fitResponse,
-          createdAt: now,
-        });
-      }
+    if (args.fitResponse && product && (product as any).categoryId) {
+      await ctx.db.insert("fitFeedback", {
+        orderId: args.orderId,
+        orderItemId: args.orderItemId,
+        productId: product._id,
+        boutiqueId,
+        categoryId: (product as any).categoryId,
+        customerId: user._id,
+        sizePurchased: (orderItem as any).variantSize || (orderItem as any).size || "M",
+        fitResponse: args.fitResponse,
+        createdAt: now,
+      });
     }
 
     return reviewId;
