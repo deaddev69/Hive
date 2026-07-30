@@ -39,24 +39,24 @@ export const getAdminDashboardMetrics = query({
       replacementDeliveredList,
       refundRequestedList,
     ] = await Promise.all([
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "pending_confirmation")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "pending_payment")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "confirmed")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "delivered")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "packed")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "pickup_scheduled")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "picked_up")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "in_transit")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "out_for_delivery")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "cancelled")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "refunded")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "booking_failed")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "claim_submitted")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "replacement_requested")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "replacement_approved")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "replacement_dispatched")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "replacement_delivered")).collect(),
-      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "refund_requested")).collect(),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "pending_confirmation")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "pending_payment")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "confirmed")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "delivered")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "packed")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "pickup_scheduled")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "picked_up")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "in_transit")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "out_for_delivery")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "cancelled")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "refunded")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "booking_failed")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "claim_submitted")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "replacement_requested")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "replacement_approved")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "replacement_dispatched")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "replacement_delivered")).take(100),
+      ctx.db.query("orders").withIndex("by_status", q => q.eq("status", "refund_requested")).take(100),
     ]);
 
     const allOrders = [
@@ -252,7 +252,7 @@ export const getAdminDashboardMetrics = query({
     const activeProducts = await ctx.db
       .query("products")
       .withIndex("by_active", (q) => q.eq("active", true))
-      .collect();
+      .take(500);
     const inactiveProductsSample = await ctx.db
       .query("products")
       .withIndex("by_active", (q) => q.eq("active", false))
