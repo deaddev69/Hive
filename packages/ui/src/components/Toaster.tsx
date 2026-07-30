@@ -28,37 +28,36 @@ export function Toaster() {
   };
 
   return (
-    <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-3 w-full max-w-sm pointer-events-none md:max-w-md">
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-3 w-max max-w-[90vw] pointer-events-none">
       {toasts.map((t) => {
         let Icon = Info;
-        let borderClass = "border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-900/50 dark:bg-sky-950/90 dark:text-sky-200";
-        let iconClass = "text-sky-500";
+        let iconContainerClass = "bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/30 shadow-[0_0_10px_rgba(56,189,248,0.2)]";
         
         if (t.type === "success") {
           Icon = CheckCircle2;
-          borderClass = "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/90 dark:text-emerald-200";
-          iconClass = "text-emerald-500";
+          iconContainerClass = "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30 shadow-[0_0_10px_rgba(52,211,153,0.2)]";
         } else if (t.type === "error") {
           Icon = AlertCircle;
-          borderClass = "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/90 dark:text-rose-200";
-          iconClass = "text-rose-500";
+          iconContainerClass = "bg-rose-500/15 text-rose-400 ring-1 ring-rose-500/30 shadow-[0_0_10px_rgba(251,113,133,0.2)]";
         }
 
         return (
           <div
             key={t.id}
-            className={cn(
-              "flex items-start gap-3 p-4 rounded-xl border shadow-lg backdrop-blur-sm pointer-events-auto transition-all duration-300 ease-out animate-in fade-in slide-in-from-top-4 md:slide-in-from-right-4",
-              borderClass
-            )}
+            className="flex items-center gap-3 p-2.5 pr-4 rounded-full bg-[#121212]/95 backdrop-blur-xl border border-white/[0.08] shadow-[0_16px_40px_-10px_rgba(0,0,0,0.4)] pointer-events-auto transition-all duration-400 ease-out animate-in fade-in zoom-in-95 slide-in-from-top-6"
           >
-            <Icon className={cn("w-5 h-5 mt-0.5 flex-shrink-0", iconClass)} />
-            <div className="flex-1 text-sm font-medium leading-5">{t.message}</div>
+            <div className={cn("p-1.5 rounded-full flex-shrink-0", iconContainerClass)}>
+              <Icon className="w-4 h-4" strokeWidth={2.5} />
+            </div>
+            <div className="text-[13px] font-sans font-medium tracking-wide text-stone-200">
+              {t.message}
+            </div>
+            <div className="w-px h-4 bg-white/10 mx-1 rounded-full" />
             <button
               onClick={() => removeToast(t.id)}
-              className="text-current opacity-60 hover:opacity-100 transition-opacity p-0.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+              className="text-stone-400 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10 active:scale-90"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" strokeWidth={3} />
             </button>
           </div>
         );
