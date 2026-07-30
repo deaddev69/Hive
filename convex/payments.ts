@@ -149,6 +149,19 @@ export const initCheckoutSessionInternal = internalMutation({
       throw new Error("Address verification is pending or rejected. Please update your address to verify serviceability.");
     }
 
+    // Strict Pincode Blocking Guard: Check if destination pincode is active & serviceable
+    if (addr.pincode) {
+      const pincodeRecord = await ctx.db
+        .query("serviceablePincodes")
+        .withIndex("by_pincode", (q) => q.eq("pincode", addr.pincode))
+        .filter((q) => q.eq(q.field("active"), true))
+        .first();
+
+      if (!pincodeRecord) {
+        throw new Error(`Delivery to pincode ${addr.pincode} is currently blocked or not serviceable.`);
+      }
+    }
+
     if (args.items.length === 0) {
       throw new Error("Cart is empty.");
     }
