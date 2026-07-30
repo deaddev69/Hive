@@ -1905,19 +1905,7 @@ export const sendMerchantInviteAction = internalAction({
     // Log the claim link so developers can easily test locally without emails
     console.log(`[sendMerchantInviteAction] Claim Link: ${claimLink}`);
 
-    // 1. WhatsApp Template Notification
-    console.log(`[sendMerchantInviteAction] Sending WhatsApp to ${boutique.phone}`);
-    try {
-      await ctx.runAction(internal.whatsapp.sendTemplateMessage, {
-        recipient: boutique.phone,
-        templateName: "merchant_invite",
-        parameters: [claimLink],
-      });
-    } catch (e) {
-      console.error("[sendMerchantInviteAction] Failed to dispatch WhatsApp invite message:", e);
-    }
-
-    // 2. Owner Email Notification
+    // 1. Owner Email Notification
     const ownerTargetEmail = boutique.ownerEmail || boutique.email;
     console.log(`[sendMerchantInviteAction] Sending Owner Email to ${ownerTargetEmail}`);
     try {
