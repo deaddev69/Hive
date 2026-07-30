@@ -22,12 +22,14 @@ import {
   User,
   Truck,
   ExternalLink,
+  Star,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { useSessionStore } from "@/context/SessionContext";
+import { ReviewModal } from "@/components/product/ReviewModal";
 import { formatCurrency } from "@hive/utils";
 import BeeLoader from "@/components/shared/BeeLoader";
 
@@ -186,7 +188,7 @@ export default function OrderDetailPage() {
           <div className="md:col-span-7 space-y-6">
             <TrackingTimeline status={uiStatus} />
             {order.driverDetails && <DriverTrackingCard driverDetails={order.driverDetails} />}
-            <OrderItemsList items={order.items} />
+            <OrderItemsList items={order.items} orderId={order._id} orderStatus={uiStatus} />
           </div>
 
           {/* Right: Delivery + Pricing + Actions */}
@@ -327,7 +329,13 @@ function TrackingTimeline({ status }: { status: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Component: OrderItemsList — uses Convex orderItems shape
 // ─────────────────────────────────────────────────────────────────────────────
-function OrderItemsList({ items }: { items: any[] }) {
+function OrderItemsList({ items, orderId, orderStatus }: { items: any[]; orderId?: Id<"orders">; orderStatus?: string }) {
+  const reviewStatusMap = useQuery(
+    api.reviews.getOrderReviewStatus,
+    orderId ? { orderId } : "skip"
+  );
+  const [reviewingItem, setReviewingItem] = useState<any | null>(null);
+
   return (
     <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-4 text-left">
       <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2 flex items-center gap-1.5">
@@ -336,38 +344,72 @@ function OrderItemsList({ items }: { items: any[] }) {
       </h3>
 
       <div className="divide-y divide-hive-border/20">
-        {items.map((item, idx) => (
-          <div key={idx} className="flex gap-4 py-4 first:pt-0 last:pb-0">
-            <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-hive-cream/30 border border-hive-border/25 flex-shrink-0">
-              {item.imageUrl ? (
-                <Image src={item.imageUrl} alt={item.productName ?? item.name ?? ""} fill sizes="64px" className="object-cover" />
-              ) : (
-                <div className="w-full h-full bg-hive-comb/30" />
-              )}
-            </div>
+        {items.map((item, idx) => {
+          const isReviewed = Boolean(item._id && reviewStatusMap?.[item._id]);
 
-            <div className="flex-1 flex flex-col sm:flex-row justify-between sm:items-start gap-2">
-              <div className="space-y-1">
-                <h4 className="text-xs font-bold text-hive-dark leading-tight">{item.productName ?? item.name}</h4>
-                <div className="flex gap-2 flex-wrap items-center">
-                  <span className="text-[9px] font-extrabold text-hive-dark bg-hive-comb px-2 py-0.5 rounded-lg border border-hive-gold/15">
-                    Size: {item.variantSize ?? item.size}
+          return (
+            <div key={idx} className="flex gap-4 py-4 first:pt-0 last:pb-0">
+              <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-hive-cream/30 border border-hive-border/25 flex-shrink-0">
+                {item.imageUrl ? (
+                  <Image src={item.imageUrl} alt={item.productName ?? item.name ?? ""} fill sizes="64px" className="object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-hive-comb/30" />
+                )}
+              </div>
+
+              <div className="flex-1 flex flex-col sm:flex-row justify-between sm:items-start gap-2">
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-hive-dark leading-tight">{item.productName ?? item.name}</h4>
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <span className="text-[9px] font-extrabold text-hive-dark bg-hive-comb px-2 py-0.5 rounded-lg border border-hive-gold/15">
+                      Size: {item.variantSize ?? item.size}
+                    </span>
+                    <span className="text-[9px] font-bold text-hive-text-muted">Qty: {item.quantity}</span>
+                  </div>
+
+                  {/* Review Action for Delivered Orders */}
+                  {orderStatus === "delivered" && orderId && item._id && (
+                    <div className="pt-1">
+                      {isReviewed ? (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                          <Star className="w-3 h-3 fill-[#F5C22B] text-[#F5C22B]" /> Reviewed
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setReviewingItem(item)}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-[#F5C22B] hover:bg-[#E0B024] text-slate-900 font-extrabold text-[10px] rounded-lg shadow-xs transition-all cursor-pointer"
+                        >
+                          <Star className="w-3 h-3 fill-slate-900" /> Rate & Review Item
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-extrabold text-hive-dark block">
+                    {formatCurrency((item.priceAtPurchase ?? item.price) * item.quantity)}
                   </span>
-                  <span className="text-[9px] font-bold text-hive-text-muted">Qty: {item.quantity}</span>
+                  <span className="text-[9px] text-hive-text-muted mt-0.5 block">
+                    {formatCurrency(item.priceAtPurchase ?? item.price)} × {item.quantity}
+                  </span>
                 </div>
               </div>
-              <div className="text-right">
-                <span className="text-xs font-extrabold text-hive-dark block">
-                  {formatCurrency((item.priceAtPurchase ?? item.price) * item.quantity)}
-                </span>
-                <span className="text-[9px] text-hive-text-muted mt-0.5 block">
-                  {formatCurrency(item.priceAtPurchase ?? item.price)} × {item.quantity}
-                </span>
-              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
+
+      {/* Review Modal */}
+      {reviewingItem && orderId && (
+        <ReviewModal
+          isOpen={Boolean(reviewingItem)}
+          onClose={() => setReviewingItem(null)}
+          orderId={orderId}
+          orderItemId={reviewingItem._id}
+          productName={reviewingItem.productName ?? reviewingItem.name}
+          productImage={reviewingItem.imageUrl}
+        />
+      )}
     </div>
   );
 }

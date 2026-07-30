@@ -1109,11 +1109,20 @@ export default defineSchema({
     customerId:         v.id("users"),
     orderId:            v.id("orders"),
     orderItemId:        v.id("orderItems"),
-    rating:             v.number(),                 // 1–5 integer
+    rating:             v.number(),                 // 1–5 integer (Product & Seller)
+    platformRating:     v.optional(v.number()),     // 1–5 integer (Delivery & App experience)
     reviewText:         v.optional(v.string()),
+    fitResponse:        v.optional(v.union(
+                          v.literal("too_small"),
+                          v.literal("perfect_fit"),
+                          v.literal("too_large")
+                        )),
+    images:             v.optional(v.array(v.union(v.string(), ImageAsset))),
     isVerifiedPurchase: v.boolean(),                // always true (enforced)
     isFlagged:          v.boolean(),
     isPublished:        v.boolean(),
+    sellerReply:        v.optional(v.string()),
+    sellerRepliedAt:    v.optional(v.number()),
     flagReason:         v.optional(v.string()),
     moderatedBy:        v.optional(v.id("users")),
     moderatedAt:        v.optional(v.number()),
@@ -1124,7 +1133,10 @@ export default defineSchema({
     .index("by_boutiqueId",          ["boutiqueId"])
     .index("by_customerId",          ["customerId"])
     .index("by_orderId",             ["orderId"])
-    .index("by_productId_published", ["productId", "isPublished"]),
+    .index("by_orderItemId",          ["orderItemId"])
+    .index("by_orderId_orderItemId", ["orderId", "orderItemId"])
+    .index("by_productId_published", ["productId", "isPublished"])
+    .index("by_boutiqueId_published", ["boutiqueId", "isPublished"]),
 
   // ─── HIVE SCORES ──────────────────────────────────────────────────────────
   hiveScores: defineTable({
