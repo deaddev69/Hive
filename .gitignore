@@ -65,3 +65,11 @@ HIVE_BACKEND_SPEC.md
 HIVE_CONVEX_DATA_MODEL.md
 HIVE_PRD_V2.2.md
 HIVE_SYSTEM_ARCHITECTURE.md
+.expo/
+*.jpeg
+*.jpg
+*.png
+!**/assets/**/*.png
+!**/public/**/*.png
+!**/public/**/*.jpg
+!**/public/**/*.jpeg
