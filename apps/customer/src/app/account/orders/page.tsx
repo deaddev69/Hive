@@ -15,7 +15,7 @@ import {
 import { useOrderStore, Order } from "@/store/order-store";
 import { ReviewModal } from "@/components/product/ReviewModal";
 import { useQuery } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "../../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
