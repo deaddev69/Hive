@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
-import { Plus, Edit3, CheckCircle2, XCircle, AlertCircle, ArrowLeft, Loader2, Search, MapPin, Store } from "lucide-react";
+import { Plus, Edit3, CheckCircle2, XCircle, AlertCircle, ArrowLeft, Loader2, Search, MapPin, Store, Mail } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
@@ -28,6 +28,9 @@ export default function AdminBoutiquesPage() {
   const rejectBoutique = useMutation(api.boutiques.rejectBoutique);
   const suspendBoutique = useMutation(api.boutiques.suspendBoutique);
   const softDeleteBoutique = useMutation(api.boutiques.softDeleteBoutique);
+  const resendInvite = useMutation(api.boutiques.resendBoutiqueInvite);
+
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   // Form State
   const [boutiqueName, setBoutiqueName] = useState("");
@@ -142,6 +145,19 @@ export default function AdminBoutiquesPage() {
     } catch (err: any) {
       const errorMessage = err?.data || err?.message || "Unknown error";
       alert(`Failed to set boutique status to ${action}: ` + errorMessage);
+    }
+  };
+
+  const handleResendInvite = async (boutiqueId: any) => {
+    setResendingId(boutiqueId);
+    try {
+      await resendInvite({ boutiqueId });
+      alert("Onboarding email dispatched via Resend successfully!");
+    } catch (err: any) {
+      const errorMessage = err?.data || err?.message || "Unknown error";
+      alert("Failed to resend onboarding email: " + errorMessage);
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -467,16 +483,33 @@ export default function AdminBoutiquesPage() {
                       </div>
 
                       {/* Action buttons */}
-                      <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                        <Link href={`/admin/boutiques/${boutique._id}`}>
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                        <div className="flex items-center gap-2">
+                          <Link href={`/admin/boutiques/${boutique._id}`}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex items-center gap-1 hover:bg-slate-100 text-xs py-2 px-3 rounded-xl"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" /> Edit Profile
+                            </Button>
+                          </Link>
+
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex items-center gap-1 hover:bg-slate-100 text-xs py-2 px-3 rounded-xl"
+                            disabled={resendingId === boutique._id}
+                            onClick={() => handleResendInvite(boutique._id)}
+                            className="flex items-center gap-1 hover:bg-amber-50 text-amber-800 border-amber-200 text-xs py-2 px-3 rounded-xl font-bold bg-amber-50/40"
                           >
-                            <Edit3 className="w-3.5 h-3.5" /> Edit Profile
+                            {resendingId === boutique._id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Mail className="w-3.5 h-3.5" />
+                            )}
+                            Resend Email
                           </Button>
-                        </Link>
+                        </div>
 
                         <div className="flex items-center gap-2">
                           {!isApproved && (
