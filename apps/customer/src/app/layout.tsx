@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   },
   description: "Need instant clothes delivery in Kochi? Shop local stores online and get clothes, dresses, and outfits delivered to your door in 1-2 hours across Ernakulam.",
   icons: {
-    icon: "/logo.png",
+    icon: "/logo.png?v=2",
     apple: "/apple-touch-icon.png?v=2",
   },
 };

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "Hive Marketplace Admin Dashboard",
   description: "HIVE Central Marketplace Source of Truth Admin Panel",
   icons: {
-    icon: "/logo.png",
+    icon: "/logo.png?v=2",
     apple: "/apple-touch-icon.png?v=2",
   },
 };
