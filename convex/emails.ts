@@ -92,8 +92,8 @@ export const sendOrderEmail = internalAction({
       return;
     }
 
-    // Production: set RESEND_FROM_EMAIL=Hive Marketplace <orders@hive.in> on the Convex dashboard
-    const fromEmail = process.env.RESEND_FROM_EMAIL || "Hive Marketplace <onboarding@resend.dev>";
+    // Production: set RESEND_FROM_EMAIL=Hive Partners <onboarding@hivenow.in> on the Convex dashboard
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "Hive Partners <onboarding@hivenow.in>";
 
     // Fallbacks
     const customerName = invoice?.customerName || user?.email || "Hive Customer";
@@ -218,7 +218,7 @@ export const sendNotificationEmail = internalAction({
       });
       return;
     }
-    const fromEmail = "Hive Marketplace <onboarding@resend.dev>";
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "Hive Partners <onboarding@hivenow.in>";
     await sendViaResend(ctx, apiKey, fromEmail, args.to, args.subject, args.html, templateName);
   },
 });
