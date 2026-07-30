@@ -9,7 +9,8 @@ import {
   Calendar, 
   ArrowRight,
   Package,
-  Inbox
+  Inbox,
+  Star
 } from "lucide-react";
 import { useOrderStore, Order } from "@/store/order-store";
 
@@ -153,14 +154,36 @@ function OrderCard({ order }: { order: Order }) {
 
       {/* Action button panel */}
       <div className="flex flex-col sm:flex-row md:flex-col justify-center gap-2 pt-3 border-t border-hive-border/20 md:border-t-0 md:pt-0">
-        <button
-          type="button"
-          onClick={() => router.push(`/orders/${order.id}`)}
-          className="h-10 px-5 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm"
-        >
-          <span>Track Order</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
+        {order.status === "delivered" ? (
+          <>
+            <button
+              type="button"
+              onClick={() => onOpenReview ? onOpenReview(order) : router.push(`/orders/${order.id}`)}
+              className="h-10 px-5 bg-[#F5C22B] text-slate-900 hover:bg-[#E0B024] active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-wider text-[10px] flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <Star className="w-3.5 h-3.5 fill-slate-900" />
+              <span>Rate & Review</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push(`/orders/${order.id}`)}
+              className="h-9 px-4 border border-hive-border/60 text-hive-dark hover:bg-hive-cream/30 active:scale-[0.98] transition-all rounded-xl font-bold text-[10px] flex items-center justify-center gap-1 cursor-pointer"
+            >
+              <span>View Details</span>
+              <ChevronRight className="w-3 h-3 text-hive-text-muted" />
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => router.push(`/orders/${order.id}`)}
+            className="h-10 px-5 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+          >
+            <span>Track Order</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
     </div>

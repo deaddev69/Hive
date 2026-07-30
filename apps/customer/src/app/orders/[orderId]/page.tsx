@@ -23,6 +23,7 @@ import {
   Truck,
   ExternalLink,
   Star,
+  Sparkles,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -187,6 +188,7 @@ export default function OrderDetailPage() {
           {/* Left: Timeline + Items */}
           <div className="md:col-span-7 space-y-6">
             <TrackingTimeline status={uiStatus} />
+            {uiStatus === "delivered" && <DeliveredReviewBanner items={order.items} orderId={order._id} />}
             {order.driverDetails && <DriverTrackingCard driverDetails={order.driverDetails} />}
             <OrderItemsList items={order.items} orderId={order._id} orderStatus={uiStatus} />
           </div>
@@ -622,6 +624,68 @@ function OrderStatusBadge({ status }: { status: string }) {
     <span className={`text-[9px] font-extrabold border px-2 py-0.5 rounded-lg uppercase tracking-wider inline-block ${className}`}>
       {label}
     </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Component: DeliveredReviewBanner — Prominent post-delivery review prompt
+// ─────────────────────────────────────────────────────────────────────────────
+function DeliveredReviewBanner({ items, orderId }: { items: any[]; orderId: Id<"orders"> }) {
+  const reviewStatusMap = useQuery(api.reviews.getOrderReviewStatus, { orderId });
+  const [reviewingItem, setReviewingItem] = useState<any | null>(null);
+
+  const unreviewedItem = items.find((it) => it._id && !reviewStatusMap?.[it._id]);
+
+  if (!unreviewedItem && reviewStatusMap && Object.keys(reviewStatusMap).length > 0) {
+    return (
+      <div className="p-4 bg-emerald-50/80 border border-emerald-200/80 rounded-3xl flex items-center justify-between text-left shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xs font-black text-slate-900">Thank you for your review!</span>
+            <span className="text-[10px] text-slate-500 font-medium">Your feedback helps local boutique creators thrive.</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-3xl shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-left">
+      <div className="flex items-center gap-3.5">
+        <div className="w-11 h-11 rounded-2xl bg-[#F5C22B]/20 border border-[#F5C22B]/40 flex items-center justify-center text-[#F5C22B] shrink-0">
+          <Star className="w-6 h-6 fill-current" />
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[9px] font-black uppercase tracking-widest text-[#F5C22B]">ORDER DELIVERED</span>
+          <h4 className="text-sm font-black text-white">How did your purchase fit & feel?</h4>
+          <p className="text-[11px] text-slate-300 font-medium">Rate the quality, fit, and delivery experience.</p>
+        </div>
+      </div>
+
+      {unreviewedItem && (
+        <button
+          onClick={() => setReviewingItem(unreviewedItem)}
+          className="px-5 py-2.5 bg-[#F5C22B] hover:bg-[#E0B024] text-slate-900 font-extrabold text-xs rounded-xl uppercase tracking-wider shadow-md transition-all shrink-0 cursor-pointer flex items-center gap-1.5"
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Rate & Review</span>
+        </button>
+      )}
+
+      {reviewingItem && (
+        <ReviewModal
+          isOpen={Boolean(reviewingItem)}
+          onClose={() => setReviewingItem(null)}
+          orderId={orderId}
+          orderItemId={reviewingItem._id}
+          productName={reviewingItem.productName ?? reviewingItem.name}
+          productImage={reviewingItem.imageUrl}
+        />
+      )}
+    </div>
   );
 }
 
