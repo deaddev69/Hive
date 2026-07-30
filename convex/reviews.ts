@@ -3,7 +3,7 @@
 
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthenticatedUser, getMyBoutique, requireRole } from "./lib/auth";
+import { getAuthenticatedUser, getCurrentUserOrNull, getMyBoutique, requireRole } from "./lib/auth";
 import { ImageAsset } from "./schema";
 import { getPublicUrl } from "./media/api";
 
