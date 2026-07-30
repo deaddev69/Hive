@@ -454,6 +454,62 @@ export default function BoutiqueOrders() {
                             )}
                           </div>
                         )}
+
+                        {order.shipment && (order.shipment.providerBookingId || order.shipment.awbNumber) && (
+                          <div className="mt-2.5 p-3 bg-white border border-slate-200/80 rounded-xl text-left shadow-sm">
+                            <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-100 pb-1">
+                              Rider Information
+                            </h4>
+                            {order.shipment.driverName ? (
+                              <div className="flex flex-col gap-2 text-[11px]">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-slate-400">👤</span>
+                                  <span className="font-bold text-slate-800">{order.shipment.driverName}</span>
+                                </div>
+                                {order.shipment.driverPhone && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-slate-400">📞</span>
+                                    <span className="font-medium text-slate-700">{order.shipment.driverPhone}</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-slate-400">🛵</span>
+                                  <span className="font-mono text-slate-600">{order.shipment.vehiclePlate || "N/A"}</span>
+                                </div>
+                                {order.shipment.etaMinutes != null && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-slate-400">⏱</span>
+                                    <span className="font-medium text-slate-700">{order.shipment.etaMinutes} mins away</span>
+                                  </div>
+                                )}
+                                <div className="flex gap-2 mt-1">
+                                  {order.shipment.liveTrackingUrl && (
+                                    <a
+                                      href={order.shipment.liveTrackingUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex-1 text-center py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold transition-all border border-blue-200/50"
+                                    >
+                                      Track Rider
+                                    </a>
+                                  )}
+                                  {order.shipment.driverPhone && (
+                                    <a
+                                      href={`tel:${order.shipment.driverPhone}`}
+                                      className="flex-1 text-center py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold transition-all border border-emerald-200/50"
+                                    >
+                                      Call Rider
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-[11px] font-medium text-slate-500 italic py-1">
+                                Waiting for Porter to assign a rider.
+                              </div>
+                            )}
+                          </div>
+                        )}
                         
                         {order.status === "confirmed" && (
                           <button

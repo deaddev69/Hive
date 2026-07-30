@@ -455,7 +455,44 @@ export function ShipmentDetailsClient({ shipmentId }: { shipmentId: string }) {
             </Card>
           )}
 
-          {/* Card B: Vertical Webhook tracking events timeline */}
+          {/* Rider Assignment Card */}
+          {shipment.driverName && (
+            <Card className="border border-hive-border bg-white shadow-sm rounded-2xl p-6">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                <Truck className="w-4.5 h-4.5 text-slate-500" /> Rider Assignment
+              </h3>
+              <div className="grid grid-cols-2 gap-4 text-xs font-sans text-slate-700">
+                <div>
+                  <span className="block font-bold text-slate-400 uppercase text-[9px] tracking-wider mb-1">Rider Name</span>
+                  <span className="font-extrabold text-slate-900">{shipment.driverName}</span>
+                </div>
+                <div>
+                  <span className="block font-bold text-slate-400 uppercase text-[9px] tracking-wider mb-1">Phone</span>
+                  <span className="font-extrabold text-slate-900">{shipment.driverPhone || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="block font-bold text-slate-400 uppercase text-[9px] tracking-wider mb-1">Vehicle</span>
+                  <span className="font-extrabold text-slate-900 font-mono">{shipment.vehiclePlate || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="block font-bold text-slate-400 uppercase text-[9px] tracking-wider mb-1">ETA</span>
+                  <span className="font-extrabold text-slate-900">{shipment.etaMinutes != null ? `${shipment.etaMinutes} mins` : "N/A"}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="block font-bold text-slate-400 uppercase text-[9px] tracking-wider mb-1">Live Tracking</span>
+                  {shipment.liveTrackingUrl ? (
+                    <a href={shipment.liveTrackingUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-extrabold flex items-center gap-1">
+                      Track on Porter ↗
+                    </a>
+                  ) : (
+                    <span className="font-extrabold text-slate-900">Not Available</span>
+                  )}
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Card C: Vertical Webhook tracking events timeline */}
           <Card className="border border-hive-border bg-white shadow-sm rounded-2xl p-6">
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider mb-4 flex items-center gap-1.5">
               <Clock className="w-4.5 h-4.5 text-slate-500" /> Tracking Event History

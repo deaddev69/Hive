@@ -99,11 +99,13 @@ export default function OrderDetailPage() {
       // Step 2 — Boutique Preparing (confirmed / packed)
       confirmed:                 "confirmed",
       packed:                    "confirmed",
-      // Step 3 — Picked Up (en route to customer)
-      pickup_scheduled:          "picked_up",
+      // Step 3 — Rider Assigned
+      pickup_scheduled:          "rider_assigned",
+      driver_assigned:           "rider_assigned",
+      // Step 4 — Picked Up (en route to customer)
       picked_up:                 "picked_up",
       in_transit:                "picked_up",
-      // Step 4 — Out For Delivery
+      // Step 5 — Out For Delivery
       out_for_delivery:          "out_for_delivery",
       // Step 5 — Delivered (and all post-delivery states)
       delivered:                 "delivered",
@@ -236,7 +238,8 @@ export default function OrderDetailPage() {
 // ─────────────────────────────────────────────────────────────────────────────
 function TrackingTimeline({ status }: { status: string }) {
   const steps = [
-    { key: "confirmed", label: "Partner Confirmation", desc: "Boutique is preparing your order", statuses: ["placed", "pending_confirmation", "confirmed", "packed", "pickup_scheduled"] },
+    { key: "confirmed", label: "Partner Confirmation", desc: "Boutique is preparing your order", statuses: ["placed", "pending_confirmation", "confirmed", "packed"] },
+    { key: "rider_assigned", label: "Rider Assigned", desc: "A delivery partner is heading to the boutique", statuses: ["pickup_scheduled", "driver_assigned", "rider_assigned"] },
     { key: "picked_up", label: "Dispatched", desc: "Order handed over to courier", statuses: ["picked_up"] },
     { key: "in_transit", label: "In Transit", desc: "Arriving at your doorstep", statuses: ["in_transit", "out_for_delivery"] },
     { key: "delivered", label: "Delivered", desc: "Order completed — enjoy your outfit!", statuses: ["delivered", "claim_submitted", "refund_requested", "refunded"] },
@@ -918,6 +921,7 @@ function InvoiceInformationCard({ orderId }: { orderId: string }) {
 // Component: DriverTrackingCard
 // ─────────────────────────────────────────────────────────────────────────────
 function DriverTrackingCard({ driverDetails }: { driverDetails: any }) {
+  if (!driverDetails?.name) return null;
   return (
     <div className="bg-white border border-hive-border/60 rounded-3xl p-6 shadow-sm space-y-4 hover:border-hive-gold/30 transition-all duration-300 relative overflow-hidden group">
       {/* Decorative subtle background gradient */}
@@ -934,8 +938,14 @@ function DriverTrackingCard({ driverDetails }: { driverDetails: any }) {
             <User className="w-5 h-5 text-hive-dark" />
           </div>
           <div>
-            <p className="text-sm font-extrabold text-hive-dark">{driverDetails.name || "Delivery Associate"}</p>
+            <p className="text-sm font-extrabold text-hive-dark">{driverDetails.name}</p>
             <p className="text-[10px] text-hive-text-muted font-mono">{driverDetails.vehiclePlate || "Vehicle details pending"}</p>
+            {driverDetails.etaMinutes != null && (
+              <p className="text-[11px] font-medium text-hive-dark mt-1 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-hive-gold" />
+                Arriving in {driverDetails.etaMinutes} mins
+              </p>
+            )}
           </div>
         </div>
 

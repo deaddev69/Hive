@@ -928,6 +928,11 @@ export const getBoutiqueOrders = query({
           awbNumber: shipment.awbNumber || null,
           status: shipment.status,
           trackingUrl: shipment.trackingUrl || null,
+          driverName: shipment.driverName || null,
+          driverPhone: shipment.driverPhone || null,
+          vehiclePlate: shipment.vehiclePlate || null,
+          etaMinutes: shipment.etaMinutes ?? null,
+          liveTrackingUrl: shipment.liveTrackingUrl || null,
         } : null,
         totalBasePrice,
         totalPayout,
@@ -1617,6 +1622,8 @@ export const getBoutiqueOrderById = query({
 
     const customerUser = await ctx.db.get(order.customerId);
 
+    const shipment = order.shipmentId ? await ctx.db.get(order.shipmentId) : null;
+
     return {
       ...order,
       items,
@@ -1624,6 +1631,19 @@ export const getBoutiqueOrderById = query({
       customerPhone: customerUser?.phone || invoice?.customerPhone || null,
       customerName: customerProfile?.displayName || "Customer",
       boutiqueName: boutique.boutiqueName || boutique.name || "Boutique",
+      shipment: shipment ? {
+        _id: shipment._id,
+        provider: shipment.provider,
+        providerBookingId: shipment.providerBookingId || shipment.awbNumber || null,
+        awbNumber: shipment.awbNumber || null,
+        status: shipment.status,
+        trackingUrl: shipment.trackingUrl || null,
+        driverName: shipment.driverName || null,
+        driverPhone: shipment.driverPhone || null,
+        vehiclePlate: shipment.vehiclePlate || null,
+        etaMinutes: shipment.etaMinutes ?? null,
+        liveTrackingUrl: shipment.liveTrackingUrl || null,
+      } : null,
     };
   },
 });
