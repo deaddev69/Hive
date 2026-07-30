@@ -672,13 +672,13 @@ export const getOrderDetails = query({
 const VALID_TRANSITIONS: Record<string, string[]> = {
   pending_payment: ["pending_confirmation", "cancelled"],
   pending_confirmation: ["confirmed", "cancelled"],
-  confirmed: ["packed", "cancelled"],
-  packed: ["confirmed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery", "cancelled"],
-  pickup_scheduled: ["picked_up", "in_transit", "out_for_delivery", "cancelled"],
+  confirmed: ["packed", "delivered", "cancelled"],
+  packed: ["confirmed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery", "delivered", "cancelled"],
+  pickup_scheduled: ["picked_up", "in_transit", "out_for_delivery", "delivered", "cancelled"],
   picked_up: ["in_transit", "out_for_delivery", "delivered", "cancelled"],
   in_transit: ["out_for_delivery", "delivered", "cancelled"],
   out_for_delivery: ["delivered", "cancelled"],
-  booking_failed: ["pickup_scheduled", "cancelled"],
+  booking_failed: ["pickup_scheduled", "delivered", "cancelled"],
   delivered: ["claim_submitted", "refund_requested", "refunded"],
   cancelled: [],
   claim_submitted: ["refund_requested", "replacement_requested"],
@@ -831,12 +831,15 @@ export const updateOrderStatus = mutation({
     if (args.status === "in_transit" && !order.inTransitAt) patch.inTransitAt = now;
     if (args.status === "out_for_delivery" && !order.outForDeliveryAt) patch.outForDeliveryAt = now;
     if (args.status === "delivered") {
-      if (!order.shipmentId) {
-        throw new Error("Cannot transition order to delivered: order does not have an associated shipment.");
-      }
-      const shipment = await ctx.db.get(order.shipmentId);
-      if (!shipment || shipment.status !== "delivered") {
-        throw new Error("Cannot transition order to delivered: associated shipment is not delivered.");
+      if (order.shipmentId) {
+        const shipment = await ctx.db.get(order.shipmentId);
+        if (shipment && shipment.status !== "delivered") {
+          await ctx.db.patch(order.shipmentId, {
+            status: "delivered",
+            deliveredAt: now,
+            updatedAt: now,
+          });
+        }
       }
       if (!order.deliveredAt) {
         patch.deliveredAt = now;
