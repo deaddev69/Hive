@@ -197,8 +197,8 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
 
       {/* ── SECTION 5: TRUST REASSURANCE ── */}
       <div className="border-t border-stone-100 pt-4 mt-3 py-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase select-none">
-        <span className={product.returnsAccepted === false ? "text-amber-800 font-extrabold" : ""}>
-          {product.returnsAccepted === false ? "Final Sale — No Returns" : "Easy exchanges"}
+        <span className={product.returnsAccepted === false ? "text-red-700 font-extrabold" : "text-emerald-700 font-extrabold"}>
+          {product.returnsAccepted === false ? "🔒 Final Sale — No Voluntary Returns" : "🛡️ 24h Easy Returns Accepted"}
         </span>
         <span className="text-stone-300">•</span>
         <span>{product.sameDayEligible ? "Same-Day Delivery" : "Express Delivery"}</span>
@@ -271,33 +271,40 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             onClick={() => setOpenAccordion(openAccordion === "returns" ? null : "returns")}
             className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900 focus:outline-none"
           >
-            <span>Delivery & Returns</span>
+            <span>Delivery & 24h Return Policy</span>
             <span className="text-stone-400 text-xs font-normal">
               {openAccordion === "returns" ? "−" : "+"}
             </span>
           </button>
           {openAccordion === "returns" && (
-            <div className="text-xs text-stone-600 leading-relaxed font-medium pt-1 space-y-2 text-left animate-fade-in">
+            <div className="text-xs text-stone-600 leading-relaxed font-medium pt-1 space-y-2.5 text-left animate-fade-in">
               {product.returnsAccepted === false ? (
-                <p>
-                  • <strong className="text-amber-800">Final Sale Item</strong>: This product is non-returnable and non-refundable unless physically damaged, defective, or incorrect item received.
-                </p>
+                <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-2xl space-y-1.5 text-xs text-slate-800 font-medium">
+                  <p className="font-bold text-red-700 flex items-center gap-1.5">
+                    <span>🔒 Final Sale — Voluntary Returns Not Accepted</span>
+                  </p>
+                  <p className="text-[11px] text-stone-600 leading-relaxed">
+                    This boutique has marked this product as Final Sale. Voluntary change-of-mind or size returns are not accepted.
+                  </p>
+                  <p className="text-[11px] font-extrabold text-slate-900 border-t border-stone-200 pt-1.5 mt-1">
+                    🛡️ Compulsory Guarantee: If you receive a damaged, defective, or wrong item, returns/refunds are 100% compulsory & covered within 24 hours of delivery.
+                  </p>
+                </div>
               ) : (
-                <p>
-                  • <strong>1-Day Return Window</strong>: Return requests must be initiated within 24 hours of delivery.
-                </p>
+                <div className="p-3 bg-emerald-50/50 border border-emerald-200/60 rounded-2xl space-y-1.5 text-xs text-emerald-950 font-medium">
+                  <p className="font-bold text-emerald-800 flex items-center gap-1.5">
+                    <span>🛡️ 24-Hour Easy Returns & Exchanges</span>
+                  </p>
+                  <p className="text-[11px] text-emerald-900/80 leading-relaxed">
+                    This boutique accepts 24-hour voluntary returns and size exchanges from the moment your order is delivered.
+                  </p>
+                  <p className="text-[11px] font-extrabold text-slate-900 border-t border-emerald-200/60 pt-1.5 mt-1">
+                    🛡️ Compulsory Guarantee: Damaged, defective, or wrong items are 100% guaranteed for full refund or replacement.
+                  </p>
+                </div>
               )}
-              <p>
-                • <strong>No Change-of-Mind</strong>: Returns are eligible for physically damaged, defective, or wrong items only.
-              </p>
-              <p>
-                • <strong>Refund Timeline</strong>: Once approved, refunds are credited back to your original payment method within 5–7 business days.
-              </p>
-              <p>
-                Read our full{" "}
-                <a href="/return-policy" className="underline font-bold text-stone-850 hover:text-stone-950">
-                  Return and Refund Policy
-                </a>.
+              <p className="text-[11px] text-stone-500">
+                • <strong>Refund Timeline</strong>: Once approved, refunds credit back to your original payment method within 5–7 business days.
               </p>
             </div>
           )}

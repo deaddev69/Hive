@@ -756,7 +756,7 @@ export default function CreateProductModal({
         setPrice("");
         setDiscountPrice("");
         setSameDayEligible(false);
-        setReturnsAccepted(true);
+        setReturnsAccepted(myBoutiqueSafe?.returnsAcceptedDefault !== false);
         setFeatured(false);
         setActive(true);
         setImages([]);

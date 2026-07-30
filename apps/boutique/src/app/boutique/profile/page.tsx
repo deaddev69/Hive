@@ -50,6 +50,7 @@ export default function BoutiqueProfile() {
 
   const [saving, setSaving] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
+  const [returnsAcceptedDefault, setReturnsAcceptedDefault] = useState(true);
 
   // Sync details when boutique query resolves
   useEffect(() => {
@@ -85,6 +86,7 @@ export default function BoutiqueProfile() {
       setClosingTime(boutique.closingTime || "21:00");
       setWeeklyClosedDays(boutique.weeklyClosedDays || []);
       setHolidayDates(boutique.holidayDates || []);
+      setReturnsAcceptedDefault(boutique.returnsAcceptedDefault !== false);
     }
   }, [boutique]);
 
@@ -174,6 +176,7 @@ export default function BoutiqueProfile() {
         closingTime,
         weeklyClosedDays,
         holidayDates,
+        returnsAcceptedDefault,
       };
 
       if (logoPayload !== undefined) {
@@ -364,6 +367,37 @@ export default function BoutiqueProfile() {
               </span>
               <div className="bg-amber-50 border border-amber-200/60 p-4 rounded-xl text-xs text-amber-800 font-medium leading-relaxed">
                 Once map coordinates are set through admin, they are locked. To change your store location, you must contact admin and send a support mail to <a href="mailto:support@hivenow.in" className="font-bold underline">support@hivenow.in</a>.
+            {/* Store Default Return Policy Toggle */}
+            <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Default 24-Hour Return Policy
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setReturnsAcceptedDefault(true)}
+                  className={`p-3 rounded-2xl border text-xs font-bold transition-all text-left flex flex-col gap-1 cursor-pointer ${
+                    returnsAcceptedDefault
+                      ? "bg-emerald-50 border-emerald-300 text-emerald-950 shadow-xs"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="font-extrabold flex items-center gap-1">🛡️ Accept 24h Returns</span>
+                  <span className="text-[10px] font-normal text-slate-500">Allow voluntary size/change-of-mind returns within 24h</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReturnsAcceptedDefault(false)}
+                  className={`p-3 rounded-2xl border text-xs font-bold transition-all text-left flex flex-col gap-1 cursor-pointer ${
+                    !returnsAcceptedDefault
+                      ? "bg-stone-100 border-stone-300 text-slate-900 shadow-xs"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="font-extrabold flex items-center gap-1">🔒 Final Sale Default</span>
+                  <span className="text-[10px] font-normal text-slate-500">No voluntary returns (Damaged/wrong items compulsory covered)</span>
+                </button>
               </div>
             </div>
 

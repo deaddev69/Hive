@@ -967,6 +967,7 @@ export const updateBoutiqueProfile = mutation({
                         )
                       ),
     closedUntil:      v.optional(v.number()),
+    returnsAcceptedDefault: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const boutique = await getMyBoutique(ctx);
@@ -1076,6 +1077,7 @@ export const updateBoutiqueProfile = mutation({
       isAcceptingOrders: args.isAcceptingOrders ?? boutique.isAcceptingOrders,
       pauseReason: args.pauseReason ?? boutique.pauseReason,
       closedUntil: args.closedUntil !== undefined ? args.closedUntil : boutique.closedUntil,
+      returnsAcceptedDefault: args.returnsAcceptedDefault !== undefined ? args.returnsAcceptedDefault : boutique.returnsAcceptedDefault,
       
       name: args.boutiqueName ?? boutique.name,
       gstNumber: args.gstNumber ?? boutique.gstNumber,
