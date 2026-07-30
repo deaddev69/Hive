@@ -1898,7 +1898,9 @@ export const sendMerchantInviteAction = internalAction({
       return;
     }
 
-    const claimLink = `https://seller.hivenow.in/invite/${args.rawToken}`;
+    const claimLink = args.rawToken === "claimed"
+      ? "https://seller.hivenow.in"
+      : `https://seller.hivenow.in/invite/${args.rawToken}`;
     
     // Log the claim link so developers can easily test locally without emails
     console.log(`[sendMerchantInviteAction] Claim Link: ${claimLink}`);
@@ -2017,29 +2019,41 @@ export const sendMerchantInviteAction = internalAction({
  * Regenerate and resend a boutique's invite.
  */
 export const resendBoutiqueInvite = mutation({
-  args: { id: v.id("boutiques") },
+  args: { 
+    boutiqueId: v.optional(v.id("boutiques")),
+    id: v.optional(v.id("boutiques")),
+  },
   handler: async (ctx, args) => {
+    const boutiqueId = args.boutiqueId || args.id;
+    if (!boutiqueId) {
+      throw new ConvexError("Boutique ID is required");
+    }
+
     const admin = await requireRole(ctx, "admin");
-    const boutique = await ctx.db.get(args.id);
-    if (!boutique) throw new Error("Boutique not found");
-    if (boutique.ownerUserId) throw new Error("Account already claimed");
+    const boutique = await ctx.db.get(boutiqueId);
+    if (!boutique) {
+      throw new ConvexError("Boutique not found");
+    }
 
     const rawToken = generateInviteToken();
     const hashed = await hashInviteToken(rawToken);
     const now = Date.now();
 
-    await ctx.db.patch(args.id, {
-      inviteTokenHash: hashed,
-      inviteStatus: "sent",
-      inviteSentAt: now,
-      inviteExpiresAt: now + 14 * 24 * 60 * 60 * 1000,
-      inviteRequestedAt: undefined,
-      inviteCreatedBy: admin._id,
-    });
+    // Patch new invite token if not already claimed, or update timestamp
+    if (!boutique.ownerUserId) {
+      await ctx.db.patch(boutiqueId, {
+        inviteTokenHash: hashed,
+        inviteStatus: "sent",
+        inviteSentAt: now,
+        inviteExpiresAt: now + 14 * 24 * 60 * 60 * 1000,
+        inviteRequestedAt: undefined,
+        inviteCreatedBy: admin._id,
+      });
+    }
 
     await ctx.scheduler.runAfter(0, internal.boutiques.sendMerchantInviteAction, {
-      boutiqueId: args.id,
-      rawToken,
+      boutiqueId,
+      rawToken: boutique.ownerUserId ? "claimed" : rawToken,
     });
 
     await ctx.db.insert("auditLogs", {
@@ -2047,10 +2061,10 @@ export const resendBoutiqueInvite = mutation({
       actorRole: "admin",
       action: "boutique.invite_resent",
       entityType: "boutiques",
-      entityId: args.id,
+      entityId: boutiqueId,
       metadata: JSON.stringify({
         inviteEmail: boutique.email,
-        boutiqueId: args.id,
+        boutiqueId,
       }),
       createdAt: now,
     });
