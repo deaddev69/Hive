@@ -222,11 +222,6 @@ export default function OrderDetailPage() {
             <InvoiceInformationCard orderId={order._id} />
 
             <ContextualActionsConvex status={uiStatus} orderId={order._id} cancelReason={order.cancelReason} deliveredAt={order.deliveredAt} />
-
-            {/* Fit Feedback Card — shown only for delivered orders */}
-            {uiStatus === "delivered" && (
-              <FitFeedbackCard orderId={order._id} items={order.items} />
-            )}
           </div>
         </div>
 
@@ -574,27 +569,30 @@ function ContextualActionsConvex({
     if (!isWithinWindow) return null;
 
     return (
-      <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm space-y-3.5">
+      <div className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-xs space-y-3 text-left">
         <div className="space-y-1">
-          <h4 className="text-xs font-extrabold text-hive-dark">Have quality concerns or need a different size?</h4>
-          <p className="text-[10px] text-hive-text-muted leading-relaxed">
-            Our 24-Hour Return & Refund Policy covers you. Report issues or initiate exchanges easily.
+          <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3 text-emerald-600" /> 24-HOUR HIVE GUARANTEE
+          </span>
+          <h4 className="text-xs font-black text-slate-900">Need a size exchange or reporting an issue?</h4>
+          <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+            Report wrong, damaged, or size issue items within 24 hours of delivery.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
           <Link
             href={`/claims/new?orderId=${orderId}&type=issue`}
-            className="flex-1 h-11 border border-red-200 text-red-600 hover:bg-red-50 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm"
+            className="flex-1 h-9 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 active:scale-[0.98] transition-all rounded-xl font-bold uppercase tracking-wider text-[10px] flex items-center justify-center gap-1.5 cursor-pointer"
           >
+            <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
             <span>Report Issue</span>
-            <HelpCircle className="w-3.5 h-3.5" />
           </Link>
           <Link
             href={`/claims/new?orderId=${orderId}&type=exchange`}
-            className="flex-1 h-11 border border-hive-amber text-hive-amber hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm"
+            className="flex-1 h-9 bg-slate-900 hover:bg-slate-800 text-white active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-wider text-[10px] flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
           >
-            <span>Exchange</span>
-            <Ticket className="w-3.5 h-3.5" />
+            <Ticket className="w-3.5 h-3.5 text-[#F5C22B]" />
+            <span>Exchange Size</span>
           </Link>
         </div>
       </div>
@@ -613,7 +611,7 @@ function OrderStatusBadge({ status }: { status: string }) {
     confirmed: { label: "Confirmed", className: "text-indigo-700 bg-indigo-50 border-indigo-200/50" },
     picked_up: { label: "Picked Up", className: "text-purple-700 bg-purple-50 border-purple-200/50" },
     out_for_delivery: { label: "Out For Delivery", className: "text-amber-700 bg-amber-50 border-amber-200/50" },
-    delivered: { label: "Delivered", className: "text-green-700 bg-green-50 border-green-200/50" },
+    delivered: { label: "Delivered", className: "text-emerald-800 bg-emerald-50 border-emerald-300/80 font-black rounded-full px-2.5 py-0.5" },
     cancelled: { label: "Cancelled", className: "text-red-700 bg-red-50 border-red-200/50" },
   };
   const { label, className } = map[status] ?? {
@@ -621,7 +619,8 @@ function OrderStatusBadge({ status }: { status: string }) {
     className: "text-hive-text-muted bg-hive-cream border-hive-border/50",
   };
   return (
-    <span className={`text-[9px] font-extrabold border px-2 py-0.5 rounded-lg uppercase tracking-wider inline-block ${className}`}>
+    <span className={`text-[9px] font-extrabold border px-2 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1 ${className}`}>
+      {status === "delivered" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />}
       {label}
     </span>
   );

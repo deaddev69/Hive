@@ -13,6 +13,7 @@ import {
   Star
 } from "lucide-react";
 import { useOrderStore, Order } from "@/store/order-store";
+import { ReviewModal } from "@/components/product/ReviewModal";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Customer Order History Listing Page
@@ -65,11 +66,26 @@ export default function OrderHistoryPage() {
 // Component: OrdersList
 // ─────────────────────────────────────────────────────────────────────────────
 function OrdersList({ orders }: { orders: Order[] }) {
+  const [reviewingOrder, setReviewingOrder] = useState<Order | null>(null);
+
+  const firstItem = reviewingOrder?.items[0];
+
   return (
     <div className="space-y-4">
       {orders.map((order) => (
-        <OrderCard key={order.id} order={order} />
+        <OrderCard key={order.id} order={order} onOpenReview={(ord) => setReviewingOrder(ord)} />
       ))}
+
+      {reviewingOrder && firstItem && (
+        <ReviewModal
+          isOpen={Boolean(reviewingOrder)}
+          onClose={() => setReviewingOrder(null)}
+          orderId={(reviewingOrder as any)._id || (reviewingOrder.id as any)}
+          orderItemId={(firstItem as any)._id || (firstItem.id as any)}
+          productName={firstItem.name}
+          productImage={firstItem.imageUrl}
+        />
+      )}
     </div>
   );
 }
@@ -77,7 +93,7 @@ function OrdersList({ orders }: { orders: Order[] }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Component: OrderCard
 // ─────────────────────────────────────────────────────────────────────────────
-function OrderCard({ order }: { order: Order }) {
+function OrderCard({ order, onOpenReview }: { order: Order; onOpenReview?: (ord: Order) => void }) {
   const router = useRouter();
   const firstItem = order.items[0];
   const itemsCount = order.items.reduce((acc, item) => acc + item.quantity, 0);
@@ -205,7 +221,7 @@ function OrderStatusBadge({ status }: { status: string }) {
       case "out_for_delivery":
         return "text-amber-700 bg-amber-50 border-amber-200/50";
       case "delivered":
-        return "text-green-700 bg-green-50 border-green-200/50";
+        return "text-emerald-800 bg-emerald-50 border-emerald-300/80 font-black";
       case "cancelled":
         return "text-red-700 bg-red-50 border-red-200/50";
       default:
@@ -226,7 +242,8 @@ function OrderStatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span className={`text-[9px] font-extrabold border px-2 py-0.5 rounded-lg uppercase tracking-wider inline-block ${getStyles()}`}>
+    <span className={`text-[9px] font-extrabold border px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1 ${getStyles()}`}>
+      {status === "delivered" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />}
       {getLabel()}
     </span>
   );
