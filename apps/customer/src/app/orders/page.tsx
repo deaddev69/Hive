@@ -141,8 +141,8 @@ export default function MyOrdersPage() {
           <ReviewModal
             isOpen={Boolean(reviewingOrder)}
             onClose={() => setReviewingOrder(null)}
-            orderId={reviewingOrder._id}
-            orderItemId={firstReviewItem._id}
+            orderId={(reviewingOrder._id || reviewingOrder.convexId || reviewingOrder.id) as any}
+            orderItemId={(firstReviewItem._id || firstReviewItem.id || firstReviewItem.productId) as any}
             productName={firstReviewItem.productName || firstReviewItem.name}
             productImage={firstReviewItem.imageUrl}
           />
