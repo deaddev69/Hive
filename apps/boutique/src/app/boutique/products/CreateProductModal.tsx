@@ -580,6 +580,9 @@ export default function CreateProductModal({
         return found ? found.name : id;
       });
 
+      const finalMaterial = materialType === "Other" ? autoCorrectCapitalization(customMaterialType) : materialType;
+      const finalCare = care === "Other" ? autoCorrectCapitalization(customCare) : care;
+
       const payload = {
         name,
         description,
