@@ -176,8 +176,8 @@ export default function OrderDetailPage() {
               })}
             </p>
           </div>
-          <div className="text-[10px] text-hive-text bg-hive-cream/60 px-3 py-2 rounded-xl border border-hive-border/40 inline-flex items-center gap-1.5 font-bold">
-            <ShieldCheck className="w-3.5 h-3.5 text-hive-gold" />
+          <div className="text-[10px] text-slate-800 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200/80 inline-flex items-center gap-1.5 font-extrabold uppercase tracking-wider">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
             <span>Protected Trial Order</span>
           </div>
         </div>
@@ -279,9 +279,10 @@ function TrackingTimeline({ status }: { status: string }) {
           <div className="absolute left-[13px] top-4 bottom-4 w-[2px] bg-hive-border/40" />
 
           {steps.map((step, idx) => {
-            const done = idx < currentIdx;
-            const active = idx === currentIdx;
-            const upcoming = idx > currentIdx;
+            const isFullyDelivered = status === "delivered";
+            const done = isFullyDelivered || idx < currentIdx;
+            const active = !isFullyDelivered && idx === currentIdx;
+            const upcoming = !isFullyDelivered && idx > currentIdx;
 
             return (
               <div key={step.key} className="flex gap-4 items-start relative">
@@ -289,7 +290,7 @@ function TrackingTimeline({ status }: { status: string }) {
                 <div
                   className={`absolute -left-[22px] w-6 h-6 rounded-full border-2 text-[10px] font-extrabold flex items-center justify-center z-10 transition-all duration-300 ${
                     done
-                      ? "bg-green-500 border-green-500 text-white shadow-sm"
+                      ? "bg-emerald-600 border-emerald-600 text-white shadow-xs"
                       : active
                       ? "bg-hive-dark border-hive-dark text-hive-gold ring-4 ring-hive-gold/10 scale-110 shadow-md"
                       : "bg-white border-hive-border/50 text-hive-text-muted/60"
@@ -366,17 +367,17 @@ function OrderItemsList({ items, orderId, orderStatus }: { items: any[]; orderId
 
                   {/* Review Action for Delivered Orders */}
                   {orderStatus === "delivered" && orderId && item._id && (
-                    <div className="pt-1">
+                    <div className="pt-0.5">
                       {isReviewed ? (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
-                          <Star className="w-3 h-3 fill-[#F5C22B] text-[#F5C22B]" /> Reviewed
+                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80">
+                          <Star className="w-3 h-3 fill-emerald-600 text-emerald-600" /> Reviewed
                         </span>
                       ) : (
                         <button
                           onClick={() => setReviewingItem(item)}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-[#F5C22B] hover:bg-[#E0B024] text-slate-900 font-extrabold text-[10px] rounded-lg shadow-xs transition-all cursor-pointer"
+                          className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 hover:text-slate-900 underline transition-colors cursor-pointer"
                         >
-                          <Star className="w-3 h-3 fill-slate-900" /> Rate & Review Item
+                          <Star className="w-3 h-3 text-amber-500 fill-amber-500" /> Write item review
                         </button>
                       )}
                     </div>
@@ -447,25 +448,29 @@ function DeliveryCard({
         <p className="text-hive-text-muted font-bold mt-1 text-[10px]">Tel: {address.phone}</p>
       </div>
 
-      {/* Slot */}
-      <div className="border-t border-hive-border/20 pt-3.5 space-y-2">
-        <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-          Fitting Schedule
-        </span>
-        <div className="grid grid-cols-2 gap-2 text-xs font-bold text-hive-dark">
-          <div>
-            <p className="text-[10px] text-hive-text-muted font-medium mb-0.5">Date</p>
-            <p>{date}</p>
+      {/* Slot (render only if valid date and slot are provided) */}
+      {date && date !== "—" && slot && slot !== "—" && (
+        <div className="border-t border-hive-border/20 pt-3.5 space-y-2">
+          <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
+            Fitting Schedule
+          </span>
+          <div className="grid grid-cols-2 gap-2 text-xs font-bold text-hive-dark">
+            <div>
+              <p className="text-[10px] text-hive-text-muted font-medium mb-0.5">Date</p>
+              <p>{date}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-hive-text-muted font-medium mb-0.5">Slot</p>
+              <p>{slot}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] text-hive-text-muted font-medium mb-0.5">Slot</p>
-            <p>{slot}</p>
-          </div>
+          {window && (
+            <p className="text-[10px] text-emerald-800 bg-emerald-50 px-3 py-1 rounded-xl border border-emerald-200/50 inline-block font-semibold">
+              {window}
+            </p>
+          )}
         </div>
-        <p className="text-[10px] text-green-700 bg-green-50 px-3 py-1.5 rounded-xl border border-green-200/50 inline-block font-semibold">
-          {window}
-        </p>
-      </div>
+      )}
     </div>
   );
 }
@@ -893,12 +898,15 @@ function InvoiceInformationCard({ orderId }: { orderId: string }) {
         type="button"
         disabled={downloading}
         onClick={() => downloadInvoiceData(invoice)}
-        className="w-full h-11 border border-hive-border text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 mt-2"
+        className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl uppercase tracking-wider text-[11px] flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-50 mt-2"
       >
         {downloading ? (
-          <span className="w-4 h-4 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
+          <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
         ) : (
-          <span>Download Invoice</span>
+          <>
+            <FileText className="w-3.5 h-3.5 text-[#F5C22B]" />
+            <span>Download Official Invoice</span>
+          </>
         )}
       </button>
     </div>
