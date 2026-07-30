@@ -6,7 +6,7 @@ import { SignOutButton } from "@clerk/nextjs";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent, cn } from "@hive/ui";
 import Link from "next/link";
-import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut, Star, Wallet, ChevronRight } from "lucide-react";
+import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut, Star, Wallet, ChevronRight, ShieldCheck, Lock } from "lucide-react";
 import { toast } from "@hive/utils";
 
 export default function BoutiqueProfile() {
@@ -369,37 +369,92 @@ export default function BoutiqueProfile() {
                 Once map coordinates are set through admin, they are locked. To change your store location, you must contact admin and send a support mail to <a href="mailto:support@hivenow.in" className="font-bold underline">support@hivenow.in</a>.
               </div>
             </div>
-            {/* Store Default Return Policy Toggle */}
-            <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                Default 24-Hour Return Policy
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setReturnsAcceptedDefault(true)}
-                  className={`p-3 rounded-2xl border text-xs font-bold transition-all text-left flex flex-col gap-1 cursor-pointer ${
-                    returnsAcceptedDefault
-                      ? "bg-emerald-50 border-emerald-300 text-emerald-950 shadow-xs"
-                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  <span className="font-extrabold flex items-center gap-1">🛡️ Accept 24h Returns</span>
-                  <span className="text-[10px] font-normal text-slate-500">Allow voluntary size/change-of-mind returns within 24h</span>
-                </button>
+            {/* Store Default Return Policy Toggle Card */}
+            <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <label className="text-xs font-black uppercase tracking-wider text-slate-900">
+                    Default 24-Hour Return Policy
+                  </label>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                  Choose your store's default return setting. This auto-applies when adding new products.
+                </p>
+              </div>
 
-                <button
-                  type="button"
-                  onClick={() => setReturnsAcceptedDefault(false)}
-                  className={`p-3 rounded-2xl border text-xs font-bold transition-all text-left flex flex-col gap-1 cursor-pointer ${
-                    !returnsAcceptedDefault
-                      ? "bg-stone-100 border-stone-300 text-slate-900 shadow-xs"
-                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Option A: Accept 24h Returns */}
+                <div
+                  onClick={() => setReturnsAcceptedDefault(true)}
+                  className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between gap-3 text-left ${
+                    returnsAcceptedDefault
+                      ? "bg-emerald-50/70 border-2 border-emerald-600 shadow-xs"
+                      : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
                   }`}
                 >
-                  <span className="font-extrabold flex items-center gap-1">🔒 Final Sale Default</span>
-                  <span className="text-[10px] font-normal text-slate-500">No voluntary returns (Damaged/wrong items compulsory covered)</span>
-                </button>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        returnsAcceptedDefault ? "bg-emerald-600 text-white" : "bg-emerald-100 text-emerald-700"
+                      }`}>
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black text-slate-900">Accept 24h Returns</span>
+                        <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">★ Recommended</span>
+                      </div>
+                    </div>
+
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                      returnsAcceptedDefault ? "bg-emerald-600 text-white" : "border-2 border-slate-300"
+                    }`}>
+                      {returnsAcceptedDefault && <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />}
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
+                    Allow buyers to request voluntary size exchanges or change-of-mind returns within 24 hours of delivery.
+                  </p>
+                </div>
+
+                {/* Option B: Final Sale Default */}
+                <div
+                  onClick={() => setReturnsAcceptedDefault(false)}
+                  className={`p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between gap-3 text-left ${
+                    !returnsAcceptedDefault
+                      ? "bg-slate-900 text-white border-2 border-slate-900 shadow-md"
+                      : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        !returnsAcceptedDefault ? "bg-slate-800 text-[#F5C22B]" : "bg-slate-100 text-slate-700"
+                      }`}>
+                        <Lock className="w-4.5 h-4.5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className={`text-xs font-black ${!returnsAcceptedDefault ? "text-white" : "text-slate-900"}`}>
+                          Final Sale Default
+                        </span>
+                        <span className={`text-[9px] font-bold uppercase tracking-wider ${!returnsAcceptedDefault ? "text-amber-400" : "text-slate-400"}`}>
+                          No Voluntary Returns
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                      !returnsAcceptedDefault ? "bg-[#F5C22B] text-slate-900" : "border-2 border-slate-300"
+                    }`}>
+                      {!returnsAcceptedDefault && <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />}
+                    </div>
+                  </div>
+
+                  <p className={`text-[11px] leading-relaxed font-medium ${!returnsAcceptedDefault ? "text-slate-300" : "text-slate-600"}`}>
+                    No voluntary change-of-mind returns. Damaged or wrong items remain 100% platform guaranteed.
+                  </p>
+                </div>
               </div>
             </div>
 
