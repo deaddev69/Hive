@@ -62,6 +62,8 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       .join(" ");
   };
 
+  const isReturnsAccepted = product.returnsAccepted ?? (product as any).boutique?.returnsAcceptedDefault ?? true;
+
   const hasDescription = product.description && product.description.trim() !== "";
 
   const productDetails = (product as any).details || {};
@@ -197,8 +199,8 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
 
       {/* ── SECTION 5: TRUST REASSURANCE ── */}
       <div className="border-t border-stone-100 pt-4 mt-3 py-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase select-none">
-        <span className={product.returnsAccepted === false ? "text-red-700 font-extrabold" : "text-emerald-700 font-extrabold"}>
-          {product.returnsAccepted === false ? "🔒 Final Sale — No Voluntary Returns" : "🛡️ 24h Easy Returns Accepted"}
+        <span className={!isReturnsAccepted ? "text-red-700 font-extrabold" : "text-emerald-700 font-extrabold"}>
+          {!isReturnsAccepted ? "🔒 Final Sale — No Voluntary Returns" : "🛡️ 24h Easy Returns Accepted"}
         </span>
         <span className="text-stone-300">•</span>
         <span>{product.sameDayEligible ? "Same-Day Delivery" : "Express Delivery"}</span>
@@ -278,7 +280,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
           </button>
           {openAccordion === "returns" && (
             <div className="text-xs text-stone-600 leading-relaxed font-medium pt-1 space-y-2.5 text-left animate-fade-in">
-              {product.returnsAccepted === false ? (
+              {!isReturnsAccepted ? (
                 <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-2xl space-y-1.5 text-xs text-slate-800 font-medium">
                   <p className="font-bold text-red-700 flex items-center gap-1.5">
                     <span>🔒 Final Sale — Voluntary Returns Not Accepted</span>

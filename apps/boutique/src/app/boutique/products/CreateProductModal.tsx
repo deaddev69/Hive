@@ -1151,56 +1151,6 @@ export default function CreateProductModal({
 
             <hr className="border-slate-100 my-1" />
 
-            {/* RETURN & EXCHANGE POLICY CONTROL */}
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">
-                RETURN & EXCHANGE POLICY
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setReturnsAccepted(true)}
-                  className={`p-4 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all cursor-pointer ${
-                    returnsAccepted
-                      ? "border-2 border-emerald-600 bg-emerald-50/70 shadow-xs"
-                      : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" /> Accept 24h Returns
-                    </span>
-                    {returnsAccepted && <Check className="w-4 h-4 text-emerald-700 stroke-[3]" />}
-                  </div>
-                  <span className="text-[11px] text-slate-600 font-medium leading-relaxed">
-                    24-Hour Voluntary Size & Return Window for buyers.
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setReturnsAccepted(false)}
-                  className={`p-4 rounded-2xl border text-left flex flex-col justify-between gap-2.5 transition-all cursor-pointer ${
-                    !returnsAccepted
-                      ? "border-2 border-slate-900 bg-slate-900 text-white shadow-md"
-                      : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-black flex items-center gap-1.5 ${!returnsAccepted ? "text-white" : "text-slate-900"}`}>
-                      <span className="w-2 h-2 rounded-full bg-[#F5C22B]" /> Final Sale — No Returns
-                    </span>
-                    {!returnsAccepted && <Check className="w-4 h-4 text-[#F5C22B] stroke-[3]" />}
-                  </div>
-                  <span className={`text-[11px] font-medium leading-relaxed ${!returnsAccepted ? "text-slate-300" : "text-slate-600"}`}>
-                    Custom tailored or delicate item; non-returnable (Damaged/wrong items compulsory covered).
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <hr className="border-slate-100 -my-3" />
-
             <div className="flex flex-col gap-2">
               <label className="text-[11px] font-black uppercase tracking-widest text-slate-600">1. COMPARED TO A STANDARD SIZE, HOW DOES THIS PRODUCT FIT?</label>
               <div className="flex bg-[#f8fafc] p-1.5 rounded-2xl border border-[#f1f5f9] gap-1">
