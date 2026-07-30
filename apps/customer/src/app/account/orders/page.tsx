@@ -112,6 +112,8 @@ function OrderCard({ order, onOpenReview }: { order: Order; onOpenReview?: (ord:
     }
   };
 
+  const isDelivered = order.status?.toLowerCase() === "delivered";
+
   return (
     <div className="bg-white border border-hive-border/50 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-5 text-left">
       <div className="flex gap-4">
@@ -152,7 +154,7 @@ function OrderCard({ order, onOpenReview }: { order: Order; onOpenReview?: (ord:
             <p className="text-[10px] text-hive-text-muted leading-tight font-medium flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-hive-gold" />
               <span>
-                {order.status === "delivered" ? "Delivered on" : "Expected on"}:{" "}
+                {isDelivered ? "Delivered on" : "Expected on"}:{" "}
                 <span className="font-extrabold text-hive-dark">{order.deliveryDate}</span>
               </span>
             </p>
@@ -170,7 +172,7 @@ function OrderCard({ order, onOpenReview }: { order: Order; onOpenReview?: (ord:
 
       {/* Action button panel */}
       <div className="flex flex-col sm:flex-row md:flex-col justify-center gap-2 pt-3 border-t border-hive-border/20 md:border-t-0 md:pt-0">
-        {order.status === "delivered" ? (
+        {isDelivered ? (
           <>
             <button
               type="button"
@@ -210,8 +212,9 @@ function OrderCard({ order, onOpenReview }: { order: Order; onOpenReview?: (ord:
 // Component: OrderStatusBadge
 // ─────────────────────────────────────────────────────────────────────────────
 function OrderStatusBadge({ status }: { status: string }) {
+  const norm = status?.toLowerCase();
   const getStyles = () => {
-    switch (status) {
+    switch (norm) {
       case "placed":
         return "text-blue-700 bg-blue-50 border-blue-200/50";
       case "confirmed":
@@ -230,20 +233,20 @@ function OrderStatusBadge({ status }: { status: string }) {
   };
 
   const getLabel = () => {
-    switch (status) {
+    switch (norm) {
       case "placed": return "Order Placed";
       case "confirmed": return "Confirmed";
       case "picked_up": return "Picked Up";
       case "out_for_delivery": return "Out For Delivery";
       case "delivered": return "Delivered";
       case "cancelled": return "Cancelled";
-      default: return "Processing";
+      default: return status || "Processing";
     }
   };
 
   return (
     <span className={`text-[9px] font-extrabold border px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1 ${getStyles()}`}>
-      {status === "delivered" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />}
+      {norm === "delivered" && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />}
       {getLabel()}
     </span>
   );
