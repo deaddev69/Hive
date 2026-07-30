@@ -107,7 +107,7 @@ export const submitOrderReview = mutation({
           boutiqueId: order.boutiqueId,
           categoryId: product.categoryId,
           customerId: user._id,
-          sizePurchased: orderItem.size || "M",
+          sizePurchased: (orderItem as any).variantSize || (orderItem as any).size || "M",
           fitResponse: args.fitResponse,
           createdAt: now,
         });

@@ -83,6 +83,7 @@ import type * as porter from "../porter.js";
 import type * as pricingHelpers from "../pricingHelpers.js";
 import type * as products from "../products.js";
 import type * as recommendations from "../recommendations.js";
+import type * as reviews from "../reviews.js";
 import type * as routing from "../routing.js";
 import type * as seed from "../seed.js";
 import type * as seedMutations from "../seedMutations.js";
@@ -206,6 +207,7 @@ declare const fullApi: ApiFromModules<{
   pricingHelpers: typeof pricingHelpers;
   products: typeof products;
   recommendations: typeof recommendations;
+  reviews: typeof reviews;
   routing: typeof routing;
   seed: typeof seed;
   seedMutations: typeof seedMutations;
