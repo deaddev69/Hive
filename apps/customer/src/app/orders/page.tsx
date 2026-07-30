@@ -30,7 +30,7 @@ function toTitleCase(str?: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// /orders — My Orders Page
+// /orders — Customer Orders Page (with Rate & Review action for delivered orders)
 // ─────────────────────────────────────────────────────────────────────────────
 export default function MyOrdersPage() {
   const router = useRouter();
