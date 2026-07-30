@@ -1,14 +1,23 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { ShieldAlert, LogOut, Loader2 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent } from "@hive/ui";
 import { SignOutButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 export default function BoutiqueUnauthorizedPage() {
   const me = useQuery(api.users.getMe);
+  const router = useRouter();
+
+  // Auto-redirect to dashboard if role is valid (e.g. after syncUser upgraded it)
+  useEffect(() => {
+    if (me && (me.role === "boutique" || me.role === "boutique_owner" || me.role === "admin")) {
+      router.replace("/boutique");
+    }
+  }, [me, router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 text-center bg-slate-50">
