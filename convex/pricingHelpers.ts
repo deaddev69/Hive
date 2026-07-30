@@ -3,6 +3,30 @@ import { Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
 
 /**
+ * Helper to get the active platform markup rate based on settings and product base price.
+ */
+export function getPlatformMarkupRate(
+  basePriceRupees: number,
+  settings: {
+    markupRate: number;
+    markupType?: "flat" | "tiered";
+    markupTiers?: Array<{ min_price: number; max_price: number | null; rate: number }>;
+  }
+): number {
+  if (settings.markupType === "tiered" && Array.isArray(settings.markupTiers)) {
+    const tier = settings.markupTiers.find((t) => {
+      const minMatch = basePriceRupees >= t.min_price;
+      const maxMatch = t.max_price === null || t.max_price === undefined || basePriceRupees <= t.max_price;
+      return minMatch && maxMatch;
+    });
+    if (tier) {
+      return tier.rate / 100;
+    }
+  }
+  return settings.markupRate;
+}
+
+/**
  * Calculates the exact financial snapshot for an item at checkout based on current platform settings.
  * Validates the client's provided price against the dynamically calculated price.
  */
@@ -18,14 +42,15 @@ export async function calculateItemFinancials(
     platformFeeRate: 0.02,
   };
 
-  const platformMarkupRateAtPurchase = settings.markupRate;
-  const platformFeeRateAtPurchase = settings.platformFeeRate;
-
   // Fallback to reverse-calculating basePrice if it's missing (e.g. products created before write-time patching)
+  // Reverse calculate using flat rate fallback to avoid complexity/circular dependencies in legacy data
   const basePriceRupees = productRow.basePrice !== undefined 
     ? productRow.basePrice 
-    : Math.floor(productRow.price / (1 + platformMarkupRateAtPurchase));
+    : Math.floor(productRow.price / (1 + (settings.markupRate || 0.15)));
   
+  const platformMarkupRateAtPurchase = getPlatformMarkupRate(basePriceRupees, settings);
+  const platformFeeRateAtPurchase = settings.platformFeeRate;
+
   // Re-calculate the exact customer price dynamically using Charm Pricing (Nearest 9)
   const rawCustomerPriceRupees = basePriceRupees * (1 + platformMarkupRateAtPurchase);
   const customerPriceRupees = Math.ceil(rawCustomerPriceRupees / 10) * 10 - 1;

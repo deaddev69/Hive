@@ -12,6 +12,7 @@ import { updateBoutiqueProductCount } from "./boutiques";
 import { normalizeEmail } from "./users";
 import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
 import { internal } from "./_generated/api";
+import { getPlatformMarkupRate } from "./pricingHelpers";
 import { checkRateLimit } from "./lib/rateLimit";
 import { getPublicUrl } from "./media/api";
 import { haversineKm } from "./lib/serviceability";
@@ -445,8 +446,11 @@ export const createProduct = mutation({
       }
     }
 
-    const settings = await ctx.db.query("platformSettings").first();
-    const markupRate = settings ? settings.markupRate : 0.15;
+    const settings = await ctx.db.query("platformSettings").first() || {
+      markupRate: 0.15,
+      platformFeeRate: 0.02,
+    };
+    const markupRate = getPlatformMarkupRate(args.price, settings);
     
     const rawCustomerPrice = args.price * (1 + markupRate);
     const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
@@ -689,8 +693,11 @@ export const updateProduct = mutation({
       ? (merchantTier === "Bronze" ? "pending" : "approved")
       : undefined;
 
-    const settings = await ctx.db.query("platformSettings").first();
-    const markupRate = settings ? settings.markupRate : 0.15;
+    const settings = await ctx.db.query("platformSettings").first() || {
+      markupRate: 0.15,
+      platformFeeRate: 0.02,
+    };
+    const markupRate = getPlatformMarkupRate(args.price, settings);
     
     const rawCustomerPrice = args.price * (1 + markupRate);
     const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;

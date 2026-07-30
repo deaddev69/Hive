@@ -888,11 +888,34 @@ export default function CreateProductModal({
                 required
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
               />
-              {price && platformSettings && (
-                <div className="text-[11px] font-medium text-slate-500 mt-1">
-                  Customer Display Price: <span className="font-bold text-slate-700">₹{Math.ceil((parseFloat(price) * (1 + platformSettings.markupRate)) / 10) * 10 - 1}</span>
-                </div>
-              )}
+              {price && platformSettings && (() => {
+                const baseVal = parseFloat(price);
+                if (isNaN(baseVal) || baseVal < 0) return null;
+                
+                let rate = platformSettings.markupRate;
+                if (platformSettings.markupType === "tiered" && Array.isArray(platformSettings.markupTiers)) {
+                  const tier = platformSettings.markupTiers.find((t: any) => {
+                    const minMatch = baseVal >= t.min_price;
+                    const maxMatch = t.max_price === null || t.max_price === undefined || baseVal <= t.max_price;
+                    return minMatch && maxMatch;
+                  });
+                  if (tier) {
+                    rate = tier.rate / 100;
+                  }
+                }
+                
+                const custPrice = Math.ceil((baseVal * (1 + rate)) / 10) * 10 - 1;
+                return (
+                  <div className="text-[11px] font-medium text-slate-500 mt-1 flex flex-wrap gap-x-2 divide-x divide-slate-200">
+                    <div>
+                      Customer Price: <span className="font-bold text-slate-700">₹{custPrice}</span>
+                    </div>
+                    <div className="pl-2">
+                      Your Net Earning: <span className="font-bold text-slate-700 font-mono">₹{baseVal.toLocaleString("en-IN", { minimumFractionDigits: 2 })} per order</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <hr className="border-slate-100 my-4" />

@@ -50,6 +50,12 @@ export default defineSchema({
   platformSettings: defineTable({
     markupRate: v.number(),
     platformFeeRate: v.number(),
+    markupType: v.optional(v.union(v.literal("flat"), v.literal("tiered"))),
+    markupTiers: v.optional(v.array(v.object({
+      min_price: v.number(),
+      max_price: v.union(v.number(), v.null()),
+      rate: v.number()
+    }))),
     updatedAt: v.number(),
   }),
   // ─── MEDIA UPLOAD SESSIONS ────────────────────────────────────────────────

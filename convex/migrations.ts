@@ -1,5 +1,6 @@
 import { mutation } from "./_generated/server";
 import { requireRole } from "./lib/auth";
+import { getPlatformMarkupRate } from "./pricingHelpers";
 
 /**
  * Migration to backfill the productPerformance table for all historical orders and claims.
@@ -237,4 +238,105 @@ export const migrateProductPricesPhase1 = mutation({
 
     return `Successfully migrated ${updatedProducts} products and ${updatedVariants} variants to the new pricing model.`;
   },
+});
+
+/**
+ * Migration to seed/backfill platformSettings with the default tiered slabs.
+ */
+export const migratePlatformSettingsToTiered = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity !== null) {
+      await requireRole(ctx, "admin");
+    }
+
+    const defaultTiers = [
+      { min_price: 0, max_price: 499, rate: 18 },
+      { min_price: 500, max_price: 999, rate: 16 },
+      { min_price: 1000, max_price: 1499, rate: 14 },
+      { min_price: 1500, max_price: 2499, rate: 12 },
+      { min_price: 2500, max_price: 4999, rate: 11 },
+      { min_price: 5000, max_price: null, rate: 10 }
+    ];
+
+    const settings = await ctx.db.query("platformSettings").first();
+    if (settings) {
+      await ctx.db.patch(settings._id, {
+        markupType: "tiered",
+        markupTiers: defaultTiers,
+        updatedAt: Date.now()
+      });
+      return "Successfully updated existing platform settings with tiered slabs.";
+    } else {
+      await ctx.db.insert("platformSettings", {
+        markupRate: 0.15,
+        platformFeeRate: 0.02,
+        markupType: "tiered",
+        markupTiers: defaultTiers,
+        updatedAt: Date.now()
+      });
+      return "Successfully seeded new platform settings with default tiered slabs.";
+    }
+  }
+});
+
+/**
+ * Migration to recalculate all product prices from base prices using active platform settings.
+ */
+export const recalculateAllProductPrices = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity !== null) {
+      await requireRole(ctx, "admin");
+    }
+
+    const settings = await ctx.db.query("platformSettings").first() || {
+      markupRate: 0.15,
+      platformFeeRate: 0.02,
+      markupType: "tiered",
+      markupTiers: [
+        { min_price: 0, max_price: 499, rate: 18 },
+        { min_price: 500, max_price: 999, rate: 16 },
+        { min_price: 1000, max_price: 1499, rate: 14 },
+        { min_price: 1500, max_price: 2499, rate: 12 },
+        { min_price: 2500, max_price: 4999, rate: 11 },
+        { min_price: 5000, max_price: null, rate: 10 }
+      ]
+    };
+
+    const products = await ctx.db.query("products").collect();
+    let updatedCount = 0;
+
+    for (const product of products) {
+      const basePrice = product.basePrice !== undefined ? product.basePrice : product.price;
+      const rate = getPlatformMarkupRate(basePrice, settings as any);
+      
+      const rawCustomerPrice = basePrice * (1 + rate);
+      const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
+      
+      let customerDiscountPrice = undefined;
+      if (product.baseDiscountPrice !== undefined) {
+        const rawDiscount = product.baseDiscountPrice * (1 + rate);
+        customerDiscountPrice = Math.ceil(rawDiscount / 10) * 10 - 1;
+      } else if (product.discountPrice !== undefined && product.basePrice !== undefined) {
+        // Fallback: reverse-calculate base discount price if missing
+        const oldRate = settings.markupRate || 0.15;
+        const baseDiscount = Math.floor(product.discountPrice / (1 + oldRate));
+        const rawDiscount = baseDiscount * (1 + rate);
+        customerDiscountPrice = Math.ceil(rawDiscount / 10) * 10 - 1;
+      }
+
+      await ctx.db.patch(product._id, {
+        basePrice,
+        price: customerPrice,
+        discountPrice: customerDiscountPrice,
+        updatedAt: Date.now()
+      });
+      updatedCount++;
+    }
+
+    return `Successfully recalculated and updated prices for ${updatedCount} products.`;
+  }
 });
