@@ -207,8 +207,8 @@ export const syncUser = mutation({
         const allBoutiques = await ctx.db.query("boutiques").collect();
         const staffBoutique = allBoutiques.find(b => 
           b.status !== "DELETED" && (
-            (b.staffEmail1 && b.staffEmail1.toLowerCase() === emailNormalized) || 
-            (b.staffEmail2 && b.staffEmail2.toLowerCase() === emailNormalized)
+            (b.staffEmail1 && normalizeEmail(b.staffEmail1) === emailNormalized) || 
+            (b.staffEmail2 && normalizeEmail(b.staffEmail2) === emailNormalized)
           )
         );
 
@@ -766,8 +766,8 @@ export const syncUserFromWebhook = internalMutation({
       const allBoutiques = await ctx.db.query("boutiques").collect();
       const staffBoutique = allBoutiques.find(b =>
         b.status !== "DELETED" && (
-          (b.staffEmail1 && b.staffEmail1.toLowerCase() === emailNormalized) ||
-          (b.staffEmail2 && b.staffEmail2.toLowerCase() === emailNormalized)
+          (b.staffEmail1 && normalizeEmail(b.staffEmail1) === emailNormalized) ||
+          (b.staffEmail2 && normalizeEmail(b.staffEmail2) === emailNormalized)
         )
       );
 

@@ -6,6 +6,7 @@ import { MutationCtx, QueryCtx, ActionCtx } from "../_generated/server";
 import { ConvexError } from "convex/values";
 import { HiveError } from "./errors";
 import { Id } from "../_generated/dataModel";
+import { normalizeEmail } from "../users";
 
 type AuthCtx = QueryCtx | MutationCtx;
 
@@ -187,8 +188,8 @@ export async function requireBoutiqueOwnership(
     if (!boutique && userEmail) {
       const allBoutiques = await ctx.db.query("boutiques").collect();
       boutique = allBoutiques.find((b: any) =>
-        (b.staffEmail1 && b.staffEmail1.toLowerCase() === userEmail.toLowerCase()) ||
-        (b.staffEmail2 && b.staffEmail2.toLowerCase() === userEmail.toLowerCase())
+        (b.staffEmail1 && normalizeEmail(b.staffEmail1) === normalizeEmail(userEmail)) ||
+        (b.staffEmail2 && normalizeEmail(b.staffEmail2) === normalizeEmail(userEmail))
       ) as any;
     }
   }
@@ -234,8 +235,8 @@ export async function getMyBoutique(ctx: AuthCtx, token?: string, allowSuspended
   if (!boutique && userEmail) {
     const allBoutiques = await ctx.db.query("boutiques").collect();
     boutique = allBoutiques.find((b: any) =>
-      (b.staffEmail1 && b.staffEmail1.toLowerCase() === userEmail.toLowerCase()) ||
-      (b.staffEmail2 && b.staffEmail2.toLowerCase() === userEmail.toLowerCase())
+      (b.staffEmail1 && normalizeEmail(b.staffEmail1) === normalizeEmail(userEmail)) ||
+      (b.staffEmail2 && normalizeEmail(b.staffEmail2) === normalizeEmail(userEmail))
     ) as any;
   }
 

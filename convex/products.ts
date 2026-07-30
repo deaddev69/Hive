@@ -9,6 +9,7 @@ import { Id } from "./_generated/dataModel";
 import { validateUploadedFile } from "./lib/uploads";
 import { resolveBoutiqueStatus } from "./lib/boutiqueStatus";
 import { updateBoutiqueProductCount } from "./boutiques";
+import { normalizeEmail } from "./users";
 import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
 import { internal } from "./_generated/api";
 import { checkRateLimit } from "./lib/rateLimit";
@@ -867,8 +868,8 @@ export const getProduct = query({
         if (boutique) {
           const isPrimaryOwner = boutique.ownerUserId === currentUser._id || boutique.userId === currentUser._id;
           const isStaffMember = currentUser.email ? (
-            (boutique.staffEmail1 && boutique.staffEmail1.toLowerCase() === currentUser.email.toLowerCase()) ||
-            (boutique.staffEmail2 && boutique.staffEmail2.toLowerCase() === currentUser.email.toLowerCase())
+            (boutique.staffEmail1 && normalizeEmail(boutique.staffEmail1) === normalizeEmail(currentUser.email)) ||
+            (boutique.staffEmail2 && normalizeEmail(boutique.staffEmail2) === normalizeEmail(currentUser.email))
           ) : false;
           if (isPrimaryOwner || isStaffMember) {
             isOwner = true;
