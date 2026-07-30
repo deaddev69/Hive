@@ -10,8 +10,8 @@ interface HiveLogoProps {
 }
 
 const sizeClasses = {
-  sm: "h-11 sm:h-10",
-  md: "h-14 sm:h-12",
+  sm: "h-12 sm:h-11",
+  md: "h-14 sm:h-16",
 };
 
 export function HiveLogo({ roleLabel, href = "/", className = "", size = "md", noLink = false }: HiveLogoProps) {
