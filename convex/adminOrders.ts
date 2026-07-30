@@ -2,12 +2,126 @@
 // Admin-only order queries and mutations for the HIVE Admin panel.
 // All functions require the "admin" role.
 
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation, MutationCtx } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { requireRole, getCurrentUserOrNull } from "./lib/auth";
 import { internal } from "./_generated/api";
 import { triggerNotification } from "./lib/notifications";
 import { markOrderFinanciallyDelivered } from "./adminFinance";
+
+interface StatusTransitionArgs {
+  oldStatus?: string;
+  newStatus?: string;
+  amountDelta?: number;
+}
+
+/**
+ * Incrementally updates the singleton `dashboardMetrics` document.
+ * Call this inside any mutation that creates an order or updates an order status.
+ */
+export async function updateDashboardMetricsHelper(
+  ctx: MutationCtx,
+  { oldStatus, newStatus, amountDelta = 0 }: StatusTransitionArgs
+) {
+  const now = new Date();
+  const todayDate = now.toISOString().split("T")[0];
+  const timestamp = Date.now();
+
+  let metrics = await ctx.db.query("dashboardMetrics").first();
+
+  if (!metrics) {
+    const initialCounts: Record<string, number> = {};
+    if (newStatus) initialCounts[newStatus] = 1;
+
+    const initialId = await ctx.db.insert("dashboardMetrics", {
+      orderCountByStatus: initialCounts,
+      totalRevenue: amountDelta > 0 ? amountDelta : 0,
+      todayOrderCount: amountDelta > 0 ? 1 : 0,
+      todayGmv: amountDelta > 0 ? amountDelta : 0,
+      todayDate,
+      updatedAt: timestamp,
+    });
+    return initialId;
+  }
+
+  const counts: Record<string, number> = { ...(metrics.orderCountByStatus ?? {}) };
+
+  if (oldStatus && counts[oldStatus]) {
+    counts[oldStatus] = Math.max(0, counts[oldStatus] - 1);
+  }
+
+  if (newStatus) {
+    counts[newStatus] = (counts[newStatus] || 0) + 1;
+  }
+
+  const isNewDay = metrics.todayDate !== todayDate;
+  const nextTodayCount = isNewDay ? (amountDelta > 0 ? 1 : 0) : metrics.todayOrderCount + (amountDelta > 0 ? 1 : 0);
+  const nextTodayGmv = isNewDay ? (amountDelta > 0 ? amountDelta : 0) : metrics.todayGmv + amountDelta;
+
+  await ctx.db.patch(metrics._id, {
+    orderCountByStatus: counts,
+    totalRevenue: metrics.totalRevenue + amountDelta,
+    todayOrderCount: nextTodayCount,
+    todayGmv: nextTodayGmv,
+    todayDate,
+    updatedAt: timestamp,
+  });
+
+  return metrics._id;
+}
+
+/**
+ * Backfill mutation to initialize/re-sync dashboardMetrics from historic orders.
+ */
+export const backfillDashboardMetrics = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const orders = await ctx.db.query("orders").collect();
+    const todayDate = new Date().toISOString().split("T")[0];
+
+    const counts: Record<string, number> = {};
+    let totalRevenue = 0;
+    let todayOrderCount = 0;
+    let todayGmv = 0;
+
+    for (const order of orders) {
+      if (order.status) {
+        counts[order.status] = (counts[order.status] || 0) + 1;
+      }
+      
+      const orderAmount = order.total ?? 0;
+      totalRevenue += orderAmount;
+
+      const orderDate = new Date(order._creationTime).toISOString().split("T")[0];
+      if (orderDate === todayDate) {
+        todayOrderCount += 1;
+        todayGmv += orderAmount;
+      }
+    }
+
+    const existing = await ctx.db.query("dashboardMetrics").first();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        orderCountByStatus: counts,
+        totalRevenue,
+        todayOrderCount,
+        todayGmv,
+        todayDate,
+        updatedAt: Date.now(),
+      });
+    } else {
+      await ctx.db.insert("dashboardMetrics", {
+        orderCountByStatus: counts,
+        totalRevenue,
+        todayOrderCount,
+        todayGmv,
+        todayDate,
+        updatedAt: Date.now(),
+      });
+    }
+    return { success: true, count: orders.length };
+  },
+});
 
 /**
  * Admin Dashboard Metrics
