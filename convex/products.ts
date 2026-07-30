@@ -917,8 +917,7 @@ export const getActiveProducts = query({
     if (args.boutiqueId) {
       products = await ctx.db
         .query("products")
-        .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", args.boutiqueId!))
-        .filter((q) => q.eq(q.field("active"), true))
+        .withIndex("by_boutiqueId_active", (q) => q.eq("boutiqueId", args.boutiqueId!).eq("active", true))
         .collect();
     } else if (args.categoryIds && args.categoryIds.length > 0) {
       // Recursively fetch all active descendant category IDs

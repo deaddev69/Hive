@@ -1378,7 +1378,8 @@ export default defineSchema({
     createdAt:      v.number(),
   })
     .index("by_active_and_sortOrder", ["active", "sortOrder"])
-    .index("by_parentId", ["parentId"]),
+    .index("by_parentId", ["parentId"])
+    .index("by_slug", ["slug"]),
 
   // ─── DELIVERY ZONES & PINCODES ─────────────────────────────────────────────
   deliveryZones: defineTable({

@@ -255,7 +255,7 @@ export const getCategoryBySlug = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("categories")
-      .filter((q) => q.eq(q.field("slug"), args.slug))
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
   },
 });
