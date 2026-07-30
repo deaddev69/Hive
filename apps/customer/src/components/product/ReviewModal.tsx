@@ -7,6 +7,7 @@ import { Id } from "../../../../../convex/_generated/dataModel";
 import { Modal } from "@hive/ui";
 import { Star, Loader2, CheckCircle2, PackageCheck, Sparkles, ShieldCheck } from "lucide-react";
 import { toast } from "@hive/utils";
+import { useSessionStore } from "@/context/SessionContext";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export function ReviewModal({
   onSuccess,
 }: ReviewModalProps) {
   const submitReview = useMutation(api.reviews.submitOrderReview);
+  const { token } = useSessionStore();
 
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
@@ -49,6 +51,7 @@ export function ReviewModal({
         platformRating,
         reviewText: reviewText.trim() || undefined,
         fitResponse,
+        token: token || undefined,
       });
 
       toast.success("Thank you! Your review has been submitted.");
