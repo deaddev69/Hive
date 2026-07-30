@@ -14,6 +14,9 @@ import {
 } from "lucide-react";
 import { useOrderStore, Order } from "@/store/order-store";
 import { ReviewModal } from "@/components/product/ReviewModal";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
+import { useSessionStore } from "@/context/SessionContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Customer Order History Listing Page
@@ -22,7 +25,9 @@ export default function OrderHistoryPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   
-  const orders = useOrderStore((state) => state.orders);
+  const { token } = useSessionStore();
+  const localOrders = useOrderStore((state) => state.orders);
+  const convexOrders = useQuery(api.orders.listMyOrders, { token: token || undefined });
 
   useEffect(() => {
     setMounted(true);
@@ -32,8 +37,52 @@ export default function OrderHistoryPage() {
     return <OrdersSkeleton />;
   }
 
+  // Merge local orders + live Convex DB orders
+  const mergedMap = new Map<string, any>();
+
+  // 1. Add local Zustand orders first
+  localOrders.forEach((ord) => {
+    if (ord.id) mergedMap.set(ord.id, ord);
+  });
+
+  // 2. Override with live Convex DB orders (so backend status changes update immediately)
+  if (convexOrders) {
+    convexOrders.forEach((cord: any) => {
+      const mappedOrder = {
+        id: cord.orderNumber || cord._id,
+        _id: cord._id,
+        convexId: cord._id,
+        status: cord.status,
+        createdAt: new Date(cord.createdAt).toISOString(),
+        items: (cord.items || []).map((it: any) => ({
+          id: it._id,
+          _id: it._id,
+          productId: it.productId,
+          name: it.productName || it.name || "Item",
+          imageUrl: it.imageUrl || "",
+          price: it.priceAtPurchase || it.price || 0,
+          size: it.variantSize || it.size || "M",
+          quantity: it.quantity || 1,
+          boutiqueName: it.boutiqueName || "",
+        })),
+        subtotal: cord.subtotal || cord.total || 0,
+        discount: cord.discount || 0,
+        deliveryFee: cord.deliveryFee || 0,
+        codFee: 0,
+        total: cord.total || 0,
+        paymentMethod: cord.paymentMethod || "online",
+        address: cord.address || {},
+        deliveryDate: cord.deliveryDate || "Delivered",
+        deliverySlot: cord.deliverySlot || "Standard",
+      };
+
+      if (cord.orderNumber) mergedMap.set(cord.orderNumber, mappedOrder);
+      if (cord._id) mergedMap.set(cord._id, mappedOrder);
+    });
+  }
+
   // Sort orders: Newest First
-  const sortedOrders = [...orders].sort(
+  const sortedOrders = Array.from(mergedMap.values()).sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
