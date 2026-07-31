@@ -347,6 +347,15 @@ export default defineSchema({
 
     // Razorpay Route integration
     razorpayAccountId: v.optional(v.string()),
+    kycStatus: v.optional(
+      v.union(
+        v.literal("not_started"),
+        v.literal("created"),
+        v.literal("under_review"),
+        v.literal("activated"),
+        v.literal("needs_clarification")
+      )
+    ),
     razorpayAccountStatus: v.optional(
       v.union(
         v.literal("created"),
@@ -375,6 +384,7 @@ export default defineSchema({
     .index("by_ownerUserId", ["ownerUserId"])
     .index("by_ownerEmail", ["ownerEmail"])
     .index("by_inviteTokenHash", ["inviteTokenHash"])
+    .index("by_razorpayAccountId", ["razorpayAccountId"])
     .searchIndex("search_boutiques", {
       searchField: "boutiqueName",
       filterFields: ["status", "storeCategory"],

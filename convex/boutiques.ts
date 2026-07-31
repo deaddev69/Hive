@@ -2504,3 +2504,85 @@ export const updateRazorpayDetails = internalMutation({
   },
 });
 
+export const getBoutiqueByClerkId = query({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+    if (!user) return null;
+    
+    let boutique = await ctx.db
+      .query("boutiques")
+      .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
+      .unique();
+
+    if (!boutique && user.email) {
+      boutique = await ctx.db
+        .query("boutiques")
+        .withIndex("by_email", (q) => q.eq("email", user.email))
+        .unique();
+    }
+    return boutique;
+  }
+});
+
+export const updateBoutiqueRazorpayOnboarding = mutation({
+  args: {
+    secret: v.string(),
+    boutiqueId: v.id("boutiques"),
+    razorpayAccountId: v.string(),
+    kycStatus: v.union(
+      v.literal("not_started"),
+      v.literal("created"),
+      v.literal("under_review"),
+      v.literal("activated"),
+      v.literal("needs_clarification")
+    )
+  },
+  handler: async (ctx, args) => {
+    const expectedSecret = process.env.CLERK_SECRET_KEY;
+    if (!expectedSecret || args.secret !== expectedSecret) {
+      throw new Error("Unauthorized: Invalid secret key.");
+    }
+    await ctx.db.patch(args.boutiqueId, {
+      razorpayAccountId: args.razorpayAccountId,
+      kycStatus: args.kycStatus,
+      razorpayAccountStatus: args.kycStatus === "activated" ? "active" : "created",
+    });
+  }
+});
+
+export const updateBoutiqueKycStatus = mutation({
+  args: {
+    secret: v.string(),
+    razorpayAccountId: v.string(),
+    kycStatus: v.union(
+      v.literal("not_started"),
+      v.literal("created"),
+      v.literal("under_review"),
+      v.literal("activated"),
+      v.literal("needs_clarification")
+    )
+  },
+  handler: async (ctx, args) => {
+    const expectedSecret = process.env.CLERK_SECRET_KEY;
+    if (!expectedSecret || args.secret !== expectedSecret) {
+      throw new Error("Unauthorized: Invalid secret key.");
+    }
+    const boutique = await ctx.db
+      .query("boutiques")
+      .withIndex("by_razorpayAccountId", (q) => q.eq("razorpayAccountId", args.razorpayAccountId))
+      .unique();
+    if (!boutique) {
+      throw new Error(`Boutique not found for Razorpay Account ID: ${args.razorpayAccountId}`);
+    }
+    await ctx.db.patch(boutique._id, {
+      kycStatus: args.kycStatus,
+      razorpayAccountStatus: args.kycStatus === "activated" ? "active" : boutique.razorpayAccountStatus,
+    });
+  }
+});
+
+
