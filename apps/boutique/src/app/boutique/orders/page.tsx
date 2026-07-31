@@ -1,6 +1,6 @@
 "use client";
 
-// Trigger Vercel build: null-safe order pricing checks deployed
+// Trigger Vercel build: null-safe order pricing checks deployed (July 31, 2026)
 import React from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
