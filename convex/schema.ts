@@ -340,6 +340,7 @@ export default defineSchema({
     inviteSentAt:               v.optional(v.number()),
     inviteExpiresAt:            v.optional(v.number()),
     inviteRequestedAt:          v.optional(v.number()),
+    inviteCreatedBy:            v.optional(v.id("users")),
     claimedAt:                  v.optional(v.number()),
     maxActiveOrders:            v.optional(v.number()),
     minimumOrderValue:          v.optional(v.number()),
