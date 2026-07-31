@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 
@@ -64,4 +64,42 @@ export const updatePlatformSettings = mutation({
       });
     }
   },
+});
+
+export const updatePlatformSettingsFromApi = mutation({
+  args: {
+    secret: v.string(),
+    markupRate: v.number(),
+    platformFeeRate: v.number(),
+    markupType: v.union(v.literal("flat"), v.literal("tiered")),
+    markupTiers: v.array(v.object({
+      min_price: v.number(),
+      max_price: v.union(v.number(), v.null()),
+      rate: v.number()
+    }))
+  },
+  handler: async (ctx, args) => {
+    const expectedSecret = process.env.CLERK_SECRET_KEY;
+    if (!expectedSecret || args.secret !== expectedSecret) {
+      throw new Error("Unauthorized: Invalid secret key.");
+    }
+    const settings = await ctx.db.query("platformSettings").first();
+    if (settings) {
+      await ctx.db.patch(settings._id, {
+        markupRate: args.markupRate,
+        platformFeeRate: args.platformFeeRate,
+        markupType: args.markupType,
+        markupTiers: args.markupTiers,
+        updatedAt: Date.now(),
+      });
+    } else {
+      await ctx.db.insert("platformSettings", {
+        markupRate: args.markupRate,
+        platformFeeRate: args.platformFeeRate,
+        markupType: args.markupType,
+        markupTiers: args.markupTiers,
+        updatedAt: Date.now(),
+      });
+    }
+  }
 });

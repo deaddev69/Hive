@@ -8,25 +8,33 @@ import { Loader2, Save, Plus, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@hive/ui";
 
 export default function SettingsClient() {
-  const platformSettings = useQuery(api.adminSettings.getPlatformSettings);
-  const updateSettings = useMutation(api.adminSettings.updatePlatformSettings);
-
   const [markupRate, setMarkupRate] = useState<string>("");
   const [platformFeeRate, setPlatformFeeRate] = useState<string>("");
   const [markupType, setMarkupType] = useState<"flat" | "tiered">("tiered");
   const [markupTiers, setMarkupTiers] = useState<Array<{ min_price: number; max_price: number | null; rate: number }>>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (platformSettings) {
-      setMarkupRate((platformSettings.markupRate * 100).toString());
-      setPlatformFeeRate((platformSettings.platformFeeRate * 100).toString());
-      setMarkupType(platformSettings.markupType || "tiered");
-      setMarkupTiers(platformSettings.markupTiers || []);
+    async function loadConfig() {
+      try {
+        const res = await fetch("/api/admin/platform-config");
+        if (!res.ok) throw new Error("Failed to load platform configuration from REST API");
+        const data = await res.json();
+        setMarkupRate(data.markupRate.toString());
+        setPlatformFeeRate(data.platformFeeRate.toString());
+        setMarkupType(data.markupType);
+        setMarkupTiers(data.markupTiers);
+      } catch (err: any) {
+        toast.error(err.message || "Failed to load settings");
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }, [platformSettings]);
+    loadConfig();
+  }, []);
 
-  if (platformSettings === undefined) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12">
         <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
@@ -176,16 +184,27 @@ export default function SettingsClient() {
         }
       }
 
-      await updateSettings({
-        markupRate: parsedMarkup / 100,
-        platformFeeRate: parsedFee / 100,
-        markupType,
-        markupTiers: markupTiers.map((t) => ({
-          min_price: t.min_price,
-          max_price: t.max_price === null ? null : t.max_price,
-          rate: t.rate,
-        })),
+      const res = await fetch("/api/admin/platform-config", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          markupRate: parsedMarkup,
+          platformFeeRate: parsedFee,
+          markupType,
+          markupTiers: markupTiers.map((t) => ({
+            min_price: t.min_price,
+            max_price: t.max_price,
+            rate: t.rate,
+          })),
+        }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to update platform settings.");
+      }
 
       toast.success("Platform settings updated successfully!");
     } catch (err: any) {
