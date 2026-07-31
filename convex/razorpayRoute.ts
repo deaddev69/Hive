@@ -1,6 +1,6 @@
 // convex/razorpayRoute.ts
 import { action } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 
 export const createLinkedAccount: any = action({
@@ -23,7 +23,7 @@ export const createLinkedAccount: any = action({
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) {
-      throw new Error("Razorpay credentials not configured");
+      throw new ConvexError("Razorpay credentials not configured");
     }
     const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
 
@@ -31,7 +31,7 @@ export const createLinkedAccount: any = action({
       id: args.boutiqueId,
     });
 
-    if (!boutique) throw new Error("Boutique not found");
+    if (!boutique) throw new ConvexError("Boutique not found");
 
     // 1. Create Linked Account on Razorpay Route
     const accountResponse = await fetch("https://api.razorpay.com/v1/accounts", {
@@ -59,7 +59,9 @@ export const createLinkedAccount: any = action({
             },
           },
         },
-        legal_info: { pan: args.pan },
+        receivers: {
+          types: ["vpa"],
+        },
         bank_account: {
           ifsc_code: args.ifsc,
           account_number: args.accountNumber,
@@ -70,7 +72,7 @@ export const createLinkedAccount: any = action({
 
     if (!accountResponse.ok) {
       const err = await accountResponse.json();
-      throw new Error(err.error?.description || "Failed to create Razorpay account");
+      throw new ConvexError(err.error?.description || "Failed to create Razorpay account");
     }
 
     const accountData = await accountResponse.json();
@@ -89,7 +91,7 @@ export const createLinkedAccount: any = action({
 
     if (!linkResponse.ok) {
       const err = await linkResponse.json();
-      throw new Error(err.error?.description || "Failed to generate onboarding link");
+      throw new ConvexError(err.error?.description || "Failed to generate onboarding link");
     }
 
     const linkData = await linkResponse.json();
@@ -121,7 +123,7 @@ export const releasePayout: any = action({
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) {
-      throw new Error("Razorpay credentials not configured");
+      throw new ConvexError("Razorpay credentials not configured");
     }
     const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
 
@@ -160,7 +162,7 @@ export const releasePayout: any = action({
     if (!res.ok) {
       const errText = await res.text();
       console.error(`Failed to release hold for transfer ${order.razorpayTransferId}: ${errText}`);
-      throw new Error(`Razorpay transfer release failed: ${errText}`);
+      throw new ConvexError(`Razorpay transfer release failed: ${errText}`);
     }
 
     await ctx.runMutation((internal.orders as any).updateTransferStatus, {
@@ -176,7 +178,7 @@ export const getKYCOnboardingLink: any = action({
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) {
-      throw new Error("Razorpay credentials not configured");
+      throw new ConvexError("Razorpay credentials not configured");
     }
     const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
 
@@ -193,12 +195,10 @@ export const getKYCOnboardingLink: any = action({
 
     if (!response.ok) {
       const errText = await response.text();
-      throw new Error(`Failed to generate onboarding link: ${errText}`);
+      throw new ConvexError(`Failed to generate onboarding link: ${errText}`);
     }
 
     const data = await response.json();
     return { onboardingUrl: data.url };
   },
 });
-
-

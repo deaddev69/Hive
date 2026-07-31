@@ -84,7 +84,9 @@ function RazorpayOnboarding({ boutique }: { boutique: any }) {
         window.open(res.onboardingUrl, "_blank");
       }
     } catch (err: any) {
-      setFormError(err.message || "Failed to submit onboarding details");
+      const msg = err.data || err.message || "Failed to submit onboarding details";
+      const cleanMsg = typeof msg === "string" ? msg.replace(/^\[CONVEX .*?\]\s*/, "") : String(msg);
+      setFormError(cleanMsg);
     } finally {
       setSubmitting(false);
     }
@@ -103,7 +105,9 @@ function RazorpayOnboarding({ boutique }: { boutique: any }) {
         toast.error("Failed to generate KYC onboarding link.");
       }
     } catch (err: any) {
-      toast.error(err.message || "Error generating onboarding link");
+      const msg = err.data || err.message || "Error generating onboarding link";
+      const cleanMsg = typeof msg === "string" ? msg.replace(/^\[CONVEX .*?\]\s*/, "") : String(msg);
+      toast.error(cleanMsg);
     } finally {
       setLoadingLink(false);
     }
