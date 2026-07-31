@@ -1,185 +1,109 @@
-# Hive API Gateway - Architecture Documentation
+# Hive API Gateway - System Architecture
 
-This document describes the architecture of the Hive API Gateway backend, its historical context, the rationale behind the recent directory restructure, and the engineering decisions guiding its development.
-
----
-
-## 1. Overview
-
-The **Hive API Gateway** is a backend integration layer built with **Node.js**, **Express**, and **JavaScript**. Its primary role is to orchestrate integrations between the core frontend client apps, the database backend (Convex), and third-party logistics/payment partners.
-
-Currently, it manages live integrations for:
-* **Porter** (Logistics & Delivery)
-* **Razorpay** (Standard Payment Processing)
-
-In the future, the gateway will expand to orchestrate:
-* **Razorpay Route** (Marketplace split settlements and seller payouts)
-* **Convex** (Dynamic marketplace state synchronizations)
+This document describes the overall system architecture of the Hive API Gateway and maps out the request, response, and webhook lifecycles.
 
 ---
 
-## 2. Previous Architecture
+## 1. Overall System Architecture
 
-Originally, the backend was a lightweight, flat Express structure. Everything was grouped into a few large files:
+The Hive platform separates core application state, client portals, and external third-party integrations into three distinct layers:
+1. **Frontend Portals** (Next.js Apps for Customer, Admin, and Boutique Partner).
+2. **Convex Backend** (Acts as the database, serverless schema validator, and core event engine).
+3. **Hive API Gateway** (An Express Node.js application running on an Ubuntu VPS, acting as a public proxy and security gateway for webhook ingestions and logistics/payment integrations).
 
-```
-config/
-controllers/
-middleware/
-routes/
-services/
-    porterService.js
-    razorpayService.js
-index.js
-```
-
-### Problems Identified:
-* **Low Modularity**: The core integrations (`porterService.js` and `razorpayService.js`) had grown into massive files carrying multiple responsibilities: parsing payloads, constructing API requests, handling webhooks, and implementing error states.
-* **Controller Bloat**: Route controllers were directly handling request validation, error try-catches, and business logic execution.
-* **No Unified Contract/Validation**: Incoming request validation was ad-hoc, making API boundaries fragile.
-* **Decentralized Configurations**: Environment variables and client configurations were instantiated in-place within the services, rather than being parsed and validated at initialization.
-
----
-
-## 3. Mistake Avoided: The Parallel Src/ Directory
-
-During an early refactoring proposal, an attempt was made to move the active codebase into a nested `src/` directory. This resulted in two parallel project structures existing simultaneously:
-
-```
-/
-config/
-controllers/
-routes/
-services/
-
-src/
-config/
-controllers/
-routes/
-services/
-```
-
-This dual structure created immediate path conflicts, duplicate import references, and deployment confusion. 
-
-**Decision**: The redundant `src/` folder was completely removed. The project strictly maintains the flat, root-level directory layout to preserve simplicity, clean imports, and compatibility with the existing build pipelines.
-
----
-
-## 4. Current Folder Structure
-
-The project has been restructured to cleanly separate configuration, schemas, controllers, middleware, and granular service domains:
-
-```
-config/
-    env.js
-    porter.js
-    razorpay.js
-
-constants/
-    sellerStatus.js
-
-controllers/
-    porterController.js
-    razorpayController.js
-    sellerController.js
-
-middleware/
-    porterWebhook.js
-    razorpayWebhook.js
-    validate.js
-    errorHandler.js
-
-routes/
-    porter.js
-    razorpay.js
-    seller.js
-
-schemas/
-    seller.schema.js
-
-services/
-    marketplace/
-        sellerService.js
-        paymentService.js
-        transferService.js
-
-    porter/
-        quotes.js
-        orders.js
-
-    razorpay/
-        accounts.js
-        payments.js
-        transfers.js
-        webhooks.js
-
-    porterService.js
-    razorpayService.js
-
-utils/
-    ApiError.js
-
-index.js
+```mermaid
+graph TD
+    Client[Next.js Client Apps] <-->|WebSockets / Mutations| Convex[Convex Backend]
+    Convex <-->|HTTP Actions / REST| Gateway[Hive API Gateway]
+    Gateway <-->|Partner REST APIs| Porter[Porter Logistics API]
+    Gateway <-->|Partner REST APIs| Razorpay[Razorpay Payment API]
+    Porter -.->|Webhooks| Gateway
+    Razorpay -.->|Webhooks| Gateway
 ```
 
 ---
 
-## 5. Folder & File Responsibilities
+## 2. Request & Response Lifecycle
 
-### Root Directories:
-* **`config/`**: Centralizes client initializations and environment variable loaders. 
-  * `env.js`: Parses and validates all `.env` requirements on startup.
-  * `porter.js` & `razorpay.js`: Initialize and export client SDKs/headers.
-* **`constants/`**: Holds static system values (e.g., `sellerStatus.js` defining status states like `PENDING`, `ACTIVE`, `SUSPENDED`). Keeping statuses here prevents magic-string bugs.
-* **`controllers/`**: Thin handlers that ingest HTTP requests, hand over execution to services, and return responses. They do not contain business logic.
-* **`middleware/`**: Shared route execution pipelines.
-  * `porterWebhook.js` & `razorpayWebhook.js`: Verify webhook cryptographic signatures securely.
-  * `validate.js`: Generic Joi/Zod middleware to validate request bodies against schemas before they reach controllers.
-  * `errorHandler.js`: Intercepts thrown exceptions, formats them, and returns standard HTTP responses.
-* **`routes/`**: Registers Express router paths and maps them to their respective validation middlewares and controllers.
-* **`schemas/`**: Request validation definitions (e.g., `seller.schema.js` validating onboarding payloads). Separating validation schemas from controllers ensures reusable API contracts.
-* **`utils/`**: Shared helper utility classes.
-  * `ApiError.js`: A custom operational error wrapper extending standard `Error` to easily attach HTTP status codes.
+When a client application or an external partner issues a request to the Hive API Gateway, it goes through our centralized request lifecycle:
 
-### Restructured `services/` Directory:
-Services are grouped into granular subfolders by vendor/module to support future modularization:
-* **`services/marketplace/`**: Orchestrates local seller onboarding database updates, payments, and splits.
-* **`services/porter/`**: Preparation files separating Porter operations into quotes and order management.
-* **`services/razorpay/`**: Preparation files separating Razorpay actions into accounts, payments, and transfer operations.
-* **`services/porterService.js` & `services/razorpayService.js`**: Legacy files that currently run the active production application.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as External Client / Partner
+    participant CF as Cloudflare (DNS & Edge)
+    participant Nginx as Nginx (Reverse Proxy)
+    participant Express as Express App (Root)
+    participant Auth as Webhook/Auth Middleware
+    participant Val as Validate Middleware (Zod/Joi)
+    participant Ctrl as Route Controller
+    participant Svc as Feature Service
+    participant Convex as Convex / Partner API
+
+    Client->>CF: Send Request (HTTPS)
+    CF->>Nginx: Forward Request
+    Nginx->>Express: Proxy Pass to Local Port (3000)
+    Express->>Auth: Signature Verification (for Webhooks)
+    Auth-->>Express: Signature Verified (or throws 401/403)
+    Express->>Val: Ingest Schema Validation
+    Val-->>Express: Schema Valid (or throws 400 Validation Error)
+    Express->>Ctrl: Trigger Controller Action
+    Ctrl->>Svc: Execute Business Logic
+    Svc->>Convex: Outbound Request (Convex / Partner API)
+    Convex-->>Svc: Success Response
+    Svc-->>Ctrl: Returns Processed Data
+    Ctrl-->>Client: Send HTTP 200 OK Response
+```
+
+### Request Phase:
+1. **Edge Filter**: The request passes through Cloudflare (for DDoS protection and SSL enforcement) to the target Ubuntu VPS.
+2. **Reverse Proxy**: Nginx intercepts the request on port 443, appends the headers (`X-Real-IP`, `X-Forwarded-For`), and proxies it to local port 3000.
+3. **Global Middlewares**: Express parses the payload (`express.json()`), compresses the output (`compression`), and adds standard security headers (`helmet`).
+4. **Signature Check (Webhooks only)**: The payload is cryptographically validated using HMAC SHA256 against a shared secret to confirm authenticity.
+5. **Payload Validation**: The schema-validator middleware compares the request body against standard models.
+6. **Controller Mapping**: The clean payload is handed off to the router and matched with a controller.
+
+### Response Phase:
+1. **Centralized Error Interceptor**: If any validation, network, or server error occurs, it is thrown as a custom `ApiError` class. The `errorHandler` middleware catches it and maps it to a standard JSON error response:
+   ```json
+   {
+     "error": "Error Message Here",
+     "statusCode": 400
+   }
+   ```
+2. **Successful Execution**: The controller responds with an HTTP status code (200, 201) and returns a clean JSON schema.
 
 ---
 
-## 6. Architectural & Design Decisions
+## 3. Webhook Lifecycle
 
-### A. Gradual Services Migration (Important Safety Decision)
-While the new subdirectories (`services/porter/` and `services/razorpay/`) have been laid out, the live integrations continue to run on the legacy `porterService.js` and `razorpayService.js` modules. 
+Webhooks from logistics partners (like Porter) or payment processors (like Razorpay) report asynchronous updates about physical transactions (e.g. driver assigned, payment captured). Since these partners cannot establish direct WebSockets to Convex, they ping the Express API Gateway.
 
-* **Why?**: A complete rewrite of live logistics and payment services introduces a high regression risk. By keeping legacy files active, we ensure service continuity while allowing engineers to migrate individual functions to the new directories module-by-module.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Partner as Porter / Razorpay API
+    participant Gateway as Express Gateway (Port 3000)
+    participant Validate as Webhook Signature Validator
+    participant Service as Gateway Webhook Service
+    participant Convex as Convex HTTP Webhook Action
+    participant Client as Next.js Client App
 
-### B. Avoiding Premature Abstractions in Marketplace Design
-Instead of building a complex "Marketplace Engine" abstraction layer, the gateway uses a direct choreography model:
+    Partner->>Gateway: POST /v1/webhooks/porter (Payload + Signature)
+    Gateway->>Validate: Extract and verify X-Razorpay-Signature / X-API-Key
+    alt Signature Invalid
+        Validate-->>Partner: HTTP 401 Unauthorized
+    else Signature Valid
+        Validate-->>Gateway: Signature Validated
+        Gateway->>Service: Parse payload and map status
+        Service->>Convex: POST /api/webhooks/porter (Signed payload)
+        Convex-->>Service: HTTP 200 OK (State Updated in DB)
+        Service-->>Partner: HTTP 200 OK (Acknowledge Receipt)
+        Convex-->>Client: WebSocket Push (UI Live Update)
+    end
+```
 
-$$\text{Seller Controller} \longrightarrow \text{Seller Service} \longrightarrow \begin{cases} \text{Razorpay Service} \\ \text{Convex} \\ \text{Future Integrations} \end{cases}$$
-
-* **Why?**: Premature abstraction increases complexity. By placing orchestration inside `sellerService.js`, we keep the flow readable and easily debuggable. An engine abstraction will only be introduced once the complexity justifies it.
-
-### C. Pausing Razorpay Route Implementation
-Although the folder skeleton is prepared for Razorpay Route account creation and split payouts, the coding implementation has been paused.
-
-* **Why?**: Official payload contracts and sandbox credentials are still pending from Razorpay Support. Building API payloads based on assumptions or third-party blogs creates fragile integrations. We wait for official API documentation to ensure a reliable implementation.
-
----
-
-## 7. Current Status & Roadmap
-
-The refactoring leaves the codebase in a clean, stable state:
-* **Restructured Layout**: Clean separation of concerns with a verified root structure.
-* **Validation**: Request validation is decoupled from controllers.
-* **Error Handling**: A centralized, custom `ApiError` format is established.
-* **Live Features**: Porter and Razorpay integrations continue to run reliably via legacy service modules.
-
-### Next Steps:
-1. Complete validation audits on legacy routes.
-2. Resume Razorpay Route implementation once official API documentation is provided.
-3. Migrate legacy `porterService` and `razorpayService` code gradually into the modularized subfolders.
+### Webhook Verification Process:
+* For **Porter**: Validates incoming API keys or signature headers against the server-configured `PORTER_WEBHOOK_SECRET`.
+* For **Razorpay**: Recomputes the SHA256 signature using the raw payload body and `RAZORPAY_ROUTE_WEBHOOK_SECRET` and matches it against `x-razorpay-signature` header.
+* **Database Sync**: The validated webhook parameters are mapped into a standardized payload and forwarded to Convex HTTP actions, which patch database documents and trigger WebSocket push alerts to partner and client dashboards.
