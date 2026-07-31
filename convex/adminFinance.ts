@@ -692,6 +692,13 @@ export async function markOrderFinanciallyDelivered(ctx: any, orderId: any, now:
     });
   }
 
+  // Trigger Razorpay Route transfer release hold if payment is online split-routed
+  if (order.razorpayTransferId && order.transferStatus === "pending") {
+    await ctx.scheduler.runAfter(0, internal.razorpayRoute.releasePayout, {
+      orderId: order._id,
+    });
+  }
+
   return { success: true, settlementId };
 }
 

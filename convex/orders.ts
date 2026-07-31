@@ -1959,3 +1959,29 @@ export const readyForPickupAction = action({
     }
   },
 });
+
+export const getById = internalQuery({
+  args: { id: v.id("orders") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
+export const updateTransferStatus = internalMutation({
+  args: {
+    orderId: v.id("orders"),
+    transferStatus: v.union(
+      v.literal("pending"),
+      v.literal("processed"),
+      v.literal("failed"),
+      v.literal("reversed")
+    ),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.orderId, {
+      transferStatus: args.transferStatus,
+      payoutStatus: args.transferStatus === "processed" ? "settled" : undefined,
+    });
+  },
+});
+

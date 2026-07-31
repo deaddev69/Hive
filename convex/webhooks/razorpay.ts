@@ -524,6 +524,20 @@ export const processPaymentCaptured = internalMutation({
       await ctx.db.delete(ci._id);
     }
 
+    // Fetch and store Razorpay Route transfer ID in the background
+    if (!args.razorpayPaymentId.startsWith("pay_mock_")) {
+      await ctx.scheduler.runAfter(0, internal.payments.fetchAndStoreTransferId, {
+        orderId,
+        razorpayPaymentId: args.razorpayPaymentId,
+      });
+    } else {
+      // Save simulated transfer ID for mock checks
+      await ctx.db.patch(orderId, {
+        razorpayTransferId: `trf_mock_${Math.random().toString(36).substring(2, 12).toUpperCase()}`,
+        transferStatus: "pending",
+      });
+    }
+
     return { success: true, orderId, orderNumber };
   },
 });

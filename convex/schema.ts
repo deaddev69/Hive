@@ -341,9 +341,30 @@ export default defineSchema({
     inviteExpiresAt:            v.optional(v.number()),
     inviteRequestedAt:          v.optional(v.number()),
     claimedAt:                  v.optional(v.number()),
-    inviteCreatedBy:            v.optional(v.id("users")),
     maxActiveOrders:            v.optional(v.number()),
     minimumOrderValue:          v.optional(v.number()),
+
+    // Razorpay Route integration
+    razorpayAccountId: v.optional(v.string()),
+    razorpayAccountStatus: v.optional(
+      v.union(
+        v.literal("created"),
+        v.literal("active"),
+        v.literal("suspended"),
+        v.literal("needs_attention")
+      )
+    ),
+    razorpayAccountLinkedAt: v.optional(v.number()),
+    businessType: v.optional(
+      v.union(
+        v.literal("individual"),
+        v.literal("proprietorship"),
+        v.literal("partnership"),
+        v.literal("private_limited"),
+        v.literal("llp")
+      )
+    ),
+    pan: v.optional(v.string()),
   })
     .index("by_slug",      ["slug"])
     .index("by_userId",    ["userId"])
@@ -742,6 +763,17 @@ export default defineSchema({
     scheduledProcessingDate: v.optional(v.string()),
     createdAt:            v.number(),
     updatedAt:            v.number(),
+
+    // Razorpay Route integration
+    razorpayTransferId: v.optional(v.string()),
+    transferStatus: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("processed"),
+        v.literal("failed"),
+        v.literal("reversed")
+      )
+    ),
   })
     .index("by_orderNumber",       ["orderNumber"])
     .index("by_customerId",        ["customerId"])

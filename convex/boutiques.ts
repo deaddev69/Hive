@@ -2,7 +2,7 @@
 // convex/boutiques.ts
 // Queries and mutations to manage boutiques in the marketplace registry.
 
-import { mutation, query, internalQuery, internalAction } from "./_generated/server";
+import { mutation, query, internalQuery, internalAction, internalMutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { requireRole, getMyBoutique, getCurrentUserOrNull, getAuthenticatedUser, requireBoutiqueOwnership } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
@@ -2446,3 +2446,61 @@ function getDefaultBoutiqueConfig() {
     whatsAppNotificationsEnabled: true,
   };
 }
+
+export const getById = internalQuery({
+  args: { id: v.id("boutiques") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
+export const updateRazorpayDetails = internalMutation({
+  args: {
+    boutiqueId: v.id("boutiques"),
+    razorpayAccountId: v.string(),
+    razorpayAccountStatus: v.union(
+      v.literal("created"),
+      v.literal("active"),
+      v.literal("suspended"),
+      v.literal("needs_attention")
+    ),
+    businessType: v.union(
+      v.literal("individual"),
+      v.literal("proprietorship"),
+      v.literal("partnership"),
+      v.literal("private_limited"),
+      v.literal("llp")
+    ),
+    pan: v.string(),
+    bankAccount: v.optional(v.object({
+      holderName: v.string(),
+      accountNo:  v.string(),
+      ifsc:       v.string(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const patchData: any = {
+      razorpayAccountId: args.razorpayAccountId,
+      razorpayAccountStatus: args.razorpayAccountStatus,
+      razorpayAccountLinkedAt: Date.now(),
+      businessType: args.businessType,
+      pan: args.pan,
+    };
+
+    if (args.bankAccount) {
+      const secret = process.env.BANK_ENCRYPTION_KEY;
+      if (!secret) throw new ConvexError("FATAL: BANK_ENCRYPTION_KEY environment variable is not configured. Cannot process bank data.");
+      const encryptedAccountNo = await encryptData(args.bankAccount.accountNo, secret);
+      const accountNoLast4 = args.bankAccount.accountNo.slice(-4).padStart(args.bankAccount.accountNo.length, "X");
+      patchData.bankAccount = {
+        holderName: args.bankAccount.holderName,
+        accountNoLast4,
+        encryptedAccountNo,
+        ifsc: args.bankAccount.ifsc,
+      };
+    }
+
+    await ctx.db.patch(args.boutiqueId, patchData);
+  },
+});
+

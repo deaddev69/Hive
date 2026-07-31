@@ -440,6 +440,11 @@ export const initCheckoutSessionInternal = internalMutation({
       };
     });
 
+    let merchantPayablePaise = 0;
+    for (const item of itemsParsed) {
+      merchantPayablePaise += calculateBoutiquePayout(item) * item.quantity;
+    }
+
     // Save temporary Checkout Session
     const checkoutSessionId = await ctx.db.insert("checkoutSessions", {
       userId: user._id,
@@ -491,6 +496,8 @@ export const initCheckoutSessionInternal = internalMutation({
       userEmail: user.email || "",
       userPhone: finalPhone,
       customerName: user.email?.split("@")[0] || "Hive Customer",
+      razorpayAccountId: primaryBoutique?.razorpayAccountId || undefined,
+      merchantPayablePaise,
     };
   },
 });
@@ -911,6 +918,20 @@ export async function verifyPaymentAndPlaceOrderInternal(
     });
   }
 
+  // Fetch and store Razorpay Route transfer ID in the background
+  if (!args.razorpayPaymentId.startsWith("pay_mock_")) {
+    await ctx.scheduler.runAfter(0, internal.payments.fetchAndStoreTransferId, {
+      orderId,
+      razorpayPaymentId: args.razorpayPaymentId,
+    });
+  } else {
+    // Save simulated transfer ID for mock checks
+    await ctx.db.patch(orderId, {
+      razorpayTransferId: `trf_mock_${Math.random().toString(36).substring(2, 12).toUpperCase()}`,
+      transferStatus: "pending",
+    });
+  }
+
   return { success: true, orderId, orderNumber };
 }
 
@@ -1057,22 +1078,38 @@ export const createCheckoutSession = action({
     try {
       const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
 
+      const orderPayload: Record<string, any> = {
+        amount: Math.round(initResult.total * 100),
+        currency: "INR",
+        receipt: initResult.checkoutSessionId,
+        notes: {
+          checkoutSessionId: initResult.checkoutSessionId,
+          customerEmail: initResult.userEmail,
+          customerPhone: initResult.userPhone,
+        },
+      };
+
+      if (initResult.razorpayAccountId) {
+        orderPayload.transfers = [
+          {
+            account: initResult.razorpayAccountId,
+            amount: initResult.merchantPayablePaise,
+            currency: "INR",
+            on_hold: true,
+            notes: {
+              checkoutSessionId: initResult.checkoutSessionId,
+            },
+          },
+        ];
+      }
+
       const response = await fetch("https://api.razorpay.com/v1/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": authHeader,
         },
-        body: JSON.stringify({
-          amount: Math.round(initResult.total * 100),
-          currency: "INR",
-          receipt: initResult.checkoutSessionId,
-          notes: {
-            checkoutSessionId: initResult.checkoutSessionId,
-            customerEmail: initResult.userEmail,
-            customerPhone: initResult.userPhone,
-          },
-        }),
+        body: JSON.stringify(orderPayload),
       });
 
       if (!response.ok) {
@@ -1574,3 +1611,56 @@ export const retryCheckoutSession = action({
 export function isSignatureBypassAllowed(enableDebugTools: string | undefined, razorpaySecret: string | undefined): boolean {
   return enableDebugTools === "true" && razorpaySecret === "mock_secret";
 }
+
+export const updateOrderTransferId = internalMutation({
+  args: {
+    orderId: v.id("orders"),
+    razorpayTransferId: v.string(),
+    transferStatus: v.union(v.literal("pending"), v.literal("processed"), v.literal("failed"), v.literal("reversed")),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.orderId, {
+      razorpayTransferId: args.razorpayTransferId,
+      transferStatus: args.transferStatus,
+    });
+  },
+});
+
+export const fetchAndStoreTransferId = internalAction({
+  args: {
+    orderId: v.id("orders"),
+    razorpayPaymentId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keyId || !keySecret || keySecret === "mock_secret") {
+      return;
+    }
+    const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
+
+    try {
+      const res = await fetch(`https://api.razorpay.com/v1/payments/${args.razorpayPaymentId}/transfers`, {
+        headers: {
+          Authorization: authHeader,
+        },
+      });
+      if (!res.ok) {
+        console.error(`Failed to fetch transfers for payment ${args.razorpayPaymentId}: ${await res.text()}`);
+        return;
+      }
+      const data = await res.json();
+      const transfer = data.items?.[0];
+      if (transfer) {
+        await ctx.runMutation(internal.payments.updateOrderTransferId, {
+          orderId: args.orderId,
+          razorpayTransferId: transfer.id,
+          transferStatus: "pending",
+        });
+      }
+    } catch (err) {
+      console.error(`Error fetching transfer for payment ${args.razorpayPaymentId}:`, err);
+    }
+  },
+});
+

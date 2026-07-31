@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
-import { useQuery } from "convex/react";
+import React, { useState, useEffect } from "react";
+import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Card, CardContent } from "@hive/ui";
-import { formatCurrency } from "@hive/utils";
+import { formatCurrency, toast } from "@hive/utils";
 import {
   Loader2,
   Wallet,
@@ -16,8 +16,13 @@ import {
   AlertCircle,
   Building,
   ArrowDownRight,
-  FileText
+  FileText,
+  ExternalLink,
+  RefreshCw,
+  AlertTriangle,
+  Check
 } from "lucide-react";
+
 
 function StatusBadge({ variant, label }: { variant: "success" | "info" | "warning" | "danger"; label: string }) {
   const styles = {
@@ -30,6 +35,294 @@ function StatusBadge({ variant, label }: { variant: "success" | "info" | "warnin
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ${styles[variant]}`}>
       {label}
     </span>
+  );
+}
+
+function RazorpayOnboarding({ boutique }: { boutique: any }) {
+  const createLinkedAccountAction = useAction(api.razorpayRoute.createLinkedAccount);
+  const getKYCOnboardingLinkAction = useAction(api.razorpayRoute.getKYCOnboardingLink);
+  const [submitting, setSubmitting] = useState(false);
+  const [loadingLink, setLoadingLink] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
+  const [legalName, setLegalName] = useState("");
+  const [businessType, setBusinessType] = useState<"individual" | "proprietorship" | "partnership" | "private_limited" | "llp">("individual");
+  const [pan, setPan] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [ifsc, setIfsc] = useState("");
+  const [holderName, setHolderName] = useState("");
+
+  useEffect(() => {
+    if (boutique) {
+      setLegalName(boutique.boutiqueName || "");
+      setPan(boutique.pan || "");
+      setHolderName(boutique.ownerName || "");
+    }
+  }, [boutique]);
+
+  const handleOnboard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!legalName || !pan || !accountNumber || !ifsc || !holderName) {
+      setFormError("All bank and business fields are required.");
+      return;
+    }
+    setSubmitting(true);
+    setFormError("");
+    try {
+      const res = await createLinkedAccountAction({
+        boutiqueId: boutique._id,
+        legalName,
+        businessType,
+        pan: pan.toUpperCase().trim(),
+        accountNumber: accountNumber.trim(),
+        ifsc: ifsc.toUpperCase().trim(),
+        holderName,
+      });
+      toast.success("Account created successfully!");
+      if (res.onboardingUrl) {
+        window.open(res.onboardingUrl, "_blank");
+      }
+    } catch (err: any) {
+      setFormError(err.message || "Failed to submit onboarding details");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCompleteKYC = async () => {
+    if (!boutique.razorpayAccountId) return;
+    setLoadingLink(true);
+    try {
+      const res = await getKYCOnboardingLinkAction({
+        razorpayAccountId: boutique.razorpayAccountId,
+      });
+      if (res.onboardingUrl) {
+        window.open(res.onboardingUrl, "_blank");
+      } else {
+        toast.error("Failed to generate KYC onboarding link.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Error generating onboarding link");
+    } finally {
+      setLoadingLink(false);
+    }
+  };
+
+  // State 1: Active
+  if (boutique.razorpayAccountId && boutique.razorpayAccountStatus === "active") {
+    return (
+      <div className="bg-emerald-50/50 border border-emerald-100 rounded-3xl p-5 mt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 select-none">
+        <div className="flex items-start gap-4">
+          <div className="p-2 bg-white rounded-2xl text-emerald-600 border border-emerald-100 shadow-sm shrink-0">
+            <Building className="w-5 h-5" />
+          </div>
+          <div className="flex flex-col gap-0.5 text-left">
+            <div className="flex items-center gap-2">
+              <h4 className="text-xs font-bold text-slate-800">Split Payouts Active</h4>
+              <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                <Check className="w-2.5 h-2.5" /> Active
+              </span>
+            </div>
+            <p className="text-[11px] font-medium text-slate-500 leading-relaxed max-w-xl">
+              Earnings from online sales are automatically split and settled to your registered bank account:
+            </p>
+            {boutique.bankAccount && (
+              <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] font-mono font-semibold text-slate-600">
+                <span>Holder: {boutique.bankAccount.holderName}</span>
+                <span>IFSC: {boutique.bankAccount.ifsc}</span>
+                <span>A/C: {boutique.bankAccount.accountNoLast4}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="text-[11px] text-slate-400 font-mono self-end sm:self-center">
+          ID: {boutique.razorpayAccountId}
+        </div>
+      </div>
+    );
+  }
+
+  // State 2: Created (KYC Pending)
+  if (boutique.razorpayAccountId) {
+    return (
+      <div className="bg-amber-50/40 border border-amber-100 rounded-3xl p-5 mt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 select-none">
+        <div className="flex items-start gap-4">
+          <div className="p-2 bg-white rounded-2xl text-amber-600 border border-amber-100 shadow-sm shrink-0">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <div className="flex flex-col gap-1 text-left">
+            <h4 className="text-xs font-bold text-slate-800">Complete KYC Onboarding</h4>
+            <p className="text-[11px] font-medium text-slate-500 leading-relaxed max-w-xl">
+              Your settlement account is registered on Razorpay Route (ID: <span className="font-mono text-slate-700">{boutique.razorpayAccountId}</span>), but payouts are on hold. You must complete Razorpay's KYC verification to start receiving payouts.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleCompleteKYC}
+          disabled={loadingLink}
+          className="w-full sm:w-auto px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white font-bold text-xs rounded-2xl transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+        >
+          {loadingLink ? (
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <>
+              Complete KYC <ExternalLink className="w-3 h-3" />
+            </>
+          )}
+        </button>
+      </div>
+    );
+  }
+
+  // State 3: Setup Form / Missing Account
+  return (
+    <div className="mt-2 transition-all">
+      {!showForm ? (
+        <div className="bg-slate-50 border border-slate-200/80 rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 select-none">
+          <div className="flex items-start gap-4">
+            <div className="p-2 bg-white rounded-2xl text-slate-500 border border-slate-200/50 shadow-sm shrink-0">
+              <Building className="w-5 h-5" />
+            </div>
+            <div className="flex flex-col gap-1 text-left">
+              <h4 className="text-xs font-bold text-slate-800">Setup Split Settlements</h4>
+              <p className="text-[11px] font-medium text-hive-text-muted leading-relaxed max-w-xl">
+                Hive uses Razorpay Route to split customer checkout payments and disburse earnings automatically. Register your legal business entity and bank account details below to link your account.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowForm(true)}
+            className="w-full sm:w-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-2xl transition-all shadow-xs shrink-0 cursor-pointer"
+          >
+            Setup Settlements
+          </button>
+        </div>
+      ) : (
+        <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col gap-4 text-left">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-800">Link Bank Account for Automated Settlements</h3>
+            <button
+              onClick={() => {
+                setShowForm(false);
+                setFormError("");
+              }}
+              className="text-xs text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+
+          <form onSubmit={handleOnboard} className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase text-slate-400">Legal Business Name</label>
+              <input
+                type="text"
+                required
+                value={legalName}
+                onChange={(e) => setLegalName(e.target.value)}
+                placeholder="e.g. Acme Clothing Inc."
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-slate-800 transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase text-slate-400">Business Type</label>
+              <select
+                value={businessType}
+                onChange={(e) => setBusinessType(e.target.value as any)}
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 bg-white focus:outline-none focus:border-slate-800 transition-colors"
+              >
+                <option value="individual">Individual / Proprietorship</option>
+                <option value="partnership">Partnership</option>
+                <option value="private_limited">Private Limited</option>
+                <option value="llp">LLP</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase text-slate-400">Business PAN</label>
+              <input
+                type="text"
+                required
+                maxLength={10}
+                value={pan}
+                onChange={(e) => setPan(e.target.value.toUpperCase())}
+                placeholder="ABCD1234E"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:border-slate-800 transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase text-slate-400">Account Holder Name</label>
+              <input
+                type="text"
+                required
+                value={holderName}
+                onChange={(e) => setHolderName(e.target.value)}
+                placeholder="Name as in Bank Account"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-slate-800 transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase text-slate-400">Bank Account Number</label>
+              <input
+                type="password"
+                required
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                placeholder="Full Bank Account Number"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-slate-800 transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase text-slate-400">Bank IFSC Code</label>
+              <input
+                type="text"
+                required
+                maxLength={11}
+                value={ifsc}
+                onChange={(e) => setIfsc(e.target.value.toUpperCase())}
+                placeholder="HDFC0000001"
+                className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-700 focus:outline-none focus:border-slate-800 transition-colors"
+              />
+            </div>
+
+            {formError && (
+              <div className="md:col-span-2 text-xs text-red-500 font-bold bg-red-50 border border-red-100 rounded-xl p-3 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" /> {formError}
+              </div>
+            )}
+
+            <div className="md:col-span-2 flex justify-end gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false);
+                  setFormError("");
+                }}
+                className="px-4 py-2 border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs font-bold rounded-xl transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white disabled:bg-slate-300 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                {submitting ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  "Create Account & Onboard"
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -147,18 +440,8 @@ export default function BoutiqueFinance() {
         </div>
       </div>
 
-      {/* Bank Account Settings Info box */}
-      <div className="bg-hive-cream/40 border border-[#f1f5f9]/60 rounded-3xl p-5 mt-2 flex items-start gap-4 select-none">
-        <div className="p-2 bg-white rounded-2xl text-[#D9A71E] border border-[#f1f5f9] shadow-sm shrink-0">
-          <Building className="w-4.5 h-4.5" />
-        </div>
-        <div className="flex flex-col gap-1 text-left">
-          <h4 className="text-xs font-bold text-hive-dark">Settlement Destination</h4>
-          <p className="text-[11px] font-medium text-hive-text-muted leading-relaxed">
-            Payouts are processed manually to your registered business bank account on a weekly basis. To change or register your settlement bank details, please contact the platform administration or email support directly at <a href="mailto:support@hivenow.in" className="underline font-bold text-[#D9A71E]">support@hivenow.in</a>.
-          </p>
-        </div>
-      </div>
+      {/* Razorpay Route Onboarding Section */}
+      <RazorpayOnboarding boutique={boutique} />
 
       {/* Tabs list */}
       <div className="flex items-center gap-2 border-b border-hive-border mt-6">
