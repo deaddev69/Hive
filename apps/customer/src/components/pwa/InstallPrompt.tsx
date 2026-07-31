@@ -41,7 +41,7 @@ export function InstallPrompt() {
 
           {/* Premium Gold Hive Logo */}
           <div className="mb-4 mt-2">
-            <HiveLogo noLink size="sm" />
+            <HiveLogo noLink size="sm" variant="pwa" />
           </div>
 
           <h2 className="text-xl sm:text-2xl font-serif font-black text-slate-900 tracking-tight leading-tight">
@@ -123,7 +123,7 @@ export function InstallPrompt() {
 
           {/* Branded Golden Hive Logo */}
           <div className="mb-1 mt-2 animate-in fade-in zoom-in-95 duration-500 relative z-10">
-            <HiveLogo noLink size="sm" />
+            <HiveLogo noLink size="sm" variant="pwa" />
           </div>
 
           {/* Editorial Headline */}
