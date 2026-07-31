@@ -309,7 +309,7 @@ export const Navbar: React.FC = () => {
           <div className="h-14 sm:h-16 flex items-center justify-between gap-2.5 sm:gap-4 w-full">
             
             {/* Zone 1: Logo */}
-            <div className="flex-shrink-0 shrink-0 mr-1 sm:mr-4 lg:mr-6">
+            <div className="flex-shrink-0 shrink-0 mr-4 sm:mr-4 lg:mr-6">
               <HiveLogo />
             </div>
 
