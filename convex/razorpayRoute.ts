@@ -3,7 +3,7 @@ import { action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
-export const createLinkedAccount = action({
+export const createLinkedAccount: any = action({
   args: {
     boutiqueId: v.id("boutiques"),
     legalName: v.string(),
@@ -27,7 +27,7 @@ export const createLinkedAccount = action({
     }
     const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
 
-    const boutique = await ctx.runQuery(internal.boutiques.getById, {
+    const boutique = await ctx.runQuery((internal.boutiques as any).getById, {
       id: args.boutiqueId,
     });
 
@@ -95,7 +95,7 @@ export const createLinkedAccount = action({
     const linkData = await linkResponse.json();
 
     // 3. Save Linked Account Info in Convex
-    await ctx.runMutation(internal.boutiques.updateRazorpayDetails, {
+    await ctx.runMutation((internal.boutiques as any).updateRazorpayDetails, {
       boutiqueId: args.boutiqueId,
       razorpayAccountId: accountData.id,
       razorpayAccountStatus: "created",
@@ -115,7 +115,7 @@ export const createLinkedAccount = action({
   },
 });
 
-export const releasePayout = action({
+export const releasePayout: any = action({
   args: { orderId: v.id("orders") },
   handler: async (ctx, args) => {
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
@@ -125,7 +125,7 @@ export const releasePayout = action({
     }
     const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
 
-    const order = await ctx.runQuery(internal.orders.getById, { id: args.orderId });
+    const order = await ctx.runQuery((internal.orders as any).getById, { id: args.orderId });
 
     if (!order) {
       console.error(`Order ${args.orderId} not found.`);
@@ -163,14 +163,14 @@ export const releasePayout = action({
       throw new Error(`Razorpay transfer release failed: ${errText}`);
     }
 
-    await ctx.runMutation(internal.orders.updateTransferStatus, {
+    await ctx.runMutation((internal.orders as any).updateTransferStatus, {
       orderId: args.orderId,
       transferStatus: "processed",
     });
   },
 });
 
-export const getKYCOnboardingLink = action({
+export const getKYCOnboardingLink: any = action({
   args: { razorpayAccountId: v.string() },
   handler: async (ctx, args) => {
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;

@@ -442,7 +442,11 @@ export const initCheckoutSessionInternal = internalMutation({
 
     let merchantPayablePaise = 0;
     for (const item of itemsParsed) {
-      merchantPayablePaise += calculateBoutiquePayout(item) * item.quantity;
+      merchantPayablePaise += calculateBoutiquePayout({
+        priceAtPurchase: item.price,
+        basePriceAtPurchase: item.basePriceAtPurchase,
+        platformFeeAmount: item.platformFeeAmount,
+      }) * item.quantity;
     }
 
     // Save temporary Checkout Session
