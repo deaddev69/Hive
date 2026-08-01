@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, ArrowRight, Bell, AlertTriangle, CheckCircle, Info, Clock } from "lucide-react";
+import { ShoppingBag, ArrowRight, Bell, AlertTriangle, CheckCircle, Info, Clock, Heart } from "lucide-react";
 import { cn } from "@hive/ui";
 import { ProductDetail } from "@/lib/mockProductDetails";
 import { useCartStore } from "@/store/cart-store";
@@ -198,6 +198,8 @@ interface StickyMobilePurchaseBarProps {
   isPreorder?: boolean;
   preorderType?: "CLOSED_TODAY" | "CLOSED_EXTENDED";
   nextDayLabel?: string;
+  isFavorite?: boolean;
+  onToggleWishlist?: () => void;
 }
 
 export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = ({
@@ -215,6 +217,8 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
   isPreorder = false,
   preorderType,
   nextDayLabel = "",
+  isFavorite = false,
+  onToggleWishlist,
 }) => {
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
   const isOffline = resolvedStatus === "closed" || resolvedStatus === "temporarily_unavailable";
@@ -241,21 +245,19 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
 
       {/* Button CTA */}
       <div className="flex-1 min-w-[180px]">
-        {resolvedStatus === "closed" ? (
+        {isOffline ? (
           <button
             type="button"
-            disabled
-            className="h-14 w-full rounded-2xl bg-red-50 text-red-600 font-bold uppercase tracking-wider text-[11px] cursor-not-allowed leading-tight px-1"
+            onClick={onToggleWishlist}
+            className={cn(
+              "h-14 w-full rounded-2xl font-bold uppercase tracking-wider text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border cursor-pointer",
+              isFavorite
+                ? "bg-amber-50 border-amber-200 text-amber-700"
+                : "bg-hive-dark text-white border-transparent"
+            )}
           >
-            Store Closed
-          </button>
-        ) : resolvedStatus === "temporarily_unavailable" ? (
-          <button
-            type="button"
-            disabled
-            className="h-14 w-full rounded-2xl bg-red-50 text-red-600 font-bold uppercase tracking-wider text-[10px] cursor-not-allowed leading-tight px-1"
-          >
-            Limit Reached
+            <Heart className={cn("w-4 h-4", isFavorite && "fill-amber-600 stroke-amber-600")} />
+            <span>{isFavorite ? "Saved in Wishlist" : "Save to Wishlist"}</span>
           </button>
         ) : !isServiceable ? (
           <button
@@ -339,6 +341,10 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
   const [crossBoutiqueModalOpen, setCrossBoutiqueModalOpen] = useState(false);
+
+  const toggleItem = useWishlistStore((state) => state.toggleItem);
+  const isFavorite = useWishlistStore((state) => product.slug ? state.hasItem(product.slug) : false);
+
   const handleSelectSizePrompt = () => {
     const el = document.getElementById("size-selector-section");
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -602,7 +608,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       {showAlert && (
         <div className="flex flex-col gap-2 w-full">
           {isPreorderMode ? (
-            <div className="flex flex-col gap-1 text-xs font-bold text-amber-700 bg-amber-50 px-3.5 py-2.5 rounded-xl border border-amber-200 w-full">
+            <div className="flex flex-col gap-1.5 text-xs font-bold text-amber-700 bg-amber-50/50 backdrop-blur-md px-4 py-3 rounded-2xl border border-amber-200/85 w-full shadow-2xs">
               <div className="flex items-center gap-2">
                 <Info className="w-4 h-4 flex-shrink-0 text-amber-500" />
                 <span>Pre-Order Active: {product.boutique.name || "This boutique"} is currently offline.</span>
@@ -616,7 +622,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
               </p>
             </div>
           ) : resolvedStatus === "closed" ? (
-            <div className="flex flex-col gap-1 text-xs font-bold text-red-700 bg-red-50 px-3.5 py-2.5 rounded-xl border border-red-200 w-full">
+            <div className="flex flex-col gap-1.5 text-xs font-bold text-red-700 bg-red-50/50 backdrop-blur-md px-4 py-3 rounded-2xl border border-red-200/85 w-full shadow-2xs">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-500" />
                 <span>Store Closed: {product.boutique.name || "This boutique"} is currently offline.</span>
@@ -628,13 +634,13 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
               )}
             </div>
           ) : resolvedStatus === "temporarily_unavailable" ? (
-            <div className="flex items-center gap-2 text-xs font-bold text-red-700 bg-red-50 px-3.5 py-2.5 rounded-xl border border-red-200 w-full">
+            <div className="flex items-center gap-2 text-xs font-bold text-red-700 bg-red-50/50 backdrop-blur-md px-4 py-3 rounded-2xl border border-red-200/85 w-full shadow-2xs">
               <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-500" />
               <span>Not Accepting Orders: Store capacity reached for today. Please try again tomorrow.</span>
             </div>
           ) : resolvedStatus === "busy" ? (
             <div className="flex flex-col gap-2 w-full">
-              <div className="flex items-center gap-2 text-xs font-bold text-amber-700 bg-amber-50 px-3.5 py-2 rounded-xl border border-amber-200 w-full">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-700 bg-amber-50/50 backdrop-blur-md px-4 py-3 rounded-2xl border border-amber-200/85 w-full shadow-2xs">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-500" />
                 <span>High Demand: Orders may take longer to prepare today.</span>
               </div>
@@ -670,21 +676,29 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
 
       {/* 2. CTAs (Add to Cart / Buy Now / Out Of Stock form) */}
       {isStoreOffline ? (
-        <div className="hidden lg:flex w-full h-12 rounded-2xl items-stretch opacity-60">
-          <AddToCartButton
-            variant="unified"
-            disabled={true}
-            loading={false}
-            onClick={handleAddToCart}
-            isServiceable={false}
-          />
-          <BuyNowButton 
-            variant="unified"
-            disabled={true} 
-            onClick={handleBuyNow} 
-            isServiceable={false} 
-          />
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            toggleItem({
+              id: product.id ?? (product as any)._id,
+              slug: product.slug,
+              name: product.name,
+              price: product.price,
+              imageUrl: product.images[0] || "",
+              boutiqueName: product.boutique.name,
+            });
+            triggerToast(isFavorite ? "Removed from wishlist" : `Saved ${cleanProductTitle(product.name)} to wishlist`);
+          }}
+          className={cn(
+            "hidden lg:flex h-12 w-full rounded-2xl font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] items-center justify-center gap-2 cursor-pointer shadow-sm border",
+            isFavorite
+              ? "bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100/50"
+              : "bg-hive-dark text-white border-transparent hover:bg-stone-900"
+          )}
+        >
+          <Heart className={cn("w-4 h-4", isFavorite && "fill-amber-600 stroke-amber-600")} />
+          <span>{isFavorite ? "Saved in Wishlist" : "Save to Wishlist"}</span>
+        </button>
       ) : isOutOfStock ? (
         <div className="bg-[#FAF8F5] border border-hive-border/40 rounded-2xl p-4.5 space-y-3.5">
           <div className="text-xs">
