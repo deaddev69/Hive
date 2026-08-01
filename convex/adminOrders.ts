@@ -24,7 +24,7 @@ export async function updateDashboardMetricsHelper(
   { oldStatus, newStatus, amountDelta = 0 }: StatusTransitionArgs
 ) {
   const now = new Date();
-  const todayDate = now.toISOString().split("T")[0];
+  const todayDate = now.toISOString().split("T")[0] || "";
   const timestamp = Date.now();
 
   let metrics = await ctx.db.query("dashboardMetrics").first();
@@ -77,7 +77,7 @@ export const backfillDashboardMetrics = internalMutation({
   args: {},
   handler: async (ctx) => {
     const orders = await ctx.db.query("orders").collect();
-    const todayDate = new Date().toISOString().split("T")[0];
+    const todayDate = new Date().toISOString().split("T")[0] || "";
 
     const counts: Record<string, number> = {};
     let totalRevenue = 0;

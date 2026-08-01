@@ -37,6 +37,8 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
   const [address, setAddress] = useState("");
   const [staffEmail1, setStaffEmail1] = useState("");
   const [staffEmail2, setStaffEmail2] = useState("");
+  const [staffPhone1, setStaffPhone1] = useState("");
+  const [staffPhone2, setStaffPhone2] = useState("");
   const [latitude, setLatitude] = useState(17.385044);
   const [longitude, setLongitude] = useState(78.486671);
   const [deliveryRadiusKm, setDeliveryRadiusKm] = useState(10);
@@ -58,6 +60,8 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
       setAddress(boutique.address);
       setStaffEmail1(boutique.staffEmail1 || "");
       setStaffEmail2(boutique.staffEmail2 || "");
+      setStaffPhone1((boutique as any).staffPhone1 || "");
+      setStaffPhone2((boutique as any).staffPhone2 || "");
       setLatitude(boutique.latitude);
       setLongitude(boutique.longitude);
       setDeliveryRadiusKm(boutique.deliveryRadiusKm);
@@ -89,6 +93,16 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
       return;
     }
 
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    if (staffPhone1 && !phoneRegex.test(staffPhone1)) {
+      alert("Staff WhatsApp 1 must be a valid E.164 phone number (e.g. +919876543210)");
+      return;
+    }
+    if (staffPhone2 && !phoneRegex.test(staffPhone2)) {
+      alert("Staff WhatsApp 2 must be a valid E.164 phone number (e.g. +919876543210)");
+      return;
+    }
+
     setSubmitting(true);
     console.log("[EditBoutiquePage] Submitting update request for ID:", boutiqueId, {
       boutiqueName,
@@ -103,6 +117,8 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
       status,
       staffEmail1,
       staffEmail2,
+      staffPhone1,
+      staffPhone2,
     });
 
     try {
@@ -123,6 +139,8 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
         status,
         staffEmail1: staffEmail1 || undefined,
         staffEmail2: staffEmail2 || undefined,
+        staffPhone1: staffPhone1 || undefined,
+        staffPhone2: staffPhone2 || undefined,
       });
       console.log("[EditBoutiquePage] Update successful!");
       alert("Boutique profile updated successfully!");
@@ -258,6 +276,29 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
                 placeholder="staff2@boutique.com"
                 value={staffEmail2}
                 onChange={(e) => setStaffEmail2(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff WhatsApp 1 (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. +919876543211"
+                value={staffPhone1}
+                onChange={(e) => setStaffPhone1(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff WhatsApp 2 (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. +919876543212"
+                value={staffPhone2}
+                onChange={(e) => setStaffPhone2(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
               />
             </div>

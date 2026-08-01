@@ -905,16 +905,42 @@ export async function verifyPaymentAndPlaceOrderInternal(
   const isWhatsAppEnabled = boutique?.whatsAppNotificationsEnabled ?? true;
   const recipientPhone = boutique?.notificationPhone || boutique?.phone;
 
-  if (isWhatsAppEnabled && recipientPhone) {
-    await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-      recipient: recipientPhone,
-      templateName: "new_order_received",
-      parameters: [
-        boutique.ownerName || "Merchant",
-        orderNumber,
-        `Rs. ${(session.total / 100).toFixed(2)}`
-      ],
-    });
+  if (isWhatsAppEnabled && (recipientPhone || boutique?.staffPhone1 || boutique?.staffPhone2)) {
+    if (recipientPhone) {
+      await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+        recipient: recipientPhone,
+        templateName: "new_order_received",
+        parameters: [
+          boutique.ownerName || "Merchant",
+          orderNumber,
+          `Rs. ${(session.total / 100).toFixed(2)}`
+        ],
+      });
+    }
+
+    if (boutique?.staffPhone1) {
+      await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+        recipient: boutique.staffPhone1,
+        templateName: "new_order_received",
+        parameters: [
+          "Store Staff",
+          orderNumber,
+          `Rs. ${(session.total / 100).toFixed(2)}`
+        ],
+      });
+    }
+
+    if (boutique?.staffPhone2) {
+      await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+        recipient: boutique.staffPhone2,
+        templateName: "new_order_received",
+        parameters: [
+          "Store Staff",
+          orderNumber,
+          `Rs. ${(session.total / 100).toFixed(2)}`
+        ],
+      });
+    }
   } else {
     await ctx.scheduler.runAfter(0, internal.emails.sendOrderEmail, {
       orderId,

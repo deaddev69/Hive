@@ -12,6 +12,8 @@ import { toast } from "@hive/utils";
 export default function BoutiqueProfile() {
   const boutique = useQuery(api.boutiques.getMyBoutiqueDetails);
   const updateBoutiqueProfile = useMutation(api.boutiques.updateBoutiqueProfile);
+  const me = useQuery(api.users.getMe);
+  const updateBoutiqueStaff = useMutation(api.boutiques.updateBoutiqueStaff);
   const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
   const commitUpload = useAction(api.media.api.commitUpload);
 
@@ -52,6 +54,13 @@ export default function BoutiqueProfile() {
   const [uploadMsg, setUploadMsg] = useState("");
   const [returnsAcceptedDefault, setReturnsAcceptedDefault] = useState(true);
 
+  // Staff States
+  const [staffEmail1, setStaffEmail1] = useState("");
+  const [staffEmail2, setStaffEmail2] = useState("");
+  const [staffPhone1, setStaffPhone1] = useState("");
+  const [staffPhone2, setStaffPhone2] = useState("");
+  const [savingStaff, setSavingStaff] = useState(false);
+
   // Sync details when boutique query resolves
   useEffect(() => {
     if (boutique) {
@@ -87,6 +96,10 @@ export default function BoutiqueProfile() {
       setWeeklyClosedDays(boutique.weeklyClosedDays || []);
       setHolidayDates(boutique.holidayDates || []);
       setReturnsAcceptedDefault(boutique.returnsAcceptedDefault !== false);
+      setStaffEmail1(boutique.staffEmail1 || "");
+      setStaffEmail2(boutique.staffEmail2 || "");
+      setStaffPhone1((boutique as any).staffPhone1 || "");
+      setStaffPhone2((boutique as any).staffPhone2 || "");
     }
   }, [boutique]);
 
@@ -197,6 +210,35 @@ export default function BoutiqueProfile() {
     }
   };
 
+  const handleUpdateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    if (staffPhone1 && !phoneRegex.test(staffPhone1)) {
+      toast.error("Staff WhatsApp 1 must be a valid E.164 phone number (e.g. +919876543210)");
+      return;
+    }
+    if (staffPhone2 && !phoneRegex.test(staffPhone2)) {
+      toast.error("Staff WhatsApp 2 must be a valid E.164 phone number (e.g. +919876543210)");
+      return;
+    }
+
+    setSavingStaff(true);
+    try {
+      await updateBoutiqueStaff({
+        staffEmail1: staffEmail1 || undefined,
+        staffEmail2: staffEmail2 || undefined,
+        staffPhone1: staffPhone1 || undefined,
+        staffPhone2: staffPhone2 || undefined,
+      });
+      toast.success("Staff details updated!");
+    } catch (err: any) {
+      toast.error("Failed to update staff: " + err.message);
+    } finally {
+      setSavingStaff(false);
+    }
+  };
+
   if (boutique === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
@@ -231,21 +273,23 @@ export default function BoutiqueProfile() {
           <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
         </Link>
 
-        <Link
-          href="/boutique/finance"
-          className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:border-slate-900 transition-all flex items-center justify-between group cursor-pointer"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-              <Wallet className="w-5 h-5" />
+        {me?.role !== "boutique" && (
+          <Link
+            href="/boutique/finance"
+            className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:border-slate-900 transition-all flex items-center justify-between group cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-900 group-hover:text-slate-900">Earnings & Settlements</span>
+                <span className="text-[11px] text-slate-500 font-medium">Track payouts, ledgers & revenue</span>
+              </div>
             </div>
-            <div className="flex flex-col">
-              <span className="text-xs font-bold text-slate-900 group-hover:text-slate-900">Earnings & Settlements</span>
-              <span className="text-[11px] text-slate-500 font-medium">Track payouts, ledgers & revenue</span>
-            </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
-        </Link>
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-900 transition-colors" />
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -603,6 +647,78 @@ export default function BoutiqueProfile() {
               </div>
             </div>
           </Card>
+
+          {/* Card: Staff Management (Owner-only) */}
+          {me?.role !== "boutique" && (
+            <Card className="border border-hive-border bg-white rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+              <div>
+                <h3 className="text-lg font-serif font-bold text-hive-dark">
+                  Manage Shop Staff
+                </h3>
+                <p className="text-xs text-hive-text-muted mt-0.5 font-medium leading-relaxed">
+                  Update active staff contact emails and WhatsApp numbers. Changed staff will automatically lose authentication access.
+                </p>
+              </div>
+
+              <form onSubmit={handleUpdateStaff} className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 gap-3.5">
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff Email 1</label>
+                    <input
+                      type="email"
+                      placeholder="e.g. staff1@store.com"
+                      value={staffEmail1}
+                      onChange={(e) => setStaffEmail1(e.target.value)}
+                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff WhatsApp 1</label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. +919876543211"
+                      value={staffPhone1}
+                      onChange={(e) => setStaffPhone1(e.target.value)}
+                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3.5 border-t border-slate-100 pt-3.5">
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff Email 2</label>
+                    <input
+                      type="email"
+                      placeholder="e.g. staff2@store.com"
+                      value={staffEmail2}
+                      onChange={(e) => setStaffEmail2(e.target.value)}
+                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff WhatsApp 2</label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. +919876543212"
+                      value={staffPhone2}
+                      onChange={(e) => setStaffPhone2(e.target.value)}
+                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={savingStaff}
+                  className="w-full py-2.5 flex items-center justify-center gap-2 mt-2"
+                >
+                  {savingStaff && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  Save Staff Details
+                </Button>
+              </form>
+            </Card>
+          )}
 
           <Card className="border border-hive-border bg-white rounded-3xl p-6 shadow-sm flex flex-col gap-5">
             <h3 className="text-lg font-serif font-bold text-hive-dark pb-2 border-b border-hive-border/60">

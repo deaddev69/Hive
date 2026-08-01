@@ -27,7 +27,7 @@ export default function BoutiqueReviewsPage() {
 
   const { metrics, reviews } = data;
 
-  const filteredReviews = reviews.filter((r) => {
+  const filteredReviews = reviews.filter((r: any) => {
     if (activeTab === "unreplied") return !r.sellerReply;
     if (activeTab === "low_ratings") return r.rating <= 3;
     return true;
@@ -142,7 +142,7 @@ export default function BoutiqueReviewsPage() {
             activeTab === "unreplied" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400 hover:text-slate-700"
           }`}
         >
-          Needs Reply ({reviews.filter((r) => !r.sellerReply).length})
+          Needs Reply ({reviews.filter((r: any) => !r.sellerReply).length})
         </button>
         <button
           onClick={() => setActiveTab("low_ratings")}
@@ -150,7 +150,7 @@ export default function BoutiqueReviewsPage() {
             activeTab === "low_ratings" ? "border-slate-900 text-slate-900" : "border-transparent text-slate-400 hover:text-slate-700"
           }`}
         >
-          Low Ratings (≤3★) ({reviews.filter((r) => r.rating <= 3).length})
+          Low Ratings (≤3★) ({reviews.filter((r: any) => r.rating <= 3).length})
         </button>
       </div>
 
@@ -163,7 +163,7 @@ export default function BoutiqueReviewsPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {filteredReviews.map((rev) => (
+          {filteredReviews.map((rev: any) => (
             <div key={rev._id} className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm flex flex-col gap-3">
               {/* Review Header */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -201,7 +201,7 @@ export default function BoutiqueReviewsPage() {
               {/* Review Images */}
               {rev.images && rev.images.length > 0 && (
                 <div className="flex gap-2 py-1">
-                  {rev.images.map((imgUrl, idx) => (
+                  {rev.images.map((imgUrl: string, idx: number) => (
                     <img key={idx} src={imgUrl} alt="Review attachment" className="w-16 h-16 object-cover rounded-xl border border-slate-200" />
                   ))}
                 </div>

@@ -40,6 +40,8 @@ export default function AdminBoutiquesPage() {
   const [address, setAddress] = useState("");
   const [staffEmail1, setStaffEmail1] = useState("");
   const [staffEmail2, setStaffEmail2] = useState("");
+  const [staffPhone1, setStaffPhone1] = useState("");
+  const [staffPhone2, setStaffPhone2] = useState("");
   
   // Coordinates (latitude and longitude) are mandatory
   const [latitude, setLatitude] = useState<number>(9.9816);
@@ -65,6 +67,8 @@ export default function AdminBoutiquesPage() {
     setAddress("");
     setStaffEmail1("");
     setStaffEmail2("");
+    setStaffPhone1("");
+    setStaffPhone2("");
     setCity("Ernakulam");
     setState("Kerala");
     setPincode("682011");
@@ -96,6 +100,16 @@ export default function AdminBoutiquesPage() {
       return;
     }
 
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    if (staffPhone1 && !phoneRegex.test(staffPhone1)) {
+      alert("Staff WhatsApp 1 must be a valid E.164 phone number (e.g. +919876543210)");
+      return;
+    }
+    if (staffPhone2 && !phoneRegex.test(staffPhone2)) {
+      alert("Staff WhatsApp 2 must be a valid E.164 phone number (e.g. +919876543210)");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const result = await createBoutique({
@@ -114,6 +128,8 @@ export default function AdminBoutiquesPage() {
         status,
         staffEmail1: staffEmail1 || undefined,
         staffEmail2: staffEmail2 || undefined,
+        staffPhone1: staffPhone1 || undefined,
+        staffPhone2: staffPhone2 || undefined,
       });
       const claimLink = `https://seller.hivenow.in/invite/${result.rawToken}`;
       prompt(
@@ -279,6 +295,29 @@ export default function AdminBoutiquesPage() {
                 placeholder="staff2@boutique.com"
                 value={staffEmail2}
                 onChange={(e) => setStaffEmail2(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff WhatsApp 1 (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. +919876543211"
+                value={staffPhone1}
+                onChange={(e) => setStaffPhone1(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Staff WhatsApp 2 (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. +919876543212"
+                value={staffPhone2}
+                onChange={(e) => setStaffPhone2(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
               />
             </div>

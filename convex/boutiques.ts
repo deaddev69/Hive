@@ -222,6 +222,8 @@ export const createBoutique = mutation({
                       ),
     staffEmail1:      v.optional(v.string()),
     staffEmail2:      v.optional(v.string()),
+    staffPhone1:      v.optional(v.string()),
+    staffPhone2:      v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const adminUser = await requireRole(ctx, "admin");
@@ -269,6 +271,8 @@ export const createBoutique = mutation({
         
         staffEmail1:      args.staffEmail1 ? args.staffEmail1.toLowerCase() : undefined,
         staffEmail2:      args.staffEmail2 ? args.staffEmail2.toLowerCase() : undefined,
+        staffPhone1:      args.staffPhone1 ? normalizePhoneNumber(args.staffPhone1) : undefined,
+        staffPhone2:      args.staffPhone2 ? normalizePhoneNumber(args.staffPhone2) : undefined,
 
         // Invite metadata
         inviteTokenHash:  hashed,
@@ -406,6 +410,8 @@ export const updateBoutique = mutation({
                       ),
     staffEmail1:      v.optional(v.string()),
     staffEmail2:      v.optional(v.string()),
+    staffPhone1:      v.optional(v.string()),
+    staffPhone2:      v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
@@ -443,6 +449,8 @@ export const updateBoutique = mutation({
       
       staffEmail1:      args.staffEmail1 ? args.staffEmail1.toLowerCase() : undefined,
       staffEmail2:      args.staffEmail2 ? args.staffEmail2.toLowerCase() : undefined,
+      staffPhone1:      args.staffPhone1 ? normalizePhoneNumber(args.staffPhone1) : undefined,
+      staffPhone2:      args.staffPhone2 ? normalizePhoneNumber(args.staffPhone2) : undefined,
       
       // Update compatibility fields
       name:             args.boutiqueName,
@@ -2583,6 +2591,88 @@ export const updateBoutiqueKycStatus = mutation({
       razorpayAccountStatus: args.kycStatus === "activated" ? "active" : boutique.razorpayAccountStatus,
     });
   }
+});
+
+export const updateBoutiqueStaff = mutation({
+  args: {
+    staffEmail1: v.optional(v.string()),
+    staffEmail2: v.optional(v.string()),
+    staffPhone1: v.optional(v.string()),
+    staffPhone2: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { user, boutique } = await getMyBoutique(ctx);
+
+    if (user.role !== "boutique_owner" && user.role !== "admin") {
+      throw new ConvexError("Unauthorized: Only boutique owners can manage staff.");
+    }
+
+    const oldEmail1 = boutique.staffEmail1 ? boutique.staffEmail1.trim().toLowerCase() : "";
+    const oldEmail2 = boutique.staffEmail2 ? boutique.staffEmail2.trim().toLowerCase() : "";
+    const newEmail1 = args.staffEmail1 ? args.staffEmail1.trim().toLowerCase() : "";
+    const newEmail2 = args.staffEmail2 ? args.staffEmail2.trim().toLowerCase() : "";
+
+    const patchData: any = {
+      staffEmail1: args.staffEmail1 ? newEmail1 : undefined,
+      staffEmail2: args.staffEmail2 ? newEmail2 : undefined,
+      staffPhone1: args.staffPhone1 ? normalizePhoneNumber(args.staffPhone1) : undefined,
+      staffPhone2: args.staffPhone2 ? normalizePhoneNumber(args.staffPhone2) : undefined,
+    };
+
+    await ctx.db.patch(boutique._id, patchData);
+
+    const now = Date.now();
+    const oldEmails = [oldEmail1, oldEmail2].filter(Boolean);
+    const newEmails = [newEmail1, newEmail2].filter(Boolean);
+
+    // Revoke old staff access
+    for (const oldEmail of oldEmails) {
+      if (!newEmails.includes(oldEmail)) {
+        const existingUser = await ctx.db
+          .query("users")
+          .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", oldEmail))
+          .unique();
+
+        if (existingUser && existingUser.role === "boutique") {
+          await ctx.db.patch(existingUser._id, { role: "customer", updatedAt: now });
+
+          await ctx.db.insert("auditLogs", {
+            actorRole: "system",
+            action: "boutique_staff.revoked",
+            entityType: "boutiques",
+            entityId: boutique._id,
+            metadata: JSON.stringify({ userId: existingUser._id, email: oldEmail }),
+            createdAt: now,
+          });
+        }
+      }
+    }
+
+    // Grant new staff access
+    for (const newEmail of newEmails) {
+      if (newEmail && !oldEmails.includes(newEmail)) {
+        const existingUser = await ctx.db
+          .query("users")
+          .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", newEmail))
+          .unique();
+
+        if (existingUser && existingUser.role === "customer") {
+          await ctx.db.patch(existingUser._id, { role: "boutique", updatedAt: now });
+
+          await ctx.db.insert("auditLogs", {
+            actorRole: "system",
+            action: "boutique_staff.linked",
+            entityType: "boutiques",
+            entityId: boutique._id,
+            metadata: JSON.stringify({ userId: existingUser._id, email: newEmail }),
+            createdAt: now,
+          });
+        }
+      }
+    }
+
+    return boutique._id;
+  },
 });
 
 

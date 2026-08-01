@@ -5,7 +5,7 @@ import { useAuth, SignOutButton, useUser, useClerk } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Tag, Package, ClipboardList, User, LogOut, Menu, X, Loader2, ShieldX, Wallet, Star } from "lucide-react";
+import { Home, Tag, Package, ClipboardList, User, LogOut, Menu, X, Loader2, ShieldX, Wallet, Star, Plus } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@hive/ui";
@@ -220,28 +220,57 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
         </div>
       </main>
 
-      {/* Mobile Bottom Navigation Footer (Capped at 5 core items for clean UX) */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-white border-t border-[#f1f5f9] z-50 flex items-center justify-around px-2 shadow-[0_-4px_12px_rgba(0,0,0,0.02)] pb-safe">
-        {navItems
-          .filter((item) => ["Home", "Products", "Stock", "Orders", "More"].includes(item.label))
-          .map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return (
-              <Link 
-                key={item.href} 
-                href={item.href}
-                className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
-                  isActive 
-                    ? "text-[#020617] font-bold" 
-                    : "text-[#94a3b8] hover:text-[#020617]"
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="text-[10px] font-semibold">{item.label}</span>
-              </Link>
-            );
-          })}
+      {/* Mobile Bottom Navigation Footer (With central gold floating Add button) */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-white border-t border-[#f1f5f9] z-50 flex items-center justify-around px-2 shadow-[0_-8px_20px_rgba(0,0,0,0.06)] pb-safe">
+        <Link 
+          href="/boutique"
+          className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
+            pathname === "/boutique" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+          }`}
+        >
+          <Home className="w-5 h-5" />
+          <span className="text-[10px] font-semibold">Home</span>
+        </Link>
+
+        <Link 
+          href="/boutique/products"
+          className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
+            pathname === "/boutique/products" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+          }`}
+        >
+          <Tag className="w-5 h-5" />
+          <span className="text-[10px] font-semibold">Products</span>
+        </Link>
+
+        <div className="flex items-center justify-center w-full h-full relative">
+          <Link 
+            href="/boutique/products/new"
+            className="w-13 h-13 bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(233,185,41,0.4)] active:scale-95 transition-all -translate-y-4 border-4 border-white cursor-pointer z-10 hover:shadow-[0_12px_28px_rgba(233,185,41,0.5)]"
+            title="Add Product"
+          >
+            <Plus className="w-6 h-6 stroke-[3]" />
+          </Link>
+        </div>
+
+        <Link 
+          href="/boutique/orders"
+          className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
+            pathname === "/boutique/orders" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+          }`}
+        >
+          <ClipboardList className="w-5 h-5" />
+          <span className="text-[10px] font-semibold">Orders</span>
+        </Link>
+
+        <Link 
+          href="/boutique/profile"
+          className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
+            pathname === "/boutique/profile" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+          }`}
+        >
+          <User className="w-5 h-5" />
+          <span className="text-[10px] font-semibold">More</span>
+        </Link>
       </nav>
     </div>
   );
