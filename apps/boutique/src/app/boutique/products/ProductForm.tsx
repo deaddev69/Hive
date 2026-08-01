@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { Button, Modal } from "@hive/ui";
+import { Button, Modal, cn } from "@hive/ui";
 import { toast } from "@hive/utils";
 import { 
   Upload, X, ArrowLeft, Check, AlertCircle, ChevronDown, 
@@ -23,8 +23,22 @@ const MATERIAL_OPTIONS = [
 ];
 const CARE_OPTIONS = ["Dry Clean Only", "Machine Wash Cold", "Hand Wash", "Do Not Bleach", "Other"];
 
+const ALLOWED_CATEGORIES = [
+  "Sarees",
+  "Lehengas",
+  "Kurtis",
+  "Salwar Sets",
+  "Anarkalis",
+  "Gowns",
+  "Indo-Western",
+  "Blouses",
+  "Dupattas",
+  "Co-ord Sets",
+  "Fusion Wear",
+  "Tops"
+];
+
 const DEFAULT_CATEGORY_TAGS = [
-  { id: "womens-ethnic", name: "Women's Ethnic" },
   { id: "sarees", name: "Sarees" },
   { id: "lehengas", name: "Lehengas" },
   { id: "kurtis", name: "Kurtis" },
@@ -32,16 +46,11 @@ const DEFAULT_CATEGORY_TAGS = [
   { id: "anarkalis", name: "Anarkalis" },
   { id: "gowns", name: "Gowns" },
   { id: "indo-western", name: "Indo-Western" },
-  { id: "dupattas", name: "Dupattas" },
   { id: "blouses", name: "Blouses" },
+  { id: "dupattas", name: "Dupattas" },
   { id: "co-ord-sets", name: "Co-ord Sets" },
   { id: "fusion-wear", name: "Fusion Wear" },
-  { id: "dresses", name: "Dresses" },
-  { id: "tops-tunics", name: "Tops & Tunics" },
-  { id: "jewellery", name: "Jewellery" },
-  { id: "accessories", name: "Accessories" },
-  { id: "home-decor", name: "Home Decor" },
-  { id: "other", name: "Other" }
+  { id: "tops", name: "Tops" },
 ];
 
 function autoCorrectCapitalization(str: string): string {
@@ -102,6 +111,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
   // Layout and Specs UI toggles
   const [showSpecs, setShowSpecs] = useState(false);
+  const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
 
   // Standard react states for values not fits inside text validation
   const [localPreviews, setLocalPreviews] = useState<{ url: string; file?: File; storageId?: string }[]>([]);
@@ -144,21 +154,34 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   // Categories helper list
   const allCategoriesList = React.useMemo(() => {
     const list: { _id: string; name: string }[] = [];
-    const nameSet = new Set<string>();
 
     (categories || []).forEach((c) => {
-      let cleanName = c.name;
-      if (cleanName.toLowerCase() === "ethnic wer") {
-        cleanName = "Ethnic Wear";
+      let mappedName = c.name;
+      // Auto-map "Tops & Tunics" or variations of "tops" to "Tops"
+      if (mappedName.toLowerCase().includes("tops")) {
+        mappedName = "Tops";
       }
-      list.push({ _id: c._id, name: cleanName });
-      nameSet.add(cleanName.toLowerCase());
+
+      const match = ALLOWED_CATEGORIES.find(
+        (name) => name.toLowerCase() === mappedName.toLowerCase()
+      );
+      if (match) {
+        list.push({ _id: c._id, name: match });
+      }
     });
 
+    const dbNames = new Set(list.map((c) => c.name.toLowerCase()));
     DEFAULT_CATEGORY_TAGS.forEach((tag) => {
-      if (!nameSet.has(tag.name.toLowerCase())) {
+      if (!dbNames.has(tag.name.toLowerCase())) {
         list.push({ _id: tag.id, name: tag.name });
       }
+    });
+
+    // Sort according to ALLOWED_CATEGORIES order
+    list.sort((a, b) => {
+      const indexA = ALLOWED_CATEGORIES.findIndex(name => name.toLowerCase() === a.name.toLowerCase());
+      const indexB = ALLOWED_CATEGORIES.findIndex(name => name.toLowerCase() === b.name.toLowerCase());
+      return indexA - indexB;
     });
 
     return list;
@@ -776,16 +799,70 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">Category Tag *</label>
-                    <select
-                      {...register("categoryId")}
-                      className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] shadow-xs cursor-pointer"
+                    <input type="hidden" {...register("categoryId")} />
+                    <button
+                      type="button"
+                      onClick={() => setIsCategoryPickerOpen(true)}
+                      className={cn(
+                        "w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-800 bg-white flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] shadow-xs cursor-pointer text-left transition-all",
+                        errors.categoryId && "border-red-500 ring-1 ring-red-500"
+                      )}
                     >
-                      <option value="">Select Category...</option>
-                      {allCategoriesList.map((c) => (
-                        <option key={c._id} value={c._id}>{c.name}</option>
-                      ))}
-                    </select>
+                      <span>{allCategoriesList.find(c => c._id === categoryIdWatch)?.name || "Select Category..."}</span>
+                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                    </button>
                     {errors.categoryId && <span className="text-red-500 text-xs font-bold">{errors.categoryId.message}</span>}
+
+                    {/* Custom Bottom Sheet / Drawer Category Picker */}
+                    {isCategoryPickerOpen && (
+                      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center sm:justify-center animate-in fade-in duration-200">
+                        {/* Backdrop */}
+                        <div 
+                          className="fixed inset-0 bg-black/40 backdrop-blur-xs"
+                          onClick={() => setIsCategoryPickerOpen(false)}
+                        />
+                        
+                        {/* Drawer content */}
+                        <div className="relative w-full max-h-[85vh] bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-bottom duration-300 sm:max-w-md sm:m-4 overflow-hidden z-10 border border-slate-100 pb-safe">
+                          <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                            <span className="text-xs font-black uppercase tracking-widest text-slate-800">Select Category</span>
+                            <button 
+                              type="button"
+                              onClick={() => setIsCategoryPickerOpen(false)}
+                              className="w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
+                              aria-label="Close picker"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          
+                          <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-1.5 py-1 scrollbar-none">
+                            {allCategoriesList.map((c) => {
+                              const isSelected = categoryIdWatch === c._id;
+                              return (
+                                <button
+                                  key={c._id}
+                                  type="button"
+                                  onClick={() => {
+                                    setValue("categoryId", c._id, { shouldValidate: true });
+                                    setIsCategoryPickerOpen(false);
+                                  }}
+                                  className={cn(
+                                    "w-full px-4 py-3 rounded-xl text-left text-xs font-extrabold transition-all flex justify-between items-center border cursor-pointer",
+                                    isSelected
+                                      ? "bg-amber-50/70 border-amber-200 text-amber-700"
+                                      : "bg-white border-slate-100 hover:border-slate-200 text-slate-600 hover:bg-slate-50"
+                                  )}
+                                >
+                                  <span>{c.name}</span>
+                                  {isSelected && <Check className="w-4 h-4 text-amber-600" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-1.5">
