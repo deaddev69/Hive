@@ -68,7 +68,7 @@ const productFormSchema = z.object({
   craft: z.string().optional(),
   
   // Collapsible specifications
-  color: z.string().optional(),
+  color: z.string().min(1, "Color is required"),
   fabricContent: z.string().optional(),
   fabricDetail: z.string().optional(),
   neckType: z.string().optional(),
@@ -698,9 +698,10 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 <button
                   type="button"
                   onClick={() => removeImage(selectedPreviewIndex)}
-                  className="absolute right-3 top-3 w-7 h-7 bg-white hover:bg-slate-50 text-slate-500 rounded-full flex items-center justify-center shadow-md transition-transform duration-100 active:scale-95 z-10"
+                  className="absolute right-3 top-3 w-9 h-9 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 rounded-full flex items-center justify-center shadow-md transition-all active:scale-95 hover:text-red-500 z-10"
+                  title="Remove Image"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4.5 h-4.5 stroke-[2.5]" />
                 </button>
               </>
             ) : (
@@ -726,16 +727,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 onClick={() => setSelectedPreviewIndex(idx)}
               >
                 <img src={prev.url} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeImage(idx);
-                  }}
-                  className="absolute right-1 top-1 w-4 h-4 bg-slate-900/80 hover:bg-slate-900 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <X className="w-2.5 h-2.5" />
-                </button>
               </div>
             ))}
             
@@ -811,13 +802,14 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">Color</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">Color *</label>
                     <input
                       type="text"
                       placeholder="e.g. Crimson Red"
                       {...register("color")}
                       className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] shadow-xs"
                     />
+                    {errors.color && <span className="text-red-500 text-xs font-bold">{errors.color.message}</span>}
                   </div>
                 </div>
 

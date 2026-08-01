@@ -67,6 +67,8 @@ function generateDynamicFallback(roughText: string, style: string): string {
   return selectedTemplates[index]!;
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // Helper to stream text string chunk-by-chunk to simulate real streaming response
 function createFallbackStream(text: string): ReadableStream {
   const encoder = new TextEncoder();
@@ -74,18 +76,15 @@ function createFallbackStream(text: string): ReadableStream {
   let wordIndex = 0;
 
   return new ReadableStream({
-    async start(controller) {
-      function pushWord() {
-        if (wordIndex < words.length) {
-          const chunk = words[wordIndex] + (wordIndex === words.length - 1 ? "" : " ");
-          controller.enqueue(encoder.encode(chunk));
-          wordIndex++;
-          setTimeout(pushWord, 40); // 40ms per word typing feel
-        } else {
-          controller.close();
-        }
+    async pull(controller) {
+      if (wordIndex < words.length) {
+        const chunk = words[wordIndex] + (wordIndex === words.length - 1 ? "" : " ");
+        controller.enqueue(encoder.encode(chunk));
+        wordIndex++;
+        await sleep(30); // 30ms typing feel
+      } else {
+        controller.close();
       }
-      pushWord();
     }
   });
 }
@@ -174,47 +173,27 @@ export async function POST(req: NextRequest) {
                       if (done) break;
 
                       buffer += decoder.decode(value, { stream: true });
-                      
-                      // Process SSE streams or JSON array chunks
-                      // Gemini streamGenerateContent returns JSON array or SSE objects
-                      // We scan for completed JSON segments
-                      let boundary = buffer.indexOf("\n");
-                      while (boundary !== -1) {
-                        const line = buffer.slice(0, boundary).trim();
-                        buffer = buffer.slice(boundary + 1);
 
-                        // Extract text content from Gemini chunk JSON format
-                        if (line.startsWith("[") || line.startsWith(",") || line.startsWith("]")) {
-                          // Structural characters, safe to skip or inspect
-                        }
+                      // Robust Regex to match any "text": "..." token in the raw JSON stream chunks
+                      const textRegex = /"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+                      let match;
+                      while ((match = textRegex.exec(buffer)) !== null) {
+                        const escapedText = match[1];
                         try {
-                          // Clean potential prefix comma for JSON parsing
-                          const cleanLine = line.replace(/^,/, "").trim();
-                          if (cleanLine && cleanLine !== "[" && cleanLine !== "]") {
-                            const parsed = JSON.parse(cleanLine);
-                            const chunkText = parsed.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                            if (chunkText) {
-                              controller.enqueue(encoder.encode(chunkText));
-                            }
+                          const unescaped = JSON.parse(`"${escapedText}"`);
+                          if (unescaped) {
+                            controller.enqueue(encoder.encode(unescaped));
                           }
                         } catch (e) {
-                          // Incomplete chunk, wait for next buffer line
+                          // Ignore parsing errors for partial/incomplete strings
                         }
-
-                        boundary = buffer.indexOf("\n");
                       }
-                    }
-                    
-                    // Flush remaining buffer
-                    if (buffer.trim()) {
-                      try {
-                        const cleanLine = buffer.replace(/^,/, "").trim();
-                        const parsed = JSON.parse(cleanLine);
-                        const chunkText = parsed.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                        if (chunkText) {
-                          controller.enqueue(encoder.encode(chunkText));
-                        }
-                      } catch (e) {}
+                      
+                      // Clear matched portion from buffer to keep execution light
+                      const lastMatchIndex = textRegex.lastIndex;
+                      if (lastMatchIndex > 0) {
+                        buffer = buffer.slice(lastMatchIndex);
+                      }
                     }
                   } catch (err) {
                     controller.error(err);
