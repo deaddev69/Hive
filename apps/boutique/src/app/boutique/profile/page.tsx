@@ -60,6 +60,7 @@ export default function BoutiqueProfile() {
   const [staffPhone1, setStaffPhone1] = useState("");
   const [staffPhone2, setStaffPhone2] = useState("");
   const [savingStaff, setSavingStaff] = useState(false);
+  const [isEditingStaff, setIsEditingStaff] = useState(false);
 
   // Sync details when boutique query resolves
   useEffect(() => {
@@ -232,11 +233,22 @@ export default function BoutiqueProfile() {
         staffPhone2: staffPhone2 || undefined,
       });
       toast.success("Staff details updated!");
+      setIsEditingStaff(false);
     } catch (err: any) {
       toast.error("Failed to update staff: " + err.message);
     } finally {
       setSavingStaff(false);
     }
+  };
+
+  const handleCancelStaffEdit = () => {
+    if (boutique) {
+      setStaffEmail1(boutique.staffEmail1 || "");
+      setStaffEmail2(boutique.staffEmail2 || "");
+      setStaffPhone1((boutique as any).staffPhone1 || "");
+      setStaffPhone2((boutique as any).staffPhone2 || "");
+    }
+    setIsEditingStaff(false);
   };
 
   if (boutique === undefined) {
@@ -651,13 +663,25 @@ export default function BoutiqueProfile() {
           {/* Card: Staff Management (Owner-only) */}
           {me?.role !== "boutique" && (
             <Card className="border border-hive-border bg-white rounded-3xl p-6 shadow-sm flex flex-col gap-5">
-              <div>
-                <h3 className="text-lg font-serif font-bold text-hive-dark">
-                  Manage Shop Staff
-                </h3>
-                <p className="text-xs text-hive-text-muted mt-0.5 font-medium leading-relaxed">
-                  Update active staff contact emails and WhatsApp numbers. Changed staff will automatically lose authentication access.
-                </p>
+              <div className="flex justify-between items-start gap-4">
+                <div>
+                  <h3 className="text-lg font-serif font-bold text-hive-dark">
+                    Manage Shop Staff
+                  </h3>
+                  <p className="text-xs text-hive-text-muted mt-0.5 font-medium leading-relaxed">
+                    Update active staff contact emails and WhatsApp numbers. Changed staff will automatically lose authentication access.
+                  </p>
+                </div>
+                {!isEditingStaff && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditingStaff(true)}
+                    className="shrink-0 h-9 text-xs px-3 font-bold border-slate-200 hover:border-slate-800 text-slate-700 hover:text-slate-900 rounded-xl"
+                  >
+                    Edit
+                  </Button>
+                )}
               </div>
 
               <form onSubmit={handleUpdateStaff} className="flex flex-col gap-4">
@@ -669,7 +693,8 @@ export default function BoutiqueProfile() {
                       placeholder="e.g. staff1@store.com"
                       value={staffEmail1}
                       onChange={(e) => setStaffEmail1(e.target.value)}
-                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm"
+                      disabled={!isEditingStaff}
+                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm bg-white disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100 disabled:cursor-not-allowed transition-all duration-150"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5 text-left">
@@ -679,7 +704,8 @@ export default function BoutiqueProfile() {
                       placeholder="e.g. +919876543211"
                       value={staffPhone1}
                       onChange={(e) => setStaffPhone1(e.target.value)}
-                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm"
+                      disabled={!isEditingStaff}
+                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm bg-white disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100 disabled:cursor-not-allowed transition-all duration-150"
                     />
                   </div>
                 </div>
@@ -692,7 +718,8 @@ export default function BoutiqueProfile() {
                       placeholder="e.g. staff2@store.com"
                       value={staffEmail2}
                       onChange={(e) => setStaffEmail2(e.target.value)}
-                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm"
+                      disabled={!isEditingStaff}
+                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm bg-white disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100 disabled:cursor-not-allowed transition-all duration-150"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5 text-left">
@@ -702,20 +729,33 @@ export default function BoutiqueProfile() {
                       placeholder="e.g. +919876543212"
                       value={staffPhone2}
                       onChange={(e) => setStaffPhone2(e.target.value)}
-                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm"
+                      disabled={!isEditingStaff}
+                      className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm bg-white disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100 disabled:cursor-not-allowed transition-all duration-150"
                     />
                   </div>
                 </div>
 
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={savingStaff}
-                  className="w-full py-2.5 flex items-center justify-center gap-2 mt-2"
-                >
-                  {savingStaff && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  Save Staff Details
-                </Button>
+                {isEditingStaff && (
+                  <div className="flex gap-3 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancelStaffEdit}
+                      className="flex-1 py-2.5 border-slate-200 text-slate-700 hover:bg-slate-50 rounded-2xl text-xs font-bold transition-all"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={savingStaff}
+                      className="flex-1 py-2.5 flex items-center justify-center gap-2 rounded-2xl text-xs font-bold"
+                    >
+                      {savingStaff && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      Save Details
+                    </Button>
+                  </div>
+                )}
               </form>
             </Card>
           )}
