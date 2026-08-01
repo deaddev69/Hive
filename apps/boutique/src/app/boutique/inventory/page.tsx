@@ -683,32 +683,64 @@ export default function BoutiqueInventory() {
                   })}
 
                   {/* Inline Form to Add a Size */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-[#f1f5f9]/20 mt-1 flex-wrap">
-                    <input
-                      type="text"
-                      placeholder="Add Size (e.g. XL)"
-                      value={addSizeFields[prod._id]?.label || ""}
-                      onChange={(e) => handleAddSizeChange(prod._id, "label", e.target.value)}
-                      className="flex-1 min-w-[120px] px-2.5 py-1.5 bg-white border border-[#f1f5f9]/30 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#F5C22B] font-manrope text-slate-800 placeholder:text-slate-400"
-                    />
-                    <div className="flex items-center rounded-lg bg-white border border-[#f1f5f9]/20">
-                      <span className="px-2 text-[10px] font-bold uppercase text-slate-400 select-none">Qty</span>
+                  <div className="pt-2 border-t border-[#f1f5f9]/20 mt-1 flex flex-col gap-2">
+                    {/* Quick Size Select Pills */}
+                    {(() => {
+                      const availablePills = ["XS", "S", "M", "L", "XL", "XXL", "FREE"].filter(
+                        (sz) => !localProdSizes.includes(sz)
+                      );
+                      if (availablePills.length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase select-none mr-1">Quick Size:</span>
+                          {availablePills.map((sz) => {
+                            const isCurrent = addSizeFields[prod._id]?.label?.toUpperCase() === sz;
+                            return (
+                              <button
+                                key={sz}
+                                type="button"
+                                onClick={() => handleAddSizeChange(prod._id, "label", sz)}
+                                className={`px-2.5 py-1 text-[10px] font-black rounded-lg border transition-all cursor-pointer ${
+                                  isCurrent 
+                                    ? "bg-[#E9B929] border-[#E9B929] text-slate-900" 
+                                    : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300"
+                                }`}
+                              >
+                                {sz}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+
+                    <div className="flex items-center gap-2 flex-wrap">
                       <input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={addSizeFields[prod._id]?.qty || "0"}
-                        onChange={(e) => handleAddSizeChange(prod._id, "qty", e.target.value)}
-                        className="w-12 text-center font-mono font-bold text-xs bg-transparent border-0 focus:outline-none focus:ring-0 text-slate-800"
+                        type="text"
+                        placeholder="Add Size (e.g. XL)"
+                        value={addSizeFields[prod._id]?.label || ""}
+                        onChange={(e) => handleAddSizeChange(prod._id, "label", e.target.value)}
+                        className="flex-1 min-w-[120px] px-2.5 py-1.5 bg-white border border-[#f1f5f9]/30 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] font-manrope text-slate-800 placeholder:text-slate-400"
                       />
+                      <div className="flex items-center rounded-lg bg-white border border-[#f1f5f9]/20">
+                        <span className="px-2 text-[10px] font-bold uppercase text-slate-400 select-none">Qty</span>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          value={addSizeFields[prod._id]?.qty || "0"}
+                          onChange={(e) => handleAddSizeChange(prod._id, "qty", e.target.value)}
+                          className="w-12 text-center font-mono font-bold text-xs bg-transparent border-0 focus:outline-none focus:ring-0 text-slate-800"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddSizeSubmit(prod._id)}
+                        className="bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 font-extrabold px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-95 shadow-sm cursor-pointer"
+                      >
+                        Add
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleAddSizeSubmit(prod._id)}
-                      className="bg-[#F5C22B] hover:bg-[#E0B024] text-slate-900 font-extrabold px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-95 shadow-sm"
-                    >
-                      Add
-                    </button>
                   </div>
                 </div>
               )}

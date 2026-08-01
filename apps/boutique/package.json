@@ -15,6 +15,7 @@
     "@hive/types": "*",
     "@hive/ui": "*",
     "@hive/utils": "*",
+    "@hookform/resolvers": "^5.5.7",
     "@react-google-maps/api": "^2.20.8",
     "@vis.gl/react-google-maps": "^1.9.0",
     "convex": "^1.17.4",
@@ -22,7 +23,9 @@
     "next": "^15.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "sonner": "^2.0.7"
+    "react-hook-form": "^7.84.0",
+    "sonner": "^2.0.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.10",

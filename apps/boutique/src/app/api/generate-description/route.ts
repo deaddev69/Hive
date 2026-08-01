@@ -13,6 +13,14 @@ const CRAFT_GLOSSARY: Record<string, string> = {
   jamdani: "Jamdani is a legendary hand-woven fine muslin textile technique from Bengal, featuring intricate floral and geometric motifs created directly on the loom."
 };
 
+const STYLE_PROMPTS: Record<string, string> = {
+  elegant: "Write in a highly sophisticated, premium, and graceful tone. Use words that sound refined and high-end but avoid forbidden buzzwords.",
+  minimalist: "Write in a clean, direct, and modern tone. Focus on simple features, geometry, and utility without unnecessary fluff.",
+  festive: "Write in a vibrant, celebratory, and warm tone. Focus on grandeur, celebration, and rich traditional styling.",
+  casual: "Write in an easy, laid-back, everyday comfortable tone. Focus on daily wearability and relaxed style.",
+  artistic: "Write in an expressive, heritage-focused, and storytelling tone. Focus on the craft, dye, and design heritage."
+};
+
 function getLocalCraftDetails(text: string): string {
   const lowercaseText = text.toLowerCase();
   const matchedCrafts: string[] = [];
@@ -26,83 +34,113 @@ function getLocalCraftDetails(text: string): string {
     : "";
 }
 
-function generateDynamicFallback(roughText: string, isDescription: boolean): string {
+function generateDynamicFallback(roughText: string, style: string): string {
   const raw = roughText.trim();
   const capitalized = raw.charAt(0).toUpperCase() + raw.slice(1);
   const lowercase = raw.toLowerCase();
 
-  if (isDescription) {
-    const descTemplates = [
-      `${capitalized}. Designed for daily comfort and easy styling, this piece fits true to size and feels soft against the skin. It features neat stitching and quality finishing throughout, making it a reliable and versatile choice for casual outings, work, or weekend wear.`,
-      `A classic ${lowercase} crafted with soft, breathable fabric and a clean fit. Easy to pair with your favorite accessories, it keeps you comfortable all day long while offering a neat, effortless look for any casual or festive occasion.`,
-      `${capitalized}. Features careful tailoring and quality fabric to give you a comfortable and flattering fit. Simple, versatile, and easy to care for, it makes a great addition to your everyday wardrobe rotation.`
-    ];
-    const index = Math.floor(Math.random() * descTemplates.length);
-    return descTemplates[index]!;
-  } else {
-    const storyTemplates = [
-      `Made with care and attention to detail, this piece features ${lowercase}. Designed to combine traditional comfort with simple modern styling, every stitch reflects a commitment to quality craftsmanship and effortless everyday wearability.`,
-      `Inspired by classic design and fine fabric texture, this creation highlights ${lowercase}. Created to feel light, comfortable, and neat every time you wear it, bringing simple charm to your wardrobe.`
-    ];
-    const index = Math.floor(Math.random() * storyTemplates.length);
-    return storyTemplates[index]!;
-  }
+  const templates: Record<string, string[]> = {
+    elegant: [
+      `${capitalized}. An exceptionally refined design presenting a polished silhouette. Tailored for those who value classic lines and premium comfort, this style carries a sophisticated drape suitable for evening wear and special occasions.`,
+      `A graceful presentation of ${lowercase}, featuring clean finishes and a tailored fit. Represents an upscale addition to your collection, delivering structural luxury and comfort in equal measure.`
+    ],
+    minimalist: [
+      `${capitalized}. Designed with clean lines and absolute simplicity. Soft to the touch and fit for easy daily wear, it offers a neat, uncluttered look for modern wardrobes.`,
+      `A clean-cut ${lowercase} that keeps details minimal. Focuses on quality fabric, neat seams, and functional daily styling.`
+    ],
+    festive: [
+      `${capitalized}. Crafted for celebratory charm, bringing rich details and traditional textures to light. Perfect for special moments and festive gatherings, it pairs comfort with dynamic design.`,
+      `A vibrant display of ${lowercase}, presenting a festive and warm look. Built with lightweight, premium weave to keep you comfortable during long celebrations.`
+    ],
+    casual: [
+      `${capitalized}. Designed for everyday wear, easy comfort, and simple styling. Soft on the skin and fits true to size, making it a reliable choice for work or casual weekends.`,
+      `An easygoing ${lowercase} with a relaxed fit. Keeps things simple, lightweight, and comfortable for all-day comfort.`
+    ],
+    artistic: [
+      `${capitalized}. A unique creation celebrating rich textile heritage and organic design patterns. Highlighting historical craftsmanship and hand-done detailing, it represents a wearable piece of art.`,
+      `A beautiful canvas of ${lowercase}, showcasing traditional textures and artisanal storytelling.`
+    ]
+  };
+
+  const selectedTemplates = templates[style] || templates.casual!;
+  const index = Math.floor(Math.random() * selectedTemplates.length);
+  return selectedTemplates[index]!;
+}
+
+// Helper to stream text string chunk-by-chunk to simulate real streaming response
+function createFallbackStream(text: string): ReadableStream {
+  const encoder = new TextEncoder();
+  const words = text.split(" ");
+  let wordIndex = 0;
+
+  return new ReadableStream({
+    async start(controller) {
+      function pushWord() {
+        if (wordIndex < words.length) {
+          const chunk = words[wordIndex] + (wordIndex === words.length - 1 ? "" : " ");
+          controller.enqueue(encoder.encode(chunk));
+          wordIndex++;
+          setTimeout(pushWord, 40); // 40ms per word typing feel
+        } else {
+          controller.close();
+        }
+      }
+      pushWord();
+    }
+  });
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { roughText, type } = await req.json();
+    const { roughText, type, style = "casual" } = await req.json();
 
     if (!roughText || !roughText.trim()) {
       return NextResponse.json({ error: "Rough text input is required" }, { status: 400 });
     }
 
-    const isDescription = type === "description";
-
     // 1. Gather API keys for failover
     const keysString = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
     const apiKeys = keysString.split(",").map(k => k.trim()).filter(Boolean);
 
-    // 2. Perform RAG - Pull Local Craft Context
+    // 2. Gather context
     const craftContext = getLocalCraftDetails(roughText);
+    const styleInstruction = STYLE_PROMPTS[style] || STYLE_PROMPTS.casual!;
 
-    // 3. Assemble Prompt (Simple, natural everyday human tone)
-    const targetType = isDescription ? "product description" : "design story";
-    const systemPrompt = `You are a product writer for a local clothing store. Rewrite the user's rough notes into a clear, simple, and natural ${targetType}.
+    // 3. Assemble Prompt
+    const systemPrompt = `You are a product copywriter for a clothing store. Rewrite the user's rough notes into a clear, simple, and natural product description.
+    
+    STYLE DIRECTION:
+    ${styleInstruction}
 
-STRICT WRITING RULES:
-- Write in simple, everyday, warm English that sounds like a real person wrote it.
-- Keep the language clean, friendly, and easy to read.
-- NEVER use AI buzzwords or dramatic cliché phrases such as "exquisite", "lustrous", "timeless elegance", "meticulously crafted", "effortlessly", "sophisticated", "draped in", "testament to", "rich crimson", or "uniquely textured".
-- Keep all original details (color, fabric, comfort, pattern) 100% accurate. Do not invent extra features.
-- Write 45 to 60 words in one complete, natural paragraph (2 to 3 sentences).
-- Focus ONLY on the product itself. Do not mention any store, boutique, merchant, or delivery service.
+    STRICT WRITING RULES:
+    - Write in simple, warm, everyday English.
+    - Keep the language clean and friendly.
+    - NEVER use AI buzzwords or dramatic cliché phrases such as "exquisite", "lustrous", "timeless elegance", "meticulously crafted", "effortlessly", "sophisticated", "draped in", "testament to", "rich crimson", or "uniquely textured".
+    - Keep all original details (color, fabric, comfort, pattern) 100% accurate. Do not invent extra features.
+    - Write 40 to 60 words in one complete, natural paragraph (2 to 3 sentences).
+    - Focus ONLY on the product itself. Do not mention any store, boutique, merchant, or delivery service.
 
-Return ONLY the plain text without intro, outro, or wrapper quotes.
+    Return ONLY the plain text without intro, outro, or wrapper quotes.
 
-${craftContext}
+    ${craftContext}
 
-Rough Input:
-"${roughText.trim()}"
+    Rough Input:
+    "${roughText.trim()}"
 
-Polished Output:`;
+    Polished Output:`;
 
-    let generatedText = "";
-    let success = false;
-
-    // 4. Try API Keys and active Gemini models in failover loop
+    // 4. Try API Keys and active Gemini models in streaming failover
     const candidateModels = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-2.0-flash"];
 
     if (apiKeys.length > 0) {
-      keyLoop: for (let i = 0; i < apiKeys.length; i++) {
+      for (let i = 0; i < apiKeys.length; i++) {
         const apiKey = apiKeys[i];
 
         for (const modelId of candidateModels) {
           try {
-            console.log(`[Hive AI] Attempting generation with key index ${i} using model ${modelId}...`);
-            
+            console.log(`[Hive AI Stream] Attempting stream key ${i} model ${modelId}...`);
             const response = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
+              `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -120,40 +158,98 @@ Polished Output:`;
               }
             );
 
-            if (response.ok) {
-              const data = await response.json();
-              const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-              if (text && text.trim()) {
-                generatedText = text.trim();
-                success = true;
-                console.log(`[Hive AI SUCCESS ✨] Real Gemini AI generated output returned using key ${i} (${modelId})!`);
-                break keyLoop;
-              }
-            } else {
-              const errorBody = await response.text();
-              console.warn(
-                `[Hive AI FAILOVER WARNING ⚠️] Key ${i} model ${modelId} returned HTTP ${response.status}:`,
-                errorBody
-              );
+            if (response.ok && response.body) {
+              const encoder = new TextEncoder();
+              const decoder = new TextDecoder();
+              const reader = response.body.getReader();
+
+              console.log(`[Hive AI Stream SUCCESS ✨] Streaming response from Gemini (${modelId})!`);
+
+              const customStream = new ReadableStream({
+                async start(controller) {
+                  let buffer = "";
+                  try {
+                    while (true) {
+                      const { done, value } = await reader.read();
+                      if (done) break;
+
+                      buffer += decoder.decode(value, { stream: true });
+                      
+                      // Process SSE streams or JSON array chunks
+                      // Gemini streamGenerateContent returns JSON array or SSE objects
+                      // We scan for completed JSON segments
+                      let boundary = buffer.indexOf("\n");
+                      while (boundary !== -1) {
+                        const line = buffer.slice(0, boundary).trim();
+                        buffer = buffer.slice(boundary + 1);
+
+                        // Extract text content from Gemini chunk JSON format
+                        if (line.startsWith("[") || line.startsWith(",") || line.startsWith("]")) {
+                          // Structural characters, safe to skip or inspect
+                        }
+                        try {
+                          // Clean potential prefix comma for JSON parsing
+                          const cleanLine = line.replace(/^,/, "").trim();
+                          if (cleanLine && cleanLine !== "[" && cleanLine !== "]") {
+                            const parsed = JSON.parse(cleanLine);
+                            const chunkText = parsed.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                            if (chunkText) {
+                              controller.enqueue(encoder.encode(chunkText));
+                            }
+                          }
+                        } catch (e) {
+                          // Incomplete chunk, wait for next buffer line
+                        }
+
+                        boundary = buffer.indexOf("\n");
+                      }
+                    }
+                    
+                    // Flush remaining buffer
+                    if (buffer.trim()) {
+                      try {
+                        const cleanLine = buffer.replace(/^,/, "").trim();
+                        const parsed = JSON.parse(cleanLine);
+                        const chunkText = parsed.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                        if (chunkText) {
+                          controller.enqueue(encoder.encode(chunkText));
+                        }
+                      } catch (e) {}
+                    }
+                  } catch (err) {
+                    controller.error(err);
+                  } finally {
+                    controller.close();
+                  }
+                }
+              });
+
+              return new Response(customStream, {
+                headers: {
+                  "Content-Type": "text/plain; charset=utf-8",
+                  "Transfer-Encoding": "chunked",
+                },
+              });
             }
           } catch (err) {
-            console.error(`[Hive AI FAILOVER ERROR ❌] Exception with key ${i} model ${modelId}:`, err);
+            console.warn(`[Hive AI Stream failover warning] Model ${modelId} failed:`, err);
           }
         }
       }
-    } else {
-      console.warn("[Hive AI WARNING ⚠️] No valid GEMINI_API_KEY found in .env.local.");
     }
 
-    // 5. Dynamic Rules-based Fallback if API keys fail
-    if (!success) {
-      console.log("[Hive AI FALLBACK 🔄] Gemini API call failed. Using dynamic rules-based template fallback.");
-      generatedText = generateDynamicFallback(roughText, isDescription);
-    }
+    // 5. Fallback stream if API keys fail
+    console.log("[Hive AI Stream Fallback 🔄] Streaming dynamic rule template...");
+    const fallbackText = generateDynamicFallback(roughText, style);
+    return new Response(createFallbackStream(fallbackText), {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Transfer-Encoding": "chunked",
+      },
+    });
 
-    return NextResponse.json({ text: generatedText });
   } catch (error: any) {
-    console.error("[Hive AI API Error]:", error);
+    console.error("[Hive AI Stream API Error]:", error);
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }

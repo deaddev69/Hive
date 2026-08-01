@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Play, Image as ImageIcon, Sparkles, Heart, Share2 } from "lucide-react";
+import { Play, Image as ImageIcon, Sparkles, Heart, Share2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@hive/ui";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { ProductDetail } from "@/lib/mockProductDetails";
@@ -25,6 +25,9 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
   const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({});
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const mainImageRef = useRef<HTMLDivElement>(null);
+  
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const [hydrated, setHydrated] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -334,16 +337,26 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
           {mediaList.map((item, idx) => (
             <div
               key={idx}
-              className="w-full h-full flex-shrink-0 snap-start snap-always relative overflow-hidden"
+              className={cn(
+                "w-full h-full flex-shrink-0 snap-start snap-always relative overflow-hidden",
+                item.type === "image" && "cursor-zoom-in active:opacity-95 transition-opacity"
+              )}
+              onClick={() => {
+                if (item.type === "image") {
+                  const imageIdx = images.indexOf(item.url);
+                  setLightboxIndex(imageIdx !== -1 ? imageIdx : 0);
+                  setIsLightboxOpen(true);
+                }
+              }}
             >
               {item.type === "image" ? (
                 <img
                   src={item.url}
                   alt={`${productName} slide ${idx + 1}`}
-                  className="w-full h-full object-cover pointer-events-none select-none"
+                  className="w-full h-full object-cover select-none"
                 />
               ) : (
-                <div className="w-full h-full bg-black relative">
+                <div className="w-full h-full bg-black relative" onClick={(e) => e.stopPropagation()}>
                   <video
                      src={item.url}
                      controls
@@ -394,6 +407,76 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
           </div>
         )}
       </div>
+
+      {/* Mobile Swipeable Zoom Lightbox Overlay */}
+      {isLightboxOpen && images.length > 0 && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/98 flex flex-col justify-between p-4 animate-in fade-in duration-200"
+          onClick={() => setIsLightboxOpen(false)}
+        >
+          {/* Top Bar */}
+          <div className="flex items-center justify-between w-full text-white z-50 pt-2">
+            <span className="text-[11px] font-bold tracking-widest uppercase text-stone-400">
+              {lightboxIndex + 1} / {images.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsLightboxOpen(false)}
+              className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white transition-all active:scale-95 cursor-pointer"
+              aria-label="Close zoom"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Large Image Viewport */}
+          <div 
+            className="flex-1 w-full flex items-center justify-center relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Previous Image trigger */}
+            {images.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setLightboxIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                className="absolute left-2 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-95 transition-all z-20"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Main zoomable image */}
+            <div className="w-full h-full flex items-center justify-center relative p-2 overflow-auto scrollbar-none">
+              <img 
+                src={images[lightboxIndex]} 
+                alt={`${productName} zoom ${lightboxIndex + 1}`} 
+                className="max-w-full max-h-full object-contain rounded-lg transition-transform duration-300 ease-out select-none"
+                style={{ touchAction: "pinch-zoom" }}
+              />
+            </div>
+
+            {/* Next Image trigger */}
+            {images.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setLightboxIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                className="absolute right-2 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-95 transition-all z-20"
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+          </div>
+
+          {/* Bottom Bar Hints */}
+          <div className="w-full text-center pb-2 z-50">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-400 select-none">
+              Pinch to zoom • Swipe or tap side arrows to navigate
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent, AnimatedBackground } from "@hive/ui";
 import { Plus, Edit3, Trash2, Loader2, Upload, Search, Image as ImageIcon, ChevronDown } from "lucide-react";
-import CreateProductModal from "./CreateProductModal";
+import { useRouter } from "next/navigation";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "Free"];
 
@@ -79,6 +79,7 @@ function CategoryFilterSelect({
 }
 
 export default function BoutiqueProducts() {
+  const router = useRouter();
   const products = useQuery(api.products.getBoutiqueProducts);
   const categories = useQuery(api.categories.getCategories, { onlyActive: true });
   
@@ -92,21 +93,17 @@ export default function BoutiqueProducts() {
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [showMoreActions, setShowMoreActions] = useState(false);
   
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleOpenCreate = () => {
-    setEditingProduct(null);
-    setIsOpen(true);
+    router.push("/boutique/products/new");
   };
 
   const handleEdit = (product: any) => {
-    setEditingProduct(product);
-    setIsOpen(true);
+    router.push(`/boutique/products/edit/${product._id}`);
   };
 
   const handleDelete = (id: string) => {
@@ -484,15 +481,6 @@ export default function BoutiqueProducts() {
         )}
 
       </div>
-
-      {isOpen && (
-        <CreateProductModal
-          isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
-          productToEdit={editingProduct}
-          categories={categories}
-        />
-      )}
 
       {deletingProductId && (
         <div className="fixed inset-0 bg-[#0f172a]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">

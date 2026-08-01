@@ -223,7 +223,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             {/* AI Generated Product Description Paragraph */}
             {hasDescription && (
               <p className="text-xs sm:text-[13px] text-stone-700 leading-relaxed font-medium pt-1 pb-3 text-left">
-                {(product as any).story ?? product.description}
+                {product.description}
               </p>
             )}
 
@@ -241,6 +241,27 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Design Story Accordion */}
+        {(product as any).story && (
+          <div className="border-b border-stone-100/60 pb-2.5">
+            <button
+              type="button"
+              onClick={() => setOpenAccordion(openAccordion === "story" ? null : "story")}
+              className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900 focus:outline-none"
+            >
+              <span>The Design Story</span>
+              <span className="text-stone-400 text-xs font-normal">
+                {openAccordion === "story" ? "−" : "+"}
+              </span>
+            </button>
+            {openAccordion === "story" && (
+              <p className="text-xs text-stone-600 leading-relaxed font-medium pt-1 animate-fade-in text-left italic font-serif">
+                {(product as any).story}
+              </p>
             )}
           </div>
         )}
