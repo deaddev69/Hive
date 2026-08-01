@@ -433,7 +433,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     }
 
     setGeneratingDesc(true);
-    setValue("description", ""); // clear input to simulate stream loading
+    setValue("description", "", { shouldDirty: true, shouldValidate: true });
 
     try {
       const response = await fetch("/api/generate-description", {
@@ -450,20 +450,24 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         throw new Error("Failed to call generation endpoint");
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let streamAccumulator = "";
+      if (response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let streamAccumulator = "";
 
-      if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
           const chunkText = decoder.decode(value);
           streamAccumulator += chunkText;
-          setValue("description", streamAccumulator); // Dynamic state bind
+          setValue("description", streamAccumulator, { shouldDirty: true, shouldValidate: true });
         }
-        toast.success("AI description generated successfully!");
+        toast.success("Description updated!");
+      } else {
+        const text = await response.text();
+        setValue("description", text, { shouldDirty: true, shouldValidate: true });
+        toast.success("Description updated!");
       }
     } catch (e: any) {
       console.error(e);
@@ -751,7 +755,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
             type="file"
             ref={fileInputRef}
             multiple
-            accept="image/*;capture=camera"
+            accept="image/*"
             onChange={handleImageFileChange}
             className="hidden"
           />
@@ -762,17 +766,11 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
           {/* CARD 1: Primary Details */}
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
-            <button
-              type="button"
-              onClick={() => toggleDrawer("primary")}
-              className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none cursor-pointer"
-            >
+            <div className="px-6 py-5 border-b border-slate-50">
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">1. Primary Product Info</h3>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${openDrawers.primary ? "rotate-180" : ""}`} />
-            </button>
+            </div>
 
-            {openDrawers.primary && (
-              <div className="px-6 pb-6 border-t border-slate-50 pt-5 flex flex-col gap-5 animate-in fade-in duration-200">
+            <div className="px-6 pb-6 pt-5 flex flex-col gap-5">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">Product Name *</label>
                   <input
@@ -840,34 +838,39 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   }
                   
                   const custPrice = Math.ceil((baseVal * (1 + rate)) / 10) * 10 - 1;
+                  const netPayout = baseVal * 0.98;
+                  const feeAmount = baseVal * 0.02;
                   return (
-                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-xs font-bold text-slate-600 flex flex-wrap gap-y-2 justify-between">
-                      <div>
-                        Estimated Storefront Price: <span className="font-extrabold text-slate-900 font-mono">₹{custPrice}</span>
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-xs font-bold text-slate-600 flex flex-col gap-2">
+                      <div className="flex justify-between flex-wrap gap-2">
+                        <span>Estimated Storefront Price:</span>
+                        <span className="font-extrabold text-slate-900 font-mono text-sm">₹{custPrice}</span>
                       </div>
-                      <div>
-                        Your Net Earning: <span className="font-extrabold text-slate-900 font-mono">₹{baseVal.toFixed(2)}</span> per order
+                      <div className="flex justify-between flex-wrap border-t border-slate-100 pt-2 text-[11px] text-slate-500 font-normal">
+                        <span>Base price entered:</span>
+                        <span className="font-mono">₹{baseVal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between flex-wrap text-[11px] text-slate-500 font-normal">
+                        <span>Platform Fee (2%):</span>
+                        <span className="font-mono text-red-500">-₹{feeAmount.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between flex-wrap border-t border-slate-200/50 pt-2 text-emerald-700 font-extrabold">
+                        <span>Your Net Payout:</span>
+                        <span className="font-mono text-slate-900 text-sm">₹{netPayout.toFixed(2)}</span>
                       </div>
                     </div>
                   );
                 })()}
               </div>
-            )}
-          </div>
+            </div>
 
           {/* CARD 2: Sizes & Fit */}
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
-            <button
-              type="button"
-              onClick={() => toggleDrawer("sizing")}
-              className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none cursor-pointer"
-            >
+            <div className="px-6 py-5 border-b border-slate-50">
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">2. Sizing & Stock</h3>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${openDrawers.sizing ? "rotate-180" : ""}`} />
-            </button>
+            </div>
 
-            {openDrawers.sizing && (
-              <div className="px-6 pb-6 border-t border-slate-50 pt-5 flex flex-col gap-5 animate-in fade-in duration-200">
+            <div className="px-6 pb-6 pt-5 flex flex-col gap-5">
                 {/* Size Pills */}
                 <div className="flex flex-col gap-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">Select Active Sizes *</label>
@@ -957,22 +960,15 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   </div>
                 </div>
               </div>
-            )}
           </div>
 
           {/* CARD 3: Description, AI Assistant, & Story */}
           <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
-            <button
-              type="button"
-              onClick={() => toggleDrawer("story")}
-              className="w-full px-6 py-5 flex items-center justify-between hover:bg-slate-50 transition-colors focus:outline-none cursor-pointer"
-            >
+            <div className="px-6 py-5 border-b border-slate-50">
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">3. Storytelling & Details</h3>
-              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${openDrawers.story ? "rotate-180" : ""}`} />
-            </button>
+            </div>
 
-            {openDrawers.story && (
-              <div className="px-6 pb-6 border-t border-slate-50 pt-5 flex flex-col gap-5 animate-in fade-in duration-200">
+            <div className="px-6 pb-6 pt-5 flex flex-col gap-5">
                 {/* AI description generator textarea */}
                 <div className="flex flex-col gap-2 relative">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
@@ -1012,6 +1008,8 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   <textarea
                     placeholder="Provide a detailed description of fabrics, stitching style, design aesthetics..."
                     {...register("description")}
+                    value={descriptionWatch || ""}
+                    onChange={(e) => setValue("description", e.target.value, { shouldDirty: true, shouldValidate: true })}
                     rows={4}
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] shadow-xs font-sans leading-relaxed resize-none"
                   />
@@ -1070,7 +1068,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   </div>
                 </div>
               </div>
-            )}
           </div>
 
           {/* CARD 4: Collapsible Accordion (12+ Specs) */}
