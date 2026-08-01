@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Play, Image as ImageIcon, Sparkles, Heart, Share2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@hive/ui";
 import { useWishlistStore } from "@/store/wishlist-store";
@@ -37,6 +38,17 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
   useEffect(() => {
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (isLightboxOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isLightboxOpen]);
 
   const isWishlisted = hydrated && product ? hasItem(product.slug) : false;
 
@@ -409,9 +421,9 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
       </div>
 
       {/* Mobile Swipeable Zoom Lightbox Overlay */}
-      {isLightboxOpen && images.length > 0 && (
+      {isLightboxOpen && images.length > 0 && hydrated && createPortal(
         <div 
-          className="fixed inset-0 z-[9999] bg-black/98 flex flex-col justify-between p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[99999] bg-black flex flex-col justify-between p-4 pb-safe animate-in fade-in duration-200"
           onClick={() => setIsLightboxOpen(false)}
         >
           {/* Top Bar */}
@@ -475,7 +487,8 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
               Pinch to zoom • Swipe or tap side arrows to navigate
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
