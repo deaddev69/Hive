@@ -1,11 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent } from "@hive/ui";
 import { Plus, Edit3, Trash2, Power, ArrowLeft, Loader2, ListCollapse, UploadCloud } from "lucide-react";
 import Link from "next/link";
+const ALLOWED_CATEGORIES = [
+  "Sarees",
+  "Lehengas",
+  "Kurtis",
+  "Salwar Sets",
+  "Anarkalis",
+  "Gowns",
+  "Indo-Western",
+  "Blouses",
+  "Dupattas",
+  "Co-ord Sets",
+  "Fusion Wear",
+  "Tops"
+];
 
 export default function AdminCategoriesPage() {
   const categories = useQuery(api.categories.getCategories, {});
@@ -184,7 +198,29 @@ export default function AdminCategoriesPage() {
     );
   }
 
-  const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
+  const sortedCategories = useMemo(() => {
+    if (!categories) return [];
+    return categories
+      .map((c: any) => {
+        let mappedName = c.name;
+        if (mappedName.toLowerCase().includes("tops")) {
+          mappedName = "Tops";
+        }
+        const match = ALLOWED_CATEGORIES.find(
+          (name) => name.toLowerCase() === mappedName.toLowerCase()
+        );
+        if (match) {
+          return { ...c, name: match };
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => {
+        const indexA = ALLOWED_CATEGORIES.findIndex(name => name.toLowerCase() === a.name.toLowerCase());
+        const indexB = ALLOWED_CATEGORIES.findIndex(name => name.toLowerCase() === b.name.toLowerCase());
+        return indexA - indexB;
+      });
+  }, [categories]);
 
   return (
     <div className="flex flex-col gap-6 text-left">

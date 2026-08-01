@@ -9,6 +9,21 @@ import { useRouter } from "next/navigation";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "Free"];
 
+const ALLOWED_CATEGORIES = [
+  "Sarees",
+  "Lehengas",
+  "Kurtis",
+  "Salwar Sets",
+  "Anarkalis",
+  "Gowns",
+  "Indo-Western",
+  "Blouses",
+  "Dupattas",
+  "Co-ord Sets",
+  "Fusion Wear",
+  "Tops"
+];
+
 function CategoryFilterSelect({
   value,
   onChange,
@@ -82,6 +97,30 @@ export default function BoutiqueProducts() {
   const router = useRouter();
   const products = useQuery(api.products.getBoutiqueProducts);
   const categories = useQuery(api.categories.getCategories, { onlyActive: true });
+
+  const filteredCategories = useMemo(() => {
+    if (!categories) return [];
+    return categories
+      .map((c: any) => {
+        let mappedName = c.name;
+        if (mappedName.toLowerCase().includes("tops")) {
+          mappedName = "Tops";
+        }
+        const match = ALLOWED_CATEGORIES.find(
+          (name) => name.toLowerCase() === mappedName.toLowerCase()
+        );
+        if (match) {
+          return { ...c, name: match };
+        }
+        return null;
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => {
+        const indexA = ALLOWED_CATEGORIES.findIndex(name => name.toLowerCase() === a.name.toLowerCase());
+        const indexB = ALLOWED_CATEGORIES.findIndex(name => name.toLowerCase() === b.name.toLowerCase());
+        return indexA - indexB;
+      });
+  }, [categories]);
   
   const deleteProduct = useMutation(api.products.deleteProduct);
   const toggleProductStatus = useMutation(api.products.toggleProductStatus);
@@ -308,7 +347,7 @@ export default function BoutiqueProducts() {
             <CategoryFilterSelect
               value={filterCategory}
               onChange={setFilterCategory}
-              categories={categories}
+              categories={filteredCategories}
             />
           </div>
 
