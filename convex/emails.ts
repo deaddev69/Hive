@@ -137,6 +137,14 @@ export const sendOrderEmail = internalAction({
 
         const bEmail = boutique?.email || boutique?.ownerEmail;
         if (bEmail) toEmails.push(bEmail);
+
+        // Include selected staff member in order notification list
+        const selection = (boutique as any)?.staffNotificationSelection;
+        if (selection === "staff1" && boutique?.staffEmail1) {
+          toEmails.push(boutique.staffEmail1);
+        } else if (selection === "staff2" && boutique?.staffEmail2) {
+          toEmails.push(boutique.staffEmail2);
+        }
         break;
 
       case "confirmed":

@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
     - Keep the language clean and friendly.
     - NEVER use AI buzzwords or dramatic cliché phrases such as "exquisite", "lustrous", "timeless elegance", "meticulously crafted", "effortlessly", "sophisticated", "draped in", "testament to", "rich crimson", or "uniquely textured".
     - Keep all original details (color, fabric, comfort, pattern) 100% accurate. Do not invent extra features.
-    - Write 40 to 60 words in one complete, natural paragraph (2 to 3 sentences).
+    - Write a maximum of 180 characters in one complete, natural paragraph (1 to 2 concise sentences).
     - Focus ONLY on the product itself. Do not mention any store, boutique, merchant, or delivery service.
 
     Return ONLY the plain text without intro, outro, or wrapper quotes.

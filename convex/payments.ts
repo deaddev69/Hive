@@ -100,7 +100,7 @@ export const initCheckoutSessionInternal = internalMutation({
     quotedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    let storedQuote = null;
+    let storedQuote: any = null;
     if (args.quoteId) {
       storedQuote = await ctx.db.query("checkoutQuotes")
         .withIndex("by_checkoutSessionId", (q) => q.eq("checkoutSessionId", args.quoteId as string))
@@ -261,7 +261,7 @@ export const initCheckoutSessionInternal = internalMutation({
         throw new Error(`The item "${item.name}" is currently deactivated.`);
       }
 
-      let boutique = null;
+      let boutique: any = null;
       if (productRow) {
         boutique = await ctx.db.get(productRow.boutiqueId);
       } else {
@@ -623,7 +623,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
   const orderNumber = `HIVE-${Math.floor(now / 1000).toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   // Resolve boutiqueId and build resolvedProductMap from session items
-  let boutiqueId = undefined;
+  let boutiqueId: any = undefined;
   const resolvedProductMap = new Map<string, Id<"products">>();
   for (const item of session.items) {
     const product = await ctx.db
@@ -657,7 +657,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
   }
 
   // Resolve boutique details snapshot
-  const boutique = await ctx.db.get(boutiqueId);
+  const boutique = await ctx.db.get(boutiqueId) as any;
   const boutiqueName = boutique ? (boutique.boutiqueName || boutique.name || "Unknown Boutique") : "Unknown Boutique";
 
   // Setup snapshot metrics

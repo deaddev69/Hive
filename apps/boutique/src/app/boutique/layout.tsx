@@ -138,7 +138,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
               width={140}
               height={50}
               priority
-              className="h-12 w-auto object-contain shrink-0"
+              className="h-8 w-auto object-contain shrink-0"
             />
           </Link>
         </div>
@@ -157,7 +157,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
                 width={80}
                 height={80}
                 priority
-                className="h-20 w-auto object-contain shrink-0"
+                className="h-11 w-auto object-contain shrink-0"
               />
             </Link>
           </div>
@@ -222,41 +222,50 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
 
       {/* Mobile Bottom Navigation Footer (With central gold floating Add button) */}
       {!pathname.includes("/products/new") && !pathname.includes("/products/edit") && (
-        <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-white border-t border-[#f1f5f9] z-50 flex items-center justify-around px-2 shadow-[0_-8px_20px_rgba(0,0,0,0.06)] pb-safe">
+        <nav className="md:hidden fixed bottom-4 inset-x-0 h-16 bg-white/95 backdrop-blur-md border border-slate-100/90 z-50 flex items-center justify-around px-2 shadow-[0_12px_36px_rgba(0,0,0,0.08)] rounded-2xl mx-4 pb-0 select-none">
           <Link 
             href="/boutique"
-            className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
-              pathname === "/boutique" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+            className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-all duration-150 ${
+              pathname === "/boutique" ? "text-slate-900 font-bold" : "text-slate-400"
             }`}
           >
             <Home className="w-5 h-5" />
-            <span className="text-[10px] font-semibold">Home</span>
+            <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Home</span>
+            {pathname === "/boutique" && (
+              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
+            )}
           </Link>
 
           <Link 
             href="/boutique/products"
-            className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
-              pathname === "/boutique/products" && !pathname.includes("/new") ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+            className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-all duration-150 ${
+              pathname === "/boutique/products" && !pathname.includes("/new") ? "text-slate-900 font-bold" : "text-slate-400"
             }`}
           >
             <Tag className="w-5 h-5" />
-            <span className="text-[10px] font-semibold">Products</span>
+            <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Products</span>
+            {pathname === "/boutique/products" && !pathname.includes("/new") && (
+              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
+            )}
           </Link>
 
           <Link 
             href="/boutique/inventory"
-            className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
-              pathname === "/boutique/inventory" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+            className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-all duration-150 ${
+              pathname === "/boutique/inventory" ? "text-slate-900 font-bold" : "text-slate-400"
             }`}
           >
             <Package className="w-5 h-5" />
-            <span className="text-[10px] font-semibold">Stock</span>
+            <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Stock</span>
+            {pathname === "/boutique/inventory" && (
+              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
+            )}
           </Link>
 
           <div className="flex items-center justify-center w-full h-full relative">
             <Link 
               href="/boutique/products/new"
-              className="w-12 h-12 bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(233,185,41,0.45)] active:scale-95 transition-all -translate-y-4 border-4 border-white cursor-pointer z-10 hover:shadow-[0_12px_28px_rgba(233,185,41,0.55)]"
+              className="w-12 h-12 bg-gradient-to-tr from-[#E9B929] to-[#F5C22B] text-slate-900 rounded-full flex items-center justify-center shadow-[0_6px_20px_rgba(233,185,41,0.4)] active:scale-95 transition-all -translate-y-4 border-4 border-white cursor-pointer z-10 hover:shadow-[0_10px_24px_rgba(233,185,41,0.5)]"
               title="Add Product"
             >
               <Plus className="w-6 h-6 stroke-[3]" />
@@ -265,22 +274,28 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
 
           <Link 
             href="/boutique/orders"
-            className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
-              pathname === "/boutique/orders" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+            className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-all duration-150 ${
+              pathname === "/boutique/orders" ? "text-slate-900 font-bold" : "text-slate-400"
             }`}
           >
             <ClipboardList className="w-5 h-5" />
-            <span className="text-[10px] font-semibold">Orders</span>
+            <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Orders</span>
+            {pathname === "/boutique/orders" && (
+              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
+            )}
           </Link>
 
           <Link 
             href="/boutique/profile"
-            className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
-              pathname === "/boutique/profile" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+            className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-all duration-150 ${
+              pathname === "/boutique/profile" ? "text-slate-900 font-bold" : "text-slate-400"
             }`}
           >
             <User className="w-5 h-5" />
-            <span className="text-[10px] font-semibold">More</span>
+            <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">More</span>
+            {pathname === "/boutique/profile" && (
+              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
+            )}
           </Link>
         </nav>
       )}

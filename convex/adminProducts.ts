@@ -133,7 +133,7 @@ export const getAdminProducts = query({
     const performanceMap = new Map(performanceRows.filter(Boolean).map(r => [r!.productId, r]));
 
     // 3. Enrich products
-    let enriched = [];
+    let enriched: any[] = [];
     for (const p of products) {
       const resolvedImages = await Promise.all(
         p.images.map(async (imgId: any) => {

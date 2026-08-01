@@ -226,7 +226,7 @@ export const importProductsCsv = mutation({
           issues.push({ product: item.name, reason: validationErrors.join(", ") });
         }
 
-        const merchantTier = boutique.merchantTier || "Bronze";
+        const merchantTier = (boutique as any).merchantTier || "Bronze";
         const approvalStatus = active
           ? (merchantTier === "Bronze" ? "pending" : "approved")
           : undefined;
@@ -275,7 +275,7 @@ export const importProductsCsv = mutation({
           issues.push({ product: item.name, reason: validationErrors.join(", ") });
         }
 
-        const merchantTier = boutique.merchantTier || "Bronze";
+        const merchantTier = (boutique as any).merchantTier || "Bronze";
         const approvalStatus = active
           ? (merchantTier === "Bronze" ? "pending" : "approved")
           : undefined;

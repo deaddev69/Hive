@@ -16,7 +16,7 @@ export const getCompleteTheLook = query({
     if (!product) return [];
 
     const boutiqueId = product.boutiqueId;
-    let productsToEnrich = [];
+    let productsToEnrich: any[] = [];
 
     const matchingIds = product.matchingProductIds || [];
     if (matchingIds.length > 0) {

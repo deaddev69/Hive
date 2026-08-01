@@ -169,7 +169,7 @@ export const resolveRoadDistancesAction = action({
     const startLat = Math.round(args.userLat * 1000) / 1000;
     const startLng = Math.round(args.userLng * 1000) / 1000;
 
-    const results = [];
+    const results: any[] = [];
 
     for (const cand of top20) {
       const endLat = cand.bLat;

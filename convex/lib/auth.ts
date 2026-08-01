@@ -165,7 +165,7 @@ export async function requireBoutiqueOwnership(
     });
   }
 
-  let boutique = null;
+  let boutique: any = null;
   if (user.role === "admin") {
     boutique = await ctx.db.get(boutiqueId as Id<"boutiques">);
   } else {

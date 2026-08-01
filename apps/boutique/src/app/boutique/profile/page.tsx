@@ -61,6 +61,7 @@ export default function BoutiqueProfile() {
   const [staffPhone2, setStaffPhone2] = useState("");
   const [savingStaff, setSavingStaff] = useState(false);
   const [isEditingStaff, setIsEditingStaff] = useState(false);
+  const [staffNotificationSelection, setStaffNotificationSelection] = useState("none");
 
   // Sync details when boutique query resolves
   useEffect(() => {
@@ -101,6 +102,7 @@ export default function BoutiqueProfile() {
       setStaffEmail2(boutique.staffEmail2 || "");
       setStaffPhone1((boutique as any).staffPhone1 || "");
       setStaffPhone2((boutique as any).staffPhone2 || "");
+      setStaffNotificationSelection((boutique as any).staffNotificationSelection || "none");
     }
   }, [boutique]);
 
@@ -231,6 +233,7 @@ export default function BoutiqueProfile() {
         staffEmail2: staffEmail2 || undefined,
         staffPhone1: staffPhone1 || undefined,
         staffPhone2: staffPhone2 || undefined,
+        staffNotificationSelection,
       });
       toast.success("Staff details updated!");
       setIsEditingStaff(false);
@@ -247,6 +250,7 @@ export default function BoutiqueProfile() {
       setStaffEmail2(boutique.staffEmail2 || "");
       setStaffPhone1((boutique as any).staffPhone1 || "");
       setStaffPhone2((boutique as any).staffPhone2 || "");
+      setStaffNotificationSelection((boutique as any).staffNotificationSelection || "none");
     }
     setIsEditingStaff(false);
   };
@@ -732,6 +736,59 @@ export default function BoutiqueProfile() {
                       disabled={!isEditingStaff}
                       className="w-full h-11 px-3 border border-hive-border rounded-xl text-sm bg-white disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100 disabled:cursor-not-allowed transition-all duration-150"
                     />
+                  </div>
+                </div>
+
+                {/* Order Notifications Routing Selection */}
+                <div className="flex flex-col gap-2.5 border-t border-slate-100 pt-3.5 text-left select-none animate-in fade-in duration-200">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Order Notification Routing</label>
+                  <p className="text-[10px] text-slate-455 text-slate-500 font-medium leading-relaxed">
+                    Order alerts are always dispatched to the store owner. Choose which staff member should also receive notifications:
+                  </p>
+                  
+                  <div className="flex flex-col gap-2 mt-1.5">
+                    <label className="flex items-center gap-2.5 text-xs text-slate-800 font-semibold cursor-pointer">
+                      <input
+                        type="radio"
+                        name="staffNotification"
+                        value="none"
+                        checked={staffNotificationSelection === "none"}
+                        onChange={() => setStaffNotificationSelection("none")}
+                        disabled={!isEditingStaff}
+                        className="w-4 h-4 accent-[#E9B929]"
+                      />
+                      <span>Owner Only (No Staff)</span>
+                    </label>
+
+                    {staffEmail1 && (
+                      <label className="flex items-center gap-2.5 text-xs text-slate-800 font-semibold cursor-pointer">
+                        <input
+                          type="radio"
+                          name="staffNotification"
+                          value="staff1"
+                          checked={staffNotificationSelection === "staff1"}
+                          onChange={() => setStaffNotificationSelection("staff1")}
+                          disabled={!isEditingStaff}
+                          className="w-4 h-4 accent-[#E9B929]"
+                        />
+                        <span>Owner + Staff 1 ({staffEmail1})</span>
+                      </label>
+                    )}
+
+                    {staffEmail2 && (
+                      <label className="flex items-center gap-2.5 text-xs text-slate-800 font-semibold cursor-pointer">
+                        <input
+                          type="radio"
+                          name="staffNotification"
+                          value="staff2"
+                          checked={staffNotificationSelection === "staff2"}
+                          onChange={() => setStaffNotificationSelection("staff2")}
+                          disabled={!isEditingStaff}
+                          className="w-4 h-4 accent-[#E9B929]"
+                        />
+                        <span>Owner + Staff 2 ({staffEmail2})</span>
+                      </label>
+                    )}
                   </div>
                 </div>
 

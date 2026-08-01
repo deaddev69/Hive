@@ -316,7 +316,7 @@ export const recalculateAllProductPrices = mutation({
       const rawCustomerPrice = basePrice * (1 + rate);
       const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
       
-      let customerDiscountPrice = undefined;
+      let customerDiscountPrice: any = undefined;
       if (product.baseDiscountPrice !== undefined) {
         const rawDiscount = product.baseDiscountPrice * (1 + rate);
         customerDiscountPrice = Math.ceil(rawDiscount / 10) * 10 - 1;

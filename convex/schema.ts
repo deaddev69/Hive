@@ -203,6 +203,7 @@ export default defineSchema({
     staffEmail2:      v.optional(v.string()),
     staffPhone1:      v.optional(v.string()),
     staffPhone2:      v.optional(v.string()),
+    staffNotificationSelection: v.optional(v.string()),
     hasAcceptedLegalTerms: v.optional(v.boolean()),
     isAcceptingOrders: v.optional(v.boolean()),
     whatsAppNotificationsEnabled: v.optional(v.boolean()),

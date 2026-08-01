@@ -214,7 +214,7 @@ export const placeOrder = mutation({
     let fallbackBoutique: any = null;
 
     let expectedSubtotalPaise = 0;
-    const resolvedItems = [];
+    const resolvedItems: any[] = [];
 
     // 1. Validate each item using pre-fetched data
     for (const { item, productRow } of resolvedProducts) {
@@ -725,7 +725,7 @@ export const placeOrder = mutation({
  */
 async function formatOrderForCustomer(ctx: any, order: any, items: any[]) {
   if (!order) return null;
-  let driverDetails = null;
+  let driverDetails: any = null;
   if (order.shipmentId) {
     const shipment = await ctx.db.get(order.shipmentId);
     if (shipment && (shipment.driverName || shipment.driverPhone || shipment.vehiclePlate || shipment.liveTrackingUrl)) {
@@ -790,7 +790,7 @@ export const listMyOrders = query({
       )
     );
 
-    const formattedOrders = [];
+    const formattedOrders: any[] = [];
     for (let i = 0; i < orders.length; i++) {
       const formatted = await formatOrderForCustomer(ctx, orders[i], itemsList[i] ?? []);
       if (formatted) {
@@ -1404,7 +1404,7 @@ export const bulkUpdateBoutiqueOrderStatus = mutation({
   handler: async (ctx, args) => {
     const boutique = await getMyBoutique(ctx);
     const now = Date.now();
-    const results = [];
+    const results: any[] = [];
 
     for (const orderId of args.orderIds) {
       const order = await ctx.db.get(orderId);

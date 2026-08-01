@@ -2599,6 +2599,7 @@ export const updateBoutiqueStaff = mutation({
     staffEmail2: v.optional(v.string()),
     staffPhone1: v.optional(v.string()),
     staffPhone2: v.optional(v.string()),
+    staffNotificationSelection: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { user, boutique } = await getMyBoutique(ctx);
@@ -2617,6 +2618,7 @@ export const updateBoutiqueStaff = mutation({
       staffEmail2: args.staffEmail2 ? newEmail2 : undefined,
       staffPhone1: args.staffPhone1 ? normalizePhoneNumber(args.staffPhone1) : undefined,
       staffPhone2: args.staffPhone2 ? normalizePhoneNumber(args.staffPhone2) : undefined,
+      staffNotificationSelection: args.staffNotificationSelection,
     };
 
     await ctx.db.patch(boutique._id, patchData);

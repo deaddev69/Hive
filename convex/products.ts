@@ -8,6 +8,7 @@ import { getMyBoutique, requireRole, getAuthenticatedUser, getCurrentUserOrNull 
 import { Id } from "./_generated/dataModel";
 import { validateUploadedFile } from "./lib/uploads";
 import { resolveBoutiqueStatus } from "./lib/boutiqueStatus";
+import { getBoutiqueStatus } from "./shared/boutiqueStatus";
 import { updateBoutiqueProductCount } from "./boutiques";
 import { normalizeEmail } from "./users";
 import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
@@ -857,7 +858,7 @@ export const getProduct = query({
     slug: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    let product = null;
+    let product: any = null;
     if (args.id) {
       product = await ctx.db.get(args.id);
     } else if (args.slug) {
@@ -875,7 +876,7 @@ export const getProduct = query({
       const isAdmin = currentUser?.role === "admin";
       let isOwner = false;
       if (currentUser && (currentUser.role === "boutique" || currentUser.role === "boutique_owner")) {
-        const boutique = await ctx.db.get(product.boutiqueId);
+        const boutique = await ctx.db.get(product.boutiqueId) as any;
         if (boutique) {
           const isPrimaryOwner = boutique.ownerUserId === currentUser._id || boutique.userId === currentUser._id;
           const isStaffMember = currentUser.email ? (
@@ -893,7 +894,7 @@ export const getProduct = query({
       }
     }
 
-    const boutique = await ctx.db.get(product.boutiqueId);
+    const boutique = await ctx.db.get(product.boutiqueId) as any;
     const purchasable = isPurchasableProduct(product, boutique);
 
     const enriched = await enrichProduct(ctx, product);
@@ -974,6 +975,26 @@ export const getActiveProducts = query({
     // Optimize lookups by filtering approved boutiques early
     const approvedBoutiqueIds = await getApprovedBoutiqueIds(ctx);
     let filtered = products.filter((p) => approvedBoutiqueIds.has(p.boutiqueId) && p.adminHidden !== true && (!p.approvalStatus || p.approvalStatus === "approved"));
+
+    // If browsing general catalog (no specific boutiqueId filter), hide products from boutiques that are currently closed
+    if (!args.boutiqueId) {
+      const boutiqueCache = new Map<string, any>();
+      const openStoreProducts: typeof filtered = [];
+      for (const p of filtered) {
+        let b = boutiqueCache.get(p.boutiqueId);
+        if (!b) {
+          b = await ctx.db.get(p.boutiqueId);
+          boutiqueCache.set(p.boutiqueId, b);
+        }
+        if (b) {
+          const status = getBoutiqueStatus(b, Date.now());
+          if (status.type === "OPEN") {
+            openStoreProducts.push(p);
+          }
+        }
+      }
+      filtered = openStoreProducts;
+    }
 
     // Featured filter
     if (args.featuredOnly) {
@@ -1829,7 +1850,7 @@ export const getDashboardMetrics = query({
           const claimRateOk = claimRate < 2;
           
           if (scoreNeed > 0 || ordersNeed > 0 || !claimRateOk) {
-            const parts = [];
+            const parts: string[] = [];
             if (scoreNeed > 0) parts.push(`increase score by ${scoreNeed} pts`);
             if (ordersNeed > 0) parts.push(`need ${ordersNeed} more deliveries`);
             if (!claimRateOk) parts.push("reduce claim rate below 2%");
@@ -2084,7 +2105,7 @@ export const getMostLovedProducts = query({
         .map((b) => b._id.toString())
     );
     
-    let products = [];
+    let products: any[] = [];
     for (const pid of productIds) {
       try {
         const prod = await ctx.db.get(pid);

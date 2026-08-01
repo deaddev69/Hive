@@ -407,10 +407,10 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const boutiqueStatus = product.boutique
     ? getBoutiqueStatus(product.boutique as any, Date.now())
     : { type: "OPEN" as const };
-  const isStoreOffline = boutiqueStatus.type === "PAUSED";
-  const isPreorderMode = boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED";
-  const resolvedStatus = boutiqueStatus.type === "PAUSED"
-    ? (boutiqueStatus.reason === "vacation" ? ("closed" as const) : ("temporarily_unavailable" as const))
+  const isStoreOffline = boutiqueStatus.type === "PAUSED" || boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED";
+  const isPreorderMode = false; // Disables pre-ordering completely to respect closed hours
+  const resolvedStatus = boutiqueStatus.type === "PAUSED" || boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED"
+    ? "closed" as const
     : (product.boutique as any).storeStatus === "busy"
     ? ("busy" as const)
     : ("open" as const);
@@ -622,13 +622,14 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
               </p>
             </div>
           ) : resolvedStatus === "closed" ? (
-            <div className="flex flex-col gap-1.5 text-xs font-bold text-red-700 bg-red-50/50 backdrop-blur-md px-4 py-3 rounded-2xl border border-red-200/85 w-full shadow-2xs">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-500" />
-                <span>Store Closed: {product.boutique.name || "This boutique"} is currently offline.</span>
-              </div>
+            <div className="flex flex-col items-center justify-center p-6 bg-slate-50 border border-slate-100 rounded-2xl text-center gap-2 select-none shadow-2xs">
+              <Clock className="w-8 h-8 text-amber-500 animate-pulse" />
+              <span className="text-xs font-black uppercase tracking-wider text-slate-800">Boutique Currently Closed</span>
+              <p className="text-[11px] text-slate-500 font-medium leading-normal max-w-xs">
+                {product.boutique.name || "This boutique"} is closed right now. We are open from {product.boutique.openingTime || "09:00"} to {product.boutique.closingTime || "20:00"}. Please visit us when we open!
+              </p>
               {(product.boutique as any).storeMessage && (
-                <p className="text-[10px] text-red-600/90 font-medium pl-6 leading-normal">
+                <p className="text-[10px] text-amber-700 font-bold mt-1 bg-amber-50 px-3 py-1 rounded-lg">
                   Notice: {(product.boutique as any).storeMessage}
                 </p>
               )}
