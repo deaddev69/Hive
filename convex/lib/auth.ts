@@ -56,7 +56,7 @@ export async function getAuthenticatedUser(ctx: AuthCtx, token?: string, options
  */
 export function assertRoleIssuerGating(user: { role: string }, identity: { issuer?: string }, throwOnViolation: boolean = true): boolean {
   if (!identity.issuer) return true;
-  const isProd = process.env.NODE_ENV === "production" || process.env.CONVEX_ENV === "production";
+  const isProdDeployment = process.env.CONVEX_SITE_URL?.includes("standing-mosquito-377") || false;
   const VALID_FIREBASE_ISSUERS = [
     `https://securetoken.google.com/${process.env.FIREBASE_PROJECT_ID || "hive-fashion"}`
   ];
@@ -65,7 +65,7 @@ export function assertRoleIssuerGating(user: { role: string }, identity: { issue
     "https://hivenow.in",
     "https://accounts.hivenow.in",
   ];
-  if (!isProd) {
+  if (!isProdDeployment) {
     VALID_CLERK_ISSUERS.push("https://artistic-tiger-76.clerk.accounts.dev");
   }
 
