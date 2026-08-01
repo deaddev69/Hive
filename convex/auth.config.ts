@@ -8,7 +8,8 @@
 // 2. Set CLERK_JWT_ISSUER_DOMAIN in Convex Dashboard → Settings → Environment Variables
 //    Value: <your Clerk JWT Issuer Domain from Clerk Dashboard>
 
-const isProd = process.env.NODE_ENV === "production" || process.env.CONVEX_ENV === "production";
+// Detect if this is the production deployment
+const isProdDeployment = process.env.CONVEX_SITE_URL?.includes("standing-mosquito-377") || false;
 
 const providers = [
   // Firebase Auth (Customer Storefront)
@@ -31,7 +32,7 @@ const providers = [
   },
 ];
 
-if (!isProd) {
+if (!isProdDeployment) {
   // Clerk Auth (Dev instance fallback - excluded in production)
   providers.push({
     domain: "https://artistic-tiger-76.clerk.accounts.dev",
