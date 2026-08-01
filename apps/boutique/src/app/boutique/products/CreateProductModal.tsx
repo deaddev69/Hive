@@ -35,6 +35,110 @@ const DEFAULT_CATEGORY_TAGS = [
   { id: "other", name: "Other" }
 ];
 
+const FABRIC_CONTENT_OPTIONS = [
+  "100% Cotton", "100% Organic Silk", "100% Linen", "50% Silk 50% Cotton",
+  "80% Cotton 20% Polyester", "100% Rayon", "100% Polyester", "100% Viscose",
+  "Silk Blend", "Cotton Blend", "Wool Blend", "Other"
+];
+const FABRIC_DETAIL_OPTIONS = [
+  "Plain Weave", "Satin", "Twill Weave", "Jacquard", "Zari Brocade",
+  "Chanderi Weave", "Georgette", "Chiffon", "Velvet", "Mulmul", "Organza", "Other"
+];
+const NECK_TYPE_OPTIONS = [
+  "Boat Neck", "Mandarin Collar", "V-Neck", "Round Neck", "Sweetheart Neck",
+  "Collar Neck", "High Neck", "Square Neck", "Halter Neck", "Cowl Neck", "Other"
+];
+const CLOSURE_OPTIONS = [
+  "Hook and Eye", "Zipper", "Buttons", "Drawstring", "Slip On",
+  "Elasticated", "Tie-up", "Velcro", "Other"
+];
+const SLEEVE_LENGTH_OPTIONS = [
+  "Three-Quarter Sleeve", "Short Sleeve", "Sleeveless", "Full Sleeve",
+  "Half Sleeve", "Elbow Length", "Cap Sleeve", "Other"
+];
+const SLEEVE_STYLING_OPTIONS = [
+  "Puff Sleeve", "Regular", "Bell Sleeve", "Flutter Sleeve", "Bishop Sleeve",
+  "Cape Sleeve", "Raglan Sleeve", "Other"
+];
+const SHAPE_OPTIONS = [
+  "A-Line", "Straight", "Anarkali", "Flared", "Fit and Flare", "Asymmetric",
+  "Peplum", "Other"
+];
+const HEMLINE_OPTIONS = [
+  "Flared", "Asymmetric", "Straight", "Curved", "Scalloped", "High-Low", "Other"
+];
+const GARMENT_LENGTH_OPTIONS = [
+  "Calf Length", "Knee Length", "Maxi / Floor Length", "Ankle Length",
+  "Short / Above Knee", "Thigh Length", "Other"
+];
+const PATTERN_OPTIONS = [
+  "Floral Print", "Solid / Plain", "Striped", "Self Design", "Embellished",
+  "Checked", "Printed", "Zari Woven", "Embroidery", "Other"
+];
+const FABRIC_FAMILY_OPTIONS = [
+  "Silk", "Cotton", "Banarasi", "Linen", "Organza", "Chanderi",
+  "Georgette", "Crepe", "Velvet", "Rayon", "Polyester", "Other"
+];
+
+interface InlineDropdownProps {
+  label: string;
+  options: string[];
+  placeholder: string;
+  value: string;
+  onChange: (val: string) => void;
+}
+
+function InlineDropdown({ label, options, placeholder, value, onChange }: InlineDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-1.5 relative w-full font-sans animate-in fade-in" ref={containerRef}>
+      <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">{label}</label>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-left text-slate-700 bg-white flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm cursor-pointer select-none"
+      >
+        <span className={value ? "text-slate-800 font-medium" : "text-slate-400 font-medium"}>
+          {value || placeholder}
+        </span>
+        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-[102%] bg-white border border-[#f1f5f9]/30 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
+          {options.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => {
+                onChange(opt);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2.5 text-[13px] text-left hover:bg-slate-50 transition-colors ${
+                value === opt ? "bg-[#F5C22B]/10 text-[#D9A71E] font-bold" : "text-slate-700"
+              }`}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function autoCorrectCapitalization(str: string): string {
   if (!str) return str;
   return str.replace(/\b([a-z])([a-z]*)\b/gi, (match, p1, p2) => {
@@ -470,6 +574,20 @@ export default function CreateProductModal({
     fabricFamily: ""
   });
 
+  const [specDropdowns, setSpecDropdowns] = useState({
+    fabricContent: "",
+    fabricDetail: "",
+    neckType: "",
+    closure: "",
+    sleeve: "",
+    sleeveStyling: "",
+    shape: "",
+    hemline: "",
+    length: "",
+    pattern: "",
+    fabricFamily: "",
+  });
+
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [stockBySize, setStockBySize] = useState<Record<string, number>>({});
   const [fitRecommendation, setFitRecommendation] = useState<"runs_small" | "true_to_size" | "runs_large">("true_to_size");
@@ -701,19 +819,52 @@ export default function CreateProductModal({
         setCraft(productToEdit.details?.craft ? autoCorrectCapitalization(productToEdit.details.craft) : "");
         
         if (productToEdit.details) {
+          const cFabricContent = autoCorrectCapitalization(productToEdit.details.fabricContent || "");
+          const cFabricDetail = autoCorrectCapitalization(productToEdit.details.fabricDetail || "");
+          const cNeckType = autoCorrectCapitalization(productToEdit.details.neckType || "");
+          const cClosure = autoCorrectCapitalization(productToEdit.details.closure || "");
+          const cSleeve = autoCorrectCapitalization(productToEdit.details.sleeve || "");
+          const cSleeveStyling = autoCorrectCapitalization(productToEdit.details.sleeveStyling || "");
+          const cShape = autoCorrectCapitalization(productToEdit.details.shape || "");
+          const cHemline = autoCorrectCapitalization(productToEdit.details.hemline || "");
+          const cLength = autoCorrectCapitalization(productToEdit.details.length || "");
+          const cPattern = autoCorrectCapitalization(productToEdit.details.pattern || "");
+          const cFabricFamily = autoCorrectCapitalization(productToEdit.details.fabricFamily || "");
+
+          const initSpec = (val: string, options: string[]) => {
+            if (!val) return "";
+            const found = options.find(o => o.toLowerCase() === val.toLowerCase());
+            if (found && found !== "Other") return found;
+            return "Other";
+          };
+
           setSpecs({
             color: autoCorrectCapitalization(productToEdit.details.color || ""),
-            fabricContent: autoCorrectCapitalization(productToEdit.details.fabricContent || ""),
-            fabricDetail: autoCorrectCapitalization(productToEdit.details.fabricDetail || ""),
-            neckType: autoCorrectCapitalization(productToEdit.details.neckType || ""),
-            closure: autoCorrectCapitalization(productToEdit.details.closure || ""),
-            sleeve: autoCorrectCapitalization(productToEdit.details.sleeve || ""),
-            sleeveStyling: autoCorrectCapitalization(productToEdit.details.sleeveStyling || ""),
-            shape: autoCorrectCapitalization(productToEdit.details.shape || ""),
-            hemline: autoCorrectCapitalization(productToEdit.details.hemline || ""),
-            length: autoCorrectCapitalization(productToEdit.details.length || ""),
-            pattern: autoCorrectCapitalization(productToEdit.details.pattern || ""),
-            fabricFamily: autoCorrectCapitalization(productToEdit.details.fabricFamily || "")
+            fabricContent: cFabricContent,
+            fabricDetail: cFabricDetail,
+            neckType: cNeckType,
+            closure: cClosure,
+            sleeve: cSleeve,
+            sleeveStyling: cSleeveStyling,
+            shape: cShape,
+            hemline: cHemline,
+            length: cLength,
+            pattern: cPattern,
+            fabricFamily: cFabricFamily
+          });
+
+          setSpecDropdowns({
+            fabricContent: initSpec(cFabricContent, FABRIC_CONTENT_OPTIONS),
+            fabricDetail: initSpec(cFabricDetail, FABRIC_DETAIL_OPTIONS),
+            neckType: initSpec(cNeckType, NECK_TYPE_OPTIONS),
+            closure: initSpec(cClosure, CLOSURE_OPTIONS),
+            sleeve: initSpec(cSleeve, SLEEVE_LENGTH_OPTIONS),
+            sleeveStyling: initSpec(cSleeveStyling, SLEEVE_STYLING_OPTIONS),
+            shape: initSpec(cShape, SHAPE_OPTIONS),
+            hemline: initSpec(cHemline, HEMLINE_OPTIONS),
+            length: initSpec(cLength, GARMENT_LENGTH_OPTIONS),
+            pattern: initSpec(cPattern, PATTERN_OPTIONS),
+            fabricFamily: initSpec(cFabricFamily, FABRIC_FAMILY_OPTIONS),
           });
         }
         
@@ -754,6 +905,11 @@ export default function CreateProductModal({
           color: "", fabricContent: "", fabricDetail: "", neckType: "",
           closure: "", sleeve: "", sleeveStyling: "", shape: "",
           hemline: "", length: "", pattern: "", fabricFamily: ""
+        });
+        setSpecDropdowns({
+          fabricContent: "", fabricDetail: "", neckType: "", closure: "",
+          sleeve: "", sleeveStyling: "", shape: "", hemline: "",
+          length: "", pattern: "", fabricFamily: ""
         });
         setSelectedSizes([]);
         setStockBySize({});
@@ -1018,33 +1174,7 @@ export default function CreateProductModal({
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">DESIGN STORY</label>
-                <button
-                  type="button"
-                  disabled={generatingStory}
-                  onClick={() => handleGenerateAI("story")}
-                  className="text-[11px] font-bold text-[#D9A71E] hover:text-[#020617] disabled:opacity-50 transition-colors flex items-center gap-1 select-none cursor-pointer"
-                >
-                  {generatingStory ? "Generating..." : "✨ Generate with AI"}
-                </button>
-              </div>
-              {justPolishedStory && story ? (
-                <div className="p-3 bg-amber-50/70 border border-amber-200/70 rounded-xl">
-                  <TextEffect key={story} per="word" preset="fade" className="text-[13px] text-slate-800 font-medium leading-relaxed">
-                    {story}
-                  </TextEffect>
-                </div>
-              ) : null}
-              <textarea
-                placeholder="Tell customers about the inspiration, craftsmanship, or what makes this piece special..."
-                value={story}
-                onChange={(e) => setStory(e.target.value)}
-                rows={2}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm resize-none"
-              />
-            </div>
+
 
             <div className="flex flex-col gap-2">
               <CustomSelect
@@ -1258,135 +1388,300 @@ export default function CreateProductModal({
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">FABRIC CONTENT</label>
-                <input
-                  type="text"
-                  value={specs.fabricContent}
-                  onChange={(e) => setSpecs({ ...specs, fabricContent: autoCorrectCapitalization(e.target.value) })}
-                  onBlur={(e) => setSpecs({ ...specs, fabricContent: autoCorrectCapitalization(e.target.value) })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
-                  placeholder="e.g. 100% Cotton"
+                <InlineDropdown
+                  label="FABRIC CONTENT"
+                  options={FABRIC_CONTENT_OPTIONS}
+                  placeholder="Select fabric content..."
+                  value={specDropdowns.fabricContent}
+                  onChange={(val) => {
+                    setSpecDropdowns(prev => ({ ...prev, fabricContent: val }));
+                    if (val !== "Other") {
+                      setSpecs(prev => ({ ...prev, fabricContent: val }));
+                    } else {
+                      setSpecs(prev => ({ ...prev, fabricContent: "" }));
+                    }
+                  }}
                 />
+                {specDropdowns.fabricContent === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom fabric content..."
+                    value={specs.fabricContent}
+                    onChange={(e) => setSpecs(prev => ({ ...prev, fabricContent: autoCorrectCapitalization(e.target.value) }))}
+                    onBlur={(e) => setSpecs(prev => ({ ...prev, fabricContent: autoCorrectCapitalization(e.target.value) }))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
+                  />
+                )}
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">FABRIC DETAIL</label>
-                <input
-                  type="text"
-                  value={specs.fabricDetail}
-                  onChange={(e) => setSpecs({ ...specs, fabricDetail: autoCorrectCapitalization(e.target.value) })}
-                  onBlur={(e) => setSpecs({ ...specs, fabricDetail: autoCorrectCapitalization(e.target.value) })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
-                  placeholder="e.g. Pure Cotton"
+                <InlineDropdown
+                  label="FABRIC DETAIL"
+                  options={FABRIC_DETAIL_OPTIONS}
+                  placeholder="Select fabric detail..."
+                  value={specDropdowns.fabricDetail}
+                  onChange={(val) => {
+                    setSpecDropdowns(prev => ({ ...prev, fabricDetail: val }));
+                    if (val !== "Other") {
+                      setSpecs(prev => ({ ...prev, fabricDetail: val }));
+                    } else {
+                      setSpecs(prev => ({ ...prev, fabricDetail: "" }));
+                    }
+                  }}
                 />
+                {specDropdowns.fabricDetail === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom fabric detail..."
+                    value={specs.fabricDetail}
+                    onChange={(e) => setSpecs(prev => ({ ...prev, fabricDetail: autoCorrectCapitalization(e.target.value) }))}
+                    onBlur={(e) => setSpecs(prev => ({ ...prev, fabricDetail: autoCorrectCapitalization(e.target.value) }))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
+                  />
+                )}
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">NECK TYPE</label>
-                <input
-                  type="text"
-                  value={specs.neckType}
-                  onChange={(e) => setSpecs({ ...specs, neckType: autoCorrectCapitalization(e.target.value) })}
-                  onBlur={(e) => setSpecs({ ...specs, neckType: autoCorrectCapitalization(e.target.value) })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
-                  placeholder="e.g. Mandarin Collar"
+                <InlineDropdown
+                  label="NECK TYPE"
+                  options={NECK_TYPE_OPTIONS}
+                  placeholder="Select neck type..."
+                  value={specDropdowns.neckType}
+                  onChange={(val) => {
+                    setSpecDropdowns(prev => ({ ...prev, neckType: val }));
+                    if (val !== "Other") {
+                      setSpecs(prev => ({ ...prev, neckType: val }));
+                    } else {
+                      setSpecs(prev => ({ ...prev, neckType: "" }));
+                    }
+                  }}
                 />
+                {specDropdowns.neckType === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom neck type..."
+                    value={specs.neckType}
+                    onChange={(e) => setSpecs(prev => ({ ...prev, neckType: autoCorrectCapitalization(e.target.value) }))}
+                    onBlur={(e) => setSpecs(prev => ({ ...prev, neckType: autoCorrectCapitalization(e.target.value) }))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
+                  />
+                )}
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">CLOSURE</label>
-                <input
-                  type="text"
-                  value={specs.closure}
-                  onChange={(e) => setSpecs({ ...specs, closure: autoCorrectCapitalization(e.target.value) })}
-                  onBlur={(e) => setSpecs({ ...specs, closure: autoCorrectCapitalization(e.target.value) })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
-                  placeholder="e.g. Slip On"
+                <InlineDropdown
+                  label="CLOSURE"
+                  options={CLOSURE_OPTIONS}
+                  placeholder="Select closure..."
+                  value={specDropdowns.closure}
+                  onChange={(val) => {
+                    setSpecDropdowns(prev => ({ ...prev, closure: val }));
+                    if (val !== "Other") {
+                      setSpecs(prev => ({ ...prev, closure: val }));
+                    } else {
+                      setSpecs(prev => ({ ...prev, closure: "" }));
+                    }
+                  }}
                 />
+                {specDropdowns.closure === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom closure..."
+                    value={specs.closure}
+                    onChange={(e) => setSpecs(prev => ({ ...prev, closure: autoCorrectCapitalization(e.target.value) }))}
+                    onBlur={(e) => setSpecs(prev => ({ ...prev, closure: autoCorrectCapitalization(e.target.value) }))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
+                  />
+                )}
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">SLEEVE</label>
-                <input
-                  type="text"
-                  value={specs.sleeve}
-                  onChange={(e) => setSpecs({ ...specs, sleeve: autoCorrectCapitalization(e.target.value) })}
-                  onBlur={(e) => setSpecs({ ...specs, sleeve: autoCorrectCapitalization(e.target.value) })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
-                  placeholder="e.g. Three-Quarter"
+                <InlineDropdown
+                  label="SLEEVE LENGTH"
+                  options={SLEEVE_LENGTH_OPTIONS}
+                  placeholder="Select sleeve length..."
+                  value={specDropdowns.sleeve}
+                  onChange={(val) => {
+                    setSpecDropdowns(prev => ({ ...prev, sleeve: val }));
+                    if (val !== "Other") {
+                      setSpecs(prev => ({ ...prev, sleeve: val }));
+                    } else {
+                      setSpecs(prev => ({ ...prev, sleeve: "" }));
+                    }
+                  }}
                 />
+                {specDropdowns.sleeve === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom sleeve length..."
+                    value={specs.sleeve}
+                    onChange={(e) => setSpecs(prev => ({ ...prev, sleeve: autoCorrectCapitalization(e.target.value) }))}
+                    onBlur={(e) => setSpecs(prev => ({ ...prev, sleeve: autoCorrectCapitalization(e.target.value) }))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
+                  />
+                )}
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">SLEEVE STYLING</label>
-                <input
-                  type="text"
-                  value={specs.sleeveStyling}
-                  onChange={(e) => setSpecs({ ...specs, sleeveStyling: autoCorrectCapitalization(e.target.value) })}
-                  onBlur={(e) => setSpecs({ ...specs, sleeveStyling: autoCorrectCapitalization(e.target.value) })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
-                  placeholder="e.g. Regular"
+                <InlineDropdown
+                  label="SLEEVE STYLING"
+                  options={SLEEVE_STYLING_OPTIONS}
+                  placeholder="Select sleeve styling..."
+                  value={specDropdowns.sleeveStyling}
+                  onChange={(val) => {
+                    setSpecDropdowns(prev => ({ ...prev, sleeveStyling: val }));
+                    if (val !== "Other") {
+                      setSpecs(prev => ({ ...prev, sleeveStyling: val }));
+                    } else {
+                      setSpecs(prev => ({ ...prev, sleeveStyling: "" }));
+                    }
+                  }}
                 />
+                {specDropdowns.sleeveStyling === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom sleeve styling..."
+                    value={specs.sleeveStyling}
+                    onChange={(e) => setSpecs(prev => ({ ...prev, sleeveStyling: autoCorrectCapitalization(e.target.value) }))}
+                    onBlur={(e) => setSpecs(prev => ({ ...prev, sleeveStyling: autoCorrectCapitalization(e.target.value) }))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
+                  />
+                )}
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">SHAPE</label>
-                <input
-                  type="text"
-                  value={specs.shape}
-                  onChange={(e) => setSpecs({ ...specs, shape: autoCorrectCapitalization(e.target.value) })}
-                  onBlur={(e) => setSpecs({ ...specs, shape: autoCorrectCapitalization(e.target.value) })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
-                  placeholder="e.g. Straight"
+                <InlineDropdown
+                  label="SHAPE"
+                  options={SHAPE_OPTIONS}
+                  placeholder="Select shape..."
+                  value={specDropdowns.shape}
+                  onChange={(val) => {
+                    setSpecDropdowns(prev => ({ ...prev, shape: val }));
+                    if (val !== "Other") {
+                      setSpecs(prev => ({ ...prev, shape: val }));
+                    } else {
+                      setSpecs(prev => ({ ...prev, shape: "" }));
+                    }
+                  }}
                 />
+                {specDropdowns.shape === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom shape..."
+                    value={specs.shape}
+                    onChange={(e) => setSpecs(prev => ({ ...prev, shape: autoCorrectCapitalization(e.target.value) }))}
+                    onBlur={(e) => setSpecs(prev => ({ ...prev, shape: autoCorrectCapitalization(e.target.value) }))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
+                  />
+                )}
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">HEMLINE</label>
-                <input
-                  type="text"
-                  value={specs.hemline}
-                  onChange={(e) => setSpecs({ ...specs, hemline: autoCorrectCapitalization(e.target.value) })}
-                  onBlur={(e) => setSpecs({ ...specs, hemline: autoCorrectCapitalization(e.target.value) })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
-                  placeholder="e.g. Straight"
+                <InlineDropdown
+                  label="HEMLINE"
+                  options={HEMLINE_OPTIONS}
+                  placeholder="Select hemline..."
+                  value={specDropdowns.hemline}
+                  onChange={(val) => {
+                    setSpecDropdowns(prev => ({ ...prev, hemline: val }));
+                    if (val !== "Other") {
+                      setSpecs(prev => ({ ...prev, hemline: val }));
+                    } else {
+                      setSpecs(prev => ({ ...prev, hemline: "" }));
+                    }
+                  }}
                 />
+                {specDropdowns.hemline === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom hemline..."
+                    value={specs.hemline}
+                    onChange={(e) => setSpecs(prev => ({ ...prev, hemline: autoCorrectCapitalization(e.target.value) }))}
+                    onBlur={(e) => setSpecs(prev => ({ ...prev, hemline: autoCorrectCapitalization(e.target.value) }))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
+                  />
+                )}
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">LENGTH</label>
-                <input
-                  type="text"
-                  value={specs.length}
-                  onChange={(e) => setSpecs({ ...specs, length: autoCorrectCapitalization(e.target.value) })}
-                  onBlur={(e) => setSpecs({ ...specs, length: autoCorrectCapitalization(e.target.value) })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
-                  placeholder="e.g. Calf Length"
+                <InlineDropdown
+                  label="GARMENT LENGTH"
+                  options={GARMENT_LENGTH_OPTIONS}
+                  placeholder="Select garment length..."
+                  value={specDropdowns.length}
+                  onChange={(val) => {
+                    setSpecDropdowns(prev => ({ ...prev, length: val }));
+                    if (val !== "Other") {
+                      setSpecs(prev => ({ ...prev, length: val }));
+                    } else {
+                      setSpecs(prev => ({ ...prev, length: "" }));
+                    }
+                  }}
                 />
+                {specDropdowns.length === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom garment length..."
+                    value={specs.length}
+                    onChange={(e) => setSpecs(prev => ({ ...prev, length: autoCorrectCapitalization(e.target.value) }))}
+                    onBlur={(e) => setSpecs(prev => ({ ...prev, length: autoCorrectCapitalization(e.target.value) }))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
+                  />
+                )}
               </div>
               
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">PATTERN</label>
-                <input
-                  type="text"
-                  value={specs.pattern}
-                  onChange={(e) => setSpecs({ ...specs, pattern: autoCorrectCapitalization(e.target.value) })}
-                  onBlur={(e) => setSpecs({ ...specs, pattern: autoCorrectCapitalization(e.target.value) })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
-                  placeholder="e.g. Floral Print"
+                <InlineDropdown
+                  label="PATTERN"
+                  options={PATTERN_OPTIONS}
+                  placeholder="Select pattern..."
+                  value={specDropdowns.pattern}
+                  onChange={(val) => {
+                    setSpecDropdowns(prev => ({ ...prev, pattern: val }));
+                    if (val !== "Other") {
+                      setSpecs(prev => ({ ...prev, pattern: val }));
+                    } else {
+                      setSpecs(prev => ({ ...prev, pattern: "" }));
+                    }
+                  }}
                 />
+                {specDropdowns.pattern === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom pattern..."
+                    value={specs.pattern}
+                    onChange={(e) => setSpecs(prev => ({ ...prev, pattern: autoCorrectCapitalization(e.target.value) }))}
+                    onBlur={(e) => setSpecs(prev => ({ ...prev, pattern: autoCorrectCapitalization(e.target.value) }))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
+                  />
+                )}
               </div>
               
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">FABRIC FAMILY</label>
-                <input
-                  type="text"
-                  value={specs.fabricFamily}
-                  onChange={(e) => setSpecs({ ...specs, fabricFamily: autoCorrectCapitalization(e.target.value) })}
-                  onBlur={(e) => setSpecs({ ...specs, fabricFamily: autoCorrectCapitalization(e.target.value) })}
-                  className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
-                  placeholder="e.g. Pure Cotton"
+              <div className="flex flex-col gap-1 col-span-2">
+                <InlineDropdown
+                  label="FABRIC FAMILY"
+                  options={FABRIC_FAMILY_OPTIONS}
+                  placeholder="Select fabric family..."
+                  value={specDropdowns.fabricFamily}
+                  onChange={(val) => {
+                    setSpecDropdowns(prev => ({ ...prev, fabricFamily: val }));
+                    if (val !== "Other") {
+                      setSpecs(prev => ({ ...prev, fabricFamily: val }));
+                    } else {
+                      setSpecs(prev => ({ ...prev, fabricFamily: "" }));
+                    }
+                  }}
                 />
+                {specDropdowns.fabricFamily === "Other" && (
+                  <input
+                    type="text"
+                    placeholder="Enter custom fabric family..."
+                    value={specs.fabricFamily}
+                    onChange={(e) => setSpecs(prev => ({ ...prev, fabricFamily: autoCorrectCapitalization(e.target.value) }))}
+                    onBlur={(e) => setSpecs(prev => ({ ...prev, fabricFamily: autoCorrectCapitalization(e.target.value) }))}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
+                  />
+                )}
               </div>
 
             </div>
