@@ -89,6 +89,22 @@ const productFormSchema = z.object({
   length: z.string().optional(),
   pattern: z.string().optional(),
   fabricFamily: z.string().optional(),
+}).refine(data => {
+  if (data.materialType === "Other" && (!data.customMaterialType || !data.customMaterialType.trim())) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Custom material name is required when choosing Other",
+  path: ["customMaterialType"]
+}).refine(data => {
+  if (data.care === "Other" && (!data.customCare || !data.customCare.trim())) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Custom care instructions are required when choosing Other",
+  path: ["customCare"]
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -112,6 +128,8 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   // Layout and Specs UI toggles
   const [showSpecs, setShowSpecs] = useState(false);
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+  const [isMaterialPickerOpen, setIsMaterialPickerOpen] = useState(false);
+  const [isCarePickerOpen, setIsCarePickerOpen] = useState(false);
 
   // Standard react states for values not fits inside text validation
   const [localPreviews, setLocalPreviews] = useState<{ url: string; file?: File; storageId?: string }[]>([]);
@@ -229,6 +247,8 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const priceWatch = watch("price");
   const nameWatch = watch("name");
   const descriptionWatch = watch("description");
+  const materialTypeWatch = watch("materialType");
+  const careWatch = watch("care");
 
   // Auto-expand drawer if errors are found inside them
   useEffect(() => {
@@ -486,11 +506,11 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           streamAccumulator += chunkText;
           setValue("description", streamAccumulator, { shouldDirty: true, shouldValidate: true });
         }
-        toast.success("Description updated!");
+        toast.success("Product description generated.");
       } else {
         const text = await response.text();
         setValue("description", text, { shouldDirty: true, shouldValidate: true });
-        toast.success("Description updated!");
+        toast.success("Product description generated.");
       }
     } catch (e: any) {
       console.error(e);
@@ -1077,8 +1097,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   <textarea
                     placeholder="Provide a detailed description of fabrics, stitching style, design aesthetics..."
                     {...register("description")}
-                    value={descriptionWatch || ""}
-                    onChange={(e) => setValue("description", e.target.value, { shouldDirty: true, shouldValidate: true })}
                     rows={4}
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] shadow-xs font-sans leading-relaxed resize-none"
                   />
@@ -1100,30 +1118,152 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-1">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">Material *</label>
-                    <select
-                      {...register("materialType")}
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] cursor-pointer min-h-[44px]"
+                    <input type="hidden" {...register("materialType")} />
+                    <button
+                      type="button"
+                      onClick={() => setIsMaterialPickerOpen(true)}
+                      className={cn(
+                        "w-full px-3 py-2.5 border border-slate-200 rounded-xl text-[13px] text-slate-800 bg-white flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] cursor-pointer min-h-[44px] text-left transition-all",
+                        errors.materialType && "border-red-500 ring-1 ring-red-500"
+                      )}
                     >
-                      <option value="">Select Material...</option>
-                      {MATERIAL_OPTIONS.map((mat) => (
-                        <option key={mat} value={mat}>{mat}</option>
-                      ))}
-                    </select>
+                      <span>{materialTypeWatch || "Select Material..."}</span>
+                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                    </button>
                     {errors.materialType && <span className="text-red-500 text-xs font-bold">{errors.materialType.message}</span>}
+
+                    {/* Conditional manual writing input if Other is selected */}
+                    {materialTypeWatch === "Other" && (
+                      <div className="flex flex-col gap-1.5 mt-2 animate-in fade-in duration-200">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Custom Material Name *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Raw Silk"
+                          {...register("customMaterialType")}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] min-h-[38px]"
+                        />
+                        {errors.customMaterialType && <span className="text-red-500 text-xs font-bold">{errors.customMaterialType.message}</span>}
+                      </div>
+                    )}
+
+                    {/* Custom Material Picker Drawer */}
+                    {isMaterialPickerOpen && (
+                      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center sm:justify-center animate-in fade-in duration-200">
+                        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setIsMaterialPickerOpen(false)} />
+                        <div className="relative w-full max-h-[85vh] bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-bottom duration-300 sm:max-w-md sm:m-4 overflow-hidden z-10 border border-slate-100 pb-safe">
+                          <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                            <span className="text-xs font-black uppercase tracking-widest text-slate-800">Select Material</span>
+                            <button 
+                              type="button"
+                              onClick={() => setIsMaterialPickerOpen(false)}
+                              className="w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
+                              aria-label="Close picker"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-1.5 py-1 scrollbar-none">
+                            {MATERIAL_OPTIONS.map((mat) => {
+                              const isSelected = materialTypeWatch === mat;
+                              return (
+                                <button
+                                  key={mat}
+                                  type="button"
+                                  onClick={() => {
+                                    setValue("materialType", mat, { shouldValidate: true });
+                                    setIsMaterialPickerOpen(false);
+                                  }}
+                                  className={cn(
+                                    "w-full px-4 py-3 rounded-xl text-left text-xs font-extrabold transition-all flex justify-between items-center border cursor-pointer",
+                                    isSelected
+                                      ? "bg-amber-50/70 border-amber-200 text-amber-700"
+                                      : "bg-white border-slate-100 hover:border-slate-200 text-slate-600 hover:bg-slate-50"
+                                  )}
+                                >
+                                  <span>{mat}</span>
+                                  {isSelected && <Check className="w-4 h-4 text-amber-600" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">Care Instruction *</label>
-                    <select
-                      {...register("care")}
-                      className="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-[13px] text-slate-800 bg-white focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] cursor-pointer min-h-[44px]"
+                    <input type="hidden" {...register("care")} />
+                    <button
+                      type="button"
+                      onClick={() => setIsCarePickerOpen(true)}
+                      className={cn(
+                        "w-full px-3 py-2.5 border border-slate-200 rounded-xl text-[13px] text-slate-800 bg-white flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] cursor-pointer min-h-[44px] text-left transition-all",
+                        errors.care && "border-red-500 ring-1 ring-red-500"
+                      )}
                     >
-                      <option value="">Select Care...</option>
-                      {CARE_OPTIONS.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                      <span>{careWatch || "Select Care..."}</span>
+                      <ChevronDown className="w-4 h-4 text-slate-400" />
+                    </button>
                     {errors.care && <span className="text-red-500 text-xs font-bold">{errors.care.message}</span>}
+
+                    {/* Conditional manual writing input if Other is selected */}
+                    {careWatch === "Other" && (
+                      <div className="flex flex-col gap-1.5 mt-2 animate-in fade-in duration-200">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-500">Custom Care Instruction *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Dry clean first wash"
+                          {...register("customCare")}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-[12px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] min-h-[38px]"
+                        />
+                        {errors.customCare && <span className="text-red-500 text-xs font-bold">{errors.customCare.message}</span>}
+                      </div>
+                    )}
+
+                    {/* Custom Care Picker Drawer */}
+                    {isCarePickerOpen && (
+                      <div className="fixed inset-0 z-[1000] flex items-end sm:items-center sm:justify-center animate-in fade-in duration-200">
+                        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setIsCarePickerOpen(false)} />
+                        <div className="relative w-full max-h-[85vh] bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-bottom duration-300 sm:max-w-md sm:m-4 overflow-hidden z-10 border border-slate-100 pb-safe">
+                          <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                            <span className="text-xs font-black uppercase tracking-widest text-slate-800">Select Care</span>
+                            <button 
+                              type="button"
+                              onClick={() => setIsCarePickerOpen(false)}
+                              className="w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
+                              aria-label="Close picker"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-1.5 py-1 scrollbar-none">
+                            {CARE_OPTIONS.map((c) => {
+                              const isSelected = careWatch === c;
+                              return (
+                                <button
+                                  key={c}
+                                  type="button"
+                                  onClick={() => {
+                                    setValue("care", c, { shouldValidate: true });
+                                    setIsCarePickerOpen(false);
+                                  }}
+                                  className={cn(
+                                    "w-full px-4 py-3 rounded-xl text-left text-xs font-extrabold transition-all flex justify-between items-center border cursor-pointer",
+                                    isSelected
+                                      ? "bg-amber-50/70 border-amber-200 text-amber-700"
+                                      : "bg-white border-slate-100 hover:border-slate-200 text-slate-600 hover:bg-slate-50"
+                                  )}
+                                >
+                                  <span>{c}</span>
+                                  {isSelected && <Check className="w-4 h-4 text-amber-600" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col gap-1.5">

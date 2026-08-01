@@ -221,67 +221,69 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
       </main>
 
       {/* Mobile Bottom Navigation Footer (With central gold floating Add button) */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-white border-t border-[#f1f5f9] z-50 flex items-center justify-around px-2 shadow-[0_-8px_20px_rgba(0,0,0,0.06)] pb-safe">
-        <Link 
-          href="/boutique"
-          className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
-            pathname === "/boutique" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
-          }`}
-        >
-          <Home className="w-5 h-5" />
-          <span className="text-[10px] font-semibold">Home</span>
-        </Link>
-
-        <Link 
-          href="/boutique/products"
-          className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
-            pathname === "/boutique/products" && !pathname.includes("/new") ? "text-[#020617] font-bold" : "text-[#94a3b8]"
-          }`}
-        >
-          <Tag className="w-5 h-5" />
-          <span className="text-[10px] font-semibold">Products</span>
-        </Link>
-
-        <Link 
-          href="/boutique/inventory"
-          className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
-            pathname === "/boutique/inventory" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
-          }`}
-        >
-          <Package className="w-5 h-5" />
-          <span className="text-[10px] font-semibold">Stock</span>
-        </Link>
-
-        <div className="flex items-center justify-center w-full h-full relative">
+      {!pathname.includes("/products/new") && !pathname.includes("/products/edit") && (
+        <nav className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-white border-t border-[#f1f5f9] z-50 flex items-center justify-around px-2 shadow-[0_-8px_20px_rgba(0,0,0,0.06)] pb-safe">
           <Link 
-            href="/boutique/products/new"
-            className="w-12 h-12 bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(233,185,41,0.45)] active:scale-95 transition-all -translate-y-4 border-4 border-white cursor-pointer z-10 hover:shadow-[0_12px_28px_rgba(233,185,41,0.55)]"
-            title="Add Product"
+            href="/boutique"
+            className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
+              pathname === "/boutique" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+            }`}
           >
-            <Plus className="w-6 h-6 stroke-[3]" />
+            <Home className="w-5 h-5" />
+            <span className="text-[10px] font-semibold">Home</span>
           </Link>
-        </div>
 
-        <Link 
-          href="/boutique/orders"
-          className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
-            pathname === "/boutique/orders" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
-          }`}
-        >
-          <ClipboardList className="w-5 h-5" />
-          <span className="text-[10px] font-semibold">Orders</span>
-        </Link>
+          <Link 
+            href="/boutique/products"
+            className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
+              pathname === "/boutique/products" && !pathname.includes("/new") ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+            }`}
+          >
+            <Tag className="w-5 h-5" />
+            <span className="text-[10px] font-semibold">Products</span>
+          </Link>
 
-        <Link 
-          href="/boutique/profile"
-          className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
-            pathname === "/boutique/profile" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
-          }`}
-        >
-          <User className="w-5 h-5" />
-          <span className="text-[10px] font-semibold">More</span>
-        </Link>
-      </nav>
+          <Link 
+            href="/boutique/inventory"
+            className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
+              pathname === "/boutique/inventory" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+            }`}
+          >
+            <Package className="w-5 h-5" />
+            <span className="text-[10px] font-semibold">Stock</span>
+          </Link>
+
+          <div className="flex items-center justify-center w-full h-full relative">
+            <Link 
+              href="/boutique/products/new"
+              className="w-12 h-12 bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 rounded-full flex items-center justify-center shadow-[0_8px_24px_rgba(233,185,41,0.45)] active:scale-95 transition-all -translate-y-4 border-4 border-white cursor-pointer z-10 hover:shadow-[0_12px_28px_rgba(233,185,41,0.55)]"
+              title="Add Product"
+            >
+              <Plus className="w-6 h-6 stroke-[3]" />
+            </Link>
+          </div>
+
+          <Link 
+            href="/boutique/orders"
+            className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
+              pathname === "/boutique/orders" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+            }`}
+          >
+            <ClipboardList className="w-5 h-5" />
+            <span className="text-[10px] font-semibold">Orders</span>
+          </Link>
+
+          <Link 
+            href="/boutique/profile"
+            className={`flex flex-col items-center justify-center gap-1 w-full h-full pt-1 transition-all duration-150 ${
+              pathname === "/boutique/profile" ? "text-[#020617] font-bold" : "text-[#94a3b8]"
+            }`}
+          >
+            <User className="w-5 h-5" />
+            <span className="text-[10px] font-semibold">More</span>
+          </Link>
+        </nav>
+      )}
     </div>
   );
 }
