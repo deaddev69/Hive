@@ -26,6 +26,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
   const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({});
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const mainImageRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
   
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -445,6 +446,24 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
           <div 
             className="flex-1 w-full flex items-center justify-center relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => {
+              touchStartX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              if (touchStartX.current === null) return;
+              const touchEndX = e.changedTouches[0].clientX;
+              const diffX = touchStartX.current - touchEndX;
+              const minSwipeDistance = 50; // minimum distance to qualify as a swipe
+              
+              if (diffX > minSwipeDistance) {
+                // Swiped left -> Go to next image
+                setLightboxIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+              } else if (diffX < -minSwipeDistance) {
+                // Swiped right -> Go to previous image
+                setLightboxIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+              }
+              touchStartX.current = null;
+            }}
           >
             {/* Previous Image trigger */}
             {images.length > 1 && (
