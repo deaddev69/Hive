@@ -1017,76 +1017,168 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
   const handleTileClick = (fileIndex: number) => {
     setSelectedPreviewIndex(fileIndex);
-  };
-
-  if (wizardStep === "select") {
+  };  if (wizardStep === "select") {
     const canGoNext = localPreviews.length >= 3;
+    const activePreview = localPreviews[selectedPreviewIndex];
+    const cropSettings = activePreview?.cropSettings || { zoom: 1, x: 0, y: 0, aspect: "1:1" as const };
+
+    const getViewportHeight = () => {
+      if (cropSettings.aspect === "4:5") return 500;
+      if (cropSettings.aspect === "original" && imageNaturalSize.width > 0) {
+        const aspect = imageNaturalSize.width / imageNaturalSize.height;
+        return Math.round(400 / aspect);
+      }
+      return 400; // default 1:1
+    };
 
     return (
-      <div className="w-full max-w-xl mx-auto px-4 py-8 font-sans animate-in fade-in duration-200">
-        <div className="bg-white border border-slate-100 rounded-[24px] shadow-xl overflow-hidden flex flex-col">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-20">
-            <button
-              type="button"
-              onClick={() => router.push("/boutique/products")}
-              className="text-slate-500 hover:text-slate-800 transition-colors p-1"
+      <div className="fixed inset-0 bg-white z-[100] flex flex-col font-sans overflow-hidden animate-in fade-in duration-200">
+        {/* Header Bar */}
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
+          <button
+            type="button"
+            onClick={() => router.push("/boutique/products")}
+            className="text-slate-500 hover:text-slate-800 transition-colors p-1"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <span className="text-sm font-black uppercase tracking-widest text-slate-800">New product post</span>
+          <button
+            type="button"
+            onClick={handleApplyCrop}
+            disabled={!canGoNext}
+            className={cn(
+              "text-xs font-black uppercase tracking-wider px-4 py-2 rounded-xl transition-all",
+              canGoNext 
+                ? "bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 shadow-xs cursor-pointer" 
+                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+            )}
+          >
+            Next
+          </button>
+        </div>
+
+        {/* Viewport & Grid Splitter Container */}
+        <div className="flex-1 overflow-y-auto bg-slate-50/50 flex flex-col">
+          
+          {/* Top Interactive Viewport Frame */}
+          <div className="w-full bg-slate-100 flex justify-center items-center py-4 relative shrink-0">
+            <div
+              ref={viewportRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerLeave={handlePointerUp}
+              className="w-full relative bg-slate-950 overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing rounded-2xl shadow-inner select-none"
+              style={{
+                height: `${getViewportHeight()}px`,
+                maxWidth: "400px"
+              }}
             >
-              <X className="w-5 h-5" />
-            </button>
-            <span className="text-sm font-black uppercase tracking-widest text-slate-800">New product post</span>
-            <button
-              type="button"
-              onClick={() => setWizardStep("crop")}
-              disabled={!canGoNext}
-              className={cn(
-                "text-xs font-black uppercase tracking-wider px-4 py-2 rounded-xl transition-all",
-                canGoNext 
-                  ? "bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 shadow-xs cursor-pointer" 
-                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
+              {activePreview ? (
+                <img
+                  ref={imgRef}
+                  src={activePreview.url}
+                  alt="Crop preview"
+                  className="absolute max-w-none pointer-events-none select-none"
+                  style={{
+                    transform: `translate(-50%, -50%) scale(${cropSettings.zoom}) translate(${cropSettings.x}px, ${cropSettings.y}px)`,
+                    left: "50%",
+                    top: "50%",
+                    height: "100%",
+                    width: "auto",
+                    objectFit: "cover"
+                  }}
+                  onLoad={(e) => {
+                    const img = e.currentTarget;
+                    setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
+                  }}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-slate-400 gap-2 p-6">
+                  <ImageIcon className="w-12 h-12 stroke-[1.25] text-slate-500 mb-2" />
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Upload photos below</span>
+                </div>
               )}
-            >
-              Next
-            </button>
+
+              {/* Grid overlay lines */}
+              {isDragging && (
+                <div className="absolute inset-0 pointer-events-none grid grid-cols-3 grid-rows-3 border border-white/20">
+                  <div className="border-r border-b border-white/30" />
+                  <div className="border-r border-b border-white/30" />
+                  <div className="border-b border-white/30" />
+                  <div className="border-r border-b border-white/30" />
+                  <div className="border-r border-b border-white/30" />
+                  <div className="border-b border-white/30" />
+                  <div className="border-r border-white/30" />
+                  <div className="border-r border-white/30" />
+                  <div />
+                </div>
+              )}
+
+              {/* Aspect Ratio Button Overlay */}
+              {activePreview && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextAspect = cropSettings.aspect === "1:1" ? "4:5" : cropSettings.aspect === "4:5" ? "original" : "1:1";
+                    updateActiveCrop({ aspect: nextAspect, x: 0, y: 0 });
+                  }}
+                  className="absolute bottom-3 left-3 h-8 w-8 rounded-full bg-black/65 hover:bg-black/85 text-white flex items-center justify-center transition-all cursor-pointer shadow-md select-none active:scale-95 border border-white/10"
+                  title="Toggle Aspect Ratio"
+                >
+                  <span className="text-[9px] font-black tracking-tighter uppercase">
+                    {cropSettings.aspect === "1:1" ? "1:1" : cropSettings.aspect === "4:5" ? "4:5" : "Orig"}
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
 
-          <div className="w-full aspect-square bg-slate-950 flex items-center justify-center relative overflow-hidden">
-            {localPreviews[selectedPreviewIndex] ? (
-              <img
-                src={localPreviews[selectedPreviewIndex].url}
-                alt="Selected preview"
-                className="w-full h-full object-cover"
+          {/* Zoom Slider Overlay */}
+          {activePreview && (
+            <div className="px-6 py-2.5 bg-white border-y border-slate-100 flex items-center gap-3 shrink-0 select-none">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Zoom</span>
+              <input
+                type="range"
+                min="1"
+                max="3"
+                step="0.01"
+                value={cropSettings.zoom}
+                onChange={(e) => updateActiveCrop({ zoom: parseFloat(e.target.value) })}
+                className="flex-1 accent-[#E9B929] cursor-ew-resize h-1 bg-slate-100 rounded-lg appearance-none"
               />
-            ) : (
-              <div className="flex flex-col items-center justify-center text-slate-400 gap-2 p-6">
-                <ImageIcon className="w-12 h-12 stroke-[1.25] text-slate-500 mb-2" />
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Select 3-5 images for your product</span>
-              </div>
-            )}
-            
-            {localPreviews[selectedPreviewIndex] && (
-              <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-xs text-[10px] font-bold text-white px-3 py-1 rounded-full uppercase tracking-wider">
-                Previewing image {selectedPreviewIndex + 1}
-              </div>
-            )}
-          </div>
+              <span className="text-[10px] font-black text-slate-700 font-mono w-8 text-right">
+                {Math.round(cropSettings.zoom * 100)}%
+              </span>
+            </div>
+          )}
 
-          <div className="px-5 py-3.5 border-y border-slate-100 bg-slate-50/50 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 cursor-default select-none">
+          {/* Recents & Selection Toolbar */}
+          <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between shrink-0 select-none">
+            <div className="flex items-center gap-1 cursor-default">
               <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Recents</span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
             </div>
-            
-            <div className="flex items-center gap-2">
+
+            <div className="flex items-center gap-3">
               {localPreviews.length > 0 && (
-                <span className="text-[10px] font-bold text-slate-400">
+                <span className="text-[10px] font-bold text-slate-500">
                   {localPreviews.length} of 5 selected
                 </span>
               )}
+              <div className="bg-white border border-slate-200 px-3 py-1 rounded-full shadow-2xs text-[10px] font-black uppercase text-slate-700 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[#E9B929]" />
+                Select Multiple
+              </div>
             </div>
           </div>
 
-          <div className="p-4 bg-white">
+          {/* Gallery Photo Grid */}
+          <div className="p-4 bg-white flex-1 overflow-y-auto">
             <div className="grid grid-cols-4 gap-2">
+              
+              {/* Upload Button Grid Tile */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -1102,6 +1194,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 <span className="text-[9px] font-black uppercase text-slate-500 tracking-wide">Upload</span>
               </button>
 
+              {/* Preview Selection Tiles */}
               {localPreviews.map((prev, idx) => {
                 const isSelectedForPreview = idx === selectedPreviewIndex;
                 return (
@@ -1111,23 +1204,26 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                     className={cn(
                       "aspect-square rounded-xl overflow-hidden border relative cursor-pointer group transition-all",
                       isSelectedForPreview 
-                        ? "border-[#E9B929] ring-2 ring-[#E9B929]/20" 
+                        ? "border-[#E9B929] ring-2 ring-[#E9B929]/20 shadow-xs" 
                         : "border-slate-200 hover:border-slate-350"
                     )}
                   >
                     <img src={prev.url} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
                     
+                    {/* Badge number */}
                     <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#E9B929] text-slate-900 flex items-center justify-center text-[10px] font-black shadow-sm">
                       {idx + 1}
                     </div>
 
+                    {/* Delete badge */}
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         removeImage(idx);
                       }}
-                      className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-600 transition-colors shadow-sm"
+                      className="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-650 transition-colors shadow-sm cursor-pointer"
+                      title="Remove image"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -1172,173 +1268,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           onChange={handleImageFileChange}
           className="hidden"
         />
-      </div>
-    );
-  }
-
-  if (wizardStep === "crop") {
-    const activePreview = localPreviews[selectedPreviewIndex];
-    const cropSettings = activePreview?.cropSettings || { zoom: 1, x: 0, y: 0, aspect: "1:1" as const };
-
-    const getViewportHeight = () => {
-      if (cropSettings.aspect === "4:5") return 500;
-      if (cropSettings.aspect === "original" && imageNaturalSize.width > 0) {
-        const aspect = imageNaturalSize.width / imageNaturalSize.height;
-        return Math.round(400 / aspect);
-      }
-      return 400;
-    };
-
-    return (
-      <div className="w-full max-w-xl mx-auto px-4 py-8 font-sans animate-in fade-in duration-200">
-        {croppingInProgress && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex flex-col items-center justify-center z-[9999] animate-in fade-in">
-            <div className="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4 max-w-xs text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-[#E9B929]" />
-              <span className="text-xs font-black text-slate-800 uppercase tracking-wider">Applying crop changes...</span>
-              <span className="text-[11px] text-slate-500 font-medium">Generating high-detail cropped images for cloth preview zoom.</span>
-            </div>
-          </div>
-        )}
-
-        <div className="bg-white border border-slate-100 rounded-[24px] shadow-xl overflow-hidden flex flex-col">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-20">
-            <button
-              type="button"
-              onClick={() => setWizardStep("select")}
-              className="text-slate-500 hover:text-slate-800 transition-colors p-1"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <span className="text-sm font-black uppercase tracking-widest text-slate-800">Zoom & Crop</span>
-            <button
-              type="button"
-              onClick={handleApplyCrop}
-              className="text-xs font-black uppercase tracking-wider px-4 py-2 bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 rounded-xl transition-all shadow-xs cursor-pointer"
-            >
-              Next
-            </button>
-          </div>
-
-          <div className="p-4 bg-slate-50 border-b border-slate-100 flex justify-center items-center">
-            <div
-              ref={viewportRef}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-              className="w-full relative bg-slate-950 overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing rounded-2xl shadow-inner select-none"
-              style={{
-                height: `${getViewportHeight()}px`,
-                maxWidth: "400px"
-              }}
-            >
-              {activePreview && (
-                <img
-                  ref={imgRef}
-                  src={activePreview.url}
-                  alt="Crop preview"
-                  className="absolute max-w-none pointer-events-none select-none"
-                  style={{
-                    transform: `translate(-50%, -50%) scale(${cropSettings.zoom}) translate(${cropSettings.x}px, ${cropSettings.y}px)`,
-                    left: "50%",
-                    top: "50%",
-                    height: "100%",
-                    width: "auto",
-                    objectFit: "cover"
-                  }}
-                  onLoad={(e) => {
-                    const img = e.currentTarget;
-                    setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
-                  }}
-                />
-              )}
-
-              {isDragging && (
-                <div className="absolute inset-0 pointer-events-none grid grid-cols-3 grid-rows-3 border border-white/20">
-                  <div className="border-r border-b border-white/30" />
-                  <div className="border-r border-b border-white/30" />
-                  <div className="border-b border-white/30" />
-                  <div className="border-r border-b border-white/30" />
-                  <div className="border-r border-b border-white/30" />
-                  <div className="border-b border-white/30" />
-                  <div className="border-r border-white/30" />
-                  <div className="border-r border-white/30" />
-                  <div />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="px-5 py-4 bg-white border-b border-slate-100 flex flex-col gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Zoom</span>
-              <input
-                type="range"
-                min="1"
-                max="3"
-                step="0.01"
-                value={cropSettings.zoom}
-                onChange={(e) => updateActiveCrop({ zoom: parseFloat(e.target.value) })}
-                className="flex-1 accent-[#E9B929] cursor-ew-resize h-1 bg-slate-100 rounded-lg appearance-none"
-              />
-              <span className="text-[10px] font-black text-slate-700 font-mono w-8 text-right">
-                {Math.round(cropSettings.zoom * 100)}%
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Aspect Ratio</span>
-              <div className="flex bg-slate-50 border border-slate-200 p-0.5 rounded-xl gap-0.5">
-                {(["1:1", "4:5", "original"] as const).map((r) => {
-                  const isSel = cropSettings.aspect === r;
-                  return (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => updateActiveCrop({ aspect: r, x: 0, y: 0 })}
-                      className={cn(
-                        "px-3.5 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all cursor-pointer",
-                        isSel 
-                          ? "bg-white text-slate-800 shadow-2xs border border-slate-200/50" 
-                          : "text-slate-400 hover:text-slate-600"
-                      )}
-                    >
-                      {r === "original" ? "Original" : r}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4 bg-white">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Selected Photos</span>
-            <div className="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-none">
-              {localPreviews.map((prev, idx) => {
-                const isActive = idx === selectedPreviewIndex;
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setSelectedPreviewIndex(idx)}
-                    className={cn(
-                      "w-16 h-16 rounded-xl overflow-hidden shrink-0 border relative transition-all cursor-pointer",
-                      isActive 
-                        ? "border-[#E9B929] ring-2 ring-[#E9B929]/25 scale-95" 
-                        : "border-slate-200 hover:border-slate-350"
-                    )}
-                  >
-                    <img src={prev.url} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
-                    <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-slate-900/60 text-white flex items-center justify-center text-[9px] font-black">
-                      {idx + 1}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
       </div>
     );
   }
