@@ -2136,31 +2136,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 )}
               </div>
 
-              <div className="flex flex-col gap-1 col-span-1 md:col-span-2">
-                <InlineDropdown
-                  label="Fabric Family"
-                  options={FABRIC_FAMILY_OPTIONS}
-                  placeholder="Select fabric family..."
-                  value={specDropdowns.fabricFamily}
-                  onChange={(val) => {
-                    setSpecDropdowns(prev => ({ ...prev, fabricFamily: val }));
-                    if (val !== "Other") {
-                      setValue("fabricFamily", val);
-                    } else {
-                      setValue("fabricFamily", "");
-                    }
-                  }}
-                />
-                {specDropdowns.fabricFamily === "Other" && (
-                  <input
-                    type="text"
-                    placeholder="Enter custom fabric family..."
-                    {...register("fabricFamily")}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-[12px] text-slate-800 mt-1 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929]"
-                  />
-                )}
-              </div>
-
             </div>
           )}
         </div>

@@ -1658,34 +1658,6 @@ export default function CreateProductModal({
                   />
                 )}
               </div>
-              
-              <div className="flex flex-col gap-1 col-span-2">
-                <InlineDropdown
-                  label="FABRIC FAMILY"
-                  options={FABRIC_FAMILY_OPTIONS}
-                  placeholder="Select fabric family..."
-                  value={specDropdowns.fabricFamily}
-                  onChange={(val) => {
-                    setSpecDropdowns(prev => ({ ...prev, fabricFamily: val }));
-                    if (val !== "Other") {
-                      setSpecs(prev => ({ ...prev, fabricFamily: val }));
-                    } else {
-                      setSpecs(prev => ({ ...prev, fabricFamily: "" }));
-                    }
-                  }}
-                />
-                {specDropdowns.fabricFamily === "Other" && (
-                  <input
-                    type="text"
-                    placeholder="Enter custom fabric family..."
-                    value={specs.fabricFamily}
-                    onChange={(e) => setSpecs(prev => ({ ...prev, fabricFamily: autoCorrectCapitalization(e.target.value) }))}
-                    onBlur={(e) => setSpecs(prev => ({ ...prev, fabricFamily: autoCorrectCapitalization(e.target.value) }))}
-                    className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm mt-1"
-                  />
-                )}
-              </div>
-
             </div>
           </div>
         )}
