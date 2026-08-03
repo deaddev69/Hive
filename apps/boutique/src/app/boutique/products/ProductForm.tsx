@@ -9,7 +9,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { Button, Modal, cn } from "@hive/ui";
 import { toast } from "@hive/utils";
 import { 
-  Upload, X, ArrowLeft, Check, AlertCircle, ChevronDown, 
+  Upload, X, ArrowLeft, ArrowRight, Check, AlertCircle, ChevronDown, 
   ChevronUp, Loader2, Sparkles, Image as ImageIcon, Save, CheckCircle2, Search, Plus
 } from "lucide-react";
 import Link from "next/link";
@@ -201,6 +201,7 @@ interface InlineDropdownProps {
 function InlineDropdown({ label, options, placeholder, value, onChange }: InlineDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -212,8 +213,14 @@ function InlineDropdown({ label, options, placeholder, value, onChange }: Inline
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (isOpen && listRef.current) {
+      listRef.current.scrollTop = 0;
+    }
+  }, [isOpen]);
+
   return (
-    <div className={`flex flex-col gap-1.5 relative w-full font-sans ${isOpen ? "z-50" : "z-10"}`} ref={containerRef}>
+    <div className={`flex flex-col gap-1.5 relative w-full font-sans ${isOpen ? "z-[110]" : "z-10"}`} ref={containerRef}>
       <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">{label}</label>
       <button
         type="button"
@@ -227,7 +234,7 @@ function InlineDropdown({ label, options, placeholder, value, onChange }: Inline
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[102%] bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-56 overflow-y-auto py-1">
+        <div ref={listRef} className="absolute left-0 right-0 top-[102%] bg-white border border-slate-200 rounded-xl shadow-2xl z-[110] max-h-56 overflow-y-auto py-1">
           {options.map((opt) => (
             <button
               key={opt}
@@ -1261,6 +1268,32 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
               </div>
             )}
           </div>
+        </div>
+
+        {/* Bottom Action Footer with Next Button at Bottom Right */}
+        <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-between shrink-0 shadow-lg z-20">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-700">
+              {localPreviews.length} of 3 photos uploaded
+            </span>
+            {localPreviews.length >= 3 && (
+              <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Ready</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleApplyCrop}
+            disabled={!canGoNext}
+            className={cn(
+              "text-xs font-black uppercase tracking-wider px-6 py-3 rounded-xl transition-all flex items-center gap-2 select-none",
+              canGoNext 
+                ? "bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 shadow-md cursor-pointer active:scale-95" 
+                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+            )}
+          >
+            <span>Next</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
 
         <input
