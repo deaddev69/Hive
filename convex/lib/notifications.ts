@@ -399,11 +399,13 @@ export function formatSlackNotification(template: string, rawPayload: any): { te
 
   switch (template) {
     case "product_pending_approval": {
-      const title = `🛍️ New Product Pending Review`;
+      const isEdit = Boolean(payload.isEdit);
+      const title = isEdit ? `📝 Edited Product Pending Re-Review` : `🛍️ New Product Pending Review`;
       const fallback = `${title}: ${payload.productName || "Product"} from ${payload.boutiqueName || "Boutique"}`;
       const fields = [
         { type: "mrkdwn", text: `*Boutique:*\n${payload.boutiqueName || "Unknown"}` },
         { type: "mrkdwn", text: `*Product:*\n${payload.productName || "Unnamed Product"}` },
+        { type: "mrkdwn", text: `*Status:*\n${isEdit ? "Re-submitted after Edit" : "New Listing"}` },
       ];
       if (payload.price) {
         fields.push({ type: "mrkdwn", text: `*Price:*\n₹${payload.price}` });
