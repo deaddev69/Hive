@@ -388,7 +388,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     primary: true,
     sizing: true,
     story: true,
-    specs: true,
+    specs: false,
   });
 
   const toggleDrawer = (drawerName: keyof typeof openDrawers) => {
