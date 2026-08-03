@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent, Modal, cn } from "@hive/ui";
+import { ProductInspectionDrawer } from "@/components/ProductInspectionDrawer";
+
 import { 
   Loader2, 
   Search, 
@@ -94,6 +96,7 @@ export default function AdminProductsPage() {
   });
 
   const kpis = useQuery(api.adminProducts.getCatalogDashboardMetricsAdmin, {});
+  const categories = useQuery(api.categories.getCategories, {});
 
   const deactivateProduct = useMutation(api.adminProducts.deactivateProductAdmin);
   const reactivateProduct = useMutation(api.adminProducts.reactivateProductAdmin);
@@ -134,6 +137,7 @@ export default function AdminProductsPage() {
   const [reason, setReason] = useState("");
   const [moderationCategory, setModerationCategory] = useState("COPYRIGHT");
   const [submitting, setSubmitting] = useState(false);
+  const [inspectProduct, setInspectProduct] = useState<any>(null);
 
   // History Modal State
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
@@ -619,6 +623,14 @@ export default function AdminProductsPage() {
                       {/* Actions */}
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setInspectProduct(prod)}
+                            className="px-2.5 py-1 text-[10px] font-bold text-[#C59A5B] border-[#C59A5B]/30 hover:bg-[#C59A5B]/5 rounded-lg flex items-center gap-1 font-sans cursor-pointer"
+                          >
+                            Inspect & Edit
+                          </Button>
                           {/* Approval Actions */}
                           {prod.active && prod.approvalStatus === "pending" && (
                             <>
@@ -1065,6 +1077,14 @@ export default function AdminProductsPage() {
           </div>
         )}
       </Modal>
+
+      {inspectProduct && (
+        <ProductInspectionDrawer
+          product={inspectProduct}
+          onClose={() => setInspectProduct(null)}
+          categories={categories || []}
+        />
+      )}
     </div>
   );
 }

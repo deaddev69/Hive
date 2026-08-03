@@ -6,6 +6,9 @@ import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { updateBoutiqueProductCount } from "./boutiques";
 import { getPublicUrl } from "./media/api";
+import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
+import { getPlatformMarkupRate } from "./pricingHelpers";
+
 
 /**
  * Quality Score helper function.
@@ -652,6 +655,171 @@ export const requestChangesProductAdmin = mutation({
         name: product.name,
         boutiqueId: product.boutiqueId,
         notes: args.notes.trim(),
+      }),
+      createdAt: now,
+    });
+
+    await updateBoutiqueProductCount(ctx, product.boutiqueId);
+
+    return args.id;
+  },
+});
+
+/**
+ * Update product details from admin console.
+ * Admin-only mutation.
+ */
+export const updateProductDetailsAdmin = mutation({
+  args: {
+    id: v.id("products"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    categoryId: v.optional(v.id("categories")),
+    price: v.optional(v.number()),
+    discountPrice: v.optional(v.number()),
+    sizes: v.optional(v.array(v.string())),
+    stockBySize: v.optional(v.record(v.string(), v.number())),
+    details: v.optional(v.record(v.string(), v.string())),
+    fitRecommendation: v.optional(v.union(
+      v.literal("runs_small"),
+      v.literal("true_to_size"),
+      v.literal("runs_large")
+    )),
+    silhouette: v.optional(v.union(
+      v.literal("slim_fit"),
+      v.literal("regular_fit"),
+      v.literal("relaxed_fit"),
+      v.literal("oversized")
+    )),
+    material: v.optional(v.string()),
+    care: v.optional(v.string()),
+    origin: v.optional(v.string()),
+    fitNote: v.optional(v.string()),
+    story: v.optional(v.string()),
+    occasion: v.optional(v.string()),
+    active: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const admin = await requireRole(ctx, "admin");
+    const product = await ctx.db.get(args.id);
+    if (!product) throw new Error("Product not found");
+
+    const now = Date.now();
+
+    // Clean details if provided
+    let cleanedDetails: Record<string, string> | undefined = undefined;
+    if (args.details !== undefined) {
+      cleanedDetails = {};
+      const allowedKeys = new Set(Object.keys(PRODUCT_SPEC_KEYS));
+      for (const [key, value] of Object.entries(args.details)) {
+        const trimmed = value.trim();
+        if (allowedKeys.has(key) && trimmed) {
+          cleanedDetails[key] = trimmed;
+        } else if (!allowedKeys.has(key)) {
+          throw new Error(`Invalid product specification key: ${key}`);
+        }
+      }
+    }
+
+    // Compute stock totals if sizes/stock modified
+    const currentStockBySize = product.stockBySize || {};
+    const updatedStockBySize = args.stockBySize !== undefined ? args.stockBySize : currentStockBySize;
+    const totalStock = Object.values(updatedStockBySize).reduce((sum: number, val: any) => sum + (val || 0), 0);
+
+    // Active state logic based on stock and input args
+    let active = args.active !== undefined ? args.active : product.active;
+    let autoDeactivatedBecauseOutOfStock = product.autoDeactivatedBecauseOutOfStock ?? false;
+
+    if (totalStock === 0) {
+      active = false;
+      autoDeactivatedBecauseOutOfStock = true;
+    } else if (product.autoDeactivatedBecauseOutOfStock && totalStock > 0) {
+      active = true;
+      autoDeactivatedBecauseOutOfStock = false;
+    } else if (totalStock > 0) {
+      autoDeactivatedBecauseOutOfStock = false;
+    }
+
+    // Compute Pricing markup
+    let basePrice = args.price !== undefined ? args.price : product.basePrice;
+    let customerPrice = product.price;
+    let baseDiscountPrice = args.discountPrice !== undefined ? args.discountPrice : product.baseDiscountPrice;
+    let customerDiscountPrice = product.discountPrice;
+
+    if (args.price !== undefined) {
+      const settings = await ctx.db.query("platformSettings").first() || {
+        markupRate: 0.15,
+        platformFeeRate: 0.02,
+      };
+      const markupRate = getPlatformMarkupRate(args.price, settings);
+      const rawCustomerPrice = args.price * (1 + markupRate);
+      customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
+    }
+
+    if (args.discountPrice !== undefined) {
+      if (args.discountPrice) {
+        const settings = await ctx.db.query("platformSettings").first() || {
+          markupRate: 0.15,
+          platformFeeRate: 0.02,
+        };
+        const markupRate = getPlatformMarkupRate(args.discountPrice, settings);
+        const rawCustomerDiscountPrice = args.discountPrice * (1 + markupRate);
+        customerDiscountPrice = Math.ceil(rawCustomerDiscountPrice / 10) * 10 - 1;
+      } else {
+        customerDiscountPrice = undefined;
+      }
+    } else if (args.price !== undefined && baseDiscountPrice) {
+      const settings = await ctx.db.query("platformSettings").first() || {
+        markupRate: 0.15,
+        platformFeeRate: 0.02,
+      };
+      const markupRate = getPlatformMarkupRate(baseDiscountPrice, settings);
+      const rawCustomerDiscountPrice = baseDiscountPrice * (1 + markupRate);
+      customerDiscountPrice = Math.ceil(rawCustomerDiscountPrice / 10) * 10 - 1;
+    }
+
+    // Prepare updates
+    const updates: any = {
+      updatedAt: now,
+      active,
+      autoDeactivatedBecauseOutOfStock,
+    };
+
+    if (args.name !== undefined) updates.name = args.name;
+    if (args.description !== undefined) updates.description = args.description;
+    if (args.categoryId !== undefined) updates.categoryId = args.categoryId;
+    if (args.price !== undefined) {
+      updates.basePrice = args.price;
+      updates.price = customerPrice;
+    }
+    if (args.discountPrice !== undefined || args.price !== undefined) {
+      updates.baseDiscountPrice = baseDiscountPrice;
+      updates.discountPrice = customerDiscountPrice;
+    }
+    if (args.sizes !== undefined) updates.sizes = args.sizes;
+    if (args.stockBySize !== undefined) updates.stockBySize = args.stockBySize;
+    if (cleanedDetails !== undefined) updates.details = cleanedDetails;
+    if (args.fitRecommendation !== undefined) updates.fitRecommendation = args.fitRecommendation;
+    if (args.silhouette !== undefined) updates.silhouette = args.silhouette;
+    if (args.material !== undefined) updates.material = args.material;
+    if (args.care !== undefined) updates.care = args.care;
+    if (args.origin !== undefined) updates.origin = args.origin;
+    if (args.fitNote !== undefined) updates.fitNote = args.fitNote;
+    if (args.story !== undefined) updates.story = args.story;
+    if (args.occasion !== undefined) updates.occasion = args.occasion;
+
+    await ctx.db.patch(args.id, updates);
+
+    // Audit Log entry
+    await ctx.db.insert("auditLogs", {
+      actorId: admin._id,
+      actorRole: "admin",
+      action: "product.updated_admin",
+      entityType: "products",
+      entityId: args.id,
+      metadata: JSON.stringify({
+        productName: product.name,
+        modifiedFields: Object.keys(updates).filter(k => k !== "updatedAt"),
       }),
       createdAt: now,
     });
