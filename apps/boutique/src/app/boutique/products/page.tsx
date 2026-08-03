@@ -305,8 +305,8 @@ export default function BoutiqueProducts() {
                 setCurrentPage(1);
               }
             }}
-            className="p-1 rounded-2xl bg-white border border-slate-200/80 shadow-xs"
-            activeClassName="bg-slate-900 text-white shadow-sm"
+            className="p-1 rounded-2xl bg-slate-100/90 border border-slate-200/80"
+            activeClassName="bg-[#F5C22B] text-slate-950 shadow-[0_3px_10px_-2px_rgba(245,194,43,0.4)]"
           >
             {[
               { id: "all", label: "All", count: null },
@@ -322,17 +322,17 @@ export default function BoutiqueProducts() {
                   data-id={tab.id}
                   type="button"
                   className={`px-4 py-2 text-[13px] rounded-xl flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
-                    isActive ? "font-extrabold text-white" : "font-semibold text-slate-600 hover:text-slate-900"
+                    isActive ? "font-extrabold text-slate-950" : "font-semibold text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   <span>{tab.label}</span>
                   {tab.count !== null && (
                     <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold leading-none transition-colors ${
                       isActive
-                        ? "bg-white/25 text-white"
+                        ? "bg-slate-950/15 text-slate-950"
                         : tab.isAlert
                         ? "bg-amber-50 text-amber-700 border border-amber-200/70"
-                        : "bg-slate-100 text-slate-600 border border-slate-200/60"
+                        : "bg-slate-200 text-slate-700"
                     }`}>
                       {tab.count}
                     </span>
