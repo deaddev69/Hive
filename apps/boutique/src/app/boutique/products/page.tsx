@@ -305,8 +305,8 @@ export default function BoutiqueProducts() {
                 setCurrentPage(1);
               }
             }}
-            className="p-1 rounded-2xl bg-slate-100/90 border border-slate-200/80"
-            activeClassName="bg-slate-900 text-white shadow-xs"
+            className="p-1 rounded-2xl bg-white border border-slate-200/80 shadow-xs"
+            activeClassName="bg-slate-900 text-white shadow-sm"
           >
             {[
               { id: "all", label: "All", count: null },
@@ -314,23 +314,32 @@ export default function BoutiqueProducts() {
               { id: "draft", label: "Drafts", count: stats.draft > 0 ? stats.draft : null },
               { id: "pending", label: "Review", count: stats.pending > 0 ? stats.pending : null, isAlert: stats.pending > 0 },
               { id: "low", label: "Low Stock", count: stats.low > 0 ? stats.low : null, isAlert: stats.low > 0 },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                data-id={tab.id}
-                type="button"
-                className="px-4 py-2 text-[13px] rounded-xl flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-              >
-                <span>{tab.label}</span>
-                {tab.count !== null && (
-                  <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold leading-none ${
-                    tab.isAlert ? "bg-rose-50 text-rose-600 border border-rose-200/60" : "bg-slate-200 text-slate-700"
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
+            ].map((tab) => {
+              const isActive = statusFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  data-id={tab.id}
+                  type="button"
+                  className={`px-4 py-2 text-[13px] rounded-xl flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+                    isActive ? "font-extrabold text-white" : "font-semibold text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {tab.count !== null && (
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold leading-none transition-colors ${
+                      isActive
+                        ? "bg-white/25 text-white"
+                        : tab.isAlert
+                        ? "bg-amber-50 text-amber-700 border border-amber-200/70"
+                        : "bg-slate-100 text-slate-600 border border-slate-200/60"
+                    }`}>
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </AnimatedBackground>
         </div>
 
