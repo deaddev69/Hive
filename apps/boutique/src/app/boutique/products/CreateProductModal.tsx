@@ -110,7 +110,7 @@ function InlineDropdown({ label, options, placeholder, value, onChange }: Inline
   }, [isOpen]);
 
   return (
-    <div className={`flex flex-col gap-1.5 relative w-full font-sans animate-in fade-in ${isOpen ? "z-[110]" : "z-10"}`} ref={containerRef}>
+    <div className={`flex flex-col gap-1.5 relative w-full font-sans animate-in fade-in ${isOpen ? "z-[120]" : "z-10"}`} ref={containerRef}>
       <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">{label}</label>
       <button
         type="button"
@@ -124,7 +124,7 @@ function InlineDropdown({ label, options, placeholder, value, onChange }: Inline
       </button>
 
       {isOpen && (
-        <div ref={listRef} className="absolute left-0 right-0 top-[102%] bg-white border border-[#f1f5f9]/30 rounded-xl shadow-2xl z-[110] max-h-56 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
+        <div ref={listRef} className="absolute left-0 right-0 top-[102%] bg-white border border-slate-200 rounded-xl shadow-2xl z-[120] max-h-56 overflow-y-auto py-1 animate-in fade-in slide-in-from-top-1">
           {options.map((opt) => (
             <button
               key={opt}

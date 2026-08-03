@@ -220,7 +220,7 @@ function InlineDropdown({ label, options, placeholder, value, onChange }: Inline
   }, [isOpen]);
 
   return (
-    <div className={`flex flex-col gap-1.5 relative w-full font-sans ${isOpen ? "z-[110]" : "z-10"}`} ref={containerRef}>
+    <div className={`flex flex-col gap-1.5 relative w-full font-sans ${isOpen ? "z-[120]" : "z-10"}`} ref={containerRef}>
       <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">{label}</label>
       <button
         type="button"
@@ -234,7 +234,7 @@ function InlineDropdown({ label, options, placeholder, value, onChange }: Inline
       </button>
 
       {isOpen && (
-        <div ref={listRef} className="absolute left-0 right-0 top-[102%] bg-white border border-slate-200 rounded-xl shadow-2xl z-[110] max-h-56 overflow-y-auto py-1">
+        <div ref={listRef} className="absolute left-0 right-0 top-[102%] bg-white border border-slate-200 rounded-xl shadow-2xl z-[120] max-h-56 overflow-y-auto py-1">
           {options.map((opt) => (
             <button
               key={opt}
@@ -383,12 +383,12 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const [selectedStyle, setSelectedStyle] = useState<string>("casual");
   const [generatingDesc, setGeneratingDesc] = useState(false);
 
-  // Drawer visibility state (mobile-first collapsing)
+  // Drawer visibility state (default expanded for instant editing)
   const [openDrawers, setOpenDrawers] = useState({
     primary: true,
-    sizing: false,
-    story: false,
-    specs: false,
+    sizing: true,
+    story: true,
+    specs: true,
   });
 
   const toggleDrawer = (drawerName: keyof typeof openDrawers) => {
@@ -1528,7 +1528,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           </div>
         </div>
 
-        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-visible">
           <button
             type="button"
             onClick={() => toggleDrawer("story")}
@@ -1539,17 +1539,18 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           </button>
 
           {openDrawers.story && (
-            <div className="px-6 pb-6 border-t border-slate-50 pt-5 flex flex-col gap-5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="px-6 pb-6 border-t border-slate-50 pt-5 flex flex-col gap-5 animate-in fade-in slide-in-from-top-2 duration-200 overflow-visible">
               
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">Product Description *</label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase">Aesthetics:</span>
+                  
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">Aesthetics:</span>
                     <select
                       value={selectedStyle}
                       onChange={(e) => setSelectedStyle(e.target.value)}
-                      className="px-2 py-1 text-[11px] border border-slate-200 bg-white rounded-lg text-slate-700 font-semibold"
+                      className="px-2.5 py-1.5 text-[11px] border border-slate-200 bg-white rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-[#E9B929]"
                     >
                       <option value="casual">Casual / Work</option>
                       <option value="elegant">Premium / Regal</option>
@@ -1560,17 +1561,17 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                       type="button"
                       disabled={generatingDesc}
                       onClick={handleGenerateAI}
-                      className="px-3 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-black text-[#E9B929] hover:text-[#d6a51d] transition-all flex items-center gap-1 select-none cursor-pointer"
+                      className="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100/80 border border-amber-200/90 rounded-xl text-[11px] font-black text-amber-800 transition-all flex items-center gap-1.5 select-none cursor-pointer shadow-2xs shrink-0"
                     >
                       {generatingDesc ? (
                         <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          Writing...
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                          <span>Writing...</span>
                         </>
                       ) : (
                         <>
-                          <Sparkles className="w-3 h-3 text-[#E9B929]" />
-                          Auto-Write
+                          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                          <span>✨ Auto-Write</span>
                         </>
                       )}
                     </button>
@@ -1746,7 +1747,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           )}
         </div>
 
-        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-visible">
           <button
             type="button"
             onClick={() => toggleDrawer("sizing")}
