@@ -11,6 +11,7 @@ import Image from "next/image";
 import { Button, LoadingState } from "@hive/ui";
 import { HiveLogo } from "@/components/shared/HiveLogo";
 import LegalAgreementStep from "@/components/onboarding/LegalAgreementStep";
+import { PushNotificationManager } from "@/components/PushNotificationManager";
 
 const BOUTIQUE_NAV_ITEMS = [
   { label: "Home", href: "/boutique", icon: Home },
@@ -211,6 +212,10 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
 
       {/* Page Content Slot */}
       <main className="flex-1 overflow-x-hidden md:h-screen md:overflow-y-auto pb-20 md:pb-0">
+        <PushNotificationManager
+          boutiqueId={(myBoutiqueSafe as any)?.boutique?._id}
+          userId={me?._id}
+        />
         <div className="p-4 md:p-10 w-full">
           {children}
         </div>

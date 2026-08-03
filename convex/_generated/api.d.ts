@@ -82,6 +82,8 @@ import type * as payments from "../payments.js";
 import type * as porter from "../porter.js";
 import type * as pricingHelpers from "../pricingHelpers.js";
 import type * as products from "../products.js";
+import type * as pushActions from "../pushActions.js";
+import type * as pushNotifications from "../pushNotifications.js";
 import type * as razorpayRoute from "../razorpayRoute.js";
 import type * as recommendations from "../recommendations.js";
 import type * as reviews from "../reviews.js";
@@ -208,6 +210,8 @@ declare const fullApi: ApiFromModules<{
   porter: typeof porter;
   pricingHelpers: typeof pricingHelpers;
   products: typeof products;
+  pushActions: typeof pushActions;
+  pushNotifications: typeof pushNotifications;
   razorpayRoute: typeof razorpayRoute;
   recommendations: typeof recommendations;
   reviews: typeof reviews;

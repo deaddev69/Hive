@@ -948,6 +948,14 @@ export async function verifyPaymentAndPlaceOrderInternal(
     });
   }
 
+  // Dispatch background Web Push notification to boutique sellers / staff
+  await ctx.scheduler.runAfter(0, internal.pushActions.sendOrderPushToBoutique, {
+    boutiqueId,
+    title: `New Order: ₹${(session.total / 100).toFixed(2)}! 🎉`,
+    body: `New order ${orderNumber} placed for ${session.items.length} item(s).`,
+    url: `/boutique/orders/${orderId}`,
+  });
+
   // Fetch and store Razorpay Route transfer ID in the background
   if (!args.razorpayPaymentId.startsWith("pay_mock_")) {
     await ctx.scheduler.runAfter(0, internal.payments.fetchAndStoreTransferId, {

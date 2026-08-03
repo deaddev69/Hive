@@ -700,6 +700,14 @@ export const placeOrder = mutation({
       event: "new_order",
     });
 
+    // Schedule background Web Push notification to boutique sellers / staff
+    await ctx.scheduler.runAfter(0, internal.pushActions.sendOrderPushToBoutique, {
+      boutiqueId: primaryBoutiqueId,
+      title: `New Order: ₹${args.total.toFixed(2)}! 🎉`,
+      body: `New order ${orderNumber} placed for ${args.items.length} item(s).`,
+      url: `/boutique/orders/${orderId}`,
+    });
+
     await triggerNotification(
       ctx,
       user._id,

@@ -1942,4 +1942,22 @@ export default defineSchema({
     updatedAt: v.number(),
   }),
 
+  // ─── PUSH SUBSCRIPTIONS ───────────────────────────────────────────────────
+  pushSubscriptions: defineTable({
+    boutiqueId: v.id("boutiques"),
+    userId: v.id("users"),
+    subscription: v.object({
+      endpoint: v.string(),
+      keys: v.object({
+        p256dh: v.string(),
+        auth: v.string(),
+      }),
+    }),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_boutique", ["boutiqueId"])
+    .index("by_user", ["userId"])
+    .index("by_endpoint", ["subscription.endpoint"]),
+
 });
