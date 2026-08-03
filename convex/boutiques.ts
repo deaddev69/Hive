@@ -2602,9 +2602,10 @@ export const updateBoutiqueStaff = mutation({
     staffNotificationSelection: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { user, boutique } = await getMyBoutique(ctx);
+    const user = await getAuthenticatedUser(ctx);
+    const boutique = await getMyBoutique(ctx);
 
-    if (user.role !== "boutique_owner" && user.role !== "admin") {
+    if (user.role !== "boutique" && user.role !== "boutique_owner" && user.role !== "admin") {
       throw new ConvexError("Unauthorized: Only boutique owners can manage staff.");
     }
 
