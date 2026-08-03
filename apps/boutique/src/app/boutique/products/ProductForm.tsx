@@ -1097,16 +1097,14 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
               ) : (
                 <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-full bg-[#FAF8F5] border-2 border-dashed border-amber-300/80 rounded-2xl flex flex-col items-center justify-center text-center p-6 cursor-pointer hover:bg-amber-50/40 transition-all group"
+                  className="w-full h-full bg-[#F9FAFB] border border-slate-200/80 rounded-2xl flex flex-col items-center justify-center text-center p-6 cursor-pointer hover:bg-slate-100/60 transition-colors"
                 >
-                  <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200/80 text-[#D97706] flex items-center justify-center mb-3 shadow-2xs group-hover:scale-105 transition-transform">
-                    <ImageIcon className="w-7 h-7 stroke-[1.75]" />
-                  </div>
-                  <span className="text-sm font-black text-slate-800 tracking-tight mb-1">
-                    Tap to Select Product Photos
+                  <ImageIcon className="w-9 h-9 stroke-[1.5] text-slate-600 mb-2.5" />
+                  <span className="text-xs font-bold text-slate-800 tracking-tight mb-0.5">
+                    Select Product Photos
                   </span>
-                  <span className="text-[11px] font-semibold text-amber-800/80">
-                    Supports High-Res JPG, PNG & WebP (3:4 Ratio Recommended)
+                  <span className="text-[11px] font-medium text-slate-500">
+                    Upload 3 to 5 high-resolution images
                   </span>
                 </div>
               )}
@@ -1194,16 +1192,14 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 onClick={() => fileInputRef.current?.click()}
                 disabled={localPreviews.length >= 5}
                 className={cn(
-                  "aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 transition-all select-none",
+                  "aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 transition-colors select-none",
                   localPreviews.length >= 5
-                    ? "bg-slate-50 border-slate-200 cursor-not-allowed opacity-50"
-                    : localPreviews.length === 0
-                    ? "bg-amber-50/70 border-2 border-dashed border-[#F5C22B] shadow-[0_0_15px_rgba(245,194,43,0.3)] animate-pulse cursor-pointer hover:bg-amber-100/60"
-                    : "bg-[#f8fafc] border-dashed border-[#E9B929] hover:bg-amber-50/40 cursor-pointer"
+                    ? "bg-slate-50 border-slate-200 cursor-not-allowed opacity-40"
+                    : "bg-slate-50 hover:bg-slate-100 border-slate-200 cursor-pointer"
                 )}
               >
-                <Plus className={cn("w-6 h-6", localPreviews.length === 0 ? "text-[#D97706]" : "text-[#E9B929]")} />
-                <span className={cn("text-[9px] font-black uppercase tracking-wide", localPreviews.length === 0 ? "text-amber-900" : "text-slate-500")}>Upload</span>
+                <Plus className="w-5 h-5 text-slate-600 stroke-[2]" />
+                <span className="text-[10px] font-semibold text-slate-600">Add Photo</span>
               </button>
 
               {/* Preview Selection Tiles */}
@@ -1261,44 +1257,24 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   </div>
                 );
               })}
-            </div>
-            
-            {localPreviews.length < 3 && (
-              <div className="mt-4 flex items-center gap-2 p-3 bg-amber-50/50 border border-amber-100 rounded-xl text-[11px] text-amber-800 font-medium">
-                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>Please upload at least 3 photos (min. requirement) before continuing.</span>
-              </div>
-            )}
           </div>
         </div>
+      </div>
 
-        {/* Bottom Action Footer with Next Button at Bottom Right */}
-        <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-between shrink-0 shadow-lg z-20">
-          <div className="flex items-center gap-2">
-            {localPreviews.length === 0 ? (
-              <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-slate-100 text-slate-600 border border-slate-200">
-                0 of 3 photos — Upload 3 photos to proceed
-              </span>
-            ) : localPreviews.length < 3 ? (
-              <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-[#E9B929] animate-pulse" />
-                {localPreviews.length} of 3 photos — Add {3 - localPreviews.length} more
-              </span>
-            ) : (
-              <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5 uppercase tracking-wider">
-                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
-                {localPreviews.length} photos READY
-              </span>
-            )}
-          </div>
+      {/* Bottom Action Footer with Next Button at Bottom Right */}
+        <div className="px-6 py-4 bg-white border-t border-slate-100 flex items-center justify-between shrink-0 shadow-sm z-20">
+          <span className="text-xs font-semibold text-slate-500 font-sans">
+            {localPreviews.length} of 3 photos selected
+          </span>
+
           <button
             type="button"
             onClick={handleApplyCrop}
             disabled={!canGoNext}
             className={cn(
-              "text-xs font-black uppercase tracking-wider px-6 py-3 rounded-xl transition-all flex items-center gap-2 select-none",
+              "text-xs font-bold uppercase tracking-wider px-6 py-2.5 rounded-xl transition-all flex items-center gap-2 select-none",
               canGoNext 
-                ? "bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 shadow-md cursor-pointer active:scale-95" 
+                ? "bg-[#F5C22B] hover:bg-[#d9a71e] text-slate-950 font-black shadow-xs cursor-pointer active:scale-95" 
                 : "bg-slate-100 text-slate-400 cursor-not-allowed"
             )}
           >
