@@ -2248,7 +2248,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         isOpen={submitting}
         isComplete={isPublishingComplete}
         productName={getValues("name")}
-        statusText={uploadStatusText}
         onFinished={() => {
           setSubmitting(false);
           router.push("/boutique/products");

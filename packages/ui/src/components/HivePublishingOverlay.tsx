@@ -47,12 +47,12 @@ export const HivePublishingOverlay: React.FC<HivePublishingOverlayProps> = ({
   if (!isOpen) return null;
 
   const stageMessages = [
-    `Crafting luxury listing for "${productName}"...`,
-    "Optimizing photos & color specifications...",
-    "Notifying Hive Quality Ops in #ops-alert...",
+    `Preparing listing for "${productName}"...`,
+    "Processing product images & details...",
+    "Submitting for Hive Quality Verification...",
   ];
 
-  const currentMessage = statusText || stageMessages[Math.min(stage, 2)];
+  const currentMessage = stageMessages[Math.min(stage, 2)];
 
   return (
     <div className="fixed inset-0 z-[999] bg-[#1A1200]/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center select-none animate-in fade-in duration-300 font-sans overflow-hidden">
