@@ -47,7 +47,8 @@
     "NEXT_PUBLIC_ENABLE_WHATSAPP_NOTIFICATIONS",
     "VERCEL_URL",
     "VERCEL_ENV",
-    "NODE_ENV"
+    "NODE_ENV",
+    "NEXT_PUBLIC_VAPID_PUBLIC_KEY"
   ],
   "tasks": {
     "build": {
