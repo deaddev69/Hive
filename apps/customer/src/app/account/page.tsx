@@ -5,6 +5,8 @@ import { useSessionStore } from "@/context/SessionContext";
 import { useRouter } from "next/navigation";
 import { navigateToSignIn } from "@/lib/auth-redirect";
 import { useQuery, useMutation, useAction } from "convex/react";
+import { toast } from "@hive/utils";
+import { LoadingState } from "@hive/ui";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import {
@@ -972,7 +974,7 @@ export default function AccountPage() {
   if (isLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAF8F4]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#78716C]" />
+        <LoadingState message="Loading your account..." variant="full" />
       </div>
     );
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Modal } from "@hive/ui";
+import { Modal, LoadingState } from "@hive/ui";
 import { useLocation } from "@/context/LocationContext";
 import { MapPin, Loader2, AlertCircle, ArrowRight, X, ShieldCheck, Truck, Lock } from "lucide-react";
 
@@ -38,13 +38,11 @@ export const LocationPermissionModal: React.FC = () => {
     >
       <div className="flex flex-col gap-4 sm:gap-6 text-center items-center py-2 font-sans overflow-y-auto no-scrollbar">
         {loadingStep === "detecting" || loadingStep === "geocoding" ? (
-          <div className="flex flex-col items-center gap-4 py-12">
-            <Loader2 className="w-12 h-12 text-[#D97706] animate-spin" />
-            <p className="text-sm font-semibold text-stone-850 dark:text-white">
-              {loadingStep === "detecting"
-                ? "Detecting your location..."
-                : "Finding nearby boutiques..."}
-            </p>
+          <div className="py-6">
+            <LoadingState 
+              message={loadingStep === "detecting" ? "Scanning your location..." : "Finding local boutiques near you..."} 
+              size="md" 
+            />
           </div>
         ) : (
           <>

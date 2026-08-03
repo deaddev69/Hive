@@ -5,6 +5,7 @@ import { useParams, notFound, useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Loader2, MapPin, CheckCircle, ArrowLeft } from "lucide-react";
+import { LoadingState } from "@hive/ui";
 import Image from "next/image";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { ProductCardData } from "@/lib/mockProducts";
@@ -35,12 +36,7 @@ export default function BoutiqueStorefrontPage() {
   }, [boutique]);
 
   if (boutique === undefined) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
-        <p className="text-sm text-stone-500 font-bold">Loading storefront...</p>
-      </div>
-    );
+    return <LoadingState message="Loading boutique storefront..." variant="full" />;
   }
 
   // Suspended, rejected, or invalid slug returns null

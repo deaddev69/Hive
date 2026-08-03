@@ -17,6 +17,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { ProductCardData } from "@/lib/mockProducts";
 import { CollectionDetails } from "@/lib/mockCollections";
 import { Loader2 } from "lucide-react";
+import { LoadingState } from "@hive/ui";
 import { useLocation } from "@/context/LocationContext";
 import {
   CatalogFilterState,
@@ -181,10 +182,7 @@ export function OccasionPageClient({ details }: OccasionPageClientProps) {
           { label: details.title },
         ]}
       >
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
-          <p className="text-sm text-hive-text-muted font-bold font-sans">Loading collection...</p>
-        </div>
+        <LoadingState message="Loading collection..." variant="full" />
       </CatalogLayout>
     );
   }

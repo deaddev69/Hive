@@ -17,6 +17,7 @@ import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { ProductCardData } from "@/lib/mockProducts";
 import { Loader2 } from "lucide-react";
+import { LoadingState } from "@hive/ui";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLocation } from "@/context/LocationContext";
 import {
@@ -85,12 +86,7 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
 
 export function ProductsClient({ initialCategorySlug }: { initialCategorySlug?: string }) {
   return (
-    <React.Suspense fallback={
-      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
-        <p className="text-sm text-hive-text-muted font-bold">Loading product directory...</p>
-      </div>
-    }>
+    <React.Suspense fallback={<LoadingState message="Discovering catalog items..." variant="full" />}>
       <ProductsCatalog initialCategorySlug={initialCategorySlug} />
     </React.Suspense>
   );
@@ -233,10 +229,7 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
   if (dbProducts === undefined) {
     return (
       <CatalogLayout breadcrumbs={[{ label: "All Products" }]}>
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
-          <p className="text-sm text-hive-text-muted font-bold">Loading product directory...</p>
-        </div>
+        <LoadingState message="Discovering catalog items..." variant="full" />
       </CatalogLayout>
     );
   }
