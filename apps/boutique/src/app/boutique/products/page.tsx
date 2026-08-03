@@ -305,8 +305,8 @@ export default function BoutiqueProducts() {
                 setCurrentPage(1);
               }
             }}
-            className="p-1 rounded-2xl bg-slate-100/90 border border-slate-200/80"
-            activeClassName="bg-[#F5C22B] text-slate-950 shadow-[0_3px_10px_-2px_rgba(245,194,43,0.4)]"
+            className="p-1 rounded-2xl bg-slate-100/90 border border-slate-200/80 overflow-hidden"
+            activeClassName="bg-[#F5C22B] text-slate-950 ring-1 ring-[#D9A71E]/50 shadow-2xs"
           >
             {[
               { id: "all", label: "All", count: null },
@@ -321,7 +321,7 @@ export default function BoutiqueProducts() {
                   key={tab.id}
                   data-id={tab.id}
                   type="button"
-                  className={`px-4 py-2 text-[13px] rounded-xl flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+                  className={`px-4 py-1.5 text-[13px] rounded-xl flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
                     isActive ? "font-extrabold text-slate-950" : "font-semibold text-slate-600 hover:text-slate-900"
                   }`}
                 >

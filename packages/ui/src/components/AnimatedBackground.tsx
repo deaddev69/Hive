@@ -85,7 +85,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   return (
     <div
       ref={containerRef}
-      className={cn("relative inline-flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-neutral-800/80 border border-slate-200/80 dark:border-neutral-700/80", className)}
+      className={cn("relative inline-flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-neutral-800/80 border border-slate-200/80 dark:border-neutral-700/80 overflow-hidden", className)}
       onMouseLeave={() => enableHover && setHoverId(null)}
     >
       {/* Sliding Active Pill Indicator */}
