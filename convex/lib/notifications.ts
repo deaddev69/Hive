@@ -340,15 +340,13 @@ export async function triggerNotification(
         sentAt: Date.now(),
       });
     } else if (channel === "slack") {
-      let text = `*New Notification: ${template}*\n`;
-      if (payload) {
-        text += "```\n" + JSON.stringify(payload, null, 2) + "\n```";
-      }
+      const { text, blocks } = formatSlackNotification(template, payload);
 
       // Slack uses fetch(), so dispatch it from an action after this mutation commits.
       await ctx.scheduler.runAfter(0, internal.slack.sendNotification, {
         eventId,
         text,
+        blocks,
       });
     } else if (channel === "whatsapp") {
       const phone = user.phone || payload.phone;
@@ -384,4 +382,308 @@ export async function triggerNotification(
   }
 
   return eventId;
+}
+
+export function formatSlackNotification(template: string, rawPayload: any): { text: string; blocks?: any[] } {
+  let payload: any = rawPayload;
+  if (typeof rawPayload === "string") {
+    try {
+      payload = JSON.parse(rawPayload);
+    } catch (e) {
+      payload = { raw: rawPayload };
+    }
+  }
+  payload = payload || {};
+
+  const adminBaseUrl = process.env.ADMIN_URL || "https://admin.hivenow.in";
+
+  switch (template) {
+    case "product_pending_approval": {
+      const title = `🛍️ New Product Pending Review`;
+      const fallback = `${title}: ${payload.productName || "Product"} from ${payload.boutiqueName || "Boutique"}`;
+      const fields = [
+        { type: "mrkdwn", text: `*Boutique:*\n${payload.boutiqueName || "Unknown"}` },
+        { type: "mrkdwn", text: `*Product:*\n${payload.productName || "Unnamed Product"}` },
+      ];
+      if (payload.price) {
+        fields.push({ type: "mrkdwn", text: `*Price:*\n₹${payload.price}` });
+      }
+      if (payload.category) {
+        fields.push({ type: "mrkdwn", text: `*Category:*\n${payload.category}` });
+      }
+
+      const blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: title, emoji: true },
+        },
+        {
+          type: "section",
+          fields,
+        },
+        { type: "divider" },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `🔗 <${adminBaseUrl}/admin/products|Inspect Product on Admin Dashboard>`,
+            },
+          ],
+        },
+      ];
+      return { text: fallback, blocks };
+    }
+
+    case "admin_product_approved": {
+      const title = `✅ Product Approved & Live`;
+      const fallback = `${title}: ${payload.productName || "Product"} by ${payload.boutiqueName || "Boutique"}`;
+      const blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: title, emoji: true },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Product:*\n${payload.productName || "Unnamed"}` },
+            { type: "mrkdwn", text: `*Boutique:*\n${payload.boutiqueName || "Unknown"}` },
+          ],
+        },
+      ];
+      return { text: fallback, blocks };
+    }
+
+    case "admin_product_rejected": {
+      const title = `❌ Product Rejected`;
+      const fallback = `${title}: ${payload.productName || "Product"} by ${payload.boutiqueName || "Boutique"}`;
+      const blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: title, emoji: true },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Product:*\n${payload.productName || "Unnamed"}` },
+            { type: "mrkdwn", text: `*Boutique:*\n${payload.boutiqueName || "Unknown"}` },
+            { type: "mrkdwn", text: `*Reason:*\n${payload.reason || "Not specified"}` },
+          ],
+        },
+      ];
+      return { text: fallback, blocks };
+    }
+
+    case "boutique_application_submitted": {
+      const title = `🏬 New Boutique Partner Application`;
+      const fallback = `${title}: ${payload.boutiqueName || "New Boutique"}`;
+      const blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: title, emoji: true },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Boutique Name:*\n${payload.boutiqueName || "N/A"}` },
+            { type: "mrkdwn", text: `*Owner Name:*\n${payload.ownerName || "N/A"}` },
+            { type: "mrkdwn", text: `*City:*\n${payload.city || "N/A"}` },
+            { type: "mrkdwn", text: `*Phone:*\n${payload.phone || "N/A"}` },
+          ],
+        },
+        { type: "divider" },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `🔗 <${adminBaseUrl}/admin/boutiques|Review Application on Admin Portal>`,
+            },
+          ],
+        },
+      ];
+      return { text: fallback, blocks };
+    }
+
+    case "boutique_kyc_submitted":
+    case "boutique_document_uploaded": {
+      const title = `📜 Boutique KYC Documents Submitted`;
+      const fallback = `${title}: ${payload.boutiqueName || "Boutique"}`;
+      const blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: title, emoji: true },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Boutique:*\n${payload.boutiqueName || "Unknown"}` },
+            { type: "mrkdwn", text: `*Document Type:*\n${payload.documentType || "GST / Bank Verification"}` },
+          ],
+        },
+        { type: "divider" },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `🔗 <${adminBaseUrl}/admin/boutiques|Verify Documents on Admin Portal>`,
+            },
+          ],
+        },
+      ];
+      return { text: fallback, blocks };
+    }
+
+    case "order_confirmed": {
+      const title = `💳 New Order Confirmed`;
+      const fallback = `${title}: Order #${payload.orderId || ""} - ₹${payload.amount || ""}`;
+      const blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: title, emoji: true },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Order ID:*\n${payload.orderId || "N/A"}` },
+            { type: "mrkdwn", text: `*Amount:*\n₹${payload.amount || "0"}` },
+            { type: "mrkdwn", text: `*Customer:*\n${payload.customerName || "N/A"}` },
+            { type: "mrkdwn", text: `*Items:*\n${payload.itemCount || 1} Item(s)` },
+          ],
+        },
+        { type: "divider" },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `🔗 <${adminBaseUrl}/admin/orders|Manage Order on Admin Portal>`,
+            },
+          ],
+        },
+      ];
+      return { text: fallback, blocks };
+    }
+
+    case "high_value_order": {
+      const title = `🚨 High-Value Order Placed (> ₹10,000)`;
+      const fallback = `${title}: Order #${payload.orderId || ""} - ₹${payload.amount || ""}`;
+      const blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: title, emoji: true },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Order ID:*\n${payload.orderId || "N/A"}` },
+            { type: "mrkdwn", text: `*Total Amount:*\n*₹${payload.amount || "0"}*` },
+            { type: "mrkdwn", text: `*Customer:*\n${payload.customerName || "N/A"}` },
+            { type: "mrkdwn", text: `*Boutique:*\n${payload.boutiqueName || "N/A"}` },
+          ],
+        },
+        { type: "divider" },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `🔗 <${adminBaseUrl}/admin/orders|View High-Value Order on Admin Portal>`,
+            },
+          ],
+        },
+      ];
+      return { text: fallback, blocks };
+    }
+
+    case "return_claim_requested":
+    case "claim_filed": {
+      const title = `📦 Return / Refund Claim Initiated`;
+      const fallback = `${title}: Claim for Order #${payload.orderId || ""}`;
+      const blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: title, emoji: true },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Order ID:*\n${payload.orderId || "N/A"}` },
+            { type: "mrkdwn", text: `*Reason:*\n${payload.reason || "Return requested"}` },
+            { type: "mrkdwn", text: `*Claimant:*\n${payload.claimantName || "Customer"}` },
+          ],
+        },
+        { type: "divider" },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `🔗 <${adminBaseUrl}/admin/claims|Review Claim on Admin Portal>`,
+            },
+          ],
+        },
+      ];
+      return { text: fallback, blocks };
+    }
+
+    case "payout_requested": {
+      const title = `💰 Boutique Payout Requested`;
+      const fallback = `${title}: ${payload.boutiqueName || "Boutique"} - ₹${payload.amount || ""}`;
+      const blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: title, emoji: true },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Boutique:*\n${payload.boutiqueName || "N/A"}` },
+            { type: "mrkdwn", text: `*Amount:*\n₹${payload.amount || "0"}` },
+          ],
+        },
+        { type: "divider" },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `🔗 <${adminBaseUrl}/admin/finance|Approve Payout on Admin Portal>`,
+            },
+          ],
+        },
+      ];
+      return { text: fallback, blocks };
+    }
+
+    case "out_of_stock_alert": {
+      const title = `⚠️ Product Stock Alert (Out of Stock)`;
+      const fallback = `${title}: ${payload.productName || "Product"} in ${payload.boutiqueName || "Boutique"}`;
+      const blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: title, emoji: true },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Product:*\n${payload.productName || "N/A"}` },
+            { type: "mrkdwn", text: `*Boutique:*\n${payload.boutiqueName || "N/A"}` },
+            { type: "mrkdwn", text: `*Current Stock:*\n0 units` },
+          ],
+        },
+      ];
+      return { text: fallback, blocks };
+    }
+
+    default: {
+      const title = `🔔 Notification: ${template}`;
+      let text = `*${title}*\n`;
+      if (payload) {
+        text += "```\n" + JSON.stringify(payload, null, 2) + "\n```";
+      }
+      return { text };
+    }
+  }
 }

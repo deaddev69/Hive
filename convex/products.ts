@@ -528,9 +528,12 @@ export const createProduct = mutation({
     if (approvalStatus === "pending") {
       const superadmin = await ctx.db.query("users").withIndex("by_role", q => q.eq("role", "admin")).first();
       if (superadmin) {
+        const catDoc = await ctx.db.get(resolvedCategoryId);
         await triggerNotification(ctx, superadmin._id, "slack", "product_pending_approval", "product", productId, JSON.stringify({
           productName: args.name,
-          boutiqueName: boutique.name
+          boutiqueName: boutique.name,
+          price: customerPrice,
+          category: (catDoc as any)?.name || undefined,
         }));
       }
     }

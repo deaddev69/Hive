@@ -23,6 +23,7 @@ export const sendNotification = internalAction({
     args: {
         eventId: v.id("notificationEvents"),
         text: v.string(),
+        blocks: v.optional(v.any()),
     },
     handler: async (ctx, args) => {
         try {
@@ -30,10 +31,15 @@ export const sendNotification = internalAction({
             if (!webhookUrl) {
                 console.warn("[sendSlackNotification] Slack webhook URL not configured");
             } else {
+                const bodyPayload: any = { text: args.text };
+                if (args.blocks && Array.isArray(args.blocks) && args.blocks.length > 0) {
+                    bodyPayload.blocks = args.blocks;
+                }
+
                 const response = await fetch(webhookUrl, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ text: args.text }),
+                    body: JSON.stringify(bodyPayload),
                 });
 
                 if (!response.ok) {

@@ -508,11 +508,26 @@ export const processPaymentCaptured = internalMutation({
     // Trigger ops Slack alert for new order
     const superadmin = await ctx.db.query("users").withIndex("by_role", q => q.eq("role", "admin")).first();
     if (superadmin) {
+      const customer = await ctx.db.get(session.userId);
+      const boutiqueDoc = await ctx.db.get(boutiqueId);
+      const customerName = customer ? ((customer as any).name || customer.email || customer.phone || "Customer") : "Customer";
+      const boutiqueName = boutiqueDoc?.name || "Boutique";
+
       await triggerNotification(ctx, superadmin._id, "slack", "order_confirmed", "order", orderId, JSON.stringify({
-        orderNumber,
+        orderId: orderNumber || orderId,
         amount: payment.amount,
-        boutiqueId: boutiqueId
+        customerName,
+        boutiqueName,
       }));
+
+      if (payment.amount >= 10000) {
+        await triggerNotification(ctx, superadmin._id, "slack", "high_value_order", "order", orderId, JSON.stringify({
+          orderId: orderNumber || orderId,
+          amount: payment.amount,
+          customerName,
+          boutiqueName,
+        }));
+      }
     }
 
     // Clear user's cart

@@ -8,6 +8,7 @@ import { updateBoutiqueProductCount } from "./boutiques";
 import { getPublicUrl } from "./media/api";
 import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
 import { getPlatformMarkupRate } from "./pricingHelpers";
+import { triggerNotification } from "./lib/notifications";
 
 
 /**
@@ -617,6 +618,12 @@ export const approveProductAdmin = mutation({
 
     await updateBoutiqueProductCount(ctx, product.boutiqueId);
 
+    const boutique = await ctx.db.get(product.boutiqueId);
+    await triggerNotification(ctx, admin._id, "slack", "admin_product_approved", "product", args.id, JSON.stringify({
+      productName: product.name,
+      boutiqueName: boutique?.name || "Boutique",
+    }));
+
     return args.id;
   },
 });
@@ -643,6 +650,13 @@ export const requestChangesProductAdmin = mutation({
       approvalNotes: args.notes.trim(),
       lastModeratedAt: now,
     });
+
+    const boutique = await ctx.db.get(product.boutiqueId);
+    await triggerNotification(ctx, admin._id, "slack", "admin_product_rejected", "product", args.id, JSON.stringify({
+      productName: product.name,
+      boutiqueName: boutique?.name || "Boutique",
+      reason: args.notes.trim(),
+    }));
 
     // Write system audit logs
     await ctx.db.insert("auditLogs", {
