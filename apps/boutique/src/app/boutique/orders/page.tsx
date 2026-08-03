@@ -5,7 +5,7 @@ import React from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
-import { Card, CardContent } from "@hive/ui";
+import { Card, CardContent, LoadingState } from "@hive/ui";
 import { formatCurrency } from "@hive/utils";
 import { useAuth } from "@clerk/nextjs";
 import {
@@ -188,12 +188,7 @@ export default function BoutiqueOrders() {
   const [acceptedOrderIds, setAcceptedOrderIds] = React.useState<Record<string, boolean>>({});
 
   if (orders === undefined) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
-        <p className="text-sm text-hive-text-muted font-medium">Loading orders register...</p>
-      </div>
-    );
+    return <LoadingState message="Loading orders..." variant="full" />;
   }
 
   return (

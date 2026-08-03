@@ -6,6 +6,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Star, MessageSquare, CheckCircle, Clock, Sparkles, Filter, ChevronRight, Loader2, ThumbsUp } from "lucide-react";
 import { toast } from "@hive/utils";
+import { LoadingState } from "@hive/ui";
 
 export default function BoutiqueReviewsPage() {
   const data = useQuery(api.reviews.getBoutiqueReviews, {});
@@ -17,12 +18,7 @@ export default function BoutiqueReviewsPage() {
   const [submittingReplyId, setSubmittingReplyId] = useState<string | null>(null);
 
   if (data === undefined) {
-    return (
-      <div className="p-8 flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <Loader2 className="w-8 h-8 text-[#D9A71E] animate-spin" />
-        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Loading Customer Reviews...</span>
-      </div>
-    );
+    return <LoadingState message="Loading reviews..." variant="full" />;
   }
 
   const { metrics, reviews } = data;

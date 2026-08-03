@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { SignOutButton } from "@clerk/nextjs";
 import { api } from "../../../../../../convex/_generated/api";
-import { Button, Card, CardContent, cn } from "@hive/ui";
+import { Button, Card, CardContent, cn, LoadingState } from "@hive/ui";
 import Link from "next/link";
 import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut, Star, Wallet, ChevronRight, ShieldCheck, Lock } from "lucide-react";
 import { toast } from "@hive/utils";
@@ -256,12 +256,7 @@ export default function BoutiqueProfile() {
   };
 
   if (boutique === undefined) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
-        <p className="text-sm text-hive-text-muted font-medium">Loading profile details...</p>
-      </div>
-    );
+    return <LoadingState message="Loading account..." variant="full" />;
   }
 
   return (

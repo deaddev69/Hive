@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
+import { LoadingState } from "@hive/ui";
 import {
   Loader2,
   Search,
@@ -413,12 +414,7 @@ export default function BoutiqueInventory() {
   }, [products, localStock, localSizes, searchQuery, filterMode]);
 
   if (products === undefined) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 bg-transparent">
-        <Loader2 className="w-8 h-8 animate-spin text-[#D9A71E]" />
-        <p className="text-xs text-slate-400 font-medium font-manrope">Loading...</p>
-      </div>
-    );
+    return <LoadingState message="Loading stock..." variant="full" />;
   }
 
   const getProductImage = (prod: any) => {

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { Card, CardContent } from "@hive/ui";
+import { Card, CardContent, LoadingState } from "@hive/ui";
 import { formatCurrency, toast } from "@hive/utils";
 import {
   Loader2,
@@ -230,12 +230,7 @@ export default function BoutiqueFinance() {
   const [activeTab, setActiveTab] = useState<"settlements" | "payouts">("settlements");
 
   if (me === undefined || finance === undefined || boutique === undefined) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
-        <p className="text-sm text-hive-text-muted font-medium">Loading finance records...</p>
-      </div>
-    );
+    return <LoadingState message="Loading finance records..." variant="full" />;
   }
 
   if (me && me.role === "boutique") {
