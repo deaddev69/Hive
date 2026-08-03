@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { Button, Modal, cn } from "@hive/ui";
+import { Button, Modal, cn, HivePublishingOverlay } from "@hive/ui";
 import { toast } from "@hive/utils";
 import { 
   Upload, X, ArrowLeft, ArrowRight, Check, AlertCircle, ChevronDown, 
@@ -345,6 +345,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const [returnsAccepted, setReturnsAccepted] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [active, setActive] = useState(true);
+  const [isPublishingComplete, setIsPublishingComplete] = useState(false);
 
   // Wizard state (Instagram creation flow)
   const [wizardStep, setWizardStep] = useState<"select" | "crop" | "form">("select");
@@ -898,19 +899,20 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
       if (productToEdit?._id) {
         await updateProduct({ id: productToEdit._id as any, ...payload });
+        setIsPublishingComplete(true);
         toast.success("Changes Saved", "Your product details have been updated successfully.");
       } else {
         await createProduct(payload);
+        setIsPublishingComplete(true);
         localStorage.removeItem("hive_product_draft"); // clear draft
         toast.success("Product Submitted for Verification", "Your listing is saved and under admin review. We'll notify you once it goes live.");
       }
-
-      router.push("/boutique/products");
     } catch (e: any) {
       console.error(e);
+      setSubmitting(false);
+      setIsPublishingComplete(false);
       toast.error("Couldn't Save Product", "Something went wrong while saving your product. Please try again.");
     } finally {
-      setSubmitting(false);
       setUploadStatusText("");
     }
   };
@@ -2240,6 +2242,18 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           </p>
         </div>
       )}
+
+      {/* Hive Flying Bee Publishing & Celebration Overlay */}
+      <HivePublishingOverlay
+        isOpen={submitting}
+        isComplete={isPublishingComplete}
+        productName={getValues("name")}
+        statusText={uploadStatusText}
+        onFinished={() => {
+          setSubmitting(false);
+          router.push("/boutique/products");
+        }}
+      />
     </div>
   );
 }
