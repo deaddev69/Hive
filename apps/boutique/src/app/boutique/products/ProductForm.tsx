@@ -900,12 +900,10 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       if (productToEdit?._id) {
         await updateProduct({ id: productToEdit._id as any, ...payload });
         setIsPublishingComplete(true);
-        toast.success("Changes Saved", "Your product details have been updated successfully.");
       } else {
         await createProduct(payload);
         setIsPublishingComplete(true);
         localStorage.removeItem("hive_product_draft"); // clear draft
-        toast.success("Product Submitted for Verification", "Your listing is saved and under admin review. We'll notify you once it goes live.");
       }
     } catch (e: any) {
       console.error(e);
