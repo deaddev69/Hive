@@ -3,7 +3,7 @@
 // Scope is fully auth-gated to the active customer.
 
 import { mutation, internalMutation, action, internalAction, MutationCtx, internalQuery } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { getAuthenticatedUser } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 import { incrementBoutiqueOrderCount } from "./lib/boutiqueCounters";
@@ -110,28 +110,28 @@ export const initCheckoutSessionInternal = internalMutation({
     if (storedQuote) {
       const diff = Math.abs(args.deliveryFee - storedQuote.deliveryFee);
       if (diff > 1) {
-        throw new Error("Delivery fee mismatch. Please refresh and try again.");
+        throw new ConvexError("Delivery fee mismatch. Please refresh and try again.");
       }
       if (Date.now() > storedQuote.expiresAt) {
-        throw new Error("Delivery quote expired. Please refresh checkout.");
+        throw new ConvexError("Delivery quote expired. Please refresh checkout.");
       }
     } else if (args.quotedAt && Date.now() - args.quotedAt > 15 * 60 * 1000) {
       // Legacy TTL check for backward compatibility if quoteId isn't provided
-      throw new Error("Delivery rate expired. Please refresh the page to get a new rate.");
+      throw new ConvexError("Delivery rate expired. Please refresh the page to get a new rate.");
     }
     
     // 1. Verify kill switches
     const isMaintenanceMode = await checkKillSwitch(ctx.db, "maintenanceMode");
     if (isMaintenanceMode) {
-      throw new Error("Platform is currently undergoing scheduled maintenance.");
+      throw new ConvexError("Platform is currently undergoing scheduled maintenance.");
     }
     const isCheckoutEnabled = await checkKillSwitch(ctx.db, "checkoutEnabled");
     if (!isCheckoutEnabled) {
-      throw new Error("Checkout is temporarily disabled for maintenance.");
+      throw new ConvexError("Checkout is temporarily disabled for maintenance.");
     }
     const isPaymentsEnabled = await checkKillSwitch(ctx.db, "paymentsEnabled");
     if (!isPaymentsEnabled && args.paymentMethod !== "cod") {
-      throw new Error("Online payments are temporarily disabled.");
+      throw new ConvexError("Online payments are temporarily disabled.");
     }
 
     const user = await getAuthenticatedUser(ctx, args.token);
@@ -142,11 +142,11 @@ export const initCheckoutSessionInternal = internalMutation({
     // Retrieve and verify address
     const addr = await ctx.db.get(args.addressId);
     if (!addr || addr.userId !== user._id) {
-      throw new Error("Invalid address selection.");
+      throw new ConvexError("Invalid address selection.");
     }
 
     if (addr.addressStatus !== "verified") {
-      throw new Error("Address verification is pending or rejected. Please update your address to verify serviceability.");
+      throw new ConvexError("Address verification is pending or rejected. Please update your address to verify serviceability.");
     }
 
     // Strict Pincode Blocking Guard: Check if destination pincode is active & serviceable
@@ -158,12 +158,12 @@ export const initCheckoutSessionInternal = internalMutation({
         .first();
 
       if (!pincodeRecord) {
-        throw new Error(`Delivery to pincode ${addr.pincode} is currently blocked or not serviceable.`);
+        throw new ConvexError(`Delivery to pincode ${addr.pincode} is currently blocked or not serviceable.`);
       }
     }
 
     if (args.items.length === 0) {
-      throw new Error("Cart is empty.");
+      throw new ConvexError("Cart is empty.");
     }
 
     const deliveryLat = addr.lat;
@@ -182,16 +182,16 @@ export const initCheckoutSessionInternal = internalMutation({
       !Number.isFinite(deliveryLng) ||
       deliveryLng === 0
     ) {
-      throw new Error("Address has invalid coordinates. Please pin your address on the map.");
+      throw new ConvexError("Address has invalid coordinates. Please pin your address on the map.");
     }
 
     // Required Address Completeness Validation (P1)
     if (!addr.houseNumber || !addr.houseNumber.trim()) {
-      throw new Error("House/Flat Number is required for delivery.");
+      throw new ConvexError("House/Flat Number is required for delivery.");
     }
     const finalPhone = addr.phone || user.phone;
     if (!finalPhone || !finalPhone.trim()) {
-      throw new Error("Contact phone number is required for delivery hand-off.");
+      throw new ConvexError("Contact phone number is required for delivery hand-off.");
     }
 
     // Server-Side Promo Validation (P0)
@@ -205,11 +205,11 @@ export const initCheckoutSessionInternal = internalMutation({
       } else if (cleanPromoCode === "FREESHIP") {
         expectedDiscount = 0;
       } else {
-        throw new Error("Invalid promotional coupon code.");
+        throw new ConvexError("Invalid promotional coupon code.");
       }
     }
     if (args.discount !== expectedDiscount) {
-      throw new Error(`Discount validation failed. Expected: ₹${expectedDiscount}, Got: ₹${args.discount}`);
+      throw new ConvexError(`Discount validation failed. Expected: ₹${expectedDiscount}, Got: ₹${args.discount}`);
     }
 
     // Delivery fee validation is deferred until after items loop where distance is computed.
@@ -255,10 +255,10 @@ export const initCheckoutSessionInternal = internalMutation({
 
       const isMock = MOCK_INVENTORY[item.productId] !== undefined;
       if (!productRow && !isMock) {
-        throw new Error(`The item "${item.name}" is no longer available.`);
+        throw new ConvexError(`The item "${item.name}" is no longer available.`);
       }
       if (productRow && !productRow.active) {
-        throw new Error(`The item "${item.name}" is currently deactivated.`);
+        throw new ConvexError(`The item "${item.name}" is currently deactivated.`);
       }
 
       let boutique: any = null;
@@ -272,13 +272,13 @@ export const initCheckoutSessionInternal = internalMutation({
       }
 
       if (!boutique) {
-        throw new Error(`Boutique for item "${item.name}" is unavailable.`);
+        throw new ConvexError(`Boutique for item "${item.name}" is unavailable.`);
       }
       if (boutique.status !== "APPROVED") {
-        throw new Error(`The boutique "${boutique.boutiqueName || boutique.name}" is temporarily unavailable.`);
+        throw new ConvexError(`The boutique "${boutique.boutiqueName || boutique.name}" is temporarily unavailable.`);
       }
       if (boutique.isAcceptingOrders === false) {
-        throw new Error(`The boutique "${boutique.boutiqueName || boutique.name}" is currently paused.`);
+        throw new ConvexError(`The boutique "${boutique.boutiqueName || boutique.name}" is currently paused.`);
       }
 
       // Perform operational limits checks (hours, operating days, capacity, soft launch)
@@ -311,7 +311,7 @@ export const initCheckoutSessionInternal = internalMutation({
       }));
 
       if (!serviceability.serviceable) {
-        throw new Error(serviceability.reason || "One or more items cannot be delivered to your address.");
+        throw new ConvexError(serviceability.reason || "One or more items cannot be delivered to your address.");
       }
 
       // Recalculate price in integer Paise to prevent price manipulation
@@ -342,18 +342,18 @@ export const initCheckoutSessionInternal = internalMutation({
     if (Math.abs(clientSubtotalPaise - expectedSubtotalPaise) > 100) {
       console.error(`[TAMPERING_CHECK] Mismatch detected. clientSubtotalPaise: ${clientSubtotalPaise}, expectedSubtotalPaise: ${expectedSubtotalPaise}, client args.subtotal: ${args.subtotal}`);
       // calculateItemFinancials will throw ConvexError for stale prices. If we reach here, it's tampering or rounding.
-      throw new Error(`Security Exception: Cart subtotal mismatch. Price tampering detected.`);
+      throw new ConvexError(`Security Exception: Cart subtotal mismatch. Price tampering detected.`);
     }
 
     const primaryBoutiqueId = resolvedItems[0]?.boutiqueId;
     if (!primaryBoutiqueId) {
-      throw new Error("No valid boutique found for this checkout.");
+      throw new ConvexError("No valid boutique found for this checkout.");
     }
 
     // Enforce "1 Cart = 1 Boutique" invariant at server-side checkout session creation
     for (const resolved of resolvedItems) {
       if (resolved.boutiqueId !== primaryBoutiqueId) {
-        throw new Error("All items in the checkout must belong to the same boutique.");
+        throw new ConvexError("All items in the checkout must belong to the same boutique.");
       }
     }
 
@@ -361,7 +361,7 @@ export const initCheckoutSessionInternal = internalMutation({
     if (primaryBoutique && primaryBoutique.minimumOrderValue !== undefined) {
       const subtotalPaise = Math.round(args.subtotal * 100);
       if (subtotalPaise < primaryBoutique.minimumOrderValue) {
-        throw new Error(
+        throw new ConvexError(
           `Minimum order value for ${primaryBoutique.boutiqueName || primaryBoutique.name} is ₹${(primaryBoutique.minimumOrderValue / 100).toFixed(2)}. Please add more items.`
         );
       }
@@ -373,7 +373,7 @@ export const initCheckoutSessionInternal = internalMutation({
     }
 
     if (args.deliveryFee !== expectedDeliveryFee) {
-      throw new Error(`Delivery fee validation failed. Expected: ₹${expectedDeliveryFee}, Got: ₹${args.deliveryFee}`);
+      throw new ConvexError(`Delivery fee validation failed. Expected: ₹${expectedDeliveryFee}, Got: ₹${args.deliveryFee}`);
     }
 
     // Verify total calculation
@@ -382,7 +382,7 @@ export const initCheckoutSessionInternal = internalMutation({
     const clientTotalPaise = Math.round(args.total * 100);
     
     if (Math.abs(expectedTotalPaise - clientTotalPaise) > 100) {
-      throw new Error(`Order total mismatch. Expected: ₹${expectedTotal}, Got: ₹${args.total}`);
+      throw new ConvexError(`Order total mismatch. Expected: ₹${expectedTotal}, Got: ₹${args.total}`);
     }
 
     const now = Date.now();
@@ -521,7 +521,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
   const user = await getAuthenticatedUser(ctx, args.token);
   const session = await ctx.db.get(args.checkoutSessionId);
   if (!session || session.userId !== user._id) {
-    throw new Error("Invalid checkout session details.");
+    throw new ConvexError("Invalid checkout session details.");
   }
 
   // Order Creation Idempotency Check: lookup order by session ID key unconditionally
@@ -535,17 +535,17 @@ export async function verifyPaymentAndPlaceOrderInternal(
   }
 
   if (session.status === "completed") {
-    throw new Error("Checkout session completed but matching order record was not found.");
+    throw new ConvexError("Checkout session completed but matching order record was not found.");
   }
 
   if (session.status === "processing") {
-    throw new Error("Checkout session is currently being processed. Please wait.");
+    throw new ConvexError("Checkout session is currently being processed. Please wait.");
   }
 
   // Expiry verification
   if (session.status === "expired") {
     // If we've already marked it expired (e.g., via cron) and released inventory, we must reject.
-    throw new Error("Checkout session has expired. Stale inventory release triggered. Please try again.");
+    throw new ConvexError("Checkout session has expired. Stale inventory release triggered. Please try again.");
   }
   // NOTE: We intentionally do NOT check `session.expiresAt < Date.now()` here.
   // If the customer successfully paid on Razorpay (even if they took slightly > 15 mins),
@@ -556,7 +556,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
   }
 
   if (session.status === "failed") {
-    throw new Error("Checkout session has failed.");
+    throw new ConvexError("Checkout session has failed.");
   }
 
   // Compare-and-Swap Session Lock (P0)
@@ -565,7 +565,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
   // Signature Validation
   const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!razorpaySecret) {
-    throw new Error("FATAL: RAZORPAY_KEY_SECRET environment variable is not configured. Payment processing is disabled.");
+    throw new ConvexError("FATAL: RAZORPAY_KEY_SECRET environment variable is not configured. Payment processing is disabled.");
   }
 
   const isSignatureMock = isSignatureBypassAllowed(process.env.ENABLE_DEBUG_TOOLS, razorpaySecret);
@@ -580,7 +580,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
     if (!isVerified) {
       await restoreCheckoutSessionStock(ctx, session);
       await ctx.db.patch(args.checkoutSessionId, { status: "failed" });
-      throw new Error("Payment signature mismatch. Threat warning: possible transaction tampering.");
+      throw new ConvexError("Payment signature mismatch. Threat warning: possible transaction tampering.");
     }
   }
 
@@ -592,7 +592,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
   if (!payment) {
     await restoreCheckoutSessionStock(ctx, session);
     await ctx.db.patch(args.checkoutSessionId, { status: "failed" });
-    throw new Error("Payment record not found for this session.");
+    throw new ConvexError("Payment record not found for this session.");
   }
 
   const now = Date.now();
@@ -600,7 +600,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
   // Verify paymentsEnabled kill switch
   const isPaymentsEnabled = await checkKillSwitch(ctx.db, "paymentsEnabled");
   if (!isPaymentsEnabled) {
-    throw new Error("Online payments are temporarily disabled.");
+    throw new ConvexError("Online payments are temporarily disabled.");
   }
 
   // Capture payment
@@ -653,7 +653,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
   }
 
   if (!boutiqueId) {
-    throw new Error("No boutique found to fulfill this order.");
+    throw new ConvexError("No boutique found to fulfill this order.");
   }
 
   // Resolve boutique details snapshot
@@ -1161,7 +1161,7 @@ export const createCheckoutSession = action({
       if (!response.ok) {
         const errBody = await response.text();
         console.error(`[createCheckoutSession] Razorpay API error status ${response.status}:`, errBody);
-        throw new Error(`Razorpay returned status ${response.status}: ${errBody}`);
+        throw new ConvexError(`Razorpay returned status ${response.status}: ${errBody}`);
       }
 
       const orderData = await response.json();
@@ -1189,7 +1189,7 @@ export const createCheckoutSession = action({
         razorpayOrderId: "FAILED_CREATION",
         status: "failed",
       });
-      throw new Error(`Payment gateway creation failed: ${err.message || String(err)}`);
+      throw new ConvexError(`Payment gateway creation failed: ${err.message || String(err)}`);
     }
   },
 });
@@ -1214,10 +1214,10 @@ export const startProcessingRefund = internalMutation({
   args: { refundQueueId: v.id("refundQueue") },
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.refundQueueId);
-    if (!item) throw new Error("Refund queue item not found");
+    if (!item) throw new ConvexError("Refund queue item not found");
 
     if (item.status === "processing" || item.status === "completed") {
-      throw new Error("Refund is already being processed or is completed.");
+      throw new ConvexError("Refund is already being processed or is completed.");
     }
 
     await ctx.db.patch(args.refundQueueId, {
@@ -1240,7 +1240,7 @@ export const completeRefundQueueItem = internalMutation({
   },
   handler: async (ctx, args) => {
     const item = await ctx.db.get(args.refundQueueId);
-    if (!item) throw new Error("Refund queue item not found");
+    if (!item) throw new ConvexError("Refund queue item not found");
 
     const now = Date.now();
 
@@ -1375,7 +1375,7 @@ export const processRefundQueue = internalAction({
         });
 
         if (!payment?.razorpayPaymentId) {
-          throw new Error(`No razorpayPaymentId found for payment ${refundItem.paymentId}`);
+          throw new ConvexError(`No razorpayPaymentId found for payment ${refundItem.paymentId}`);
         }
 
         // Call Razorpay Refund API
@@ -1401,7 +1401,7 @@ export const processRefundQueue = internalAction({
 
         if (!response.ok) {
           const errBody = await response.text();
-          throw new Error(`Razorpay refund API returned ${response.status}: ${errBody}`);
+          throw new ConvexError(`Razorpay refund API returned ${response.status}: ${errBody}`);
         }
 
         const refundData = await response.json();
@@ -1451,15 +1451,15 @@ export const prepareRetryCheckoutSessionInternal = internalMutation({
   args: { checkoutSessionId: v.id("checkoutSessions"), token: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const session = await ctx.db.get(args.checkoutSessionId);
-    if (!session) throw new Error("Checkout session not found");
+    if (!session) throw new ConvexError("Checkout session not found");
 
     const user = await getAuthenticatedUser(ctx, args.token);
     if (session.userId !== user._id) {
-      throw new Error("Unauthorized: Cannot retry this session");
+      throw new ConvexError("Unauthorized: Cannot retry this session");
     }
 
     if (session.status !== "failed" && session.status !== "expired") {
-      throw new Error(`Cannot retry session in status: ${session.status}`);
+      throw new ConvexError(`Cannot retry session in status: ${session.status}`);
     }
 
     // Rate limiting: 3 retries per 15 mins
@@ -1472,12 +1472,12 @@ export const prepareRetryCheckoutSessionInternal = internalMutation({
       const product = await ctx.db.get(item.productId as Id<"products">);
       const isMock = MOCK_INVENTORY[item.productId] !== undefined;
       if (!product && !isMock) {
-        throw new Error(`The item "${item.name}" is no longer available.`);
+        throw new ConvexError(`The item "${item.name}" is no longer available.`);
       }
       if (product) {
         const currentStock = product.stockBySize[item.size] ?? 0;
         if (currentStock < item.quantity) {
-          throw new Error(`Sorry, some items in your cart sold out while processing. Please review your cart.`);
+          throw new ConvexError(`Sorry, some items in your cart sold out while processing. Please review your cart.`);
         }
       }
     }
@@ -1580,7 +1580,7 @@ export const retryCheckoutSession = action({
     });
 
     if (initResult.paymentMethod === "cod") {
-       throw new Error("COD sessions cannot be retried through this payment pipeline.");
+       throw new ConvexError("COD sessions cannot be retried through this payment pipeline.");
     }
 
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
@@ -1626,7 +1626,7 @@ export const retryCheckoutSession = action({
 
       if (!response.ok) {
         const errBody = await response.text();
-        throw new Error(`Razorpay returned status ${response.status}: ${errBody}`);
+        throw new ConvexError(`Razorpay returned status ${response.status}: ${errBody}`);
       }
 
       const orderData = await response.json();
@@ -1650,7 +1650,7 @@ export const retryCheckoutSession = action({
       await ctx.runMutation(paymentsApi.failRetryCheckoutSessionInternal, {
         checkoutSessionId: args.checkoutSessionId,
       });
-      throw new Error(`Payment gateway creation failed on retry: ${err.message || String(err)}`);
+      throw new ConvexError(`Payment gateway creation failed on retry: ${err.message || String(err)}`);
     }
   }
 });
