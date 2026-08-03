@@ -768,16 +768,27 @@ export const updateProduct = mutation({
 
     // Trigger ops Slack alert if edited product is pending approval
     if (approvalStatus === "pending") {
-      const superadmin = await ctx.db.query("users").withIndex("by_role", q => q.eq("role", "admin")).first();
+      let superadmin = await ctx.db.query("users").withIndex("by_role", q => q.eq("role", "admin")).first();
+      if (!superadmin) {
+        superadmin = await ctx.db.query("users").first();
+      }
       if (superadmin) {
         const catDoc = await ctx.db.get(resolvedCategoryId);
-        await triggerNotification(ctx, superadmin._id, "slack", "product_pending_approval", "product", args.id, JSON.stringify({
-          productName: args.name,
-          boutiqueName: boutique.name,
-          price: customerPrice,
-          category: (catDoc as any)?.name || undefined,
-          isEdit: true,
-        }));
+        await triggerNotification(
+          ctx, 
+          superadmin._id, 
+          "slack", 
+          "product_edited_pending_approval", 
+          "product", 
+          `${args.id}_edit_${now}`, 
+          JSON.stringify({
+            productName: args.name,
+            boutiqueName: boutique.name,
+            price: customerPrice,
+            category: (catDoc as any)?.name || undefined,
+            isEdit: true,
+          })
+        );
       }
     }
 

@@ -398,8 +398,9 @@ export function formatSlackNotification(template: string, rawPayload: any): { te
   const adminBaseUrl = process.env.ADMIN_URL || "https://admin.hivenow.in";
 
   switch (template) {
-    case "product_pending_approval": {
-      const isEdit = Boolean(payload.isEdit);
+    case "product_pending_approval":
+    case "product_edited_pending_approval": {
+      const isEdit = template === "product_edited_pending_approval" || Boolean(payload.isEdit);
       const title = isEdit ? `📝 Edited Product Pending Re-Review` : `🛍️ New Product Pending Review`;
       const fallback = `${title}: ${payload.productName || "Product"} from ${payload.boutiqueName || "Boutique"}`;
       const fields = [
