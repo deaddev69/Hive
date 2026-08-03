@@ -10,6 +10,7 @@ export const savePushSubscription = mutation({
     userId: v.id("users"),
     subscription: v.object({
       endpoint: v.string(),
+      expirationTime: v.optional(v.union(v.number(), v.null())),
       keys: v.object({
         p256dh: v.string(),
         auth: v.string(),
