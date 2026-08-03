@@ -213,7 +213,7 @@ function InlineDropdown({ label, options, placeholder, value, onChange }: Inline
   }, []);
 
   return (
-    <div className="flex flex-col gap-1.5 relative w-full font-sans" ref={containerRef}>
+    <div className={`flex flex-col gap-1.5 relative w-full font-sans ${isOpen ? "z-50" : "z-10"}`} ref={containerRef}>
       <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">{label}</label>
       <button
         type="button"
@@ -227,7 +227,7 @@ function InlineDropdown({ label, options, placeholder, value, onChange }: Inline
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-[102%] bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto py-1">
+        <div className="absolute left-0 right-0 top-[102%] bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-56 overflow-y-auto py-1">
           {options.map((opt) => (
             <button
               key={opt}
@@ -1849,7 +1849,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           )}
         </div>
 
-        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-visible relative z-20">
           <button
             type="button"
             onClick={() => toggleDrawer("specs")}
