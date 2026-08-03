@@ -33,4 +33,4 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
   };
 }
-// Trigger Vercel Build for Seller App
+// Trigger Vercel Build for Seller App - Web Push Service Worker Update (Aug 4, 2026)
