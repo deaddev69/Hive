@@ -1095,9 +1095,19 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   }}
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center text-slate-400 gap-2 p-6">
-                  <ImageIcon className="w-12 h-12 stroke-[1.25] text-slate-500 mb-2" />
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Upload photos below</span>
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-full bg-[#FAF8F5] border-2 border-dashed border-amber-300/80 rounded-2xl flex flex-col items-center justify-center text-center p-6 cursor-pointer hover:bg-amber-50/40 transition-all group"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200/80 text-[#D97706] flex items-center justify-center mb-3 shadow-2xs group-hover:scale-105 transition-transform">
+                    <ImageIcon className="w-7 h-7 stroke-[1.75]" />
+                  </div>
+                  <span className="text-sm font-black text-slate-800 tracking-tight mb-1">
+                    Tap to Select Product Photos
+                  </span>
+                  <span className="text-[11px] font-semibold text-amber-800/80">
+                    Supports High-Res JPG, PNG & WebP (3:4 Ratio Recommended)
+                  </span>
                 </div>
               )}
 
@@ -1184,14 +1194,16 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 onClick={() => fileInputRef.current?.click()}
                 disabled={localPreviews.length >= 5}
                 className={cn(
-                  "aspect-square rounded-xl border border-dashed flex flex-col items-center justify-center gap-1 transition-all",
+                  "aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 transition-all select-none",
                   localPreviews.length >= 5
                     ? "bg-slate-50 border-slate-200 cursor-not-allowed opacity-50"
-                    : "bg-[#f8fafc] border-[#E9B929] hover:bg-amber-50/30 cursor-pointer"
+                    : localPreviews.length === 0
+                    ? "bg-amber-50/70 border-2 border-dashed border-[#F5C22B] shadow-[0_0_15px_rgba(245,194,43,0.3)] animate-pulse cursor-pointer hover:bg-amber-100/60"
+                    : "bg-[#f8fafc] border-dashed border-[#E9B929] hover:bg-amber-50/40 cursor-pointer"
                 )}
               >
-                <Plus className="w-6 h-6 text-[#E9B929]" />
-                <span className="text-[9px] font-black uppercase text-slate-500 tracking-wide">Upload</span>
+                <Plus className={cn("w-6 h-6", localPreviews.length === 0 ? "text-[#D97706]" : "text-[#E9B929]")} />
+                <span className={cn("text-[9px] font-black uppercase tracking-wide", localPreviews.length === 0 ? "text-amber-900" : "text-slate-500")}>Upload</span>
               </button>
 
               {/* Preview Selection Tiles */}
@@ -1263,11 +1275,20 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         {/* Bottom Action Footer with Next Button at Bottom Right */}
         <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-between shrink-0 shadow-lg z-20">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-700">
-              {localPreviews.length} of 3 photos uploaded
-            </span>
-            {localPreviews.length >= 3 && (
-              <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Ready</span>
+            {localPreviews.length === 0 ? (
+              <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-slate-100 text-slate-600 border border-slate-200">
+                0 of 3 photos — Upload 3 photos to proceed
+              </span>
+            ) : localPreviews.length < 3 ? (
+              <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[#E9B929] animate-pulse" />
+                {localPreviews.length} of 3 photos — Add {3 - localPreviews.length} more
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5 uppercase tracking-wider">
+                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
+                {localPreviews.length} photos READY
+              </span>
             )}
           </div>
           <button
