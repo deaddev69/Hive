@@ -2633,7 +2633,7 @@ export const updateBoutiqueStaff = mutation({
         const existingUser = await ctx.db
           .query("users")
           .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", oldEmail))
-          .unique();
+          .first();
 
         if (existingUser && existingUser.role === "boutique") {
           await ctx.db.patch(existingUser._id, { role: "customer", updatedAt: now });
@@ -2642,7 +2642,7 @@ export const updateBoutiqueStaff = mutation({
             actorRole: "system",
             action: "boutique_staff.revoked",
             entityType: "boutiques",
-            entityId: boutique._id,
+            entityId: String(boutique._id),
             metadata: JSON.stringify({ userId: existingUser._id, email: oldEmail }),
             createdAt: now,
           });
@@ -2656,7 +2656,7 @@ export const updateBoutiqueStaff = mutation({
         const existingUser = await ctx.db
           .query("users")
           .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", newEmail))
-          .unique();
+          .first();
 
         if (existingUser && existingUser.role === "customer") {
           await ctx.db.patch(existingUser._id, { role: "boutique", updatedAt: now });
@@ -2665,7 +2665,7 @@ export const updateBoutiqueStaff = mutation({
             actorRole: "system",
             action: "boutique_staff.linked",
             entityType: "boutiques",
-            entityId: boutique._id,
+            entityId: String(boutique._id),
             metadata: JSON.stringify({ userId: existingUser._id, email: newEmail }),
             createdAt: now,
           });

@@ -1,0 +1,56 @@
+import { v } from "convex/values";
+import { internalAction, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
+
+export const markNotificationStatus = internalMutation({
+    args: {
+        eventId: v.id("notificationEvents"),
+        status: v.union(v.literal("sent"), v.literal("failed")),
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.eventId, {
+            status: args.status,
+            sentAt: args.status === "sent" ? Date.now() : undefined,
+        });
+    },
+});
+
+/**
+ * Network requests must run in an action, never in a Convex mutation.
+ * Notification-producing mutations schedule this action after committing.
+ */
+export const sendNotification = internalAction({
+    args: {
+        eventId: v.id("notificationEvents"),
+        text: v.string(),
+    },
+    handler: async (ctx, args) => {
+        try {
+            const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+            if (!webhookUrl) {
+                console.warn("[sendSlackNotification] Slack webhook URL not configured");
+            } else {
+                const response = await fetch(webhookUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text: args.text }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Slack webhook failed: ${await response.text()}`);
+                }
+            }
+
+            await ctx.runMutation(internal.slack.markNotificationStatus, {
+                eventId: args.eventId,
+                status: "sent",
+            });
+        } catch (error) {
+            console.error("[sendSlackNotification] Failed to send notification", error);
+            await ctx.runMutation(internal.slack.markNotificationStatus, {
+                eventId: args.eventId,
+                status: "failed",
+            });
+        }
+    },
+});

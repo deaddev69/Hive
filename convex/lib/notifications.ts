@@ -340,29 +340,15 @@ export async function triggerNotification(
         sentAt: Date.now(),
       });
     } else if (channel === "slack") {
-      const webhookUrl = process.env.SLACK_WEBHOOK_URL;
-      if (webhookUrl) {
-        let text = `*New Notification: ${template}*\n`;
-        if (payload) {
-          text += "```\n" + JSON.stringify(payload, null, 2) + "\n```";
-        }
-        
-        const res = await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
-        });
-        
-        if (!res.ok) {
-          throw new Error(`Slack webhook failed: ${await res.text()}`);
-        }
-      } else {
-        console.warn("[triggerNotification] Slack webhook URL not configured");
+      let text = `*New Notification: ${template}*\n`;
+      if (payload) {
+        text += "```\n" + JSON.stringify(payload, null, 2) + "\n```";
       }
-      
-      await ctx.db.patch(eventId, {
-        status: "sent",
-        sentAt: Date.now(),
+
+      // Slack uses fetch(), so dispatch it from an action after this mutation commits.
+      await ctx.scheduler.runAfter(0, internal.slack.sendNotification, {
+        eventId,
+        text,
       });
     } else if (channel === "whatsapp") {
       const phone = user.phone || payload.phone;
