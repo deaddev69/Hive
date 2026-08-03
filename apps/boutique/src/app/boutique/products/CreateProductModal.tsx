@@ -694,11 +694,9 @@ export default function CreateProductModal({
       setUploadStatusText(productToEdit ? "Updating product catalog..." : "Publishing product...");
       setUploadingImages(false);
 
-      const primaryCatId = selectedCategoryIds[0] || (categories?.[0]?._id || "womens-ethnic");
-      const categoryTagNames = selectedCategoryIds.map((id) => {
-        const found = allCategoriesList.find((c) => c._id === id || c.name.toLowerCase() === id.toLowerCase());
-        return found ? found.name : id;
-      });
+      const rawCatId = selectedCategoryIds[0] || (allCategoriesList?.[0]?._id || "womens-ethnic");
+      const foundCat = allCategoriesList.find((c: any) => c._id === rawCatId || c.slug === rawCatId || c.name?.toLowerCase() === (rawCatId || "").toLowerCase());
+      const resolvedCatId = foundCat ? foundCat._id : (allCategoriesList?.[0]?._id || rawCatId);
 
       const finalMaterial = materialType === "Other" ? autoCorrectCapitalization(customMaterialType) : materialType;
       const finalCare = care === "Other" ? autoCorrectCapitalization(customCare) : care;
@@ -706,7 +704,7 @@ export default function CreateProductModal({
       const payload = {
         name,
         description,
-        categoryId: primaryCatId as any,
+        categoryId: resolvedCatId as any,
         price: parseFloat(price),
         discountPrice: discountPrice ? parseFloat(discountPrice) : undefined,
         images: finalImages,

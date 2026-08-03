@@ -849,13 +849,13 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       const finalCare = data.care === "Other" ? autoCorrectCapitalization(data.customCare || "") : data.care;
       
       const primaryCatId = data.categoryId;
-      const foundCategory = allCategoriesList.find((c) => c._id === primaryCatId);
-      const categoryTagName = foundCategory ? foundCategory.name : primaryCatId;
+      const foundCategory = allCategoriesList.find((c: any) => c._id === primaryCatId || c.slug === primaryCatId || c.name?.toLowerCase() === primaryCatId?.toLowerCase());
+      const resolvedCatId = foundCategory ? foundCategory._id : (allCategoriesList[0]?._id || primaryCatId);
 
       const payload = {
         name: data.name,
         description: data.description,
-        categoryId: primaryCatId as any,
+        categoryId: resolvedCatId as any,
         price: parseFloat(data.price),
         discountPrice: data.discountPrice ? parseFloat(data.discountPrice) : undefined,
         images: finalImages,

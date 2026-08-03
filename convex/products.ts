@@ -329,7 +329,7 @@ export const createProduct = mutation({
   args: {
     name: v.string(),
     description: v.string(),
-    categoryId: v.id("categories"),
+    categoryId: v.union(v.id("categories"), v.string()),
     price: v.number(),
     discountPrice: v.optional(v.number()),
     images: v.array(v.union(v.string(), ImageAsset)), // Storage IDs, URLs, or ImageAsset
@@ -369,6 +369,17 @@ export const createProduct = mutation({
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx, args.token);
     const boutique = await getMyBoutique(ctx, args.token);
+
+    // Resolve categoryId if passed as slug or name string
+    let resolvedCategoryId: any = args.categoryId;
+    const allCategories = await ctx.db.query("categories").collect();
+    if (allCategories.length > 0 && typeof args.categoryId === "string") {
+      const searchCat = args.categoryId.toLowerCase();
+      const matched = allCategories.find(
+        (c: any) => c._id === args.categoryId || c.slug === args.categoryId || (c.name ? c.name.toLowerCase() : "") === searchCat
+      );
+      resolvedCategoryId = matched ? matched._id : (allCategories[0]?._id as any);
+    }
 
     // Validate quality gate if active
     await validateProductQuality(ctx, args);
@@ -463,7 +474,7 @@ export const createProduct = mutation({
       name: args.name,
       slug,
       description: args.description,
-      categoryId: args.categoryId,
+      categoryId: resolvedCategoryId as any,
       basePrice: args.price,
       price: customerPrice,
       baseDiscountPrice: args.discountPrice,
@@ -547,7 +558,7 @@ export const updateProduct = mutation({
     id: v.id("products"),
     name: v.string(),
     description: v.string(),
-    categoryId: v.id("categories"),
+    categoryId: v.union(v.id("categories"), v.string()),
     price: v.number(),
     discountPrice: v.optional(v.number()),
     images: v.array(v.union(v.string(), ImageAsset)),
@@ -703,10 +714,21 @@ export const updateProduct = mutation({
       ? Math.ceil((args.discountPrice * (1 + markupRate)) / 10) * 10 - 1 
       : undefined;
 
+    // Resolve categoryId if passed as slug or name string
+    let resolvedCategoryId: any = args.categoryId;
+    const allCategories = await ctx.db.query("categories").collect();
+    if (allCategories.length > 0 && typeof args.categoryId === "string") {
+      const searchCat = args.categoryId.toLowerCase();
+      const matched = allCategories.find(
+        (c: any) => c._id === args.categoryId || c.slug === args.categoryId || (c.name ? c.name.toLowerCase() : "") === searchCat
+      );
+      resolvedCategoryId = matched ? matched._id : (allCategories[0]?._id as any);
+    }
+
     await ctx.db.patch(args.id, {
       name: args.name,
       description: args.description,
-      categoryId: args.categoryId,
+      categoryId: resolvedCategoryId as any,
       basePrice: args.price,
       price: customerPrice,
       baseDiscountPrice: args.discountPrice,
