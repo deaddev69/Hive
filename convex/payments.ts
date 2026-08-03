@@ -1088,9 +1088,8 @@ export const createCheckoutSession = action({
     quoteId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const paymentsApi = (anyApi as any).payments;
     // 1. Initialize checkout records and validate cart details
-    const initResult = await ctx.runMutation(paymentsApi.initCheckoutSessionInternal, args);
+    const initResult: any = await ctx.runMutation(internal.payments.initCheckoutSessionInternal as any, args);
 
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -1099,7 +1098,7 @@ export const createCheckoutSession = action({
     if (isMock) {
       // Offline fallback: Generate simulated Razorpay Order ID
       const razorpayOrderId = `order_mock_${Math.random().toString(36).substring(2, 12).toUpperCase()}`;
-      await ctx.runMutation(paymentsApi.updateCheckoutSessionWithRazorpayOrderId, {
+      await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId, {
         checkoutSessionId: initResult.checkoutSessionId,
         paymentId: initResult.paymentId,
         razorpayOrderId,
@@ -1158,7 +1157,7 @@ export const createCheckoutSession = action({
       const orderData = await response.json();
       const razorpayOrderId = orderData.id;
 
-      await ctx.runMutation(paymentsApi.updateCheckoutSessionWithRazorpayOrderId, {
+      await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId, {
         checkoutSessionId: initResult.checkoutSessionId,
         paymentId: initResult.paymentId,
         razorpayOrderId,
@@ -1174,7 +1173,7 @@ export const createCheckoutSession = action({
       console.error("[RazorpayOrderCreation] API request failed:", err);
 
       // Update checkout session and payment records to failed state
-      await ctx.runMutation(paymentsApi.updateCheckoutSessionWithRazorpayOrderId, {
+      await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId, {
         checkoutSessionId: initResult.checkoutSessionId,
         paymentId: initResult.paymentId,
         razorpayOrderId: "FAILED_CREATION",
