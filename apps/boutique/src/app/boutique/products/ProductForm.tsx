@@ -1055,19 +1055,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
             <X className="w-5 h-5" />
           </button>
           <span className="text-sm font-black uppercase tracking-widest text-slate-800">New product post</span>
-          <button
-            type="button"
-            onClick={handleApplyCrop}
-            disabled={!canGoNext}
-            className={cn(
-              "text-xs font-black uppercase tracking-wider px-4 py-2 rounded-xl transition-all",
-              canGoNext 
-                ? "bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 shadow-xs cursor-pointer" 
-                : "bg-slate-100 text-slate-400 cursor-not-allowed"
-            )}
-          >
-            Next
-          </button>
+          <div className="w-5 h-5" />
         </div>
 
         {/* Viewport & Grid Splitter Container */}
