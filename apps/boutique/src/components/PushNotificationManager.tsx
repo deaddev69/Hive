@@ -43,6 +43,17 @@ export function PushNotificationManager({
 
   const saveSubscription = useMutation(api.pushNotifications.savePushSubscription);
 
+  const playOrderChime = useCallback(() => {
+    try {
+      const audio = new Audio("/sounds/order-chime.wav");
+      audio.volume = 0.8;
+      audio.play().catch((err) => {
+        console.log("Audio autoplay prevented or error playing sound:", err);
+      });
+    } catch (e) {
+      console.error("Failed to play order chime audio:", e);
+    }
+  }, []);
   useEffect(() => {
     if (
       typeof window !== "undefined" &&
@@ -60,8 +71,18 @@ export function PushNotificationManager({
           }
         });
       });
+
+      const messageListener = (event: MessageEvent) => {
+        if (event.data && event.data.type === "PLAY_ORDER_CHIME") {
+          playOrderChime();
+        }
+      };
+      navigator.serviceWorker.addEventListener("message", messageListener);
+      return () => {
+        navigator.serviceWorker.removeEventListener("message", messageListener);
+      };
     }
-  }, []);
+  }, [playOrderChime]);
 
   const handleSubscribe = async () => {
     if (!isSupported) {
@@ -77,6 +98,20 @@ export function PushNotificationManager({
     try {
       setLoading(true);
 
+      // Unlock AudioContext immediately upon user interaction by playing a silent buffer
+      try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioContext) {
+          const ctx = new AudioContext();
+          const osc = ctx.createOscillator();
+          osc.connect(ctx.destination);
+          osc.start(ctx.currentTime);
+          osc.stop(ctx.currentTime + 0.001);
+        }
+      } catch (e) {
+        console.warn("Failed to unlock AudioContext:", e);
+      }
+
       const requestedPermission = await Notification.requestPermission();
       setPermission(requestedPermission);
 
@@ -89,13 +124,10 @@ export function PushNotificationManager({
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
       if (!vapidPublicKey) {
-        console.warn(
-          "[PushNotificationManager] NEXT_PUBLIC_VAPID_PUBLIC_KEY is not defined."
+        console.error(
+          "[PushNotificationManager] NEXT_PUBLIC_VAPID_PUBLIC_KEY is missing. Subscriptions cannot be generated."
         );
-        // Fallback: request permission and play test sound
-        playOrderChime();
-        setIsSubscribed(true);
-        setShowSuccessToast(true);
+        alert("Server configuration error: Missing VAPID Public Key.");
         setLoading(false);
         return;
       }
@@ -122,17 +154,7 @@ export function PushNotificationManager({
     }
   };
 
-  const playOrderChime = useCallback(() => {
-    try {
-      const audio = new Audio("/sounds/order-chime.wav");
-      audio.volume = 0.8;
-      audio.play().catch((err) => {
-        console.log("Audio autoplay prevented or error playing sound:", err);
-      });
-    } catch (e) {
-      console.error("Failed to play order chime audio:", e);
-    }
-  }, []);
+
 
   if (!isSupported || dismissed || permission === "denied") {
     return null;
