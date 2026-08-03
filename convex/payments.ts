@@ -1093,12 +1093,21 @@ export const createCheckoutSession = action({
 
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    const isMock = !keySecret || keySecret === "mock_secret";
+
+    // Check if running in mock/demo mode or if credentials are set to mock defaults / missing
+    const isMock =
+      !keyId ||
+      !keySecret ||
+      keySecret === "mock_secret" ||
+      keySecret === "YOUR_RAZORPAY_SECRET" ||
+      keyId === "rzp_test_mock" ||
+      keyId === "YOUR_RAZORPAY_KEY_ID";
 
     if (isMock) {
+      console.log("[createCheckoutSession] Running in mock/offline payment mode.");
       // Offline fallback: Generate simulated Razorpay Order ID
       const razorpayOrderId = `order_mock_${Math.random().toString(36).substring(2, 12).toUpperCase()}`;
-      await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId, {
+      await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId as any, {
         checkoutSessionId: initResult.checkoutSessionId,
         paymentId: initResult.paymentId,
         razorpayOrderId,
@@ -1151,13 +1160,14 @@ export const createCheckoutSession = action({
 
       if (!response.ok) {
         const errBody = await response.text();
+        console.error(`[createCheckoutSession] Razorpay API error status ${response.status}:`, errBody);
         throw new Error(`Razorpay returned status ${response.status}: ${errBody}`);
       }
 
       const orderData = await response.json();
       const razorpayOrderId = orderData.id;
 
-      await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId, {
+      await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId as any, {
         checkoutSessionId: initResult.checkoutSessionId,
         paymentId: initResult.paymentId,
         razorpayOrderId,
@@ -1170,10 +1180,10 @@ export const createCheckoutSession = action({
         paymentId: initResult.paymentId,
       };
     } catch (err: any) {
-      console.error("[RazorpayOrderCreation] API request failed:", err);
+      console.error("[RazorpayOrderCreation] API request failed:", err.message || err);
 
       // Update checkout session and payment records to failed state
-      await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId, {
+      await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId as any, {
         checkoutSessionId: initResult.checkoutSessionId,
         paymentId: initResult.paymentId,
         razorpayOrderId: "FAILED_CREATION",
