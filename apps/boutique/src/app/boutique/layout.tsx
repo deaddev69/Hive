@@ -8,7 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Home, Tag, Package, ClipboardList, User, LogOut, Menu, X, Loader2, ShieldX, Wallet, Star, Plus } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@hive/ui";
+import { Button, LoadingState } from "@hive/ui";
 import { HiveLogo } from "@/components/shared/HiveLogo";
 import LegalAgreementStep from "@/components/onboarding/LegalAgreementStep";
 
@@ -69,12 +69,8 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   // me===null      → user not in Convex DB yet → show error (NOT loading)
   if (!isLoaded || me === undefined || myBoutiqueSafe === undefined) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
-        <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
-        <div className="flex flex-col gap-1">
-          <span className="text-base font-serif font-black text-hive-dark">Hive Partners Portal</span>
-          <span className="text-xs text-hive-text-muted">Loading secure session...</span>
-        </div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <LoadingState message="Loading secure session..." variant="full" />
       </div>
     );
   }

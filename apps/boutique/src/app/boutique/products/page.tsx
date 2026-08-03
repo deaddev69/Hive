@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { Button, Card, CardContent, AnimatedBackground } from "@hive/ui";
+import { Button, Card, CardContent, AnimatedBackground, LoadingState } from "@hive/ui";
 import { Plus, Edit3, Trash2, Loader2, Upload, Search, Image as ImageIcon, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -241,10 +241,7 @@ export default function BoutiqueProducts() {
 
   if (products === undefined || categories === undefined) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 bg-transparent font-sans">
-        <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
-        <p className="text-sm text-hive-text-muted font-medium">Loading products catalog...</p>
-      </div>
+      <LoadingState message="Loading catalog..." variant="full" />
     );
   }
 

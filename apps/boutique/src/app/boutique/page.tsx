@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { Card, CardContent, Button, TextEffect } from "@hive/ui";
+import { Card, CardContent, Button, TextEffect, LoadingState } from "@hive/ui";
 import { formatCurrency, toast } from "@hive/utils";
 import {
   Loader2,
@@ -301,10 +301,7 @@ export default function BoutiqueDashboard() {
       );
     }
     return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
-        <p className="text-sm text-hive-text-muted font-medium">Loading dashboard...</p>
-      </div>
+      <LoadingState message="Loading dashboard..." variant="full" />
     );
   }
 
