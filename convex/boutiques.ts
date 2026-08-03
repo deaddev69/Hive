@@ -2613,11 +2613,30 @@ export const updateBoutiqueStaff = mutation({
     const newEmail1 = args.staffEmail1 ? args.staffEmail1.trim().toLowerCase() : "";
     const newEmail2 = args.staffEmail2 ? args.staffEmail2.trim().toLowerCase() : "";
 
+    let formattedPhone1: string | undefined = undefined;
+    let formattedPhone2: string | undefined = undefined;
+
+    if (args.staffPhone1 && args.staffPhone1.trim().length > 0) {
+      try {
+        formattedPhone1 = normalizePhoneNumber(args.staffPhone1);
+      } catch (err: any) {
+        throw new ConvexError(err.message || "Invalid Staff WhatsApp 1 phone number format.");
+      }
+    }
+
+    if (args.staffPhone2 && args.staffPhone2.trim().length > 0) {
+      try {
+        formattedPhone2 = normalizePhoneNumber(args.staffPhone2);
+      } catch (err: any) {
+        throw new ConvexError(err.message || "Invalid Staff WhatsApp 2 phone number format.");
+      }
+    }
+
     const patchData: any = {
-      staffEmail1: args.staffEmail1 ? newEmail1 : undefined,
-      staffEmail2: args.staffEmail2 ? newEmail2 : undefined,
-      staffPhone1: args.staffPhone1 ? normalizePhoneNumber(args.staffPhone1) : undefined,
-      staffPhone2: args.staffPhone2 ? normalizePhoneNumber(args.staffPhone2) : undefined,
+      staffEmail1: newEmail1 || undefined,
+      staffEmail2: newEmail2 || undefined,
+      staffPhone1: formattedPhone1,
+      staffPhone2: formattedPhone2,
       staffNotificationSelection: args.staffNotificationSelection,
     };
 
