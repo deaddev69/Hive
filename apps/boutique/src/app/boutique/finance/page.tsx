@@ -55,13 +55,13 @@ function RazorpayOnboarding({ boutique }: { boutique: any }) {
       }
       if (data.redirectUrl) {
         window.open(data.redirectUrl, "_blank");
-        toast.success("Redirecting to Razorpay Onboarding...");
+        toast.success("Redirecting to Razorpay", "Complete your account verification on the secure onboarding portal.");
       } else {
-        toast.error("No onboarding redirect URL received.");
+        toast.error("Verification Link Unavailable", "Unable to open onboarding portal right now. Please try again.");
       }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to start onboarding flow");
-      toast.error(err.message || "Failed to start onboarding flow");
+      toast.error("Onboarding Error", "Something went wrong starting bank account verification.");
     } finally {
       setSubmitting(false);
     }

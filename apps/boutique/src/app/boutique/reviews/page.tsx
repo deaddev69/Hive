@@ -36,7 +36,7 @@ export default function BoutiqueReviewsPage() {
   const handleSendReply = async (reviewId: Id<"reviews">) => {
     const text = replyTextMap[reviewId];
     if (!text || !text.trim()) {
-      toast.error("Please enter a reply message.");
+      toast.error("Reply Text Required", "Please enter a message before sending your reply.");
       return;
     }
 
@@ -46,10 +46,10 @@ export default function BoutiqueReviewsPage() {
         reviewId,
         replyText: text.trim(),
       });
-      toast.success("Reply posted successfully!");
+      toast.success("Reply Published", "Your response is now visible on the customer product page.");
       setReplyingToId(null);
     } catch (err: any) {
-      toast.error("Failed to post reply: " + (err.message || String(err)));
+      toast.error("Couldn't Post Reply", "Something went wrong while posting your response. Please try again.");
     } finally {
       setSubmittingReplyId(null);
     }

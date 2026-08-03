@@ -89,9 +89,13 @@ export default function BoutiqueDashboard() {
     try {
       const nextVal = !boutique.isAcceptingOrders;
       await toggleAvailability({ isAcceptingOrders: nextVal });
-      toast.success(nextVal ? "Store is now accepting orders!" : "Store order acceptance paused.");
+      if (nextVal) {
+        toast.success("Store is Now Open", "Your boutique is online and ready to accept new customer orders.");
+      } else {
+        toast.info("Store Temporarily Paused", "Order acceptance is paused. Existing orders can still be fulfilled.");
+      }
     } catch (e) {
-      toast.error("Failed to update order acceptance status.");
+      toast.error("Couldn't Update Status", "Unable to change order acceptance right now. Please try again.");
       console.error(e);
     } finally {
       setIsPending(false);
@@ -103,9 +107,15 @@ export default function BoutiqueDashboard() {
     setIsPending(true);
     try {
       await updateStatus({ storeStatus: newStatus });
-      toast.success(`Store status updated to ${newStatus.toUpperCase()}`);
+      const label = newStatus === "open" ? "Open" : newStatus === "busy" ? "Busy Mode" : "Closed";
+      const desc = newStatus === "open" 
+        ? "Your boutique is open for normal orders."
+        : newStatus === "busy"
+        ? "Busy mode enabled. Customers will see extended fulfillment times."
+        : "Store is currently closed.";
+      toast.success(`Store Status: ${label}`, desc);
     } catch (e) {
-      toast.error("Failed to update store status.");
+      toast.error("Couldn't Update Status", "Unable to update store status right now. Please try again.");
       console.error(e);
     } finally {
       setIsPending(false);

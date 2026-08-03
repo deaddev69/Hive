@@ -204,9 +204,9 @@ export default function BoutiqueProfile() {
 
       await updateBoutiqueProfile(payload);
 
-      toast.success("Profile updated successfully!");
+      toast.success("Profile Updated", "Your boutique details were saved successfully.");
     } catch (err: any) {
-      toast.error("Failed to save profile: " + err.message);
+      toast.error("Couldn't Save Profile", "Something went wrong while updating your profile. Please try again.");
     } finally {
       setSaving(false);
       setUploadMsg("");
@@ -218,11 +218,11 @@ export default function BoutiqueProfile() {
 
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
     if (staffPhone1 && !phoneRegex.test(staffPhone1)) {
-      toast.error("Staff WhatsApp 1 must be a valid E.164 phone number (e.g. +919876543210)");
+      toast.error("Invalid Phone Format", "Please enter a valid mobile number with country code (e.g. +91 98765 43210).");
       return;
     }
     if (staffPhone2 && !phoneRegex.test(staffPhone2)) {
-      toast.error("Staff WhatsApp 2 must be a valid E.164 phone number (e.g. +919876543210)");
+      toast.error("Invalid Phone Format", "Please enter a valid mobile number with country code (e.g. +91 98765 43210).");
       return;
     }
 
@@ -235,10 +235,10 @@ export default function BoutiqueProfile() {
         staffPhone2: staffPhone2 || undefined,
         staffNotificationSelection,
       });
-      toast.success("Staff details updated!");
+      toast.success("Staff Details Updated", "Notification and contact details saved successfully.");
       setIsEditingStaff(false);
     } catch (err: any) {
-      toast.error("Failed to update staff: " + err.message);
+      toast.error("Couldn't Update Staff", "Something went wrong while updating staff details. Please try again.");
     } finally {
       setSavingStaff(false);
     }

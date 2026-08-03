@@ -605,7 +605,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           setValue("care", parsed.care || "");
           setValue("customCare", parsed.customCare || "");
           setValue("craft", parsed.craft || "");
-          toast.success("Restored your unfinished product draft.");
+          toast.success("Draft Restored", "Picked up right where you left off.");
         } catch (e) {}
       }
     }
@@ -728,7 +728,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     const currentCategory = getValues("categoryId");
 
     if (!currentName) {
-      toast.error("Please enter a product name first to guide the AI writer.");
+      toast.error("Product Name Required", "Please enter a product name first to guide the AI writer.");
       return;
     }
 
@@ -768,40 +768,40 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           streamAccumulator += chunkText;
           setValue("description", streamAccumulator, { shouldDirty: true, shouldValidate: true });
         }
-        toast.success("Product description generated.");
+        toast.success("Copy Refined with AI", "Your product description has been polished.");
       } else {
         const text = await response.text();
         setValue("description", text, { shouldDirty: true, shouldValidate: true });
-        toast.success("Product description generated.");
+        toast.success("Copy Refined with AI", "Your product description has been polished.");
       }
     } catch (e: any) {
       console.error(e);
-      toast.error("Failed to generate description: " + e.message);
+      toast.error("AI Generation Failed", "Couldn't generate copy right now. Please try again.");
     } finally {
       setGeneratingDesc(false);
     }
   };
 
   const onFormError = (errors: any) => {
-    toast.error("Please review the highlighted errors before submitting.");
+    toast.error("Action Required", "Please review the highlighted fields before submitting.");
   };
 
   const onFormSubmit = async (data: ProductFormValues) => {
     if (localPreviews.length < 3) {
-      toast.error("Please upload at least 3 high-resolution images.");
+      toast.error("More Photos Needed", "Please upload at least 3 high-resolution photos so buyers can inspect your product clearly.");
       return;
     }
 
     if (selectedSizes.length === 0) {
       setOpenDrawers((prev) => ({ ...prev, sizing: true }));
-      toast.error("Please select at least one active size.");
+      toast.error("Sizing Required", "Please select at least one active size for your product.");
       return;
     }
 
     const hasZeroStock = selectedSizes.every((sz) => !stockBySize[sz] || stockBySize[sz] <= 0);
     if (hasZeroStock) {
       setOpenDrawers((prev) => ({ ...prev, sizing: true }));
-      toast.error("At least one selected size must have a stock quantity greater than 0.");
+      toast.error("Stock Quantity Required", "At least one selected size must have a stock quantity greater than 0.");
       return;
     }
 
@@ -891,17 +891,17 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
       if (productToEdit?._id) {
         await updateProduct({ id: productToEdit._id as any, ...payload });
-        toast.success("Product updated successfully.");
+        toast.success("Changes Saved", "Your product details have been updated successfully.");
       } else {
         await createProduct(payload);
         localStorage.removeItem("hive_product_draft"); // clear draft
-        toast.success("Product created. Verification pending by administrator.");
+        toast.success("Product Submitted for Verification", "Your listing is saved and under admin review. We'll notify you once it goes live.");
       }
 
       router.push("/boutique/products");
     } catch (e: any) {
       console.error(e);
-    toast.error("Failed to save product: " + e.message);
+      toast.error("Couldn't Save Product", "Something went wrong while saving your product. Please try again.");
     } finally {
       setSubmitting(false);
       setUploadStatusText("");

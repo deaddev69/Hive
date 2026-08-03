@@ -323,7 +323,7 @@ function CategoryMultiSelect({
       onChange(selectedValues.filter((id) => id !== catId));
     } else {
       if (selectedValues.length >= 3) {
-        toast.error("You can select up to 3 categories only.");
+        toast.error("Category Limit Reached", "You can select up to 3 categories only.");
         return;
       }
       onChange([...selectedValues, catId]);
@@ -542,16 +542,16 @@ export default function CreateProductModal({
         setDescription(generatedText);
         setJustPolishedDesc(true);
         setTimeout(() => setJustPolishedDesc(false), 5000);
-        toast.success("Description polished with AI successfully!");
+        toast.success("Copy Refined with AI", "Your text has been polished successfully.");
       } else {
         setStory(generatedText);
         setJustPolishedStory(true);
         setTimeout(() => setJustPolishedStory(false), 5000);
-        toast.success("Design story polished with AI successfully!");
+        toast.success("Copy Refined with AI", "Your text has been polished successfully.");
       }
     } catch (err: any) {
       console.error(err);
-      toast.error("Failed to generate AI copy: " + err.message);
+      toast.error("AI Generation Failed", "Couldn't generate copy right now. Please try again.");
     } finally {
       if (type === "description") setGeneratingDesc(false);
       else setGeneratingStory(false);
@@ -611,15 +611,15 @@ export default function CreateProductModal({
     if (step < totalSteps) {
       if (step === 1) {
         if (!name.trim()) {
-          toast.error("Please enter a product name.");
+          toast.error("Product Name Required", "Please enter a product name.");
           return;
         }
         if (selectedCategoryIds.length === 0) {
-          toast.error("Please select at least one category tag.");
+          toast.error("Category Required", "Please select at least one category tag.");
           return;
         }
         if (localPreviews.length < 3) {
-          toast.error("Please upload at least 3 high-resolution images.");
+          toast.error("More Photos Needed", "Please upload at least 3 high-resolution photos.");
           return;
         }
       }
@@ -627,18 +627,18 @@ export default function CreateProductModal({
         setStep2Error("");
         if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
           setStep2Error("Please enter a valid price greater than ₹0.");
-          toast.error("Please enter a valid price greater than ₹0.");
+          toast.error("Valid Price Required", "Please enter a valid price greater than ₹0.");
           return;
         }
         if (selectedSizes.length === 0) {
           setStep2Error("Please select at least one active size.");
-          toast.error("Please select at least one active size.");
+          toast.error("Sizing Required", "Please select at least one active size.");
           return;
         }
         const hasZeroStock = selectedSizes.every((sz) => !stockBySize[sz] || stockBySize[sz] <= 0);
         if (hasZeroStock) {
           setStep2Error("At least one selected size must have a stock quantity greater than 0.");
-          toast.error("At least one selected size must have a stock quantity greater than 0.");
+          toast.error("Stock Quantity Required", "At least one selected size must have a stock quantity greater than 0.");
           return;
         }
       }
@@ -727,10 +727,10 @@ export default function CreateProductModal({
 
       if (productToEdit?._id) {
         await updateProduct({ id: productToEdit._id as any, ...payload });
-        toast.success("Product updated successfully!");
+        toast.success("Changes Saved", "Your product details have been updated successfully.");
       } else {
         await createProduct(payload);
-        toast.success("Product created successfully!");
+        toast.success("Product Submitted for Verification", "Your listing is saved and under admin review. We'll notify you once it goes live.");
       }
       onClose();
     } catch (err: any) {
