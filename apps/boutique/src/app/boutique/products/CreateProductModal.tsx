@@ -529,22 +529,22 @@ export default function CreateProductModal({
         }),
       });
 
-      if (!res.ok) {
-        throw new Error(`API responded with status: ${res.status}`);
-      }
-
-      const data = await res.json();
-      if (data.error) {
-        throw new Error(data.error);
+      let generatedText = "";
+      if (res.headers.get("content-type")?.includes("application/json")) {
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        generatedText = data.text || "";
+      } else {
+        generatedText = await res.text();
       }
 
       if (type === "description") {
-        setDescription(data.text);
+        setDescription(generatedText);
         setJustPolishedDesc(true);
         setTimeout(() => setJustPolishedDesc(false), 5000);
         toast.success("Description polished with AI successfully!");
       } else {
-        setStory(data.text);
+        setStory(generatedText);
         setJustPolishedStory(true);
         setTimeout(() => setJustPolishedStory(false), 5000);
         toast.success("Design story polished with AI successfully!");
@@ -721,10 +721,7 @@ export default function CreateProductModal({
         material: finalMaterial,
         care: finalCare,
         details: {
-          ...(craft ? { craft: autoCorrectCapitalization(craft) } : {}),
           ...specs,
-          categoryIds: selectedCategoryIds.join(","),
-          categoryNames: categoryTagNames.join(","),
         },
         fitRecommendation,
         silhouette,

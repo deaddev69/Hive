@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
 
     Polished Output:`;
 
-    // 4. Try API Keys and active Gemini models in streaming failover
+    // 4. Try API Keys and active Gemini models in failover
     const candidateModels = ["gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-2.0-flash"];
 
     if (apiKeys.length > 0) {
@@ -137,9 +137,9 @@ export async function POST(req: NextRequest) {
 
         for (const modelId of candidateModels) {
           try {
-            console.log(`[Hive AI Stream] Attempting stream key ${i} model ${modelId}...`);
+            console.log(`[Hive AI] Attempting key ${i} model ${modelId}...`);
             const response = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?key=${apiKey}`,
+              `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -157,61 +157,23 @@ export async function POST(req: NextRequest) {
               }
             );
 
-            if (response.ok && response.body) {
-              const encoder = new TextEncoder();
-              const decoder = new TextDecoder();
-              const reader = response.body.getReader();
-
-              console.log(`[Hive AI Stream SUCCESS ✨] Streaming response from Gemini (${modelId})!`);
-
-              const customStream = new ReadableStream({
-                async start(controller) {
-                  let buffer = "";
-                  try {
-                    while (true) {
-                      const { done, value } = await reader.read();
-                      if (done) break;
-
-                      buffer += decoder.decode(value, { stream: true });
-
-                      // Robust Regex to match any "text": "..." token in the raw JSON stream chunks
-                      const textRegex = /"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
-                      let match;
-                      while ((match = textRegex.exec(buffer)) !== null) {
-                        const escapedText = match[1];
-                        try {
-                          const unescaped = JSON.parse(`"${escapedText}"`);
-                          if (unescaped) {
-                            controller.enqueue(encoder.encode(unescaped));
-                          }
-                        } catch (e) {
-                          // Ignore parsing errors for partial/incomplete strings
-                        }
-                      }
-                      
-                      // Clear matched portion from buffer to keep execution light
-                      const lastMatchIndex = textRegex.lastIndex;
-                      if (lastMatchIndex > 0) {
-                        buffer = buffer.slice(lastMatchIndex);
-                      }
-                    }
-                  } catch (err) {
-                    controller.error(err);
-                  } finally {
-                    controller.close();
-                  }
-                }
-              });
-
-              return new Response(customStream, {
-                headers: {
-                  "Content-Type": "text/plain; charset=utf-8",
-                  "Transfer-Encoding": "chunked",
-                },
-              });
+            if (response.ok) {
+              const data = await response.json();
+              const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+              if (text) {
+                console.log(`[Hive AI SUCCESS ✨] Generated description from ${modelId}!`);
+                
+                // Return streaming response for real-time typing feel
+                return new Response(createFallbackStream(text), {
+                  headers: {
+                    "Content-Type": "text/plain; charset=utf-8",
+                    "Transfer-Encoding": "chunked",
+                  },
+                });
+              }
             }
           } catch (err) {
-            console.warn(`[Hive AI Stream failover warning] Model ${modelId} failed:`, err);
+            console.warn(`[Hive AI failover warning] Model ${modelId} failed:`, err);
           }
         }
       }

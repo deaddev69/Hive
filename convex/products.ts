@@ -373,7 +373,7 @@ export const createProduct = mutation({
     // Validate quality gate if active
     await validateProductQuality(ctx, args);
 
-    // Trim and drop empty values, validate keys for details
+    // Trim and drop empty values, keep allowed specification keys
     const cleanedDetails: Record<string, string> = {};
     if (args.details) {
       const allowedKeys = new Set(Object.keys(PRODUCT_SPEC_KEYS));
@@ -381,8 +381,6 @@ export const createProduct = mutation({
         const trimmed = value.trim();
         if (allowedKeys.has(key) && trimmed) {
           cleanedDetails[key] = trimmed;
-        } else if (!allowedKeys.has(key)) {
-          throw new Error(`Invalid product specification key: ${key}`);
         }
       }
     }
@@ -593,7 +591,7 @@ export const updateProduct = mutation({
       throw new Error("Unauthorized: Product does not belong to your boutique.");
     }
 
-    // Trim and drop empty values, validate keys for details
+    // Trim and drop empty values, keep allowed specification keys
     let cleanedDetails: Record<string, string> | undefined = undefined;
     if (args.details !== undefined) {
       cleanedDetails = {};
@@ -602,8 +600,6 @@ export const updateProduct = mutation({
         const trimmed = value.trim();
         if (allowedKeys.has(key) && trimmed) {
           cleanedDetails[key] = trimmed;
-        } else if (!allowedKeys.has(key)) {
-          throw new Error(`Invalid product specification key: ${key}`);
         }
       }
     }

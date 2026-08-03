@@ -736,11 +736,16 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     setValue("description", "", { shouldDirty: true, shouldValidate: true });
 
     try {
+      const currentDescription = getValues("description");
+      const roughInput = currentDescription && currentDescription.trim() 
+        ? `${currentName} - ${currentDescription.trim()}`
+        : `${currentName} in category ${currentCategory || "clothing"}`;
+
       const response = await fetch("/api/generate-description", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          roughText: `${currentName} in category ${currentCategory || "clothing"}`,
+          roughText: roughInput,
           type: "description",
           style: selectedStyle,
         }),
@@ -878,8 +883,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           length: data.length || "",
           pattern: data.pattern || "",
           fabricFamily: data.fabricFamily || "",
-          categoryIds: primaryCatId,
-          categoryNames: categoryTagName,
         },
         fitRecommendation,
         silhouette,
@@ -1860,7 +1863,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           </button>
 
           {openDrawers.specs && (
-            <div className="px-6 pb-6 border-t border-slate-50 pt-5 grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="px-6 pb-52 border-t border-slate-50 pt-5 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-visible relative z-20 animate-in fade-in slide-in-from-top-2 duration-200">
               
               <div className="flex flex-col gap-1">
                 <InlineDropdown
@@ -2143,6 +2146,36 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       </form>
 
       <div className="h-24 md:h-0" />
+
+      {/* Mobile Fixed Sticky Action Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 z-[90] flex items-center justify-between gap-3 shadow-lg">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/boutique/products")}
+          className="w-1/3 h-11 text-xs font-bold uppercase tracking-wider border-slate-200 rounded-xl"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          onClick={handleSubmit(onFormSubmit, onFormError)}
+          disabled={submitting}
+          className="w-2/3 h-11 bg-[#E9B929] hover:bg-[#d6a51d] text-slate-900 text-xs font-black uppercase tracking-wider rounded-xl border border-[#E9B929] flex items-center justify-center gap-2 shadow-sm"
+        >
+          {submitting ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              {uploadStatusText || "Saving..."}
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="w-4 h-4" />
+              {productToEdit ? "Update Listing" : "Submit for Verification"}
+            </>
+          )}
+        </Button>
+      </div>
 
       {isZoomModalOpen && localPreviews[selectedPreviewIndex] && (
         <div 
