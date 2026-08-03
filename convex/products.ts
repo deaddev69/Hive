@@ -364,6 +364,8 @@ export const createProduct = mutation({
                          v.literal("relaxed_fit"),
                          v.literal("oversized")
                        )),
+    returnsAccepted: v.optional(v.boolean()),
+    approvalStatus: v.optional(v.string()),
     token: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -483,6 +485,7 @@ export const createProduct = mutation({
       sizes: args.sizes,
       stockBySize: args.stockBySize,
       sameDayEligible: args.sameDayEligible,
+      returnsAccepted: args.returnsAccepted,
       featured: args.featured,
       active,
       autoDeactivatedBecauseOutOfStock,
@@ -593,6 +596,8 @@ export const updateProduct = mutation({
                          v.literal("relaxed_fit"),
                          v.literal("oversized")
                        )),
+    returnsAccepted: v.optional(v.boolean()),
+    approvalStatus: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
@@ -737,6 +742,7 @@ export const updateProduct = mutation({
       sizes: args.sizes,
       stockBySize: args.stockBySize,
       sameDayEligible: args.sameDayEligible,
+      returnsAccepted: args.returnsAccepted,
       featured: args.featured,
       active,
       autoDeactivatedBecauseOutOfStock,
