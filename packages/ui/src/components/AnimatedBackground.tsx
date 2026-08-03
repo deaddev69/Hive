@@ -50,7 +50,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 
       setRect({
         left: elementRect.left - containerRect.left,
-        top: elementRect.top - containerRect.top,
+        top: (containerRect.height - elementRect.height) / 2,
         width: elementRect.width,
         height: elementRect.height,
       });
@@ -71,7 +71,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         const elementRect = activeElement.getBoundingClientRect();
         setRect({
           left: elementRect.left - containerRect.left,
-          top: elementRect.top - containerRect.top,
+          top: (containerRect.height - elementRect.height) / 2,
           width: elementRect.width,
           height: elementRect.height,
         });

@@ -318,7 +318,7 @@ export default function BoutiqueProducts() {
                   key={tab.id}
                   data-id={tab.id}
                   type="button"
-                  className={`px-4 py-1.5 text-[13px] rounded-xl flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
+                  className={`h-8 px-4 text-[13px] rounded-xl flex items-center gap-1.5 cursor-pointer whitespace-nowrap transition-colors ${
                     isActive ? "font-extrabold text-slate-950" : "font-semibold text-slate-600 hover:text-slate-900"
                   }`}
                 >
