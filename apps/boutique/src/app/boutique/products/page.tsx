@@ -191,7 +191,8 @@ export default function BoutiqueProducts() {
         pending++;
       }
 
-      const hasLowStock = Object.values(p.stockBySize).some((qty: any) => qty <= 2);
+      const totalStock = Object.values(p.stockBySize || {}).reduce((a: any, b: any) => a + (b || 0), 0) as number;
+      const hasLowStock = totalStock > 0 && totalStock <= 5;
       if (hasLowStock) {
         low++;
       }
@@ -219,7 +220,10 @@ export default function BoutiqueProducts() {
       if (statusFilter === "live") return prod.active && isApproved;
       if (statusFilter === "pending") return prod.active && isPending;
       if (statusFilter === "draft") return !prod.active;
-      if (statusFilter === "low") return Object.values(prod.stockBySize).some((qty: any) => qty <= 2);
+      if (statusFilter === "low") {
+        const totalStock = Object.values(prod.stockBySize || {}).reduce((a: any, b: any) => a + (b || 0), 0) as number;
+        return totalStock > 0 && totalStock <= 5;
+      }
       if (statusFilter === "missing_images") return !prod.images || prod.images.length === 0;
 
       return true;
@@ -411,78 +415,82 @@ export default function BoutiqueProducts() {
                 <div 
                   key={prod._id} 
                   onClick={() => handleEdit(prod)}
-                  className="p-4 bg-[#ffffff] border border-[#f1f5f9]/90 shadow-[0_4px_16px_-4px_rgba(168,154,126,0.08)] rounded-[20px] hover:shadow-[0_8px_24px_-4px_rgba(168,154,126,0.14)] transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 select-none"
+                  className="p-4 bg-white border border-slate-200/80 shadow-[0_4px_16px_-4px_rgba(168,154,126,0.08)] rounded-2xl hover:shadow-[0_8px_24px_-4px_rgba(168,154,126,0.14)] transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 select-none"
                 >
-                  {/* Left: Thumbnail (Restrained 56x56px POS Sizing) & Core Info (#5) */}
+                  {/* Left: 3:4 Fashion Portrait Thumbnail & Core Info */}
                   <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    <div className="w-[56px] h-[56px] shrink-0 bg-slate-50 rounded-[14px] overflow-hidden relative border border-[#f1f5f9] flex items-center justify-center shadow-2xs">
+                    <div className="w-16 h-20 shrink-0 bg-slate-100 rounded-xl overflow-hidden relative border border-slate-200/80 flex items-center justify-center shadow-2xs">
                       {getProductImage(prod) ? (
                         <img src={getProductImage(prod) || ""} alt={prod.name} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-[#D9A71E] font-bold text-base font-serif leading-none select-none">
+                        <span className="text-[#D9A71E] font-bold text-lg font-serif leading-none select-none">
                           {prod.name ? prod.name.charAt(0).toUpperCase() : "H"}
                         </span>
                       )}
                       {!prod.active && (
-                        <div className="absolute inset-0 bg-[#ffffff]/50 backdrop-blur-[1px]" />
+                        <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px]" />
                       )}
                     </div>
 
                     <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-[16px] font-extrabold text-[#0f172a] tracking-[-0.01em] truncate leading-tight">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-[15.5px] font-extrabold text-slate-900 tracking-tight truncate leading-tight">
                           {prod.name}
                         </h3>
-                        {/* Soft Capsule Status Badge (#7) */}
+                        {/* Soft Capsule Status Badge */}
                         {!prod.active ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#64748b] border border-[#f1f5f9]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#64748b]" /> Draft
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" /> Draft
                           </span>
                         ) : isApproved ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#0f172a] border border-[#f1f5f9]">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Live
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 border border-emerald-500/25">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Live
                           </span>
                         ) : isPending ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#B88643] border border-[#F5C22B]/40">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#F5C22B] animate-pulse" /> Review
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#F5C22B]/15 text-[#9E7606] border border-[#F5C22B]/35">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#D9A71E] animate-pulse" /> Review
                           </span>
                         ) : isChangesRequested ? (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/60">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200">
                             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Changes req
                           </span>
                         ) : (
-                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-50 text-[#64748b] border border-[#f1f5f9]">
+                          <span className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                             Draft
                           </span>
                         )}
                       </div>
                       
-                      <span className="text-[13px] font-medium text-[#64748b] truncate mt-0.5">
+                      <span className="text-[13px] font-medium text-slate-500 truncate mt-0.5">
                         {categories?.find((c: any) => c._id === prod.categoryId)?.name || "Boutique Item"}
                       </span>
 
-                      {/* Stock & Price Hierarchy (#5): Stock first, then Price */}
-                      <div className="flex items-center gap-2 text-[13px] font-sans mt-1">
-                        <span className={`font-extrabold ${totalStock <= 2 ? "text-rose-600 font-mono" : "text-[#0f172a]"}`}>
-                          {totalStock} <span className="font-medium text-[#64748b]">in stock</span>
+                      {/* Stock Badge & Price Tag */}
+                      <div className="flex items-center gap-2 text-[13px] font-sans mt-1.5 flex-wrap">
+                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-md ${
+                          totalStock === 0 ? "bg-rose-50 text-rose-600 border border-rose-200/60" :
+                          totalStock <= 5 ? "bg-amber-50 text-amber-700 border border-amber-200/60 font-mono" :
+                          "bg-slate-100 text-slate-700 border border-slate-200/60 font-mono"
+                        }`}>
+                          {totalStock === 0 ? "Out of stock" : `${totalStock} in stock`}
                         </span>
-                        <span className="w-1 h-1 rounded-full bg-[#f1f5f9]" />
-                        <span className="font-bold text-[#0f172a] font-mono">₹{(prod.basePrice || prod.price).toLocaleString("en-IN")}</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-200" />
+                        <span className="font-extrabold text-slate-900 font-mono text-[14.5px]">₹{(prod.basePrice || prod.price).toLocaleString("en-IN")}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right: Clean, Tactile Action Buttons (#6 & #10) */}
-                  <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#f1f5f9]/60 sm:border-transparent w-full sm:w-auto justify-end">
+                  {/* Right: Clean, Tactile Action Buttons */}
+                  <div className="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 sm:border-transparent w-full sm:w-auto justify-end">
                     <button
                       onClick={(e) => { e.stopPropagation(); handleEdit(prod); }}
-                      className="px-3 py-1.5 bg-white hover:bg-slate-50 border border-[#f1f5f9] rounded-[14px] text-[12px] font-bold text-[#0f172a] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                      className="px-3.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl text-[12px] font-bold text-slate-800 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95"
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-[#64748b] stroke-[1.75]" /> Edit
+                      <Edit3 className="w-3.5 h-3.5 text-slate-500 stroke-[1.75]" /> Edit
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(prod._id); }}
-                      className="w-8 h-8 flex items-center justify-center bg-transparent hover:bg-rose-50 text-[#64748b] hover:text-rose-600 rounded-[14px] transition-all cursor-pointer"
+                      className="w-8 h-8 flex items-center justify-center bg-transparent hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-xl transition-all cursor-pointer active:scale-95"
                       title="Delete Product"
                     >
                       <Trash2 className="w-4 h-4 stroke-[1.75]" />
