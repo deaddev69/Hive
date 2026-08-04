@@ -8,7 +8,7 @@ export async function uploadBannerToR2(file: File): Promise<string> {
   const accessKeyId = process.env.R2_ACCESS_KEY_ID;
   const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
   const bucketName = process.env.R2_BUCKET_NAME || "hive-assets";
-  const publicDomain = process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN || "https://assets.hivenow.in";
+  const publicDomain = process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN || process.env.R2_PUBLIC_DEV_URL || "https://assets.hivenow.in";
 
   if (!accountId || !accessKeyId || !secretAccessKey) {
     console.warn("Cloudflare R2 credentials missing. Using object URL fallback.");

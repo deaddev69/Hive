@@ -217,7 +217,7 @@ export function BroadcastCampaignModal({ isOpen, onClose }: BroadcastCampaignMod
                   alt="Banner Preview"
                   className="w-full h-32 object-cover"
                   onError={() => {
-                    setUploadError("Image URL DNS error (assets.hivenow.in unresolved). Please paste a direct image URL.");
+                    setUploadError("Image failed to load. Please verify the URL or ensure DNS is resolved.");
                     setImageMode("url");
                   }}
                 />
