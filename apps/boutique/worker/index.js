@@ -1,5 +1,5 @@
 // Custom PWA Service Worker logic for @ducanh2912/next-pwa
-// High-Urgency Pinned Notification & Swiggy-Style Alarm Trigger Handler
+// High-Urgency Pinned Notification & Dual-Mode Lockscreen Action Handler
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
@@ -19,6 +19,10 @@ self.addEventListener("push", (event) => {
     renotify: true,
     requireInteraction: true,
     vibrate: [500, 200, 500, 200, 500, 200, 1000, 300, 500, 200, 500],
+    actions: [
+      { action: "silence", title: "🔕 Silence Alarm" },
+      { action: "open", title: "📦 View Order" },
+    ],
     data: {
       url: payload.url || "/boutique/orders",
       orderNumber: payload.orderNumber,
@@ -46,6 +50,19 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+
+  // Handle direct lockscreen action button "Silence Alarm"
+  if (event.action === "silence") {
+    event.waitUntil(
+      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: "STOP_ORDER_ALARM" });
+        });
+      })
+    );
+    return;
+  }
+
   const targetUrl = (event.notification.data && event.notification.data.url) || "/boutique/orders";
 
   event.waitUntil(

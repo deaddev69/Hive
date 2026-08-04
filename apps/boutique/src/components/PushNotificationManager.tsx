@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { Bell, Volume2, X, CheckCircle2, BellRing } from "lucide-react";
+import { Bell, Volume2, X, CheckCircle2, BellRing, Smartphone, Store, VolumeX } from "lucide-react";
 import { Button } from "@hive/ui";
 import { Id } from "../../../../convex/_generated/dataModel";
 
@@ -17,6 +17,8 @@ interface AlarmPayload {
   body?: string;
   orderNumber?: string;
 }
+
+type AlertMode = "store" | "mobile" | "chime";
 
 /**
  * Utility to convert base64 VAPID key to Uint8Array for PushManager
@@ -47,15 +49,32 @@ export function PushNotificationManager({
   const [dismissed, setDismissed] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
-  // Swiggy/Zomato style continuous alarm state
+  // Swiggy/Zomato style continuous alarm state & mode
   const [isRinging, setIsRinging] = useState(false);
+  const [alertMode, setAlertMode] = useState<AlertMode>("mobile");
   const [activeAlert, setActiveAlert] = useState<AlarmPayload | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sirenIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSilenceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const saveSubscription = useMutation(api.pushNotifications.savePushSubscription);
+
+  // Load saved device preference
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedMode = (localStorage.getItem("hive_alert_mode") as AlertMode) || "mobile";
+      setAlertMode(savedMode);
+    }
+  }, []);
+
+  const handleModeChange = (mode: AlertMode) => {
+    setAlertMode(mode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("hive_alert_mode", mode);
+    }
+  };
 
   // Web Audio Synthesizer Fallback (Alternating 880Hz / 1046Hz Siren)
   const startSynthesizedSiren = useCallback(() => {
@@ -97,6 +116,11 @@ export function PushNotificationManager({
     setIsRinging(false);
     setActiveAlert(null);
 
+    if (autoSilenceTimerRef.current) {
+      clearTimeout(autoSilenceTimerRef.current);
+      autoSilenceTimerRef.current = null;
+    }
+
     // Stop HTML5 Audio
     if (audioRef.current) {
       audioRef.current.pause();
@@ -113,22 +137,38 @@ export function PushNotificationManager({
     }
   }, []);
 
-  const startOrderAlarm = useCallback((payload?: AlarmPayload) => {
-    setIsRinging(true);
-    if (payload) setActiveAlert(payload);
+  const startOrderAlarm = useCallback(
+    (payload?: AlarmPayload) => {
+      setIsRinging(true);
+      if (payload) setActiveAlert(payload);
 
-    // Initialize audio element if needed
-    if (!audioRef.current) {
-      audioRef.current = new Audio("/sounds/order-chime.mp3");
-      audioRef.current.loop = true;
-    }
+      if (!audioRef.current) {
+        audioRef.current = new Audio("/sounds/order-chime.mp3");
+      }
 
-    audioRef.current.currentTime = 0;
-    audioRef.current.play().catch((err) => {
-      console.warn("[PushNotificationManager] Audio play error, starting synthesized siren:", err);
-      startSynthesizedSiren();
-    });
-  }, [startSynthesizedSiren]);
+      audioRef.current.currentTime = 0;
+
+      if (alertMode === "store") {
+        // Endless loop for in-shop terminal
+        audioRef.current.loop = true;
+        audioRef.current.play().catch(() => startSynthesizedSiren());
+      } else if (alertMode === "mobile") {
+        // Loop with 10-second auto-timeout safeguard for personal phones
+        audioRef.current.loop = true;
+        audioRef.current.play().catch(() => startSynthesizedSiren());
+
+        if (autoSilenceTimerRef.current) clearTimeout(autoSilenceTimerRef.current);
+        autoSilenceTimerRef.current = setTimeout(() => {
+          stopOrderAlarm();
+        }, 10000);
+      } else {
+        // Single chime mode
+        audioRef.current.loop = false;
+        audioRef.current.play().catch(() => startSynthesizedSiren());
+      }
+    },
+    [alertMode, startSynthesizedSiren, stopOrderAlarm]
+  );
 
   // Real-time Convex order count listener
   const orders = useQuery(api.orders.getBoutiqueOrders);
@@ -169,6 +209,10 @@ export function PushNotificationManager({
         if (event.data?.type === "TRIGGER_ORDER_ALARM" || event.data?.type === "PLAY_ORDER_CHIME") {
           console.log("[PushNotificationManager] Received SW alarm event:", event.data);
           startOrderAlarm(event.data.payload);
+        }
+        if (event.data?.type === "STOP_ORDER_ALARM") {
+          console.log("[PushNotificationManager] Received STOP_ORDER_ALARM event from lockscreen!");
+          stopOrderAlarm();
         }
       };
       navigator.serviceWorker.addEventListener("message", messageListener);
@@ -261,8 +305,8 @@ export function PushNotificationManager({
 
   return (
     <>
-      {/* Dev / Staff Test Trigger */}
-      <div className="fixed bottom-4 right-4 z-40">
+      {/* Dev / Staff Test Trigger & Mode Switcher */}
+      <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
         <button
           onClick={() =>
             startOrderAlarm({
@@ -277,8 +321,8 @@ export function PushNotificationManager({
         </button>
       </div>
 
-      {/* Ringing Overlay (Swiggy/Zomato style continuous alarm banner) */}
-      {isRinging && (
+      {/* Ringing Overlay (Rendered on 'store' and 'mobile' modes) */}
+      {isRinging && alertMode !== "chime" && (
         <div className="fixed inset-0 z-50 bg-red-600/95 backdrop-blur-md text-white flex flex-col items-center justify-center p-6 animate-pulse">
           <div className="text-7xl mb-4 animate-bounce">🛍️</div>
           <h1 className="text-3xl font-black uppercase tracking-wider text-center mb-2">
@@ -299,36 +343,8 @@ export function PushNotificationManager({
         </div>
       )}
 
-      {/* Active Subscription Toast */}
-      {isSubscribed && showSuccessToast && !isRinging && (
-        <div className="fixed bottom-20 right-4 z-50 bg-emerald-900 text-emerald-100 border border-emerald-700/50 shadow-xl rounded-2xl px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <div className="text-xs">
-            <p className="font-semibold text-white">Order Sound Alerts Active 🔔</p>
-            <p className="text-emerald-200/80">Instant chime alerts active for new orders.</p>
-          </div>
-          <button
-            onClick={() =>
-              startOrderAlarm({
-                title: "🚨 TEST ORDER ALARM",
-                body: "Testing merchant order alarm.",
-              })
-            }
-            className="px-2.5 py-1 bg-emerald-800 hover:bg-emerald-700 text-emerald-100 rounded-lg text-[10px] font-bold transition-colors ml-1 border border-emerald-600/40 shrink-0"
-          >
-            Test 🔊
-          </button>
-          <button
-            onClick={() => setShowSuccessToast(false)}
-            className="text-emerald-300 hover:text-white ml-1 p-1"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {/* Subscription Banner */}
-      {!isSubscribed && !dismissed && isSupported && permission !== "denied" && !isRinging && (
+      {/* Subscription & Alert Preference Card */}
+      {!dismissed && isSupported && permission !== "denied" && !isRinging && (
         <div className="mx-4 my-3 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
           <div className="flex items-start gap-3">
             <div className="p-2.5 bg-amber-500/20 text-amber-500 rounded-xl shrink-0 mt-0.5 sm:mt-0">
@@ -336,44 +352,76 @@ export function PushNotificationManager({
             </div>
             <div>
               <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                Enable Instant Order Sound Alerts
+                Order Sound Alert Mode
                 <span className="bg-amber-500/20 text-amber-600 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">
-                  Recommended
+                  {alertMode.toUpperCase()}
                 </span>
               </h4>
               <p className="text-xs text-slate-600 mt-0.5">
-                Get instant loud chimes and vibration alerts when a customer places an order — even when your screen is locked.
+                Choose how this device alerts shop staff or owners when a customer orders.
               </p>
+
+              {/* Mode Selector Buttons */}
+              <div className="flex items-center gap-1.5 mt-2">
+                <button
+                  onClick={() => handleModeChange("store")}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-colors flex items-center gap-1 ${
+                    alertMode === "store"
+                      ? "bg-red-600 text-white shadow-sm"
+                      : "bg-white/80 hover:bg-white text-slate-700 border border-slate-200"
+                  }`}
+                  title="Endless looping siren & overlay for shop tablet"
+                >
+                  <Store className="w-3 h-3" />
+                  Store Terminal
+                </button>
+
+                <button
+                  onClick={() => handleModeChange("mobile")}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-colors flex items-center gap-1 ${
+                    alertMode === "mobile"
+                      ? "bg-amber-500 text-slate-950 shadow-sm"
+                      : "bg-white/80 hover:bg-white text-slate-700 border border-slate-200"
+                  }`}
+                  title="10-second auto-timeout loop for owner phone"
+                >
+                  <Smartphone className="w-3 h-3" />
+                  Owner Mobile
+                </button>
+
+                <button
+                  onClick={() => handleModeChange("chime")}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-colors flex items-center gap-1 ${
+                    alertMode === "chime"
+                      ? "bg-emerald-600 text-white shadow-sm"
+                      : "bg-white/80 hover:bg-white text-slate-700 border border-slate-200"
+                  }`}
+                  title="Single short chime notification"
+                >
+                  <VolumeX className="w-3 h-3" />
+                  Single Chime
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 w-full sm:w-auto justify-end">
-            <button
-              onClick={() =>
-                startOrderAlarm({
-                  title: "🚨 TEST ORDER ALARM",
-                  body: "Testing merchant order alarm.",
-                })
-              }
-              className="px-2.5 py-1.5 text-xs text-amber-700 hover:text-amber-900 font-semibold transition-colors bg-amber-100/50 hover:bg-amber-100 rounded-xl border border-amber-300/50 flex items-center gap-1"
-            >
-              Test 🔊
-            </button>
-            <button
-              onClick={() => setDismissed(true)}
-              className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 font-medium transition-colors"
-            >
-              Dismiss
-            </button>
-            <Button
-              onClick={handleSubscribe}
-              disabled={loading}
-              size="sm"
-              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm text-xs rounded-xl flex items-center gap-1.5"
-            >
-              <Bell className="w-3.5 h-3.5" />
-              {loading ? "Enabling..." : "Turn On Alerts"}
-            </Button>
+            {!isSubscribed ? (
+              <Button
+                onClick={handleSubscribe}
+                disabled={loading}
+                size="sm"
+                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm text-xs rounded-xl flex items-center gap-1.5"
+              >
+                <Bell className="w-3.5 h-3.5" />
+                {loading ? "Enabling..." : "Turn On Alerts"}
+              </Button>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/80 border border-emerald-300/60 px-3 py-1.5 rounded-xl">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Alerts Active
+              </span>
+            )}
           </div>
         </div>
       )}
