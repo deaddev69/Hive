@@ -13,21 +13,60 @@ export const getAllHeroCampaigns = query({
   },
 });
 
-// Get all homepage collections with item counts
+// Get all homepage collections with item counts and health status
 export const getAllHomepageCollections = query({
   args: {},
   handler: async (ctx) => {
-    const collections = await ctx.db.query("homepageCollections").collect();
+    const legacyCols = await ctx.db.query("homepageCollections").collect();
+    const platformCols = await ctx.db.query("collections").collect();
     
+    const combined = [
+      ...legacyCols.map((c) => ({
+        _id: c._id.toString(),
+        title: c.title,
+        subtitle: c.subtitle,
+        emoji: c.emoji,
+        imageUrl: c.imageUrl,
+        slug: c.slug,
+        type: c.type,
+        sourceMode: "MANUAL",
+        sortOrder: c.sortOrder,
+        isPublished: c.isPublished,
+        createdAt: c.createdAt,
+      })),
+      ...platformCols.map((c) => ({
+        _id: c._id.toString(),
+        title: c.name,
+        subtitle: c.description,
+        emoji: c.emoji,
+        imageUrl: c.imageUrl,
+        slug: c.slug,
+        type: "collection",
+        sourceMode: c.sourceMode || "MANUAL",
+        rules: c.rules || [],
+        sortOrder: 1,
+        isPublished: c.isPublished,
+        createdAt: c.createdAt,
+      })),
+    ];
+
     return await Promise.all(
-      collections.map(async (col) => {
+      combined.map(async (col) => {
         const mappings = await ctx.db
           .query("collectionProducts")
           .withIndex("by_collection_sort", (q) => q.eq("collectionId", col._id))
           .collect();
+
+        const productCount = mappings.length;
+        let health: "HEALTHY" | "LOW_STOCK" | "ATTENTION" | "EMPTY" = "EMPTY";
+        if (productCount >= 12) health = "HEALTHY";
+        else if (productCount >= 5) health = "LOW_STOCK";
+        else if (productCount > 0) health = "ATTENTION";
+
         return {
           ...col,
-          productCount: mappings.length,
+          productCount,
+          health,
         };
       })
     );
@@ -464,6 +503,36 @@ export const seedDefaultHomepageData = mutation({
           config: {},
           sortOrder: b.sortOrder,
           status: "draft",
+        });
+      }
+    }
+
+    // 3. Seed Homepage Collections if empty
+    const existingCols = await ctx.db.query("homepageCollections").collect();
+    if (existingCols.length === 0) {
+      const defaultCols = [
+        { title: "Today's Edit", subtitle: "Hand-picked daily editorial picks", emoji: "✨", type: "mood" as const, slug: "todays-edit" },
+        { title: "Fresh on Hive", subtitle: "New arrivals in the last 14 days", emoji: "🌿", type: "trending" as const, slug: "fresh-on-hive" },
+        { title: "Trending in Kochi", subtitle: "Popular styles across Panampilly Nagar & Edappally", emoji: "🔥", type: "trending" as const, slug: "trending-in-kochi" },
+        { title: "Going Out Today", subtitle: "Evening co-ords & party wear", emoji: "🍸", type: "going_out" as const, slug: "going-out-today" },
+        { title: "Wedding Season", subtitle: "Festive sarees, bridal lehengas & sherwanis", emoji: "👑", type: "seasonal" as const, slug: "wedding-season" },
+        { title: "Quiet Luxury", subtitle: "Minimalist linen, silks & structured cuts", emoji: "🕊️", type: "mood" as const, slug: "quiet-luxury" },
+        { title: "Linen Love", subtitle: "100% pure Kerala handloom linens", emoji: "🌾", type: "occasion" as const, slug: "linen-love" },
+        { title: "Under ₹999", subtitle: "Affordable boutique finds", emoji: "🏷️", type: "occasion" as const, slug: "under-999" },
+      ];
+
+      let idx = 0;
+      for (const col of defaultCols) {
+        idx++;
+        await ctx.db.insert("homepageCollections", {
+          title: col.title,
+          subtitle: col.subtitle,
+          emoji: col.emoji,
+          slug: col.slug,
+          type: col.type,
+          sortOrder: idx,
+          isPublished: true,
+          createdAt: now,
         });
       }
     }

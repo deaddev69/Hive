@@ -1,25 +1,22 @@
 "use client";
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import {
   CheckCircle2,
-  Sparkles,
   ShoppingBag,
   Calendar,
   Clock,
-  ShieldCheck,
   ChevronRight,
-  Sparkle,
-  Lock,
   RotateCcw,
-  Award,
-  List,
-  Eye,
-  Scissors,
   Check,
   Copy,
-  AlertCircle,
-  PackageX
+  PackageX,
+  MapPin,
+  CreditCard,
+  Download,
+  ShieldCheck,
+  Sparkles
 } from "lucide-react";
 import { useOrderStore } from "@/store/order-store";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
@@ -28,14 +25,13 @@ import { api } from "../../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Redesigned Success Page Route Implementation
+// Redesigned Order Success Page Implementation
 // ─────────────────────────────────────────────────────────────────────────────
 function OrderSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderIdParam = searchParams.get("orderId");
   const [mounted, setMounted] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
 
   const latestOrder = useOrderStore((state) => state.latestOrder);
   const { token } = useSessionStore();
@@ -45,10 +41,7 @@ function OrderSuccessContent() {
     orderIdParam ? { orderNumber: orderIdParam } : "skip"
   );
 
-  // ── Auto-generate invoice PDF (fire-and-forget) ─────────────────────────
-  // Runs once when the Convex order ID becomes available.
-  // The PDF is generated server-side in /api/invoices/generate and stored
-  // in Convex storage so Admin/Boutique panels can access it immediately.
+  // Auto-generate invoice PDF (fire-and-forget)
   useEffect(() => {
     if (!queriedOrder?._id) return;
 
@@ -99,7 +92,7 @@ function OrderSuccessContent() {
           price: item.priceAtPurchase,
           quantity: item.quantity,
           imageUrl: item.imageUrl,
-          boutiqueName: item.boutiqueName || "Hive Marketplace",
+          boutiqueName: item.boutiqueName || "Hive Partner",
           boutiqueId: item.boutiqueId || queriedOrder.boutiqueId || "",
         })),
         subtotal: queriedOrder.subtotal,
@@ -133,32 +126,26 @@ function OrderSuccessContent() {
   // Edge case: if no order session exists, show missing screen
   if (!resolvedOrder) {
     return (
-      <div className="min-h-screen bg-hive-cream/30 flex items-center justify-center py-20 px-6 text-center select-none text-left animate-[scaleUp_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards]">
-        <div className="max-w-md w-full bg-white border border-hive-border rounded-3xl p-8 shadow-sm space-y-6 flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full bg-amber-50 border border-hive-gold/20 flex items-center justify-center">
-            <ShoppingBag className="w-8 h-8 text-hive-gold" />
+      <div className="min-h-screen bg-slate-50/50 flex items-center justify-center py-20 px-6 text-center select-none animate-[fadeIn_0.3s_ease-out_forwards]">
+        <div className="max-w-md w-full bg-white border border-slate-200/80 rounded-3xl p-8 shadow-sm space-y-6 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-800">
+            <ShoppingBag className="w-8 h-8" />
           </div>
           <div className="space-y-2">
-            <h1 className="font-serif text-2xl font-bold text-hive-dark">No Recent Order Found</h1>
-            <p className="text-xs text-hive-text-muted max-w-[285px] mx-auto leading-relaxed">
-              We couldn't locate any recent purchase details for this session. Explore our catalog to place your first try-on order.
+            <h1 className="font-serif text-2xl font-bold text-slate-900">No Recent Order Found</h1>
+            <p className="text-xs text-slate-500 max-w-[280px] mx-auto leading-relaxed">
+              We couldn't locate any recent purchase details for this session. Explore our catalog to discover new styles.
             </p>
           </div>
           <button
             type="button"
             onClick={() => router.push("/products")}
-            className="w-full h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 shadow-sm"
+            className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-wider text-xs flex items-center justify-center gap-1.5 shadow-xs"
           >
-            <span>Return To Products</span>
+            <span>Browse Catalog</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
-        <style>{`
-          @keyframes scaleUp {
-            from { opacity: 0; transform: scale(0.96); }
-            to { opacity: 1; transform: scale(1); }
-          }
-        `}</style>
       </div>
     );
   }
@@ -167,89 +154,85 @@ function OrderSuccessContent() {
     switch (method) {
       case "upi": return "UPI Payment";
       case "card": return "Credit / Debit Card";
-      case "netbanking": return "Net Banking Portal";
+      case "netbanking": return "Net Banking";
       case "wallet": return "Digital Wallet";
-      case "online": return "Prepaid (Online)";
-      default: return "Online Checkout";
+      case "online": return "Prepaid Online";
+      default: return "Prepaid";
     }
   };
 
   const getEstimatedWindow = (slot: string) => {
     const s = slot.toLowerCase();
-    if (s.includes("morning")) return "Expected before 1:00 PM";
-    if (s.includes("afternoon")) return "Expected before 4:00 PM";
-    if (s.includes("evening")) return "Expected before 7:00 PM";
-    if (s.includes("night")) return "Expected before 9:00 PM";
-    return "Expected within slot time range";
+    if (s.includes("morning")) return "Expected 10:00 AM - 1:00 PM";
+    if (s.includes("afternoon")) return "Expected 1:00 PM - 4:00 PM";
+    if (s.includes("evening")) return "Expected 4:00 PM - 7:00 PM";
+    if (s.includes("night")) return "Expected 7:00 PM - 9:00 PM";
+    return "Scheduled within slot window";
   };
 
   const itemCount = resolvedOrder.items.reduce((acc: number, item: any) => acc + item.quantity, 0);
   const slotWindow = resolvedOrder.deliverySlotWindow || getEstimatedWindow(resolvedOrder.deliverySlot);
 
   return (
-    <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
-      <div className="max-w-[900px] mx-auto flex flex-col gap-6 animate-[scaleUp_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+    <div className="min-h-screen bg-slate-50/60 py-10 px-4 sm:px-6 lg:px-8 select-none text-left">
+      <div className="max-w-[920px] mx-auto flex flex-col gap-6 animate-[fadeIn_0.3s_ease-out_forwards]">
 
-        {/* Success Hero */}
+        {/* Header Hero */}
         <OrderSuccessHero 
           orderId={resolvedOrder.id} 
           placedDuringClosedHours={(resolvedOrder as any).placedDuringClosedHours} 
         />
 
-        {/* Desktop grid layout: 2 columns */}
+        {/* 2-Column Grid */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
 
-          {/* Left Panel - Delivery schedule & Visual timeline */}
-          <div className="md:col-span-7 space-y-6">
-
-            <DeliveryConfirmationCard
+          {/* Left Column: Delivery Window & Journey Stepper */}
+          <div className="md:col-span-7 space-y-5">
+            <DeliveryStatusCard
               date={resolvedOrder.deliveryDate}
               slot={resolvedOrder.deliverySlot}
               window={slotWindow}
+              status={resolvedOrder.status}
             />
 
-
-
-            {/* NextStepsSection with status passed in */}
-            <NextStepsSection status={resolvedOrder.status} />
-
-            {/* Post-Purchase guarantees strip */}
-            <PostPurchaseInfo />
-
+            {/* Subtle Post-Purchase Trust Footer */}
+            <div className="p-4 bg-white border border-slate-200/80 rounded-2xl flex items-center justify-between text-[11px] text-slate-500 font-medium">
+              <span className="flex items-center gap-1.5">
+                <RotateCcw className="w-3.5 h-3.5 text-slate-700" />
+                <span>3-Day Easy Returns</span>
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
+                <span>Verified Quality Checks</span>
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-slate-700" />
+                <span>Same-Day Dispatch</span>
+              </span>
+            </div>
           </div>
 
-          {/* Right Panel - Summary & Actions */}
-          <div className="md:col-span-5 space-y-6">
-
+          {/* Right Column: Order Summary & Actions */}
+          <div className="md:col-span-5 space-y-5">
             <OrderSummaryCard
               itemCount={itemCount}
               totalAmount={resolvedOrder.total}
+              subtotal={resolvedOrder.subtotal}
+              deliveryFee={resolvedOrder.deliveryFee}
               paymentMethod={paymentMethodLabel(resolvedOrder.paymentMethod)}
               address={resolvedOrder.address}
               items={resolvedOrder.items}
-              deliveryDate={resolvedOrder.deliveryDate}
-              deliverySlot={resolvedOrder.deliverySlot}
-              deliverySlotWindow={slotWindow}
-              showDetails={showDetails}
-              onToggleDetails={() => setShowDetails(!showDetails)}
               boutiqueName={resolvedOrder.items[0]?.boutiqueName}
             />
 
-            {/* Action buttons */}
             <SuccessActions resolvedOrder={resolvedOrder} />
-
           </div>
 
         </div>
 
       </div>
-
-      <style>{`
-        @keyframes scaleUp {
-          from { opacity: 0; transform: scale(0.96); }
-          to { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -281,43 +264,40 @@ function OrderSuccessHero({
   };
 
   return (
-    <div className="w-full bg-hive-cream/40 border border-hive-border/40 rounded-3xl p-8 sm:p-10 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] flex flex-col items-center text-center space-y-5 relative overflow-hidden">
-      {/* Subtle background glow effect */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[400px] h-full bg-gradient-to-b from-hive-gold/5 to-transparent pointer-events-none" />
-
-      <div className="relative w-16 h-16 bg-white border border-hive-gold/20 rounded-full flex items-center justify-center text-hive-gold shadow-sm z-10">
-        <div className="absolute inset-0 rounded-full bg-hive-gold/10 animate-ping opacity-75 duration-1000" />
-        <CheckCircle2 className="w-9 h-9 stroke-[1.8] relative z-10" />
-        <Sparkle className="w-4 h-4 text-hive-gold absolute -top-1 -right-1 animate-pulse" />
+    <div className="w-full bg-white border border-slate-200/80 rounded-3xl p-8 sm:p-10 shadow-xs flex flex-col items-center text-center space-y-4 relative overflow-hidden">
+      <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-200/60 flex items-center justify-center shadow-2xs">
+        <CheckCircle2 className="w-8 h-8 stroke-[2]" />
       </div>
 
-      <div className="space-y-1.5 z-10">
-        <h1 className="font-serif text-3xl font-black text-hive-dark tracking-tight">Order Confirmed</h1>
-        <p className="text-[13px] text-hive-text-muted max-w-md font-medium leading-relaxed">
-          Your Hive Partner is reviewing your order.<br/>
-          You'll receive confirmation shortly.
+      <div className="space-y-1">
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+          Order Confirmed
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 max-w-md font-medium leading-relaxed">
+          Thank you for your order. We've received your details and are preparing your package for delivery.
         </p>
       </div>
 
       {placedDuringClosedHours && (
-        <div className="w-full max-w-md py-3 px-4 bg-amber-50 border border-amber-200/60 rounded-2xl flex flex-col gap-1 text-center text-xs animate-[scaleUp_0.4s_ease-out] z-10">
-          <span className="font-extrabold text-amber-800 flex items-center justify-center gap-1">
-            ⚠️ Order Placed During Closed Hours
+        <div className="w-full max-w-md py-2.5 px-4 bg-amber-50 border border-amber-200/60 rounded-xl text-center text-xs space-y-0.5">
+          <span className="font-bold text-amber-900 block">
+            Boutique Currently Closed
           </span>
-          <span className="font-medium text-amber-700">
-            This boutique is currently closed. Your order has been successfully placed and payment received, and it will be processed when the boutique opens for its next working hours.
+          <span className="text-amber-700 text-[11px] block">
+            Your order has been recorded and will be processed first thing when boutique working hours resume.
           </span>
         </div>
       )}
 
       <button 
+        type="button"
         onClick={handleCopy}
-        className="mt-2 py-2.5 px-4 bg-amber-50/80 hover:bg-amber-100/80 active:bg-amber-100 transition-colors border border-amber-200/50 rounded-xl inline-flex items-center gap-2 text-xs z-10 cursor-pointer"
+        className="mt-1 py-2 px-3.5 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 transition-colors border border-slate-200/70 rounded-xl inline-flex items-center gap-2 text-xs cursor-pointer"
       >
-        <span className="font-bold text-amber-900/60">Order ID:</span>
-        <span className="font-black text-amber-900 tracking-wide">{orderId}</span>
-        <div className="w-4 h-4 flex items-center justify-center text-amber-900/60 ml-1">
-          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3 h-3" />}
+        <span className="font-semibold text-slate-500">Order ID:</span>
+        <span className="font-mono font-bold text-slate-900 tracking-wide">{orderId}</span>
+        <div className="w-4 h-4 flex items-center justify-center text-slate-400">
+          {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3 h-3" />}
         </div>
       </button>
     </div>
@@ -325,172 +305,127 @@ function OrderSuccessHero({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Component: DeliveryConfirmationCard
+// Component: DeliveryStatusCard (Window + Timeline Stepper)
 // ─────────────────────────────────────────────────────────────────────────────
-function DeliveryConfirmationCard({
+function DeliveryStatusCard({
   date,
   slot,
   window,
+  status,
 }: {
   date: string;
   slot: string;
   window: string;
+  status: string;
 }) {
-  return (
-    <div className="bg-white border border-hive-border/20 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4 text-left">
-      <div className="border-b border-hive-border/40 pb-3">
-        <h3 className="text-[11px] font-extrabold text-hive-dark uppercase tracking-wider flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-hive-gold" />
-          <span>Delivery & Fitting Window</span>
-        </h3>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 text-xs font-bold text-hive-dark pt-1">
-        <div className="space-y-1">
-          <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-            Selected Date
-          </span>
-          <p className="text-sm">{date}</p>
-        </div>
-        <div className="space-y-1">
-          <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-            Preferred Slot
-          </span>
-          <p className="text-sm">{slot}</p>
-        </div>
-      </div>
-
-      <div className="bg-hive-cream/30 border border-hive-border/40 p-3.5 rounded-2xl flex items-start gap-3 mt-2">
-        <Clock className="w-4.5 h-4.5 text-hive-gold mt-0.5 flex-shrink-0" />
-        <div className="text-[10.5px] text-hive-text leading-relaxed">
-          <span className="font-extrabold text-hive-dark block text-xs">{window}</span>
-          <p className="text-hive-text-muted mt-1 leading-relaxed">
-            A boutique fit agent will deliver the items and assist you with trials or quick alterations on-site.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Component: NextStepsSection (Timeline Stepper)
-// ─────────────────────────────────────────────────────────────────────────────
-function NextStepsSection({ status }: { status: string }) {
-  // Check for non-happy-path states
   const isCancelledOrRefunded = ["cancelled", "return_requested", "returned", "refunded"].includes(status);
 
   if (isCancelledOrRefunded) {
     let title = "Order Cancelled";
-    let desc = "This order has been cancelled.";
-    let icon = <PackageX className="w-6 h-6 text-red-500" />;
+    let desc = "This order was cancelled.";
+    let icon = <PackageX className="w-5 h-5 text-red-500" />;
     
     if (status === "return_requested" || status === "returned") {
-      title = "Return Processed";
-      desc = "Your return request is being processed.";
-      icon = <RotateCcw className="w-6 h-6 text-amber-500" />;
+      title = "Return Request Received";
+      desc = "Your return request is currently being processed.";
+      icon = <RotateCcw className="w-5 h-5 text-amber-500" />;
     } else if (status === "refunded") {
-      title = "Refund Issued";
-      desc = "Your refund has been successfully processed.";
-      icon = <CheckCircle2 className="w-6 h-6 text-green-500" />;
+      title = "Refund Processed";
+      desc = "Your refund has been issued back to your payment source.";
+      icon = <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
     }
 
     return (
-      <div className="bg-white border border-hive-border/20 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4 text-left">
-        <div className="border-b border-hive-border/40 pb-3">
-          <h3 className="text-[11px] font-extrabold text-hive-dark uppercase tracking-wider">
-            Order Status
-          </h3>
-        </div>
-        <div className="flex items-center gap-4 py-4 px-2">
-          <div className="w-12 h-12 rounded-2xl bg-neutral-50 border border-hive-border/40 flex items-center justify-center">
+      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4 text-left">
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          Order Status
+        </h3>
+        <div className="flex items-center gap-3 py-2">
+          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
             {icon}
           </div>
           <div>
-            <h4 className="font-bold text-hive-dark">{title}</h4>
-            <p className="text-xs text-hive-text-muted mt-0.5">{desc}</p>
+            <h4 className="font-bold text-slate-900 text-sm">{title}</h4>
+            <p className="text-xs text-slate-500">{desc}</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Map status to progress index (0 to 4)
-  let currentStepIndex = 0;
-  if (["confirmed"].includes(status)) currentStepIndex = 1;
-  else if (["packed", "pickup_scheduled", "ready_for_pickup"].includes(status)) currentStepIndex = 2;
+  // Stepper state
+  let currentStepIndex = 1; // Default: Order Confirmed
+  if (["packed", "pickup_scheduled", "ready_for_pickup"].includes(status)) currentStepIndex = 2;
   else if (["picked_up", "in_transit", "out_for_delivery"].includes(status)) currentStepIndex = 3;
   else if (["delivered"].includes(status)) currentStepIndex = 4;
 
   const steps = [
-    { label: "Payment Received", desc: "Via Razorpay" },
-    { label: "Partner Confirmation", desc: "Boutique accepted" },
-    { label: "Preparing Order", desc: "Hand-crafting & prep" },
-    { label: "Out For Delivery", desc: "Doorstep fitting trials" },
-    { label: "Delivered", desc: "Alterations finalized" }
+    { label: "Payment", desc: "Received" },
+    { label: "Confirmed", desc: "Order Accepted" },
+    { label: "Out for Delivery", desc: "In Transit" },
+    { label: "Delivered", desc: "Completed" },
   ];
 
   return (
-    <div className="bg-white border border-hive-border/20 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4 text-left">
-      <div className="border-b border-hive-border/40 pb-3">
-        <h3 className="text-[11px] font-extrabold text-hive-dark uppercase tracking-wider">
-          Fittings Journey Timeline
-        </h3>
+    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-5 text-left">
+      {/* Delivery Schedule Info */}
+      <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div className="space-y-0.5">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+            Estimated Delivery
+          </span>
+          <p className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+            <Calendar className="w-4 h-4 text-slate-700" />
+            <span>{date || "Today"} • {slot || "Standard Delivery"}</span>
+          </p>
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+            Time Slot
+          </span>
+          <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg inline-block">
+            {window}
+          </span>
+        </div>
       </div>
 
-      {/* Responsive pipeline: vertical on mobile, horizontal on desktop */}
-      <div className="flex flex-col md:flex-row md:justify-between gap-6 relative pt-4 pb-2">
-        {steps.map((step, idx) => {
-          const isCompleted = idx < currentStepIndex;
-          const isActive = idx === currentStepIndex;
-          const isPending = idx > currentStepIndex;
+      {/* Progress Timeline Stepper */}
+      <div className="space-y-3 pt-1">
+        <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+          Fulfillment Timeline
+        </h4>
+        <div className="grid grid-cols-4 gap-2 relative">
+          {steps.map((step, idx) => {
+            const stepNum = idx + 1;
+            const isCompleted = stepNum < currentStepIndex;
+            const isActive = stepNum === currentStepIndex;
 
-          return (
-            <div key={idx} className="flex md:flex-col items-start md:items-center text-left md:text-center gap-3 md:gap-2 flex-1 relative group">
-              
-              {/* Horizontal line connector for desktop */}
-              {idx < steps.length - 1 && (
-                <div className="hidden md:block absolute left-[50%] top-4 w-full h-[2px] bg-neutral-100 z-0">
-                  {(isCompleted || isActive) && (
-                    <div className={`h-full bg-gradient-to-r from-hive-gold to-hive-dark transition-all duration-700 ease-in-out ${isActive ? "w-1/2" : "w-full"}`} />
-                  )}
+            return (
+              <div key={idx} className="flex flex-col items-center text-center space-y-1.5 relative">
+                {/* Step indicator circle */}
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
+                    isCompleted
+                      ? "bg-slate-900 text-white"
+                      : isActive
+                      ? "bg-emerald-600 text-white ring-4 ring-emerald-100"
+                      : "bg-slate-100 text-slate-400 border border-slate-200"
+                  }`}
+                >
+                  {isCompleted ? <Check className="w-3.5 h-3.5" /> : stepNum}
                 </div>
-              )}
-
-              {/* Vertical line connector for mobile */}
-              {idx < steps.length - 1 && (
-                <div className="md:hidden absolute left-4 top-10 w-[2px] h-[calc(100%+8px)] bg-neutral-100 z-0">
-                  {(isCompleted || isActive) && (
-                    <div className={`w-full bg-gradient-to-b from-hive-gold to-hive-dark transition-all duration-700 ease-in-out ${isActive ? "h-1/2" : "h-full"}`} />
-                  )}
+                <div className="space-y-0.5">
+                  <span className={`text-[10px] font-bold block leading-tight ${isActive || isCompleted ? "text-slate-900" : "text-slate-400"}`}>
+                    {step.label}
+                  </span>
+                  <span className="text-[9px] text-slate-400 block leading-tight hidden sm:block">
+                    {step.desc}
+                  </span>
                 </div>
-              )}
-
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border text-[11px] font-black flex-shrink-0 z-10 transition-all duration-300 ${
-                isCompleted 
-                  ? "bg-hive-dark border-hive-dark text-hive-gold shadow-sm"
-                  : isActive
-                  ? "bg-white border-hive-gold text-hive-dark shadow-[0_0_0_4px_rgba(212,175,55,0.1)] ring-1 ring-hive-gold"
-                  : "bg-neutral-50 border-hive-border/60 text-hive-text-muted/50"
-              }`}>
-                {isCompleted ? <Check className="w-4 h-4" /> : idx + 1}
               </div>
-
-              <div className="space-y-1 text-left md:text-center mt-1 md:mt-1.5">
-                <span className={`text-[10px] uppercase tracking-wider block leading-none ${
-                  isCompleted || isActive ? "text-hive-dark font-black" : "text-hive-text-muted/60 font-bold"
-                }`}>
-                  {step.label}
-                </span>
-                <span className={`text-[10px] leading-normal block max-w-[110px] sm:mx-auto ${
-                  isCompleted || isActive ? "text-hive-text-muted font-medium" : "text-hive-text-muted/40"
-                }`}>
-                  {step.desc}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -502,121 +437,100 @@ function NextStepsSection({ status }: { status: string }) {
 function OrderSummaryCard({
   itemCount,
   totalAmount,
+  subtotal,
+  deliveryFee,
   paymentMethod,
   address,
   items,
-  deliveryDate,
-  deliverySlot,
-  deliverySlotWindow,
-  showDetails,
-  onToggleDetails,
   boutiqueName,
 }: {
   itemCount: number;
   totalAmount: number;
+  subtotal: number;
+  deliveryFee: number;
   paymentMethod: string;
   address: any;
   items: any[];
-  deliveryDate: string;
-  deliverySlot: string;
-  deliverySlotWindow: string;
-  showDetails: boolean;
-  onToggleDetails: () => void;
   boutiqueName?: string;
 }) {
   return (
-    <div className="bg-white border border-hive-border/20 rounded-3xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] space-y-4 text-left">
-      {/* Boutique Prestige Badge moved here */}
-      <div className="pb-4 mb-2 border-b border-hive-border/30 flex items-start gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-hive-dark border border-hive-gold/30 flex items-center justify-center text-hive-gold font-serif text-xl font-bold flex-shrink-0 select-none shadow-sm">
-          {(boutiqueName || "B").charAt(0).toUpperCase()}
-        </div>
-        <div className="space-y-1.5 mt-0.5">
-          <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-widest block leading-none">
-            Fulfilled by
-          </span>
-          <h4 className="text-sm font-black text-hive-dark leading-tight">
-            {boutiqueName || "Boutique Partner"}
-          </h4>
-          <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-hive-dark bg-gradient-to-r from-amber-50 to-amber-100/50 px-2.5 py-1 rounded-md border border-hive-gold/30 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-            <ShieldCheck className="w-3 h-3 text-hive-gold" strokeWidth={2.5} />
-            Verified Hive Partner
-          </span>
-        </div>
-      </div>
-
-      <div className="border-b border-hive-border/40 pb-3 flex justify-between items-center mt-4">
-        <h3 className="text-[11px] font-extrabold text-hive-dark uppercase tracking-wider">
+    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xs space-y-4 text-left">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
           Order Summary
         </h3>
-        <span className="text-[10px] font-extrabold text-hive-text-muted">
+        <span className="text-[11px] font-semibold text-slate-500">
           {itemCount} {itemCount === 1 ? "Item" : "Items"}
         </span>
       </div>
 
-      <div className="space-y-2.5 text-xs font-bold text-hive-dark">
-        <div className="flex justify-between items-center text-hive-text-muted">
-          <span>Delivery Date</span>
-          <span className="text-hive-dark font-semibold">{deliveryDate}</span>
-        </div>
-        <div className="flex justify-between items-center text-hive-text-muted">
-          <span>Delivery Slot</span>
-          <span className="text-hive-dark font-semibold text-right">{deliverySlot}</span>
-        </div>
-        <div className="flex justify-between items-center text-hive-text-muted">
-          <span>Time Window</span>
-          <span className="text-hive-dark font-semibold text-right">{deliverySlotWindow}</span>
-        </div>
-        <div className="flex justify-between items-center text-hive-text-muted">
-          <span>Payment Method</span>
-          <span className="text-hive-dark font-semibold">{paymentMethod}</span>
-        </div>
-        <div className="flex justify-between items-center text-hive-text-muted">
-          <span>Shipping Location</span>
-          <span className="text-hive-dark font-semibold max-w-[200px] text-right truncate">
-            {address.name} ({address.pincode})
-          </span>
-        </div>
-        <div className="flex justify-between items-center border-t border-hive-border/40 pt-2.5">
-          <span className="text-xs font-extrabold">Final Paid</span>
-          <span className="text-sm font-extrabold">₹{(totalAmount / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        </div>
+      {/* Item Product Thumbnails */}
+      <div className="space-y-3 max-h-56 overflow-y-auto pr-1 border-b border-slate-100 pb-3">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex items-center gap-3">
+            <div className="relative w-12 h-14 bg-slate-100 rounded-xl overflow-hidden shrink-0 border border-slate-200/60">
+              {item.imageUrl ? (
+                <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-400">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="text-xs font-bold text-slate-900 truncate">{item.name}</h4>
+              <p className="text-[10px] text-slate-500 font-medium">
+                Size: {item.size || "Standard"} • Qty: {item.quantity}
+              </p>
+              {item.boutiqueName && (
+                <span className="text-[10px] text-slate-400 block truncate">
+                  {item.boutiqueName}
+                </span>
+              )}
+            </div>
+            <span className="text-xs font-bold text-slate-900 shrink-0">
+              ₹{((item.price * item.quantity) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+        ))}
       </div>
 
-      {/* Accordion dropdown toggle detail */}
-      <div className="border-t border-hive-border/40 pt-3.5 mt-2">
-        <button
-          type="button"
-          onClick={onToggleDetails}
-          className="w-full flex items-center justify-between text-[10px] font-extrabold uppercase tracking-wider text-hive-amber hover:text-hive-dark transition-colors"
-        >
+      {/* Price & Address Details */}
+      <div className="space-y-2 text-xs font-medium text-slate-600 pt-1">
+        <div className="flex justify-between items-center text-slate-500">
           <span className="flex items-center gap-1.5">
-            <Eye className="w-3.5 h-3.5" />
-            <span>{showDetails ? "Hide Item Details" : "View Item Details"}</span>
+            <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+            <span>Payment</span>
           </span>
-          <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${showDetails ? "rotate-90" : ""}`} />
-        </button>
+          <span className="font-semibold text-slate-800">{paymentMethod}</span>
+        </div>
 
-        {showDetails && (
-          <div className="mt-3.5 space-y-3 max-h-[220px] overflow-y-auto pr-1 animate-[fadeIn_0.2s_ease-out]">
-            {items.map((item, idx) => (
-              <div key={idx} className="flex justify-between items-center text-xs border-b border-hive-border/20 pb-2.5 last:border-b-0 last:pb-0">
-                <div className="text-left max-w-[190px]">
-                  <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-                    {item.boutiqueName}
-                  </span>
-                  <p className="font-bold text-hive-dark truncate mt-0.5">{item.name}</p>
-                  <span className="text-[9px] font-bold text-hive-text-muted">
-                    Size: {item.size} • Qty: {item.quantity}
-                  </span>
-                </div>
-                <span className="font-extrabold text-hive-dark flex-shrink-0">
-                  ₹{((item.price * item.quantity) / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
+        {address && (
+          <div className="flex justify-between items-center text-slate-500">
+            <span className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-slate-400" />
+              <span>Deliver To</span>
+            </span>
+            <span className="font-semibold text-slate-800 truncate max-w-[170px]">
+              {address.name || "Home"} ({address.pincode})
+            </span>
           </div>
         )}
+
+        <div className="flex justify-between items-center pt-2 text-slate-500">
+          <span>Subtotal</span>
+          <span>₹{(subtotal / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+        </div>
+
+        <div className="flex justify-between items-center text-slate-500">
+          <span>Delivery</span>
+          <span>{deliveryFee > 0 ? `₹${(deliveryFee / 100).toFixed(2)}` : "FREE"}</span>
+        </div>
+
+        <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-sm font-bold text-slate-900">
+          <span>Total Paid</span>
+          <span>₹{(totalAmount / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+        </div>
       </div>
     </div>
   );
@@ -636,17 +550,15 @@ function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
   };
 
   const downloading = resolvedOrder?.convexId ? isDownloading(resolvedOrder.convexId) : false;
-  const boutiqueId = resolvedOrder?.items?.[0]?.boutiqueId || "";
-  const exploreUrl = boutiqueId ? `/products?boutiqueId=${boutiqueId}` : "/products";
 
   return (
-    <div className="w-full space-y-3">
+    <div className="w-full space-y-2.5">
       <button
         type="button"
         onClick={() => router.push(resolvedOrder?.convexId ? `/orders/${resolvedOrder.convexId}` : "/orders")}
-        className="w-full h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-sm"
+        className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer"
       >
-        <span>Track Order</span>
+        <span>Track Order Details</span>
         <ChevronRight className="w-4 h-4" />
       </button>
 
@@ -655,63 +567,20 @@ function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
           type="button"
           disabled={downloading}
           onClick={handleDownload}
-          className="w-full h-12 border border-hive-border text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+          className="w-full h-11 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
         >
-          {downloading ? (
-            <span className="w-4 h-4 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
-          ) : (
-            <span>Download Invoice</span>
-          )}
+          <Download className="w-3.5 h-3.5" />
+          <span>{downloading ? "Generating PDF..." : "Download Tax Invoice"}</span>
         </button>
       )}
 
       <button
         type="button"
-        onClick={() => router.push(exploreUrl)}
-        className="w-full h-12 border border-hive-border text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-1.5"
+        onClick={() => router.push("/products")}
+        className="w-full h-11 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
       >
         <span>Continue Shopping</span>
       </button>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Component: PostPurchaseInfo
-// ─────────────────────────────────────────────────────────────────────────────
-function PostPurchaseInfo() {
-  const badges = [
-    { title: "3-Day Return & Refund", desc: "Raise requests within 3 days.", icon: RotateCcw },
-    { title: "Same-Day Delivery", desc: "Hyperlocal couriers.", icon: ShieldCheck },
-    { title: "Verified Boutique", desc: "Matching standards.", icon: Award }
-  ];
-
-  return (
-    <div className="bg-transparent pt-2 pb-4 space-y-3.5 text-left">
-      <span className="text-[10px] font-extrabold text-hive-text-muted uppercase tracking-wider block pl-2">
-        Hive Post-Purchase Assurances
-      </span>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {badges.map((badge, idx) => {
-          const IconComponent = badge.icon;
-          return (
-            <div key={idx} className="flex flex-col gap-2.5 items-start p-4 bg-white border border-hive-border/20 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.03)] rounded-2xl group hover:border-hive-gold/30 transition-colors">
-              <div className="w-8 h-8 rounded-xl bg-hive-cream/40 flex items-center justify-center border border-hive-border/40 text-hive-dark group-hover:bg-hive-dark group-hover:text-hive-gold transition-colors">
-                <IconComponent className="w-4 h-4" strokeWidth={1.5} />
-              </div>
-              <div className="space-y-1 text-left">
-                <span className="font-extrabold text-hive-dark block text-[10px] leading-tight">
-                  {badge.title}
-                </span>
-                <p className="text-[10px] text-hive-text-muted leading-snug">
-                  {badge.desc}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -721,25 +590,19 @@ function PostPurchaseInfo() {
 // ─────────────────────────────────────────────────────────────────────────────
 function OrderSuccessSkeleton() {
   return (
-    <div className="min-h-screen bg-hive-cream/30 py-12 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
-      <div className="max-w-[900px] mx-auto flex flex-col gap-6">
-
-        {/* Hero skeleton */}
-        <div className="h-[200px] bg-white border border-hive-border/20 rounded-3xl" />
-
-        {/* 2 columns layout skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-          <div className="md:col-span-7 space-y-6">
-            <div className="h-[140px] bg-white border border-hive-border/20 rounded-3xl" />
-            <div className="h-[140px] bg-white border border-hive-border/20 rounded-3xl" />
-            <div className="h-[140px] bg-white border border-hive-border/20 rounded-3xl" />
+    <div className="min-h-screen bg-slate-50/60 py-10 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
+      <div className="max-w-[920px] mx-auto flex flex-col gap-6">
+        <div className="h-44 bg-white border border-slate-200/80 rounded-3xl" />
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <div className="md:col-span-7 space-y-4">
+            <div className="h-52 bg-white border border-slate-200/80 rounded-3xl" />
+            <div className="h-14 bg-white border border-slate-200/80 rounded-2xl" />
           </div>
-          <div className="md:col-span-5 space-y-6">
-            <div className="h-[220px] bg-white border border-hive-border/20 rounded-3xl" />
-            <div className="h-[100px] bg-white border border-hive-border/20 rounded-3xl" />
+          <div className="md:col-span-5 space-y-4">
+            <div className="h-64 bg-white border border-slate-200/80 rounded-3xl" />
+            <div className="h-28 bg-white border border-slate-200/80 rounded-2xl" />
           </div>
         </div>
-
       </div>
     </div>
   );
