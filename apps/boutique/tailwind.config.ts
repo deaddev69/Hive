@@ -38,7 +38,7 @@ const config: Config = {
         }
       },
       fontFamily: {
-        serif: ["Satoshi", "sans-serif"],
+        serif: ["var(--font-satoshi)", "sans-serif"],
         sans: ["var(--font-inter)", "Inter", "sans-serif"],
         inter: ["var(--font-inter)", "sans-serif"],
         mono: ["var(--font-geist-mono)", "monospace"],

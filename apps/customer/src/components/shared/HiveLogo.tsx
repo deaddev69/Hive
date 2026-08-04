@@ -34,23 +34,13 @@ export function HiveLogo({
 
   const content = (
     <div className="flex items-center gap-2 select-none">
-      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden shadow-xs border border-amber-500/30 flex items-center justify-center bg-amber-500 shrink-0">
-        <Image
-          src="/icon-192x192.png"
-          alt="Hive PWA Logo"
-          width={36}
-          height={36}
-          priority
-          className="w-full h-full object-cover"
-        />
-      </div>
       <Image
-        src="/logo-navbar.png"
-        alt="Hive"
-        width={100}
-        height={32}
+        src="/icon-512x512.png"
+        alt="Hive Logo"
+        width={40}
+        height={40}
         priority
-        className="h-6 sm:h-7 w-auto object-contain"
+        className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl object-contain shadow-xs"
       />
       {roleLabel && (
         <div className="flex flex-col border-l border-slate-300 pl-2.5 py-0.5">

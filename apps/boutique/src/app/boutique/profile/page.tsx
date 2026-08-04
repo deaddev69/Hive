@@ -472,21 +472,42 @@ export default function BoutiqueProfile() {
             </div>
             {/* Store Default Return Policy Toggle Card */}
             <div className="flex flex-col gap-3 pt-4 border-t border-slate-100 font-sans">
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  Store Default Return Policy
-                </h4>
-                <p className="text-[12px] text-slate-500 font-medium mt-0.5">
-                  Auto-applies when listing new products.
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    Store Default Return Policy
+                  </h4>
+                  <p className="text-[12px] text-slate-500 font-medium mt-0.5">
+                    Auto-applies when listing new products.
+                  </p>
+                </div>
+                {boutique?.returnsAcceptedDefaultLocked && (
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                    🔒 Locked
+                  </span>
+                )}
               </div>
+
+              {boutique?.returnsAcceptedDefaultLocked && (
+                <div className="bg-amber-50 border border-amber-200/80 p-3.5 rounded-xl text-xs text-amber-900 font-medium leading-relaxed">
+                  Store Return Policy is locked once configured to protect buyer trust. To request policy modifications, please send a support request to <a href="mailto:support@hivenow.in" className="font-bold underline text-amber-950">support@hivenow.in</a>.
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Option A: Accept 24h Returns */}
                 <div
-                  onClick={() => setReturnsAcceptedDefault(true)}
-                  className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 text-left ${
+                  onClick={() => {
+                    if (boutique?.returnsAcceptedDefaultLocked) {
+                      toast.error("Policy Locked", "Store Return Policy is locked. Contact support@hivenow.in to request a change.");
+                      return;
+                    }
+                    setReturnsAcceptedDefault(true);
+                  }}
+                  className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left ${
+                    boutique?.returnsAcceptedDefaultLocked ? "opacity-75 cursor-not-allowed" : "cursor-pointer"
+                  } ${
                     returnsAcceptedDefault
                       ? "bg-emerald-50/60 border-emerald-500/80 shadow-2xs"
                       : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
@@ -513,8 +534,16 @@ export default function BoutiqueProfile() {
 
                 {/* Option B: Final Sale Default */}
                 <div
-                  onClick={() => setReturnsAcceptedDefault(false)}
-                  className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-start justify-between gap-3 text-left ${
+                  onClick={() => {
+                    if (boutique?.returnsAcceptedDefaultLocked) {
+                      toast.error("Policy Locked", "Store Return Policy is locked. Contact support@hivenow.in to request a change.");
+                      return;
+                    }
+                    setReturnsAcceptedDefault(false);
+                  }}
+                  className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left ${
+                    boutique?.returnsAcceptedDefaultLocked ? "opacity-75 cursor-not-allowed" : "cursor-pointer"
+                  } ${
                     !returnsAcceptedDefault
                       ? "bg-slate-900 text-white border-slate-900 shadow-2xs"
                       : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"

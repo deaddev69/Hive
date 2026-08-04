@@ -412,6 +412,9 @@ export const updateBoutique = mutation({
     staffEmail2:      v.optional(v.string()),
     staffPhone1:      v.optional(v.string()),
     staffPhone2:      v.optional(v.string()),
+    razorpayAccountId: v.optional(v.string()),
+    returnsAcceptedDefault: v.optional(v.boolean()),
+    returnsAcceptedDefaultLocked: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
@@ -446,6 +449,10 @@ export const updateBoutique = mutation({
       area:             args.area,
       searchKeywords:    args.searchKeywords,
       serviceType:       args.serviceType,
+      razorpayAccountId: args.razorpayAccountId,
+      
+      returnsAcceptedDefault: args.returnsAcceptedDefault,
+      returnsAcceptedDefaultLocked: args.returnsAcceptedDefaultLocked,
       
       staffEmail1:      args.staffEmail1 ? args.staffEmail1.toLowerCase() : undefined,
       staffEmail2:      args.staffEmail2 ? args.staffEmail2.toLowerCase() : undefined,
@@ -1085,11 +1092,17 @@ export const updateBoutiqueProfile = mutation({
       isAcceptingOrders: args.isAcceptingOrders ?? boutique.isAcceptingOrders,
       pauseReason: args.pauseReason ?? boutique.pauseReason,
       closedUntil: args.closedUntil !== undefined ? args.closedUntil : boutique.closedUntil,
-      returnsAcceptedDefault: args.returnsAcceptedDefault !== undefined ? args.returnsAcceptedDefault : boutique.returnsAcceptedDefault,
-      
       name: args.boutiqueName ?? boutique.name,
       gstNumber: args.gstNumber ?? boutique.gstNumber,
     };
+
+    if (args.returnsAcceptedDefault !== undefined) {
+      if (boutique.returnsAcceptedDefaultLocked && args.returnsAcceptedDefault !== boutique.returnsAcceptedDefault) {
+        throw new ConvexError("Store Return Policy is permanently locked. Contact support@hivenow.in to modify your return policy.");
+      }
+      patchData.returnsAcceptedDefault = args.returnsAcceptedDefault;
+      patchData.returnsAcceptedDefaultLocked = true;
+    }
 
     if (args.bankAccount) {
       const secret = process.env.BANK_ENCRYPTION_KEY;

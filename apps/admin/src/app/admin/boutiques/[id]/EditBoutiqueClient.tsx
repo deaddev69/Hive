@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Button, Card, CardContent } from "@hive/ui";
-import { ArrowLeft, Loader2, Save, Store, MapPin } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Store, MapPin, CreditCard, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
@@ -47,6 +47,9 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
   const [city, setCity] = useState("Kochi");
   const [state, setState] = useState("Kerala");
   const [pincode, setPincode] = useState("");
+  const [razorpayAccountId, setRazorpayAccountId] = useState("");
+  const [returnsAcceptedDefault, setReturnsAcceptedDefault] = useState(true);
+  const [returnsAcceptedDefaultLocked, setReturnsAcceptedDefaultLocked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Prepopulate form when boutique query completes
@@ -70,6 +73,9 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
       setCity(boutique.city || boutique.addressDetails?.city || "Kochi");
       setState(boutique.state || boutique.addressDetails?.state || "Kerala");
       setPincode(boutique.pincode || boutique.addressDetails?.pincode || "");
+      setRazorpayAccountId((boutique as any).razorpayAccountId || "");
+      setReturnsAcceptedDefault(boutique.returnsAcceptedDefault ?? true);
+      setReturnsAcceptedDefaultLocked(boutique.returnsAcceptedDefaultLocked ?? false);
     }
   }, [boutique]);
 
@@ -100,6 +106,12 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
     }
     if (staffPhone2 && !phoneRegex.test(staffPhone2)) {
       alert("Staff WhatsApp 2 must be a valid E.164 phone number (e.g. +919876543210)");
+      return;
+    }
+
+    const trimmedAccountId = razorpayAccountId.trim();
+    if (trimmedAccountId && !trimmedAccountId.startsWith("acc_")) {
+      alert("Razorpay Linked Account ID must start with \"acc_\". Example: acc_TLcH6m3i3GBI2n");
       return;
     }
 
@@ -141,6 +153,9 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
         staffEmail2: staffEmail2 || undefined,
         staffPhone1: staffPhone1 || undefined,
         staffPhone2: staffPhone2 || undefined,
+        razorpayAccountId: razorpayAccountId.trim() || undefined,
+        returnsAcceptedDefault,
+        returnsAcceptedDefaultLocked,
       });
       console.log("[EditBoutiquePage] Update successful!");
       alert("Boutique profile updated successfully!");
@@ -326,6 +341,8 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
             />
           </div>
 
+
+
           {/* Map picker container */}
           <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
             <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted flex justify-between">
@@ -342,12 +359,11 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">City</label>
               <input
                 type="text"
-                required
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
@@ -357,7 +373,6 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
               <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">State</label>
               <input
                 type="text"
-                required
                 value={state}
                 onChange={(e) => setState(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
@@ -367,7 +382,6 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
               <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Pincode</label>
               <input
                 type="text"
-                required
                 value={pincode}
                 onChange={(e) => setPincode(e.target.value)}
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 text-slate-800"
@@ -387,6 +401,68 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
               <option value="REJECTED">REJECTED</option>
               <option value="SUSPENDED">SUSPENDED</option>
             </select>
+          </div>
+
+          {/* ── Admin Return Policy Control ── */}
+          <div className="flex flex-col gap-4 pt-4 border-t border-hive-border/60">
+            <h3 className="text-sm font-serif font-bold text-hive-dark flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Store Return Policy Management</span>
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Default Policy</label>
+                <select
+                  value={returnsAcceptedDefault ? "24h" : "final_sale"}
+                  onChange={(e) => setReturnsAcceptedDefault(e.target.value === "24h")}
+                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-white font-bold text-slate-800"
+                >
+                  <option value="24h">Accept 24h Returns (Recommended)</option>
+                  <option value="final_sale">Final Sale Only (No Returns)</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Seller Portal Lock State</label>
+                <select
+                  value={returnsAcceptedDefaultLocked ? "locked" : "unlocked"}
+                  onChange={(e) => setReturnsAcceptedDefaultLocked(e.target.value === "locked")}
+                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-white font-bold text-slate-800"
+                >
+                  <option value="locked">🔒 Locked (Seller cannot change in dashboard)</option>
+                  <option value="unlocked">🔓 Unlocked (Seller can change in dashboard)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Payment Configuration ── */}
+          <div className="flex flex-col gap-4 pt-4 border-t border-hive-border/60">
+            <h3 className="text-sm font-serif font-bold text-hive-dark flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-hive-amber" />
+              <span>Payment Configuration</span>
+            </h3>
+            <div className="flex flex-col gap-1.5 md:max-w-md">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Razorpay Linked Account ID</label>
+              <input
+                type="text"
+                placeholder="acc_xxxxxxxxxxxxxx"
+                value={razorpayAccountId}
+                onChange={(e) => setRazorpayAccountId(e.target.value)}
+                className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 font-mono text-slate-800 ${
+                  razorpayAccountId.trim() && !razorpayAccountId.trim().startsWith("acc_")
+                    ? "border-red-400"
+                    : "border-hive-border/60"
+                }`}
+              />
+              <p className="text-[11px] text-hive-text-muted leading-snug">
+                Paste the Razorpay Route Linked Account ID generated from the Razorpay Dashboard.
+              </p>
+              {razorpayAccountId.trim() && !razorpayAccountId.trim().startsWith("acc_") && (
+                <p className="text-[11px] text-red-500 font-semibold">Must start with &quot;acc_&quot;</p>
+              )}
+            </div>
           </div>
 
           <div className="flex gap-3 mt-4 pt-4 border-t border-hive-border/60">

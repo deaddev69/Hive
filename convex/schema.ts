@@ -261,6 +261,7 @@ export default defineSchema({
     deliveryFee:           v.optional(v.number()),
     freeDeliveryThreshold: v.optional(v.number()),
     returnsAcceptedDefault: v.optional(v.boolean()),
+    returnsAcceptedDefaultLocked: v.optional(v.boolean()),
 
     ownerUserId:      v.optional(v.id("users")),
     ownerEmail:       v.string(),
