@@ -41,7 +41,7 @@ export const getCollectionsByType = query({
 
 // Resolve products for a specific collection
 export const getCollectionProducts = query({
-  args: { collectionId: v.id("homepageCollections"), limit: v.optional(v.number()) },
+  args: { collectionId: v.string(), limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const mappings = await ctx.db
       .query("collectionProducts")

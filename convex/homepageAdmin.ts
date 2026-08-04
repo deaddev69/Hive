@@ -192,7 +192,7 @@ export const deleteCollection = mutation({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const addProductToCollection = mutation({
-  args: { collectionId: v.id("homepageCollections"), productId: v.id("products") },
+  args: { collectionId: v.string(), productId: v.id("products") },
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("collectionProducts")
@@ -218,7 +218,7 @@ export const addProductToCollection = mutation({
 });
 
 export const removeProductFromCollection = mutation({
-  args: { collectionId: v.id("homepageCollections"), productId: v.id("products") },
+  args: { collectionId: v.string(), productId: v.id("products") },
   handler: async (ctx, args) => {
     const mapping = await ctx.db
       .query("collectionProducts")
@@ -234,7 +234,7 @@ export const removeProductFromCollection = mutation({
 
 export const reorderCollectionProducts = mutation({
   args: {
-    collectionId: v.id("homepageCollections"),
+    collectionId: v.string(),
     orderedProductIds: v.array(v.id("products")),
   },
   handler: async (ctx, args) => {
@@ -258,7 +258,7 @@ export const reorderCollectionProducts = mutation({
 });
 
 export const togglePinProduct = mutation({
-  args: { collectionId: v.id("homepageCollections"), productId: v.id("products") },
+  args: { collectionId: v.string(), productId: v.id("products") },
   handler: async (ctx, args) => {
     const mapping = await ctx.db
       .query("collectionProducts")
