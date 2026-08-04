@@ -1,38 +1,52 @@
 // Custom PWA Service Worker logic for @ducanh2912/next-pwa
-// This file is automatically compiled and injected into public/sw.js during build.
+// High-Urgency Pinned Notification & Swiggy-Style Alarm Trigger Handler
 
-// Push Notification Event Listener
 self.addEventListener("push", (event) => {
-  const data = event.data ? event.data.json() : {};
+  if (!event.data) return;
 
-  const title = data.title || "New Order Received! 🛍️";
-  const options = {
-    body: data.body || "A customer just placed a new order.",
-    icon: data.icon || "/icon-192x192.png",
-    badge: data.badge || "/icon-192x192.png",
-    sound: "/sounds/order-chime.mp3",
-    vibrate: [200, 100, 200, 100, 400],
-    tag: "new-order",
+  let payload = { title: "🚨 NEW ORDER RECEIVED!", body: "Check dashboard now." };
+  try {
+    payload = event.data.json();
+  } catch (e) {
+    payload.body = event.data.text();
+  }
+
+  const notificationOptions = {
+    body: payload.body || "A customer just placed a new order.",
+    icon: payload.icon || "/icon-192x192.png",
+    badge: payload.badge || "/icon-192x192.png",
+    tag: "hive-order-alert",
     renotify: true,
-    data: { url: data.url || "/boutique/orders" },
+    requireInteraction: true,
+    vibrate: [500, 200, 500, 200, 500, 200, 1000, 300, 500, 200, 500],
+    data: {
+      url: payload.url || "/boutique/orders",
+      orderNumber: payload.orderNumber,
+    },
   };
 
   event.waitUntil(
     Promise.all([
-      self.registration.showNotification(title, options),
-      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-        clientList.forEach((client) => {
-          client.postMessage({ type: "PLAY_ORDER_CHIME" });
+      self.registration.showNotification(payload.title || "🚨 NEW ORDER!", notificationOptions),
+      self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({
+            type: "TRIGGER_ORDER_ALARM",
+            payload,
+          });
+          client.postMessage({
+            type: "PLAY_ORDER_CHIME",
+            payload,
+          });
         });
       }),
     ])
   );
 });
 
-// Notification Click Event Listener
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const targetUrl = (event.notification && event.notification.data && event.notification.data.url) || "/boutique/orders";
+  const targetUrl = (event.notification.data && event.notification.data.url) || "/boutique/orders";
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {

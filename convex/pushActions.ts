@@ -52,7 +52,10 @@ export const sendOrderPush = internalAction({
         timestamp: Date.now(),
       });
 
-      await webPush.sendNotification(args.subscription, payload);
+      await webPush.sendNotification(args.subscription, payload, {
+        urgency: "high",
+        TTL: 60,
+      });
       console.log(
         `[sendOrderPush] Web push dispatched successfully to endpoint: ${args.subscription.endpoint.slice(0, 30)}...`
       );
