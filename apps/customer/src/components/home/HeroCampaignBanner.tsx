@@ -13,34 +13,25 @@ const FALLBACK_CAMPAIGNS = [
     _id: "fallback-1",
     title: "Monsoon Handloom Edit '26",
     subtitle: "Breathable Kerala linens, hand-dyed organzas & rainy day silhouettes curated by local boutiques.",
-    imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1400&q=80",
+    desktopImageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1400&q=80",
+    mobileImageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1400&q=80",
     ctaText: "Explore Monsoon Edit",
-    ctaUrl: "/shop?collection=monsoon",
-    priority: 10,
+    ctaLink: "/shop?collection=monsoon",
   },
   {
     _id: "fallback-2",
     title: "Kochi Festive & Wedding Luxe",
     subtitle: "Handcrafted Zari sarees, bridal lehengas & evening co-ords delivered in under 2 hours.",
-    imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1400&q=80",
+    desktopImageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1400&q=80",
+    mobileImageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1400&q=80",
     ctaText: "Shop Wedding Collection",
-    ctaUrl: "/shop?collection=wedding",
-    priority: 9,
-  },
-  {
-    _id: "fallback-3",
-    title: "Minimalist Linen & Co-ords",
-    subtitle: "Effortless, elevated everyday luxury from verified designer studios.",
-    imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1400&q=80",
-    ctaText: "Discover Minimalist",
-    ctaUrl: "/shop?collection=minimalist",
-    priority: 8,
+    ctaLink: "/shop?collection=wedding",
   },
 ];
 
 export function HeroCampaignBanner() {
-  const adminCampaigns = useQuery(api.homepage.getActiveHeroCampaigns);
-  const campaigns = adminCampaigns && adminCampaigns.length > 0 ? adminCampaigns : FALLBACK_CAMPAIGNS;
+  const activeBanners = useQuery(api.banners.getActiveBanners);
+  const campaigns = activeBanners && activeBanners.length > 0 ? activeBanners : FALLBACK_CAMPAIGNS;
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -53,6 +44,7 @@ export function HeroCampaignBanner() {
   }, [campaigns.length]);
 
   const current = campaigns[currentIndex] || FALLBACK_CAMPAIGNS[0];
+  const imageUrl = (current as any).desktopImageUrl || (current as any).mobileImageUrl || (current as any).imageUrl || FALLBACK_CAMPAIGNS[0].desktopImageUrl;
 
   return (
     <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 select-none">
@@ -69,7 +61,7 @@ export function HeroCampaignBanner() {
             className="absolute inset-0"
           >
             <Image
-              src={current.imageUrl}
+              src={imageUrl}
               alt={current.title}
               fill
               priority
@@ -92,7 +84,7 @@ export function HeroCampaignBanner() {
           >
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 backdrop-blur-md border border-amber-500/30 rounded-full text-amber-300 text-xs font-bold uppercase tracking-widest">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Hive Exclusive Drop</span>
+              <span>Hive Featured Drop</span>
             </div>
 
             <h1 className="text-2xl sm:text-4xl md:text-5xl font-serif font-bold tracking-tight text-white leading-tight">
@@ -105,7 +97,7 @@ export function HeroCampaignBanner() {
 
             <div className="pt-2">
               <Link
-                href={current.ctaUrl || "/shop"}
+                href={(current as any).ctaLink || (current as any).ctaUrl || "/shop"}
                 className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-amber-500/20 transition-all transform active:scale-95"
               >
                 <span>{current.ctaText || "Explore Drop"}</span>
