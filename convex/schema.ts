@@ -1988,4 +1988,71 @@ export default defineSchema({
   })
     .index("by_deviceId", ["deviceId"])
     .index("by_installedAt", ["installedAt"]),
+
+  // ─── HOMEPAGE V2: HERO CAMPAIGNS ──────────────────────────────────────────
+  heroCampaigns: defineTable({
+    title: v.string(),
+    subtitle: v.string(),
+    imageUrl: v.string(),
+    ctaText: v.string(),
+    ctaUrl: v.string(),
+    priority: v.number(),
+    startDate: v.number(),
+    endDate: v.number(),
+    isPublished: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_published_priority", ["isPublished", "priority"]),
+
+  // ─── HOMEPAGE V2: CURATED COLLECTIONS ──────────────────────────────────────
+  homepageCollections: defineTable({
+    title: v.string(),
+    subtitle: v.optional(v.string()),
+    emoji: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    slug: v.string(),
+    type: v.union(
+      v.literal("mood"),         // "How are you dressing today?"
+      v.literal("occasion"),     // "What are you dressing for?"
+      v.literal("trending"),     // "Trending in Kochi"
+      v.literal("going_out"),    // "Going Out Today"
+      v.literal("seasonal")      // "Wedding Season"
+    ),
+    sortOrder: v.number(),
+    isPublished: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_type_published", ["type", "isPublished", "sortOrder"])
+    .index("by_slug", ["slug"]),
+
+  // ─── HOMEPAGE V2: COLLECTION PRODUCTS MAPPING ──────────────────────────────
+  collectionProducts: defineTable({
+    collectionId: v.id("homepageCollections"),
+    productId: v.id("products"),
+    sortOrder: v.number(),
+    isPinned: v.optional(v.boolean()),
+    addedAt: v.number(),
+  })
+    .index("by_collection_sort", ["collectionId", "sortOrder"])
+    .index("by_productId", ["productId"]),
+
+  // ─── HOMEPAGE V2: PRODUCT METADATA ENRICHMENT ──────────────────────────────
+  productMetadata: defineTable({
+    productId: v.id("products"),
+    styleTags: v.array(v.string()),      
+    occasionTags: v.array(v.string()),  
+    seasonTags: v.array(v.string()),    
+    color: v.optional(v.string()),
+    fabric: v.optional(v.string()),
+    fit: v.optional(v.string()),
+    updatedAt: v.number(),
+  }).index("by_productId", ["productId"]),
+
+  // ─── HOMEPAGE V2: USER RECENTLY VIEWED ────────────────────────────────────
+  recentlyViewed: defineTable({
+    userId: v.id("users"),
+    productId: v.id("products"),
+    viewedAt: v.number(),
+  })
+    .index("by_user_viewed", ["userId", "viewedAt"])
+    .index("by_user_product", ["userId", "productId"]),
 });
