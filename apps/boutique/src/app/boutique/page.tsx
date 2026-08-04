@@ -537,30 +537,30 @@ export default function BoutiqueDashboard() {
           {/* Today's Snapshot Card */}
           <div className="bg-white border border-slate-200/60 rounded-[24px] p-6 flex flex-col gap-6 shadow-none">
             
-            <div className="grid grid-cols-3 gap-4 select-none">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 select-none">
               {me?.role !== "boutique" ? (
-                <div className="flex flex-col gap-0.5 text-left">
-                  <span className="text-[28px] font-extrabold text-slate-800 tracking-tight">
+                <div className="flex flex-col gap-0.5 text-left min-w-0">
+                  <span className="text-xl sm:text-2xl lg:text-[28px] font-extrabold text-slate-800 tracking-tight truncate" title={salesToday === 0 ? "₹0" : formatCurrency(salesToday).replace(".00", "")}>
                     {salesToday === 0 ? "₹0" : formatCurrency(salesToday).replace(".00", "")}
                   </span>
                   <span className="text-[13px] text-slate-500 font-medium">Today's Sales</span>
                 </div>
               ) : (
-                <div className="flex flex-col gap-0.5 text-left">
-                  <span className="text-[28px] font-extrabold text-slate-800 tracking-tight">
+                <div className="flex flex-col gap-0.5 text-left min-w-0">
+                  <span className="text-xl sm:text-2xl lg:text-[28px] font-extrabold text-slate-800 tracking-tight truncate">
                     {lowStockCount}
                   </span>
                   <span className="text-[13px] text-slate-500 font-medium">Low Stock Items</span>
                 </div>
               )}
-              <div className="flex flex-col gap-0.5 text-left">
-                <span className="text-[28px] font-extrabold text-slate-800 tracking-tight">
+              <div className="flex flex-col gap-0.5 text-left min-w-0">
+                <span className="text-xl sm:text-2xl lg:text-[28px] font-extrabold text-slate-800 tracking-tight truncate">
                   {ordersNewToday}
                 </span>
                 <span className="text-[13px] text-slate-500 font-medium">Pending Orders</span>
               </div>
-              <div className="flex flex-col gap-0.5 text-left">
-                <span className="text-[28px] font-extrabold text-slate-800 tracking-tight">
+              <div className="flex flex-col gap-0.5 text-left min-w-0">
+                <span className="text-xl sm:text-2xl lg:text-[28px] font-extrabold text-slate-800 tracking-tight truncate">
                   {toPackCount}
                 </span>
                 <span className="text-[13px] text-slate-500 font-medium">Ready to Pack</span>

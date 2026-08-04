@@ -12,6 +12,7 @@ import { Button, LoadingState } from "@hive/ui";
 import { HiveLogo } from "@/components/shared/HiveLogo";
 import LegalAgreementStep from "@/components/onboarding/LegalAgreementStep";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
+import { AudioAlertHeaderStatus } from "@/components/layout/AudioAlertHeaderStatus";
 
 const BOUTIQUE_NAV_ITEMS = [
   { label: "Home", href: "/boutique", icon: Home },
@@ -139,6 +140,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
             />
           </Link>
         </div>
+        <AudioAlertHeaderStatus />
       </header>
 
       {/* Desktop Sidebar Navigation */}

@@ -303,6 +303,52 @@ export default function BoutiqueProfile() {
         )}
       </div>
 
+      {/* Audio & Sound Alert Configuration Card */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 flex flex-col gap-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-amber-500/10 rounded-xl text-amber-500 text-xl font-bold">🔊</div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-sm">Order Alert Sound Mode</h3>
+              <p className="text-xs text-slate-500">Choose how this device alerts shop staff or owners when a customer places an order.</p>
+            </div>
+          </div>
+          <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 text-xs font-semibold rounded-full">
+            ✓ Alerts Active
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                localStorage.setItem("hive_alert_mode", "store");
+                window.dispatchEvent(new Event("hive_alert_mode_change"));
+                toast.success("Mode Changed: Store Terminal 🏪", "Continuous looping siren & overlay enabled.");
+              }
+            }}
+            className="p-4 rounded-xl border border-slate-200 hover:border-amber-500 text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer bg-slate-50 hover:bg-amber-500/10 text-slate-800"
+          >
+            <span>🏪 Store Terminal Mode</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                localStorage.setItem("hive_alert_mode", "mobile");
+                window.dispatchEvent(new Event("hive_alert_mode_change"));
+                toast.success("Mode Changed: Owner Mobile 📱", "Single 1-second chime enabled.");
+              }
+            }}
+            className="p-4 rounded-xl border border-slate-200 hover:border-amber-500 text-sm font-bold flex items-center justify-center gap-2 transition cursor-pointer bg-slate-50 hover:bg-amber-500/10 text-slate-800"
+          >
+            <span>📱 Owner Mobile Mode</span>
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Left Form: Editable Settings (7 cols) */}

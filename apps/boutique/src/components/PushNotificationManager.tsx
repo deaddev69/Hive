@@ -4,8 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { Bell, Volume2, X, CheckCircle2, BellRing, Smartphone, Store, ShoppingBag, ArrowRight } from "lucide-react";
-import { Button } from "@hive/ui";
+import { BellRing, ShoppingBag, ArrowRight } from "lucide-react";
 import { Id } from "../../../../convex/_generated/dataModel";
 
 interface PushNotificationManagerProps {
@@ -45,12 +44,6 @@ export function PushNotificationManager({
   userId,
 }: PushNotificationManagerProps) {
   const router = useRouter();
-  const [permission, setPermission] = useState<NotificationPermission>("default");
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isSupported, setIsSupported] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   // Alert state & mode ("store" terminal vs "mobile" owner)
   const [isRinging, setIsRinging] = useState(false);
@@ -63,20 +56,21 @@ export function PushNotificationManager({
 
   const saveSubscription = useMutation(api.pushNotifications.savePushSubscription);
 
-  // Load saved device preference
-  useEffect(() => {
+  // Sync mode with localStorage & listen for header changes
+  const syncAlertMode = useCallback(() => {
     if (typeof window !== "undefined") {
       const savedMode = (localStorage.getItem("hive_alert_mode") as AlertMode) || "mobile";
       setAlertMode(savedMode === "store" ? "store" : "mobile");
     }
   }, []);
 
-  const handleModeChange = (mode: AlertMode) => {
-    setAlertMode(mode);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("hive_alert_mode", mode);
-    }
-  };
+  useEffect(() => {
+    syncAlertMode();
+    window.addEventListener("hive_alert_mode_change", syncAlertMode);
+    return () => {
+      window.removeEventListener("hive_alert_mode_change", syncAlertMode);
+    };
+  }, [syncAlertMode]);
 
   // Web Audio Synthesizer Fallback (Alternating 880Hz / 1046Hz Siren for Store Mode)
   const startSynthesizedSiren = useCallback(() => {
@@ -187,17 +181,6 @@ export function PushNotificationManager({
       "PushManager" in window &&
       "Notification" in window
     ) {
-      setIsSupported(true);
-      setPermission(Notification.permission);
-
-      navigator.serviceWorker.ready.then((registration) => {
-        registration.pushManager.getSubscription().then((sub) => {
-          if (sub) {
-            setIsSubscribed(true);
-          }
-        });
-      });
-
       const messageListener = (event: MessageEvent) => {
         if (event.data?.type === "TRIGGER_ORDER_ALARM" || event.data?.type === "PLAY_ORDER_CHIME") {
           console.log("[PushNotificationManager] Received SW alarm event:", event.data);
@@ -209,92 +192,34 @@ export function PushNotificationManager({
         }
       };
       navigator.serviceWorker.addEventListener("message", messageListener);
+
+      // Auto subscribe if granted
+      if (Notification.permission === "granted" && boutiqueId && userId) {
+        navigator.serviceWorker.ready.then(async (registration) => {
+          const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+          if (vapidPublicKey) {
+            const existingSub = await registration.pushManager.getSubscription();
+            if (!existingSub) {
+              const subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as unknown as BufferSource,
+              });
+              await saveSubscription({
+                boutiqueId,
+                userId,
+                subscription: JSON.parse(JSON.stringify(subscription)),
+              }).catch(console.error);
+            }
+          }
+        });
+      }
+
       return () => {
         navigator.serviceWorker.removeEventListener("message", messageListener);
         stopOrderAlarm();
       };
     }
-  }, [startOrderAlarm, stopOrderAlarm]);
-
-  const handleSubscribe = async () => {
-    if (!isSupported) {
-      alert("Push notifications are not supported by this browser.");
-      return;
-    }
-
-    if (!boutiqueId || !userId) {
-      console.warn("[PushNotificationManager] Missing boutiqueId or userId");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // Unlock AudioContext immediately upon user interaction
-      try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioContext) {
-          const ctx = new AudioContext();
-          const osc = ctx.createOscillator();
-          osc.connect(ctx.destination);
-          osc.start(ctx.currentTime);
-          osc.stop(ctx.currentTime + 0.001);
-        }
-      } catch (e) {
-        console.warn("Failed to unlock AudioContext:", e);
-      }
-
-      const requestedPermission = await Notification.requestPermission();
-      setPermission(requestedPermission);
-
-      if (requestedPermission !== "granted") {
-        setLoading(false);
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-
-      if (!vapidPublicKey) {
-        console.error(
-          "[PushNotificationManager] NEXT_PUBLIC_VAPID_PUBLIC_KEY is missing. Subscriptions cannot be generated."
-        );
-        alert("Server configuration error: Missing VAPID Public Key.");
-        setLoading(false);
-        return;
-      }
-
-      // Unsubscribe any old/stale push token first to force generating a fresh token for current VAPID keys
-      const existingSub = await registration.pushManager.getSubscription();
-      if (existingSub) {
-        console.log("[PushNotificationManager] Unsubscribing stale push token...");
-        await existingSub.unsubscribe().catch((e) => console.warn("Failed to unsubscribe old token:", e));
-      }
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as unknown as BufferSource,
-      });
-
-      // Save subscription to Convex DB
-      await saveSubscription({
-        boutiqueId,
-        userId,
-        subscription: JSON.parse(JSON.stringify(subscription)),
-      });
-
-      setIsSubscribed(true);
-      setShowSuccessToast(true);
-      startOrderAlarm({
-        title: "🔔 Order Alerts Active!",
-        body: "Test alert triggered. Mode set to " + alertMode.toUpperCase(),
-      });
-    } catch (err) {
-      console.error("[PushNotificationManager] Error subscribing to push:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [boutiqueId, userId, saveSubscription, startOrderAlarm, stopOrderAlarm]);
 
   return (
     <>
@@ -307,7 +232,7 @@ export function PushNotificationManager({
               body: "Order #HIVE-TEST-001 • 1 Item",
             })
           }
-          className="bg-zinc-900 hover:bg-black text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-lg border border-zinc-700 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
+          className="bg-zinc-900 hover:bg-black text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-lg border border-zinc-700 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
         >
           <BellRing className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
           <span>Test Alarm 🚨</span>
@@ -352,7 +277,7 @@ export function PushNotificationManager({
           <div className="w-full max-w-md pb-6 flex flex-col gap-3">
             <button
               onClick={handleAcceptViewOrder}
-              className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-base uppercase tracking-wider rounded-2xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:brightness-110"
+              className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-base uppercase tracking-wider rounded-2xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:brightness-110 cursor-pointer"
             >
               <span>Accept & View Order</span>
               <ArrowRight className="w-5 h-5" />
@@ -360,80 +285,10 @@ export function PushNotificationManager({
 
             <button
               onClick={stopOrderAlarm}
-              className="w-full py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-sm rounded-2xl backdrop-blur-md border border-white/20 active:scale-95 transition-all text-center"
+              className="w-full py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-sm rounded-2xl backdrop-blur-md border border-white/20 active:scale-95 transition-all text-center cursor-pointer"
             >
               Silence Alarm 🔕
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Subscription & Alert Preference Card */}
-      {!dismissed && isSupported && permission !== "denied" && !isRinging && (
-        <div className="mx-4 my-3 bg-gradient-to-r from-amber-500/10 via-amber-400/5 to-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-amber-500/20 text-amber-500 rounded-xl shrink-0 mt-0.5 sm:mt-0">
-              <Volume2 className="w-5 h-5 animate-pulse" />
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                Order Alert Sound Mode
-                <span className="bg-amber-500/20 text-amber-600 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">
-                  {alertMode === "store" ? "STORE TERMINAL" : "OWNER MOBILE"}
-                </span>
-              </h4>
-              <p className="text-xs text-slate-600 mt-0.5">
-                Choose how this device alerts shop staff or owners when a customer orders.
-              </p>
-
-              {/* Mode Selector Buttons (Clean 2-Way Toggle) */}
-              <div className="flex items-center gap-2 mt-2">
-                <button
-                  onClick={() => handleModeChange("store")}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
-                    alertMode === "store"
-                      ? "bg-red-600 text-white shadow-md scale-105"
-                      : "bg-white/80 hover:bg-white text-slate-700 border border-slate-200"
-                  }`}
-                  title="Continuous looping siren & overlay for shop tablet"
-                >
-                  <Store className="w-3.5 h-3.5" />
-                  Store Terminal 🏪
-                </button>
-
-                <button
-                  onClick={() => handleModeChange("mobile")}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
-                    alertMode === "mobile"
-                      ? "bg-amber-500 text-slate-950 shadow-md scale-105"
-                      : "bg-white/80 hover:bg-white text-slate-700 border border-slate-200"
-                  }`}
-                  title="Single 1-second chime for owner phone"
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                  Owner Mobile 📱
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 w-full sm:w-auto justify-end">
-            {!isSubscribed ? (
-              <Button
-                onClick={handleSubscribe}
-                disabled={loading}
-                size="sm"
-                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold shadow-sm text-xs rounded-xl flex items-center gap-1.5"
-              >
-                <Bell className="w-3.5 h-3.5" />
-                {loading ? "Enabling..." : "Turn On Alerts"}
-              </Button>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/80 border border-emerald-300/60 px-3 py-1.5 rounded-xl">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                Alerts Active
-              </span>
-            )}
           </div>
         </div>
       )}
