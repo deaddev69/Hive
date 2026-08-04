@@ -33,6 +33,7 @@ export default function AdminHomepageMerchandisingPage() {
   // Mutations
   const toggleCampaign = useMutation(api.homepageAdmin.toggleCampaignPublished);
   const deleteCampaign = useMutation(api.homepageAdmin.deleteHeroCampaign);
+  const seedStarter = useMutation(api.homepageAdmin.seedDefaultHomepageData);
 
   // Campaign Form State
   const [showCampaignModal, setShowCampaignModal] = useState(false);
@@ -137,6 +138,18 @@ export default function AdminHomepageMerchandisingPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              await seedStarter();
+              toast.success("Starter campaigns & collections seeded successfully!");
+            }}
+            className="px-4 py-2.5 bg-slate-900 dark:bg-zinc-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer border border-slate-700"
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>Seed Starter Content</span>
+          </button>
+
           {activeTab === "campaigns" && (
             <button
               type="button"

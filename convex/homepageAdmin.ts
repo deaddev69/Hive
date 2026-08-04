@@ -305,17 +305,121 @@ export const upsertProductMetadata = mutation({
         fit: args.fit,
         updatedAt: now,
       });
-    } else {
-      await ctx.db.insert("productMetadata", {
-        productId: args.productId,
-        styleTags: args.styleTags,
-        occasionTags: args.occasionTags,
-        seasonTags: args.seasonTags,
-        color: args.color,
-        fabric: args.fabric,
-        fit: args.fit,
-        updatedAt: now,
-      });
     }
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEED STARTER HOMEPAGE DATA
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const seedDefaultHomepageData = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const oneYear = 365 * 24 * 60 * 60 * 1000;
+
+    // 1. Seed Hero Campaigns if empty
+    const existingCampaigns = await ctx.db.query("heroCampaigns").collect();
+    if (existingCampaigns.length === 0) {
+      await ctx.db.insert("heroCampaigns", {
+        title: "Monsoon Handloom Edit '26",
+        subtitle: "Breathable Kerala linens, hand-dyed organzas & rainy day silhouettes curated by local boutiques.",
+        imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1400&q=80",
+        ctaText: "Explore Monsoon Edit",
+        ctaUrl: "/shop?collection=monsoon",
+        priority: 10,
+        startDate: now - 1000,
+        endDate: now + oneYear,
+        isPublished: true,
+        createdAt: now,
+      });
+
+      await ctx.db.insert("heroCampaigns", {
+        title: "Kochi Festive & Wedding Luxe",
+        subtitle: "Handcrafted Zari sarees, bridal lehengas & evening co-ords delivered in under 2 hours.",
+        imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1400&q=80",
+        ctaText: "Shop Wedding Collection",
+        ctaUrl: "/shop?collection=wedding",
+        priority: 9,
+        startDate: now - 1000,
+        endDate: now + oneYear,
+        isPublished: true,
+        createdAt: now,
+      });
+    }
+
+    // 2. Seed Homepage Collections if empty
+    const existingCols = await ctx.db.query("homepageCollections").collect();
+    if (existingCols.length === 0) {
+      // Moods
+      const moods = [
+        { title: "Feeling Cute", emoji: "✨", imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80" },
+        { title: "Boss Mode", emoji: "💼", imageUrl: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=600&q=80" },
+        { title: "Minimal Luxe", emoji: "🌿", imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=600&q=80" },
+        { title: "Coffee Date", emoji: "☕", imageUrl: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=600&q=80" },
+      ];
+
+      for (let i = 0; i < moods.length; i++) {
+        const m = moods[i];
+        await ctx.db.insert("homepageCollections", {
+          title: m.title,
+          subtitle: `Curated ${m.title} outfits`,
+          emoji: m.emoji,
+          imageUrl: m.imageUrl,
+          slug: m.title.toLowerCase().replace(/\s+/g, "-"),
+          type: "mood",
+          sortOrder: i + 1,
+          isPublished: true,
+          createdAt: now,
+        });
+      }
+
+      // Occasions
+      const occasions = [
+        { title: "Office & Workwear", subtitle: "Tailored blazers, linen trousers & crisp shirts", imageUrl: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=800&q=80" },
+        { title: "Brunch & Cafe", subtitle: "Floaty sundresses, pastel sets & tote bags", imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80" },
+        { title: "Date Night", subtitle: "Silk slips, bodycon dresses & statement jewelry", imageUrl: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80" },
+      ];
+
+      for (let i = 0; i < occasions.length; i++) {
+        const o = occasions[i];
+        await ctx.db.insert("homepageCollections", {
+          title: o.title,
+          subtitle: o.subtitle,
+          imageUrl: o.imageUrl,
+          slug: o.title.toLowerCase().replace(/\s+/g, "-"),
+          type: "occasion",
+          sortOrder: i + 1,
+          isPublished: true,
+          createdAt: now,
+        });
+      }
+
+      // Trending in Kochi
+      await ctx.db.insert("homepageCollections", {
+        title: "Trending in Kochi",
+        subtitle: "Most requested styles across Panampilly Nagar & Edappally",
+        slug: "trending-in-kochi",
+        type: "trending",
+        sortOrder: 1,
+        isPublished: true,
+        createdAt: now,
+      });
+
+      // Going Out Today
+      await ctx.db.insert("homepageCollections", {
+        title: "Going Out Today",
+        subtitle: "Evening co-ords & party edit",
+        slug: "going-out-today",
+        type: "going_out",
+        sortOrder: 1,
+        isPublished: true,
+        createdAt: now,
+      });
+    }
+
+    return true;
+  },
+});
+
