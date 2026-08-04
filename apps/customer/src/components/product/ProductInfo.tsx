@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Scissors, Compass, Ruler, FileText, Shirt, CheckCircle2 } from "lucide-react";
+import { Scissors, Compass, Ruler, FileText, Shirt, CheckCircle2, RotateCcw, Truck, ShieldCheck } from "lucide-react";
 import { cn } from "@hive/ui";
 import { PRODUCT_SPEC_KEYS } from "@hive/types";
 import { ProductDetail } from "@/lib/mockProductDetails";
