@@ -953,7 +953,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
     boutiqueId,
     title: `New Order: ₹${(session.total / 100).toFixed(2)}! 🎉`,
     body: `New order ${orderNumber} placed for ${session.items.length} item(s).`,
-    url: `/boutique/orders/${orderId}`,
+    url: "/boutique/orders",
   });
 
   // Fetch and store Razorpay Route transfer ID in the background

@@ -63,7 +63,11 @@ self.addEventListener("notificationclick", (event) => {
     return;
   }
 
-  const targetUrl = (event.notification.data && event.notification.data.url) || "/boutique/orders";
+  let rawUrl = (event.notification.data && event.notification.data.url) || "/boutique/orders";
+  if (rawUrl.startsWith("/boutique/orders/")) {
+    rawUrl = "/boutique/orders";
+  }
+  const targetUrl = new URL(rawUrl, self.location.origin).href;
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {

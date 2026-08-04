@@ -705,7 +705,7 @@ export const placeOrder = mutation({
       boutiqueId: primaryBoutiqueId,
       title: `New Order: ₹${args.total.toFixed(2)}! 🎉`,
       body: `New order ${orderNumber} placed for ${args.items.length} item(s).`,
-      url: `/boutique/orders/${orderId}`,
+      url: "/boutique/orders",
     });
 
     await triggerNotification(
