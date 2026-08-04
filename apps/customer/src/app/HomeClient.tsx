@@ -264,21 +264,21 @@ export function HomeClient() {
     {
       title: "Wedding Season",
       subtitle: "Up to 30% OFF • Designer Guestwear",
-      img: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80",
+      img: "",
       cta: "Shop Now",
       href: "/collections/wedding",
     },
     {
       title: "Designer Sarees",
       subtitle: "Pure silk & georgette drapes",
-      img: "https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=800&q=80",
+      img: "",
       cta: "Explore",
       href: "/products/sarees",
     },
     {
       title: "Handwoven Silk",
       subtitle: "Curated local designer staples",
-      img: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
+      img: "",
       cta: "Shop Collection",
       href: "/products",
     },
@@ -288,8 +288,14 @@ export function HomeClient() {
   const products = useMemo(() => {
     return (dbProducts || [])
       .filter((p) => {
+        if (p.active === false) return false;
         const stock = p.stockBySize || {};
-        return Object.values(stock).reduce((sum: number, val: any) => sum + (val || 0), 0) > 0;
+        const totalStock = Object.values(stock).reduce((sum: number, val: any) => sum + (val || 0), 0);
+        if (totalStock > 0) return true;
+        if (p.stock !== undefined && p.stock > 0) return true;
+        if (p.inventoryCount !== undefined && p.inventoryCount > 0) return true;
+        // Default to in-stock if not explicitly marked zero
+        return p.stock !== 0 && p.inventoryCount !== 0;
       })
       .map(mapDbProduct);
   }, [dbProducts]);
@@ -297,8 +303,13 @@ export function HomeClient() {
   const mostLovedProducts = useMemo(() => {
     return (dbMostLoved || [])
       .filter((p) => {
+        if (p.active === false) return false;
         const stock = p.stockBySize || {};
-        return Object.values(stock).reduce((sum: number, val: any) => sum + (val || 0), 0) > 0;
+        const totalStock = Object.values(stock).reduce((sum: number, val: any) => sum + (val || 0), 0);
+        if (totalStock > 0) return true;
+        if (p.stock !== undefined && p.stock > 0) return true;
+        if (p.inventoryCount !== undefined && p.inventoryCount > 0) return true;
+        return p.stock !== 0 && p.inventoryCount !== 0;
       })
       .map(mapDbProduct);
   }, [dbMostLoved]);
@@ -306,8 +317,13 @@ export function HomeClient() {
   const newArrivalsProducts = useMemo(() => {
     return (dbNewArrivals || [])
       .filter((p) => {
+        if (p.active === false) return false;
         const stock = p.stockBySize || {};
-        return Object.values(stock).reduce((sum: number, val: any) => sum + (val || 0), 0) > 0;
+        const totalStock = Object.values(stock).reduce((sum: number, val: any) => sum + (val || 0), 0);
+        if (totalStock > 0) return true;
+        if (p.stock !== undefined && p.stock > 0) return true;
+        if (p.inventoryCount !== undefined && p.inventoryCount > 0) return true;
+        return p.stock !== 0 && p.inventoryCount !== 0;
       })
       .map(mapDbProduct)
       .slice(0, 8);
