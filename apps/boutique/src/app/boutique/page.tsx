@@ -195,10 +195,22 @@ export default function BoutiqueDashboard() {
     return orders?.filter(isCreatedToday).length ?? 0;
   }, [orders]);
 
-  const salesToday = useMemo(() => {
-    return orders
-      ?.filter(isCreatedToday)
-      ?.reduce((sum: number, o: any) => sum + (o.total ?? 0), 0) ?? 0;
+  const netEarningsToday = useMemo(() => {
+    return (
+      orders
+        ?.filter(isCreatedToday)
+        ?.reduce((sum: number, o: any) => {
+          let payoutPaise = o.totalPayout;
+          if (payoutPaise == null || payoutPaise <= 0) {
+            payoutPaise = o.totalBasePrice
+              ? Math.round(o.totalBasePrice * 0.98)
+              : o.subtotal
+              ? Math.round(o.subtotal * 0.98)
+              : Math.round((o.total ?? 0) * 0.98);
+          }
+          return sum + (payoutPaise / 100);
+        }, 0) ?? 0
+    );
   }, [orders]);
 
   const toPackCount = useMemo(() => {
@@ -540,10 +552,10 @@ export default function BoutiqueDashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 select-none">
               {me?.role !== "boutique" ? (
                 <div className="flex flex-col gap-0.5 text-left min-w-0">
-                  <span className="text-xl sm:text-2xl lg:text-[28px] font-extrabold text-slate-800 tracking-tight truncate" title={salesToday === 0 ? "₹0" : formatCurrency(salesToday).replace(".00", "")}>
-                    {salesToday === 0 ? "₹0" : formatCurrency(salesToday).replace(".00", "")}
+                  <span className="text-xl sm:text-2xl lg:text-[28px] font-extrabold text-slate-800 tracking-tight truncate" title={netEarningsToday === 0 ? "₹0" : formatCurrency(netEarningsToday).replace(".00", "")}>
+                    {netEarningsToday === 0 ? "₹0" : formatCurrency(netEarningsToday).replace(".00", "")}
                   </span>
-                  <span className="text-[13px] text-slate-500 font-medium">Today's Sales</span>
+                  <span className="text-[13px] text-slate-500 font-medium">Today's Net Payout</span>
                 </div>
               ) : (
                 <div className="flex flex-col gap-0.5 text-left min-w-0">

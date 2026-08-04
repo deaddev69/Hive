@@ -21,6 +21,7 @@ export const sendOrderPush = internalAction({
     title: v.string(),
     body: v.string(),
     url: v.optional(v.string()),
+    netPayout: v.optional(v.number()),
     icon: v.optional(v.string()),
     badge: v.optional(v.string()),
   },
@@ -46,6 +47,7 @@ export const sendOrderPush = internalAction({
       const payload = JSON.stringify({
         title: args.title,
         body: args.body,
+        netPayout: args.netPayout,
         url: args.url || "/boutique/orders",
         icon: args.icon || "/icon-192x192.png",
         badge: args.badge || "/icon-192x192.png",
@@ -87,6 +89,7 @@ export const sendOrderPushToBoutique = internalAction({
     title: v.string(),
     body: v.string(),
     url: v.optional(v.string()),
+    netPayout: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const subscriptions = await ctx.runQuery(
@@ -106,6 +109,7 @@ export const sendOrderPushToBoutique = internalAction({
         subscription: sub.subscription,
         title: args.title,
         body: args.body,
+        netPayout: args.netPayout,
         url: args.url,
       });
     }

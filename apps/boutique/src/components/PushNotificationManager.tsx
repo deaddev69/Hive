@@ -17,6 +17,7 @@ interface AlarmPayload {
   body?: string;
   orderNumber?: string;
   url?: string;
+  netPayout?: number;
 }
 
 type AlertMode = "store" | "mobile";
@@ -164,10 +165,18 @@ export function PushNotificationManager({
   useEffect(() => {
     if (orders !== undefined) {
       if (prevOrderCountRef.current !== null && orders.length > prevOrderCountRef.current) {
-        console.log("[PushNotificationManager] New order detected via real-time query! Triggering alarm...");
+        const latest = orders[0];
+        let netPayout: number | undefined = undefined;
+        if (latest) {
+          const payoutPaise = latest.totalPayout ?? (latest.totalBasePrice ? Math.round(latest.totalBasePrice * 0.98) : Math.round((latest.total ?? 0) * 0.98));
+          netPayout = payoutPaise / 100;
+        }
+
+        console.log("[PushNotificationManager] New order detected via real-time query! Triggering alarm...", { netPayout });
         startOrderAlarm({
           title: "🚨 NEW ORDER RECEIVED!",
-          body: `A new order has been placed on your store.`,
+          body: `Order ${latest?.orderNumber || ""} placed for ${latest?.items?.length || 1} item(s).`,
+          netPayout,
         });
       }
       prevOrderCountRef.current = orders.length;
@@ -230,6 +239,7 @@ export function PushNotificationManager({
             startOrderAlarm({
               title: "🚨 NEW ORDER RECEIVED!",
               body: "Order #HIVE-TEST-001 • 1 Item",
+              netPayout: 1200.00,
             })
           }
           className="bg-zinc-900 hover:bg-black text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-lg border border-zinc-700 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
@@ -267,9 +277,18 @@ export function PushNotificationManager({
               {activeAlert?.body || "A customer just placed a new order."}
             </p>
 
-            {/* Price Badge */}
-            <div className="bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-2xl sm:text-3xl px-6 py-2.5 rounded-2xl shadow-xl border border-amber-200/50 mb-2">
-              NEW ORDER 🛍️
+            {/* Net Payout Badge */}
+            <div className="flex flex-col items-center gap-1.5 mb-2">
+              <div className="bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-2xl sm:text-3xl px-6 py-2.5 rounded-2xl shadow-xl border border-amber-200/50">
+                {activeAlert?.netPayout != null
+                  ? `NET PAYOUT: ₹${activeAlert.netPayout.toFixed(2)}`
+                  : "NEW ORDER 🛍️"}
+              </div>
+              {activeAlert?.netPayout != null && (
+                <span className="text-xs font-semibold text-slate-300/80 tracking-wide">
+                  (Net earnings credited to store after platform fee)
+                </span>
+              )}
             </div>
           </div>
 
