@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@convex/api";
-import { useAuth } from "@clerk/nextjs";
+import { useSessionStore } from "@/context/SessionContext";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -22,7 +22,8 @@ export function usePushSubscription() {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { userId } = useAuth();
+  const { user } = useSessionStore();
+  const userId = user?._id;
   const saveSubscription = useMutation(api.customerPush.saveCustomerPushSubscription);
 
   useEffect(() => {
