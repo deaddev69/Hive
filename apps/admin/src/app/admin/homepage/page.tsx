@@ -60,6 +60,8 @@ export default function AdminHomepageMerchandisingPage() {
   const createCol = useMutation(api.homepageAdmin.createCollection);
   const publishBlocks = useMutation(api.homepageAdmin.publishDraftBlocks);
   const updateBlock = useMutation(api.homepageAdmin.updateHomepageBlock);
+  const duplicateColMutation = useMutation(api.homepageAdmin.duplicateCollection);
+  const duplicateCampaignMutation = useMutation(api.homepageAdmin.duplicateCampaign);
 
   const handlePublishLive = async () => {
     try {
@@ -72,6 +74,11 @@ export default function AdminHomepageMerchandisingPage() {
       setIsPublishing(false);
     }
   };
+
+  // Operational Filters & Preview Controls
+  const [filterTab, setFilterTab] = useState<"all" | "editorial" | "automated" | "seasonal" | "draft" | "archived">("all");
+  const [devicePreview, setDevicePreview] = useState<"desktop" | "iphone" | "android">("iphone");
+  const [personaPreview, setPersonaPreview] = useState<"guest" | "logged_in">("guest");
 
   // Collection Selection & Merchandising State
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
@@ -124,58 +131,132 @@ export default function AdminHomepageMerchandisingPage() {
     setColImageUrl("");
   };
 
+  const filteredCollections = collections?.filter((c: any) => {
+    if (filterTab === "all") return true;
+    if (filterTab === "editorial") return c.type === "mood" || c.type === "going_out";
+    if (filterTab === "automated") return c.type === "trending";
+    if (filterTab === "seasonal") return c.type === "seasonal";
+    if (filterTab === "draft") return !c.isPublished;
+    if (filterTab === "archived") return c.isPublished === false;
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 p-6 space-y-6 text-slate-900 dark:text-zinc-100 select-none">
       
-      {/* ── Top Header ──────────────────────────────────────────────────────── */}
+      {/* ── Top Header & Operational Quick Actions ──────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-slate-200/80 dark:border-zinc-800 shadow-xs">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-amber-600 dark:text-amber-400 text-xs font-bold uppercase tracking-widest">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Curated Collections CMS</span>
+            <span>Operational Merchandising Studio</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight">
-            Homepage Merchandising Control Center
+            Experiences & Content Engine
           </h1>
           <p className="text-xs text-slate-500 dark:text-zinc-400">
-            Curate mood-based collections, occasion edits, and regional Kochi trends without touching code.
+            Curate collections, schedule marketing campaigns, and render dynamic customer experiences across PWA & push channels.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowColModal(true)}
+            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ New Collection</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setPreviewStatus(previewStatus === "draft" ? "published" : "draft")}
-            className={`px-4 py-2.5 font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer border ${
+            className={`px-3.5 py-2.5 font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer border ${
               previewStatus === "draft"
                 ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
                 : "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
             }`}
           >
-            <span>Preview Mode: {previewStatus.toUpperCase()}</span>
+            <span>Status: {previewStatus.toUpperCase()}</span>
           </button>
 
           <button
             type="button"
             onClick={handlePublishLive}
             disabled={isPublishing}
-            className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer disabled:opacity-50"
+            className="px-4 py-2.5 bg-slate-900 dark:bg-zinc-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer disabled:opacity-50 border border-slate-700"
           >
-            {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            <span>🚀 Publish Live to Production</span>
+            {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-400" />}
+            <span>Publish Live</span>
           </button>
 
           <button
             type="button"
             onClick={async () => {
               await seedStarter();
-              toast.success("Starter collections & blocks seeded successfully!");
+              toast.success("Hive Essentials collections & blocks imported successfully!");
             }}
-            className="px-3.5 py-2.5 bg-slate-900 dark:bg-zinc-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer border border-slate-700 hover:bg-slate-800"
+            className="px-3.5 py-2.5 bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition border border-zinc-700/60 cursor-pointer"
           >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Seed Starter Data</span>
+            <span>Import Hive Essentials</span>
           </button>
+        </div>
+      </div>
+
+      {/* ── Operational Status Filter Tabs & Persona Toolbar ──────────────────── */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-zinc-900 px-5 py-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800">
+        <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
+          {(["all", "editorial", "automated", "seasonal", "draft"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setFilterTab(tab)}
+              className={`px-3.5 py-1.5 text-xs font-bold rounded-xl capitalize transition cursor-pointer ${
+                filterTab === tab
+                  ? "bg-amber-500 text-slate-950 shadow-xs"
+                  : "text-zinc-400 hover:text-white hover:bg-zinc-800/60"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3 text-xs font-semibold text-zinc-400">
+          <div className="flex items-center gap-1 bg-zinc-800/80 p-1 rounded-xl border border-zinc-700/60">
+            <button
+              type="button"
+              onClick={() => setDevicePreview("iphone")}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${devicePreview === "iphone" ? "bg-amber-500/20 text-amber-400" : "hover:text-white"}`}
+            >
+              iPhone
+            </button>
+            <button
+              type="button"
+              onClick={() => setDevicePreview("desktop")}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${devicePreview === "desktop" ? "bg-amber-500/20 text-amber-400" : "hover:text-white"}`}
+            >
+              Desktop
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1 bg-zinc-800/80 p-1 rounded-xl border border-zinc-700/60">
+            <button
+              type="button"
+              onClick={() => setPersonaPreview("guest")}
+              className={`px-2 py-1 text-[11px] font-bold rounded-lg transition ${personaPreview === "guest" ? "bg-emerald-500/20 text-emerald-400" : "hover:text-white"}`}
+            >
+              Guest
+            </button>
+            <button
+              type="button"
+              onClick={() => setPersonaPreview("logged_in")}
+              className={`px-2 py-1 text-[11px] font-bold rounded-lg transition ${personaPreview === "logged_in" ? "bg-emerald-500/20 text-emerald-400" : "hover:text-white"}`}
+            >
+              Logged In
+            </button>
+          </div>
         </div>
       </div>
 
@@ -194,7 +275,7 @@ export default function AdminHomepageMerchandisingPage() {
           </div>
 
           <div className="space-y-2 max-h-[680px] overflow-y-auto pr-1">
-            {collections?.map((col: any) => (
+            {filteredCollections?.map((col: any) => (
               <div
                 key={col._id}
                 onClick={() => setSelectedCollectionId(col._id)}

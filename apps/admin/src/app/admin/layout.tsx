@@ -19,6 +19,15 @@ const NAV_GROUPS = [
     ]
   },
   {
+    title: "MERCHANDISING",
+    items: [
+      { label: "Experiences", href: "/admin/homepage", icon: Sparkles },
+      { label: "Collections", href: "/admin/homepage?tab=collections", icon: FolderKanban },
+      { label: "Campaigns", href: "/admin/homepage?tab=campaigns", icon: Send },
+      { label: "Banners", href: "/admin/banners", icon: ImageIcon },
+    ]
+  },
+  {
     title: "OPERATIONS",
     items: [
       { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
@@ -28,7 +37,6 @@ const NAV_GROUPS = [
       { label: "Settlements", href: "/admin/settlements", icon: Landmark },
       { label: "Payouts", href: "/admin/payouts", icon: CreditCard },
       { label: "Logistics", href: "/admin/logistics", icon: Truck },
-      { label: "Dispatch Board", href: "/admin/logistics/dispatch", icon: Send },
     ]
   },
   {
@@ -41,9 +49,7 @@ const NAV_GROUPS = [
     title: "PLATFORM",
     items: [
       { label: "Users", href: "/admin/users", icon: Users },
-      { label: "Homepage CMS", href: "/admin/homepage", icon: Sparkles },
       { label: "Categories", href: "/admin/categories", icon: FolderKanban },
-      { label: "Banners", href: "/admin/banners", icon: ImageIcon },
       { label: "Platform Config", href: "/admin/settings", icon: LayoutDashboard },
     ]
   }

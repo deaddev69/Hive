@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAction } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { Send, Upload, X, Sparkles, CheckCircle2, Link2, AlertTriangle, Image as ImageIcon } from "lucide-react";
+import { Send, Upload, X, Sparkles, CheckCircle2, Link2, AlertTriangle, Layers, FolderKanban } from "lucide-react";
 
 interface BroadcastCampaignModalProps {
   isOpen: boolean;
@@ -21,42 +21,20 @@ export function BroadcastCampaignModal({ isOpen, onClose }: BroadcastCampaignMod
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
 
+  const collections = useQuery(api.homepageAdmin.getAllHomepageCollections);
   const broadcastNotification = useAction(api.customerPushActions.broadcastCustomerNotification);
 
   if (!isOpen) return null;
 
-  // Preset Campaign Templates
-  const presets = [
-    {
-      name: "🔥 New Stock Alert",
-      title: "Fresh Kerala Handloom Styles Just Uploaded!",
-      body: "Discover breathable linens & silk sarees from local Kochi boutiques.",
-      link: "/collections/fresh-on-hive",
-    },
-    {
-      name: "✨ Flash Sale",
-      title: "Flash Sale: Up to 40% OFF Selected Styles!",
-      body: "Limited time offer on trending boutique collections across Kochi.",
-      link: "/collections/under-999",
-    },
-    {
-      name: "🚚 Express Delivery",
-      title: "Need An Outfit Today? Same-Day Delivery Active!",
-      body: "Order before 2 PM for 2-hour doorstep trial & delivery in Kochi.",
-      link: "/collections/going-out-today",
-    },
-    {
-      name: "👑 Wedding Luxe",
-      title: "Kochi Festive & Wedding Luxe Curation '26",
-      body: "Handcrafted Zari sarees, bridal organzas & designer sherwanis.",
-      link: "/collections/wedding-season",
-    },
-  ];
+  // Attach existing collection to push notification
+  const handleAttachCollection = (colId: string) => {
+    const col = collections?.find((c: any) => c._id === colId);
+    if (!col) return;
 
-  const applyPreset = (preset: typeof presets[0]) => {
-    setTitle(preset.title);
-    setBody(preset.body);
-    setTargetUrl(preset.link);
+    setTitle(col.title);
+    setBody(col.subtitle || `Explore the curated ${col.title} collection on Hive.`);
+    setTargetUrl(`/collections/${col.slug}`);
+    if (col.imageUrl) setBannerUrl(col.imageUrl);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,20 +122,30 @@ export function BroadcastCampaignModal({ isOpen, onClose }: BroadcastCampaignMod
           </div>
         </div>
 
-        {/* Presets Bar */}
+        {/* Attach Collection / Campaign Library */}
         <div className="mt-3 space-y-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">1-Click Campaign Presets</span>
-          <div className="flex flex-wrap gap-1.5">
-            {presets.map((p, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => applyPreset(p)}
-                className="px-2.5 py-1 bg-zinc-800 hover:bg-amber-500/20 hover:border-amber-500/40 text-zinc-300 hover:text-amber-300 text-[11px] font-semibold rounded-lg border border-zinc-700/60 transition cursor-pointer"
-              >
-                {p.name}
-              </button>
-            ))}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1">
+              <FolderKanban className="w-3 h-3 text-amber-400" /> Attach Collection / Campaign
+            </span>
+            <span className="text-[10px] text-zinc-500">Auto-fills metadata & banner</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+            {collections && collections.length > 0 ? (
+              collections.map((col: any) => (
+                <button
+                  key={col._id}
+                  type="button"
+                  onClick={() => handleAttachCollection(col._id)}
+                  className="px-2.5 py-1 bg-zinc-800 hover:bg-amber-500/20 hover:border-amber-500/40 text-zinc-200 hover:text-amber-300 text-[11px] font-medium rounded-lg border border-zinc-700/60 transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>{col.emoji || "📁"}</span>
+                  <span>{col.title}</span>
+                </button>
+              ))
+            ) : (
+              <span className="text-xs text-zinc-500">No active collections found.</span>
+            )}
           </div>
         </div>
 

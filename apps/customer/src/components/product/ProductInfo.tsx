@@ -198,14 +198,23 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       </div>
 
       {/* ── SECTION 5: TRUST REASSURANCE ── */}
-      <div className="border-t border-stone-100 pt-4 mt-3 py-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase select-none">
-        <span className={!isReturnsAccepted ? "text-red-700 font-extrabold" : "text-emerald-700 font-extrabold"}>
-          {!isReturnsAccepted ? "🔒 Final Sale — No Voluntary Returns" : "🛡️ 24h Easy Returns Accepted"}
+      <div className="border-t border-stone-100 pt-4 mt-3 py-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold tracking-wider text-stone-600 uppercase select-none">
+        <span className="flex items-center gap-1.5">
+          <RotateCcw className="w-3.5 h-3.5 text-stone-500" />
+          <span className={!isReturnsAccepted ? "text-stone-700 font-bold" : "text-stone-800 font-extrabold"}>
+            {!isReturnsAccepted ? "Final Sale — Defect & Wrong Item Covered" : "1-Day Easy Return Window"}
+          </span>
         </span>
         <span className="text-stone-300">•</span>
-        <span>{product.sameDayEligible ? "Same-Day Delivery" : "Express Delivery"}</span>
+        <span className="flex items-center gap-1.5">
+          <Truck className="w-3.5 h-3.5 text-stone-500" />
+          <span>{product.sameDayEligible ? "Same-Day Delivery" : "Express Delivery"}</span>
+        </span>
         <span className="text-stone-300">•</span>
-        <span>Secure checkout</span>
+        <span className="flex items-center gap-1.5">
+          <ShieldCheck className="w-3.5 h-3.5 text-stone-500" />
+          <span>Verified Partner</span>
+        </span>
       </div>
 
       {/* ── SECTION 6: ACCORDIONS (Product Details, Wash & Care, Delivery & Returns) ── */}

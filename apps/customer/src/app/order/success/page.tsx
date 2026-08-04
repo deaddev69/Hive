@@ -199,7 +199,7 @@ function OrderSuccessContent() {
             <div className="p-4 bg-white border border-slate-200/80 rounded-2xl flex items-center justify-between text-[11px] text-slate-500 font-medium">
               <span className="flex items-center gap-1.5">
                 <RotateCcw className="w-3.5 h-3.5 text-slate-700" />
-                <span>3-Day Easy Returns</span>
+                <span>1-Day Easy Returns</span>
               </span>
               <span className="text-slate-300">•</span>
               <span className="flex items-center gap-1.5">

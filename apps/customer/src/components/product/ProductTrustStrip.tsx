@@ -73,15 +73,17 @@ export const TrustCard: React.FC<TrustCardProps> = ({
 interface ProductTrustStripProps {
   videoUrl?: string;
   sameDayEligible: boolean;
+  returnsAccepted?: boolean;
   className?: string;
 }
 
 export const ProductTrustStrip: React.FC<ProductTrustStripProps> = ({
   videoUrl,
   sameDayEligible,
+  returnsAccepted = true,
   className = "",
 }) => {
-  // Construct dynamic list of trust signals
+  // Construct dynamic list of trust signals based on seller product settings
   const signals = [
     {
       icon: Ruler,
@@ -97,8 +99,10 @@ export const ProductTrustStrip: React.FC<ProductTrustStripProps> = ({
     },
     {
       icon: RefreshCw,
-      title: "3-Day Returns",
-      description: "Return requests accepted within 3 days of delivery according to our Platform Return and Refund Policy.",
+      title: returnsAccepted ? "1-Day Easy Returns" : "Final Sale",
+      description: returnsAccepted
+        ? "Return request accepted within 24 hours of delivery according to seller boutique policy."
+        : "Covered strictly for manufacturing defects or wrong item delivered.",
       show: true,
     },
     {

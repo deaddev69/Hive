@@ -541,4 +541,94 @@ export const seedDefaultHomepageData = mutation({
   },
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// DUPLICATE COLLECTION & CAMPAIGN MUTATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const duplicateCollection = mutation({
+  args: { id: v.string() },
+  handler: async (ctx, args) => {
+    let col: any = null;
+    try {
+      col = await ctx.db.get(args.id as any);
+    } catch {
+      col = null;
+    }
+
+    if (!col) return null;
+
+    const now = Date.now();
+    const newSlug = `${col.slug}-copy-${Math.random().toString(36).substring(7)}`;
+
+    let newColId: string;
+    if (col.name !== undefined) {
+      newColId = (await ctx.db.insert("collections", {
+        name: `${col.name} (Copy)`,
+        slug: newSlug,
+        description: col.description,
+        imageUrl: col.imageUrl,
+        emoji: col.emoji,
+        sourceMode: col.sourceMode,
+        rules: col.rules,
+        isPublished: false,
+        createdAt: now,
+      })).toString();
+    } else {
+      newColId = (await ctx.db.insert("homepageCollections", {
+        title: `${col.title} (Copy)`,
+        subtitle: col.subtitle,
+        emoji: col.emoji,
+        imageUrl: col.imageUrl,
+        slug: newSlug,
+        type: col.type,
+        sortOrder: (col.sortOrder || 1) + 1,
+        isPublished: false,
+        createdAt: now,
+      })).toString();
+    }
+
+    // Duplicate mapped collection items
+    const items = await ctx.db
+      .query("collectionProducts")
+      .withIndex("by_collection_sort", (q) => q.eq("collectionId", args.id))
+      .collect();
+
+    for (const item of items) {
+      await ctx.db.insert("collectionProducts", {
+        collectionId: newColId,
+        productId: item.productId,
+        sortOrder: item.sortOrder,
+        isPinned: item.isPinned,
+        isFeatured: item.isFeatured,
+        addedAt: now,
+      });
+    }
+
+    return newColId;
+  },
+});
+
+export const duplicateCampaign = mutation({
+  args: { id: v.id("heroCampaigns") },
+  handler: async (ctx, args) => {
+    const campaign = await ctx.db.get(args.id);
+    if (!campaign) return null;
+
+    const now = Date.now();
+    return await ctx.db.insert("heroCampaigns", {
+      title: `${campaign.title} (Copy)`,
+      subtitle: campaign.subtitle,
+      imageUrl: campaign.imageUrl,
+      ctaText: campaign.ctaText,
+      ctaUrl: campaign.ctaUrl,
+      priority: campaign.priority,
+      startDate: now,
+      endDate: campaign.endDate,
+      isPublished: false,
+      createdAt: now,
+    });
+  },
+});
+
+
 
