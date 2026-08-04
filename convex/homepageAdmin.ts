@@ -312,6 +312,83 @@ export const upsertProductMetadata = mutation({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// HOMEPAGE BLOCKS ADMIN MANAGEMENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getAllHomepageBlocks = query({
+  args: { status: v.optional(v.union(v.literal("draft"), v.literal("published"))) },
+  handler: async (ctx, args) => {
+    const targetStatus = args.status ?? "draft";
+    return await ctx.db
+      .query("homepageBlocks")
+      .withIndex("by_status_sort", (q) => q.eq("status", targetStatus))
+      .collect();
+  },
+});
+
+export const updateHomepageBlock = mutation({
+  args: {
+    id: v.id("homepageBlocks"),
+    title: v.optional(v.string()),
+    subtitle: v.optional(v.string()),
+    sortOrder: v.optional(v.number()),
+    status: v.optional(v.union(v.literal("draft"), v.literal("published"))),
+    config: v.optional(
+      v.object({
+        collectionId: v.optional(v.string()),
+        bannerId: v.optional(v.string()),
+        maxProducts: v.optional(v.number()),
+        showSeeAll: v.optional(v.boolean()),
+        theme: v.optional(v.string()),
+        spacing: v.optional(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    await ctx.db.patch(id, updates);
+  },
+});
+
+export const toggleBlockStatus = mutation({
+  args: { id: v.id("homepageBlocks"), status: v.union(v.literal("draft"), v.literal("published")) },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { status: args.status });
+  },
+});
+
+export const publishDraftBlocks = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const draftBlocks = await ctx.db
+      .query("homepageBlocks")
+      .withIndex("by_status_sort", (q) => q.eq("status", "draft"))
+      .collect();
+
+    // Delete current published blocks
+    const publishedBlocks = await ctx.db
+      .query("homepageBlocks")
+      .withIndex("by_status_sort", (q) => q.eq("status", "published"))
+      .collect();
+
+    for (const pb of publishedBlocks) {
+      await ctx.db.delete(pb._id);
+    }
+
+    // Clone draft blocks to published status
+    for (const db of draftBlocks) {
+      const { _id, _creationTime, ...blockData } = db;
+      await ctx.db.insert("homepageBlocks", {
+        ...blockData,
+        status: "published",
+      });
+    }
+
+    return draftBlocks.length;
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SEED STARTER HOMEPAGE DATA
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -351,73 +428,48 @@ export const seedDefaultHomepageData = mutation({
       });
     }
 
-    // 2. Seed Homepage Collections if empty
-    const existingCols = await ctx.db.query("homepageCollections").collect();
-    if (existingCols.length === 0) {
-      // Moods
-      const moods = [
-        { title: "Feeling Cute", emoji: "✨" },
-        { title: "Boss Mode", emoji: "💼" },
-        { title: "Minimal Luxe", emoji: "🌿" },
-        { title: "Coffee Date", emoji: "☕" },
+    // 2. Seed Default Blocks if empty
+    const existingBlocks = await ctx.db.query("homepageBlocks").collect();
+    if (existingBlocks.length === 0) {
+      const defaultBlocks = [
+        { blockKey: "hero_main", title: "Hero Carousel", blockType: "hero" as const, renderer: "productCarousel" as const, sortOrder: 1 },
+        { blockKey: "categories_strip", title: "Shop By Category", blockType: "category" as const, renderer: "largeCards" as const, sortOrder: 2 },
+        { blockKey: "trending_kochi", title: "Trending in Kochi", subtitle: "Most requested styles across Panampilly Nagar, Edappally & Kakkanad.", blockType: "collection" as const, renderer: "productCarousel" as const, sortOrder: 3 },
+        { blockKey: "fresh_arrivals", title: "Fresh on Hive", subtitle: "New styles added today by verified boutique partners.", blockType: "collection" as const, renderer: "productCarousel" as const, sortOrder: 4 },
+        { blockKey: "going_out", title: "Going Out Today?", subtitle: "Evening co-ords, statement mini dresses & luxury accessories.", blockType: "collection" as const, renderer: "productCarousel" as const, sortOrder: 5 },
+        { blockKey: "seasonal_highlight", title: "Wedding & Festive Curation '26", subtitle: "Handcrafted Zari sarees, bridal organzas & designer sherwanis.", blockType: "collection" as const, renderer: "editorialGrid" as const, sortOrder: 6 },
+        { blockKey: "recently_viewed", title: "Recently Viewed & Recommended", blockType: "recentlyViewed" as const, renderer: "productCarousel" as const, sortOrder: 7 },
+        { blockKey: "trust_strip", title: "Why Shop on Hive", blockType: "trust" as const, renderer: "largeCards" as const, sortOrder: 8 },
       ];
 
-      for (const m of moods) {
-        await ctx.db.insert("homepageCollections", {
-          title: m.title,
-          subtitle: `Curated ${m.title} outfits`,
-          emoji: m.emoji,
-          slug: m.title.toLowerCase().replace(/\s+/g, "-"),
-          type: "mood",
-          sortOrder: moods.indexOf(m) + 1,
-          isPublished: true,
-          createdAt: now,
+      for (const b of defaultBlocks) {
+        // Insert both published & draft versions
+        await ctx.db.insert("homepageBlocks", {
+          blockKey: b.blockKey,
+          title: b.title,
+          subtitle: b.subtitle,
+          blockType: b.blockType,
+          renderer: b.renderer,
+          config: {},
+          sortOrder: b.sortOrder,
+          status: "published",
+        });
+
+        await ctx.db.insert("homepageBlocks", {
+          blockKey: b.blockKey,
+          title: b.title,
+          subtitle: b.subtitle,
+          blockType: b.blockType,
+          renderer: b.renderer,
+          config: {},
+          sortOrder: b.sortOrder,
+          status: "draft",
         });
       }
-
-      // Occasions
-      const occasions = [
-        { title: "Office & Workwear", subtitle: "Tailored blazers, linen trousers & crisp shirts" },
-        { title: "Brunch & Cafe", subtitle: "Floaty sundresses, pastel sets & tote bags" },
-        { title: "Date Night", subtitle: "Silk slips, bodycon dresses & statement jewelry" },
-      ];
-
-      for (const o of occasions) {
-        await ctx.db.insert("homepageCollections", {
-          title: o.title,
-          subtitle: o.subtitle,
-          slug: o.title.toLowerCase().replace(/\s+/g, "-"),
-          type: "occasion",
-          sortOrder: occasions.indexOf(o) + 1,
-          isPublished: true,
-          createdAt: now,
-        });
-      }
-
-      // Trending in Kochi
-      await ctx.db.insert("homepageCollections", {
-        title: "Trending in Kochi",
-        subtitle: "Most requested styles across Panampilly Nagar & Edappally",
-        slug: "trending-in-kochi",
-        type: "trending",
-        sortOrder: 1,
-        isPublished: true,
-        createdAt: now,
-      });
-
-      // Going Out Today
-      await ctx.db.insert("homepageCollections", {
-        title: "Going Out Today",
-        subtitle: "Evening co-ords & party edit",
-        slug: "going-out-today",
-        type: "going_out",
-        sortOrder: 1,
-        isPublished: true,
-        createdAt: now,
-      });
     }
 
     return true;
   },
 });
+
 

@@ -2003,7 +2003,7 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_published_priority", ["isPublished", "priority"]),
 
-  // ─── HOMEPAGE V2: CURATED COLLECTIONS ──────────────────────────────────────
+  // ─── HOMEPAGE V2: CURATED COLLECTIONS (LEGACY REFACTORED) ──────────────────
   homepageCollections: defineTable({
     title: v.string(),
     subtitle: v.optional(v.string()),
@@ -2024,16 +2024,88 @@ export default defineSchema({
     .index("by_type_published", ["type", "isPublished", "sortOrder"])
     .index("by_slug", ["slug"]),
 
+  // ─── PLATFORM MERCHANDISING: REUSABLE COLLECTIONS ENGINE ──────────────────
+  collections: defineTable({
+    name: v.string(),
+    slug: v.string(),
+    description: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    emoji: v.optional(v.string()),
+    sourceMode: v.union(v.literal("MANUAL"), v.literal("RULE"), v.literal("HYBRID")),
+    rules: v.optional(v.array(v.object({
+      field: v.string(),
+      operator: v.union(v.literal("="), v.literal("!="), v.literal(">"), v.literal("<"), v.literal(">="), v.literal("<="), v.literal("contains"), v.literal("in"), v.literal("between")),
+      value: v.any(),
+    }))),
+    isPublished: v.boolean(),
+    isArchived: v.optional(v.boolean()),
+    createdAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_published", ["isPublished"]),
+
   // ─── HOMEPAGE V2: COLLECTION PRODUCTS MAPPING ──────────────────────────────
   collectionProducts: defineTable({
-    collectionId: v.id("homepageCollections"),
+    collectionId: v.string(),
     productId: v.id("products"),
     sortOrder: v.number(),
+    isFeatured: v.optional(v.boolean()),
     isPinned: v.optional(v.boolean()),
     addedAt: v.number(),
   })
     .index("by_collection_sort", ["collectionId", "sortOrder"])
     .index("by_productId", ["productId"]),
+
+  // ─── MERCHANDISING: REUSABLE BANNER ASSETS ─────────────────────────────────
+  bannerAssets: defineTable({
+    name: v.string(),
+    desktopImageUrl: v.string(),
+    mobileImageUrl: v.string(),
+    ctaText: v.optional(v.string()),
+    ctaLink: v.string(),
+    placements: v.array(v.string()),
+    isPublished: v.boolean(),
+    isArchived: v.optional(v.boolean()),
+    createdAt: v.number(),
+  }).index("by_published", ["isPublished"]),
+
+  // ─── MERCHANDISING: HOMEPAGE DYNAMIC BLOCKS ────────────────────────────────
+  homepageBlocks: defineTable({
+    blockKey: v.string(),
+    title: v.optional(v.string()),
+    subtitle: v.optional(v.string()),
+    blockType: v.union(
+      v.literal("hero"),
+      v.literal("category"),
+      v.literal("collection"),
+      v.literal("banner"),
+      v.literal("recentlyViewed"),
+      v.literal("trust")
+    ),
+    renderer: v.optional(v.union(
+      v.literal("productCarousel"),
+      v.literal("largeCards"),
+      v.literal("moodGrid"),
+      v.literal("occasionGrid"),
+      v.literal("editorialGrid")
+    )),
+    config: v.object({
+      collectionId: v.optional(v.string()),
+      bannerId: v.optional(v.string()),
+      maxProducts: v.optional(v.number()),
+      showSeeAll: v.optional(v.boolean()),
+      theme: v.optional(v.string()),
+      spacing: v.optional(v.string()),
+    }),
+    sortOrder: v.number(),
+    priority: v.optional(v.number()),
+    visibility: v.optional(v.union(v.literal("Everyone"), v.literal("Guests"), v.literal("LoggedIn"))),
+    status: v.union(v.literal("draft"), v.literal("published")),
+    startDate: v.optional(v.number()),
+    endDate: v.optional(v.number()),
+  })
+    .index("by_status_sort", ["status", "sortOrder"])
+    .index("by_blockKey", ["blockKey"]),
 
   // ─── HOMEPAGE V2: PRODUCT METADATA ENRICHMENT ──────────────────────────────
   productMetadata: defineTable({

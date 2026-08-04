@@ -141,3 +141,106 @@ export const getRecentlyViewed = query({
     return validProducts;
   },
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HOMEPAGE MERCHANDISING SERVICE: RESOLVER LAYER
+// Decouples database schema, rule execution, and joins from React frontend renderer.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getActiveHomepageBlocks = query({
+  args: { status: v.optional(v.union(v.literal("draft"), v.literal("published"))) },
+  handler: async (ctx, args) => {
+    const targetStatus = args.status ?? "published";
+    const now = Date.now();
+
+    const blocks = await ctx.db
+      .query("homepageBlocks")
+      .withIndex("by_status_sort", (q) => q.eq("status", targetStatus))
+      .collect();
+
+    // Filter valid dates & sort by sortOrder
+    const activeBlocks = blocks
+      .filter((b) => (!b.startDate || b.startDate <= now) && (!b.endDate || b.endDate >= now))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+
+    // Resolve View Models for each block
+    const resolvedBlocks = await Promise.all(
+      activeBlocks.map(async (block) => {
+        let products: any[] = [];
+        let banner: any = null;
+        let heroCampaigns: any[] = [];
+
+        if (block.blockType === "hero") {
+          heroCampaigns = await ctx.db
+            .query("heroCampaigns")
+            .withIndex("by_published_priority", (q) => q.eq("isPublished", true))
+            .collect();
+          heroCampaigns = heroCampaigns
+            .filter((c) => (!c.startDate || c.startDate <= now) && (!c.endDate || c.endDate >= now) && !c.isArchived)
+            .sort((a, b) => b.priority - a.priority);
+        } else if (block.blockType === "banner" && block.config.bannerId) {
+          try {
+            banner = await ctx.db.get(block.config.bannerId as any);
+          } catch {
+            banner = null;
+          }
+        } else if (block.blockType === "collection") {
+          let collection: any = null;
+          if (block.config.collectionId) {
+            try {
+              collection = await ctx.db.get(block.config.collectionId as any);
+            } catch {
+              collection = null;
+            }
+          }
+
+          if (collection) {
+            const mappings = await ctx.db
+              .query("collectionProducts")
+              .withIndex("by_collection_sort", (q) => q.eq("collectionId", collection._id.toString()))
+              .take(block.config.maxProducts || 20);
+
+            const fetchedProds = await Promise.all(
+              mappings.map(async (m) => {
+                const p = await ctx.db.get(m.productId);
+                if (!p) return null;
+                return {
+                  ...p,
+                  isFeatured: m.isFeatured || m.isPinned,
+                  sortOrder: m.sortOrder,
+                };
+              })
+            );
+            products = fetchedProds.filter(Boolean);
+          }
+
+          // Fallback to active catalog items if collection is empty
+          if (products.length === 0) {
+            products = await ctx.db
+              .query("products")
+              .withIndex("by_active", (q) => q.eq("active", true))
+              .order("desc")
+              .take(block.config.maxProducts || 12);
+          }
+        }
+
+        return {
+          _id: block._id,
+          blockKey: block.blockKey,
+          title: block.title,
+          subtitle: block.subtitle,
+          blockType: block.blockType,
+          renderer: block.renderer || "productCarousel",
+          config: block.config,
+          sortOrder: block.sortOrder,
+          products,
+          banner,
+          heroCampaigns,
+        };
+      })
+    );
+
+    return resolvedBlocks;
+  },
+});
+

@@ -20,6 +20,8 @@ import { formatCurrency, toast } from "@hive/utils";
 
 export default function AdminHomepageMerchandisingPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewStatus, setPreviewStatus] = useState<"draft" | "published">("draft");
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const handleFileUploadToR2 = async (file: File): Promise<string | null> => {
     try {
@@ -49,11 +51,27 @@ export default function AdminHomepageMerchandisingPage() {
 
   // Queries
   const collections = useQuery(api.homepageAdmin.getAllHomepageCollections);
+  const blocks = useQuery(api.homepageAdmin.getAllHomepageBlocks, { status: previewStatus });
+  const livePreviewBlocks = useQuery(api.homepage.getActiveHomepageBlocks, { status: previewStatus });
 
   // Mutations
   const seedStarter = useMutation(api.homepageAdmin.seedDefaultHomepageData);
   const deleteCol = useMutation(api.homepageAdmin.deleteCollection);
   const createCol = useMutation(api.homepageAdmin.createCollection);
+  const publishBlocks = useMutation(api.homepageAdmin.publishDraftBlocks);
+  const updateBlock = useMutation(api.homepageAdmin.updateHomepageBlock);
+
+  const handlePublishLive = async () => {
+    try {
+      setIsPublishing(true);
+      const count = await publishBlocks({});
+      toast.success(`Published ${count} homepage blocks live to production! 🚀`);
+    } catch (err: any) {
+      toast.error("Failed to publish blocks: " + err.message);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
 
   // Collection Selection & Merchandising State
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
@@ -127,23 +145,36 @@ export default function AdminHomepageMerchandisingPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={async () => {
-              await seedStarter();
-              toast.success("Starter collections seeded successfully!");
-            }}
-            className="px-4 py-2.5 bg-slate-900 dark:bg-zinc-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer border border-slate-700 hover:bg-slate-800"
+            onClick={() => setPreviewStatus(previewStatus === "draft" ? "published" : "draft")}
+            className={`px-4 py-2.5 font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer border ${
+              previewStatus === "draft"
+                ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
+                : "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+            }`}
           >
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Seed Starter Collections</span>
+            <span>Preview Mode: {previewStatus.toUpperCase()}</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setShowColModal(true)}
-            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
+            onClick={handlePublishLive}
+            disabled={isPublishing}
+            className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer disabled:opacity-50"
           >
-            <Plus className="w-4 h-4" />
-            <span>New Collection</span>
+            {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            <span>🚀 Publish Live to Production</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              await seedStarter();
+              toast.success("Starter collections & blocks seeded successfully!");
+            }}
+            className="px-3.5 py-2.5 bg-slate-900 dark:bg-zinc-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer border border-slate-700 hover:bg-slate-800"
+          >
+            <Sparkles className="w-4 h-4 text-amber-400" />
+            <span>Seed Starter Data</span>
           </button>
         </div>
       </div>
