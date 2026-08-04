@@ -247,9 +247,11 @@ export const reorderCollectionProducts = mutation({
 
     for (let index = 0; index < args.orderedProductIds.length; index++) {
       const pId = args.orderedProductIds[index];
-      const mapping = mappingMap.get(pId);
-      if (mapping) {
-        await ctx.db.patch(mapping._id, { sortOrder: index });
+      if (pId) {
+        const mapping = mappingMap.get(pId);
+        if (mapping) {
+          await ctx.db.patch(mapping._id, { sortOrder: index });
+        }
       }
     }
   },
@@ -360,8 +362,7 @@ export const seedDefaultHomepageData = mutation({
         { title: "Coffee Date", emoji: "☕", imageUrl: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=600&q=80" },
       ];
 
-      for (let i = 0; i < moods.length; i++) {
-        const m = moods[i];
+      for (const m of moods) {
         await ctx.db.insert("homepageCollections", {
           title: m.title,
           subtitle: `Curated ${m.title} outfits`,
@@ -369,7 +370,7 @@ export const seedDefaultHomepageData = mutation({
           imageUrl: m.imageUrl,
           slug: m.title.toLowerCase().replace(/\s+/g, "-"),
           type: "mood",
-          sortOrder: i + 1,
+          sortOrder: moods.indexOf(m) + 1,
           isPublished: true,
           createdAt: now,
         });
@@ -382,15 +383,14 @@ export const seedDefaultHomepageData = mutation({
         { title: "Date Night", subtitle: "Silk slips, bodycon dresses & statement jewelry", imageUrl: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80" },
       ];
 
-      for (let i = 0; i < occasions.length; i++) {
-        const o = occasions[i];
+      for (const o of occasions) {
         await ctx.db.insert("homepageCollections", {
           title: o.title,
           subtitle: o.subtitle,
           imageUrl: o.imageUrl,
           slug: o.title.toLowerCase().replace(/\s+/g, "-"),
           type: "occasion",
-          sortOrder: i + 1,
+          sortOrder: occasions.indexOf(o) + 1,
           isPublished: true,
           createdAt: now,
         });

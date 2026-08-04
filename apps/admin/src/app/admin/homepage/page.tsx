@@ -18,6 +18,8 @@ import {
   Tag,
   CheckCircle2,
   Calendar,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -25,6 +27,33 @@ import { formatCurrency, toast } from "@hive/utils";
 
 export default function AdminHomepageMerchandisingPage() {
   const [activeTab, setActiveTab] = useState<"campaigns" | "collections" | "metadata">("campaigns");
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleFileUploadToR2 = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingImage(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload/r2", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Failed to upload file to R2");
+      }
+
+      toast.success("Image saved to Cloudflare R2!");
+      return data.url;
+    } catch (err: any) {
+      toast.error(err.message || "Failed to upload image");
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   // Queries
   const heroCampaigns = useQuery(api.homepageAdmin.getAllHeroCampaigns);
@@ -467,14 +496,38 @@ export default function AdminHomepageMerchandisingPage() {
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 dark:text-zinc-300 mb-1">Image URL</label>
+                <label className="block font-bold text-slate-700 dark:text-zinc-300 mb-1">
+                  Campaign Banner Image (Cloudflare R2)
+                </label>
+                <div className="flex gap-2 items-center mb-1.5">
+                  <label className="flex-1 cursor-pointer flex items-center justify-center gap-1.5 p-2.5 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl transition">
+                    {uploadingImage ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    <span>{uploadingImage ? "Uploading to R2..." : "Upload Image to Cloudflare R2"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const url = await handleFileUploadToR2(file);
+                          if (url) setCampaignImageUrl(url);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
                 <input
                   type="url"
                   required
                   value={campaignImageUrl}
                   onChange={(e) => setCampaignImageUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full p-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl"
+                  placeholder="Or paste external image URL..."
+                  className="w-full p-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl font-mono text-[11px]"
                 />
               </div>
 
