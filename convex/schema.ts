@@ -1961,4 +1961,31 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_endpoint", ["subscription.endpoint"]),
 
+  // ─── CUSTOMER PUSH SUBSCRIPTIONS ──────────────────────────────────────────
+  customerPushSubscriptions: defineTable({
+    userId: v.optional(v.id("users")),
+    subscription: v.object({
+      endpoint: v.string(),
+      expirationTime: v.optional(v.union(v.number(), v.null())),
+      keys: v.object({
+        p256dh: v.string(),
+        auth: v.string(),
+      }),
+    }),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_endpoint", ["subscription.endpoint"]),
+
+  // ─── PWA APP INSTALL ANALYTICS ─────────────────────────────────────────────
+  pwaInstalls: defineTable({
+    userId: v.optional(v.id("users")),
+    deviceId: v.string(),
+    platform: v.string(),
+    userAgent: v.string(),
+    installedAt: v.number(),
+  })
+    .index("by_deviceId", ["deviceId"])
+    .index("by_installedAt", ["installedAt"]),
 });

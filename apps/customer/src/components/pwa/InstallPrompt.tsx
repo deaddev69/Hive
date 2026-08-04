@@ -1,9 +1,11 @@
 "use client";
 import React, { useState } from "react";
 import { usePWAInstallation } from "../../hooks/usePWAInstallation";
+import { useTrackPWAInstall } from "../../hooks/useTrackPWAInstall";
 import { HiveLogo } from "@/components/shared/HiveLogo";
 
 export function InstallPrompt() {
+  useTrackPWAInstall();
   const { showPrompt, handleDismiss, handleInstall, isIOS } = usePWAInstallation();
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
