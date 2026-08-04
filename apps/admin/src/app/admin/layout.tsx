@@ -5,7 +5,7 @@ import { useAuth, SignOutButton, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, Loader2, ShieldX, Users, ShoppingBag, Activity, ShieldAlert, Package, DollarSign, Landmark, CreditCard, Truck, Send } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, Loader2, ShieldX, Users, ShoppingBag, Activity, ShieldAlert, Package, DollarSign, Landmark, CreditCard, Truck, Send, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@hive/ui";
 import { HiveLogo } from "@/components/shared/HiveLogo";
@@ -41,6 +41,7 @@ const NAV_GROUPS = [
     title: "PLATFORM",
     items: [
       { label: "Users", href: "/admin/users", icon: Users },
+      { label: "Homepage CMS", href: "/admin/homepage", icon: Sparkles },
       { label: "Categories", href: "/admin/categories", icon: FolderKanban },
       { label: "Banners", href: "/admin/banners", icon: ImageIcon },
       { label: "Platform Config", href: "/admin/settings", icon: LayoutDashboard },
