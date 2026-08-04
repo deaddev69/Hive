@@ -23,7 +23,6 @@ const NAV_GROUPS = [
     items: [
       { label: "Experiences", href: "/admin/homepage", icon: Sparkles },
       { label: "Collections", href: "/admin/homepage?tab=collections", icon: FolderKanban },
-      { label: "Campaigns", href: "/admin/homepage?tab=campaigns", icon: Send },
       { label: "Banners", href: "/admin/banners", icon: ImageIcon },
     ]
   },
