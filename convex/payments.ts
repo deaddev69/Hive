@@ -901,6 +901,9 @@ export async function verifyPaymentAndPlaceOrderInternal(
   // Increment boutique's daily active order count O(1)
   await incrementBoutiqueOrderCount(ctx, boutiqueId, now);
 
+  // Calculate net payout for merchant
+  const netPayoutRupees = (orderSnapshot.merchantPayable / 100);
+
   // Notify boutique (WhatsApp if enabled, fallback to Email)
   const isWhatsAppEnabled = boutique?.whatsAppNotificationsEnabled ?? true;
   const recipientPhone = boutique?.notificationPhone || boutique?.phone;
@@ -913,7 +916,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
         parameters: [
           boutique.ownerName || "Merchant",
           orderNumber,
-          `Rs. ${(session.total / 100).toFixed(2)}`
+          `Rs. ${netPayoutRupees.toFixed(2)}`
         ],
       });
     }
@@ -925,7 +928,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
         parameters: [
           "Store Staff",
           orderNumber,
-          `Rs. ${(session.total / 100).toFixed(2)}`
+          `Rs. ${netPayoutRupees.toFixed(2)}`
         ],
       });
     }
@@ -937,7 +940,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
         parameters: [
           "Store Staff",
           orderNumber,
-          `Rs. ${(session.total / 100).toFixed(2)}`
+          `Rs. ${netPayoutRupees.toFixed(2)}`
         ],
       });
     }
@@ -951,8 +954,9 @@ export async function verifyPaymentAndPlaceOrderInternal(
   // Dispatch background Web Push notification to boutique sellers / staff
   await ctx.scheduler.runAfter(0, internal.pushActions.sendOrderPushToBoutique, {
     boutiqueId,
-    title: `New Order: ₹${(session.total / 100).toFixed(2)}! 🎉`,
+    title: `New Order: Net Payout ₹${netPayoutRupees.toFixed(2)}! 🎉`,
     body: `New order ${orderNumber} placed for ${session.items.length} item(s).`,
+    netPayout: netPayoutRupees,
     url: "/boutique/orders",
   });
 

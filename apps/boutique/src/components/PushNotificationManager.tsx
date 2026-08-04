@@ -278,17 +278,10 @@ export function PushNotificationManager({
             </p>
 
             {/* Net Payout Badge */}
-            <div className="flex flex-col items-center gap-1.5 mb-2">
-              <div className="bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-2xl sm:text-3xl px-6 py-2.5 rounded-2xl shadow-xl border border-amber-200/50">
-                {activeAlert?.netPayout != null
-                  ? `NET PAYOUT: ₹${activeAlert.netPayout.toFixed(2)}`
-                  : "NEW ORDER 🛍️"}
-              </div>
-              {activeAlert?.netPayout != null && (
-                <span className="text-xs font-semibold text-slate-300/80 tracking-wide">
-                  (Net earnings credited to store after platform fee)
-                </span>
-              )}
+            <div className="bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-2xl sm:text-3xl px-6 py-2.5 rounded-2xl shadow-xl border border-amber-200/50 mb-2">
+              {activeAlert?.netPayout != null
+                ? `NET PAYOUT: ₹${activeAlert.netPayout.toFixed(2)}`
+                : "NEW ORDER 🛍️"}
             </div>
           </div>
 
