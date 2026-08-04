@@ -22,11 +22,9 @@ import {
   Medal,
   Shield,
   Star,
-  ChevronDown
+  ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
-import { PWAStatsCard } from "../../components/admin/PWAStatsCard";
-import { BroadcastCampaignModal } from "../../components/admin/BroadcastCampaignModal";
 
 // 1. StatusBadge component with premium light pastel colors
 function StatusBadge({ variant, label, icon: Icon }: { variant: "success" | "info" | "warning"; label: string; icon?: React.ComponentType<any> }) {
@@ -84,7 +82,6 @@ export default function BoutiqueDashboard() {
 
   const [isPending, setIsPending] = useState(false);
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
 
   const handleToggleAvailability = async () => {
     if (!boutique) return;
@@ -348,35 +345,6 @@ export default function BoutiqueDashboard() {
   // Stacking order layout (Mobile first stack, Desktop 2-column layout)
   return (
     <div className="flex flex-col gap-6 text-left max-w-6xl w-full pt-2 pb-14 font-sans px-2 lg:px-6">
-      
-      {/* PWA App Download Analytics & Broadcast Campaign Action */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <PWAStatsCard />
-        </div>
-        <div className="bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-amber-500/10 border border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="p-1.5 bg-amber-500/20 text-amber-500 rounded-lg text-xs font-bold">PROMO</span>
-              <h4 className="text-sm font-bold text-slate-900">Customer Push Campaign</h4>
-            </div>
-            <p className="text-xs text-slate-600">
-              Broadcast rich push notifications with Cloudflare R2 banners to all customer PWA apps.
-            </p>
-          </div>
-          <button
-            onClick={() => setIsBroadcastModalOpen(true)}
-            className="mt-4 w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all active:scale-95"
-          >
-            <span>Broadcast Campaign 🚀</span>
-          </button>
-        </div>
-      </div>
-
-      <BroadcastCampaignModal
-        isOpen={isBroadcastModalOpen}
-        onClose={() => setIsBroadcastModalOpen(false)}
-      />
 
       {/* 1. Operations Control Center Card */}
       <div className="bg-white border border-slate-200/60 rounded-[24px] p-6 flex flex-col shadow-none select-none">

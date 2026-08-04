@@ -8,9 +8,12 @@ import { StatCard, Card, CardHeader, CardTitle, CardDescription, CardContent } f
 import { formatCurrency } from "@hive/utils";
 import { Store, CheckCircle, FolderKanban, Image as ImageIcon, ArrowRight, Loader2, ShieldX, ShoppingBag, Clock, TrendingUp, Package } from "lucide-react";
 import Link from "next/link";
+import { PWAStatsCard } from "../../components/pwa/PWAStatsCard";
+import { BroadcastCampaignModal } from "../../components/pwa/BroadcastCampaignModal";
 
 export default function AdminDashboardPage() {
   const { isLoading: convexAuthLoading, isAuthenticated } = useConvexAuth();
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const boutiques = useQuery(api.boutiques.getBoutiques, { excludeTestData: true });
   const categories = useQuery(api.categories.getCategories, {});
   const banners = useQuery(api.banners.getBanners);
@@ -65,6 +68,35 @@ export default function AdminDashboardPage() {
         <h1 className="text-3xl font-serif font-black text-hive-dark">Overview Dashboard</h1>
         <p className="text-sm text-hive-text-muted">Central directory configuration and marketplace registry statistics.</p>
       </div>
+
+      {/* PWA App Download Analytics & Broadcast Campaign Action */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <PWAStatsCard />
+        </div>
+        <div className="bg-gradient-to-br from-amber-500/10 via-amber-400/5 to-amber-500/10 border border-amber-500/30 rounded-2xl p-5 flex flex-col justify-between shadow-sm">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="p-1.5 bg-amber-500/20 text-amber-500 rounded-lg text-xs font-bold">PROMO</span>
+              <h4 className="text-sm font-bold text-slate-900">Customer Push Campaign</h4>
+            </div>
+            <p className="text-xs text-slate-600">
+              Broadcast rich push notifications with Cloudflare R2 banners to all customer PWA apps.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsBroadcastModalOpen(true)}
+            className="mt-4 w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+          >
+            <span>Broadcast Campaign 🚀</span>
+          </button>
+        </div>
+      </div>
+
+      <BroadcastCampaignModal
+        isOpen={isBroadcastModalOpen}
+        onClose={() => setIsBroadcastModalOpen(false)}
+      />
 
       {/* Order KPI Cards */}
       <div>
