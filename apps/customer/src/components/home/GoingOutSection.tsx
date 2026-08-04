@@ -1,13 +1,12 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { formatCurrency } from "@hive/utils";
+import { ProductCard } from "@/components/product/ProductCard";
+import { mapDbProduct } from "@/lib/mapDbProduct";
 
 export function GoingOutSection() {
   const goingOutCollections = useQuery(api.homepage.getCollectionsByType, { type: "going_out" });
@@ -54,35 +53,10 @@ export function GoingOutSection() {
             </div>
           </div>
 
-          {/* Right Product Grid */}
+          {/* Right Product Grid with Official ProductCard */}
           <div className="md:col-span-7 grid grid-cols-2 gap-3 sm:gap-4">
             {products.slice(0, 4).map((p: any) => (
-              <motion.div
-                key={p._id}
-                whileHover={{ y: -4 }}
-                className="bg-zinc-900/90 border border-zinc-800 rounded-2xl overflow-hidden group flex flex-col justify-between"
-              >
-                <Link href={`/product/${p.slug || p._id}`} className="block relative aspect-[4/5] bg-zinc-800">
-                  <Image
-                    src={p.imageUrl || p.imageUrls?.[0] || "/placeholder.png"}
-                    alt={p.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </Link>
-
-                <div className="p-3 space-y-1">
-                  <p className="text-[10px] text-amber-400 font-bold tracking-wide uppercase truncate">
-                    {p.boutiqueName || "Boutique"}
-                  </p>
-                  <h3 className="text-xs font-bold text-white truncate">
-                    {p.name}
-                  </h3>
-                  <p className="text-xs font-extrabold text-white">
-                    {formatCurrency(p.price)}
-                  </p>
-                </div>
-              </motion.div>
+              <ProductCard key={p._id} product={mapDbProduct(p)} />
             ))}
           </div>
 

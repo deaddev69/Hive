@@ -1,13 +1,12 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { formatCurrency } from "@hive/utils";
+import { ProductCard } from "@/components/product/ProductCard";
+import { mapDbProduct } from "@/lib/mapDbProduct";
 
 export function SeasonalCollectionSection() {
   const seasonalCollections = useQuery(api.homepage.getCollectionsByType, { type: "seasonal" });
@@ -15,7 +14,7 @@ export function SeasonalCollectionSection() {
 
   const collectionProducts = useQuery(
     api.homepage.getCollectionProducts,
-    activeSeasonal ? { collectionId: activeSeasonal._id, limit: 6 } : "skip"
+    activeSeasonal ? { collectionId: activeSeasonal._id, limit: 8 } : "skip"
   );
 
   const title = activeSeasonal?.title || "Wedding & Festive Curation '26";
@@ -45,30 +44,9 @@ export function SeasonalCollectionSection() {
       </div>
 
       {collectionProducts && collectionProducts.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {collectionProducts.map((p: any) => (
-            <motion.div
-              key={p._id}
-              whileHover={{ y: -4 }}
-              className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden group flex flex-col justify-between shadow-xs"
-            >
-              <Link href={`/product/${p.slug || p._id}`} className="block relative aspect-[4/5] bg-zinc-100 dark:bg-zinc-800">
-                <Image
-                  src={p.imageUrl || p.imageUrls?.[0] || "/placeholder.png"}
-                  alt={p.name}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-              </Link>
-              <div className="p-2.5 space-y-1">
-                <h3 className="text-xs font-bold text-zinc-900 dark:text-white truncate">
-                  {p.name}
-                </h3>
-                <p className="text-xs font-extrabold text-zinc-900 dark:text-white">
-                  {formatCurrency(p.price)}
-                </p>
-              </div>
-            </motion.div>
+            <ProductCard key={p._id} product={mapDbProduct(p)} />
           ))}
         </div>
       )}

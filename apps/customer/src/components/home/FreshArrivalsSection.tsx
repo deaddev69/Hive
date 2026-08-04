@@ -1,13 +1,12 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { formatCurrency } from "@hive/utils";
+import { ProductCard } from "@/components/product/ProductCard";
+import { mapDbProduct } from "@/lib/mapDbProduct";
 
 export function FreshArrivalsSection() {
   const freshProducts = useQuery(api.homepage.getFreshArrivals, { limit: 8 });
@@ -39,40 +38,7 @@ export function FreshArrivalsSection() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         {freshProducts.map((p: any) => (
-          <motion.div
-            key={p._id}
-            whileHover={{ y: -4 }}
-            className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden group flex flex-col justify-between shadow-xs"
-          >
-            <Link href={`/product/${p.slug || p._id}`} className="block relative aspect-[4/5] bg-zinc-100 dark:bg-zinc-800">
-              <Image
-                src={p.imageUrl || p.imageUrls?.[0] || "/placeholder.png"}
-                alt={p.name}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500 text-zinc-950 rounded-md text-[9px] font-black uppercase tracking-wider">
-                NEW
-              </div>
-            </Link>
-
-            <div className="p-3 space-y-1">
-              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold tracking-wide uppercase truncate">
-                {p.boutiqueName || "Boutique"}
-              </p>
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-white truncate">
-                {p.name}
-              </h3>
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-xs font-extrabold text-zinc-900 dark:text-white">
-                  {formatCurrency(p.price)}
-                </span>
-                <span className="text-[10px] text-zinc-400 font-medium bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
-                  {p.sizes?.slice(0, 2).join(", ") || "Free"}
-                </span>
-              </div>
-            </div>
-          </motion.div>
+          <ProductCard key={p._id} product={mapDbProduct(p)} />
         ))}
       </div>
     </section>

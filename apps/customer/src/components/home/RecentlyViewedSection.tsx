@@ -1,14 +1,12 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { motion } from "framer-motion";
-import { History, ArrowRight } from "lucide-react";
+import { History } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
-import { formatCurrency } from "@hive/utils";
+import { ProductCard } from "@/components/product/ProductCard";
+import { mapDbProduct } from "@/lib/mapDbProduct";
 
 export function RecentlyViewedSection() {
   const { user } = useSessionStore();
@@ -16,10 +14,10 @@ export function RecentlyViewedSection() {
 
   const recentlyViewed = useQuery(
     api.homepage.getRecentlyViewed,
-    userId ? { userId: userId as any, limit: 6 } : "skip"
+    userId ? { userId: userId as any, limit: 8 } : "skip"
   );
 
-  const fallbackFresh = useQuery(api.homepage.getFreshArrivals, { limit: 6 });
+  const fallbackFresh = useQuery(api.homepage.getFreshArrivals, { limit: 8 });
   const products = recentlyViewed && recentlyViewed.length > 0 ? recentlyViewed : fallbackFresh;
 
   if (!products || products.length === 0) return null;
@@ -38,34 +36,9 @@ export function RecentlyViewedSection() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         {products.map((p: any) => (
-          <motion.div
-            key={p._id}
-            whileHover={{ y: -4 }}
-            className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl overflow-hidden group flex flex-col justify-between shadow-xs"
-          >
-            <Link href={`/product/${p.slug || p._id}`} className="block relative aspect-[4/5] bg-zinc-100 dark:bg-zinc-800">
-              <Image
-                src={p.imageUrl || p.imageUrls?.[0] || "/placeholder.png"}
-                alt={p.name}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-            </Link>
-
-            <div className="p-2.5 space-y-1">
-              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold tracking-wide uppercase truncate">
-                {p.boutiqueName || "Boutique"}
-              </p>
-              <h3 className="text-xs font-bold text-zinc-900 dark:text-white truncate">
-                {p.name}
-              </h3>
-              <p className="text-xs font-extrabold text-zinc-900 dark:text-white">
-                {formatCurrency(p.price)}
-              </p>
-            </div>
-          </motion.div>
+          <ProductCard key={p._id} product={mapDbProduct(p)} />
         ))}
       </div>
     </section>
