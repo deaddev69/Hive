@@ -7,6 +7,7 @@ import { navigateToSignIn } from "@/lib/auth-redirect";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { toast } from "@hive/utils";
 import { LoadingState } from "@hive/ui";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import {
@@ -877,6 +878,8 @@ function SettingsTab() {
   const [notifEmail, setNotifEmail] = useState(true);
   const [notifSMS, setNotifSMS] = useState(false);
   const [privacyShare, setPrivacyShare] = useState(true);
+  
+  const { isSupported, isSubscribed, isLoading, subscribeToPush } = usePushSubscription();
 
   return (
     <div className="flex flex-col gap-6 text-left animate-fadeIn">
@@ -886,6 +889,38 @@ function SettingsTab() {
       </div>
 
       <div className="bg-white border border-[#1c1917]/[0.08] rounded-xl divide-y divide-[#1c1917]/[0.08] overflow-hidden shadow-sm">
+        
+        {/* Push Notifications Section */}
+        <div className="p-5 flex items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wide flex items-center gap-2">
+              <Bell className="w-3.5 h-3.5" /> Push Notifications
+            </h4>
+            <p className="text-xs text-[#78716C]">Receive flash sale alerts and order updates on this device</p>
+          </div>
+          {isSupported ? (
+            <button
+              onClick={() => {
+                if (!isSubscribed && !isLoading) {
+                  subscribeToPush().then((success) => {
+                    if (success) toast.success("Push Notifications Enabled!");
+                  });
+                }
+              }}
+              disabled={isLoading || isSubscribed}
+              className={`w-10 h-6 rounded-full p-0.5 transition-colors ${
+                isSubscribed ? "bg-[#1C1917] flex justify-end opacity-70 cursor-not-allowed" : "bg-[#1c1917]/[0.08] flex justify-start cursor-pointer hover:bg-[#1c1917]/20"
+              }`}
+            >
+              <span className="w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200 flex items-center justify-center">
+                {isLoading && <Loader2 className="w-3 h-3 text-[#1C1917] animate-spin" />}
+              </span>
+            </button>
+          ) : (
+            <span className="text-[10px] font-bold uppercase text-red-500 bg-red-50 px-2 py-1 rounded">Not Supported</span>
+          )}
+        </div>
+
         <div className="p-5 flex items-center justify-between gap-4">
           <div className="space-y-0.5">
             <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wide">Communication Preferences</h4>
@@ -903,8 +938,8 @@ function SettingsTab() {
 
         <div className="p-5 flex items-center justify-between gap-4">
           <div className="space-y-0.5">
-            <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wide">Notification Preferences</h4>
-            <p className="text-xs text-[#78716C]">Receive delivery ETA and driver contacts on phone SMS / WhatsApp</p>
+            <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wide">SMS / WhatsApp</h4>
+            <p className="text-xs text-[#78716C]">Receive delivery ETA and driver contacts on phone SMS</p>
           </div>
           <button
             onClick={() => setNotifSMS(!notifSMS)}

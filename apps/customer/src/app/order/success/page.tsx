@@ -23,6 +23,7 @@ import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Redesigned Order Success Page Implementation
@@ -256,6 +257,7 @@ function OrderSuccessHero({
   placedDuringClosedHours?: boolean; 
 }) {
   const [copied, setCopied] = useState(false);
+  const { isSupported, isSubscribed, subscribeToPush, isLoading } = usePushSubscription();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(orderId);
@@ -286,6 +288,24 @@ function OrderSuccessHero({
           <span className="text-amber-700 text-[11px] block">
             Your order has been recorded and will be processed first thing when boutique working hours resume.
           </span>
+        </div>
+      )}
+
+      {isSupported && !isSubscribed && (
+        <div className="w-full max-w-md mt-4 mb-2 py-4 px-5 bg-slate-900 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-slate-900/10">
+          <div className="text-left space-y-1">
+            <h4 className="text-sm font-bold flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#F5A623]" /> Order Updates
+            </h4>
+            <p className="text-xs text-slate-300">Turn on notifications to track your delivery.</p>
+          </div>
+          <button
+            onClick={() => subscribeToPush()}
+            disabled={isLoading}
+            className="w-full sm:w-auto px-4 py-2 bg-white text-slate-900 text-xs font-bold rounded-xl active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+          >
+            {isLoading ? "Enabling..." : "Enable Notifications"}
+          </button>
         </div>
       )}
 
