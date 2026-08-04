@@ -14,7 +14,10 @@ export async function POST(req: Request) {
     const accessKeyId = process.env.R2_ACCESS_KEY_ID;
     const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
     const bucketName = (process.env.R2_BUCKET_NAME || "hive-media").trim();
-    const publicDomain = process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN || "https://assets.hivenow.in";
+    let publicDomain = process.env.NEXT_PUBLIC_R2_PUBLIC_DOMAIN || "https://assets.hivenow.in";
+    if (!publicDomain.startsWith("http://") && !publicDomain.startsWith("https://")) {
+      publicDomain = `https://${publicDomain}`;
+    }
 
     if (!accountId || !accessKeyId || !secretAccessKey) {
       return NextResponse.json(

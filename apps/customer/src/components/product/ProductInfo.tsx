@@ -301,9 +301,9 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
           <button
             type="button"
             onClick={() => setOpenAccordion(openAccordion === "returns" ? null : "returns")}
-            className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900 focus:outline-none"
+            className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900 focus:outline-none cursor-pointer"
           >
-            <span>Delivery & 24h Return Policy</span>
+            <span>{isReturnsAccepted ? "Delivery & 1-Day Return Policy" : "Delivery & Final Sale Policy"}</span>
             <span className="text-stone-400 text-xs font-normal">
               {openAccordion === "returns" ? "−" : "+"}
             </span>
@@ -312,31 +312,35 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             <div className="text-xs text-stone-600 leading-relaxed font-medium pt-1 space-y-2.5 text-left animate-fade-in">
               {!isReturnsAccepted ? (
                 <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-2xl space-y-1.5 text-xs text-slate-800 font-medium">
-                  <p className="font-bold text-red-700 flex items-center gap-1.5">
-                    <span>🔒 Final Sale — Voluntary Returns Not Accepted</span>
+                  <p className="font-bold text-stone-900 flex items-center gap-1.5">
+                    <RotateCcw className="w-3.5 h-3.5 text-stone-600" />
+                    <span>Final Sale Item — Voluntary Returns Disabled</span>
                   </p>
                   <p className="text-[11px] text-stone-600 leading-relaxed">
-                    This boutique has marked this product as Final Sale. Voluntary change-of-mind or size returns are not accepted.
+                    This product is listed as Final Sale by the seller boutique. Voluntary size or change-of-mind returns are disabled.
                   </p>
-                  <p className="text-[11px] font-extrabold text-slate-900 border-t border-stone-200 pt-1.5 mt-1">
-                    🛡️ Compulsory Guarantee: If you receive a damaged, defective, or wrong item, returns/refunds are 100% compulsory & covered within 24 hours of delivery.
+                  <p className="text-[11px] font-bold text-stone-800 border-t border-stone-200/80 pt-1.5 mt-1 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-stone-600" />
+                    <span>Buyer Protection: Damaged, defective, or incorrect items remain 100% covered.</span>
                   </p>
                 </div>
               ) : (
-                <div className="p-3 bg-emerald-50/50 border border-emerald-200/60 rounded-2xl space-y-1.5 text-xs text-emerald-950 font-medium">
-                  <p className="font-bold text-emerald-800 flex items-center gap-1.5">
-                    <span>🛡️ 24-Hour Easy Returns & Exchanges</span>
+                <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-2xl space-y-1.5 text-xs text-slate-900 font-medium">
+                  <p className="font-bold text-stone-900 flex items-center gap-1.5">
+                    <RotateCcw className="w-3.5 h-3.5 text-stone-600" />
+                    <span>1-Day Easy Return & Size Exchange Window</span>
                   </p>
-                  <p className="text-[11px] text-emerald-900/80 leading-relaxed">
-                    This boutique accepts 24-hour voluntary returns and size exchanges from the moment your order is delivered.
+                  <p className="text-[11px] text-stone-600 leading-relaxed">
+                    This boutique seller accepts 24-hour voluntary size exchanges and returns starting from doorstep delivery time.
                   </p>
-                  <p className="text-[11px] font-extrabold text-slate-900 border-t border-emerald-200/60 pt-1.5 mt-1">
-                    🛡️ Compulsory Guarantee: Damaged, defective, or wrong items are 100% guaranteed for full refund or replacement.
+                  <p className="text-[11px] font-bold text-stone-800 border-t border-stone-200/80 pt-1.5 mt-1 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-stone-600" />
+                    <span>Buyer Protection: Damaged, defective, or wrong items are guaranteed replacement or full refund.</span>
                   </p>
                 </div>
               )}
               <p className="text-[11px] text-stone-500">
-                • <strong>Refund Timeline</strong>: Once approved, refunds credit back to your original payment method within 5–7 business days.
+                • <strong>Refund Settlement</strong>: Approved refunds credit back to your original payment method within 5–7 business days.
               </p>
             </div>
           )}

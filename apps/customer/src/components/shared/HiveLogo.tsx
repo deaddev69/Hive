@@ -30,29 +30,36 @@ export function HiveLogo({
   variant = "navbar"
 }: HiveLogoProps) {
   const isNavbar = variant === "navbar";
-  const src = isNavbar ? "/logo-navbar.png" : "/logo.png";
-  const width = isNavbar ? 120 : 180;
-  const height = isNavbar ? 120 : 75;
   const sizeClass = sizeClasses[variant][size];
 
   const content = (
-    <>
+    <div className="flex items-center gap-2 select-none">
+      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl overflow-hidden shadow-xs border border-amber-500/30 flex items-center justify-center bg-amber-500 shrink-0">
+        <Image
+          src="/icon-192x192.png"
+          alt="Hive PWA Logo"
+          width={36}
+          height={36}
+          priority
+          className="w-full h-full object-cover"
+        />
+      </div>
       <Image
-        src={src}
+        src="/logo-navbar.png"
         alt="Hive"
-        width={width}
-        height={height}
+        width={100}
+        height={32}
         priority
-        className={`${sizeClass} object-contain`}
+        className="h-6 sm:h-7 w-auto object-contain"
       />
       {roleLabel && (
-        <div className="flex flex-col border-l border-hive-border/40 pl-3 py-1">
-          <span className="text-[10px] sm:text-xs font-bold tracking-[0.2em] text-hive-gold whitespace-nowrap leading-none font-sans">
+        <div className="flex flex-col border-l border-slate-300 pl-2.5 py-0.5">
+          <span className="text-[10px] sm:text-xs font-extrabold tracking-[0.2em] text-amber-600 whitespace-nowrap leading-none font-sans">
             {roleLabel}
           </span>
         </div>
       )}
-    </>
+    </div>
   );
 
   if (noLink) {

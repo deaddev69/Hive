@@ -749,6 +749,10 @@ async function formatOrderForCustomer(ctx: any, order: any, items: any[]) {
 
   const itemsWithReviewStatus = await Promise.all(
     items.map(async (item) => {
+      const product = await ctx.db.get(item.productId);
+      const boutique = await ctx.db.get(item.boutiqueId);
+      const returnsAccepted = product?.returnsAccepted ?? boutique?.returnsAcceptedDefault ?? true;
+
       const existingReview = await ctx.db
         .query("reviews")
         .withIndex("by_orderItemId", (q: any) => q.eq("orderItemId", item._id))
@@ -758,9 +762,13 @@ async function formatOrderForCustomer(ctx: any, order: any, items: any[]) {
         priceAtPurchase: item.priceAtPurchase,
         subtotal: item.subtotal,
         hasReview: !!existingReview,
+        returnsAccepted,
       };
     })
   );
+
+  const boutique = await ctx.db.get(order.boutiqueId);
+  const returnsAccepted = itemsWithReviewStatus.some((i) => i.returnsAccepted !== false);
 
   return {
     ...order,
@@ -770,6 +778,7 @@ async function formatOrderForCustomer(ctx: any, order: any, items: any[]) {
     total: order.total,
     driverDetails,
     items: itemsWithReviewStatus,
+    returnsAccepted,
   };
 }
 

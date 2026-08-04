@@ -22,6 +22,7 @@ import {
   FileText,
   AlertCircle,
   Package,
+  RotateCcw,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -381,38 +382,125 @@ export default function OrderDetailPage() {
               </div>
             </motion.div>
 
-            {/* Hive 1-Day Return & Fit Guarantee Card */}
-            <motion.div
-              variants={itemVariants}
-              className="relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-3xl p-4 flex items-start gap-3 shadow-xs"
-            >
-              <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div className="text-xs space-y-1">
-                <h3 className="font-extrabold text-slate-900 dark:text-white">
-                  Hive 1-Day Return & Fit Guarantee
-                </h3>
-                <p className="text-slate-600 dark:text-zinc-400 leading-relaxed text-[11px]">
-                  Enjoy 1-day hassle-free returns or instant on-site trial and alteration assistance during delivery.
-                </p>
-              </div>
-            </motion.div>
+            {/* Dynamic Seller Return Policy & Fit Guarantee Card */}
+            {(() => {
+              const isFinalSale = (order as any).returnsAccepted === false || (order as any).items?.every((i: any) => i.returnsAccepted === false);
+              const isDelivered = order.status === "delivered";
+              const deliveredTime = order.deliveredAt || order.updatedAt;
+              const hoursSinceDelivery = isDelivered ? (Date.now() - deliveredTime) / (1000 * 60 * 60) : 0;
+              const isWindowActive = isDelivered && hoursSinceDelivery <= 24;
+
+              if (isFinalSale) {
+                return (
+                  <motion.div
+                    variants={itemVariants}
+                    className="relative overflow-hidden bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-4 flex items-start gap-3 shadow-xs"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-zinc-800 flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 mt-0.5">
+                      <ShieldCheck className="w-4.5 h-4.5" />
+                    </div>
+                    <div className="text-xs space-y-1">
+                      <h3 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>Final Sale — Voluntary Returns Disabled</span>
+                        <span className="text-[9px] bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold px-2 py-0.5 rounded-full">
+                          Seller Policy
+                        </span>
+                      </h3>
+                      <p className="text-slate-600 dark:text-zinc-400 leading-relaxed text-[11px]">
+                        This boutique listing is configured as Final Sale. Voluntary returns or size exchanges are disabled. Damaged, defective, or incorrect items remain 100% covered.
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              }
+
+              return (
+                <motion.div
+                  variants={itemVariants}
+                  className="relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-3xl p-4 flex items-start gap-3 shadow-xs"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+                    <RotateCcw className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="text-xs space-y-1">
+                    <h3 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>{isWindowActive ? "1-Day Return Window Active" : "24-Hour Return Policy"}</span>
+                      {isWindowActive && (
+                        <span className="text-[9px] bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold px-2 py-0.5 rounded-full">
+                          {Math.max(0, Math.floor(24 - hoursSinceDelivery))}h Remaining
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-slate-600 dark:text-zinc-400 leading-relaxed text-[11px]">
+                      {isDelivered
+                        ? isWindowActive
+                          ? "Your 24-hour return window is active. Submit return or exchange requests within 24 hours of delivery."
+                          : "Voluntary return window has ended (24h past delivery). Damaged or wrong item claims remain covered."
+                        : "Voluntary 24-hour size exchanges and returns will activate upon doorstep delivery."}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })()}
           </>
         )}
 
         {/* ── High-Conversion Action Button Stack ────────────────────────────── */}
         <motion.div variants={itemVariants} className="pt-2 space-y-2.5">
           {!isCancelled && (
-            <Link
-              href={`/orders/${order._id}/track`}
-              className="relative overflow-hidden w-full py-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all cursor-pointer group"
-            >
-              {/* Shimmer Overlay */}
-              <span className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out pointer-events-none" />
-              <ShoppingBag className="w-4 h-4" />
-              <span>Track Order Status</span>
-            </Link>
+            <div className="space-y-2">
+              <Link
+                href={`/orders/${order._id}/track`}
+                className="relative overflow-hidden w-full py-3.5 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all cursor-pointer group"
+              >
+                <span className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out pointer-events-none" />
+                <ShoppingBag className="w-4 h-4" />
+                <span>Track Order Status</span>
+              </Link>
+
+              {/* Dynamic Return Action Button */}
+              {(() => {
+                const isFinalSale = (order as any).returnsAccepted === false || (order as any).items?.every((i: any) => i.returnsAccepted === false);
+                const isDelivered = order.status === "delivered";
+                const deliveredTime = order.deliveredAt || order.updatedAt;
+                const hoursSinceDelivery = isDelivered ? (Date.now() - deliveredTime) / (1000 * 60 * 60) : 0;
+                const isWindowActive = isDelivered && hoursSinceDelivery <= 24;
+
+                if (isFinalSale) {
+                  return (
+                    <a
+                      href={`mailto:support@hivenow.in?subject=Report Damaged/Defective Item Order ${order.orderNumber}`}
+                      className="w-full py-3 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 font-bold text-xs rounded-2xl flex items-center justify-center gap-2 border border-slate-200 dark:border-zinc-700 transition-all cursor-pointer"
+                    >
+                      <AlertCircle className="w-4 h-4 text-slate-600 dark:text-zinc-400" />
+                      <span>Report Damaged or Defective Item</span>
+                    </a>
+                  );
+                }
+
+                if (isDelivered && isWindowActive) {
+                  return (
+                    <a
+                      href={`mailto:support@hivenow.in?subject=Return/Exchange Request Order ${order.orderNumber}`}
+                      className="w-full py-3 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-900 dark:text-amber-300 font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 border border-amber-300 dark:border-amber-800 transition-all cursor-pointer"
+                    >
+                      <RotateCcw className="w-4 h-4 text-amber-600" />
+                      <span>Request Return / Exchange (24h Window Active)</span>
+                    </a>
+                  );
+                }
+
+                return (
+                  <a
+                    href={`mailto:support@hivenow.in?subject=Order Issue Order ${order.orderNumber}`}
+                    className="w-full py-3 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-semibold text-xs rounded-2xl flex items-center justify-center gap-2 border border-slate-200 dark:border-zinc-800 transition-all cursor-pointer"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Report Wrong Item or Defect</span>
+                  </a>
+                );
+              })()}
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-2.5">

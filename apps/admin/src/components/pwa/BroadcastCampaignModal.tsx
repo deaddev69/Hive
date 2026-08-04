@@ -212,11 +212,19 @@ export function BroadcastCampaignModal({ isOpen, onClose }: BroadcastCampaignMod
             {bannerUrl ? (
               <div className="relative rounded-2xl overflow-hidden border border-zinc-700/80 bg-black">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={bannerUrl} alt="Banner Preview" className="w-full h-32 object-cover" />
+                <img
+                  src={bannerUrl}
+                  alt="Banner Preview"
+                  className="w-full h-32 object-cover"
+                  onError={() => {
+                    setUploadError("Image URL DNS error (assets.hivenow.in unresolved). Please paste a direct image URL.");
+                    setImageMode("url");
+                  }}
+                />
                 <button
                   type="button"
                   onClick={() => { setBannerUrl(""); setUploadError(null); }}
-                  className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-black text-white rounded-full text-xs"
+                  className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-black text-white rounded-full text-xs cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
