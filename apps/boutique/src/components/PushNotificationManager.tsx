@@ -151,6 +151,13 @@ export function PushNotificationManager({
         return;
       }
 
+      // Unsubscribe any old/stale push token first to force generating a fresh token for current VAPID keys
+      const existingSub = await registration.pushManager.getSubscription();
+      if (existingSub) {
+        console.log("[PushNotificationManager] Unsubscribing stale push token...");
+        await existingSub.unsubscribe().catch((e) => console.warn("Failed to unsubscribe old token:", e));
+      }
+
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as unknown as BufferSource,
