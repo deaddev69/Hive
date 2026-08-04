@@ -8,54 +8,11 @@ import { ArrowRight } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 
-const FALLBACK_OCCASIONS = [
-  {
-    _id: "occ-1",
-    title: "Office & Workwear",
-    subtitle: "Tailored blazers, linen trousers & crisp shirts",
-    imageUrl: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=800&q=80",
-    slug: "office",
-  },
-  {
-    _id: "occ-2",
-    title: "Brunch & Cafe",
-    subtitle: "Floaty sundresses, pastel sets & tote bags",
-    imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
-    slug: "brunch",
-  },
-  {
-    _id: "occ-3",
-    title: "Date Night",
-    subtitle: "Silk slips, bodycon dresses & statement jewelry",
-    imageUrl: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80",
-    slug: "date-night",
-  },
-  {
-    _id: "occ-4",
-    title: "Wedding Guest",
-    subtitle: "Zari sarees, embroidered lehengas & dupattas",
-    imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
-    slug: "wedding-guest",
-  },
-  {
-    _id: "occ-5",
-    title: "College & Campus",
-    subtitle: "Comfy kurtis, denims & oversized shirts",
-    imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80",
-    slug: "college",
-  },
-  {
-    _id: "occ-6",
-    title: "Vacation & Resort",
-    subtitle: "Breezy kaftans, beach co-ords & sunglasses",
-    imageUrl: "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=80",
-    slug: "vacation",
-  },
-];
-
 export function OccasionDressingSection() {
   const adminOccasions = useQuery(api.homepage.getCollectionsByType, { type: "occasion" });
-  const occasions = adminOccasions && adminOccasions.length > 0 ? adminOccasions : FALLBACK_OCCASIONS;
+  const occasions = adminOccasions || [];
+
+  if (!adminOccasions || adminOccasions.length === 0) return null;
 
   return (
     <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 select-none">
@@ -84,18 +41,22 @@ export function OccasionDressingSection() {
             key={occ._id || idx}
             whileHover={{ scale: 1.015 }}
             whileTap={{ scale: 0.985 }}
-            className="relative h-44 sm:h-52 rounded-3xl overflow-hidden group cursor-pointer shadow-sm bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800"
+            className="relative h-44 sm:h-52 rounded-3xl overflow-hidden group cursor-pointer shadow-sm bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 border border-zinc-200/80 dark:border-zinc-800 p-5 flex flex-col justify-end"
           >
-            <Link href={`/shop?occasion=${occ.slug || occ.title.toLowerCase().replace(/\s+/g, "-")}`}>
-              <Image
-                src={occ.imageUrl || FALLBACK_OCCASIONS[idx % FALLBACK_OCCASIONS.length].imageUrl}
-                alt={occ.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/40 to-transparent" />
+            <Link href={`/shop?occasion=${occ.slug || occ.title.toLowerCase().replace(/\s+/g, "-")}`} className="absolute inset-0 flex flex-col justify-end p-5">
+              {occ.imageUrl ? (
+                <>
+                  <Image
+                    src={occ.imageUrl}
+                    alt={occ.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-zinc-950/40 to-transparent" />
+                </>
+              ) : null}
               
-              <div className="absolute bottom-0 inset-x-0 p-4 space-y-1">
+              <div className="relative z-10 space-y-1">
                 <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
                   {occ.title}
                 </h3>

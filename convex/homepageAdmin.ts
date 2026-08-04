@@ -327,7 +327,7 @@ export const seedDefaultHomepageData = mutation({
       await ctx.db.insert("heroCampaigns", {
         title: "Monsoon Handloom Edit '26",
         subtitle: "Breathable Kerala linens, hand-dyed organzas & rainy day silhouettes curated by local boutiques.",
-        imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1400&q=80",
+        imageUrl: "",
         ctaText: "Explore Monsoon Edit",
         ctaUrl: "/shop?collection=monsoon",
         priority: 10,
@@ -340,7 +340,7 @@ export const seedDefaultHomepageData = mutation({
       await ctx.db.insert("heroCampaigns", {
         title: "Kochi Festive & Wedding Luxe",
         subtitle: "Handcrafted Zari sarees, bridal lehengas & evening co-ords delivered in under 2 hours.",
-        imageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1400&q=80",
+        imageUrl: "",
         ctaText: "Shop Wedding Collection",
         ctaUrl: "/shop?collection=wedding",
         priority: 9,
@@ -356,10 +356,10 @@ export const seedDefaultHomepageData = mutation({
     if (existingCols.length === 0) {
       // Moods
       const moods = [
-        { title: "Feeling Cute", emoji: "✨", imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=600&q=80" },
-        { title: "Boss Mode", emoji: "💼", imageUrl: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=600&q=80" },
-        { title: "Minimal Luxe", emoji: "🌿", imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=600&q=80" },
-        { title: "Coffee Date", emoji: "☕", imageUrl: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=600&q=80" },
+        { title: "Feeling Cute", emoji: "✨" },
+        { title: "Boss Mode", emoji: "💼" },
+        { title: "Minimal Luxe", emoji: "🌿" },
+        { title: "Coffee Date", emoji: "☕" },
       ];
 
       for (const m of moods) {
@@ -367,7 +367,6 @@ export const seedDefaultHomepageData = mutation({
           title: m.title,
           subtitle: `Curated ${m.title} outfits`,
           emoji: m.emoji,
-          imageUrl: m.imageUrl,
           slug: m.title.toLowerCase().replace(/\s+/g, "-"),
           type: "mood",
           sortOrder: moods.indexOf(m) + 1,
@@ -378,16 +377,15 @@ export const seedDefaultHomepageData = mutation({
 
       // Occasions
       const occasions = [
-        { title: "Office & Workwear", subtitle: "Tailored blazers, linen trousers & crisp shirts", imageUrl: "https://images.unsplash.com/photo-1487222477894-8943e31ef7b2?auto=format&fit=crop&w=800&q=80" },
-        { title: "Brunch & Cafe", subtitle: "Floaty sundresses, pastel sets & tote bags", imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80" },
-        { title: "Date Night", subtitle: "Silk slips, bodycon dresses & statement jewelry", imageUrl: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=800&q=80" },
+        { title: "Office & Workwear", subtitle: "Tailored blazers, linen trousers & crisp shirts" },
+        { title: "Brunch & Cafe", subtitle: "Floaty sundresses, pastel sets & tote bags" },
+        { title: "Date Night", subtitle: "Silk slips, bodycon dresses & statement jewelry" },
       ];
 
       for (const o of occasions) {
         await ctx.db.insert("homepageCollections", {
           title: o.title,
           subtitle: o.subtitle,
-          imageUrl: o.imageUrl,
           slug: o.title.toLowerCase().replace(/\s+/g, "-"),
           type: "occasion",
           sortOrder: occasions.indexOf(o) + 1,

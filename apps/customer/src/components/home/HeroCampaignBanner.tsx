@@ -8,30 +8,9 @@ import { ChevronLeft, ChevronRight, Sparkles, ArrowRight } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 
-const FALLBACK_CAMPAIGNS = [
-  {
-    _id: "fallback-1",
-    title: "Monsoon Handloom Edit '26",
-    subtitle: "Breathable Kerala linens, hand-dyed organzas & rainy day silhouettes curated by local boutiques.",
-    desktopImageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1400&q=80",
-    mobileImageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1400&q=80",
-    ctaText: "Explore Monsoon Edit",
-    ctaLink: "/shop?collection=monsoon",
-  },
-  {
-    _id: "fallback-2",
-    title: "Kochi Festive & Wedding Luxe",
-    subtitle: "Handcrafted Zari sarees, bridal lehengas & evening co-ords delivered in under 2 hours.",
-    desktopImageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1400&q=80",
-    mobileImageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=1400&q=80",
-    ctaText: "Shop Wedding Collection",
-    ctaLink: "/shop?collection=wedding",
-  },
-];
-
 export function HeroCampaignBanner() {
   const activeBanners = useQuery(api.banners.getActiveBanners);
-  const campaigns = activeBanners && activeBanners.length > 0 ? activeBanners : FALLBACK_CAMPAIGNS;
+  const campaigns = activeBanners || [];
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -43,8 +22,12 @@ export function HeroCampaignBanner() {
     return () => clearInterval(timer);
   }, [campaigns.length]);
 
-  const current = campaigns[currentIndex] || FALLBACK_CAMPAIGNS[0];
-  const imageUrl = (current as any).desktopImageUrl || (current as any).mobileImageUrl || (current as any).imageUrl || FALLBACK_CAMPAIGNS[0].desktopImageUrl;
+  if (!activeBanners || activeBanners.length === 0) {
+    return null;
+  }
+
+  const current = campaigns[currentIndex] || campaigns[0];
+  const imageUrl = (current as any).desktopImageUrl || (current as any).mobileImageUrl || (current as any).imageUrl || "";
 
   return (
     <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 select-none">
