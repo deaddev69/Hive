@@ -783,7 +783,9 @@ export const addBlockToExperience = mutation({
       v.literal("hero"),
       v.literal("banner"),
       v.literal("recentlyViewed"),
-      v.literal("trust")
+      v.literal("recommended"),
+      v.literal("trust"),
+      v.literal("vibeGrid")
     ),
     title: v.optional(v.string()),
     subtitle: v.optional(v.string()),
@@ -792,7 +794,9 @@ export const addBlockToExperience = mutation({
       v.literal("largeCards"),
       v.literal("moodGrid"),
       v.literal("occasionGrid"),
-      v.literal("editorialGrid")
+      v.literal("editorialGrid"),
+      v.literal("twoProductGrid"),
+      v.literal("vibeGrid")
     )),
     config: v.optional(v.any()),
     sortOrder: v.number(),
