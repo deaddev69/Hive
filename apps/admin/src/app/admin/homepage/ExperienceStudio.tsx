@@ -644,23 +644,35 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
           {schema.fields.includes("targetUrl") && (
             <div>
               <label className="block text-[11px] font-bold text-slate-500 mb-1">Target Click Link (Optional)</label>
-              <input
-                list="target-urls"
-                type="text"
-                placeholder="e.g. /collections/fresh-on-hive or /category/sarees"
-                className="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-mono"
+              <select
+                className="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium"
                 value={formData.config.targetUrl || ""}
                 onChange={e => updateConfig("targetUrl", e.target.value)}
-              />
-              <datalist id="target-urls">
-                {categories && categories.map((c: any) => (
-                  <option key={`cat-${c._id}`} value={`/category/${c.slug}`}>Category: {c.name}</option>
-                ))}
-                {collections && collections.map((c: any) => (
-                  <option key={`col-${c._id}`} value={`/collections/${c.slug}`}>Collection: {c.name}</option>
-                ))}
-                <option value="/collections">All Collections</option>
-              </datalist>
+              >
+                <option value="">-- No Link (Display Only) --</option>
+                <optgroup label="General">
+                  <option value="/collections">All Collections (Default)</option>
+                  <option value="/products">All Products</option>
+                </optgroup>
+                {categories && categories.length > 0 && (
+                  <optgroup label="Shop by Category">
+                    {categories.map((c: any) => (
+                      <option key={`cat-${c._id}`} value={`/category/${c.slug}`}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {collections && collections.length > 0 && (
+                  <optgroup label="Curated Collections">
+                    {collections.map((c: any) => (
+                      <option key={`col-${c._id}`} value={`/collections/${c.slug}`}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
             </div>
           )}
           {schema.fields.includes("renderer") && (
