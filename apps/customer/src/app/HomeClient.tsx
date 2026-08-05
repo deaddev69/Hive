@@ -163,28 +163,18 @@ export function HomeClient() {
     }
   }, [locality, city]);
 
-  // Fetch from Convex using consolidated query
+  // Fetch from Convex using unified Content API
   const homeData = useQuery(
-    api.customerHome.getCustomerHomeData,
+    api.customerHome.resolveExperiencePayload,
     {
+      slug: "homepage",
       city: city || undefined,
       userLat: latitude !== null ? latitude : undefined,
       userLng: longitude !== null ? longitude : undefined,
     }
   );
 
-  const {
-    banners: dbBanners,
-    config: homepageConfig,
-    products: dbProducts,
-    boutiques: dbBoutiques,
-    categories: dbCategories,
-    mostLoved: dbMostLoved,
-    newArrivals: dbNewArrivals,
-    homepageBlocks,
-    homepageCollections,
-    heroCampaigns,
-  } = homeData ?? {};
+  const { experience, blocks: experienceBlocks } = homeData ?? {};
 
   // Campaign Banners scroll state for mobile
   const [activeMobileIdx, setActiveMobileIdx] = useState(0);
@@ -220,9 +210,10 @@ export function HomeClient() {
   useEffect(() => {
     if (isCarouselPaused) return;
 
-    const totalBanners = dbBanners === undefined || dbBanners.length === 0
-      ? staticFallbackCampaigns.length
-      : dbBanners.length;
+    // We can extract total banners by finding the hero block
+    const heroBlock = experienceBlocks?.find(b => b.blockType === "hero");
+    const campaigns = heroBlock?.data?.campaigns || [];
+    const totalBanners = campaigns.length === 0 ? staticFallbackCampaigns.length : campaigns.length;
 
     if (totalBanners <= 1) return;
 
@@ -241,7 +232,7 @@ export function HomeClient() {
     }, 4000);
 
     return () => clearInterval(interval);
-  }, [dbBanners, isCarouselPaused]);
+  }, [experienceBlocks, isCarouselPaused]);
 
   // Helper to resolve campaign redirection path
   const getBannerHref = (targetType: string, targetValue: string) => {
@@ -288,154 +279,7 @@ export function HomeClient() {
     },
   ];
 
-  // Map products and filter out out-of-stock items
-  const products = useMemo(() => {
-    return (dbProducts || [])
-      .filter((p) => {
-        if (p.active === false) return false;
-        const stock = p.stockBySize || {};
-        const totalStock = Object.values(stock).reduce((sum: number, val: any) => sum + (val || 0), 0);
-        if (totalStock > 0) return true;
-        if (p.stock !== undefined && p.stock > 0) return true;
-        if (p.inventoryCount !== undefined && p.inventoryCount > 0) return true;
-        // Default to in-stock if not explicitly marked zero
-        return p.stock !== 0 && p.inventoryCount !== 0;
-      })
-      .map(mapDbProduct);
-  }, [dbProducts]);
-
-  const mostLovedProducts = useMemo(() => {
-    return (dbMostLoved || [])
-      .filter((p) => {
-        if (p.active === false) return false;
-        const stock = p.stockBySize || {};
-        const totalStock = Object.values(stock).reduce((sum: number, val: any) => sum + (val || 0), 0);
-        if (totalStock > 0) return true;
-        if (p.stock !== undefined && p.stock > 0) return true;
-        if (p.inventoryCount !== undefined && p.inventoryCount > 0) return true;
-        return p.stock !== 0 && p.inventoryCount !== 0;
-      })
-      .map(mapDbProduct);
-  }, [dbMostLoved]);
-
-  const newArrivalsProducts = useMemo(() => {
-    return (dbNewArrivals || [])
-      .filter((p) => {
-        if (p.active === false) return false;
-        const stock = p.stockBySize || {};
-        const totalStock = Object.values(stock).reduce((sum: number, val: any) => sum + (val || 0), 0);
-        if (totalStock > 0) return true;
-        if (p.stock !== undefined && p.stock > 0) return true;
-        if (p.inventoryCount !== undefined && p.inventoryCount > 0) return true;
-        return p.stock !== 0 && p.inventoryCount !== 0;
-      })
-      .map(mapDbProduct)
-      .slice(0, 8);
-  }, [dbNewArrivals]);
-
-  const homepageSubcategories = useMemo(() => {
-    return (dbCategories || [])
-      .filter((c) => c.showOnHomepage)
-      .sort((a, b) => (a.homepageOrder ?? 0) - (b.homepageOrder ?? 0));
-  }, [dbCategories]);
-
-
-  // Pause categories auto-scroll temporarily after mouse-leave or touch-end interaction
-
-
-
-  // Sort approved boutiques using combined weight + distance
-  const sortedBoutiques = useMemo(() => {
-    if (!dbBoutiques) return [];
-    return dbBoutiques
-      .map((b) => {
-        const bLat = b.latitude ?? b.addressDetails?.lat;
-        const bLng = b.longitude ?? b.addressDetails?.lng;
-        let distance: number | null = null;
-        if (latitude !== null && longitude !== null && bLat !== undefined && bLng !== undefined) {
-          distance = calculateDistanceKm(latitude, longitude, bLat, bLng);
-        }
-
-        let tierWeight = 0;
-        if (b.trustTier === "Elite") tierWeight = 4;
-        else if (b.trustTier === "Gold") tierWeight = 3;
-        else if (b.trustTier === "Silver") tierWeight = 2;
-        else if (b.trustTier === "Bronze") tierWeight = 1;
-
-        return {
-          ...b,
-          distance,
-          tierWeight,
-        };
-      })
-      .sort((a, b) => {
-        if (b.tierWeight !== a.tierWeight) {
-          return b.tierWeight - a.tierWeight;
-        }
-        if (a.distance !== null && b.distance !== null) {
-          return a.distance - b.distance;
-        }
-        return 0;
-      });
-  }, [dbBoutiques, latitude, longitude]);
-
-  // Filter and map boutiques to frontend Boutique shape with Proximity/ETA
-  const mappedBoutiques = useMemo(() => {
-    const withDetails = sortedBoutiques
-      .filter((b) => {
-        // Exclude boutiques that have 0 active, approved products
-        if (b.activeApprovedProductCount !== undefined && b.activeApprovedProductCount <= 0) {
-          return false;
-        }
-        // If user location is set, filter to only show boutiques where distance <= deliveryRadiusKm (default 15km)
-        if (latitude !== null && longitude !== null && b.distance !== null) {
-          return b.distance <= (b.deliveryRadiusKm ?? 15);
-        }
-        return true;
-      })
-      .map((b) => {
-        let etaMinutes: number | null = null;
-        if (b.distance !== null) {
-          const durationMin = (b.distance / 25) * 60; // 25 km/h driving speed approximation
-          etaMinutes = Math.round(durationMin + (b.averagePrepTime ?? 30));
-        }
-        return {
-          ...b,
-          etaMinutes,
-        };
-      });
-
-    // Identify top 5 closest deliverable boutiques to flag as "Nearby"
-    const sortedByDistance = [...withDetails]
-      .filter((b) => b.distance !== null)
-      .sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
-    
-    const top5Ids = new Set(sortedByDistance.slice(0, 5).map((b) => b._id));
-
-    return withDetails.map((b) => {
-      const distanceText = b.distance !== null ? `${b.distance.toFixed(1)} km away` : null;
-      const etaText = b.etaMinutes !== null ? `${b.etaMinutes} min delivery` : null;
-      return {
-        id: b._id,
-        name: b.boutiqueName,
-        tagline: b.description || "Designer Boutique",
-        city: b.addressDetails?.city || "Kochi",
-        rating: b.hiveScore ? Number((b.hiveScore / 20).toFixed(1)) : 4.8,
-        reviewCount: b.totalOrders || 12,
-        specialties: b.merchantType ? [b.merchantType] : ["Fashion"],
-        verified: b.status === "APPROVED" || b.merchantTier === "Elite" || b.merchantTier === "Gold",
-        sameDayDelivery: b.deliveryRadiusKm !== undefined ? b.deliveryRadiusKm <= 15 : true,
-        imageUrl: b.logoUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80",
-        productCount: b.activeApprovedProductCount || 0,
-        featured: b.merchantTier === "Elite" || b.merchantTier === "Gold",
-        distanceText,
-        etaText,
-        isNearby: top5Ids.has(b._id),
-        distance: b.distance,
-        etaMinutes: b.etaMinutes,
-      };
-    });
-  }, [sortedBoutiques, latitude, longitude]);
+  // Product mapping logic is now handled in the render loop on a per-block basis
 
   // Render loading skeleton
   if (homeData === undefined) {
@@ -466,13 +310,13 @@ export function HomeClient() {
       </div>
 
       {/* ── DYNAMIC HOMEPAGE ENGINE ── */}
-      {homepageBlocks?.sort((a, b) => a.sortOrder - b.sortOrder).map((block) => {
+      {experienceBlocks?.map((block) => {
         // 1. HERO CAMPAIGNS
         if (block.blockType === "hero") {
           return (
             <section key={block._id} className="w-full bg-white pt-2 pb-1">
               <div className="max-w-7xl mx-auto px-6 lg:px-8">
-                {dbBanners === undefined ? (
+                {block.data.campaigns === undefined ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
                     {[1, 2, 3].map((i) => (
                       <div key={i} className="aspect-[16/10] rounded-xl bg-slate-100 animate-pulse flex items-center justify-center border border-hive-border/30">
@@ -483,7 +327,7 @@ export function HomeClient() {
                 ) : (
                   <>
                     <div className="hidden md:grid grid-cols-3 gap-6 w-full">
-                      {(dbBanners.length > 0 ? dbBanners : staticFallbackCampaigns).slice(0, 3).map((banner: any, idx: number) => (
+                      {(block.data.campaigns.length > 0 ? block.data.campaigns : staticFallbackCampaigns).slice(0, 3).map((banner: any, idx: number) => (
                         <div
                           key={banner._id || idx}
                           className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
@@ -508,7 +352,7 @@ export function HomeClient() {
                         onTouchEnd={() => setTimeout(() => setIsCarouselPaused(false), 2000)}
                         className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6"
                       >
-                        {(dbBanners.length > 0 ? dbBanners : staticFallbackCampaigns).map((banner: any, idx: number) => (
+                        {(block.data.campaigns.length > 0 ? block.data.campaigns : staticFallbackCampaigns).map((banner: any, idx: number) => (
                           <div
                             key={banner._id || idx}
                             className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
@@ -535,7 +379,8 @@ export function HomeClient() {
 
         // 2. CATEGORY BUBBLES
         if (block.blockType === "category") {
-          if (!homepageSubcategories || homepageSubcategories.length === 0) return null;
+          const categories = block.data.categories || [];
+          if (categories.length === 0) return null;
           return (
             <section key={block._id} className="w-full bg-white pt-2 pb-2 border-b border-hive-border/20">
               <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-3 text-left">
@@ -550,7 +395,7 @@ export function HomeClient() {
                     ref={categoryScrollRef}
                     className="flex gap-6 pb-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start -mx-6 px-6 sm:mx-0 sm:px-0 pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8"
                   >
-                    {homepageSubcategories.map((subcat) => (
+                    {categories.map((subcat: any) => (
                       <button
                         key={subcat._id}
                         onClick={() => router.push(`/products/${subcat.slug}`)}
@@ -581,24 +426,21 @@ export function HomeClient() {
         if (block.blockType === "collection") {
           // Pinterest Style Mood Board
           if (block.renderer === "moodGrid" || block.renderer === "editorialGrid") {
-            const displayCols = homepageCollections?.filter((c: any) => c.type !== "trending" && c.type !== "default") || [];
-            if (displayCols.length === 0) return null;
-            return <MoodBoardGrid key={block._id} title={block.title} subtitle={block.subtitle} collections={displayCols} />;
+            // Editorial grid requires collections to be passed, but the new API resolves products into block.data.
+            // If the old code relied on homepageCollections for the mood board, we should adapt it.
+            // Since phase 1 is about architecture, let's omit moodGrid logic for now or stub it if it's unused.
+            // Actually, if we resolved the single collection in `data.collection`, we can render its products:
+            if (block.data.collection && block.data.products) {
+              const displayCols = [ { ...block.data.collection, products: block.data.products.map(mapDbProduct) } ];
+              return <MoodBoardGrid key={block._id} title={block.title} subtitle={block.subtitle} collections={displayCols} />;
+            }
+            return null;
           }
 
           // Otherwise render products
-          let blockProducts: any[] = [];
-          if (block.config?.collectionId) {
-            const col = homepageCollections?.find((c: any) => c._id === block.config?.collectionId);
-            if (col && col.products) {
-              blockProducts = col.products.map(mapDbProduct);
-            }
-          } else {
-            // Fallbacks for the seeded default blocks
-            if (block.blockKey === "trending_kochi") blockProducts = products.slice(0, 10);
-            else if (block.blockKey === "fresh_arrivals") blockProducts = newArrivalsProducts;
-            else if (block.blockKey === "going_out") blockProducts = products.slice(5, 12);
-          }
+          let blockProducts = (block.data.products || [])
+            .filter((p: any) => p.active !== false && p.stock !== 0)
+            .map(mapDbProduct);
 
           if (!blockProducts || blockProducts.length === 0) return null;
 
@@ -636,7 +478,11 @@ export function HomeClient() {
 
         // 4. RECENTLY VIEWED / MOST LOVED
         if (block.blockType === "recentlyViewed") {
-          if (!mostLovedProducts || mostLovedProducts.length === 0) return null;
+          const mostLovedProducts = (block.data.products || [])
+            .filter((p: any) => p.active !== false && p.stock !== 0)
+            .map(mapDbProduct);
+            
+          if (mostLovedProducts.length === 0) return null;
           return (
             <section key={block._id} className="w-full bg-[#FAF6F0] py-6 border-b border-hive-border/20">
               <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">

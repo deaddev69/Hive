@@ -5,14 +5,33 @@ import { v } from "convex/values";
 import { enrichProducts } from "./products";
 import { haversineKm } from "./lib/serviceability";
 
-export const getCustomerHomeData = query({
+export const resolveExperiencePayload = query({
   args: {
+    slug: v.string(),
     city: v.optional(v.string()),
     userLat: v.optional(v.number()),
     userLng: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+
+    // 1. Fetch Experience
+    const experience = await ctx.db
+      .query("experiences")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+
+    if (!experience || experience.status !== "published") {
+      return null;
+    }
+
+    // 2. Fetch Blocks
+    const experienceBlocks = await ctx.db
+      .query("experienceBlocks")
+      .withIndex("by_experience_status_sort", (q) => 
+        q.eq("experienceId", experience._id).eq("status", "published")
+      )
+      .collect();
 
     const bannersPromise = (async () => {
       const bannersRaw = await ctx.db
@@ -175,32 +194,27 @@ export const getCustomerHomeData = query({
       );
     })();
 
-    // 5. Fetch Homepage Blocks & Collections for Dynamic Engine
-    const homepageBlocksPromise = ctx.db
-      .query("homepageBlocks")
-      .withIndex("by_status_sort", (q) => q.eq("status", "published"))
-      .collect();
+    // 5. Fetch Collections for Dynamic Engine
 
-    const homepageCollectionsPromise = ctx.db
-      .query("homepageCollections")
-      .filter((q) => q.eq(q.field("isPublished"), true))
+    const collectionsPromise = ctx.db
+      .query("collections")
+      .withIndex("by_status", (q) => q.eq("status", "published"))
       .collect();
 
     const collectionProductsPromise = ctx.db.query("collectionProducts").collect();
 
     const heroCampaignsPromise = ctx.db
       .query("heroCampaigns")
-      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .withIndex("by_published_priority", (q) => q.eq("isPublished", true))
       .collect();
 
     // Execute the promises to have base info
-    const [banners, config, boutiques, categories, homepageBlocks, homepageCollections, collectionProducts, heroCampaigns] = await Promise.all([
+    const [banners, config, boutiques, categories, collectionsRaw, collectionProducts, heroCampaigns] = await Promise.all([
       bannersPromise,
       configPromise,
       boutiquesPromise,
       categoriesPromise,
-      homepageBlocksPromise,
-      homepageCollectionsPromise,
+      collectionsPromise,
       collectionProductsPromise,
       heroCampaignsPromise,
     ]);
@@ -340,7 +354,7 @@ export const getCustomerHomeData = query({
 
     // Group collection products
     const enrichedProductsMap = new Map(enrichedProducts.map(p => [p._id.toString(), p]));
-    const collectionsWithProducts = homepageCollections.map(col => {
+    const collectionsWithProducts = collectionsRaw.map(col => {
       const mappings = collectionProducts
         .filter(cp => cp.collectionId === col._id)
         .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
@@ -358,17 +372,39 @@ export const getCustomerHomeData = query({
       };
     });
 
+    const resolvedBlocks = experienceBlocks.map((block) => {
+      let data: any = {};
+
+      if (block.blockType === "hero") {
+        data.campaigns = banners;
+      } else if (block.blockType === "category") {
+        data.categories = categories.filter(c => c.showOnHomepage).sort((a,b) => (a.homepageOrder || 0) - (b.homepageOrder || 0));
+      } else if (block.blockType === "collection") {
+        if (block.config?.collectionId) {
+          const col = collectionsWithProducts.find(c => c._id.toString() === block.config?.collectionId);
+          if (col) {
+            data.collection = { title: col.name, subtitle: col.description, slug: col.slug };
+            data.products = col.products;
+          }
+        } else {
+          // Fallbacks for seed data
+          if (block.blockKey === "trending_kochi") data.products = products.slice(0, 10);
+          else if (block.blockKey === "fresh_arrivals") data.products = newArrivals;
+          else if (block.blockKey === "going_out") data.products = products.slice(5, 12);
+        }
+      } else if (block.blockType === "recentlyViewed") {
+        data.products = enrichedMostLoved;
+      }
+
+      return {
+        ...block,
+        data,
+      };
+    });
+
     return {
-      banners,
-      config,
-      products,
-      boutiques,
-      categories,
-      mostLoved: enrichedMostLoved,
-      newArrivals,
-      homepageBlocks,
-      homepageCollections: collectionsWithProducts,
-      heroCampaigns,
+      experience,
+      blocks: resolvedBlocks,
     };
   },
 });

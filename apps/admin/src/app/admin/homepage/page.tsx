@@ -17,6 +17,7 @@ import {
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { formatCurrency, toast } from "@hive/utils";
+import { ExperienceStudio } from "./ExperienceStudio";
 
 export default function AdminHomepageMerchandisingPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -49,24 +50,29 @@ export default function AdminHomepageMerchandisingPage() {
     }
   };
 
+  // View Mode: 'experiences' | 'collections'
+  const [viewMode, setViewMode] = useState<"experiences" | "collections">("experiences");
+
   // Queries
+  const experiences = useQuery(api.homepageAdmin.getExperiences);
+  const homepageExp = experiences?.find((e: any) => e.slug === "homepage");
   const collections = useQuery(api.homepageAdmin.getAllHomepageCollections);
-  const blocks = useQuery(api.homepageAdmin.getAllHomepageBlocks, { status: previewStatus });
-  const livePreviewBlocks = useQuery(api.homepage.getActiveHomepageBlocks, { status: previewStatus });
+  const blocks = useQuery(api.homepageAdmin.getExperienceBlocks, homepageExp ? { experienceId: homepageExp._id, status: previewStatus } : "skip");
 
   // Mutations
   const seedStarter = useMutation(api.homepageAdmin.seedDefaultHomepageData);
   const deleteCol = useMutation(api.homepageAdmin.deleteCollection);
   const createCol = useMutation(api.homepageAdmin.createCollection);
-  const publishBlocks = useMutation(api.homepageAdmin.publishDraftBlocks);
-  const updateBlock = useMutation(api.homepageAdmin.updateHomepageBlock);
+  const publishBlocks = useMutation(api.homepageAdmin.publishExperienceBlocks);
+  const updateBlock = useMutation(api.homepageAdmin.updateExperienceBlock);
   const duplicateColMutation = useMutation(api.homepageAdmin.duplicateCollection);
   const duplicateCampaignMutation = useMutation(api.homepageAdmin.duplicateCampaign);
 
   const handlePublishLive = async () => {
     try {
+      if (!homepageExp) throw new Error("Homepage experience not found");
       setIsPublishing(true);
-      const count = await publishBlocks({});
+      const count = await publishBlocks({ experienceId: homepageExp._id });
       toast.success(`Published ${count} homepage blocks live to production! 🚀`);
     } catch (err: any) {
       toast.error("Failed to publish blocks: " + err.message);
@@ -76,7 +82,7 @@ export default function AdminHomepageMerchandisingPage() {
   };
 
   // Operational Filters & Preview Controls
-  const [filterTab, setFilterTab] = useState<"all" | "editorial" | "automated" | "seasonal" | "draft" | "archived">("all");
+  const [filterTab, setFilterTab] = useState<"all" | "manual" | "rule" | "draft" | "archived">("all");
   const [devicePreview, setDevicePreview] = useState<"desktop" | "iphone" | "android">("iphone");
   const [personaPreview, setPersonaPreview] = useState<"guest" | "logged_in">("guest");
 
@@ -103,9 +109,7 @@ export default function AdminHomepageMerchandisingPage() {
   const [showColModal, setShowColModal] = useState(false);
   const [colTitle, setColTitle] = useState("");
   const [colSubtitle, setColSubtitle] = useState("");
-  const [colEmoji, setColEmoji] = useState("✨");
   const [colImageUrl, setColImageUrl] = useState("");
-  const [colType, setColType] = useState<"mood" | "occasion" | "trending" | "going_out" | "seasonal">("mood");
 
   const handleCreateCollection = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,14 +119,12 @@ export default function AdminHomepageMerchandisingPage() {
     }
     const slug = colTitle.toLowerCase().replace(/\s+/g, "-");
     await createCol({
-      title: colTitle,
-      subtitle: colSubtitle || undefined,
-      emoji: colEmoji || undefined,
-      imageUrl: colImageUrl || undefined,
+      name: colTitle,
+      description: colSubtitle || undefined,
+      coverImage: colImageUrl || undefined,
       slug,
-      type: colType,
-      sortOrder: (collections?.length || 0) + 1,
-      isPublished: true,
+      sourceMode: "MANUAL",
+      status: "published",
     });
     toast.success("Collection created successfully!");
     setShowColModal(false);
@@ -133,11 +135,10 @@ export default function AdminHomepageMerchandisingPage() {
 
   const filteredCollections = collections?.filter((c: any) => {
     if (filterTab === "all") return true;
-    if (filterTab === "editorial") return c.type === "mood" || c.type === "going_out";
-    if (filterTab === "automated") return c.type === "trending";
-    if (filterTab === "seasonal") return c.type === "seasonal";
-    if (filterTab === "draft") return !c.isPublished;
-    if (filterTab === "archived") return c.isPublished === false;
+    if (filterTab === "manual") return c.sourceMode === "MANUAL";
+    if (filterTab === "rule") return c.sourceMode === "RULE";
+    if (filterTab === "draft") return c.status === "draft";
+    if (filterTab === "archived") return c.status === "archived";
     return true;
   });
 
@@ -155,49 +156,42 @@ export default function AdminHomepageMerchandisingPage() {
             Experiences & Content Engine
           </h1>
           <p className="text-xs text-slate-500 dark:text-zinc-400">
-            Curate collections, schedule marketing campaigns, and render dynamic customer experiences across PWA & push channels.
+            Curate collections, schedule marketing campaigns, and render dynamic customer experiences.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-center gap-2 bg-slate-100 dark:bg-zinc-800 p-1.5 rounded-2xl">
           <button
-            type="button"
-            onClick={() => setShowColModal(true)}
-            className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>+ New Collection</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setPreviewStatus(previewStatus === "draft" ? "published" : "draft")}
-            className={`px-3.5 py-2.5 font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer border ${
-              previewStatus === "draft"
-                ? "bg-amber-500/10 text-amber-500 border-amber-500/30"
-                : "bg-emerald-500/10 text-emerald-500 border-emerald-500/30"
+            onClick={() => setViewMode("experiences")}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+              viewMode === "experiences"
+                ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs"
+                : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            <span>Status: {previewStatus.toUpperCase()}</span>
+            Experience Studio
           </button>
-
           <button
-            type="button"
-            onClick={handlePublishLive}
-            disabled={isPublishing}
-            className="px-4 py-2.5 bg-slate-900 dark:bg-zinc-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer disabled:opacity-50 border border-slate-700"
+            onClick={() => setViewMode("collections")}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+              viewMode === "collections"
+                ? "bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs"
+                : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+            }`}
           >
-            {isPublishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-400" />}
-            <span>Publish Live</span>
+            Collections Merchandising
           </button>
-
         </div>
       </div>
 
-      {/* ── Operational Status Filter Tabs & Persona Toolbar ──────────────────── */}
+      {viewMode === "experiences" ? (
+        <ExperienceStudio />
+      ) : (
+        <>
+          {/* ── Operational Status Filter Tabs & Persona Toolbar ──────────────────── */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-zinc-900 px-5 py-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800">
         <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
-          {(["all", "editorial", "automated", "seasonal", "draft"] as const).map((tab) => (
+          {(["all", "manual", "rule", "draft", "archived"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -284,10 +278,10 @@ export default function AdminHomepageMerchandisingPage() {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 relative flex items-center justify-center text-lg font-bold">
-                    {col.imageUrl ? (
-                      <img src={col.imageUrl} alt={col.title} className="absolute inset-0 w-full h-full object-cover" />
+                    {col.coverImage ? (
+                      <img src={col.coverImage} alt={col.title} className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
-                      <span>{col.emoji || "✨"}</span>
+                      <span className="text-slate-300"><Layers className="w-5 h-5"/></span>
                     )}
                   </div>
                   <div className="min-w-0">
@@ -296,7 +290,7 @@ export default function AdminHomepageMerchandisingPage() {
                         {col.title}
                       </span>
                       <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-500">
-                        {col.type}
+                        {col.status}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-400 truncate">
@@ -337,7 +331,7 @@ export default function AdminHomepageMerchandisingPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-zinc-800">
                 <div>
                   <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">
-                    {selectedCollection.type} Collection
+                    {selectedCollection.sourceMode} Collection
                   </span>
                   <h2 className="text-lg font-serif font-bold text-slate-900 dark:text-white">
                     {(devicePreview === "iphone" || devicePreview === "desktop") ? "Customer Preview: " : "Merchandizing: "} {selectedCollection.title}
@@ -575,32 +569,6 @@ export default function AdminHomepageMerchandisingPage() {
                   className="w-full p-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl font-mono text-[11px]"
                 />
               </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-zinc-300 mb-1">Collection Type</label>
-                  <select
-                    value={colType}
-                    onChange={(e) => setColType(e.target.value as any)}
-                    className="w-full p-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl font-bold"
-                  >
-                    <option value="mood">Mood</option>
-                    <option value="occasion">Occasion</option>
-                    <option value="trending">Trending</option>
-                    <option value="going_out">Going Out</option>
-                    <option value="seasonal">Seasonal</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 dark:text-zinc-300 mb-1">Emoji</label>
-                  <input
-                    type="text"
-                    value={colEmoji}
-                    onChange={(e) => setColEmoji(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-center"
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
@@ -620,6 +588,9 @@ export default function AdminHomepageMerchandisingPage() {
             </div>
           </form>
         </div>
+      )}
+
+      </>
       )}
 
     </div>

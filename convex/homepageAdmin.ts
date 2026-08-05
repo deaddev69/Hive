@@ -18,38 +18,21 @@ export const getAllHeroCampaigns = query({
 export const getAllHomepageCollections = query({
   args: {},
   handler: async (ctx) => {
-    const legacyCols = await ctx.db.query("homepageCollections").collect();
     const platformCols = await ctx.db.query("collections").collect();
     
-    const combined = [
-      ...legacyCols.map((c) => ({
-        _id: c._id.toString(),
-        title: c.title,
-        subtitle: c.subtitle,
-        emoji: c.emoji,
-        imageUrl: c.imageUrl,
-        slug: c.slug,
-        type: c.type,
-        sourceMode: "MANUAL",
-        sortOrder: c.sortOrder,
-        isPublished: c.isPublished,
-        createdAt: c.createdAt,
-      })),
-      ...platformCols.map((c) => ({
-        _id: c._id.toString(),
-        title: c.name,
-        subtitle: c.description,
-        emoji: c.emoji,
-        imageUrl: c.imageUrl,
-        slug: c.slug,
-        type: "collection",
-        sourceMode: c.sourceMode || "MANUAL",
-        rules: c.rules || [],
-        sortOrder: 1,
-        isPublished: c.isPublished,
-        createdAt: c.createdAt,
-      })),
-    ];
+    const combined = platformCols.map((c) => ({
+      _id: c._id.toString(),
+      title: c.name,
+      subtitle: c.description,
+      coverImage: c.coverImage,
+      coverAlt: c.coverAlt,
+      slug: c.slug,
+      sourceMode: c.sourceMode || "MANUAL",
+      rules: c.rules || [],
+      status: c.status,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    }));
 
     return await Promise.all(
       combined.map(async (col) => {
@@ -165,57 +148,46 @@ export const toggleCampaignPublished = mutation({
 
 export const createCollection = mutation({
   args: {
-    title: v.string(),
-    subtitle: v.optional(v.string()),
-    emoji: v.optional(v.string()),
-    imageUrl: v.optional(v.string()),
+    name: v.string(),
     slug: v.string(),
-    type: v.union(
-      v.literal("mood"),
-      v.literal("occasion"),
-      v.literal("trending"),
-      v.literal("going_out"),
-      v.literal("seasonal")
-    ),
-    sortOrder: v.number(),
-    isPublished: v.boolean(),
+    description: v.optional(v.string()),
+    coverImage: v.optional(v.string()),
+    coverAlt: v.optional(v.string()),
+    sourceMode: v.union(v.literal("MANUAL"), v.literal("RULE"), v.literal("HYBRID")),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("homepageCollections", {
+    const now = Date.now();
+    return await ctx.db.insert("collections", {
       ...args,
-      createdAt: Date.now(),
+      createdAt: now,
+      updatedAt: now,
     });
   },
 });
 
 export const updateCollection = mutation({
   args: {
-    id: v.id("homepageCollections"),
-    title: v.optional(v.string()),
-    subtitle: v.optional(v.string()),
-    emoji: v.optional(v.string()),
-    imageUrl: v.optional(v.string()),
+    id: v.id("collections"),
+    name: v.optional(v.string()),
     slug: v.optional(v.string()),
-    type: v.optional(
-      v.union(
-        v.literal("mood"),
-        v.literal("occasion"),
-        v.literal("trending"),
-        v.literal("going_out"),
-        v.literal("seasonal")
-      )
-    ),
-    sortOrder: v.optional(v.number()),
-    isPublished: v.optional(v.boolean()),
+    description: v.optional(v.string()),
+    coverImage: v.optional(v.string()),
+    coverAlt: v.optional(v.string()),
+    sourceMode: v.optional(v.union(v.literal("MANUAL"), v.literal("RULE"), v.literal("HYBRID"))),
+    status: v.optional(v.union(v.literal("draft"), v.literal("published"), v.literal("archived"))),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
-    await ctx.db.patch(id, updates);
+    await ctx.db.patch(id, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
   },
 });
 
 export const deleteCollection = mutation({
-  args: { id: v.id("homepageCollections") },
+  args: { id: v.id("collections") },
   handler: async (ctx, args) => {
     // Delete collection products mapping first
     const mappings = await ctx.db
@@ -356,23 +328,85 @@ export const upsertProductMetadata = mutation({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HOMEPAGE BLOCKS ADMIN MANAGEMENT
+// EXPERIENCES ADMIN MANAGEMENT
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const getAllHomepageBlocks = query({
-  args: { status: v.optional(v.union(v.literal("draft"), v.literal("published"))) },
+export const getExperiences = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("experiences").collect();
+  },
+});
+
+export const createExperience = mutation({
+  args: {
+    name: v.string(),
+    slug: v.string(),
+    seoTitle: v.optional(v.string()),
+    seoDescription: v.optional(v.string()),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return await ctx.db.insert("experiences", {
+      ...args,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const updateExperience = mutation({
+  args: {
+    id: v.id("experiences"),
+    name: v.optional(v.string()),
+    slug: v.optional(v.string()),
+    seoTitle: v.optional(v.string()),
+    seoDescription: v.optional(v.string()),
+    status: v.optional(v.union(v.literal("draft"), v.literal("published"), v.literal("archived"))),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    await ctx.db.patch(id, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const archiveExperience = mutation({
+  args: { id: v.id("experiences") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, {
+      status: "archived",
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPERIENCE BLOCKS ADMIN MANAGEMENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const getExperienceBlocks = query({
+  args: {
+    experienceId: v.id("experiences"),
+    status: v.optional(v.union(v.literal("draft"), v.literal("published")))
+  },
   handler: async (ctx, args) => {
     const targetStatus = args.status ?? "draft";
     return await ctx.db
-      .query("homepageBlocks")
-      .withIndex("by_status_sort", (q) => q.eq("status", targetStatus))
+      .query("experienceBlocks")
+      .withIndex("by_experience_status_sort", (q) => 
+        q.eq("experienceId", args.experienceId).eq("status", targetStatus)
+      )
       .collect();
   },
 });
 
-export const updateHomepageBlock = mutation({
+export const updateExperienceBlock = mutation({
   args: {
-    id: v.id("homepageBlocks"),
+    id: v.id("experienceBlocks"),
     title: v.optional(v.string()),
     subtitle: v.optional(v.string()),
     sortOrder: v.optional(v.number()),
@@ -395,24 +429,28 @@ export const updateHomepageBlock = mutation({
 });
 
 export const toggleBlockStatus = mutation({
-  args: { id: v.id("homepageBlocks"), status: v.union(v.literal("draft"), v.literal("published")) },
+  args: { id: v.id("experienceBlocks"), status: v.union(v.literal("draft"), v.literal("published")) },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.id, { status: args.status });
   },
 });
 
-export const publishDraftBlocks = mutation({
-  args: {},
-  handler: async (ctx) => {
+export const publishExperienceBlocks = mutation({
+  args: { experienceId: v.id("experiences") },
+  handler: async (ctx, args) => {
     const draftBlocks = await ctx.db
-      .query("homepageBlocks")
-      .withIndex("by_status_sort", (q) => q.eq("status", "draft"))
+      .query("experienceBlocks")
+      .withIndex("by_experience_status_sort", (q) => 
+        q.eq("experienceId", args.experienceId).eq("status", "draft")
+      )
       .collect();
 
-    // Delete current published blocks
+    // Delete current published blocks for this experience
     const publishedBlocks = await ctx.db
-      .query("homepageBlocks")
-      .withIndex("by_status_sort", (q) => q.eq("status", "published"))
+      .query("experienceBlocks")
+      .withIndex("by_experience_status_sort", (q) => 
+        q.eq("experienceId", args.experienceId).eq("status", "published")
+      )
       .collect();
 
     for (const pb of publishedBlocks) {
@@ -422,7 +460,7 @@ export const publishDraftBlocks = mutation({
     // Clone draft blocks to published status
     for (const db of draftBlocks) {
       const { _id, _creationTime, ...blockData } = db;
-      await ctx.db.insert("homepageBlocks", {
+      await ctx.db.insert("experienceBlocks", {
         ...blockData,
         status: "published",
       });
@@ -472,72 +510,94 @@ export const seedDefaultHomepageData = mutation({
       });
     }
 
-    // 2. Seed Default Blocks if empty
-    const existingBlocks = await ctx.db.query("homepageBlocks").collect();
-    if (existingBlocks.length === 0) {
+    // 2. Seed Collections if empty
+    const existingCols = await ctx.db.query("collections").collect();
+    const colIdMap: Record<string, string> = {};
+    if (existingCols.length === 0) {
+      const defaultCols = [
+        { name: "Today's Edit", description: "Hand-picked daily editorial picks", slug: "todays-edit" },
+        { name: "Fresh on Hive", description: "New arrivals in the last 14 days", slug: "fresh-on-hive" },
+        { name: "Trending in Kochi", description: "Popular styles across Panampilly Nagar & Edappally", slug: "trending-in-kochi" },
+        { name: "Going Out Today", description: "Evening co-ords & party wear", slug: "going-out-today" },
+        { name: "Wedding Season", description: "Festive sarees, bridal lehengas & sherwanis", slug: "wedding-season" },
+        { name: "Quiet Luxury", description: "Minimalist linen, silks & structured cuts", slug: "quiet-luxury" },
+        { name: "Linen Love", description: "100% pure Kerala handloom linens", slug: "linen-love" },
+        { name: "Under ₹999", description: "Affordable boutique finds", slug: "under-999" },
+      ];
+
+      for (const col of defaultCols) {
+        const id = await ctx.db.insert("collections", {
+          name: col.name,
+          description: col.description,
+          slug: col.slug,
+          sourceMode: "MANUAL",
+          status: "published",
+          createdAt: now,
+          updatedAt: now,
+        });
+        colIdMap[col.slug] = id.toString();
+      }
+    } else {
+      for (const col of existingCols) {
+        colIdMap[col.slug] = col._id.toString();
+      }
+    }
+
+    // 3. Seed Homepage Experience
+    const existingExperiences = await ctx.db.query("experiences").collect();
+    let homepageExpId: any = null;
+    
+    if (existingExperiences.length === 0) {
+      homepageExpId = await ctx.db.insert("experiences", {
+        name: "Homepage",
+        slug: "homepage",
+        seoTitle: "Hive - Women's Fashion Destination",
+        seoDescription: "Discover curated fashion from the best local boutiques.",
+        status: "published",
+        createdAt: now,
+        updatedAt: now,
+      });
+    } else {
+      homepageExpId = existingExperiences.find(e => e.slug === "homepage")?._id;
+    }
+
+    // 4. Seed Default Blocks if empty
+    const existingBlocks = await ctx.db.query("experienceBlocks").collect();
+    if (existingBlocks.length === 0 && homepageExpId) {
       const defaultBlocks = [
-        { blockKey: "hero_main", title: "Hero Carousel", blockType: "hero" as const, renderer: "productCarousel" as const, sortOrder: 1 },
-        { blockKey: "categories_strip", title: "Shop By Category", blockType: "category" as const, renderer: "largeCards" as const, sortOrder: 2 },
-        { blockKey: "trending_kochi", title: "Trending in Kochi", subtitle: "Most requested styles across Panampilly Nagar, Edappally & Kakkanad.", blockType: "collection" as const, renderer: "productCarousel" as const, sortOrder: 3 },
-        { blockKey: "fresh_arrivals", title: "Fresh on Hive", subtitle: "New styles added today by verified boutique partners.", blockType: "collection" as const, renderer: "productCarousel" as const, sortOrder: 4 },
-        { blockKey: "going_out", title: "Going Out Today?", subtitle: "Evening co-ords, statement mini dresses & luxury accessories.", blockType: "collection" as const, renderer: "productCarousel" as const, sortOrder: 5 },
-        { blockKey: "seasonal_highlight", title: "Wedding & Festive Curation '26", subtitle: "Handcrafted Zari sarees, bridal organzas & designer sherwanis.", blockType: "collection" as const, renderer: "editorialGrid" as const, sortOrder: 6 },
-        { blockKey: "recently_viewed", title: "Recently Viewed & Recommended", blockType: "recentlyViewed" as const, renderer: "productCarousel" as const, sortOrder: 7 },
-        { blockKey: "trust_strip", title: "Why Shop on Hive", blockType: "trust" as const, renderer: "largeCards" as const, sortOrder: 8 },
+        { blockKey: "hero_main", title: "Hero Carousel", blockType: "hero" as const, renderer: "productCarousel" as const, sortOrder: 1, config: {} },
+        { blockKey: "categories_strip", title: "Shop By Category", blockType: "category" as const, renderer: "largeCards" as const, sortOrder: 2, config: {} },
+        { blockKey: "trending_kochi", title: "Trending in Kochi", subtitle: "Most requested styles across Panampilly Nagar, Edappally & Kakkanad.", blockType: "collection" as const, renderer: "productCarousel" as const, sortOrder: 3, config: { collectionId: colIdMap["trending-in-kochi"] } },
+        { blockKey: "fresh_arrivals", title: "Fresh on Hive", subtitle: "New styles added today by verified boutique partners.", blockType: "collection" as const, renderer: "productCarousel" as const, sortOrder: 4, config: { collectionId: colIdMap["fresh-on-hive"] } },
+        { blockKey: "going_out", title: "Going Out Today?", subtitle: "Evening co-ords, statement mini dresses & luxury accessories.", blockType: "collection" as const, renderer: "productCarousel" as const, sortOrder: 5, config: { collectionId: colIdMap["going-out-today"] } },
+        { blockKey: "seasonal_highlight", title: "Wedding & Festive Curation '26", subtitle: "Handcrafted Zari sarees, bridal organzas & designer sherwanis.", blockType: "collection" as const, renderer: "editorialGrid" as const, sortOrder: 6, config: { collectionId: colIdMap["wedding-season"] } },
+        { blockKey: "recently_viewed", title: "Recently Viewed & Recommended", blockType: "recentlyViewed" as const, renderer: "productCarousel" as const, sortOrder: 7, config: {} },
+        { blockKey: "trust_strip", title: "Why Shop on Hive", blockType: "trust" as const, renderer: "largeCards" as const, sortOrder: 8, config: {} },
       ];
 
       for (const b of defaultBlocks) {
-        // Insert both published & draft versions
-        await ctx.db.insert("homepageBlocks", {
+        await ctx.db.insert("experienceBlocks", {
+          experienceId: homepageExpId,
           blockKey: b.blockKey,
           title: b.title,
           subtitle: b.subtitle,
           blockType: b.blockType,
           renderer: b.renderer,
-          config: {},
+          config: b.config,
           sortOrder: b.sortOrder,
           status: "published",
         });
 
-        await ctx.db.insert("homepageBlocks", {
+        await ctx.db.insert("experienceBlocks", {
+          experienceId: homepageExpId,
           blockKey: b.blockKey,
           title: b.title,
           subtitle: b.subtitle,
           blockType: b.blockType,
           renderer: b.renderer,
-          config: {},
+          config: b.config,
           sortOrder: b.sortOrder,
           status: "draft",
-        });
-      }
-    }
-
-    // 3. Seed Homepage Collections if empty
-    const existingCols = await ctx.db.query("homepageCollections").collect();
-    if (existingCols.length === 0) {
-      const defaultCols = [
-        { title: "Today's Edit", subtitle: "Hand-picked daily editorial picks", emoji: "✨", type: "mood" as const, slug: "todays-edit" },
-        { title: "Fresh on Hive", subtitle: "New arrivals in the last 14 days", emoji: "🌿", type: "trending" as const, slug: "fresh-on-hive" },
-        { title: "Trending in Kochi", subtitle: "Popular styles across Panampilly Nagar & Edappally", emoji: "🔥", type: "trending" as const, slug: "trending-in-kochi" },
-        { title: "Going Out Today", subtitle: "Evening co-ords & party wear", emoji: "🍸", type: "going_out" as const, slug: "going-out-today" },
-        { title: "Wedding Season", subtitle: "Festive sarees, bridal lehengas & sherwanis", emoji: "👑", type: "seasonal" as const, slug: "wedding-season" },
-        { title: "Quiet Luxury", subtitle: "Minimalist linen, silks & structured cuts", emoji: "🕊️", type: "mood" as const, slug: "quiet-luxury" },
-        { title: "Linen Love", subtitle: "100% pure Kerala handloom linens", emoji: "🌾", type: "occasion" as const, slug: "linen-love" },
-        { title: "Under ₹999", subtitle: "Affordable boutique finds", emoji: "🏷️", type: "occasion" as const, slug: "under-999" },
-      ];
-
-      let idx = 0;
-      for (const col of defaultCols) {
-        idx++;
-        await ctx.db.insert("homepageCollections", {
-          title: col.title,
-          subtitle: col.subtitle,
-          emoji: col.emoji,
-          slug: col.slug,
-          type: col.type,
-          sortOrder: idx,
-          isPublished: true,
-          createdAt: now,
         });
       }
     }
@@ -566,31 +626,18 @@ export const duplicateCollection = mutation({
     const newSlug = `${col.slug}-copy-${Math.random().toString(36).substring(7)}`;
 
     let newColId: string;
-    if (col.name !== undefined) {
-      newColId = (await ctx.db.insert("collections", {
-        name: `${col.name} (Copy)`,
-        slug: newSlug,
-        description: col.description,
-        imageUrl: col.imageUrl,
-        emoji: col.emoji,
-        sourceMode: col.sourceMode,
-        rules: col.rules,
-        isPublished: false,
-        createdAt: now,
-      })).toString();
-    } else {
-      newColId = (await ctx.db.insert("homepageCollections", {
-        title: `${col.title} (Copy)`,
-        subtitle: col.subtitle,
-        emoji: col.emoji,
-        imageUrl: col.imageUrl,
-        slug: newSlug,
-        type: col.type,
-        sortOrder: (col.sortOrder || 1) + 1,
-        isPublished: false,
-        createdAt: now,
-      })).toString();
-    }
+    newColId = (await ctx.db.insert("collections", {
+      name: `${col.name} (Copy)`,
+      slug: newSlug,
+      description: col.description,
+      coverImage: col.coverImage,
+      coverAlt: col.coverAlt,
+      sourceMode: col.sourceMode,
+      rules: col.rules,
+      status: "draft",
+      createdAt: now,
+      updatedAt: now,
+    })).toString();
 
     // Duplicate mapped collection items
     const items = await ctx.db
@@ -631,6 +678,151 @@ export const duplicateCampaign = mutation({
       endDate: campaign.endDate,
       isPublished: false,
       createdAt: now,
+    });
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPERIENCE STUDIO MUTATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const duplicateExperience = mutation({
+  args: { id: v.id("experiences"), newName: v.string(), newSlug: v.string() },
+  handler: async (ctx, args) => {
+    const experience = await ctx.db.get(args.id);
+    if (!experience) throw new Error("Experience not found");
+
+    const now = Date.now();
+    const newExpId = await ctx.db.insert("experiences", {
+      name: args.newName,
+      slug: args.newSlug,
+      seoTitle: experience.seoTitle,
+      seoDescription: experience.seoDescription,
+      status: "draft",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Duplicate all published blocks
+    const blocks = await ctx.db
+      .query("experienceBlocks")
+      .withIndex("by_experience_status_sort", (q) => 
+        q.eq("experienceId", args.id).eq("status", "published")
+      )
+      .collect();
+
+    for (const b of blocks) {
+      await ctx.db.insert("experienceBlocks", {
+        experienceId: newExpId,
+        blockKey: b.blockKey,
+        title: b.title,
+        subtitle: b.subtitle,
+        blockType: b.blockType,
+        renderer: b.renderer,
+        config: b.config,
+        sortOrder: b.sortOrder,
+        status: "draft",
+      });
+    }
+
+    return newExpId;
+  },
+});
+
+export const addBlockToExperience = mutation({
+  args: {
+    experienceId: v.id("experiences"),
+    blockKey: v.string(),
+    blockType: v.union(
+      v.literal("collection"),
+      v.literal("category"),
+      v.literal("hero"),
+      v.literal("banner"),
+      v.literal("recentlyViewed"),
+      v.literal("trust")
+    ),
+    title: v.optional(v.string()),
+    subtitle: v.optional(v.string()),
+    renderer: v.optional(v.union(
+      v.literal("productCarousel"),
+      v.literal("largeCards"),
+      v.literal("moodGrid"),
+      v.literal("occasionGrid"),
+      v.literal("editorialGrid")
+    )),
+    config: v.optional(v.any()),
+    sortOrder: v.number(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("experienceBlocks", {
+      experienceId: args.experienceId,
+      blockKey: args.blockKey,
+      blockType: args.blockType,
+      title: args.title,
+      subtitle: args.subtitle,
+      renderer: args.renderer,
+      config: args.config,
+      sortOrder: args.sortOrder,
+      status: "draft",
+    });
+  },
+});
+
+export const removeBlockFromExperience = mutation({
+  args: { id: v.id("experienceBlocks") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
+
+export const updateExperienceLayout = mutation({
+  args: {
+    blocks: v.array(v.object({
+      id: v.id("experienceBlocks"),
+      sortOrder: v.number(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    for (const b of args.blocks) {
+      await ctx.db.patch(b.id, { sortOrder: b.sortOrder });
+    }
+  },
+});
+
+export const publishExperience = mutation({
+  args: { experienceId: v.id("experiences") },
+  handler: async (ctx, args) => {
+    const draftBlocks = await ctx.db
+      .query("experienceBlocks")
+      .withIndex("by_experience_status_sort", (q) => 
+        q.eq("experienceId", args.experienceId).eq("status", "draft")
+      )
+      .collect();
+
+    const publishedBlocks = await ctx.db
+      .query("experienceBlocks")
+      .withIndex("by_experience_status_sort", (q) => 
+        q.eq("experienceId", args.experienceId).eq("status", "published")
+      )
+      .collect();
+
+    // Delete current published blocks
+    for (const pb of publishedBlocks) {
+      await ctx.db.delete(pb._id);
+    }
+
+    // Clone draft blocks to published
+    for (const db of draftBlocks) {
+      const { _id, _creationTime, ...blockData } = db;
+      await ctx.db.insert("experienceBlocks", {
+        ...blockData,
+        status: "published",
+      });
+    }
+
+    await ctx.db.patch(args.experienceId, {
+      status: "published",
+      updatedAt: Date.now(),
     });
   },
 });

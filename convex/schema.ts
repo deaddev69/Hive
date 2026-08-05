@@ -2004,46 +2004,27 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_published_priority", ["isPublished", "priority"]),
 
-  // ─── HOMEPAGE V2: CURATED COLLECTIONS (LEGACY REFACTORED) ──────────────────
-  homepageCollections: defineTable({
-    title: v.string(),
-    subtitle: v.optional(v.string()),
-    emoji: v.optional(v.string()),
-    imageUrl: v.optional(v.string()),
-    slug: v.string(),
-    type: v.union(
-      v.literal("mood"),         // "How are you dressing today?"
-      v.literal("occasion"),     // "What are you dressing for?"
-      v.literal("trending"),     // "Trending in Kochi"
-      v.literal("going_out"),    // "Going Out Today"
-      v.literal("seasonal")      // "Wedding Season"
-    ),
-    sortOrder: v.number(),
-    isPublished: v.boolean(),
-    createdAt: v.number(),
-  })
-    .index("by_type_published", ["type", "isPublished", "sortOrder"])
-    .index("by_slug", ["slug"]),
+
 
   // ─── PLATFORM MERCHANDISING: REUSABLE COLLECTIONS ENGINE ──────────────────
   collections: defineTable({
     name: v.string(),
     slug: v.string(),
     description: v.optional(v.string()),
-    imageUrl: v.optional(v.string()),
-    emoji: v.optional(v.string()),
+    coverImage: v.optional(v.string()),
+    coverAlt: v.optional(v.string()),
     sourceMode: v.union(v.literal("MANUAL"), v.literal("RULE"), v.literal("HYBRID")),
     rules: v.optional(v.array(v.object({
       field: v.string(),
       operator: v.union(v.literal("="), v.literal("!="), v.literal(">"), v.literal("<"), v.literal(">="), v.literal("<="), v.literal("contains"), v.literal("in"), v.literal("between")),
       value: v.any(),
     }))),
-    isPublished: v.boolean(),
-    isArchived: v.optional(v.boolean()),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
     createdAt: v.number(),
+    updatedAt: v.number(),
   })
     .index("by_slug", ["slug"])
-    .index("by_published", ["isPublished"]),
+    .index("by_status", ["status"]),
 
   // ─── HOMEPAGE V2: COLLECTION PRODUCTS MAPPING ──────────────────────────────
   collectionProducts: defineTable({
@@ -2070,8 +2051,21 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_published", ["isPublished"]),
 
-  // ─── MERCHANDISING: HOMEPAGE DYNAMIC BLOCKS ────────────────────────────────
-  homepageBlocks: defineTable({
+  // ─── MERCHANDISING: EXPERIENCES ENGINE ─────────────────────────────────────
+  experiences: defineTable({
+    name: v.string(),
+    slug: v.string(),
+    seoTitle: v.optional(v.string()),
+    seoDescription: v.optional(v.string()),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_status", ["status"]),
+
+  experienceBlocks: defineTable({
+    experienceId: v.id("experiences"),
     blockKey: v.string(),
     title: v.optional(v.string()),
     subtitle: v.optional(v.string()),
@@ -2094,18 +2088,17 @@ export default defineSchema({
       collectionId: v.optional(v.string()),
       bannerId: v.optional(v.string()),
       maxProducts: v.optional(v.number()),
+      showTitle: v.optional(v.boolean()),
+      showSubtitle: v.optional(v.boolean()),
       showSeeAll: v.optional(v.boolean()),
       theme: v.optional(v.string()),
+      layout: v.optional(v.string()),
       spacing: v.optional(v.string()),
     }),
     sortOrder: v.number(),
-    priority: v.optional(v.number()),
-    visibility: v.optional(v.union(v.literal("Everyone"), v.literal("Guests"), v.literal("LoggedIn"))),
     status: v.union(v.literal("draft"), v.literal("published")),
-    startDate: v.optional(v.number()),
-    endDate: v.optional(v.number()),
   })
-    .index("by_status_sort", ["status", "sortOrder"])
+    .index("by_experience_status_sort", ["experienceId", "status", "sortOrder"])
     .index("by_blockKey", ["blockKey"]),
 
   // ─── HOMEPAGE V2: PRODUCT METADATA ENRICHMENT ──────────────────────────────
