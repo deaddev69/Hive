@@ -84,6 +84,13 @@ export class BlockService {
           .order("desc")
           .take(12);
         requiredProductIds.push(...history.map((h: any) => h.productId.toString()));
+      } else if (block.blockType === "recommended") {
+        const recommended = await ctx.db
+          .query("products")
+          .withIndex("by_active", (q: any) => q.eq("active", true))
+          .order("desc")
+          .take(12);
+        requiredProductIds.push(...recommended.map((p: any) => p._id.toString()));
       }
     }
 
@@ -96,7 +103,8 @@ export class BlockService {
   static async hydrateBlocks(
     ctx: any,
     blocksRaw: any[],
-    resolvedProductsMap: Map<string, ResolvedProduct>
+    resolvedProductsMap: Map<string, ResolvedProduct>,
+    userContext?: { userId?: string }
   ): Promise<ResolvedBlock[]> {
     const resolvedBlocks: ResolvedBlock[] = [];
 
@@ -119,6 +127,27 @@ export class BlockService {
           };
           data.products = matchedProducts;
         }
+      } else if (block.blockType === "recentlyViewed" && userContext?.userId) {
+        const history = await ctx.db
+          .query("recentlyViewed")
+          .withIndex("by_user_viewed", (q: any) => q.eq("userId", userContext.userId))
+          .order("desc")
+          .take(12);
+        
+        const matchedProducts = history
+          .map((h: any) => resolvedProductsMap.get(h.productId.toString()))
+          .filter(Boolean) as ResolvedProduct[];
+          
+        data.products = matchedProducts;
+      } else if (block.blockType === "recommended") {
+        // Simple algorithmic fallback: newest products
+        const products = Array.from(resolvedProductsMap.values());
+        // Sort by newest, maybe add some randomization or use featured flag
+        const recommendedProducts = products
+          .sort((a, b) => ((b as any).createdAt || 0) - ((a as any).createdAt || 0))
+          .slice(0, block.config?.maxProducts || 12);
+          
+        data.products = recommendedProducts;
       } else if (block.blockType === "hero" || block.blockType === "banner") {
         // A. Direct image configured on the block itself (from Experience Studio)
         if (block.config?.desktopImage || block.config?.bannerImage || block.config?.imageUrl) {
@@ -140,28 +169,6 @@ export class BlockService {
               mobileImage: await resolveBannerImage(ctx, (banner as any).mobileImageUrl || (banner as any).mobileImage) || "",
               targetUrl: (banner as any).ctaLink || (banner as any).targetUrl || "/collections",
             }];
-          }
-        } else {
-          // B. Fallback: Try the admin-managed `banners` table first
-          const activeBanners = await ctx.db
-            .query("banners")
-            .withIndex("by_active_and_sortOrder", (q: any) => q.eq("active", true))
-            .collect();
-
-          if (activeBanners.length > 0) {
-            data.banners = await Promise.all(activeBanners.map(async (b: any) => ({
-              ...b,
-              desktopImage: await resolveBannerImage(ctx, b.desktopImageUrl || b.desktopImage) || "",
-              mobileImage: await resolveBannerImage(ctx, b.mobileImageUrl || b.mobileImage) || "",
-              targetUrl: b.ctaLink || b.targetUrl || "/collections",
-            })));
-          } else {
-            // C. Fallback: editorialBanners
-            const editBanners = await ctx.db
-              .query("editorialBanners")
-              .withIndex("by_status_sort", (q: any) => q.eq("status", "published"))
-              .take(5);
-            data.banners = editBanners;
           }
         }
       } else if (block.blockType === "category") {

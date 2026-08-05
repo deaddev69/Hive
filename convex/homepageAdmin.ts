@@ -411,8 +411,31 @@ export const getExperienceBlocks = query({
           q.eq("experienceId", args.experienceId).eq("status", "archived")
         )
         .collect();
-        
-      return [...draft, ...archived].sort((a, b) => a.sortOrder - b.sortOrder);
+      const published = await ctx.db
+        .query("experienceBlocks")
+        .withIndex("by_experience_status_sort", (q) => 
+          q.eq("experienceId", args.experienceId).eq("status", "published")
+        )
+        .collect();
+
+      const allBlocks = [...draft, ...published, ...archived];
+      
+      // Deduplicate by blockKey, preferring draft > published > archived
+      const deduplicatedMap = new Map();
+      for (const block of allBlocks) {
+        if (!deduplicatedMap.has(block.blockKey)) {
+          deduplicatedMap.set(block.blockKey, block);
+        } else {
+          const existing = deduplicatedMap.get(block.blockKey);
+          if (existing.status === "archived" && (block.status === "draft" || block.status === "published")) {
+            deduplicatedMap.set(block.blockKey, block);
+          } else if (existing.status === "published" && block.status === "draft") {
+            deduplicatedMap.set(block.blockKey, block);
+          }
+        }
+      }
+      
+      return Array.from(deduplicatedMap.values()).sort((a, b) => a.sortOrder - b.sortOrder);
     }
 
     return await ctx.db

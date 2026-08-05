@@ -40,7 +40,7 @@ export class ContentService {
     );
 
     // 6. Hydrate Blocks (which recursively hydrates Collections)
-    const hydratedBlocks = await BlockService.hydrateBlocks(ctx, blocksRaw, resolvedProductsMap);
+    const hydratedBlocks = await BlockService.hydrateBlocks(ctx, blocksRaw, resolvedProductsMap, userContext);
 
     // 7. Return Final DTO
     return {

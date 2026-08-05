@@ -20,7 +20,8 @@ export function getPublicUrl(asset: any, variant: "thumbnail" | "pdp" | "zoom" |
   if (typeof asset === "string") return asset;
   if (!asset?.objectKey) return "";
   
-  const domain = process.env.R2_PUBLIC_DEV_URL || "pub-09a817ec6f384c4997feafc5e8387286.r2.dev";
+  // Force R2 dev URL since cdn.hivenow.in is not resolving yet (ERR_NAME_NOT_RESOLVED)
+  const domain = "pub-09a817ec6f384c4997feafc5e8387286.r2.dev";
   
   // Cloudflare R2.dev URLs do not support /cdn-cgi/image/ optimizations
   if (domain.includes(".r2.dev")) {

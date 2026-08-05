@@ -2083,6 +2083,7 @@ export default defineSchema({
       v.literal("collection"),
       v.literal("banner"),
       v.literal("recentlyViewed"),
+      v.literal("recommended"),
       v.literal("trust")
     ),
     renderer: v.optional(v.union(
@@ -2090,7 +2091,8 @@ export default defineSchema({
       v.literal("largeCards"),
       v.literal("moodGrid"),
       v.literal("occasionGrid"),
-      v.literal("editorialGrid")
+      v.literal("editorialGrid"),
+      v.literal("twoProductGrid")
     )),
     config: v.object({
       collectionId: v.optional(v.string()),

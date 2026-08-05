@@ -109,7 +109,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                   {/* Desktop Image */}
                   <div className="hidden sm:block absolute inset-0 w-full h-full">
                     <Image
-                      src={banners[0].desktopImage || banners[0].mobileImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=1200&q=80"}
+                      src={banners[0].desktopImage || banners[0].mobileImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
                       alt={banners[0].title || "Editorial Banner"}
                       fill
                       sizes="100vw"
@@ -119,7 +119,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                   {/* Mobile Image */}
                   <div className="sm:hidden absolute inset-0 w-full h-full">
                     <Image
-                      src={banners[0].mobileImage || banners[0].desktopImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
+                      src={banners[0].mobileImage || banners[0].desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
                       alt={banners[0].title || "Editorial Banner"}
                       fill
                       sizes="100vw"
@@ -141,7 +141,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                         }}
                       >
                         <Image
-                          src={banner.desktopImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
+                          src={banner.desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
                           alt={banner.title || "Banner"}
                           fill
                           sizes="(max-width: 768px) 100vw, 33vw"
@@ -166,7 +166,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                           }}
                         >
                           <Image
-                            src={banner.mobileImage || banner.desktopImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
+                            src={banner.mobileImage || banner.desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
                             alt={banner.title || "Banner"}
                             fill
                             sizes="(max-width: 768px) 100vw, 33vw"
@@ -247,6 +247,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     if (!blockProducts || blockProducts.length === 0) return null;
 
     const isCarousel = block.renderer === "productCarousel";
+    const isTwoGrid = block.renderer === "twoProductGrid";
 
     return (
       <section className={`w-full bg-white py-6 border-b border-hive-border/20 ${block.config?.theme === "dark" ? "bg-slate-900 text-white" : ""}`}>
@@ -270,6 +271,12 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                 </div>
               ))}
             </div>
+          ) : isTwoGrid ? (
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 w-full max-w-3xl mx-auto">
+              {blockProducts.slice(0, block.config?.maxProducts || 2).map((product: any) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 w-full">
               {blockProducts.slice(0, block.config?.maxProducts || 12).map((product: any) => (
@@ -282,22 +289,27 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     );
   }
 
-  // 4. RECENTLY VIEWED / MOST LOVED
-  if (block.blockType === "recentlyViewed") {
+  // 4. RECENTLY VIEWED / RECOMMENDED
+  if (block.blockType === "recentlyViewed" || block.blockType === "recommended") {
     const mostLovedProducts = (block.data.products || [])
       .filter((p: any) => p.active !== false && p.stock !== 0)
       .map(mapDbProduct);
       
     if (mostLovedProducts.length === 0) return null;
+    
+    const isRecommended = block.blockType === "recommended";
+    const bgClass = isRecommended ? "bg-white" : "bg-[#FAF6F0]";
+    const tagText = isRecommended ? "CURATED FOR YOU" : "CUSTOMER FAVORITES";
+    
     return (
-      <section className="w-full bg-[#FAF6F0] py-6 border-b border-hive-border/20">
+      <section className={`w-full ${bgClass} py-6 border-b border-hive-border/20`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
-              CUSTOMER FAVORITES
+              {tagText}
             </span>
             <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
-              {block.title || "Most Loved"}
+              {block.title || (isRecommended ? "Recommended" : "Most Loved")}
             </h2>
           </div>
           <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">

@@ -50,6 +50,24 @@ const BLOCK_REGISTRY: BlockSchema[] = [
   },
   {
     id: "collection",
+    name: "Mood Board (Editorial)",
+    category: "Collections",
+    icon: Star,
+    description: "Graphic layout for curated outfits.",
+    defaultConfig: { title: "Editor's Picks", renderer: "moodGrid", config: { maxProducts: 8 } },
+    fields: ["title", "subtitle", "collectionId", "maxProducts"]
+  },
+  {
+    id: "collection",
+    name: "Two Product Grid",
+    category: "Collections",
+    icon: Grid,
+    description: "A simple 2-column grid layout for products.",
+    defaultConfig: { title: "Featured Duo", renderer: "twoProductGrid", config: { maxProducts: 2 } },
+    fields: ["title", "subtitle", "collectionId", "maxProducts"]
+  },
+  {
+    id: "collection",
     name: "Product Carousel",
     category: "Collections",
     icon: ShoppingBag,
@@ -73,6 +91,15 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     icon: Eye,
     description: "Personalized history of user's viewed items.",
     defaultConfig: { title: "Recently Viewed", renderer: "productCarousel", config: { maxProducts: 10 } },
+    fields: ["title", "maxProducts"]
+  },
+  {
+    id: "recommended",
+    name: "Recommended for You",
+    category: "Commerce",
+    icon: Sparkles,
+    description: "Algorithmic personalized recommendations.",
+    defaultConfig: { title: "Recommended For You", renderer: "productCarousel", config: { maxProducts: 10 } },
     fields: ["title", "maxProducts"]
   },
   {
