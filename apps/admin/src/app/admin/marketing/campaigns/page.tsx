@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
+// Using native <img> for R2 CDN images (bypasses Vercel image proxy)
 import {
   Send,
   Plus,
@@ -365,7 +365,7 @@ export default function MarketingCampaignsPage() {
 
                     {bannerAsset && (
                       <div className="relative w-full h-32 rounded-2xl overflow-hidden bg-slate-100 border border-slate-100">
-                        <Image src={bannerAsset} alt={camp.title} fill className="object-cover" />
+                        <img src={bannerAsset} alt={camp.title} className="absolute inset-0 w-full h-full object-cover" />
                       </div>
                     )}
 
@@ -660,7 +660,7 @@ export default function MarketingCampaignsPage() {
 
                   {bannerUrl && (
                     <div className="relative w-full h-36 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-700 mt-2">
-                      <Image src={bannerUrl} alt="Push banner" fill className="object-cover" />
+                      <img src={bannerUrl} alt="Push banner" className="absolute inset-0 w-full h-full object-cover" />
                     </div>
                   )}
                 </div>
