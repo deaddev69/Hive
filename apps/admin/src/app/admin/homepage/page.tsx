@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+// Deployment trigger comment
 // Using native <img> for R2 CDN images (bypasses Vercel image proxy)
 import {
   Sparkles,
