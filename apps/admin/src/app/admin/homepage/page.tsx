@@ -374,14 +374,14 @@ export default function AdminHomepageMerchandisingPage() {
                           await addProduct({ collectionId: selectedCollection._id, productId: p._id });
                           toast.success(`Added ${p.name} to collection`);
                         }}
-                        className="bg-white dark:bg-zinc-900 p-2 rounded-xl border border-slate-200 dark:border-zinc-800 hover:border-amber-500 cursor-pointer flex items-center gap-2"
+                        className="bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 hover:border-amber-500 cursor-pointer flex items-center gap-3"
                       >
-                        <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-slate-100">
+                        <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-slate-100 border border-slate-100">
                           <img src={p.imageUrl || "https://placehold.co/400x400/png?text=No+Image"} alt={p.name} className="absolute inset-0 w-full h-full object-cover" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-[11px] font-bold text-slate-800 dark:text-zinc-200 truncate">{p.name}</h4>
-                          <span className="text-[10px] font-semibold text-slate-400">{formatCurrency(p.price)}</span>
+                          <h4 className="text-xs font-bold text-slate-800 dark:text-zinc-200 line-clamp-1">{p.name}</h4>
+                          <span className="text-[11px] font-semibold text-slate-500">{formatCurrency(p.priceMin || 0)}</span>
                         </div>
                       </div>
                     ))}
@@ -416,7 +416,7 @@ export default function AdminHomepageMerchandisingPage() {
 
                         <div className="space-y-0.5">
                           <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{item.name}</h4>
-                          <p className="text-[10px] text-slate-400">{formatCurrency(item.price)}</p>
+                          <p className="text-[10px] text-slate-400">{formatCurrency(item.priceMin || 0)}</p>
                         </div>
 
                         <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-zinc-700">

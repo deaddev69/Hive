@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { enrichProducts, getTotalStock } from "./products";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN QUERIES
@@ -82,18 +83,22 @@ export const searchCatalogProducts = query({
       .withIndex("by_active", (q) => q.eq("active", true))
       .take(args.limit ?? 50);
 
-    if (!args.query || args.query.trim() === "") {
-      return allProducts;
+    let filtered = allProducts;
+    if (args.query && args.query.trim() !== "") {
+      const q = args.query.toLowerCase();
+      filtered = allProducts.filter(
+        (p: any) =>
+          p.name?.toLowerCase().includes(q) ||
+          (p.categoryName && p.categoryName.toLowerCase().includes(q)) ||
+          (p.boutiqueName && p.boutiqueName.toLowerCase().includes(q)) ||
+          (p.description && p.description.toLowerCase().includes(q))
+      );
     }
-
-    const q = args.query.toLowerCase();
-    return allProducts.filter(
-      (p: any) =>
-        p.name?.toLowerCase().includes(q) ||
-        (p.categoryName && p.categoryName.toLowerCase().includes(q)) ||
-        (p.boutiqueName && p.boutiqueName.toLowerCase().includes(q)) ||
-        (p.description && p.description.toLowerCase().includes(q))
-    );
+    
+    const enriched = await enrichProducts(ctx, filtered);
+    
+    // Only return products that have stock
+    return enriched.filter((p: any) => p.active && getTotalStock(p.stockBySize) > 0);
   },
 });
 
