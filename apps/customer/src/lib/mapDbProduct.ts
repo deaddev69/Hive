@@ -7,12 +7,18 @@ export function mapDbProduct(p: any): ProductCardData & {
   boutique?: any;
   discountPercent?: number;
 } {
+  let rawPrice = p.price || 0;
+  let rawCompare = p.compareAtPrice;
+  if (rawPrice >= 10000) rawPrice = Math.round(rawPrice / 100);
+  if (rawCompare && rawCompare >= 10000) rawCompare = Math.round(rawCompare / 100);
+
   const hasDiscount =
     p.discountPrice !== undefined &&
     p.discountPrice !== null &&
     p.discountPrice < p.price;
-  const price = hasDiscount ? p.discountPrice! : p.price;
-  const compareAtPrice = hasDiscount ? p.price : undefined;
+  let price = hasDiscount ? p.discountPrice! : rawPrice;
+  if (hasDiscount && price >= 10000) price = Math.round(price / 100);
+  const compareAtPrice = hasDiscount ? rawPrice : undefined;
   
   const discountPercent = hasDiscount 
     ? Math.round(((compareAtPrice! - price) / compareAtPrice!) * 100) 

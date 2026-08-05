@@ -451,7 +451,8 @@ function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onCl
             <div>
               <label className="block text-[11px] font-bold text-slate-500 mb-1">Renderer (Layout)</label>
               <select className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.renderer} onChange={e => setFormData({...formData, renderer: e.target.value})}>
-                <option value="productCarousel">Product Carousel</option>
+                <option value="productCarousel">Product Carousel (Horizontal Scroll)</option>
+                <option value="twoColumnGrid">2-Column Product Grid</option>
                 <option value="largeCards">Large Cards</option>
                 <option value="moodGrid">Mood Grid</option>
                 <option value="occasionGrid">Category / Occasion Grid</option>
