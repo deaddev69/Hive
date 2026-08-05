@@ -149,39 +149,23 @@ export class BlockService {
           
         data.products = recommendedProducts;
       } else if (block.blockType === "hero") {
-        // Hero block always pulls the global carousel banners from the homepageBanners table
+        // Hero block always pulls the global carousel banners from the banners table
         const activeBanners = await ctx.db
-          .query("homepageBanners")
-          .withIndex("by_active_and_displayOrder", (q: any) => q.eq("active", true))
+          .query("banners")
+          .withIndex("by_active_and_sortOrder", (q: any) => q.eq("active", true))
           .collect();
         
-        // Filter by dates if needed, and sort
-        const now = Date.now();
-        const validBanners = activeBanners.filter((b: any) => {
-          if (b.startDate && now < b.startDate) return false;
-          if (b.endDate && now > b.endDate) return false;
-          return true;
-        }).sort((a: any, b: any) => (a.displayOrder || 0) - (b.displayOrder || 0));
+        // Sort by sortOrder
+        const validBanners = activeBanners.sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
         data.banners = await Promise.all(
           validBanners.map(async (banner: any) => {
-            let targetUrl = "/products";
-            if (banner.targetType === "collection") targetUrl = `/collections/${banner.targetValue}`;
-            else if (banner.targetType === "category") targetUrl = `/products/${banner.targetValue}`;
-            else if (banner.targetType === "product") {
-              if (banner.targetValue.match(/^[a-z0-9]+$/i) && banner.targetValue.length > 10) {
-                targetUrl = `/products?boutiqueId=${banner.targetValue}`;
-              } else {
-                targetUrl = `/products/${banner.targetValue}`;
-              }
-            } else if (banner.targetType === "search") targetUrl = `/search?q=${encodeURIComponent(banner.targetValue)}`;
-
             return {
               _id: banner._id.toString(),
               title: banner.title || "",
               desktopImage: await resolveBannerImage(ctx, banner.desktopImageUrl) || "",
               mobileImage: await resolveBannerImage(ctx, banner.mobileImageUrl || banner.desktopImageUrl) || "",
-              targetUrl,
+              targetUrl: banner.ctaLink || "/products",
             };
           })
         );
