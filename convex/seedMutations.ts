@@ -525,3 +525,25 @@ export const insertMockData = mutation({
     };
   },
 });
+
+export const migrateProductPrices = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const products = await ctx.db.query("products").collect();
+    let updated = 0;
+    for (const p of products) {
+      if (p.price < 100000) {
+        // If price is less than 100000 paise (1000 rupees), it was probably seeded wrong
+        // Multiply by 100 to fix it
+        await ctx.db.patch(p._id, {
+          price: p.price * 100,
+          basePrice: p.basePrice ? p.basePrice * 100 : undefined,
+          discountPrice: p.discountPrice ? p.discountPrice * 100 : undefined,
+          baseDiscountPrice: p.baseDiscountPrice ? p.baseDiscountPrice * 100 : undefined,
+        });
+        updated++;
+      }
+    }
+    return `Migrated ${updated} product prices.`;
+  }
+});

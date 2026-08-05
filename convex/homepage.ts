@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { enrichProducts } from "./products";
 
 // Get active hero campaigns, respecting start/end dates
 export const getActiveHeroCampaigns = query({
@@ -61,8 +62,13 @@ export const getCollectionProducts = query({
       })
     );
 
-    // Filter out deleted products
-    return products.filter((p): p is NonNullable<typeof p> => p !== null);
+    // Filter out deleted products and sort by collectionSortOrder
+    const validProducts = products.filter((p): p is NonNullable<typeof p> => p !== null);
+    
+    // Enrich products to resolve image URLs properly
+    const enriched = await enrichProducts(ctx, validProducts);
+    
+    return enriched;
   },
 });
 

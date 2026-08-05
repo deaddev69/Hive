@@ -635,5 +635,25 @@ export const duplicateCampaign = mutation({
   },
 });
 
+export const migrateProductPrices = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const products = await ctx.db.query("products").collect();
+    let updated = 0;
+    for (const p of products) {
+      if (p.price < 100000) {
+        await ctx.db.patch(p._id, {
+          price: p.price * 100,
+          basePrice: p.basePrice ? p.basePrice * 100 : undefined,
+          discountPrice: p.discountPrice ? p.discountPrice * 100 : undefined,
+          baseDiscountPrice: p.baseDiscountPrice ? p.baseDiscountPrice * 100 : undefined,
+        });
+        updated++;
+      }
+    }
+    return `Migrated ${updated} product prices.`;
+  }
+});
+
 
 
