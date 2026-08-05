@@ -148,7 +148,25 @@ export class BlockService {
           .slice(0, block.config?.maxProducts || 12);
           
         data.products = recommendedProducts;
-      } else if (block.blockType === "hero" || block.blockType === "banner") {
+      } else if (block.blockType === "hero") {
+        // Hero block always pulls the global carousel banners from the editorialBanners table
+        const activeBanners = await ctx.db
+          .query("editorialBanners")
+          .withIndex("by_status_sort", (q: any) => q.eq("status", "published"))
+          .collect();
+        
+        activeBanners.sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+        data.banners = await Promise.all(
+          activeBanners.map(async (banner: any) => ({
+            _id: banner._id.toString(),
+            title: banner.title || "",
+            desktopImage: await resolveBannerImage(ctx, banner.desktopImageUrl || banner.desktopImage) || "",
+            mobileImage: await resolveBannerImage(ctx, banner.mobileImageUrl || banner.mobileImage || banner.desktopImageUrl || banner.desktopImage) || "",
+            targetUrl: banner.ctaLink || banner.targetUrl || "/collections",
+          }))
+        );
+      } else if (block.blockType === "banner") {
         // A. Direct image configured on the block itself (from Experience Studio)
         if (block.config?.desktopImage || block.config?.bannerImage || block.config?.imageUrl) {
           const desktopImage = await resolveBannerImage(ctx, block.config.desktopImage || block.config.bannerImage || block.config.imageUrl);
