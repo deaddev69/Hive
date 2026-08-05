@@ -11,7 +11,7 @@ async function resolveBannerImage(ctx: any, imageField: any): Promise<string> {
     return getPublicUrl(imageField, "pdp") || "";
   }
   if (typeof imageField === "string" && imageField.startsWith("http")) {
-    return imageField;
+    return imageField.replace("https://cdn.hivenow.in/cdn-cgi/image/format=auto/banner_images/", "https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/banner_images/");
   }
   if (typeof imageField === "string") {
     try {

@@ -105,7 +105,7 @@ export function ExperienceStudio() {
 
   const selectedExp = experiences?.find((e: any) => e._id === selectedExpId);
   // Fetch ALL blocks (draft and archived/hidden)
-  const rawBlocks = useQuery(api.homepageAdmin.getExperienceBlocks, selectedExp ? { experienceId: selectedExp._id, status: "draft" } : "skip");
+  const rawBlocks = useQuery(api.homepageAdmin.getExperienceBlocks, selectedExp ? { experienceId: selectedExp._id, status: "all" } : "skip");
   
   // Local state for optimistic updates
   const [blocks, setBlocks] = useState<any[]>([]);
@@ -122,6 +122,7 @@ export function ExperienceStudio() {
   const updateLayout = useMutation(api.homepageAdmin.updateExperienceLayout);
   
   // Granular Mutations
+  const updateExp = useMutation(api.homepageAdmin.updateExperience);
   const updateBlockContent = useMutation(api.homepageAdmin.updateBlockContent);
   const updateBlockLayoutMut = useMutation(api.homepageAdmin.updateBlockLayout);
   const toggleVisibility = useMutation(api.homepageAdmin.toggleBlockVisibility);
@@ -367,6 +368,52 @@ export function ExperienceStudio() {
                       No blocks added yet. Click "Add Block" to open the library.
                     </div>
                   )}
+                </div>
+              )}
+
+              {activeTab === "settings" && selectedExp && (
+                <div className="max-w-2xl mx-auto bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-sm">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4">Experience Settings</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Name</label>
+                      <input 
+                        type="text" 
+                        defaultValue={selectedExp.name}
+                        onBlur={(e) => updateExp({ id: selectedExp._id, name: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Slug</label>
+                      <input 
+                        type="text" 
+                        defaultValue={selectedExp.slug}
+                        onBlur={(e) => updateExp({ id: selectedExp._id, slug: e.target.value })}
+                        className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-sm font-mono text-slate-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">SEO Title</label>
+                      <input 
+                        type="text" 
+                        defaultValue={selectedExp.seoTitle || ""}
+                        onBlur={(e) => updateExp({ id: selectedExp._id, seoTitle: e.target.value })}
+                        placeholder="e.g. Premium Tailoring | Hive by TailorBee"
+                        className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">SEO Description</label>
+                      <textarea 
+                        defaultValue={selectedExp.seoDescription || ""}
+                        onBlur={(e) => updateExp({ id: selectedExp._id, seoDescription: e.target.value })}
+                        placeholder="e.g. Discover our curated collection..."
+                        rows={3}
+                        className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-sm"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

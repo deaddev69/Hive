@@ -392,10 +392,29 @@ export const archiveExperience = mutation({
 export const getExperienceBlocks = query({
   args: {
     experienceId: v.id("experiences"),
-    status: v.optional(v.union(v.literal("draft"), v.literal("published")))
+    status: v.optional(v.union(v.literal("draft"), v.literal("published"), v.literal("all")))
   },
   handler: async (ctx, args) => {
     const targetStatus = args.status ?? "draft";
+    
+    if (targetStatus === "all") {
+      const draft = await ctx.db
+        .query("experienceBlocks")
+        .withIndex("by_experience_status_sort", (q) => 
+          q.eq("experienceId", args.experienceId).eq("status", "draft")
+        )
+        .collect();
+        
+      const archived = await ctx.db
+        .query("experienceBlocks")
+        .withIndex("by_experience_status_sort", (q) => 
+          q.eq("experienceId", args.experienceId).eq("status", "archived")
+        )
+        .collect();
+        
+      return [...draft, ...archived].sort((a, b) => a.sortOrder - b.sortOrder);
+    }
+
     return await ctx.db
       .query("experienceBlocks")
       .withIndex("by_experience_status_sort", (q) => 
