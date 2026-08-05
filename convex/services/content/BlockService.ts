@@ -1,5 +1,28 @@
 import { ResolvedBlock, ResolvedProduct } from "./types";
 import { CollectionService } from "../merchandising/CollectionService";
+import { getPublicUrl } from "../../media/api";
+
+/**
+ * Resolves a banner image field that may be a string URL or an ImageAsset object.
+ */
+async function resolveBannerImage(ctx: any, imageField: any): Promise<string> {
+  if (!imageField) return "";
+  if (typeof imageField === "object" && imageField.objectKey) {
+    return getPublicUrl(imageField, "pdp") || "";
+  }
+  if (typeof imageField === "string" && imageField.startsWith("http")) {
+    return imageField;
+  }
+  if (typeof imageField === "string") {
+    try {
+      const url = await ctx.storage.getUrl(imageField);
+      return url || imageField;
+    } catch {
+      return imageField;
+    }
+  }
+  return "";
+}
 
 export class BlockService {
   /**
@@ -71,12 +94,29 @@ export class BlockService {
             data.banners = [banner];
           }
         } else {
-          // Hydrate all active banners for a carousel if no specific ID provided
-          const banners = await ctx.db
-            .query("editorialBanners")
-            .withIndex("by_status_sort", (q: any) => q.eq("status", "published"))
-            .take(5);
-          data.banners = banners;
+          // 1. Try the admin-managed `banners` table first (where /admin/banners writes)
+          const activeBanners = await ctx.db
+            .query("banners")
+            .withIndex("by_active_and_sortOrder", (q: any) => q.eq("active", true))
+            .collect();
+
+          if (activeBanners.length > 0) {
+            // Map banners table fields to the shape ExperienceBlockRenderer expects
+            // Resolve ImageAsset objects to actual HTTP URLs
+            data.banners = await Promise.all(activeBanners.map(async (b: any) => ({
+              ...b,
+              desktopImage: await resolveBannerImage(ctx, b.desktopImageUrl) || b.desktopImage || "",
+              mobileImage: await resolveBannerImage(ctx, b.mobileImageUrl) || b.mobileImage || "",
+              targetUrl: b.ctaLink || b.targetUrl || "/collections",
+            })));
+          } else {
+            // 2. Fallback to editorialBanners (seed/editorial content)
+            const editBanners = await ctx.db
+              .query("editorialBanners")
+              .withIndex("by_status_sort", (q: any) => q.eq("status", "published"))
+              .take(5);
+            data.banners = editBanners;
+          }
         }
       } else if (block.blockType === "category") {
         const categories = await ctx.db
