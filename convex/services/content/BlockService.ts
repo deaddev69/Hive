@@ -24,6 +24,39 @@ async function resolveBannerImage(ctx: any, imageField: any): Promise<string> {
   return "";
 }
 
+/**
+ * Resolves category image fields to public CDN URLs.
+ */
+async function resolveCategoryImage(ctx: any, cat: any) {
+  let imageUrl = cat.imageUrl || null;
+  if (cat.imageStorageId) {
+    if (typeof cat.imageStorageId === "object" && cat.imageStorageId.objectKey) {
+      imageUrl = getPublicUrl(cat.imageStorageId as any);
+    } else if (typeof cat.imageStorageId === "string" && cat.imageStorageId.startsWith("http")) {
+      imageUrl = cat.imageStorageId;
+    } else if (typeof cat.imageStorageId === "string") {
+      try {
+        imageUrl = await ctx.storage.getUrl(cat.imageStorageId as any);
+      } catch {
+        imageUrl = cat.imageStorageId;
+      }
+    }
+  }
+  let homepageImageUrl = cat.homepageImage || null;
+  if (cat.homepageImage && !cat.homepageImage.startsWith("http")) {
+    try {
+      homepageImageUrl = await ctx.storage.getUrl(cat.homepageImage as any);
+    } catch {
+      homepageImageUrl = cat.homepageImage;
+    }
+  }
+  return {
+    ...cat,
+    imageUrl: imageUrl || homepageImageUrl || "",
+    homepageImageUrl: homepageImageUrl || imageUrl || "",
+  };
+}
+
 export class BlockService {
   /**
    * Scans a list of raw blocks and returns all Product IDs required across all blocks.
@@ -52,7 +85,6 @@ export class BlockService {
           .take(12);
         requiredProductIds.push(...history.map((h: any) => h.productId.toString()));
       }
-      // Add other dynamic logic here if block requires direct product resolution
     }
 
     return Array.from(new Set(requiredProductIds));
@@ -88,29 +120,43 @@ export class BlockService {
           data.products = matchedProducts;
         }
       } else if (block.blockType === "hero" || block.blockType === "banner") {
-        if (block.config?.bannerId) {
+        // A. Direct image configured on the block itself (from Experience Studio)
+        if (block.config?.desktopImage || block.config?.bannerImage || block.config?.imageUrl) {
+          const desktopImage = await resolveBannerImage(ctx, block.config.desktopImage || block.config.bannerImage || block.config.imageUrl);
+          const mobileImage = await resolveBannerImage(ctx, block.config.mobileImage || block.config.desktopImage || block.config.bannerImage || block.config.imageUrl);
+          data.banners = [{
+            _id: block._id.toString(),
+            desktopImage,
+            mobileImage,
+            targetUrl: block.config.targetUrl || "/collections",
+            title: block.title || "",
+          }];
+        } else if (block.config?.bannerId) {
           const banner = await ctx.db.get(block.config.bannerId);
           if (banner) {
-            data.banners = [banner];
+            data.banners = [{
+              ...banner,
+              desktopImage: await resolveBannerImage(ctx, (banner as any).desktopImageUrl || (banner as any).desktopImage) || "",
+              mobileImage: await resolveBannerImage(ctx, (banner as any).mobileImageUrl || (banner as any).mobileImage) || "",
+              targetUrl: (banner as any).ctaLink || (banner as any).targetUrl || "/collections",
+            }];
           }
         } else {
-          // 1. Try the admin-managed `banners` table first (where /admin/banners writes)
+          // B. Fallback: Try the admin-managed `banners` table first
           const activeBanners = await ctx.db
             .query("banners")
             .withIndex("by_active_and_sortOrder", (q: any) => q.eq("active", true))
             .collect();
 
           if (activeBanners.length > 0) {
-            // Map banners table fields to the shape ExperienceBlockRenderer expects
-            // Resolve ImageAsset objects to actual HTTP URLs
             data.banners = await Promise.all(activeBanners.map(async (b: any) => ({
               ...b,
-              desktopImage: await resolveBannerImage(ctx, b.desktopImageUrl) || b.desktopImage || "",
-              mobileImage: await resolveBannerImage(ctx, b.mobileImageUrl) || b.mobileImage || "",
+              desktopImage: await resolveBannerImage(ctx, b.desktopImageUrl || b.desktopImage) || "",
+              mobileImage: await resolveBannerImage(ctx, b.mobileImageUrl || b.mobileImage) || "",
               targetUrl: b.ctaLink || b.targetUrl || "/collections",
             })));
           } else {
-            // 2. Fallback to editorialBanners (seed/editorial content)
+            // C. Fallback: editorialBanners
             const editBanners = await ctx.db
               .query("editorialBanners")
               .withIndex("by_status_sort", (q: any) => q.eq("status", "published"))
@@ -119,11 +165,11 @@ export class BlockService {
           }
         }
       } else if (block.blockType === "category") {
-        const categories = await ctx.db
+        const rawCategories = await ctx.db
           .query("categories")
-          // We can just fetch them normally and filter, as the index might have changed
           .collect();
-        data.categories = categories.filter((c: any) => c.active && c.showOnHomepage);
+        const activeCategories = rawCategories.filter((c: any) => c.active && c.showOnHomepage);
+        data.categories = await Promise.all(activeCategories.map((c: any) => resolveCategoryImage(ctx, c)));
       }
 
       resolvedBlocks.push({

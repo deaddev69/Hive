@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useQuery, useMutation } from "convex/react";
+import React, { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { toast } from "@hive/utils";
 import {
-  Sparkles, Plus, Trash2, Settings, Smartphone, Layout, Copy, Edit, X, Eye, EyeOff, Search, Layers, ShoppingBag, Zap, ChevronDown, ChevronUp
+  Sparkles, Plus, Trash2, Settings, Smartphone, Layout, Copy, Edit, X, Eye, EyeOff, Search, Layers, ShoppingBag, Zap, ChevronDown, ChevronUp, Upload, Loader2, Link as LinkIcon
 } from "lucide-react";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 
@@ -35,18 +35,18 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     name: "Hero Banner",
     category: "Marketing",
     icon: Zap,
-    description: "Large promotional banner at the top of the page.",
+    description: "Large full-bleed graphic image banner at top of page.",
     defaultConfig: { title: "", renderer: "largeCards", config: {} },
-    fields: ["campaignId", "renderer"]
+    fields: ["bannerUpload", "targetUrl"]
   },
   {
     id: "banner",
     name: "Editorial Banner",
     category: "Marketing",
     icon: Layers,
-    description: "Slimline banner for announcements.",
+    description: "Graphic lifestyle banner image between collection rows.",
     defaultConfig: { title: "", renderer: "largeCards", config: {} },
-    fields: ["title", "campaignId"]
+    fields: ["bannerUpload", "targetUrl"]
   },
   {
     id: "collection",
@@ -416,6 +416,13 @@ export function ExperienceStudio() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onClose }: { block: any, schema: BlockSchema, collections: any, campaigns: any, onSave: any, onClose: any }) {
+  const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
+  const commitUpload = useAction(api.media.api.commitUpload);
+  const [uploading, setUploading] = useState(false);
+
+  const desktopInputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     title: block.title || "",
     subtitle: block.subtitle || "",
@@ -425,6 +432,34 @@ function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onCl
 
   const updateConfig = (key: string, value: any) => {
     setFormData(prev => ({ ...prev, config: { ...prev.config, [key]: value } }));
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    setUploading(true);
+    try {
+      const { presignedUrl, sessionId } = await generateUploadUrl({
+        mimeType: file.type,
+        fileSize: file.size,
+        ownerType: "admin",
+        ownerId: "experience_banners",
+        context: "banner_image",
+      });
+      await fetch(presignedUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      const finalizedAsset = await commitUpload({ sessionId });
+      updateConfig(key, finalizedAsset);
+      toast.success("Banner image uploaded successfully!");
+    } catch (err) {
+      console.error("Banner upload failed:", err);
+      toast.error("Failed to upload banner image.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = () => onSave(formData);
@@ -445,6 +480,87 @@ function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onCl
             <div>
               <label className="block text-[11px] font-bold text-slate-500 mb-1">Subtitle</label>
               <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.subtitle} onChange={e => setFormData({...formData, subtitle: e.target.value})} />
+            </div>
+          )}
+          {schema.fields.includes("bannerUpload") && (
+            <div className="space-y-4 border-t border-b border-slate-100 py-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Desktop Banner Image (Landscape)
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={desktopInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => handleFileUpload(e, "desktopImage")}
+                  />
+                  <button
+                    type="button"
+                    disabled={uploading}
+                    onClick={() => desktopInputRef.current?.click()}
+                    className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
+                  >
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    Choose Desktop Image
+                  </button>
+                </div>
+                {formData.config.desktopImage && (
+                  <div className="mt-2 relative aspect-[16/6] rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-[140px]">
+                    <img
+                      src={typeof formData.config.desktopImage === "string" ? formData.config.desktopImage : (formData.config.desktopImage?.objectKey ? `https://cdn.hivenow.in/cdn-cgi/image/format=auto/${formData.config.desktopImage.objectKey}` : "")}
+                      alt="Desktop Banner Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Mobile Banner Image (Compact)
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={mobileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => handleFileUpload(e, "mobileImage")}
+                  />
+                  <button
+                    type="button"
+                    disabled={uploading}
+                    onClick={() => mobileInputRef.current?.click()}
+                    className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-200 disabled:opacity-50 border border-slate-200 cursor-pointer"
+                  >
+                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    Choose Mobile Image
+                  </button>
+                </div>
+                {formData.config.mobileImage && (
+                  <div className="mt-2 relative aspect-[2/1] rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-[120px]">
+                    <img
+                      src={typeof formData.config.mobileImage === "string" ? formData.config.mobileImage : (formData.config.mobileImage?.objectKey ? `https://cdn.hivenow.in/cdn-cgi/image/format=auto/${formData.config.mobileImage.objectKey}` : "")}
+                      alt="Mobile Banner Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {schema.fields.includes("targetUrl") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-1">Target Click Link (Optional)</label>
+              <input
+                type="text"
+                placeholder="e.g. /collections/fresh-on-hive"
+                className="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-mono"
+                value={formData.config.targetUrl || ""}
+                onChange={e => updateConfig("targetUrl", e.target.value)}
+              />
             </div>
           )}
           {schema.fields.includes("renderer") && (

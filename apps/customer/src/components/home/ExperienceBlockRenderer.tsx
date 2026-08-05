@@ -99,55 +99,87 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               ))}
             </div>
           ) : (
-            <>
-              <div className="hidden md:grid grid-cols-3 gap-6 w-full">
-                {banners.slice(0, 3).map((banner: any, idx: number) => (
-                  <div
-                    key={banner._id || idx}
-                    className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
-                    style={{ animationDelay: `${idx * 150}ms` }}
-                    onClick={() => {
-                      if (banner.targetUrl) router.push(banner.targetUrl);
-                    }}
-                  >
-                    <Image
-                      src={banner.desktopImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
-                      alt={banner.title || "Banner"}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    <div className="sheen-glow" />
-                  </div>
-                ))}
-              </div>
-              <div className="md:hidden flex flex-col w-full pb-1">
+              {banners.length === 1 ? (
+                // Single Full-Bleed Graphic Image Banner
                 <div
-                  ref={mobileScrollRef}
-                  className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6"
+                  className="banner-card group relative w-full aspect-[2/1] sm:aspect-[16/6] md:aspect-[21/7] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+                  onClick={() => {
+                    if (banners[0].targetUrl) router.push(banners[0].targetUrl);
+                  }}
                 >
-                  {banners.map((banner: any, idx: number) => (
-                    <div
-                      key={banner._id || idx}
-                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
-                      style={{ animationDelay: `${idx * 150}ms` }}
-                      onClick={() => {
-                        if (banner.targetUrl) router.push(banner.targetUrl);
-                      }}
-                    >
-                      <Image
-                        src={banner.mobileImage || banner.desktopImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
-                        alt={banner.title || "Banner"}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
-                      />
-                      <div className="sheen-glow" />
-                    </div>
-                  ))}
+                  {/* Desktop Image */}
+                  <div className="hidden sm:block absolute inset-0 w-full h-full">
+                    <Image
+                      src={banners[0].desktopImage || banners[0].mobileImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=1200&q=80"}
+                      alt={banners[0].title || "Editorial Banner"}
+                      fill
+                      sizes="100vw"
+                      className="object-cover pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-700 ease-out"
+                    />
+                  </div>
+                  {/* Mobile Image */}
+                  <div className="sm:hidden absolute inset-0 w-full h-full">
+                    <Image
+                      src={banners[0].mobileImage || banners[0].desktopImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
+                      alt={banners[0].title || "Editorial Banner"}
+                      fill
+                      sizes="100vw"
+                      className="object-cover pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-700 ease-out"
+                    />
+                  </div>
+                  <div className="sheen-glow" />
                 </div>
-              </div>
-            </>
+              ) : (
+                <>
+                  <div className="hidden md:grid grid-cols-3 gap-6 w-full">
+                    {banners.slice(0, 3).map((banner: any, idx: number) => (
+                      <div
+                        key={banner._id || idx}
+                        className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+                        style={{ animationDelay: `${idx * 150}ms` }}
+                        onClick={() => {
+                          if (banner.targetUrl) router.push(banner.targetUrl);
+                        }}
+                      >
+                        <Image
+                          src={banner.desktopImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
+                          alt={banner.title || "Banner"}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                          className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                        />
+                        <div className="sheen-glow" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="md:hidden flex flex-col w-full pb-1">
+                    <div
+                      ref={mobileScrollRef}
+                      className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6"
+                    >
+                      {banners.map((banner: any, idx: number) => (
+                        <div
+                          key={banner._id || idx}
+                          className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+                          style={{ animationDelay: `${idx * 150}ms` }}
+                          onClick={() => {
+                            if (banner.targetUrl) router.push(banner.targetUrl);
+                          }}
+                        >
+                          <Image
+                            src={banner.mobileImage || banner.desktopImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
+                            alt={banner.title || "Banner"}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                            className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                          />
+                          <div className="sheen-glow" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
           )}
         </div>
       </section>
