@@ -217,17 +217,24 @@ export default function AdminHomepageMerchandisingPage() {
           <div className="flex items-center gap-1 bg-zinc-800/80 p-1 rounded-xl border border-zinc-700/60">
             <button
               type="button"
-              onClick={() => setDevicePreview(devicePreview === "iphone" ? "android" : "iphone")}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${devicePreview === "iphone" ? "bg-amber-500/20 text-amber-400" : "hover:text-white"}`}
+              onClick={() => setDevicePreview("android")}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${devicePreview !== "iphone" && devicePreview !== "desktop" ? "bg-amber-500 text-slate-900" : "hover:text-white"}`}
             >
-              iPhone
+              Merchandize
             </button>
             <button
               type="button"
-              onClick={() => setDevicePreview(devicePreview === "desktop" ? "android" : "desktop")}
+              onClick={() => setDevicePreview("iphone")}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${devicePreview === "iphone" ? "bg-amber-500/20 text-amber-400" : "hover:text-white"}`}
+            >
+              Preview: iPhone
+            </button>
+            <button
+              type="button"
+              onClick={() => setDevicePreview("desktop")}
               className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${devicePreview === "desktop" ? "bg-amber-500/20 text-amber-400" : "hover:text-white"}`}
             >
-              Desktop
+              Preview: Desktop
             </button>
           </div>
 
