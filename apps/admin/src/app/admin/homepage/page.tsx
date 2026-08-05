@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
+// Using native <img> for R2 CDN images (bypasses Vercel image proxy)
 import {
   Sparkles,
   Plus,
@@ -288,7 +288,7 @@ export default function AdminHomepageMerchandisingPage() {
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 relative flex items-center justify-center text-lg font-bold">
                     {col.imageUrl ? (
-                      <Image src={col.imageUrl} alt={col.title} fill className="object-cover" />
+                      <img src={col.imageUrl} alt={col.title} className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <span>{col.emoji || "✨"}</span>
                     )}
@@ -377,7 +377,7 @@ export default function AdminHomepageMerchandisingPage() {
                         className="bg-white dark:bg-zinc-900 p-2 rounded-xl border border-slate-200 dark:border-zinc-800 hover:border-amber-500 cursor-pointer flex items-center gap-2"
                       >
                         <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-slate-100">
-                          <Image src={p.imageUrl || "/placeholder.png"} alt={p.name} fill className="object-cover" />
+                          <img src={p.imageUrl || "/placeholder.png"} alt={p.name} className="absolute inset-0 w-full h-full object-cover" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <h4 className="text-[11px] font-bold text-slate-800 dark:text-zinc-200 truncate">{p.name}</h4>
@@ -405,7 +405,7 @@ export default function AdminHomepageMerchandisingPage() {
                         }`}
                       >
                         <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100">
-                          <Image src={item.imageUrl || "/placeholder.png"} alt={item.name} fill className="object-cover" />
+                          <img src={item.imageUrl || "/placeholder.png"} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
                           {item.isPinned && (
                             <div className="absolute top-1 left-1 px-2 py-0.5 bg-amber-500 text-slate-950 font-extrabold text-[9px] rounded-md uppercase flex items-center gap-1">
                               <Star className="w-2.5 h-2.5 fill-slate-950" />
