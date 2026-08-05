@@ -13,6 +13,16 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "assets.hivenow.in",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "pub-09a817ec6f384c4997feafc5e8387286.r2.dev",
+        pathname: "/**",
+      },
     ],
   },
   async headers() {
