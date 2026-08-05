@@ -191,16 +191,6 @@ export default function AdminHomepageMerchandisingPage() {
             <span>Publish Live</span>
           </button>
 
-          <button
-            type="button"
-            onClick={async () => {
-              await seedStarter();
-              toast.success("Hive Essentials collections & blocks imported successfully!");
-            }}
-            className="px-3.5 py-2.5 bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition border border-zinc-700/60 cursor-pointer"
-          >
-            <span>Import Hive Essentials</span>
-          </button>
         </div>
       </div>
 
@@ -227,15 +217,15 @@ export default function AdminHomepageMerchandisingPage() {
           <div className="flex items-center gap-1 bg-zinc-800/80 p-1 rounded-xl border border-zinc-700/60">
             <button
               type="button"
-              onClick={() => setDevicePreview("iphone")}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${devicePreview === "iphone" ? "bg-amber-500/20 text-amber-400" : "hover:text-white"}`}
+              onClick={() => setDevicePreview(devicePreview === "iphone" ? "android" : "iphone")}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${devicePreview === "iphone" ? "bg-amber-500/20 text-amber-400" : "hover:text-white"}`}
             >
               iPhone
             </button>
             <button
               type="button"
-              onClick={() => setDevicePreview("desktop")}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition ${devicePreview === "desktop" ? "bg-amber-500/20 text-amber-400" : "hover:text-white"}`}
+              onClick={() => setDevicePreview(devicePreview === "desktop" ? "android" : "desktop")}
+              className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${devicePreview === "desktop" ? "bg-amber-500/20 text-amber-400" : "hover:text-white"}`}
             >
               Desktop
             </button>
@@ -343,110 +333,160 @@ export default function AdminHomepageMerchandisingPage() {
                     {selectedCollection.type} Collection
                   </span>
                   <h2 className="text-lg font-serif font-bold text-slate-900 dark:text-white">
-                    Merchandizing: {selectedCollection.title}
+                    {(devicePreview === "iphone" || devicePreview === "desktop") ? "Customer Preview: " : "Merchandizing: "} {selectedCollection.title}
                   </h2>
                 </div>
 
-                {/* Catalog Search & Add Bar */}
-                <div className="relative w-full sm:w-72">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder="Search catalog to add..."
-                    value={productSearchQuery}
-                    onChange={(e) => setProductSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-medium focus:outline-hidden focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
-              {/* Catalog Search Overlay Results */}
-              {productSearchQuery.trim().length > 0 && (
-                <div className="bg-slate-50 dark:bg-zinc-800 p-3 rounded-2xl space-y-2 border border-slate-200 dark:border-zinc-700">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Catalog Search Results (Click to Add)
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                    {catalogSearchResults?.map((p: any) => (
-                      <div
-                        key={p._id}
-                        onClick={async () => {
-                          await addProduct({ collectionId: selectedCollection._id, productId: p._id });
-                          toast.success(`Added ${p.name} to collection`);
-                        }}
-                        className="bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 hover:border-amber-500 cursor-pointer flex items-center gap-3"
-                      >
-                        <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-slate-100 border border-slate-100">
-                          <img src={p.imageUrl || "https://placehold.co/400x400/png?text=No+Image"} alt={p.name} className="absolute inset-0 w-full h-full object-cover" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-xs font-bold text-slate-800 dark:text-zinc-200 line-clamp-1">{p.name}</h4>
-                          <span className="text-[11px] font-semibold text-slate-500">{formatCurrency(p.price || 0)}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Collection Items Grid with Pinning & Removal */}
-              <div className="space-y-2">
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                  Curated Items ({collectionProducts?.length || 0})
-                </h3>
-
-                {collectionProducts && collectionProducts.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {collectionProducts.map((item: any) => (
-                      <div
-                        key={item._id}
-                        className={`relative bg-slate-50 dark:bg-zinc-800/80 p-2.5 rounded-2xl border transition-all flex flex-col justify-between space-y-2 ${
-                          item.isPinned ? "border-amber-500 shadow-xs" : "border-slate-200 dark:border-zinc-800"
-                        }`}
-                      >
-                        <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100">
-                          <img src={item.imageUrl || "https://placehold.co/400x400/png?text=No+Image"} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
-                          {item.isPinned && (
-                            <div className="absolute top-1 left-1 px-2 py-0.5 bg-amber-500 text-slate-950 font-extrabold text-[9px] rounded-md uppercase flex items-center gap-1">
-                              <Star className="w-2.5 h-2.5 fill-slate-950" />
-                              <span>PINNED #1</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-0.5">
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{item.name}</h4>
-                          <p className="text-[10px] text-slate-400">{formatCurrency(item.price || 0)}</p>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-zinc-700">
-                          <button
-                            type="button"
-                            onClick={() => togglePin({ collectionId: selectedCollection._id, productId: item._id })}
-                            className={`p-1 rounded-lg transition ${
-                              item.isPinned ? "text-amber-500 bg-amber-500/10" : "text-slate-400 hover:text-amber-500"
-                            }`}
-                          >
-                            <Star className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeProduct({ collectionId: selectedCollection._id, productId: item._id })}
-                            className="p-1 text-slate-400 hover:text-red-500 rounded-lg transition"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-12 text-center bg-slate-50 dark:bg-zinc-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 space-y-2">
-                    <p className="text-xs font-semibold text-slate-500">No products added to this collection yet.</p>
-                    <p className="text-[11px] text-slate-400">Use the search bar above to search catalog items and add them.</p>
+                {/* Catalog Search & Add Bar (Only in Merchandizing mode) */}
+                {(devicePreview !== "iphone" && devicePreview !== "desktop") && (
+                  <div className="relative w-full sm:w-72">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Search catalog to add..."
+                      value={productSearchQuery}
+                      onChange={(e) => setProductSearchQuery(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-medium focus:outline-hidden focus:border-amber-500"
+                    />
                   </div>
                 )}
               </div>
+
+              {/* PREVIEW MODE UI */}
+              {(devicePreview === "iphone" || devicePreview === "desktop") ? (
+                <div className={`mx-auto bg-slate-100 dark:bg-black rounded-3xl overflow-hidden border border-slate-200 dark:border-zinc-800 ${devicePreview === "iphone" ? "w-full max-w-[390px] shadow-2xl h-[700px] overflow-y-auto" : "w-full min-h-[500px]"}`}>
+                  <div className="p-4 sm:p-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h2 className="text-xl font-serif font-bold text-slate-900 dark:text-white">{selectedCollection.title}</h2>
+                        {selectedCollection.subtitle && <p className="text-xs text-slate-500 mt-1">{selectedCollection.subtitle}</p>}
+                      </div>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-zinc-800 px-3 py-1.5 rounded-full shadow-xs bg-white dark:bg-zinc-900 cursor-pointer">
+                        View All
+                      </span>
+                    </div>
+
+                    {collectionProducts && collectionProducts.length > 0 ? (
+                      <div className={`grid gap-4 ${devicePreview === "iphone" ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4 lg:grid-cols-5"}`}>
+                        {collectionProducts.map((item: any) => (
+                          <div key={item._id} className="group cursor-pointer space-y-3">
+                            <div className={`relative bg-slate-200 dark:bg-zinc-900 rounded-2xl overflow-hidden ${devicePreview === "iphone" ? "aspect-[3/4]" : "aspect-[4/5]"}`}>
+                              <img src={item.imageUrl || "https://placehold.co/400x500/png?text=No+Image"} alt={item.name} className="absolute inset-0 w-full h-full object-cover transition duration-500 group-hover:scale-105" />
+                              <button className="absolute top-2 right-2 p-1.5 bg-white/50 backdrop-blur-md rounded-full text-slate-900 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Star className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <div className="space-y-1">
+                              <h3 className="text-[13px] font-bold text-slate-900 dark:text-white line-clamp-1">{item.name}</h3>
+                              <p className="text-xs text-slate-500">{item.boutique?.name || item.boutiqueName || "Boutique"}</p>
+                              <div className="flex items-center gap-2 pt-0.5">
+                                <span className="text-sm font-extrabold text-slate-900 dark:text-white">{formatCurrency(item.price || 0)}</span>
+                                {item.compareAtPrice && <span className="text-xs text-slate-400 line-through">{formatCurrency(item.compareAtPrice)}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="py-12 text-center space-y-2">
+                        <p className="text-sm font-semibold text-slate-500">Collection is empty.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* MERCHANDIZING MODE UI */}
+                  {/* Catalog Search Overlay Results */}
+                  {productSearchQuery.trim().length > 0 && (
+                    <div className="bg-slate-50 dark:bg-zinc-800 p-3 rounded-2xl space-y-2 border border-slate-200 dark:border-zinc-700">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Catalog Search Results (Click to Add)
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                        {catalogSearchResults?.map((p: any) => (
+                          <div
+                            key={p._id}
+                            onClick={async () => {
+                              await addProduct({ collectionId: selectedCollection._id, productId: p._id });
+                              toast.success(`Added ${p.name} to collection`);
+                            }}
+                            className="bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-800 hover:border-amber-500 cursor-pointer flex items-center gap-3"
+                          >
+                            <div className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-slate-100 border border-slate-100">
+                              <img src={p.imageUrl || "https://placehold.co/400x400/png?text=No+Image"} alt={p.name} className="absolute inset-0 w-full h-full object-cover" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-xs font-bold text-slate-800 dark:text-zinc-200 line-clamp-1">{p.name}</h4>
+                              <span className="text-[11px] font-semibold text-slate-500">{formatCurrency(p.price || 0)}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Collection Items Grid with Pinning & Removal */}
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                      Curated Items ({collectionProducts?.length || 0})
+                    </h3>
+
+                    {collectionProducts && collectionProducts.length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {collectionProducts.map((item: any) => (
+                          <div
+                            key={item._id}
+                            className={`relative bg-slate-50 dark:bg-zinc-800/80 p-2.5 rounded-2xl border transition-all flex flex-col justify-between space-y-2 ${
+                              item.isPinned ? "border-amber-500 shadow-xs" : "border-slate-200 dark:border-zinc-800"
+                            }`}
+                          >
+                            <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100">
+                              <img src={item.imageUrl || "https://placehold.co/400x400/png?text=No+Image"} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
+                              {item.isPinned && (
+                                <div className="absolute top-1 left-1 px-2 py-0.5 bg-amber-500 text-slate-950 font-extrabold text-[9px] rounded-md uppercase flex items-center gap-1">
+                                  <Star className="w-2.5 h-2.5 fill-slate-950" />
+                                  <span>PINNED #1</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="space-y-0.5">
+                              <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{item.name}</h4>
+                              <p className="text-[10px] text-slate-400">{formatCurrency(item.price || 0)}</p>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-zinc-700">
+                              <button
+                                type="button"
+                                onClick={() => togglePin({ collectionId: selectedCollection._id, productId: item._id })}
+                                className={`p-1 rounded-lg transition cursor-pointer ${
+                                  item.isPinned ? "text-amber-500 bg-amber-500/10" : "text-slate-400 hover:text-amber-500"
+                                }`}
+                              >
+                                <Star className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeProduct({ collectionId: selectedCollection._id, productId: item._id })}
+                                className="p-1 text-slate-400 hover:text-red-500 rounded-lg transition cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-12 text-center bg-slate-50 dark:bg-zinc-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 space-y-2">
+                        <p className="text-xs font-semibold text-slate-500">No products added to this collection yet.</p>
+                        <p className="text-[11px] text-slate-400">Use the search bar above to search catalog items and add them.</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
             </>
           ) : (
             <div className="p-16 text-center text-slate-400 space-y-2 flex flex-col items-center justify-center min-h-[400px]">
