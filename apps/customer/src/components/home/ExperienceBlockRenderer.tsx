@@ -98,8 +98,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                 </div>
               ))}
             </div>
-          ) : (
-              {banners.length === 1 ? (
+          ) : banners.length === 1 ? (
                 // Single Full-Bleed Graphic Image Banner
                 <div
                   className="banner-card group relative w-full aspect-[2/1] sm:aspect-[16/6] md:aspect-[21/7] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
@@ -180,7 +179,6 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                   </div>
                 </>
               )}
-          )}
         </div>
       </section>
     );
