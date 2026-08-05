@@ -1094,7 +1094,7 @@ export const countAllDocuments = query({
       "reviews", "hiveScores", "notifications", "auditLogs", "analyticsEvents", 
       "webhookEvents", "cartItems", "userLocations", "serviceZones", "serviceRequests", 
       "invoices", "categories", "deliveryZones", "serviceablePincodes", "homepageConfig", 
-      "homepageBanners", "banners", "boutiqueApplications", "identityLinks", 
+      "banners", "boutiqueApplications", "identityLinks", 
       "boutiqueDocumentEvents", "commissionLedger", "settlementLedger", "payoutLedger", 
       "refundLedger", "systemAlerts", "cronRuns", "marketplaceHealthSnapshots", 
       "adminRoleProposals", "rateLimits", "refundQueue", "notificationEvents", 

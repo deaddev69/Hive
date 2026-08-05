@@ -1487,30 +1487,6 @@ export default defineSchema({
     enableTrendingSection: v.optional(v.boolean()),
     updatedAt: v.number(),
   }),
-
-  homepageBanners: defineTable({
-    title: v.string(),
-    subtitle: v.optional(v.string()),
-    desktopImageUrl: v.string(),
-    mobileImageUrl: v.optional(v.string()),
-    ctaText: v.string(),
-    active: v.boolean(),
-    displayOrder: v.number(),
-    targetType: v.union(
-      v.literal("collection"),
-      v.literal("category"),
-      v.literal("product"),
-      v.literal("search")
-    ),
-    targetValue: v.string(),
-    startDate: v.optional(v.number()),
-    endDate: v.optional(v.number()),
-    city: v.optional(v.string()),
-    createdAt: v.number(),
-  })
-    .index("by_active_and_displayOrder", ["active", "displayOrder"])
-    .index("by_city", ["city"]),
-
   // ─── BANNERS ──────────────────────────────────────────────────────────────
   banners: defineTable({
     title:           v.string(),
