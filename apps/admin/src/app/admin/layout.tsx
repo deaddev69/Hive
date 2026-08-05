@@ -79,10 +79,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Non-admin redirect
   useEffect(() => {
-    if (me && me.role !== "admin") {
+    if (me && me.role !== "admin" && pathname !== "/admin/unauthorized") {
       router.push("/admin/unauthorized");
     }
-  }, [me, router]);
+  }, [me, router, pathname]);
 
   // ── Loading guard ─────────────────────────────────────────────────────────
   // me===undefined → Convex query still in-flight → show spinner

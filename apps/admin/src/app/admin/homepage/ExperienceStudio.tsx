@@ -64,7 +64,7 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     icon: Layout,
     description: "Grid of product categories.",
     defaultConfig: { title: "Shop by Category", renderer: "occasionGrid", config: {} },
-    fields: ["title", "subtitle", "renderer"]
+    fields: ["title", "subtitle"]
   },
   {
     id: "recentlyViewed",
@@ -88,8 +88,11 @@ const BLOCK_REGISTRY: BlockSchema[] = [
 
 export function ExperienceStudio() {
   const experiences = useQuery(api.homepageAdmin.getExperiences);
+  
+  // Fetch dependencies for block configs
   const collections = useQuery(api.homepageAdmin.getAllHomepageCollections);
   const campaigns = useQuery(api.homepageAdmin.getAllEditorialBanners);
+  const categories = useQuery(api.categories.getCategories, { onlyActive: true });
 
   const [selectedExpId, setSelectedExpId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"blocks" | "settings">("blocks");
@@ -344,6 +347,7 @@ export function ExperienceStudio() {
                               schema={schema} 
                               collections={collections} 
                               campaigns={campaigns} 
+                              categories={categories}
                               onSave={async (updates: any) => {
                                 await updateBlockContent({
                                   id: block._id,
@@ -462,7 +466,7 @@ export function ExperienceStudio() {
 // SCHEMA EDITOR COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 
-function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onClose }: { block: any, schema: BlockSchema, collections: any, campaigns: any, onSave: any, onClose: any }) {
+function BlockConfigEditor({ block, schema, collections, campaigns, categories, onSave, onClose }: any) {
   const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
   const commitUpload = useAction(api.media.api.commitUpload);
   const [uploading, setUploading] = useState(false);
@@ -473,8 +477,8 @@ function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onCl
   const [formData, setFormData] = useState({
     title: block.title || "",
     subtitle: block.subtitle || "",
-    renderer: block.renderer || schema.defaultConfig.renderer,
-    config: { ...schema.defaultConfig.config, ...block.config }
+    renderer: block.renderer || schema.defaultConfig?.renderer,
+    config: { ...(schema.defaultConfig?.config || {}), ...block.config }
   });
 
   const updateConfig = (key: string, value: any) => {
@@ -614,12 +618,22 @@ function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onCl
             <div>
               <label className="block text-[11px] font-bold text-slate-500 mb-1">Target Click Link (Optional)</label>
               <input
+                list="target-urls"
                 type="text"
-                placeholder="e.g. /collections/fresh-on-hive"
+                placeholder="e.g. /collections/fresh-on-hive or /category/sarees"
                 className="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-mono"
                 value={formData.config.targetUrl || ""}
                 onChange={e => updateConfig("targetUrl", e.target.value)}
               />
+              <datalist id="target-urls">
+                {categories && categories.map((c: any) => (
+                  <option key={`cat-${c._id}`} value={`/category/${c.slug}`}>Category: {c.name}</option>
+                ))}
+                {collections && collections.map((c: any) => (
+                  <option key={`col-${c._id}`} value={`/collections/${c.slug}`}>Collection: {c.name}</option>
+                ))}
+                <option value="/collections">All Collections</option>
+              </datalist>
             </div>
           )}
           {schema.fields.includes("renderer") && (
