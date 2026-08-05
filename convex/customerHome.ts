@@ -175,12 +175,34 @@ export const getCustomerHomeData = query({
       );
     })();
 
+    // 5. Fetch Homepage Blocks & Collections for Dynamic Engine
+    const homepageBlocksPromise = ctx.db
+      .query("homepageBlocks")
+      .withIndex("by_status_sort", (q) => q.eq("status", "published"))
+      .collect();
+
+    const homepageCollectionsPromise = ctx.db
+      .query("homepageCollections")
+      .filter((q) => q.eq(q.field("isPublished"), true))
+      .collect();
+
+    const collectionProductsPromise = ctx.db.query("collectionProducts").collect();
+
+    const heroCampaignsPromise = ctx.db
+      .query("heroCampaigns")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .collect();
+
     // Execute the promises to have base info
-    const [banners, config, boutiques, categories] = await Promise.all([
+    const [banners, config, boutiques, categories, homepageBlocks, homepageCollections, collectionProducts, heroCampaigns] = await Promise.all([
       bannersPromise,
       configPromise,
       boutiquesPromise,
       categoriesPromise,
+      homepageBlocksPromise,
+      homepageCollectionsPromise,
+      collectionProductsPromise,
+      heroCampaignsPromise,
     ]);
 
     const approvedBoutiqueIds = new Set(boutiques.map((b) => b._id.toString()));
@@ -316,6 +338,26 @@ export const getCustomerHomeData = query({
 
     const enrichedMostLoved = mostLovedFromEnriched.slice(0, 12);
 
+    // Group collection products
+    const enrichedProductsMap = new Map(enrichedProducts.map(p => [p._id.toString(), p]));
+    const collectionsWithProducts = homepageCollections.map(col => {
+      const mappings = collectionProducts
+        .filter(cp => cp.collectionId === col._id)
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      
+      const mappedProducts = mappings
+        .map(cp => {
+          const product = enrichedProductsMap.get(cp.productId as string);
+          return product ? { ...product, isPinned: cp.isPinned } : null;
+        })
+        .filter(Boolean);
+
+      return {
+        ...col,
+        products: mappedProducts
+      };
+    });
+
     return {
       banners,
       config,
@@ -324,6 +366,9 @@ export const getCustomerHomeData = query({
       categories,
       mostLoved: enrichedMostLoved,
       newArrivals,
+      homepageBlocks,
+      homepageCollections: collectionsWithProducts,
+      heroCampaigns,
     };
   },
 });

@@ -16,6 +16,7 @@ import { ProductCardData } from "@/lib/mockProducts";
 import { ProductCard } from "@/components/product/ProductCard";
 import { mockCollections } from "@/lib/mockCollections";
 import { BoutiqueCard } from "@/components/boutique/BoutiqueCard";
+import { MoodBoardGrid } from "@/components/home/MoodBoardGrid";
 
 
 
@@ -180,6 +181,9 @@ export function HomeClient() {
     categories: dbCategories,
     mostLoved: dbMostLoved,
     newArrivals: dbNewArrivals,
+    homepageBlocks,
+    homepageCollections,
+    heroCampaigns,
   } = homeData ?? {};
 
   // Campaign Banners scroll state for mobile
@@ -461,282 +465,208 @@ export function HomeClient() {
         </div>
       </div>
 
-      {/* ── 1. HYPERLOCAL CAMPAIGN SHOWCASE GRID (AT TOP) ── */}
-      <section className="w-full bg-white pt-2 pb-1">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          {dbBanners === undefined ? (
-            // Skeleton loading
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="aspect-[16/10] rounded-xl bg-slate-100 animate-pulse flex items-center justify-center border border-hive-border/30">
-                  <Sparkles className="w-6 h-6 text-hive-amber/20 animate-spin" />
-                </div>
-              ))}
-            </div>
-          ) : dbBanners.length === 0 ? (
-            // Falling back to 3 premium static campaign cards
-            <>
-              {/* Desktop Fallback */}
-              <div className="hidden md:grid grid-cols-3 gap-6 w-full">
-                {staticFallbackCampaigns.map((banner, idx) => (
-                  <div
-                    key={idx}
-                    className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
-                    style={{ animationDelay: `${idx * 150}ms` }}
-                  >
-                    <Image
-                      src={banner.img || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
-                      alt={banner.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    <div className="sheen-glow" />
+      {/* ── DYNAMIC HOMEPAGE ENGINE ── */}
+      {homepageBlocks?.sort((a, b) => a.sortOrder - b.sortOrder).map((block) => {
+        // 1. HERO CAMPAIGNS
+        if (block.blockType === "hero") {
+          return (
+            <section key={block._id} className="w-full bg-white pt-2 pb-1">
+              <div className="max-w-7xl mx-auto px-6 lg:px-8">
+                {dbBanners === undefined ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="aspect-[16/10] rounded-xl bg-slate-100 animate-pulse flex items-center justify-center border border-hive-border/30">
+                        <Sparkles className="w-6 h-6 text-hive-amber/20 animate-spin" />
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <>
+                    <div className="hidden md:grid grid-cols-3 gap-6 w-full">
+                      {(dbBanners.length > 0 ? dbBanners : staticFallbackCampaigns).slice(0, 3).map((banner: any, idx: number) => (
+                        <div
+                          key={banner._id || idx}
+                          className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
+                          style={{ animationDelay: `${idx * 150}ms` }}
+                        >
+                          <Image
+                            src={banner.desktopImageUrl || banner.img || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
+                            alt={banner.title}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                            className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                          />
+                          <div className="sheen-glow" />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="md:hidden flex flex-col w-full pb-1">
+                      <div
+                        ref={mobileScrollRef}
+                        onScroll={handleMobileScroll}
+                        onTouchStart={() => setIsCarouselPaused(true)}
+                        onTouchEnd={() => setTimeout(() => setIsCarouselPaused(false), 2000)}
+                        className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6"
+                      >
+                        {(dbBanners.length > 0 ? dbBanners : staticFallbackCampaigns).map((banner: any, idx: number) => (
+                          <div
+                            key={banner._id || idx}
+                            className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
+                            style={{ animationDelay: `${idx * 150}ms` }}
+                          >
+                            <Image
+                              src={banner.mobileImageUrl || banner.img || banner.desktopImageUrl || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
+                              alt={banner.title}
+                              fill
+                              sizes="(max-width: 768px) 100vw, 33vw"
+                              className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                            />
+                            <div className="sheen-glow" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
+            </section>
+          );
+        }
 
-              {/* Mobile Fallback Carousel */}
-              <div className="md:hidden flex flex-col w-full pb-1">
-                <div
-                  ref={mobileScrollRef}
-                  onScroll={handleMobileScroll}
-                  onTouchStart={() => setIsCarouselPaused(true)}
-                  onTouchEnd={() => setTimeout(() => setIsCarouselPaused(false), 2000)}
-                  onMouseDown={() => setIsCarouselPaused(true)}
-                  onMouseUp={() => setTimeout(() => setIsCarouselPaused(false), 2000)}
-                  onMouseLeave={() => setIsCarouselPaused(false)}
-                  className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6"
-                >
-                  {staticFallbackCampaigns.map((banner, idx) => (
-                    <div
-                      key={idx}
-                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
-                      style={{ animationDelay: `${idx * 150}ms` }}
-                    >
-                      <Image
-                        src={banner.img || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
-                        alt={banner.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
-                      />
-                      <div className="sheen-glow" />
+        // 2. CATEGORY BUBBLES
+        if (block.blockType === "category") {
+          if (!homepageSubcategories || homepageSubcategories.length === 0) return null;
+          return (
+            <section key={block._id} className="w-full bg-white pt-2 pb-2 border-b border-hive-border/20">
+              <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-3 text-left">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
+                    {block.title || "Shop by Category"}
+                  </h2>
+                  {block.subtitle && <p className="text-xs text-slate-500">{block.subtitle}</p>}
+                </div>
+                <div className="relative group/rail w-full">
+                  <div
+                    ref={categoryScrollRef}
+                    className="flex gap-6 pb-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start -mx-6 px-6 sm:mx-0 sm:px-0 pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8"
+                  >
+                    {homepageSubcategories.map((subcat) => (
+                      <button
+                        key={subcat._id}
+                        onClick={() => router.push(`/products/${subcat.slug}`)}
+                        className="flex flex-col items-center gap-3 w-24 sm:w-28 flex-shrink-0 group cursor-pointer"
+                      >
+                        <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border border-hive-border/40 bg-slate-50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-md">
+                          <Image
+                            src={subcat.homepageImageUrl || subcat.imageUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80"}
+                            alt={subcat.name}
+                            fill
+                            sizes="96px"
+                            className="object-cover pointer-events-none"
+                          />
+                        </div>
+                        <span className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white text-center leading-tight truncate w-full">
+                          {subcat.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+          );
+        }
+
+        // 3. COLLECTIONS (Product Grids, Carousels, MoodBoards)
+        if (block.blockType === "collection") {
+          // Pinterest Style Mood Board
+          if (block.renderer === "moodGrid" || block.renderer === "editorialGrid") {
+            const displayCols = homepageCollections?.filter((c: any) => c.type !== "trending" && c.type !== "default") || [];
+            if (displayCols.length === 0) return null;
+            return <MoodBoardGrid key={block._id} title={block.title} subtitle={block.subtitle} collections={displayCols} />;
+          }
+
+          // Otherwise render products
+          let blockProducts: any[] = [];
+          if (block.config?.collectionId) {
+            const col = homepageCollections?.find((c: any) => c._id === block.config?.collectionId);
+            if (col && col.products) {
+              blockProducts = col.products.map(mapDbProduct);
+            }
+          } else {
+            // Fallbacks for the seeded default blocks
+            if (block.blockKey === "trending_kochi") blockProducts = products.slice(0, 10);
+            else if (block.blockKey === "fresh_arrivals") blockProducts = newArrivalsProducts;
+            else if (block.blockKey === "going_out") blockProducts = products.slice(5, 12);
+          }
+
+          if (!blockProducts || blockProducts.length === 0) return null;
+
+          const isCarousel = block.renderer === "productCarousel";
+
+          return (
+            <section key={block._id} className={`w-full bg-white py-6 border-b border-hive-border/20 ${block.config?.theme === "dark" ? "bg-slate-900 text-white" : ""}`}>
+              <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
+                <div className="flex flex-col gap-1">
+                  <h2 className={`text-2xl font-serif font-semibold uppercase tracking-wide ${block.config?.theme === "dark" ? "text-white" : "text-hive-dark"}`}>
+                    {block.title}
+                  </h2>
+                  {block.subtitle && <p className={`text-sm ${block.config?.theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>{block.subtitle}</p>}
+                </div>
+
+                {isCarousel ? (
+                  <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">
+                    {blockProducts.map((product: any) => (
+                      <div key={product.id} className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start">
+                        <ProductCard product={product} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 w-full">
+                    {blockProducts.slice(0, block.config?.maxProducts || 12).map((product: any) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          );
+        }
+
+        // 4. RECENTLY VIEWED / MOST LOVED
+        if (block.blockType === "recentlyViewed") {
+          if (!mostLovedProducts || mostLovedProducts.length === 0) return null;
+          return (
+            <section key={block._id} className="w-full bg-[#FAF6F0] py-6 border-b border-hive-border/20">
+              <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
+                    CUSTOMER FAVORITES
+                  </span>
+                  <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
+                    {block.title || "Most Loved"}
+                  </h2>
+                </div>
+                <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">
+                  {mostLovedProducts.map((product) => (
+                    <div key={product.id} className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start">
+                      <ProductCard product={product} />
                     </div>
                   ))}
                 </div>
               </div>
-            </>
-          ) : (
-            // Render dynamic campaign cards
-            <>
-              {/* Desktop Grid (3 columns) */}
-              <div className="hidden md:grid grid-cols-3 gap-6 w-full">
-                {dbBanners.slice(0, 3).map((banner, idx) => (
-                  <div
-                    key={banner._id}
-                    className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
-                    style={{ animationDelay: `${idx * 150}ms` }}
-                  >
-                    <Image
-                      src={banner.desktopImageUrl || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
-                      alt={banner.title}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    <div className="sheen-glow" />
-                  </div>
-                ))}
-              </div>
+            </section>
+          );
+        }
 
-              {/* Mobile Carousel Swipe */}
-              <div className="md:hidden flex flex-col w-full pb-1">
-                <div
-                  ref={mobileScrollRef}
-                  onScroll={handleMobileScroll}
-                  onTouchStart={() => setIsCarouselPaused(true)}
-                  onTouchEnd={() => setTimeout(() => setIsCarouselPaused(false), 2000)}
-                  onMouseDown={() => setIsCarouselPaused(true)}
-                  onMouseUp={() => setTimeout(() => setIsCarouselPaused(false), 2000)}
-                  onMouseLeave={() => setIsCarouselPaused(false)}
-                  className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6"
-                >
-                  {dbBanners.map((banner, idx) => (
-                    <div
-                      key={banner._id}
-                      className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-default"
-                      style={{ animationDelay: `${idx * 150}ms` }}
-                    >
-                      <Image
-                        src={banner.mobileImageUrl || banner.desktopImageUrl || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80"}
-                        alt={banner.title}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                        className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
-                      />
-                      <div className="sheen-glow" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </section>
+        // 5. TRUST STRIP
+        if (block.blockType === "trust") {
+          return <TrustStrip key={block._id} />;
+        }
 
-      {/* ── 3. SHOP BY CATEGORY (circular cards, children only) ── */}
-      {homepageSubcategories.length > 0 && (
-        <section className="w-full bg-white pt-0.5 pb-0 border-b border-hive-border/20">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-3 text-left">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
-                Shop by Category
-              </h2>
-            </div>
-            
-            <div className="relative group/rail w-full">
-              {/* Left Scroll Arrow */}
-              {homepageSubcategories.length > 6 && (
-                <button
-                  onClick={() => scrollCategories("left")}
-                  className="hidden md:flex absolute -left-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-10 h-10 rounded-full bg-white/90 border border-hive-border/40 shadow-md text-hive-text hover:bg-hive-amber hover:text-white transition-all duration-300 opacity-0 group-hover/rail:opacity-100 cursor-pointer"
-                  aria-label="Scroll left"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-              )}
-
-              {/* Right Scroll Arrow */}
-              {homepageSubcategories.length > 6 && (
-                <button
-                  onClick={() => scrollCategories("right")}
-                  className="hidden md:flex absolute -right-4 top-1/2 -translate-y-1/2 z-20 items-center justify-center w-10 h-10 rounded-full bg-white/90 border border-hive-border/40 shadow-md text-hive-text hover:bg-hive-amber hover:text-white transition-all duration-300 opacity-0 group-hover/rail:opacity-100 cursor-pointer"
-                  aria-label="Scroll right"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              )}
-
-              <div
-                ref={categoryScrollRef}
-                className="flex gap-6 pb-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start -mx-6 px-6 sm:mx-0 sm:px-0 pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8"
-                onMouseEnter={() => setIsCategoryHovered(true)}
-                onMouseLeave={() => setIsCategoryHovered(false)}
-                onTouchStart={() => setIsCategoryHovered(true)}
-                onTouchEnd={() => setIsCategoryHovered(false)}
-              >
-                {homepageSubcategories.map((subcat) => (
-                  <button
-                    key={subcat._id}
-                    onClick={() => router.push(`/products/${subcat.slug}`)}
-                    className="flex flex-col items-center gap-3 w-24 sm:w-28 flex-shrink-0 group cursor-pointer"
-                  >
-                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border border-hive-border/40 bg-slate-50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-md">
-                      <Image
-                        src={subcat.homepageImageUrl || subcat.imageUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80"}
-                        alt={subcat.name}
-                        fill
-                        sizes="96px"
-                        className="object-cover pointer-events-none"
-                      />
-                    </div>
-                    <span className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white text-center leading-tight truncate w-full">
-                      {subcat.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── 4. CURATED FOR KOCHI (denser 6-column grid) ── */}
-      {products.length > 0 && (homepageConfig?.enableTrendingSection !== false) && (
-        <section className="w-full bg-white pt-1 pb-6">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
-                {homepageConfig?.trendingSectionTitle || 'Curated for Kochi'}
-              </h2>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 w-full">
-              {products.slice(0, 6).map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-
-      {/* ── 5. NEW ARRIVALS (Sorted by creationTime desc, take 8) ── */}
-      {newArrivalsProducts.length > 0 && (
-        <section className="w-full bg-white py-6 border-b border-hive-border/20">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
-                JUST IN
-              </span>
-              <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
-                New Finds
-              </h2>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">
-              {newArrivalsProducts.map((product) => (
-                <div key={product.id} className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start">
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── 5.5 MOST LOVED (Performance-based / curated sorting, compact cards) ── */}
-      {mostLovedProducts.length > 0 && (
-        <section className="w-full bg-[#FAF6F0] py-6 border-b border-hive-border/20">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
-                CUSTOMER FAVORITES
-              </span>
-              <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
-                Most Loved
-              </h2>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">
-              {mostLovedProducts.map((product) => (
-                <div key={product.id} className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start">
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── 6. ALL COLLECTIONS ── */}
-      <section className="w-full bg-white py-6 border-b border-hive-border/20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-left">
-          <h3 className="text-xs font-extrabold text-hive-amber tracking-widest uppercase mb-4 border-b border-hive-border/40 pb-2">
-            All Collections
-          </h3>
-          <ProductGrid
-            products={products}
-            selectedOccasion="all"
-            onResetFilter={() => {}}
-            isLoading={dbProducts === undefined}
-            viewAllHref="/products"
-          />
-        </div>
-      </section>
-
-
-
-      {/* ── THE HIVE DIFFERENCE (TRUST STRIP) ── */}
-      <TrustStrip />
+        return null;
+      })}
 
 
 
