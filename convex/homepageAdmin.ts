@@ -59,7 +59,7 @@ export const getAllHomepageCollections = query({
 
 // Search catalog products to add to a collection
 export const searchCatalogProducts = query({
-  args: { query: v.optional(v.string()), limit: v.optional(v.number()) },
+  args: { query: v.optional(v.string()), limit: v.optional(v.number()), collectionId: v.optional(v.string()) },
   handler: async (ctx, args) => {
     const allProducts = await ctx.db
       .query("products")
@@ -78,6 +78,16 @@ export const searchCatalogProducts = query({
       );
     }
     
+    // Filter out already added products if collectionId is provided
+    if (args.collectionId) {
+      const existingMappings = await ctx.db
+        .query("collectionProducts")
+        .withIndex("by_collection_sort", (q) => q.eq("collectionId", args.collectionId!))
+        .collect();
+      const existingProductIds = new Set(existingMappings.map((m) => m.productId));
+      filtered = filtered.filter((p: any) => !existingProductIds.has(p._id));
+    }
+
     const enriched = await enrichProducts(ctx, filtered);
     
     // Only return products that have stock

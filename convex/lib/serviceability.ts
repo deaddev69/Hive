@@ -3,7 +3,7 @@
 // All distance/radius checks across the codebase should import from here.
 
 const EARTH_RADIUS_KM = 6371;
-const DEFAULT_RADIUS_KM = 15;
+const DEFAULT_RADIUS_KM = 13;
 
 /**
  * Haversine formula — returns the great-circle (straight-line) distance

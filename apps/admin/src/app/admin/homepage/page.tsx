@@ -93,7 +93,7 @@ export default function AdminHomepageMerchandisingPage() {
 
   const catalogSearchResults = useQuery(
     api.homepageAdmin.searchCatalogProducts,
-    { query: productSearchQuery, limit: 12 }
+    { query: productSearchQuery, limit: 12, collectionId: selectedCollectionId ?? undefined }
   );
 
   const selectedCollection = collections?.find((c: any) => c._id === selectedCollectionId);

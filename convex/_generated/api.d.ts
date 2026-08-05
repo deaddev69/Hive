@@ -43,7 +43,6 @@ import type * as emails from "../emails.js";
 import type * as fitFeedback from "../fitFeedback.js";
 import type * as homepage from "../homepage.js";
 import type * as homepageAdmin from "../homepageAdmin.js";
-import type * as homepageBanners from "../homepageBanners.js";
 import type * as homepageConfig from "../homepageConfig.js";
 import type * as http from "../http.js";
 import type * as invoices from "../invoices.js";
@@ -186,7 +185,6 @@ declare const fullApi: ApiFromModules<{
   fitFeedback: typeof fitFeedback;
   homepage: typeof homepage;
   homepageAdmin: typeof homepageAdmin;
-  homepageBanners: typeof homepageBanners;
   homepageConfig: typeof homepageConfig;
   http: typeof http;
   invoices: typeof invoices;

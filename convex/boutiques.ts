@@ -152,8 +152,8 @@ function validateBoutiqueDetails(details: {
   if (!details.deliveryRadiusKm || details.deliveryRadiusKm <= 0) {
     throw new ConvexError("Delivery radius must be a positive number.");
   }
-  if (details.deliveryRadiusKm > 17) {
-    throw new ConvexError("Delivery radius cannot exceed 17 km. Please contact support if you need a larger coverage area.");
+  if (details.deliveryRadiusKm > 13) {
+    throw new ConvexError("Delivery radius cannot exceed 13 km. Please contact support if you need a larger coverage area.");
   }
   if (!details.description.trim()) throw new ConvexError("Boutique description is required.");
 
@@ -1055,8 +1055,8 @@ export const updateBoutiqueProfile = mutation({
     }
 
     // Validate delivery radius cap at update time
-    if (args.deliveryRadiusKm !== undefined && args.deliveryRadiusKm > 17) {
-      throw new ConvexError("Delivery radius cannot exceed 17 km. Please contact support if you need a larger coverage area.");
+    if (args.deliveryRadiusKm !== undefined && args.deliveryRadiusKm > 13) {
+      throw new ConvexError("Delivery radius cannot exceed 13 km. Please contact support if you need a larger coverage area.");
     }
 
     const patchData: any = {

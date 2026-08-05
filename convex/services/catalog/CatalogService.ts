@@ -18,7 +18,16 @@ export class CatalogService {
       uniqueIds.map((id) => ctx.db.get(id))
     );
 
-    const validProducts = products.filter(Boolean) as any[];
+    const validProducts = products.filter((p) => {
+      if (!p) return false;
+      if (p.active === false) return false;
+      
+      const stockBySize = p.stockBySize || {};
+      const totalStock = Object.values(stockBySize).reduce((acc: number, count: any) => acc + (count || 0), 0);
+      if (totalStock <= 0) return false;
+
+      return true;
+    }) as any[];
 
     // Extract unique boutique IDs
     const boutiqueIds = Array.from(new Set(validProducts.map((p) => p.boutiqueId)));

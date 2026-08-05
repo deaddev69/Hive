@@ -248,3 +248,23 @@ export const clearDemoData = mutation({
     };
   }
 });
+
+export const capBoutiqueRadius = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const boutiques = await ctx.db.query("boutiques").collect();
+    let updatedCount = 0;
+    
+    for (const boutique of boutiques) {
+      if (boutique.deliveryRadiusKm !== undefined && boutique.deliveryRadiusKm > 13) {
+        await ctx.db.patch(boutique._id, {
+          deliveryRadiusKm: 13,
+        });
+        updatedCount++;
+      }
+    }
+    
+    console.log(`Successfully capped delivery radius to 13km for ${updatedCount} boutiques.`);
+    return updatedCount;
+  },
+});

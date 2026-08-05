@@ -34,36 +34,44 @@ export class OperationsService {
     const boutiques = await Promise.all(boutiqueIds.map((id) => ctx.db.get(id)));
     const boutiqueMap = new Map(boutiques.filter(Boolean).map((b: any) => [b._id.toString(), b]));
 
-    return products.map((dto) => {
-      const boutique = boutiqueMap.get(dto.boutiqueId);
-      if (!boutique || boutique.latitude === undefined || boutique.longitude === undefined) {
+    return products
+      .map((dto) => {
+        const boutique = boutiqueMap.get(dto.boutiqueId);
+        if (!boutique || boutique.latitude === undefined || boutique.longitude === undefined) {
+          return dto;
+        }
+
+        const bLat = boutique.latitude;
+        const bLng = boutique.longitude;
+        const cacheKey = `${bLat.toFixed(6)},${bLng.toFixed(6)}`;
+        const cached = cacheMap.get(cacheKey);
+
+        let distanceKm = 0;
+        let durationMin = 0;
+
+        if (cached) {
+          distanceKm = cached.distanceKm;
+          durationMin = cached.durationMin;
+        } else {
+          distanceKm = haversineKm(startLat, startLng, bLat, bLng);
+          durationMin = (distanceKm / 25) * 60; // rough heuristic
+        }
+
+        const prepTime = boutique.prepTimeMinutes ?? 30;
+        const etaMinutes = Math.round(durationMin + prepTime);
+
+        // Mutate DTO
+        dto.distanceKm = distanceKm;
+        dto.etaMinutes = etaMinutes;
+
+        // Store boutique's delivery radius on DTO temporarily for filtering
+        (dto as any)._deliveryRadiusKm = boutique.deliveryRadiusKm ?? 13;
+
         return dto;
-      }
-
-      const bLat = boutique.latitude;
-      const bLng = boutique.longitude;
-      const cacheKey = `${bLat.toFixed(6)},${bLng.toFixed(6)}`;
-      const cached = cacheMap.get(cacheKey);
-
-      let distanceKm = 0;
-      let durationMin = 0;
-
-      if (cached) {
-        distanceKm = cached.distanceKm;
-        durationMin = cached.durationMin;
-      } else {
-        distanceKm = haversineKm(startLat, startLng, bLat, bLng);
-        durationMin = (distanceKm / 25) * 60; // rough heuristic
-      }
-
-      const prepTime = boutique.prepTimeMinutes ?? 30;
-      const etaMinutes = Math.round(durationMin + prepTime);
-
-      // Mutate DTO
-      dto.distanceKm = distanceKm;
-      dto.etaMinutes = etaMinutes;
-
-      return dto;
-    });
+      })
+      .filter((dto: any) => {
+        if (dto.distanceKm === undefined) return true; // No boutique coords, let it pass or fail elsewhere
+        return dto.distanceKm <= (dto._deliveryRadiusKm ?? 13);
+      });
   }
 }

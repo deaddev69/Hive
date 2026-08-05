@@ -73,3 +73,4 @@ HIVE_SYSTEM_ARCHITECTURE.md
 !**/public/**/*.png
 !**/public/**/*.jpg
 !**/public/**/*.jpeg
+.vercel
