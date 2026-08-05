@@ -2128,4 +2128,104 @@ export default defineSchema({
   })
     .index("by_user_viewed", ["userId", "viewedAt"])
     .index("by_user_product", ["userId", "productId"]),
+
+  // ─── MARKETING ENGINE: AUDIENCE SEGMENTS ──────────────────────────────────
+  audienceSegments: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    segmentType: v.union(v.literal("SYSTEM"), v.literal("CUSTOM")),
+    definition: v.string(),
+    createdAt: v.number(),
+  }).index("by_type", ["segmentType"]),
+
+  // ─── MARKETING ENGINE: CAMPAIGNS ──────────────────────────────────────────
+  campaigns: defineTable({
+    title: v.string(),
+    slug: v.string(),
+    type: v.union(
+      v.literal("EDITORIAL"),
+      v.literal("SEASONAL"),
+      v.literal("ANNOUNCEMENT"),
+      v.literal("PRODUCT"),
+      v.literal("DELIVERY")
+    ),
+    subtitle: v.optional(v.string()),
+    description: v.optional(v.string()),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("scheduled"),
+      v.literal("running"),
+      v.literal("completed"),
+      v.literal("archived")
+    ),
+    collectionId: v.optional(v.string()),
+    audienceSegmentId: v.optional(v.id("audienceSegments")),
+    assets: v.array(
+      v.object({
+        type: v.union(
+          v.literal("hero"),
+          v.literal("banner"),
+          v.literal("thumbnail"),
+          v.literal("push")
+        ),
+        url: v.string(),
+        alt: v.optional(v.string()),
+        sortOrder: v.optional(v.number()),
+      })
+    ),
+    messaging: v.object({
+      pushTitle: v.string(),
+      pushBody: v.string(),
+      targetUrl: v.string(),
+    }),
+    schedule: v.optional(
+      v.object({
+        startDate: v.number(),
+        endDate: v.optional(v.number()),
+        timezone: v.optional(v.string()),
+      })
+    ),
+    lastExecutedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_slug", ["slug"]),
+
+  // ─── MARKETING ENGINE: CAMPAIGN EXECUTIONS ────────────────────────────────
+  campaignExecutions: defineTable({
+    campaignId: v.id("campaigns"),
+    channel: v.union(
+      v.literal("push"),
+      v.literal("homepage"),
+      v.literal("banner"),
+      v.literal("email"),
+      v.literal("whatsapp")
+    ),
+    status: v.union(
+      v.literal("sending"),
+      v.literal("completed"),
+      v.literal("failed"),
+      v.literal("cancelled")
+    ),
+    triggeredBy: v.union(
+      v.literal("manual"),
+      v.literal("schedule"),
+      v.literal("api")
+    ),
+    sentAt: v.number(),
+    metrics: v.object({
+      sent: v.number(),
+      delivered: v.number(),
+      failed: v.number(),
+      clicked: v.number(),
+      sessions: v.optional(v.number()),
+      orders: v.optional(v.number()),
+      revenue: v.optional(v.number()),
+    }),
+    sentBy: v.optional(v.string()),
+    error: v.optional(v.string()),
+  })
+    .index("by_campaignId", ["campaignId"])
+    .index("by_sentAt", ["sentAt"]),
 });

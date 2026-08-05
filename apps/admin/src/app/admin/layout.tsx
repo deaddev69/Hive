@@ -19,6 +19,12 @@ const NAV_GROUPS = [
     ]
   },
   {
+    title: "MARKETING",
+    items: [
+      { label: "Campaigns", href: "/admin/marketing/campaigns", icon: Send },
+    ]
+  },
+  {
     title: "MERCHANDISING",
     items: [
       { label: "Experiences", href: "/admin/homepage", icon: Sparkles },
