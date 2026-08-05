@@ -5,7 +5,7 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { toast } from "@hive/utils";
 import {
-  Sparkles, Plus, Trash2, Settings, Smartphone, Layout, Copy, Edit, X, Eye, EyeOff, Search, Layers, ShoppingBag, Zap, ChevronDown, ChevronUp, Upload, Loader2, Link as LinkIcon
+  Sparkles, Plus, Trash2, Settings, Smartphone, Layout, Copy, Edit, X, Eye, EyeOff, Search, Layers, ShoppingBag, Zap, ChevronDown, ChevronUp, Upload, Loader2, Link as LinkIcon, Star
 } from "lucide-react";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 
