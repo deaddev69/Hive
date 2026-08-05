@@ -509,7 +509,13 @@ function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onCl
                 {formData.config.desktopImage && (
                   <div className="mt-2 relative aspect-[16/6] rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-[140px]">
                     <img
-                      src={typeof formData.config.desktopImage === "string" ? formData.config.desktopImage : (formData.config.desktopImage?.objectKey ? `https://cdn.hivenow.in/cdn-cgi/image/format=auto/${formData.config.desktopImage.objectKey}` : "")}
+                      src={
+                        typeof formData.config.desktopImage === "string" 
+                          ? formData.config.desktopImage 
+                          : (formData.config.desktopImage?.objectKey 
+                              ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.desktopImage.objectKey}` 
+                              : "")
+                      }
                       alt="Desktop Banner Preview"
                       className="w-full h-full object-cover"
                     />
@@ -542,7 +548,13 @@ function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onCl
                 {formData.config.mobileImage && (
                   <div className="mt-2 relative aspect-[2/1] rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-[120px]">
                     <img
-                      src={typeof formData.config.mobileImage === "string" ? formData.config.mobileImage : (formData.config.mobileImage?.objectKey ? `https://cdn.hivenow.in/cdn-cgi/image/format=auto/${formData.config.mobileImage.objectKey}` : "")}
+                      src={
+                        typeof formData.config.mobileImage === "string" 
+                          ? formData.config.mobileImage 
+                          : (formData.config.mobileImage?.objectKey 
+                              ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.mobileImage.objectKey}` 
+                              : "")
+                      }
                       alt="Mobile Banner Preview"
                       className="w-full h-full object-cover"
                     />

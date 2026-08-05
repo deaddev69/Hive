@@ -20,11 +20,12 @@ export function getPublicUrl(asset: any, variant: "thumbnail" | "pdp" | "zoom" |
   if (typeof asset === "string") return asset;
   if (!asset?.objectKey) return "";
   
-  const domain = process.env.R2_PUBLIC_DEV_URL || "cdn.hivenow.in";
+  const domain = process.env.R2_PUBLIC_DEV_URL || "pub-09a817ec6f384c4997feafc5e8387286.r2.dev";
   
   // Cloudflare R2.dev URLs do not support /cdn-cgi/image/ optimizations
   if (domain.includes(".r2.dev")) {
-    return `https://${domain}/${asset.objectKey}`;
+    const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    return `https://${cleanDomain}/${asset.objectKey}`;
   }
 
   const variantParam = variant === "original" ? "format=auto" : `variant=${variant}`;
