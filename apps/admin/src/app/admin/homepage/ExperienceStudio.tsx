@@ -11,7 +11,8 @@ import {
 export function ExperienceStudio() {
   const experiences = useQuery(api.homepageAdmin.getExperiences);
   const [selectedExpId, setSelectedExpId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"blocks" | "seo" | "settings" | "preview">("blocks");
+  const [activeTab, setActiveTab] = useState<"blocks" | "settings" | "preview">("blocks");
+  const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
   
   // Set default selection
   useEffect(() => {
@@ -87,36 +88,25 @@ export function ExperienceStudio() {
     }
   };
 
-  // HTML5 Drag and Drop handlers
-  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
-
-  const handleDragStart = (idx: number) => {
-    setDraggedIdx(idx);
-  };
-
-  const handleDragEnter = (idx: number) => {
-    if (draggedIdx === null || draggedIdx === idx) return;
+  // Up/Down Reordering Handlers
+  const handleMoveUp = async (idx: number) => {
+    if (idx === 0) return;
     const newBlocks = [...blocks];
-    const draggedItem = newBlocks[draggedIdx];
-    newBlocks.splice(draggedIdx, 1);
-    newBlocks.splice(idx, 0, draggedItem);
-    setDraggedIdx(idx);
+    [newBlocks[idx - 1], newBlocks[idx]] = [newBlocks[idx], newBlocks[idx - 1]];
     setBlocks(newBlocks);
+    
+    const layoutUpdates = newBlocks.map((b, i) => ({ id: b._id, sortOrder: i + 1 }));
+    await updateLayout({ blocks: layoutUpdates });
   };
 
-  const handleDragEnd = async () => {
-    setDraggedIdx(null);
-    // Save new layout
-    const layoutUpdates = blocks.map((b, i) => ({
-      id: b._id,
-      sortOrder: i + 1,
-    }));
-    try {
-      await updateLayout({ blocks: layoutUpdates });
-      toast.success("Layout updated!");
-    } catch (err: any) {
-      toast.error(err.message);
-    }
+  const handleMoveDown = async (idx: number) => {
+    if (idx === blocks.length - 1) return;
+    const newBlocks = [...blocks];
+    [newBlocks[idx], newBlocks[idx + 1]] = [newBlocks[idx + 1], newBlocks[idx]];
+    setBlocks(newBlocks);
+    
+    const layoutUpdates = newBlocks.map((b, i) => ({ id: b._id, sortOrder: i + 1 }));
+    await updateLayout({ blocks: layoutUpdates });
   };
 
   return (
@@ -187,10 +177,22 @@ export function ExperienceStudio() {
                     <Copy className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={handlePublish}
-                    className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm flex items-center gap-2 transition active:scale-95 cursor-pointer"
+                    onClick={() => toast.success("Draft saved!")}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm transition cursor-pointer"
                   >
-                    <Sparkles className="w-4 h-4" /> Publish
+                    Save Draft
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("preview")}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm transition cursor-pointer"
+                  >
+                    Preview
+                  </button>
+                  <button
+                    onClick={handlePublish}
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm flex items-center gap-2 transition active:scale-95 cursor-pointer"
+                  >
+                    Publish
                   </button>
                 </div>
               </div>
@@ -198,7 +200,6 @@ export function ExperienceStudio() {
               <div className="flex items-center px-5 gap-6">
                 {[
                   { id: "blocks", label: "Blocks", icon: Layout },
-                  { id: "seo", label: "SEO", icon: Tag },
                   { id: "settings", label: "Settings", icon: Settings },
                   { id: "preview", label: "Preview", icon: Smartphone },
                 ].map((tab) => (
@@ -225,7 +226,7 @@ export function ExperienceStudio() {
               {activeTab === "blocks" && (
                 <div className="max-w-2xl mx-auto space-y-4">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold text-slate-500">Drag to reorder layout.</p>
+                    <p className="text-xs font-semibold text-slate-500">Organize your experience layout.</p>
                     <button
                       onClick={handleAddBlock}
                       className="text-xs font-bold text-amber-600 flex items-center gap-1 cursor-pointer"
@@ -236,20 +237,16 @@ export function ExperienceStudio() {
                   
                   <div className="space-y-3">
                     {blocks.map((block, idx) => (
-                      <div
-                        key={block._id}
-                        draggable
-                        onDragStart={() => handleDragStart(idx)}
-                        onDragEnter={() => handleDragEnter(idx)}
-                        onDragEnd={handleDragEnd}
-                        onDragOver={(e) => e.preventDefault()}
-                        className={`bg-white dark:bg-zinc-900 p-4 rounded-2xl border transition-all flex items-center gap-4 ${
-                          draggedIdx === idx ? "opacity-50 border-amber-500 shadow-lg scale-[1.02]" : "border-slate-200 dark:border-zinc-800 shadow-xs hover:border-slate-300"
-                        }`}
-                      >
-                        <div className="cursor-grab active:cursor-grabbing p-1 text-slate-300 hover:text-amber-500">
-                          <GripVertical className="w-5 h-5" />
-                        </div>
+                      <div key={block._id} className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-xs hover:border-slate-300 transition-all overflow-hidden">
+                        <div className="p-4 flex items-center gap-4">
+                          <div className="flex flex-col items-center gap-1">
+                            <button onClick={() => handleMoveUp(idx)} disabled={idx === 0} className={`p-0.5 rounded ${idx === 0 ? "text-slate-200" : "text-slate-400 hover:text-amber-500 bg-slate-50 hover:bg-amber-50"} cursor-pointer`}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                            </button>
+                            <button onClick={() => handleMoveDown(idx)} disabled={idx === blocks.length - 1} className={`p-0.5 rounded ${idx === blocks.length - 1 ? "text-slate-200" : "text-slate-400 hover:text-amber-500 bg-slate-50 hover:bg-amber-50"} cursor-pointer`}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </button>
+                          </div>
                         
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -270,7 +267,7 @@ export function ExperienceStudio() {
                           <button
                             className="p-2 text-slate-400 hover:text-amber-500 bg-slate-50 dark:bg-zinc-800 rounded-xl transition cursor-pointer"
                             title="Edit Block"
-                            onClick={() => toast.success("Block editor to be implemented")}
+                            onClick={() => setExpandedBlockId(expandedBlockId === block._id ? null : block._id)}
                           >
                             <Edit className="w-4 h-4" />
                           </button>
@@ -283,7 +280,45 @@ export function ExperienceStudio() {
                           </button>
                         </div>
                       </div>
-                    ))}
+
+                      {/* Block Editor Drawer (Inline) */}
+                      {expandedBlockId === block._id && (
+                        <div className="bg-slate-50 dark:bg-zinc-950 p-5 border-t border-slate-100 dark:border-zinc-800 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h5 className="text-xs font-bold text-slate-700">Block Configuration</h5>
+                            <button onClick={() => setExpandedBlockId(null)} className="text-slate-400 hover:text-slate-700"><X className="w-4 h-4"/></button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-500 mb-1">Attached Collection</label>
+                              <select className="w-full p-2 rounded-lg border border-slate-200 text-xs">
+                                <option value="">Select a collection...</option>
+                                <option value="fresh-on-hive" selected={block.config?.collectionId === 'fresh-on-hive'}>Fresh on Hive</option>
+                                <option value="weekend-edit" selected={block.config?.collectionId === 'weekend-edit'}>Weekend Edit</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-500 mb-1">Maximum Products</label>
+                              <input type="number" className="w-full p-2 rounded-lg border border-slate-200 text-xs" defaultValue={block.config?.maxProducts || 12} />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-2">
+                            <input type="checkbox" id={`seeAll-${block._id}`} defaultChecked={block.config?.showSeeAll !== false} />
+                            <label htmlFor={`seeAll-${block._id}`} className="text-xs font-bold text-slate-700">Show "See All" button</label>
+                          </div>
+
+                          <div className="pt-2 flex justify-end">
+                            <button onClick={() => {
+                               toast.success("Block saved!");
+                               setExpandedBlockId(null);
+                            }} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold">Save Configuration</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
 
                     {blocks.length === 0 && (
                       <div className="p-12 text-center text-slate-400 border border-dashed border-slate-200 rounded-2xl">
@@ -294,37 +329,38 @@ export function ExperienceStudio() {
                 </div>
               )}
 
-              {/* Other Tabs Stubs */}
-              {activeTab === "seo" && (
-                <div className="max-w-xl mx-auto space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold mb-1">SEO Title</label>
-                    <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200" defaultValue={selectedExp.seoTitle} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Meta Description</label>
-                    <textarea className="w-full p-2.5 rounded-xl border border-slate-200" rows={3} defaultValue={selectedExp.seoDescription}></textarea>
-                  </div>
-                </div>
-              )}
-
               {activeTab === "settings" && (
-                <div className="max-w-xl mx-auto space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Experience Name</label>
-                    <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200" defaultValue={selectedExp.name} />
+                <div className="max-w-xl mx-auto space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold border-b pb-2">General</h4>
+                    <div>
+                      <label className="block text-xs font-bold mb-1">Experience Name</label>
+                      <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200" defaultValue={selectedExp.name} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-1">Slug / URL Path</label>
+                      <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200" defaultValue={selectedExp.slug} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-1">Theme Configuration</label>
+                      <select className="w-full p-2.5 rounded-xl border border-slate-200">
+                        <option>Light (Default)</option>
+                        <option>Dark Mode</option>
+                        <option>Festive Gold</option>
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Slug / URL Path</label>
-                    <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200" defaultValue={selectedExp.slug} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">Theme Configuration</label>
-                    <select className="w-full p-2.5 rounded-xl border border-slate-200">
-                      <option>Light (Default)</option>
-                      <option>Dark Mode</option>
-                      <option>Festive Gold</option>
-                    </select>
+                  
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold border-b pb-2">Search Engine Optimization (SEO)</h4>
+                    <div>
+                      <label className="block text-xs font-bold mb-1">SEO Title</label>
+                      <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200" defaultValue={selectedExp.seoTitle} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold mb-1">Meta Description</label>
+                      <textarea className="w-full p-2.5 rounded-xl border border-slate-200" rows={3} defaultValue={selectedExp.seoDescription}></textarea>
+                    </div>
                   </div>
                 </div>
               )}
