@@ -90,15 +90,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     return (
       <section className="w-full bg-white pt-2 pb-1">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          {banners.length === 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="aspect-[16/10] rounded-xl bg-slate-100 animate-pulse flex items-center justify-center border border-hive-border/30">
-                  <Sparkles className="w-6 h-6 text-hive-amber/20 animate-spin" />
-                </div>
-              ))}
-            </div>
-          ) : banners.length === 1 ? (
+          {banners.length === 0 ? null : banners.length === 1 ? (
                 // Single Full-Bleed Graphic Image Banner
                 <div
                   className="banner-card group relative w-full aspect-[2/1] sm:aspect-[16/6] md:aspect-[21/7] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
