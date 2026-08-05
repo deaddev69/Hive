@@ -2105,6 +2105,7 @@ export default defineSchema({
       desktopImage: v.optional(v.any()),
       mobileImage: v.optional(v.any()),
       targetUrl: v.optional(v.string()),
+      campaignId: v.optional(v.string()),
     }),
     sortOrder: v.number(),
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),

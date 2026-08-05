@@ -511,7 +511,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onCl
                     <img
                       src={
                         typeof formData.config.desktopImage === "string" 
-                          ? formData.config.desktopImage 
+                          ? formData.config.desktopImage.replace("https://cdn.hivenow.in/cdn-cgi/image/format=auto/banner_images/", "https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/banner_images/") 
                           : (formData.config.desktopImage?.objectKey 
                               ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.desktopImage.objectKey}` 
                               : "")
@@ -550,7 +550,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onCl
                     <img
                       src={
                         typeof formData.config.mobileImage === "string" 
-                          ? formData.config.mobileImage 
+                          ? formData.config.mobileImage.replace("https://cdn.hivenow.in/cdn-cgi/image/format=auto/banner_images/", "https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/banner_images/") 
                           : (formData.config.mobileImage?.objectKey 
                               ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.mobileImage.objectKey}` 
                               : "")
