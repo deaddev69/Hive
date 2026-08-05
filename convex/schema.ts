@@ -379,6 +379,7 @@ export default defineSchema({
       )
     ),
     pan: v.optional(v.string()),
+    seedSource: v.optional(v.union(v.literal("demo"), v.literal("production"))),
   })
     .index("by_slug",      ["slug"])
     .index("by_userId",    ["userId"])
@@ -389,6 +390,7 @@ export default defineSchema({
     .index("by_ownerEmail", ["ownerEmail"])
     .index("by_inviteTokenHash", ["inviteTokenHash"])
     .index("by_razorpayAccountId", ["razorpayAccountId"])
+    .index("by_seedSource", ["seedSource"])
     .searchIndex("search_boutiques", {
       searchField: "boutiqueName",
       filterFields: ["status", "storeCategory"],
@@ -505,10 +507,12 @@ export default defineSchema({
                          v.literal("relaxed_fit"),
                          v.literal("oversized")
                        )),
+    seedSource:       v.optional(v.union(v.literal("demo"), v.literal("production"))),
   })
     .index("by_boutiqueId", ["boutiqueId"])
     .index("by_categoryId", ["categoryId"])
     .index("by_active",     ["active"])
+    .index("by_seedSource", ["seedSource"])
     .index("by_slug",       ["slug"])
     .index("by_adminHidden", ["adminHidden"])
     .index("by_approvalStatus", ["approvalStatus"])
@@ -1990,20 +1994,22 @@ export default defineSchema({
     .index("by_deviceId", ["deviceId"])
     .index("by_installedAt", ["installedAt"]),
 
-  // ─── HOMEPAGE V2: HERO CAMPAIGNS ──────────────────────────────────────────
-  heroCampaigns: defineTable({
+  // ─── HOMEPAGE V2: EDITORIAL BANNERS ─────────────────────────────────────────
+  editorialBanners: defineTable({
     title: v.string(),
-    subtitle: v.string(),
-    imageUrl: v.string(),
-    ctaText: v.string(),
-    ctaUrl: v.string(),
-    priority: v.number(),
-    startDate: v.number(),
-    endDate: v.number(),
-    isPublished: v.boolean(),
+    subtitle: v.optional(v.string()),
+    desktopImage: v.string(),
+    mobileImage: v.string(),
+    targetUrl: v.string(),
+    altText: v.optional(v.string()),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+    sortOrder: v.optional(v.number()),
+    seedSource: v.optional(v.union(v.literal("demo"), v.literal("production"))),
     createdAt: v.number(),
-  }).index("by_published_priority", ["isPublished", "priority"]),
-
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_status_sort", ["status", "sortOrder"])
+    .index("by_seedSource", ["seedSource"]),
 
 
   // ─── PLATFORM MERCHANDISING: REUSABLE COLLECTIONS ENGINE ──────────────────
@@ -2020,11 +2026,13 @@ export default defineSchema({
       value: v.any(),
     }))),
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+    seedSource: v.optional(v.union(v.literal("demo"), v.literal("production"))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_slug", ["slug"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_seedSource", ["seedSource"]),
 
   // ─── HOMEPAGE V2: COLLECTION PRODUCTS MAPPING ──────────────────────────────
   collectionProducts: defineTable({
@@ -2096,7 +2104,7 @@ export default defineSchema({
       spacing: v.optional(v.string()),
     }),
     sortOrder: v.number(),
-    status: v.union(v.literal("draft"), v.literal("published")),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
   })
     .index("by_experience_status_sort", ["experienceId", "status", "sortOrder"])
     .index("by_blockKey", ["blockKey"]),

@@ -7,10 +7,10 @@ import { enrichProducts, getTotalStock } from "./products";
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Get all hero campaigns for admin management
-export const getAllHeroCampaigns = query({
+export const getAllEditorialBanners = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("heroCampaigns").collect();
+    return await ctx.db.query("editorialBanners").collect();
   },
 });
 
@@ -89,29 +89,27 @@ export const searchCatalogProducts = query({
 // HERO CAMPAIGN MUTATIONS
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const createHeroCampaign = mutation({
+export const createCampaign = mutation({
   args: {
     title: v.string(),
-    subtitle: v.string(),
-    imageUrl: v.string(),
-    ctaText: v.string(),
-    ctaUrl: v.string(),
-    priority: v.number(),
-    startDate: v.number(),
-    endDate: v.number(),
-    isPublished: v.boolean(),
+    subtitle: v.optional(v.string()),
+    desktopImage: v.string(),
+    mobileImage: v.string(),
+    targetUrl: v.string(),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("heroCampaigns", {
+    const newId = await ctx.db.insert("editorialBanners", {
       ...args,
+      status: "draft",
       createdAt: Date.now(),
     });
   },
 });
 
-export const updateHeroCampaign = mutation({
+export const updateEditorialBanner = mutation({
   args: {
-    id: v.id("heroCampaigns"),
+    id: v.id("editorialBanners"),
     title: v.optional(v.string()),
     subtitle: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
@@ -128,17 +126,20 @@ export const updateHeroCampaign = mutation({
   },
 });
 
-export const deleteHeroCampaign = mutation({
-  args: { id: v.id("heroCampaigns") },
+export const deleteEditorialBanner = mutation({
+  args: { id: v.id("editorialBanners") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
   },
 });
 
-export const toggleCampaignPublished = mutation({
-  args: { id: v.id("heroCampaigns"), isPublished: v.boolean() },
+export const updateCampaign = mutation({
+  args: {
+    id: v.id("editorialBanners"),
+    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+  },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, { isPublished: args.isPublished });
+    await ctx.db.patch(args.id, { status: args.status });
   },
 });
 
@@ -481,31 +482,25 @@ export const seedDefaultHomepageData = mutation({
     const oneYear = 365 * 24 * 60 * 60 * 1000;
 
     // 1. Seed Hero Campaigns if empty
-    const existingCampaigns = await ctx.db.query("heroCampaigns").collect();
+    const existingCampaigns = await ctx.db.query("editorialBanners").collect();
     if (existingCampaigns.length === 0) {
-      await ctx.db.insert("heroCampaigns", {
+      await ctx.db.insert("editorialBanners", {
         title: "Monsoon Handloom Edit '26",
         subtitle: "Breathable Kerala linens, hand-dyed organzas & rainy day silhouettes curated by local boutiques.",
-        imageUrl: "",
-        ctaText: "Explore Monsoon Edit",
-        ctaUrl: "/shop?collection=monsoon",
-        priority: 10,
-        startDate: now - 1000,
-        endDate: now + oneYear,
-        isPublished: true,
+        desktopImage: "",
+        mobileImage: "",
+        targetUrl: "/shop?collection=monsoon",
+        status: "published",
         createdAt: now,
       });
 
-      await ctx.db.insert("heroCampaigns", {
+      await ctx.db.insert("editorialBanners", {
         title: "Kochi Festive & Wedding Luxe",
         subtitle: "Handcrafted Zari sarees, bridal lehengas & evening co-ords delivered in under 2 hours.",
-        imageUrl: "",
-        ctaText: "Shop Wedding Collection",
-        ctaUrl: "/shop?collection=wedding",
-        priority: 9,
-        startDate: now - 1000,
-        endDate: now + oneYear,
-        isPublished: true,
+        desktopImage: "",
+        mobileImage: "",
+        targetUrl: "/shop?collection=wedding",
+        status: "published",
         createdAt: now,
       });
     }
@@ -661,22 +656,19 @@ export const duplicateCollection = mutation({
 });
 
 export const duplicateCampaign = mutation({
-  args: { id: v.id("heroCampaigns") },
+  args: { id: v.id("editorialBanners") },
   handler: async (ctx, args) => {
     const campaign = await ctx.db.get(args.id);
     if (!campaign) return null;
 
     const now = Date.now();
-    return await ctx.db.insert("heroCampaigns", {
+    return await ctx.db.insert("editorialBanners", {
       title: `${campaign.title} (Copy)`,
       subtitle: campaign.subtitle,
-      imageUrl: campaign.imageUrl,
-      ctaText: campaign.ctaText,
-      ctaUrl: campaign.ctaUrl,
-      priority: campaign.priority,
-      startDate: now,
-      endDate: campaign.endDate,
-      isPublished: false,
+      desktopImage: campaign.desktopImage,
+      mobileImage: campaign.mobileImage,
+      targetUrl: campaign.targetUrl,
+      status: "draft",
       createdAt: now,
     });
   },
@@ -847,5 +839,73 @@ export const migrateProductPrices = mutation({
   }
 });
 
+export const updateBlockContent = mutation({
+  args: {
+    id: v.id("experienceBlocks"),
+    title: v.optional(v.string()),
+    subtitle: v.optional(v.string()),
+    config: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    await ctx.db.patch(id, updates);
+  },
+});
 
+export const updateBlockLayout = mutation({
+  args: {
+    id: v.id("experienceBlocks"),
+    renderer: v.optional(
+      v.union(
+        v.literal("productCarousel"),
+        v.literal("largeCards"),
+        v.literal("moodGrid"),
+        v.literal("occasionGrid"),
+        v.literal("editorialGrid")
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { renderer: args.renderer });
+  },
+});
 
+export const toggleBlockVisibility = mutation({
+  args: {
+    id: v.id("experienceBlocks"),
+    isHidden: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    // We repurpose the 'status' field for visibility within the draft experience.
+    // 'draft' = visible, 'archived' = hidden
+    await ctx.db.patch(args.id, { status: args.isHidden ? "archived" : "draft" });
+  },
+});
+
+export const duplicateBlock = mutation({
+  args: {
+    id: v.id("experienceBlocks"),
+  },
+  handler: async (ctx, args) => {
+    const block = await ctx.db.get(args.id);
+    if (!block) throw new Error("Block not found");
+
+    const { _id, _creationTime, ...blockData } = block;
+
+    const allBlocks = await ctx.db
+      .query("experienceBlocks")
+      .withIndex("by_experience_status_sort", (q) =>
+        q.eq("experienceId", block.experienceId)
+      )
+      .collect();
+
+    const maxSort = allBlocks.reduce((max, b) => Math.max(max, b.sortOrder), 0);
+
+    return await ctx.db.insert("experienceBlocks", {
+      ...blockData,
+      blockKey: `${blockData.blockKey}_copy_${Date.now()}`,
+      sortOrder: maxSort + 1,
+      status: "draft", // Always duplicate as visible
+    });
+  },
+});

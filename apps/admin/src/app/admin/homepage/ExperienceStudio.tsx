@@ -3,17 +3,99 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { formatCurrency, toast } from "@hive/utils";
+import { toast } from "@hive/utils";
 import {
-  Sparkles, Plus, Trash2, Settings, Smartphone, Layout, Tag, Copy, Upload, Edit, GripVertical, CheckCircle2, ChevronRight, Share, X
+  Sparkles, Plus, Trash2, Settings, Smartphone, Layout, Copy, Edit, X, Eye, EyeOff, Search, Layers, ShoppingBag, Zap, ChevronDown, ChevronUp
 } from "lucide-react";
+import { Id } from "../../../../../../convex/_generated/dataModel";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCHEMA DRIVEN CONFIGURATION
+// ─────────────────────────────────────────────────────────────────────────────
+
+type BlockType = "hero" | "collection" | "category" | "recentlyViewed" | "trust" | "banner";
+
+interface BlockSchema {
+  id: BlockType;
+  name: string;
+  category: "Marketing" | "Collections" | "Commerce";
+  icon: React.ElementType;
+  description: string;
+  defaultConfig: {
+    title?: string;
+    renderer: string;
+    config: any;
+  };
+  fields: ("title" | "subtitle" | "collectionId" | "campaignId" | "maxProducts" | "showSeeAll" | "renderer")[];
+}
+
+const BLOCK_REGISTRY: BlockSchema[] = [
+  {
+    id: "hero",
+    name: "Hero Banner",
+    category: "Marketing",
+    icon: Zap,
+    description: "Large promotional banner at the top of the page.",
+    defaultConfig: { title: "", renderer: "largeCards", config: {} },
+    fields: ["campaignId", "renderer"]
+  },
+  {
+    id: "banner",
+    name: "Editorial Banner",
+    category: "Marketing",
+    icon: Layers,
+    description: "Slimline banner for announcements.",
+    defaultConfig: { title: "", renderer: "largeCards", config: {} },
+    fields: ["title", "campaignId"]
+  },
+  {
+    id: "collection",
+    name: "Product Carousel",
+    category: "Collections",
+    icon: ShoppingBag,
+    description: "Horizontal scrollable list of products.",
+    defaultConfig: { title: "Featured Products", renderer: "productCarousel", config: { maxProducts: 12, showSeeAll: true } },
+    fields: ["title", "subtitle", "collectionId", "maxProducts", "showSeeAll"]
+  },
+  {
+    id: "category",
+    name: "Category Grid",
+    category: "Collections",
+    icon: Layout,
+    description: "Grid of product categories.",
+    defaultConfig: { title: "Shop by Category", renderer: "occasionGrid", config: {} },
+    fields: ["title", "subtitle", "renderer"]
+  },
+  {
+    id: "recentlyViewed",
+    name: "Recently Viewed",
+    category: "Commerce",
+    icon: Eye,
+    description: "Personalized history of user's viewed items.",
+    defaultConfig: { title: "Recently Viewed", renderer: "productCarousel", config: { maxProducts: 10 } },
+    fields: ["title", "maxProducts"]
+  },
+  {
+    id: "trust",
+    name: "Trust Strip",
+    category: "Commerce",
+    icon: Sparkles,
+    description: "Icons showing delivery promises and authentic guarantees.",
+    defaultConfig: { title: "", renderer: "largeCards", config: {} },
+    fields: []
+  }
+];
 
 export function ExperienceStudio() {
   const experiences = useQuery(api.homepageAdmin.getExperiences);
+  const collections = useQuery(api.homepageAdmin.getAllHomepageCollections);
+  const campaigns = useQuery(api.homepageAdmin.getAllEditorialBanners);
+
   const [selectedExpId, setSelectedExpId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"blocks" | "settings" | "preview">("blocks");
+  const [activeTab, setActiveTab] = useState<"blocks" | "settings">("blocks");
   const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
-  
+  const [showBlockLibrary, setShowBlockLibrary] = useState(false);
+
   // Set default selection
   useEffect(() => {
     if (!selectedExpId && experiences && experiences.length > 0) {
@@ -22,9 +104,10 @@ export function ExperienceStudio() {
   }, [experiences, selectedExpId]);
 
   const selectedExp = experiences?.find((e: any) => e._id === selectedExpId);
+  // Fetch ALL blocks (draft and archived/hidden)
   const rawBlocks = useQuery(api.homepageAdmin.getExperienceBlocks, selectedExp ? { experienceId: selectedExp._id, status: "draft" } : "skip");
-
-  // Local state for drag and drop
+  
+  // Local state for optimistic updates
   const [blocks, setBlocks] = useState<any[]>([]);
   useEffect(() => {
     if (rawBlocks) {
@@ -34,9 +117,15 @@ export function ExperienceStudio() {
 
   const duplicateExp = useMutation(api.homepageAdmin.duplicateExperience);
   const publishExp = useMutation(api.homepageAdmin.publishExperience);
-  const removeBlock = useMutation(api.homepageAdmin.removeBlockFromExperience);
   const addBlock = useMutation(api.homepageAdmin.addBlockToExperience);
+  const removeBlock = useMutation(api.homepageAdmin.removeBlockFromExperience);
   const updateLayout = useMutation(api.homepageAdmin.updateExperienceLayout);
+  
+  // Granular Mutations
+  const updateBlockContent = useMutation(api.homepageAdmin.updateBlockContent);
+  const updateBlockLayoutMut = useMutation(api.homepageAdmin.updateBlockLayout);
+  const toggleVisibility = useMutation(api.homepageAdmin.toggleBlockVisibility);
+  const duplicateBlock = useMutation(api.homepageAdmin.duplicateBlock);
 
   const handlePublish = async () => {
     if (!selectedExpId) return;
@@ -48,7 +137,7 @@ export function ExperienceStudio() {
     }
   };
 
-  const handleDuplicate = async () => {
+  const handleDuplicateExp = async () => {
     if (!selectedExp) return;
     const newName = prompt("Enter new experience name:", `${selectedExp.name} Copy`);
     if (!newName) return;
@@ -62,27 +151,39 @@ export function ExperienceStudio() {
     }
   };
 
-  const handleAddBlock = async () => {
+  const handleAddBlock = async (schema: BlockSchema) => {
     if (!selectedExpId) return;
     try {
       await addBlock({
         experienceId: selectedExpId as any,
-        blockKey: `block_${Date.now()}`,
-        blockType: "collection",
-        title: "New Block",
-        renderer: "productCarousel",
+        blockKey: `${schema.id}_${Date.now()}`,
+        blockType: schema.id,
+        title: schema.defaultConfig.title,
+        renderer: schema.defaultConfig.renderer as any,
+        config: schema.defaultConfig.config,
         sortOrder: blocks.length + 1,
       });
-      toast.success("Block added!");
+      setShowBlockLibrary(false);
+      toast.success(`${schema.name} added!`);
     } catch (err: any) {
       toast.error(err.message);
     }
   };
 
-  const handleRemoveBlock = async (blockId: string) => {
+  const handleDuplicateBlock = async (blockId: string) => {
     try {
-      await removeBlock({ id: blockId as any });
-      toast.success("Block removed!");
+      await duplicateBlock({ id: blockId as Id<"experienceBlocks"> });
+      toast.success("Block duplicated!");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleToggleVisibility = async (blockId: string, currentStatus: string) => {
+    try {
+      const isHidden = currentStatus !== "archived"; // if it's draft it becomes archived (hidden)
+      await toggleVisibility({ id: blockId as Id<"experienceBlocks">, isHidden });
+      toast.success(isHidden ? "Block hidden" : "Block visible");
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -94,7 +195,6 @@ export function ExperienceStudio() {
     const newBlocks = [...blocks];
     [newBlocks[idx - 1], newBlocks[idx]] = [newBlocks[idx], newBlocks[idx - 1]];
     setBlocks(newBlocks);
-    
     const layoutUpdates = newBlocks.map((b, i) => ({ id: b._id, sortOrder: i + 1 }));
     await updateLayout({ blocks: layoutUpdates });
   };
@@ -104,13 +204,16 @@ export function ExperienceStudio() {
     const newBlocks = [...blocks];
     [newBlocks[idx], newBlocks[idx + 1]] = [newBlocks[idx + 1], newBlocks[idx]];
     setBlocks(newBlocks);
-    
     const layoutUpdates = newBlocks.map((b, i) => ({ id: b._id, sortOrder: i + 1 }));
     await updateLayout({ blocks: layoutUpdates });
   };
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // RENDERERS
+  // ─────────────────────────────────────────────────────────────────────────────
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-in fade-in duration-300">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-in fade-in duration-300 relative">
       
       {/* ── Left Sidebar: Experiences ── */}
       <div className="lg:col-span-3 space-y-4">
@@ -144,13 +247,6 @@ export function ExperienceStudio() {
               )}
             </div>
           ))}
-
-          <button
-            className="w-full p-3.5 rounded-2xl border border-dashed border-slate-300 dark:border-zinc-700 text-slate-500 hover:text-amber-500 hover:border-amber-500 transition-all flex items-center justify-center gap-2 text-xs font-bold cursor-pointer"
-            onClick={() => toast.success("Create experience dialog to be implemented")}
-          >
-            <Plus className="w-4 h-4" /> New Experience
-          </button>
         </div>
       </div>
 
@@ -158,40 +254,19 @@ export function ExperienceStudio() {
       <div className="lg:col-span-9 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-xs">
         {selectedExp ? (
           <>
-            {/* Header & Tabs */}
             <div className="border-b border-slate-100 dark:border-zinc-800">
               <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-serif font-bold text-slate-900 dark:text-white">
                     {selectedExp.name}
                   </h2>
-                  <p className="text-xs text-slate-500">Status: {selectedExp.status.toUpperCase()}</p>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleDuplicate}
-                    className="p-2 text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-xl transition cursor-pointer"
-                    title="Duplicate Experience"
-                  >
-                    <Copy className="w-4 h-4" />
+                  <button onClick={() => setShowBlockLibrary(true)} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer">
+                    <Plus className="w-4 h-4"/> Add Block
                   </button>
-                  <button
-                    onClick={() => toast.success("Draft saved!")}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm transition cursor-pointer"
-                  >
-                    Save Draft
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("preview")}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm transition cursor-pointer"
-                  >
-                    Preview
-                  </button>
-                  <button
-                    onClick={handlePublish}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm flex items-center gap-2 transition active:scale-95 cursor-pointer"
-                  >
+                  <button onClick={handlePublish} className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm transition active:scale-95 cursor-pointer">
                     Publish
                   </button>
                 </div>
@@ -201,7 +276,6 @@ export function ExperienceStudio() {
                 {[
                   { id: "blocks", label: "Blocks", icon: Layout },
                   { id: "settings", label: "Settings", icon: Settings },
-                  { id: "preview", label: "Preview", icon: Smartphone },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -219,173 +293,234 @@ export function ExperienceStudio() {
               </div>
             </div>
 
-            {/* Tab Contents */}
             <div className="p-5 bg-slate-50 dark:bg-zinc-950/50 min-h-[500px]">
               
-              {/* Blocks Tab */}
               {activeTab === "blocks" && (
-                <div className="max-w-2xl mx-auto space-y-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold text-slate-500">Organize your experience layout.</p>
-                    <button
-                      onClick={handleAddBlock}
-                      className="text-xs font-bold text-amber-600 flex items-center gap-1 cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Add Block
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {blocks.map((block, idx) => (
-                      <div key={block._id} className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-xs hover:border-slate-300 transition-all overflow-hidden">
+                <div className="max-w-3xl mx-auto space-y-4">
+                  {blocks.map((block, idx) => {
+                    const schema = BLOCK_REGISTRY.find(s => s.id === block.blockType) || BLOCK_REGISTRY[0];
+                    const isHidden = block.status === "archived";
+
+                    return (
+                      <div key={block._id} className={`bg-white dark:bg-zinc-900 rounded-2xl border ${isHidden ? "border-dashed border-slate-300 opacity-60" : "border-slate-200"} dark:border-zinc-800 shadow-xs hover:border-slate-300 transition-all overflow-hidden`}>
                         <div className="p-4 flex items-center gap-4">
                           <div className="flex flex-col items-center gap-1">
-                            <button onClick={() => handleMoveUp(idx)} disabled={idx === 0} className={`p-0.5 rounded ${idx === 0 ? "text-slate-200" : "text-slate-400 hover:text-amber-500 bg-slate-50 hover:bg-amber-50"} cursor-pointer`}>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
-                            </button>
-                            <button onClick={() => handleMoveDown(idx)} disabled={idx === blocks.length - 1} className={`p-0.5 rounded ${idx === blocks.length - 1 ? "text-slate-200" : "text-slate-400 hover:text-amber-500 bg-slate-50 hover:bg-amber-50"} cursor-pointer`}>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                            </button>
+                            <button onClick={() => handleMoveUp(idx)} disabled={idx === 0} className={`p-0.5 rounded ${idx === 0 ? "text-slate-200" : "text-slate-400 hover:text-amber-500"} cursor-pointer`}><ChevronUp className="w-4 h-4"/></button>
+                            <button onClick={() => handleMoveDown(idx)} disabled={idx === blocks.length - 1} className={`p-0.5 rounded ${idx === blocks.length - 1 ? "text-slate-200" : "text-slate-400 hover:text-amber-500"} cursor-pointer`}><ChevronDown className="w-4 h-4"/></button>
                           </div>
                         
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[9px] font-extrabold text-slate-500 uppercase tracking-widest">
-                              {block.blockType}
-                            </span>
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                              {block.title || "Untitled Block"}
-                            </h4>
-                          </div>
-                          <p className="text-xs text-slate-400 mt-1 flex items-center gap-1 truncate">
-                            Renderer: {block.renderer || "Default"} 
-                            {block.config?.collectionId && " • Attached Collection"}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          <button
-                            className="p-2 text-slate-400 hover:text-amber-500 bg-slate-50 dark:bg-zinc-800 rounded-xl transition cursor-pointer"
-                            title="Edit Block"
-                            onClick={() => setExpandedBlockId(expandedBlockId === block._id ? null : block._id)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleRemoveBlock(block._id)}
-                            className="p-2 text-slate-400 hover:text-red-500 bg-slate-50 dark:bg-zinc-800 rounded-xl transition cursor-pointer"
-                            title="Remove Block"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Block Editor Drawer (Inline) */}
-                      {expandedBlockId === block._id && (
-                        <div className="bg-slate-50 dark:bg-zinc-950 p-5 border-t border-slate-100 dark:border-zinc-800 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h5 className="text-xs font-bold text-slate-700">Block Configuration</h5>
-                            <button onClick={() => setExpandedBlockId(null)} className="text-slate-400 hover:text-slate-700"><X className="w-4 h-4"/></button>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-[11px] font-bold text-slate-500 mb-1">Attached Collection</label>
-                              <select className="w-full p-2 rounded-lg border border-slate-200 text-xs">
-                                <option value="">Select a collection...</option>
-                                <option value="fresh-on-hive" selected={block.config?.collectionId === 'fresh-on-hive'}>Fresh on Hive</option>
-                                <option value="weekend-edit" selected={block.config?.collectionId === 'weekend-edit'}>Weekend Edit</option>
-                              </select>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[9px] font-extrabold text-slate-500 uppercase tracking-widest">
+                                {schema.name}
+                              </span>
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                {block.title || "Untitled Block"}
+                              </h4>
+                              {isHidden && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold">HIDDEN</span>}
                             </div>
-                            <div>
-                              <label className="block text-[11px] font-bold text-slate-500 mb-1">Maximum Products</label>
-                              <input type="number" className="w-full p-2 rounded-lg border border-slate-200 text-xs" defaultValue={block.config?.maxProducts || 12} />
-                            </div>
+                            <p className="text-xs text-slate-400 mt-1 flex items-center gap-1 truncate">
+                              Renderer: {block.renderer || "Default"} 
+                              {block.config?.collectionId && " • Attached Collection"}
+                            </p>
                           </div>
 
-                          <div className="flex items-center gap-2 mt-2">
-                            <input type="checkbox" id={`seeAll-${block._id}`} defaultChecked={block.config?.showSeeAll !== false} />
-                            <label htmlFor={`seeAll-${block._id}`} className="text-xs font-bold text-slate-700">Show "See All" button</label>
-                          </div>
-
-                          <div className="pt-2 flex justify-end">
-                            <button onClick={() => {
-                               toast.success("Block saved!");
-                               setExpandedBlockId(null);
-                            }} className="px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold">Save Configuration</button>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => setExpandedBlockId(expandedBlockId === block._id ? null : block._id)} className="p-2 text-slate-400 hover:text-amber-500 bg-slate-50 dark:bg-zinc-800 rounded-xl transition cursor-pointer" title="Configure"><Settings className="w-4 h-4" /></button>
+                            <button onClick={() => handleDuplicateBlock(block._id)} className="p-2 text-slate-400 hover:text-blue-500 bg-slate-50 dark:bg-zinc-800 rounded-xl transition cursor-pointer" title="Duplicate"><Copy className="w-4 h-4" /></button>
+                            <button onClick={() => handleToggleVisibility(block._id, block.status)} className="p-2 text-slate-400 hover:text-slate-700 bg-slate-50 dark:bg-zinc-800 rounded-xl transition cursor-pointer" title={isHidden ? "Show" : "Hide"}>
+                              {isHidden ? <Eye className="w-4 h-4"/> : <EyeOff className="w-4 h-4"/>}
+                            </button>
+                            <button onClick={() => removeBlock({ id: block._id })} className="p-2 text-slate-400 hover:text-red-500 bg-slate-50 dark:bg-zinc-800 rounded-xl transition cursor-pointer" title="Remove"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
 
-                    {blocks.length === 0 && (
-                      <div className="p-12 text-center text-slate-400 border border-dashed border-slate-200 rounded-2xl">
-                        No blocks added yet. Click "Add Block" to start merchandising.
+                        {/* Schema-Driven Config Drawer */}
+                        {expandedBlockId === block._id && (
+                          <div className="bg-slate-50 dark:bg-zinc-950 p-5 border-t border-slate-100 dark:border-zinc-800">
+                            <BlockConfigEditor 
+                              block={block} 
+                              schema={schema} 
+                              collections={collections} 
+                              campaigns={campaigns} 
+                              onSave={async (updates: any) => {
+                                await updateBlockContent({
+                                  id: block._id,
+                                  title: updates.title,
+                                  subtitle: updates.subtitle,
+                                  config: updates.config,
+                                });
+                                if (updates.renderer) {
+                                  await updateBlockLayoutMut({ id: block._id, renderer: updates.renderer });
+                                }
+                                toast.success("Configuration saved");
+                              }}
+                              onClose={() => setExpandedBlockId(null)}
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
+                  {blocks.length === 0 && (
+                    <div className="p-12 text-center text-slate-400 border border-dashed border-slate-200 rounded-2xl">
+                      No blocks added yet. Click "Add Block" to open the library.
+                    </div>
+                  )}
                 </div>
               )}
-
-              {activeTab === "settings" && (
-                <div className="max-w-xl mx-auto space-y-6">
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-bold border-b pb-2">General</h4>
-                    <div>
-                      <label className="block text-xs font-bold mb-1">Experience Name</label>
-                      <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200" defaultValue={selectedExp.name} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold mb-1">Slug / URL Path</label>
-                      <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200" defaultValue={selectedExp.slug} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold mb-1">Theme Configuration</label>
-                      <select className="w-full p-2.5 rounded-xl border border-slate-200">
-                        <option>Light (Default)</option>
-                        <option>Dark Mode</option>
-                        <option>Festive Gold</option>
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h4 className="text-sm font-bold border-b pb-2">Search Engine Optimization (SEO)</h4>
-                    <div>
-                      <label className="block text-xs font-bold mb-1">SEO Title</label>
-                      <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200" defaultValue={selectedExp.seoTitle} />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold mb-1">Meta Description</label>
-                      <textarea className="w-full p-2.5 rounded-xl border border-slate-200" rows={3} defaultValue={selectedExp.seoDescription}></textarea>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "preview" && (
-                <div className="flex flex-col items-center justify-center space-y-4 py-8">
-                  <Smartphone className="w-12 h-12 text-slate-300" />
-                  <p className="text-sm font-semibold text-slate-600">Scan to preview on device.</p>
-                  <button className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer">
-                    <Share className="w-4 h-4" /> Copy Preview Link
-                  </button>
-                </div>
-              )}
-
             </div>
           </>
         ) : (
           <div className="p-20 text-center flex flex-col items-center justify-center min-h-[500px]">
             <Sparkles className="w-10 h-10 text-amber-500/50 mb-3" />
             <h3 className="text-lg font-bold text-slate-700">Experience Studio</h3>
-            <p className="text-sm text-slate-400 mt-1 max-w-sm">
-              Select an experience from the sidebar to manage its blocks, SEO, and visual presentation.
-            </p>
+            <p className="text-sm text-slate-400 mt-1 max-w-sm">Select an experience to manage.</p>
           </div>
         )}
+      </div>
+
+      {/* ── Block Library Modal ── */}
+      {showBlockLibrary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="p-5 flex items-center justify-between border-b">
+              <h2 className="text-lg font-bold">Block Library</h2>
+              <button onClick={() => setShowBlockLibrary(false)} className="text-slate-400 hover:text-slate-900 cursor-pointer"><X className="w-5 h-5"/></button>
+            </div>
+            <div className="p-5 overflow-y-auto">
+              {["Marketing", "Collections", "Commerce"].map(category => (
+                <div key={category} className="mb-8">
+                  <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-4">{category}</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {BLOCK_REGISTRY.filter(b => b.category === category).map(block => (
+                      <div key={block.id} onClick={() => handleAddBlock(block)} className="p-4 border rounded-2xl hover:border-amber-500 hover:shadow-md cursor-pointer transition group">
+                        <block.icon className="w-6 h-6 text-slate-400 group-hover:text-amber-500 mb-3" />
+                        <h4 className="font-bold text-sm">{block.name}</h4>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">{block.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCHEMA EDITOR COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
+
+function BlockConfigEditor({ block, schema, collections, campaigns, onSave, onClose }: { block: any, schema: BlockSchema, collections: any, campaigns: any, onSave: any, onClose: any }) {
+  const [formData, setFormData] = useState({
+    title: block.title || "",
+    subtitle: block.subtitle || "",
+    renderer: block.renderer || schema.defaultConfig.renderer,
+    config: { ...schema.defaultConfig.config, ...block.config }
+  });
+
+  const updateConfig = (key: string, value: any) => {
+    setFormData(prev => ({ ...prev, config: { ...prev.config, [key]: value } }));
+  };
+
+  const handleSave = () => onSave(formData);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        {/* Dynamic Fields */}
+        <div className="space-y-4">
+          {schema.fields.includes("title") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-1">Title</label>
+              <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+            </div>
+          )}
+          {schema.fields.includes("subtitle") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-1">Subtitle</label>
+              <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.subtitle} onChange={e => setFormData({...formData, subtitle: e.target.value})} />
+            </div>
+          )}
+          {schema.fields.includes("renderer") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-1">Renderer (Layout)</label>
+              <select className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.renderer} onChange={e => setFormData({...formData, renderer: e.target.value})}>
+                <option value="productCarousel">Product Carousel</option>
+                <option value="largeCards">Large Cards</option>
+                <option value="moodGrid">Mood Grid</option>
+                <option value="occasionGrid">Category / Occasion Grid</option>
+                <option value="editorialGrid">Editorial Grid</option>
+              </select>
+            </div>
+          )}
+          {schema.fields.includes("maxProducts") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-1">Max Items to Display</label>
+              <input type="number" className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.config.maxProducts} onChange={e => updateConfig("maxProducts", parseInt(e.target.value))} />
+            </div>
+          )}
+          {schema.fields.includes("showSeeAll") && (
+            <div className="flex items-center gap-2 pt-2">
+              <input type="checkbox" id={`seeall-${block._id}`} checked={formData.config.showSeeAll} onChange={e => updateConfig("showSeeAll", e.target.checked)} />
+              <label htmlFor={`seeall-${block._id}`} className="text-sm font-semibold">Show "See All" Link</label>
+            </div>
+          )}
+        </div>
+
+        {/* Picker Column */}
+        <div>
+          {schema.fields.includes("collectionId") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-2">Assign Collection</label>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                {collections?.map((col: any) => (
+                  <div 
+                    key={col._id} 
+                    onClick={() => updateConfig("collectionId", col._id)}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition flex items-center justify-between ${formData.config.collectionId === col._id ? "border-amber-500 bg-amber-50" : "border-slate-200 hover:border-amber-300"}`}
+                  >
+                    <div>
+                      <h5 className="text-sm font-bold">{col.title}</h5>
+                      <p className="text-[10px] text-slate-500">{col.productCount} products • {col.status}</p>
+                    </div>
+                    {formData.config.collectionId === col._id && <div className="w-3 h-3 rounded-full bg-amber-500" />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {schema.fields.includes("campaignId") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-2">Assign Campaign/Banner</label>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                {campaigns?.map((camp: any) => (
+                  <div 
+                    key={camp._id} 
+                    onClick={() => updateConfig("campaignId", camp._id)}
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition flex items-center justify-between ${formData.config.campaignId === camp._id ? "border-amber-500 bg-amber-50" : "border-slate-200 hover:border-amber-300"}`}
+                  >
+                    <div>
+                      <h5 className="text-sm font-bold">{camp.title}</h5>
+                    </div>
+                    {formData.config.campaignId === camp._id && <div className="w-3 h-3 rounded-full bg-amber-500" />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-zinc-800">
+        <button onClick={onClose} className="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700">Cancel</button>
+        <button onClick={handleSave} className="px-6 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-xl shadow-sm">Save Configuration</button>
       </div>
     </div>
   );

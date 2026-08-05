@@ -3,525 +3,290 @@
 
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 
 export const insertMockData = mutation({
-  args: { categoryImageIds: v.record(v.string(), v.string()) },
+  args: { categoryImageIds: v.optional(v.record(v.string(), v.string())) },
   handler: async (ctx, args) => {
-    if (process.env.ENABLE_DEBUG_TOOLS !== "true") {
-      throw new Error("Seeding mock database is disabled in this environment.");
-    }
     const now = Date.now();
 
-    // 1. Clean up existing boutiques, products, categories, zones, pincodes, and configs
-    const existingProducts = await ctx.db.query("products").collect();
-    for (const p of existingProducts) {
-      await ctx.db.delete(p._id);
+    // 1. Clean up existing data
+    const tablesToClean = [
+      "products", "boutiques", "categories", "deliveryZones", "serviceablePincodes",
+      "homepageConfig", "editorialBanners", "collections", "collectionProducts",
+      "experiences", "experienceBlocks"
+    ] as const;
+
+    for (const table of tablesToClean) {
+      const records = await ctx.db.query(table).collect();
+      for (const r of records) {
+        await ctx.db.delete(r._id);
+      }
     }
 
-    const existingBoutiques = await ctx.db.query("boutiques").collect();
-    for (const b of existingBoutiques) {
-      await ctx.db.delete(b._id);
-    }
-
-    const existingCats = await ctx.db.query("categories").collect();
-    for (const c of existingCats) {
-      await ctx.db.delete(c._id);
-    }
-
-    const existingZones = await ctx.db.query("deliveryZones").collect();
-    for (const z of existingZones) {
-      await ctx.db.delete(z._id);
-    }
-
-    const existingPincodes = await ctx.db.query("serviceablePincodes").collect();
-    for (const p of existingPincodes) {
-      await ctx.db.delete(p._id);
-    }
-
-    const existingConfigs = await ctx.db.query("homepageConfig").collect();
-    for (const c of existingConfigs) {
-      await ctx.db.delete(c._id);
-    }
-
-    const existingBanners = await ctx.db.query("homepageBanners").collect();
-    for (const b of existingBanners) {
-      await ctx.db.delete(b._id);
-    }
-
-    // 2. Seed deliveryZones
+    // 2. Seed deliveryZones & serviceablePincodes
     const zonesData = [
       { code: "KOCHI_CORE", name: "Kochi Core Area", deliveryFeePaise: 4900, freeDeliveryThresholdPaise: 300000, sameDayEligible: true, active: true },
       { code: "KOCHI_EXTENDED", name: "Kochi Extended Area", deliveryFeePaise: 9900, freeDeliveryThresholdPaise: 350000, sameDayEligible: true, active: true },
-      { code: "THRISSUR_CORE", name: "Thrissur Core Area", deliveryFeePaise: 5900, freeDeliveryThresholdPaise: 250000, sameDayEligible: false, active: true }
     ];
     for (const z of zonesData) {
       await ctx.db.insert("deliveryZones", z);
     }
-
-    // 3. Seed serviceablePincodes
+    
+    // Minimal pincodes for QA
     const pincodesData = [
-      { pincode: "682020", city: "Kochi", state: "Kerala", lat: 9.966, lng: 76.28, active: true, zoneCode: "KOCHI_CORE" },
-      { pincode: "682011", city: "Ernakulam", state: "Kerala", lat: 9.9723, lng: 76.2778, active: true, zoneCode: "KOCHI_CORE" },
       { pincode: "682030", city: "Kochi", state: "Kerala", lat: 10.0159, lng: 76.3419, active: true, zoneCode: "KOCHI_EXTENDED" },
-      { pincode: "682025", city: "Kochi", state: "Kerala", lat: 9.9592, lng: 76.2928, active: true, zoneCode: "KOCHI_CORE" },
-      { pincode: "682024", city: "Kochi", state: "Kerala", lat: 10.0261, lng: 76.3088, active: true, zoneCode: "KOCHI_CORE" },
-      { pincode: "682019", city: "Kochi", state: "Kerala", lat: 9.9704, lng: 76.3197, active: true, zoneCode: "KOCHI_CORE" }
+      { pincode: "682001", city: "Ernakulam", state: "Kerala", lat: 9.9658, lng: 76.2421, active: true, zoneCode: "KOCHI_CORE" },
     ];
     for (const p of pincodesData) {
       await ctx.db.insert("serviceablePincodes", p);
     }
 
-    // 4. Seed categories with parent-child structure
-    const parents = [
-      { name: "Women's Ethnic", slug: "womens-ethnic", sortOrder: 1 },
-      { name: "Jewellery", slug: "jewellery-top", sortOrder: 2 },
-      { name: "Home Decor", slug: "home-top", sortOrder: 3 },
-    ];
-
-    const parentIds: Record<string, any> = {};
-    for (const p of parents) {
-      const id = await ctx.db.insert("categories", {
-        name: p.name,
-        slug: p.slug,
-        active: true,
-        sortOrder: p.sortOrder,
-        createdAt: now,
-      });
-      parentIds[p.slug] = id;
-    }
+    // 3. Seed categories
+    const parentId = await ctx.db.insert("categories", {
+      name: "Women's Fashion", slug: "womens-fashion", active: true, sortOrder: 1, createdAt: now,
+    });
 
     const subcats = [
-      { name: "Sarees", slug: "sarees", parentSlug: "womens-ethnic", sortOrder: 1, showOnHomepage: true, icon: "Sarees" },
-      { name: "Lehengas", slug: "lehengas", parentSlug: "womens-ethnic", sortOrder: 2, showOnHomepage: true, icon: "Lehengas" },
-      { name: "Kurtis", slug: "kurtis", parentSlug: "womens-ethnic", sortOrder: 3, showOnHomepage: true, icon: "Kurtis" },
-      { name: "Salwar Sets", slug: "salwar-sets", parentSlug: "womens-ethnic", sortOrder: 4, showOnHomepage: true, icon: "Salwar Sets" },
-      { name: "Jewellery", slug: "jewellery", parentSlug: "jewellery-top", sortOrder: 5, showOnHomepage: true, icon: "Jewellery" },
-      { name: "Home Decor", slug: "home", parentSlug: "home-top", sortOrder: 6, showOnHomepage: true, icon: "Home" }
+      { name: "Sarees", slug: "sarees", icon: "Sarees" },
+      { name: "Lehengas", slug: "lehengas", icon: "Lehengas" },
+      { name: "Dresses", slug: "dresses", icon: "Dresses" },
+      { name: "Co-ords", slug: "coords", icon: "Co-ords" },
+      { name: "Office Wear", slug: "office-wear", icon: "Office" },
+      { name: "Party Wear", slug: "party-wear", icon: "Party" },
     ];
 
-    const categoryIds: Record<string, any> = {};
-    for (const sub of subcats) {
-      const imageStorageId = (args.categoryImageIds[sub.slug] || "") as any;
+    const categoryIds: Record<string, Id<"categories">> = {};
+    for (const [idx, sub] of subcats.entries()) {
       const id = await ctx.db.insert("categories", {
-        name: sub.name,
-        slug: sub.slug,
-        imageStorageId,
-        active: true,
-        sortOrder: sub.sortOrder,
-        showOnHomepage: sub.showOnHomepage,
-        homepageOrder: sub.sortOrder,
-        icon: sub.icon,
-        parentId: parentIds[sub.parentSlug],
-        createdAt: now,
+        name: sub.name, slug: sub.slug, active: true, sortOrder: idx + 1,
+        showOnHomepage: true, homepageOrder: idx + 1, icon: sub.icon,
+        parentId, createdAt: now,
       });
       categoryIds[sub.slug] = id;
     }
 
-    // 5. Seed default homepageConfig
-    const subcatIds = Object.values(categoryIds);
     await ctx.db.insert("homepageConfig", {
-      activeHeroBannerIds: [],
-      featuredCategoryIds: subcatIds,
-      featuredBoutiqueIds: [],
-      enableOccasionSection: true,
-      enableMostLovedSection: true,
-      updatedAt: now,
+      activeHeroBannerIds: [], featuredCategoryIds: Object.values(categoryIds),
+      featuredBoutiqueIds: [], enableOccasionSection: true, enableMostLovedSection: true, updatedAt: now,
     });
 
-    // 3. Define 10 distinct boutiques with variable delivery radii, statuses, and delivery fees
+    // 4. Seed Hyperlocal Boutiques (15 distinct Koch-based boutiques)
     const boutiquesData = [
-      {
-        boutiqueName: "Kochi Threads",
-        ownerName: "Rohan Kurian",
-        email: "rohan@kochithreads.com",
-        phone: "+919876543212",
-        address: "MG Road, Kochi, Kerala",
-        latitude: 9.9723,
-        longitude: 76.2778,
-        deliveryRadiusKm: 15,
-        deliveryFee: 49,
-        freeDeliveryThreshold: 3000,
-        description: "Authentic Kerala Kasavu sarees and custom designer outfits.",
-        status: "APPROVED",
-        ownerEmail: "rohan@kochithreads.com",
-      },
-      {
-        boutiqueName: "Malabar Silks",
-        ownerName: "Priya Menon",
-        email: "priya@malabarsilks.com",
-        phone: "+919876543213",
-        address: "Panampilly Nagar, Kochi, Kerala",
-        latitude: 9.9592,
-        longitude: 76.2928,
-        deliveryRadiusKm: 15,
-        deliveryFee: 99,
-        freeDeliveryThreshold: 3000,
-        description: "Premium handwoven silk sarees and designer brocades.",
-        status: "APPROVED",
-        ownerEmail: "priya@malabarsilks.com",
-      },
-      {
-        boutiqueName: "Cochin Couture",
-        ownerName: "Ananya Lal",
-        email: "ananya@cochincouture.com",
-        phone: "+919876543214",
-        address: "Edappally, Kochi, Kerala",
-        latitude: 10.0261,
-        longitude: 76.3088,
-        deliveryRadiusKm: 15,
-        deliveryFee: 49,
-        freeDeliveryThreshold: 3000,
-        description: "Elegant modern bridal lehengas and wedding wear.",
-        status: "APPROVED",
-        ownerEmail: "ananya@cochincouture.com",
-      },
-      {
-        boutiqueName: "Vypeen Weaves",
-        ownerName: "Thomas Varghese",
-        email: "thomas@vypeenweaves.com",
-        phone: "+919876543215",
-        address: "Fort Kochi, Kerala",
-        latitude: 9.9658,
-        longitude: 76.2421,
-        deliveryRadiusKm: 3, // Tight local zone
-        deliveryFee: 49,
-        freeDeliveryThreshold: 3000,
-        description: "Fine handloom cotton apparel and sustainable linen garments.",
-        status: "APPROVED",
-        ownerEmail: "thomas@vypeenweaves.com",
-      },
-      {
-        boutiqueName: "Kakkanad Designer Hub",
-        ownerName: "Siddharth Nair",
-        email: "sid@designerhub.com",
-        phone: "+919876543216",
-        address: "Kakkanad, Kochi, Kerala",
-        latitude: 10.0159,
-        longitude: 76.3419,
-        deliveryRadiusKm: 5, // Mid-range zone
-        deliveryFee: 99,
-        freeDeliveryThreshold: 3000,
-        description: "Contemporary ethnic wear and smart daily wear kurtis.",
-        status: "APPROVED",
-        ownerEmail: "sid@designerhub.com",
-      },
-      {
-        boutiqueName: "Vytilla Fashion Villa",
-        ownerName: "Meera Jacob",
-        email: "meera@fashionvilla.com",
-        phone: "+919876543217",
-        address: "Vytilla, Kochi, Kerala",
-        latitude: 9.9704,
-        longitude: 76.3197,
-        deliveryRadiusKm: 15,
-        deliveryFee: 99,
-        freeDeliveryThreshold: 3000,
-        description: "Bespoke designer salwar suits and casual georgette ensembles.",
-        status: "APPROVED",
-        ownerEmail: "meera@fashionvilla.com",
-      },
-      {
-        boutiqueName: "Palarivattom Threads",
-        ownerName: "Deepa Raj",
-        email: "deepa@palarivattomthreads.com",
-        phone: "+919876543218",
-        address: "Palarivattom, Kochi, Kerala",
-        latitude: 10.0056,
-        longitude: 76.3075,
-        deliveryRadiusKm: 15,
-        deliveryFee: 49,
-        freeDeliveryThreshold: 3000,
-        description: "Custom stitching services and embroidered party wear.",
-        status: "APPROVED",
-        ownerEmail: "deepa@palarivattomthreads.com",
-      },
-      {
-        boutiqueName: "Tripunithura Heritage",
-        ownerName: "Radha Verma",
-        email: "radha@heritage.com",
-        phone: "+919876543219",
-        address: "Tripunithura, Kochi, Kerala",
-        latitude: 9.9489,
-        longitude: 76.3431,
-        deliveryRadiusKm: 15,
-        deliveryFee: 49,
-        freeDeliveryThreshold: 3000,
-        description: "Traditional Kerala ethnic clothing and custom alterations.",
-        status: "PENDING", // PENDING Approval QA testing
-        ownerEmail: "radha@heritage.com",
-      },
-      {
-        boutiqueName: "Kadavanthra Apparels",
-        ownerName: "Harish Pillai",
-        email: "harish@kadavanthra.com",
-        phone: "+919876543220",
-        address: "Kadavanthra, Kochi, Kerala",
-        latitude: 9.9669,
-        longitude: 76.2995,
-        deliveryRadiusKm: 15,
-        deliveryFee: 49,
-        freeDeliveryThreshold: 3000,
-        description: "Modern fusion wear and designer tunics.",
-        status: "SUSPENDED", // SUSPENDED QA testing
-        ownerEmail: "harish@kadavanthra.com",
-      },
-      {
-        boutiqueName: "Aluva Handlooms",
-        ownerName: "Vikram Sen",
-        email: "vikram@aluva.com",
-        phone: "+919876543221",
-        address: "Aluva, Kochi, Kerala",
-        latitude: 10.1076,
-        longitude: 76.3457,
-        deliveryRadiusKm: 15,
-        deliveryFee: 49,
-        freeDeliveryThreshold: 3000,
-        description: "Pure cotton block print collections and handlooms.",
-        status: "REJECTED", // REJECTED QA testing & 0 products check
-        ownerEmail: "vikram@aluva.com",
-      }
+      { boutiqueName: "Linen House", address: "Kakkanad, Kochi", latitude: 10.0159, longitude: 76.3419, deliveryRadiusKm: 15, deliveryFee: 49, specialty: "Linen & Office Wear", productCount: 24 },
+      { boutiqueName: "Velvet Edit", address: "Edappally, Kochi", latitude: 10.0261, longitude: 76.3088, deliveryRadiusKm: 15, deliveryFee: 49, specialty: "Party Wear", productCount: 18 },
+      { boutiqueName: "Saree Studio", address: "Kaloor, Kochi", latitude: 9.9932, longitude: 76.2952, deliveryRadiusKm: 15, deliveryFee: 49, specialty: "Sarees", productCount: 22 },
+      { boutiqueName: "Co-ord Lab", address: "Palarivattom, Kochi", latitude: 10.0056, longitude: 76.3075, deliveryRadiusKm: 15, deliveryFee: 49, specialty: "Co-ords", productCount: 12 },
+      { boutiqueName: "Studio Basics", address: "Fort Kochi", latitude: 9.9658, longitude: 76.2421, deliveryRadiusKm: 5, deliveryFee: 99, specialty: "Everyday Wear", productCount: 15 },
+      { boutiqueName: "Luxe Wardrobe", address: "Panampilly Nagar, Kochi", latitude: 9.9592, longitude: 76.2928, deliveryRadiusKm: 15, deliveryFee: 99, specialty: "Premium Designer", productCount: 8 },
+      { boutiqueName: "Monsoon Edit", address: "MG Road, Kochi", latitude: 9.9723, longitude: 76.2778, deliveryRadiusKm: 15, deliveryFee: 49, specialty: "Casual & Cotton", productCount: 11 },
+      { boutiqueName: "Vyttila Weaves", address: "Vyttila, Kochi", latitude: 9.9704, longitude: 76.3197, deliveryRadiusKm: 10, deliveryFee: 49, specialty: "Handlooms", productCount: 9 },
+      { boutiqueName: "Thrippunithura Heritage", address: "Thrippunithura, Kochi", latitude: 9.9489, longitude: 76.3431, deliveryRadiusKm: 15, deliveryFee: 49, specialty: "Ethnic", productCount: 10 },
+      { boutiqueName: "Aluva Cottons", address: "Aluva, Kochi", latitude: 10.1076, longitude: 76.3457, deliveryRadiusKm: 20, deliveryFee: 99, specialty: "Office Wear", productCount: 13 },
+      { boutiqueName: "Marine Drive Boutique", address: "Marine Drive, Kochi", latitude: 9.9796, longitude: 76.2758, deliveryRadiusKm: 10, deliveryFee: 49, specialty: "Party Wear", productCount: 7 },
+      { boutiqueName: "Thevara Trends", address: "Thevara, Kochi", latitude: 9.9431, longitude: 76.2974, deliveryRadiusKm: 10, deliveryFee: 49, specialty: "Co-ords", productCount: 6 },
+      { boutiqueName: "Kadavanthra Silks", address: "Kadavanthra, Kochi", latitude: 9.9669, longitude: 76.2995, deliveryRadiusKm: 15, deliveryFee: 49, specialty: "Sarees", productCount: 10 },
+      { boutiqueName: "Angamaly Wardrobe", address: "Angamaly, Kochi", latitude: 10.1966, longitude: 76.3863, deliveryRadiusKm: 25, deliveryFee: 149, specialty: "Casual", productCount: 5 },
+      { boutiqueName: "Mattancherry Vintage", address: "Mattancherry, Kochi", latitude: 9.9575, longitude: 76.2587, deliveryRadiusKm: 5, deliveryFee: 49, specialty: "Premium Designer", productCount: 7 },
     ];
 
-    const boutiqueIds: Record<string, any> = {};
+    const boutiqueIds: Record<string, Id<"boutiques">> = {};
     for (const b of boutiquesData) {
       const id = await ctx.db.insert("boutiques", {
-        ...b,
+        boutiqueName: b.boutiqueName,
+        ownerName: "Owner of " + b.boutiqueName,
+        email: b.boutiqueName.replace(/\s+/g, "").toLowerCase() + "@test.com",
+        ownerEmail: b.boutiqueName.replace(/\s+/g, "").toLowerCase() + "@test.com",
+        phone: "+919000000000",
+        address: b.address,
+        latitude: b.latitude,
+        longitude: b.longitude,
+        deliveryRadiusKm: b.deliveryRadiusKm,
+        deliveryFee: b.deliveryFee,
+        freeDeliveryThreshold: 3000,
+        description: `Specializing in ${b.specialty}.`,
+        status: "APPROVED",
         createdAt: now,
+        seedSource: "demo",
       });
       boutiqueIds[b.boutiqueName] = id;
     }
 
-    // 3b. Seed default homepageBanners
-    await ctx.db.insert("homepageBanners", {
-      title: "Wedding Season",
-      subtitle: "Up to 30% OFF",
-      desktopImageUrl: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80",
-      mobileImageUrl: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=600&q=80",
-      ctaText: "Shop Now",
-      active: true,
-      displayOrder: 1,
-      targetType: "collection",
-      targetValue: "wedding",
-      city: "Ernakulam",
-      createdAt: now,
-    });
-
-    await ctx.db.insert("homepageBanners", {
-      title: "Designer Sarees",
-      subtitle: "New drops landing daily",
-      desktopImageUrl: "https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=800&q=80",
-      mobileImageUrl: "https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=600&q=80",
-      ctaText: "Explore",
-      active: true,
-      displayOrder: 2,
-      targetType: "category",
-      targetValue: "sarees",
-      city: "Ernakulam",
-      createdAt: now,
-    });
-
-    await ctx.db.insert("homepageBanners", {
-      title: "Handwoven Silk Sarees",
-      subtitle: "Promoting local styles",
-      desktopImageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
-      mobileImageUrl: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80",
-      ctaText: "Shop Collection",
-      active: true,
-      displayOrder: 3,
-      targetType: "product",
-      targetValue: boutiqueIds["Kochi Threads"] || "",
-      createdAt: now,
-    });
-
-    // 4. Set up Product Templates per category
-    const templates = {
-      sarees: {
-        name: "Premium Kasavu Saree",
-        desc: "Exquisite handloom cotton saree featuring a detailed golden borders, perfect for traditional festivals.",
-        img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800",
-        sizes: ["Free"]
-      },
-      lehengas: {
-        name: "Designer Silk Lehenga",
-        desc: "Stunning silk lehenga detailed with heavy floral motifs and a contrasting net dupatta.",
-        img: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=800",
-        sizes: ["S", "M", "L"]
-      },
-      kurtis: {
-        name: "Cotton Block Print Kurti",
-        desc: "Comfortable daily wear A-line cotton kurti with block print patterns, extremely breathable.",
-        img: "https://images.unsplash.com/photo-1608748010899-18f300247112?auto=format&fit=crop&q=80&w=800",
-        sizes: ["S", "M", "L", "XL"]
-      },
-      "salwar-sets": {
-        name: "Chanderi Embroidered Suit Set",
-        desc: "Elegant Chanderi silk salwar suit with minimal neckline embroidery and solid pencil pants.",
-        img: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&q=80&w=800",
-        sizes: ["M", "L", "XL"]
-      }
+    // 5. Generate Products based on Boutique Personality
+    const productIds: Id<"products">[] = [];
+    const productMap: { [key: string]: Id<"products">[] } = {
+      premium: [], under1499: [], office: [], party: [], coords: [], dresses: [], sarees: [], fresh: []
     };
 
-    // 5. Generate exactly 100 products distributed across boutiques 1 to 9 (Boutique 10 is left with 0 products)
-    // 12 products for Boutique 1, 11 products each for Boutiques 2 to 9. Total = 12 + (8 * 11) = 100 products.
-    let productsSeeded = 0;
-
-    for (let index = 0; index < 100; index++) {
-      // Determine boutique assignment
-      let boutiqueName = "";
-      if (index < 12) {
-        boutiqueName = boutiquesData[0]!.boutiqueName; // Boutique 1 (Kochi Threads)
-      } else {
-        const boutiqueIdx = 1 + Math.floor((index - 12) / 11); // Boutiques 2 to 9 (indices 1 to 8)
-        boutiqueName = boutiquesData[boutiqueIdx]!.boutiqueName;
-      }
-
-      // Determine price based on index (QA specific price band distribution)
-      let price = 1500;
-      if (index < 30) {
-        // 30 products priced ₹799–1499
-        price = 799 + (index * 23) % 700;
-      } else if (index < 70) {
-        // 40 products priced ₹1500–2999
-        price = 1500 + (index * 37) % 1500;
-      } else if (index < 90) {
-        // 20 products priced ₹3000–5999
-        price = 3000 + (index * 131) % 3000;
-      } else {
-        // 10 products priced ₹6000–12000
-        price = 6000 + (index * 599) % 6000;
-      }
-
-      // Determine category (cycle through categories)
-      const categoriesKeys = ["sarees", "lehengas", "kurtis", "salwar-sets"] as const;
-      const categorySlug = categoriesKeys[index % 4]!;
-      const template = templates[categorySlug]!;
-
-      // Custom attributes for specific indices (Inventory & Media Edge Cases)
-      let name = `${template.name} - ${boutiqueName.split(" ")[0]} #${index}`;
-      let description = template.desc;
-      let sizes = template.sizes;
-      let stockBySize: Record<string, number> = {};
-      let active = true;
-
-      // Base premium content tailored to categories to avoid placeholder test values
-      let material = "100% Premium Pure Handcrafted Cotton";
-      let care = "Dry clean only. Iron on reverse low heat.";
-      let origin = "Handcrafted in Kerala, India";
-      let story = "Inspired by the local handloom weavers of Kochi, this piece is designed with pure grace and tradition in mind.";
-
-      if (categorySlug === "sarees") {
-        material = price > 5000 ? "Pure Varanasi Katan Silk" : "Premium Handloom Kasavu Cotton";
-        care = "Dry clean only. Store in a soft cotton storage pouch.";
-        origin = price > 5000 ? "Woven in Varanasi, Uttar Pradesh" : "Hand-loomed in Kochi, Kerala";
-        story = "A beautiful celebration of Indian heritage, showcasing fine gold zari borders and a lightweight traditional drape.";
-      } else if (categorySlug === "lehengas") {
-        material = "Premium Silk Velvet & Organza Dupatta";
-        care = "Dry clean only. Keep stored on a padded hanger.";
-        origin = "Crafted in Jaipur, Rajasthan";
-        story = "A statement wedding piece, designed with heavy floral motifs, double-cancan structure, and gold border overlays.";
-      } else if (categorySlug === "kurtis") {
-        material = "100% Organic Breathable Cotton";
-        care = "Gentle hand wash with mild detergent. Line dry in shade.";
-        origin = "Hand-printed in Aluva, Kerala";
-        story = "A daily wear essential crafted from breathable local handloom cotton with artisan-applied block prints.";
-      } else if (categorySlug === "salwar-sets") {
-        material = "Pure Chanderi Silk & Solid Cotton Pants";
-        care = "Dry clean recommended. Warm iron on reverse side.";
-        origin = "Handcrafted in Lucknow, Uttar Pradesh";
-        story = "An elegant classic salwar suit detailed with minimal neckline embroidery and structured pencil pants.";
-      }
-
-      let measurementMatrix = [
-        { size: "S", chest: "36", waist: "32", shoulder: "14", length: "42" },
-        { size: "M", chest: "38", waist: "34", shoulder: "14.5", length: "42.5" },
-        { size: "L", chest: "40", waist: "36", shoulder: "15", length: "43" }
-      ];
-      let images = [
-        template.img,
-        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=800",
-        "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&q=80&w=800"
-      ];
-
-      // Introduce some lower quality products (e.g. index % 7 === 0) for testing/gating UI
-      const isTestLowQuality = index % 7 === 0;
-      if (isTestLowQuality) {
-        images = [template.img]; // 1 image only
-        material = "";
-        care = "";
-        origin = "";
-        story = "";
-        measurementMatrix = [];
-      }
-
-      // Build default stock
-      for (const size of sizes) {
-        stockBySize[size] = 5;
-      }
-
-      // Boutique 1 specific edge cases
-      if (index === 0) {
-        name = "Traditional Kasavu Saree (Out of Stock)";
-        stockBySize = { "Free": 0 };
-      } else if (index === 1) {
-        name = "Kasavu Borders Kurti (Limited Stock)";
-        stockBySize = { "S": 1 };
-      } else if (index === 2) {
-        name = "Deactivated Linen Salwar Suit";
-        active = false;
-      } else if (index === 11) {
-        name = "Kasavu Brocade Lehenga (No Image)";
-        images = [];
-      }
-
-      // Generate unique slug with robust regex deduplication
-      const cleanBase = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      const boutiqueWord = boutiqueName.toLowerCase().split(" ")[0] || "";
-      
-      let slug = cleanBase;
-      if (boutiqueWord) {
-        const hasBoutiqueSuffix = new RegExp(`-${boutiqueWord}(-${index})?$`).test(cleanBase);
-        if (!hasBoutiqueSuffix) {
-          slug = `${slug}-${boutiqueWord}`;
+    let globalIndex = 0;
+    for (const b of boutiquesData) {
+      const bId = boutiqueIds[b.boutiqueName]!;
+      for (let i = 0; i < b.productCount; i++) {
+        globalIndex++;
+        
+        let catSlug = "dresses";
+        let name = "Dress";
+        let price = 1500;
+        
+        // Derive category and price based on specialty
+        if (b.specialty.includes("Saree")) { catSlug = "sarees"; name = "Saree"; price = 2500 + (globalIndex % 3000); }
+        else if (b.specialty.includes("Party")) { catSlug = "party-wear"; name = "Party Dress"; price = 2000 + (globalIndex % 2000); }
+        else if (b.specialty.includes("Co-ord")) { catSlug = "coords"; name = "Co-ord Set"; price = 1200 + (globalIndex % 1000); }
+        else if (b.specialty.includes("Office")) { catSlug = "office-wear"; name = "Formal Top"; price = 800 + (globalIndex % 800); }
+        else if (b.specialty.includes("Premium")) { catSlug = "lehengas"; name = "Designer Lehenga"; price = 5000 + (globalIndex % 10000); }
+        else {
+          price = 699 + (globalIndex * 13) % 2500;
         }
-      }
-      
-      const indexSuffix = `-${index}`;
-      if (!slug.endsWith(indexSuffix)) {
-        slug = `${slug}-${index}`;
-      }
-      
-      slug = slug.replace(/-+/g, "-").replace(/^-+|-+$/g, "");
 
-      await ctx.db.insert("products", {
-        boutiqueId: boutiqueIds[boutiqueName]!,
-        name,
-        slug,
-        description,
-        categoryId: categoryIds[categorySlug]!,
-        price,
-        discountPrice: index % 5 === 0 ? Math.round(price * 0.9) : undefined, // 10% off for every 5th product
-        images,
-        sizes,
-        stockBySize,
-        sameDayEligible: index % 2 === 0, // 50% eligible for same day delivery
-        featured: index % 3 === 0,
-        active,
-        material: material || undefined,
-        care: care || undefined,
-        origin: origin || undefined,
-        story: story || undefined,
-        measurementMatrix: measurementMatrix.length > 0 ? measurementMatrix : undefined,
-        createdAt: now,
-        updatedAt: now,
-      });
+        const outOfStock = (globalIndex % 5 === 0); // 20% out of stock
+        const isFresh = globalIndex % 4 === 0;
 
-      productsSeeded++;
+        const pId = await ctx.db.insert("products", {
+          boutiqueId: bId,
+          name: `${b.boutiqueName} ${name} #${i + 1}`,
+          slug: `${b.boutiqueName.replace(/\s+/g, "-").toLowerCase()}-${name.toLowerCase()}-${globalIndex}`,
+          description: `A beautiful ${name.toLowerCase()} from ${b.boutiqueName}.`,
+          categoryId: categoryIds[catSlug] || categoryIds["dresses"]!,
+          price,
+          discountPrice: globalIndex % 3 === 0 ? Math.round(price * 0.9) : undefined,
+          images: ["https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=800&q=80"],
+          sizes: ["S", "M", "L"],
+          stockBySize: { "S": outOfStock ? 0 : 5, "M": outOfStock ? 0 : 5, "L": outOfStock ? 0 : 5 },
+          sameDayEligible: true,
+          active: true,
+          featured: false,
+          createdAt: now,
+          updatedAt: now,
+          seedSource: "demo",
+        });
+
+        productIds.push(pId);
+
+        // Classify into collections for overlap
+        if (price > 4000) productMap.premium!.push(pId);
+        if (price < 1500) productMap.under1499!.push(pId);
+        if (catSlug === "office-wear" || b.specialty.includes("Office")) productMap.office!.push(pId);
+        if (catSlug === "party-wear" || b.specialty.includes("Party")) productMap.party!.push(pId);
+        if (catSlug === "coords") productMap.coords!.push(pId);
+        if (catSlug === "dresses") productMap.dresses!.push(pId);
+        if (catSlug === "sarees") productMap.sarees!.push(pId);
+        if (isFresh) productMap.fresh!.push(pId);
+      }
     }
+
+    // 6. Seed Commerce Collections
+    const collectionData = [
+      { name: "Fresh on Hive", slug: "fresh-on-hive", keys: productMap.fresh! },
+      { name: "Premium Picks", slug: "premium-picks", keys: productMap.premium! },
+      { name: "Under ₹1499", slug: "under-1499", keys: productMap.under1499! },
+      { name: "Office Wear", slug: "office-wear", keys: productMap.office! },
+      { name: "Party Wear", slug: "party-wear", keys: productMap.party! },
+      { name: "Co-ord Sets", slug: "coord-sets", keys: productMap.coords! },
+      { name: "Dresses", slug: "dresses", keys: productMap.dresses! },
+      { name: "Sarees", slug: "sarees", keys: productMap.sarees! },
+    ];
+
+    const collIds: Record<string, Id<"collections">> = {};
+    for (const c of collectionData) {
+      const id = await ctx.db.insert("collections", {
+        name: c.name, slug: c.slug, sourceMode: "MANUAL", status: "published", createdAt: now, updatedAt: now, seedSource: "demo",
+      });
+      collIds[c.slug] = id;
+      
+      // Link products
+      for (const [idx, pId] of c.keys.entries()) {
+        await ctx.db.insert("collectionProducts", { collectionId: id, productId: pId, sortOrder: idx, addedAt: now });
+      }
+    }
+
+    // 7. Seed Editorial Banners
+    const banners = [
+      { title: "Wedding Season", slug: "wedding", img: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80" },
+      { title: "Monsoon Edit", slug: "monsoon", img: "https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=800&q=80" },
+      { title: "Fresh Arrivals", slug: "fresh", img: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80" },
+      { title: "Weekend Looks", slug: "weekend", img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80" }
+    ];
+
+    const bannerIds: Record<string, Id<"editorialBanners">> = {};
+    for (const b of banners) {
+      const id = await ctx.db.insert("editorialBanners", {
+        title: b.title,
+        desktopImage: b.img,
+        mobileImage: b.img,
+        targetUrl: `/experiences/${b.slug}`,
+        status: "published",
+        createdAt: now,
+        seedSource: "demo",
+      });
+      bannerIds[b.title] = id;
+    }
+
+    // 8. Seed Editorial Experiences
+    const experiencesData = [
+      { name: "Homepage", slug: "homepage" },
+      { name: "Weekend Edit", slug: "weekend-edit" },
+      { name: "Wedding Season", slug: "wedding-season" },
+      { name: "Office Dressing", slug: "office-dressing" }
+    ];
+
+    const expIds: Record<string, Id<"experiences">> = {};
+    for (const exp of experiencesData) {
+      const id = await ctx.db.insert("experiences", {
+        name: exp.name, slug: exp.slug, status: "published", createdAt: now, updatedAt: now,
+      });
+      expIds[exp.slug] = id;
+    }
+
+    // 9. Wire Homepage Experience Blocks
+    // Hero Banner → Categories → Fresh on Hive → Editorial Banner → Premium Picks → Editorial Banner → Office Wear → Trust Strip
+    const hpId = expIds["homepage"]!;
+    
+    await ctx.db.insert("experienceBlocks", {
+      experienceId: hpId, blockKey: "hero_1", blockType: "hero", renderer: "largeCards",
+      config: { bannerId: bannerIds["Wedding Season"] }, sortOrder: 1, status: "published",
+    });
+
+    await ctx.db.insert("experienceBlocks", {
+      experienceId: hpId, blockKey: "cat_1", title: "Shop by Category", blockType: "category", renderer: "occasionGrid",
+      config: {}, sortOrder: 2, status: "published",
+    });
+
+    await ctx.db.insert("experienceBlocks", {
+      experienceId: hpId, blockKey: "coll_1", title: "Fresh on Hive", blockType: "collection", renderer: "productCarousel",
+      config: { collectionId: collIds["fresh-on-hive"], maxProducts: 12 }, sortOrder: 3, status: "published",
+    });
+
+    await ctx.db.insert("experienceBlocks", {
+      experienceId: hpId, blockKey: "banner_1", blockType: "banner", renderer: "largeCards",
+      config: { bannerId: bannerIds["Fresh Arrivals"] }, sortOrder: 4, status: "published",
+    });
+
+    await ctx.db.insert("experienceBlocks", {
+      experienceId: hpId, blockKey: "coll_2", title: "Premium Picks", blockType: "collection", renderer: "productCarousel",
+      config: { collectionId: collIds["premium-picks"], maxProducts: 12 }, sortOrder: 5, status: "published",
+    });
+
+    await ctx.db.insert("experienceBlocks", {
+      experienceId: hpId, blockKey: "banner_2", blockType: "banner", renderer: "largeCards",
+      config: { bannerId: bannerIds["Weekend Looks"] }, sortOrder: 6, status: "published",
+    });
+
+    await ctx.db.insert("experienceBlocks", {
+      experienceId: hpId, blockKey: "coll_3", title: "Office Wear", blockType: "collection", renderer: "productCarousel",
+      config: { collectionId: collIds["office-wear"], maxProducts: 12 }, sortOrder: 7, status: "published",
+    });
+
+    await ctx.db.insert("experienceBlocks", {
+      experienceId: hpId, blockKey: "trust_1", blockType: "trust", renderer: "largeCards",
+      config: {}, sortOrder: 8, status: "published",
+    });
 
     return {
       success: true,
       seededBoutiques: boutiquesData.length,
-      seededProducts: productsSeeded,
+      seededProducts: globalIndex,
+      seededCollections: collectionData.length,
+      seededExperiences: experiencesData.length,
     };
   },
 });
@@ -529,21 +294,6 @@ export const insertMockData = mutation({
 export const migrateProductPrices = mutation({
   args: {},
   handler: async (ctx) => {
-    const products = await ctx.db.query("products").collect();
-    let updated = 0;
-    for (const p of products) {
-      if (p.price < 100000) {
-        // If price is less than 100000 paise (1000 rupees), it was probably seeded wrong
-        // Multiply by 100 to fix it
-        await ctx.db.patch(p._id, {
-          price: p.price * 100,
-          basePrice: p.basePrice ? p.basePrice * 100 : undefined,
-          discountPrice: p.discountPrice ? p.discountPrice * 100 : undefined,
-          baseDiscountPrice: p.baseDiscountPrice ? p.baseDiscountPrice * 100 : undefined,
-        });
-        updated++;
-      }
-    }
-    return `Migrated ${updated} product prices.`;
+    return "Not implemented";
   }
 });

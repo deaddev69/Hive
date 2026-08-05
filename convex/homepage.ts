@@ -3,19 +3,15 @@ import { v } from "convex/values";
 import { enrichProducts } from "./products";
 
 // Get active hero campaigns, respecting start/end dates
-export const getActiveHeroCampaigns = query({
+export const getActiveCampaigns = query({
   args: {},
   handler: async (ctx) => {
-    const now = Date.now();
-    const campaigns = await ctx.db
-      .query("heroCampaigns")
-      .withIndex("by_published_priority", (q) => q.eq("isPublished", true))
+    const banners = await ctx.db
+      .query("editorialBanners")
+      .withIndex("by_status_sort", (q) => q.eq("status", "published"))
       .collect();
 
-    // Filter active dates and sort by priority (highest first)
-    return campaigns
-      .filter((c) => c.startDate <= now && c.endDate >= now)
-      .sort((a, b) => b.priority - a.priority);
+    return banners.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   },
 });
 

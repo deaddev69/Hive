@@ -67,7 +67,7 @@ export const TextEffect: React.FC<TextEffectProps> = ({
         );
       })}
 
-      <style jsx global>{`
+      <style {...{ jsx: "true", global: "true" } as any}>{`
         @keyframes textEffectFade {
           from {
             opacity: 0;
