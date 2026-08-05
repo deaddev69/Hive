@@ -171,8 +171,8 @@ export class BlockService {
         );
       } else if (block.blockType === "banner") {
         // A. Direct image configured on the block itself (from Experience Studio)
-        if (block.config?.desktopImage || block.config?.bannerImage || block.config?.imageUrl) {
-          const desktopImage = await resolveBannerImage(ctx, block.config.desktopImage || block.config.bannerImage || block.config.imageUrl);
+        if (block.config?.desktopImage || block.config?.mobileImage || block.config?.bannerImage || block.config?.imageUrl) {
+          const desktopImage = await resolveBannerImage(ctx, block.config.desktopImage || block.config.mobileImage || block.config.bannerImage || block.config.imageUrl);
           const mobileImage = await resolveBannerImage(ctx, block.config.mobileImage || block.config.desktopImage || block.config.bannerImage || block.config.imageUrl);
           data.banners = [{
             _id: block._id.toString(),
