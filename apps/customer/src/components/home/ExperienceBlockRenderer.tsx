@@ -321,5 +321,52 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     return <TrustStrip />;
   }
 
+  // 6. PINTEREST VIBE GRID
+  if (block.blockType === "vibeGrid") {
+    const items = block.config?.items || [];
+    if (items.length === 0) return null;
+
+    return (
+      <section className="w-full bg-white py-6">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          {block.title && (
+            <h2 className="text-xl font-bold text-hive-dark mb-4 tracking-tight">
+              {block.title}
+            </h2>
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+            {items.map((item: any, idx: number) => {
+              const gradients = [
+                "from-pink-50 to-rose-100",
+                "from-amber-50 to-orange-100",
+                "from-slate-50 to-gray-100",
+                "from-indigo-50 to-purple-100",
+                "from-rose-50 to-pink-100",
+                "from-stone-50 to-stone-200"
+              ];
+              const bgClass = item.backgroundColor || gradients[idx % gradients.length];
+              
+              return (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    if (item.targetUrl) router.push(item.targetUrl);
+                  }}
+                  className={`relative flex flex-col items-center justify-center p-4 aspect-[4/3] rounded-3xl cursor-pointer hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br ${bgClass} overflow-hidden group`}
+                >
+                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {item.emoji && <span className="text-3xl sm:text-4xl mb-2 drop-shadow-sm group-hover:scale-110 transition-transform duration-300">{item.emoji}</span>}
+                  <span className="text-sm font-semibold text-slate-800 text-center px-1 leading-tight z-10">
+                    {item.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return null;
 }

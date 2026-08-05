@@ -2060,7 +2060,8 @@ export default defineSchema({
       v.literal("banner"),
       v.literal("recentlyViewed"),
       v.literal("recommended"),
-      v.literal("trust")
+      v.literal("trust"),
+      v.literal("vibeGrid")
     ),
     renderer: v.optional(v.union(
       v.literal("productCarousel"),
@@ -2068,7 +2069,8 @@ export default defineSchema({
       v.literal("moodGrid"),
       v.literal("occasionGrid"),
       v.literal("editorialGrid"),
-      v.literal("twoProductGrid")
+      v.literal("twoProductGrid"),
+      v.literal("vibeGrid")
     )),
     config: v.object({
       collectionId: v.optional(v.string()),
@@ -2084,6 +2086,16 @@ export default defineSchema({
       mobileImage: v.optional(v.any()),
       targetUrl: v.optional(v.string()),
       campaignId: v.optional(v.string()),
+      items: v.optional(
+        v.array(
+          v.object({
+            label: v.string(),
+            emoji: v.optional(v.string()),
+            targetUrl: v.optional(v.string()),
+            backgroundColor: v.optional(v.string()),
+          })
+        )
+      ),
     }),
     sortOrder: v.number(),
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),

@@ -13,7 +13,7 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 // SCHEMA DRIVEN CONFIGURATION
 // ─────────────────────────────────────────────────────────────────────────────
 
-type BlockType = "hero" | "collection" | "category" | "recentlyViewed" | "trust" | "banner";
+type BlockType = "hero" | "collection" | "category" | "recentlyViewed" | "trust" | "banner" | "recommended" | "vibeGrid";
 
 interface BlockSchema {
   id: BlockType;
@@ -26,7 +26,7 @@ interface BlockSchema {
     renderer: string;
     config: any;
   };
-  fields: ("title" | "subtitle" | "collectionId" | "campaignId" | "maxProducts" | "showSeeAll" | "renderer")[];
+  fields: ("title" | "subtitle" | "collectionId" | "campaignId" | "maxProducts" | "showSeeAll" | "renderer" | "bannerUpload" | "targetUrl" | "vibeItems")[];
 }
 
 const BLOCK_REGISTRY: BlockSchema[] = [
@@ -110,6 +110,15 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     description: "Icons showing delivery promises and authentic guarantees.",
     defaultConfig: { title: "", renderer: "largeCards", config: {} },
     fields: []
+  },
+  {
+    id: "vibeGrid",
+    name: "Pinterest Vibe Grid",
+    category: "Marketing",
+    icon: Sparkles,
+    description: "Rounded cards with emojis and soft gradients for mood-based navigation.",
+    defaultConfig: { title: "How are you dressing today?", renderer: "vibeGrid", config: { items: [] } },
+    fields: ["title", "vibeItems"]
   }
 ];
 
@@ -343,7 +352,7 @@ export function ExperienceStudio() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[9px] font-extrabold text-slate-500 uppercase tracking-widest">
-                                {schema.name}
+                                {schema?.name || "Unknown Block"}
                               </span>
                               <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                                 {block.title || "Untitled Block"}
@@ -741,6 +750,72 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                     {formData.config.campaignId === camp._id && <div className="w-3 h-3 rounded-full bg-amber-500" />}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {schema.fields.includes("vibeItems") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-2">Vibe Cards</label>
+              <div className="space-y-3">
+                {(formData.config.items || []).map((item: any, idx: number) => (
+                  <div key={idx} className="flex gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <input 
+                      type="text" 
+                      placeholder="Emoji (💖)" 
+                      className="w-16 h-10 px-2 rounded-lg border border-slate-200 text-lg text-center" 
+                      value={item.emoji || ""}
+                      onChange={(e) => {
+                        const newItems = [...(formData.config.items || [])];
+                        newItems[idx].emoji = e.target.value;
+                        updateConfig("items", newItems);
+                      }}
+                    />
+                    <div className="flex-1 space-y-2">
+                      <input 
+                        type="text" 
+                        placeholder="Label (Feeling cute)" 
+                        className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm" 
+                        value={item.label || ""}
+                        onChange={(e) => {
+                          const newItems = [...(formData.config.items || [])];
+                          newItems[idx].label = e.target.value;
+                          updateConfig("items", newItems);
+                        }}
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Target URL (/collections/cute)" 
+                        className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm" 
+                        value={item.targetUrl || ""}
+                        onChange={(e) => {
+                          const newItems = [...(formData.config.items || [])];
+                          newItems[idx].targetUrl = e.target.value;
+                          updateConfig("items", newItems);
+                        }}
+                      />
+                    </div>
+                    <button 
+                      onClick={() => {
+                        const newItems = [...(formData.config.items || [])];
+                        newItems.splice(idx, 1);
+                        updateConfig("items", newItems);
+                      }}
+                      className="text-red-500 hover:text-red-600 p-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <button 
+                  onClick={() => {
+                    const newItems = [...(formData.config.items || []), { label: "", emoji: "", targetUrl: "" }];
+                    updateConfig("items", newItems);
+                  }}
+                  className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-slate-500 font-bold hover:border-amber-400 hover:text-amber-600 transition"
+                >
+                  + Add Vibe Card
+                </button>
               </div>
             </div>
           )}
