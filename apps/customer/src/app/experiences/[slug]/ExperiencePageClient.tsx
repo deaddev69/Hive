@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useQuery } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "@convex/api";
 import { useLocation } from "@/context/LocationContext";
 import { ExperienceBlockRenderer } from "@/components/home/ExperienceBlockRenderer";
 import { Sparkles, LayoutGrid } from "lucide-react";

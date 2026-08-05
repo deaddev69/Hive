@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useQuery } from "convex/react";
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "@convex/api";
 import { useLocation } from "@/context/LocationContext";
 import { ProductCard } from "@/components/product/ProductCard";
 import { CollectionHeader } from "@/components/catalog/CollectionHeader";
