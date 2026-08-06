@@ -27,8 +27,9 @@ export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: numb
  * addressDetails fallback. Returns undefined if no coordinates are available.
  */
 export function resolveBoutiqueCoords(
-  boutique: { latitude?: number; longitude?: number; addressDetails?: { lat?: number; lng?: number } }
+  boutique: { latitude?: number; longitude?: number; addressDetails?: { lat?: number; lng?: number } } | null | undefined
 ): { lat: number; lng: number } | undefined {
+  if (!boutique) return undefined;
   const lat = boutique.latitude ?? boutique.addressDetails?.lat;
   const lng = boutique.longitude ?? boutique.addressDetails?.lng;
   if (lat === undefined || lng === undefined) return undefined;
@@ -44,8 +45,9 @@ export function resolveBoutiqueCoords(
 export function isWithinDeliveryRadius(
   userLat: number | undefined | null,
   userLng: number | undefined | null,
-  boutique: { latitude?: number; longitude?: number; addressDetails?: { lat?: number; lng?: number }; deliveryRadiusKm?: number }
+  boutique: { latitude?: number; longitude?: number; addressDetails?: { lat?: number; lng?: number }; deliveryRadiusKm?: number } | null | undefined
 ): boolean {
+  if (!boutique) return false;
   if (userLat == null || userLng == null || (userLat === 0 && userLng === 0)) return false;
   const coords = resolveBoutiqueCoords(boutique);
   if (!coords) return false;
@@ -69,12 +71,15 @@ export interface ServiceabilityResult {
  * write-time in boutique registration/update, not here).
  */
 export function checkServiceability(
-  deliveryLat: number | undefined,
-  deliveryLng: number | undefined,
-  boutique: { latitude?: number; longitude?: number; addressDetails?: { lat?: number; lng?: number }; deliveryRadiusKm?: number }
+  deliveryLat: number | undefined | null,
+  deliveryLng: number | undefined | null,
+  boutique: { latitude?: number; longitude?: number; addressDetails?: { lat?: number; lng?: number }; deliveryRadiusKm?: number } | null | undefined
 ): ServiceabilityResult {
+  if (!boutique) {
+    return { serviceable: false, reason: "Boutique location not configured." };
+  }
   // Fail CLOSED: no delivery address provided
-  if (deliveryLat === undefined || deliveryLng === undefined || (deliveryLat === 0 && deliveryLng === 0)) {
+  if (deliveryLat == null || deliveryLng == null || (deliveryLat === 0 && deliveryLng === 0)) {
     return { serviceable: false, reason: "Delivery address coordinates missing." };
   }
 

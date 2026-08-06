@@ -369,9 +369,6 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
       <section className="w-full bg-white py-4 border-b border-hive-border/20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] sm:text-[11px] font-bold text-amber-600 tracking-widest uppercase">
-              VIBE & MOOD NAVIGATION
-            </span>
             {block.title && (
               <h2 className="text-xl sm:text-2xl font-serif font-extrabold text-hive-dark uppercase tracking-tight">
                 {block.title}
