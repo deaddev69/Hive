@@ -295,9 +295,10 @@ export default function CheckoutAddressPage() {
     }));
   }, [orderItems]);
 
-  const backendPricing = useQuery(api.payments.getCheckoutPricing, {
-    items: itemsForPricing,
-  });
+  const backendPricing = useQuery(
+    api.payments.getCheckoutPricing,
+    orderItems.length > 0 ? { items: itemsForPricing } : "skip"
+  );
 
   if (!mounted || !sessionLoaded) return <AddressSkeleton />;
 

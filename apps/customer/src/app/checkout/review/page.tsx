@@ -204,11 +204,16 @@ export default function OrderReviewPage() {
     ? deliveryQuote.customerPaidFee / 100
     : undefined;
 
-  const backendPricing = useQuery(api.payments.getCheckoutPricing, {
-    items: itemsForPricing,
-    deliveryFee: rawDeliveryFee,
-    promoCode: appliedPromo || undefined,
-  });
+  const backendPricing = useQuery(
+    api.payments.getCheckoutPricing,
+    orderItems.length > 0
+      ? {
+          items: itemsForPricing,
+          deliveryFee: rawDeliveryFee,
+          promoCode: appliedPromo || undefined,
+        }
+      : "skip"
+  );
 
   const subtotal = backendPricing?.subtotalRupees ?? rawSubtotal;
   const deliveryFee = backendPricing?.deliveryFeeRupees ?? (rawSubtotal >= 10000 ? 0 : 99);

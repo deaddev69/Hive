@@ -96,88 +96,137 @@ export const getCheckoutPricing = query({
     promoCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    let subtotalPaise = 0;
-    let totalBasePricePaise = 0;
-    let totalPlatformMarkupPaise = 0;
-    let totalPlatformFeePaise = 0;
-    let totalFixedPlatformFeePaise = 0;
-    const itemsBreakdown = [];
-
-    for (const item of args.items) {
-      const bySlug = await ctx.db
-        .query("products")
-        .withIndex("by_slug", (q) => q.eq("slug", item.productId))
-        .unique();
-      let productRow: any = bySlug;
-      if (!productRow) {
-        try { productRow = await ctx.db.get(item.productId as any); } catch {}
+    try {
+      if (!args.items || args.items.length === 0) {
+        return {
+          subtotalRupees: 0,
+          subtotalPaise: 0,
+          fixedPlatformFeeRupees: 7,
+          fixedPlatformFeePaise: 700,
+          gstRupees: 0,
+          gstPaise: 0,
+          deliveryFeeRupees: 0,
+          deliveryFeePaise: 0,
+          discountRupees: 0,
+          discountPaise: 0,
+          totalRupees: 0,
+          totalPaise: 0,
+          items: [],
+        };
       }
 
-      if (productRow) {
-        const clientPricePaise = Math.round(item.price * 100);
-        let snap: any;
-        try {
-          snap = await calculateItemFinancials(ctx, productRow, clientPricePaise, item.quantity);
-        } catch {
-          // Fallback if price is stale: calculate with actual product price
-          snap = await calculateItemFinancials(ctx, productRow, Math.round(productRow.price * 100), item.quantity);
+      let subtotalPaise = 0;
+      let totalBasePricePaise = 0;
+      let totalPlatformMarkupPaise = 0;
+      let totalPlatformFeePaise = 0;
+      let totalFixedPlatformFeePaise = 0;
+      const itemsBreakdown = [];
+
+      for (const item of args.items) {
+        let productRow: any = await ctx.db
+          .query("products")
+          .withIndex("by_slug", (q) => q.eq("slug", item.productId))
+          .unique();
+        
+        if (!productRow) {
+          const validId = ctx.db.normalizeId("products", item.productId);
+          if (validId) {
+            productRow = await ctx.db.get(validId);
+          }
         }
 
-        itemsBreakdown.push({
-          productId: item.productId,
-          productName: productRow.name,
-          quantity: item.quantity,
-          size: item.size,
-          priceAtPurchaseRupees: snap.priceAtPurchase / 100,
-          snapshot: snap,
-        });
+        if (productRow) {
+          const clientPricePaise = Math.round(item.price * 100);
+          let snap: any;
+          try {
+            snap = await calculateItemFinancials(ctx, productRow, clientPricePaise, item.quantity);
+          } catch {
+            snap = await calculateItemFinancials(ctx, productRow, Math.round((productRow.discountPrice ?? productRow.price) * 100), item.quantity);
+          }
 
-        subtotalPaise += snap.priceAtPurchase * item.quantity;
-        totalBasePricePaise += snap.basePriceAtPurchase * item.quantity;
-        totalPlatformMarkupPaise += snap.platformMarkupAmount * item.quantity;
-        totalPlatformFeePaise += snap.platformFeeAmount * item.quantity;
-        totalFixedPlatformFeePaise += snap.fixedPlatformFeeAtPurchase * item.quantity;
-      } else {
-        const pricePaise = Math.round(item.price * 100);
-        subtotalPaise += pricePaise * item.quantity;
+          itemsBreakdown.push({
+            productId: item.productId,
+            productName: productRow.name,
+            quantity: item.quantity,
+            size: item.size,
+            priceAtPurchaseRupees: snap.priceAtPurchase / 100,
+            snapshot: snap,
+          });
+
+          subtotalPaise += snap.priceAtPurchase * item.quantity;
+          totalBasePricePaise += snap.basePriceAtPurchase * item.quantity;
+          totalPlatformMarkupPaise += snap.platformMarkupAmount * item.quantity;
+          totalPlatformFeePaise += snap.platformFeeAmount * item.quantity;
+          totalFixedPlatformFeePaise += snap.fixedPlatformFeeAtPurchase * item.quantity;
+        } else {
+          const pricePaise = Math.round(item.price * 100);
+          subtotalPaise += pricePaise * item.quantity;
+          itemsBreakdown.push({
+            productId: item.productId,
+            productName: "Item",
+            quantity: item.quantity,
+            size: item.size,
+            priceAtPurchaseRupees: item.price,
+            snapshot: null,
+          });
+        }
       }
+
+      const subtotalRupees = subtotalPaise / 100;
+
+      let discountPaise = 0;
+      if (args.promoCode === "WELCOME10") {
+        discountPaise = Math.round(subtotalPaise * 0.10);
+      } else if (args.promoCode === "HIVE50") {
+        discountPaise = Math.min(subtotalPaise, 5000);
+      }
+
+      let deliveryFeePaise = (args.deliveryFee !== undefined) 
+        ? Math.round(args.deliveryFee * 100) 
+        : (subtotalRupees >= 10000 ? 0 : 9900);
+      if (subtotalRupees >= 10000 || args.promoCode === "FREESHIP") {
+        deliveryFeePaise = 0;
+      }
+
+      const totalPaise = Math.max(0, subtotalPaise - discountPaise + deliveryFeePaise);
+      const totalPlatformRevenuePaise = totalPlatformMarkupPaise + totalPlatformFeePaise + totalFixedPlatformFeePaise;
+      const gstPaise = Math.floor(totalPlatformRevenuePaise * 0.18);
+
+      return {
+        subtotalRupees: subtotalPaise / 100,
+        subtotalPaise,
+        fixedPlatformFeeRupees: 7,
+        fixedPlatformFeePaise: 700,
+        gstRupees: gstPaise / 100,
+        gstPaise,
+        deliveryFeeRupees: deliveryFeePaise / 100,
+        deliveryFeePaise,
+        discountRupees: discountPaise / 100,
+        discountPaise,
+        totalRupees: totalPaise / 100,
+        totalPaise,
+        items: itemsBreakdown,
+      };
+    } catch (err) {
+      console.error("[getCheckoutPricing] Error computing breakdown, returning fallback:", err);
+      const fallbackSubtotal = args.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+      const fallbackDelivery = (args.deliveryFee !== undefined) ? args.deliveryFee : (fallbackSubtotal >= 10000 ? 0 : 99);
+      return {
+        subtotalRupees: fallbackSubtotal,
+        subtotalPaise: Math.round(fallbackSubtotal * 100),
+        fixedPlatformFeeRupees: 7,
+        fixedPlatformFeePaise: 700,
+        gstRupees: 0,
+        gstPaise: 0,
+        deliveryFeeRupees: fallbackDelivery,
+        deliveryFeePaise: Math.round(fallbackDelivery * 100),
+        discountRupees: 0,
+        discountPaise: 0,
+        totalRupees: Math.max(0, fallbackSubtotal + fallbackDelivery),
+        totalPaise: Math.round(Math.max(0, fallbackSubtotal + fallbackDelivery) * 100),
+        items: [],
+      };
     }
-
-    const subtotalRupees = subtotalPaise / 100;
-
-    let discountPaise = 0;
-    if (args.promoCode === "WELCOME10") {
-      discountPaise = Math.round(subtotalPaise * 0.10);
-    } else if (args.promoCode === "HIVE50") {
-      discountPaise = Math.min(subtotalPaise, 5000);
-    }
-
-    let deliveryFeePaise = (args.deliveryFee !== undefined) 
-      ? Math.round(args.deliveryFee * 100) 
-      : (subtotalRupees >= 10000 ? 0 : 9900);
-    if (subtotalRupees >= 10000 || args.promoCode === "FREESHIP") {
-      deliveryFeePaise = 0;
-    }
-
-    const totalPaise = Math.max(0, subtotalPaise - discountPaise + deliveryFeePaise);
-    const totalPlatformRevenuePaise = totalPlatformMarkupPaise + totalPlatformFeePaise + totalFixedPlatformFeePaise;
-    const gstPaise = Math.floor(totalPlatformRevenuePaise * 0.18);
-
-    return {
-      subtotalRupees: subtotalPaise / 100,
-      subtotalPaise,
-      fixedPlatformFeeRupees: 7,
-      fixedPlatformFeePaise: 700,
-      gstRupees: gstPaise / 100,
-      gstPaise,
-      deliveryFeeRupees: deliveryFeePaise / 100,
-      deliveryFeePaise,
-      discountRupees: discountPaise / 100,
-      discountPaise,
-      totalRupees: totalPaise / 100,
-      totalPaise,
-      items: itemsBreakdown,
-    };
   },
 });
 
