@@ -99,35 +99,27 @@ export const getCheckoutPricing = query({
     try {
       if (!args.items || args.items.length === 0) {
         return {
-          subtotalRupees: 0,
-          subtotalPaise: 0,
-          fixedPlatformFeeRupees: 7,
-          fixedPlatformFeePaise: 700,
-          gstRupees: 0,
-          gstPaise: 0,
-          deliveryFeeRupees: 0,
-          deliveryFeePaise: 0,
-          discountRupees: 0,
-          discountPaise: 0,
-          totalRupees: 0,
-          totalPaise: 0,
+          subtotalRupees: 0, subtotalPaise: 0,
+          fixedPlatformFeeRupees: 7, fixedPlatformFeePaise: 700,
+          gstRupees: 0, gstPaise: 0,
+          deliveryFeeRupees: 0, deliveryFeePaise: 0,
+          discountRupees: 0, discountPaise: 0,
+          totalRupees: 0, totalPaise: 0,
           items: [],
         };
       }
 
       let subtotalPaise = 0;
-      let totalBasePricePaise = 0;
       let totalPlatformMarkupPaise = 0;
-      let totalPlatformFeePaise = 0;
-      let totalFixedPlatformFeePaise = 0;
-      const itemsBreakdown = [];
+      let totalSellerProcessingFeePaise = 0;
+      const itemsBreakdown: any[] = [];
 
       for (const item of args.items) {
         let productRow: any = await ctx.db
           .query("products")
           .withIndex("by_slug", (q) => q.eq("slug", item.productId))
           .unique();
-        
+
         if (!productRow) {
           const validId = ctx.db.normalizeId("products", item.productId);
           if (validId) {
@@ -144,39 +136,47 @@ export const getCheckoutPricing = query({
             snap = await calculateItemFinancials(ctx, productRow, Math.round((productRow.discountPrice ?? productRow.price) * 100), item.quantity);
           }
 
+          const qty = item.quantity;
+          const markupAmt = (typeof snap.platformMarkupAmount === "number" && !isNaN(snap.platformMarkupAmount)) ? snap.platformMarkupAmount : 0;
+          const feeAmt = (typeof snap.platformFeeAmount === "number" && !isNaN(snap.platformFeeAmount)) ? snap.platformFeeAmount : 0;
+
+          subtotalPaise += snap.priceAtPurchase * qty;
+          totalPlatformMarkupPaise += markupAmt * qty;
+          totalSellerProcessingFeePaise += feeAmt * qty;
+
           itemsBreakdown.push({
             productId: item.productId,
             productName: productRow.name,
-            quantity: item.quantity,
+            quantity: qty,
             size: item.size,
             priceAtPurchaseRupees: snap.priceAtPurchase / 100,
             snapshot: snap,
           });
 
-          subtotalPaise += snap.priceAtPurchase * item.quantity;
-          totalBasePricePaise += snap.basePriceAtPurchase * item.quantity;
-          totalPlatformMarkupPaise += (snap.platformMarkupAmount || 0) * item.quantity;
-          totalPlatformFeePaise += (snap.platformFeeAmount || 0) * item.quantity;
-          totalFixedPlatformFeePaise += (snap.fixedPlatformFeeAtPurchase || 700) * item.quantity;
+          console.log("[getCheckoutPricing] Item snapshot:", JSON.stringify({
+            product: productRow.name,
+            qty,
+            priceAtPurchase: snap.priceAtPurchase,
+            basePriceAtPurchase: snap.basePriceAtPurchase,
+            platformMarkupAmount: snap.platformMarkupAmount,
+            platformFeeAmount: snap.platformFeeAmount,
+            fixedPlatformFeeAtPurchase: snap.fixedPlatformFeeAtPurchase,
+          }));
         } else {
+          // Fallback for unknown products
           const pricePaise = Math.round(item.price * 100);
           subtotalPaise += pricePaise * item.quantity;
-          totalFixedPlatformFeePaise += 700 * item.quantity;
-          totalPlatformFeePaise += Math.round(pricePaise * 0.02);
-          totalPlatformMarkupPaise += Math.round(pricePaise * 0.14);
+          totalPlatformMarkupPaise += Math.round(pricePaise * 0.12) * item.quantity;
+          totalSellerProcessingFeePaise += Math.round(pricePaise * 0.02) * item.quantity;
           itemsBreakdown.push({
-            productId: item.productId,
-            productName: "Item",
-            quantity: item.quantity,
-            size: item.size,
-            priceAtPurchaseRupees: item.price,
-            snapshot: null,
+            productId: item.productId, productName: "Item",
+            quantity: item.quantity, size: item.size,
+            priceAtPurchaseRupees: item.price, snapshot: null,
           });
         }
       }
 
-      const subtotalRupees = subtotalPaise / 100;
-
+      // ── Discount ──
       let discountPaise = 0;
       if (args.promoCode === "WELCOME10") {
         discountPaise = Math.round(subtotalPaise * 0.10);
@@ -184,27 +184,43 @@ export const getCheckoutPricing = query({
         discountPaise = Math.min(subtotalPaise, 5000);
       }
 
-      let deliveryFeePaise = (args.deliveryFee !== undefined) 
-        ? Math.round(args.deliveryFee * 100) 
+      // ── Delivery Fee ──
+      const subtotalRupees = subtotalPaise / 100;
+      let deliveryFeePaise = (args.deliveryFee !== undefined)
+        ? Math.round(args.deliveryFee * 100)
         : (subtotalRupees >= 10000 ? 0 : 9900);
       if (subtotalRupees >= 10000 || args.promoCode === "FREESHIP") {
         deliveryFeePaise = 0;
       }
 
-      const fixedPlatformFeePaise = 700; // ₹7.00 Fixed Platform Service Fee
-      const totalPlatformRevenuePaise = totalPlatformMarkupPaise + totalPlatformFeePaise + totalFixedPlatformFeePaise;
+      // ── Platform Revenue = Markup + Seller 2% Fee + ₹7 Fixed Fee ──
+      const fixedPlatformFeePaise = 700;
+      const totalPlatformRevenuePaise = totalPlatformMarkupPaise + totalSellerProcessingFeePaise + fixedPlatformFeePaise;
+
+      // ── GST = 18% × Platform Revenue ──
       const gstPaise = Math.round(totalPlatformRevenuePaise * 0.18);
 
-      const totalPaise = Math.max(
-        0,
-        subtotalPaise + fixedPlatformFeePaise + gstPaise + deliveryFeePaise - discountPaise
-      );
+      // ── Grand Total = Items Total + ₹7 Platform Fee + GST + Delivery − Discount ──
+      const totalPaise = Math.max(0, subtotalPaise + fixedPlatformFeePaise + gstPaise + deliveryFeePaise - discountPaise);
+
+      // ── Debug log (temporary) ──
+      console.log("[getCheckoutPricing] PRICING TRACE:", JSON.stringify({
+        subtotal: subtotalPaise / 100,
+        platformMarkup: totalPlatformMarkupPaise / 100,
+        sellerProcessingFee: totalSellerProcessingFeePaise / 100,
+        fixedPlatformFee: fixedPlatformFeePaise / 100,
+        totalPlatformRevenue: totalPlatformRevenuePaise / 100,
+        gst: gstPaise / 100,
+        deliveryFee: deliveryFeePaise / 100,
+        discount: discountPaise / 100,
+        total: totalPaise / 100,
+      }));
 
       return {
         subtotalRupees: subtotalPaise / 100,
         subtotalPaise,
-        fixedPlatformFeeRupees: 7,
-        fixedPlatformFeePaise: 700,
+        fixedPlatformFeeRupees: fixedPlatformFeePaise / 100,
+        fixedPlatformFeePaise,
         gstRupees: gstPaise / 100,
         gstPaise,
         deliveryFeeRupees: deliveryFeePaise / 100,
@@ -216,21 +232,20 @@ export const getCheckoutPricing = query({
         items: itemsBreakdown,
       };
     } catch (err) {
-      console.error("[getCheckoutPricing] Error computing breakdown, returning fallback:", err);
-      const fallbackSubtotal = args.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
-      const fallbackDelivery = (args.deliveryFee !== undefined) ? args.deliveryFee : (fallbackSubtotal >= 10000 ? 0 : 99);
-      const fallbackSubtotalPaise = Math.round(fallbackSubtotal * 100);
-      const fallbackDeliveryPaise = Math.round(fallbackDelivery * 100);
+      console.error("[getCheckoutPricing] FALLBACK triggered:", err);
+      const fallbackSubtotalPaise = args.items.reduce((sum, i) => sum + Math.round(i.price * 100) * i.quantity, 0);
+      const fallbackDeliveryPaise = (args.deliveryFee !== undefined) ? Math.round(args.deliveryFee * 100) : (fallbackSubtotalPaise >= 1000000 ? 0 : 9900);
       const fallbackFeePaise = 700;
-      const fallbackTotalPaise = Math.max(0, fallbackSubtotalPaise + fallbackFeePaise + fallbackDeliveryPaise);
+      const fallbackGstPaise = Math.round((fallbackSubtotalPaise * 0.12 + fallbackSubtotalPaise * 0.02 + fallbackFeePaise) * 0.18);
+      const fallbackTotalPaise = Math.max(0, fallbackSubtotalPaise + fallbackFeePaise + fallbackGstPaise + fallbackDeliveryPaise);
       return {
-        subtotalRupees: fallbackSubtotal,
+        subtotalRupees: fallbackSubtotalPaise / 100,
         subtotalPaise: fallbackSubtotalPaise,
         fixedPlatformFeeRupees: 7,
         fixedPlatformFeePaise: 700,
-        gstRupees: 0,
-        gstPaise: 0,
-        deliveryFeeRupees: fallbackDelivery,
+        gstRupees: fallbackGstPaise / 100,
+        gstPaise: fallbackGstPaise,
+        deliveryFeeRupees: fallbackDeliveryPaise / 100,
         deliveryFeePaise: fallbackDeliveryPaise,
         discountRupees: 0,
         discountPaise: 0,
