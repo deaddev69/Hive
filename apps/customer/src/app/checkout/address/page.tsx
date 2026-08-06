@@ -745,9 +745,7 @@ export default function CheckoutAddressPage() {
                   <span>Review Order →</span>
                 )}
               </button>
-            </div>
           </div>
-
         </div>
       </div>
 

@@ -844,10 +844,7 @@ export default function OrderReviewPage() {
               </button>
 
 
-            </div>
-
           </div>
-
         </div>
       </div>
 
