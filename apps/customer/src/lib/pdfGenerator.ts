@@ -338,22 +338,30 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
   // Right column: Cost overview
   const summaryX = 360;
 
-  page.drawText("Subtotal", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
+  page.drawText("Items Total", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
   const subtotalText = `Rs. ${invoice.subtotal.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const subtotalWidth = fontHelvetica.widthOfTextAtSize(subtotalText, 9);
   page.drawText(subtotalText, { x: 535 - subtotalWidth, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
 
   currentY -= 16;
-  page.drawText("Delivery Fee", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
+  page.drawText("Platform Fee (Rs. 7)", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
+  const pFeeText = "Rs. 7.00";
+  const pFeeWidth = fontHelvetica.widthOfTextAtSize(pFeeText, 9);
+  page.drawText(pFeeText, { x: 535 - pFeeWidth, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
+
+  currentY -= 16;
+  page.drawText("Delivery Partner Fee", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
   const delText = invoice.deliveryFee === 0 ? "FREE" : `Rs. ${invoice.deliveryFee.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const delWidth = fontHelvetica.widthOfTextAtSize(delText, 9);
   page.drawText(delText, { x: 535 - delWidth, y: currentY, size: 9, font: fontHelvetica, color: colorDark });
 
-  currentY -= 16;
-  page.drawText("Discount", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
-  const discText = invoice.discount > 0 ? `-Rs. ${invoice.discount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Rs. 0.00";
-  const discWidth = fontHelvetica.widthOfTextAtSize(discText, 9);
-  page.drawText(discText, { x: 535 - discWidth, y: currentY, size: 9, font: fontHelvetica, color: invoice.discount > 0 ? rgb(0.1, 0.5, 0.1) : colorDark });
+  if (invoice.discount > 0) {
+    currentY -= 16;
+    page.drawText("Coupon Discount", { x: summaryX, y: currentY, size: 9, font: fontHelvetica, color: colorMuted });
+    const discText = `-Rs. ${invoice.discount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const discWidth = fontHelvetica.widthOfTextAtSize(discText, 9);
+    page.drawText(discText, { x: 535 - discWidth, y: currentY, size: 9, font: fontHelvetica, color: rgb(0.1, 0.5, 0.1) });
+  }
 
   currentY -= 20;
 

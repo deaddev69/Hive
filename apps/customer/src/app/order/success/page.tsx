@@ -23,6 +23,7 @@ import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
+import { CustomerPriceBreakdown } from "@/components/checkout/CustomerPriceBreakdown";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -537,19 +538,14 @@ function OrderSummaryCard({
           </div>
         )}
 
-        <div className="flex justify-between items-center pt-2 text-slate-500">
-          <span>Subtotal</span>
-          <span>₹{(subtotal / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-        </div>
-
-        <div className="flex justify-between items-center text-slate-500">
-          <span>Delivery</span>
-          <span>{deliveryFee > 0 ? `₹${(deliveryFee / 100).toFixed(2)}` : "FREE"}</span>
-        </div>
-
-        <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-sm font-bold text-slate-900">
-          <span>Total Paid</span>
-          <span>₹{(totalAmount / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+        <div className="pt-2 border-t border-slate-100">
+          <CustomerPriceBreakdown
+            subtotal={subtotal / 100}
+            deliveryFee={deliveryFee / 100}
+            total={totalAmount / 100}
+            isEstimatedDelivery={false}
+            showHelpSection={true}
+          />
         </div>
       </div>
     </div>

@@ -28,6 +28,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
+import { CustomerPriceBreakdown } from "@/components/checkout/CustomerPriceBreakdown";
 import { useLocation } from "@/context/LocationContext";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useOrderStore } from "@/store/order-store";
@@ -724,35 +725,17 @@ export default function CheckoutAddressPage() {
           </div>
 
           {/* RIGHT: Price summary (Desktop Only) */}
-          <div className="lg:col-span-4 space-y-6 hidden lg:block">
-            <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
-              <h2 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2">
-                Price Details
-              </h2>
-              <div className="space-y-2.5">
-                <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-                  <span>Cart Subtotal</span>
-                  <span>{formatRupees(subtotal)}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-                  <span>Delivery Partner Fee (Estimated)</span>
-                  <span>{isServiceable ? (deliveryFee === 0 ? "FREE" : `~${formatRupees(deliveryFee)}`) : "₹0.00"}</span>
-                </div>
-                {isServiceable && deliveryFee > 0 && (
-                  <div className="text-[10px] text-hive-text-muted/80 italic -mt-1.5 text-right">
-                    *final fee confirmed at next step
-                  </div>
-                )}
-                <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1.5">
-                  <span className="text-sm font-extrabold text-hive-dark">Estimated Total</span>
-                  <span className="text-base font-extrabold text-hive-dark">
-                    {formatRupees(total)}
-                  </span>
-                </div>
-              </div>
-              <button
-                type="button"
-                disabled={!selectedAddress || !isServiceable || !isAddressComplete(selectedAddress) || !dbBoutiques}
+          <div className="lg:col-span-4 space-y-4 hidden lg:block">
+            <CustomerPriceBreakdown
+              subtotal={subtotal}
+              deliveryFee={deliveryFee}
+              total={total}
+              isEstimatedDelivery={true}
+              showHelpSection={true}
+            />
+            <button
+              type="button"
+              disabled={!selectedAddress || !isServiceable || !isAddressComplete(selectedAddress) || !dbBoutiques}
                 onClick={() => router.push("/checkout/review")}
                 className="w-full h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >

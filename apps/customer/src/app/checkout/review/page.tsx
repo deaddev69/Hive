@@ -27,6 +27,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { useConvexMutation } from "@/hooks/useConvexMutation";
 import { getEffectiveCheckoutItems } from "@/lib/getEffectiveCheckoutItems";
 import { useSessionStore } from "@/context/SessionContext";
+import { CustomerPriceBreakdown } from "@/components/checkout/CustomerPriceBreakdown";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { formatRupees, toast } from "@hive/utils";
 
@@ -746,46 +747,15 @@ export default function OrderReviewPage() {
           </div>
 
           {/* Right Panel: Pricing calculations & Checkout */}
-          <div className="lg:col-span-4 space-y-6 hidden lg:block">
-
-            {/* 1. Summary pricing totals card */}
-            <div className="bg-white border border-hive-border/50 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
-              <h2 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2">
-                Order Billing
-              </h2>
-
-              <div className="space-y-2.5">
-                <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-                  <span>Cart Subtotal</span>
-                  <span>{formatRupees(subtotal)}</span>
-                </div>
-
-                {/* Promo discounts details */}
-                {discountAmount > 0 && (
-                  <div className="flex justify-between items-center text-xs font-semibold text-green-700 bg-green-50/50 px-2 py-1 rounded-lg border border-green-200/20 animate-fade">
-                    <span className="flex items-center gap-1.5">
-                      <Ticket className="w-3.5 h-3.5 text-green-600" />
-                      <span>Coupon Discount</span>
-                    </span>
-                    <span>-{formatRupees(discountAmount)}</span>
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-                  <span>Delivery Partner Fee</span>
-                  <span>{deliveryFee === 0 ? "FREE" : formatRupees(deliveryFee)}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs font-semibold text-hive-text-muted">
-                  <span>Estimated Tax</span>
-                  <span>{formatRupees(taxAmount)}</span>
-                </div>
-                <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-1.5">
-                  <span className="text-sm font-extrabold text-hive-dark">Order Total</span>
-                  <span className="text-base font-extrabold text-hive-dark">
-                    {formatRupees(total)}
-                  </span>
-                </div>
-              </div>
+          <div className="lg:col-span-4 space-y-4 hidden lg:block">
+            <CustomerPriceBreakdown
+              subtotal={subtotal}
+              deliveryFee={deliveryFee}
+              discount={discountAmount}
+              total={total}
+              isEstimatedDelivery={false}
+              showHelpSection={true}
+            />
 
               {/* Promo code widget */}
               <div className="border-t border-hive-border/40 pt-4 mt-1 text-left">

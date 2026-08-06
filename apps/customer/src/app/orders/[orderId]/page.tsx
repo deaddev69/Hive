@@ -28,6 +28,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
+import { CustomerPriceBreakdown } from "@/components/checkout/CustomerPriceBreakdown";
 import { useSessionStore } from "@/context/SessionContext";
 import { formatCurrency, toast } from "@hive/utils";
 import BeeLoader from "@/components/shared/BeeLoader";
@@ -380,6 +381,15 @@ export default function OrderDetailPage() {
                   </div>
                 ))}
               </div>
+              <CustomerPriceBreakdown
+                subtotal={order.subtotal / 100}
+                deliveryFee={order.deliveryFee / 100}
+                discount={(order.discount || 0) / 100}
+                total={order.total / 100}
+                isEstimatedDelivery={false}
+                showHelpSection={true}
+                className="mt-4 border-t border-slate-100 dark:border-zinc-800 pt-4"
+              />
             </motion.div>
 
             {/* Dynamic Seller Return Policy & Fit Guarantee Card */}
