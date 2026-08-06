@@ -383,7 +383,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           </div>
 
           {/* Grid Layout matching reference spacing */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 pt-20 pb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8 pt-6 pb-4">
             {items.map((item: any, idx: number) => {
               // Curated studio gradients matching reference (Silver/Grey, Denim Blue, Warm Nude/Beige, etc.)
               const gradients = [
@@ -408,7 +408,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                   onClick={() => {
                     if (item.targetUrl) router.push(item.targetUrl);
                   }}
-                  className="relative pt-16 group cursor-pointer w-full select-none"
+                  className="relative pt-10 group cursor-pointer w-full select-none"
                 >
                   {/* 3D Backdrop Card (Nearly square studio background with rounded-[32px]) */}
                   <div
