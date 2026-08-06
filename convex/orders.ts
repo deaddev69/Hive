@@ -549,6 +549,7 @@ export const placeOrder = mutation({
           platformFeeRateAtPurchase: snap.platformFeeRateAtPurchase,
           platformMarkupAmount: snap.platformMarkupAmount,
           platformFeeAmount: snap.platformFeeAmount,
+          fixedPlatformFeeAtPurchase: snap.fixedPlatformFeeAtPurchase ?? 700,
           quantity:        item.quantity,
           subtotal:        (snap.priceAtPurchase ?? parseMoney(item.price)) * item.quantity,
         });

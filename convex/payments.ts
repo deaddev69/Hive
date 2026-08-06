@@ -838,6 +838,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
       platformFeeRateAtPurchase: (item as any).platformFeeRateAtPurchase,
       platformMarkupAmount: (item as any).platformMarkupAmount,
       platformFeeAmount: (item as any).platformFeeAmount,
+      fixedPlatformFeeAtPurchase: (item as any).fixedPlatformFeeAtPurchase ?? 700,
       quantity: item.quantity,
       subtotal: item.price * item.quantity,
     });
