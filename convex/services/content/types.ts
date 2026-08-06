@@ -28,10 +28,11 @@ export interface ResolvedCollection {
 export interface ResolvedBlock {
   id: string;
   blockKey: string;
-  blockType: "hero" | "category" | "collection" | "banner" | "recentlyViewed" | "trust";
+  blockType: "hero" | "category" | "collection" | "banner" | "recentlyViewed" | "trust" | "vibeGrid" | "newArrivals" | "premiumCuration" | string;
   title?: string;
   subtitle?: string;
-  renderer?: "productCarousel" | "largeCards" | "moodGrid" | "occasionGrid" | "editorialGrid";
+  renderer?: "productCarousel" | "largeCards" | "moodGrid" | "occasionGrid" | "editorialGrid" | "twoProductGrid" | "vibeGrid" | string;
+  config?: any;
   data: {
     collection?: Omit<ResolvedCollection, 'products'>; // The top level block handles the products array directly
     products?: ResolvedProduct[];

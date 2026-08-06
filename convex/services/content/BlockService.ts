@@ -221,6 +221,7 @@ export class BlockService {
         title: block.title,
         subtitle: block.subtitle,
         renderer: block.renderer,
+        config: block.config,
         data,
       });
     }
