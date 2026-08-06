@@ -2061,7 +2061,9 @@ export default defineSchema({
       v.literal("recentlyViewed"),
       v.literal("recommended"),
       v.literal("trust"),
-      v.literal("vibeGrid")
+      v.literal("vibeGrid"),
+      v.literal("newArrivals"),
+      v.literal("premiumCuration")
     ),
     renderer: v.optional(v.union(
       v.literal("productCarousel"),

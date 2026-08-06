@@ -14,6 +14,7 @@ import {
   Loader2,
   Tag,
   CheckCircle2,
+  Edit,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -635,6 +636,7 @@ export default function AdminHomepageMerchandisingPage() {
             </div>
           </form>
         </div>
+      )}
       {/* ── Edit Collection Modal with Cloudflare R2 Upload ────────────────── */}
       {showEditColModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">

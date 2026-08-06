@@ -34,7 +34,7 @@ export function BroadcastCampaignModal({ isOpen, onClose }: BroadcastCampaignMod
     setTitle(col.title);
     setBody(col.subtitle || `Explore the curated ${col.title} collection on Hive.`);
     setTargetUrl(`/collections/${col.slug}`);
-    if (col.imageUrl) setBannerUrl(col.imageUrl);
+    if (col.coverImage) setBannerUrl(col.coverImage);
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

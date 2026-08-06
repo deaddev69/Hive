@@ -13,7 +13,7 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 // SCHEMA DRIVEN CONFIGURATION
 // ─────────────────────────────────────────────────────────────────────────────
 
-type BlockType = "hero" | "collection" | "category" | "recentlyViewed" | "trust" | "banner" | "recommended" | "vibeGrid";
+type BlockType = "hero" | "collection" | "category" | "recentlyViewed" | "trust" | "banner" | "recommended" | "vibeGrid" | "newArrivals" | "premiumCuration";
 
 interface BlockSchema {
   id: BlockType;
@@ -156,7 +156,7 @@ export function ExperienceStudio() {
   // Set default selection
   useEffect(() => {
     if (!selectedExpId && experiences && experiences.length > 0) {
-      setSelectedExpId(experiences[0]._id);
+      setSelectedExpId(experiences[0]?._id || null);
     }
   }, [experiences, selectedExpId]);
 
@@ -215,7 +215,7 @@ export function ExperienceStudio() {
       await addBlock({
         experienceId: selectedExpId as any,
         blockKey: `${schema.id}_${Date.now()}`,
-        blockType: schema.id,
+        blockType: schema.id as any,
         title: schema.defaultConfig.title,
         renderer: schema.defaultConfig.renderer as any,
         config: schema.defaultConfig.config,

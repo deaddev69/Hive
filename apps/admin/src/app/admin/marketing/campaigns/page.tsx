@@ -119,9 +119,9 @@ export default function MarketingCampaignsPage() {
     setPushTitle(col.title);
     setPushBody(col.subtitle || `Explore the ${col.title} collection on Hive.`);
     setTargetUrl(`/collections/${col.slug}`);
-    if (col.imageUrl) {
-      setBannerUrl(col.imageUrl);
-      setHeroUrl(col.imageUrl);
+    if (col.coverImage) {
+      setBannerUrl(col.coverImage);
+      setHeroUrl(col.coverImage);
     }
   };
 
@@ -597,7 +597,10 @@ export default function MarketingCampaignsPage() {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => handleFileUploadToR2(e, "banner")}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUploadToR2(file, "banner");
+                      }}
                       className="text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 file:text-white hover:file:bg-slate-800 cursor-pointer"
                     />
                     {isUploading && <Loader2 className="w-4 h-4 animate-spin text-amber-500" />}
