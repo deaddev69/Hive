@@ -369,7 +369,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
       <section className="w-full bg-white py-2 border-b border-hive-border/20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {block.title && (
-            <h2 className="text-xl sm:text-2xl font-serif font-extrabold text-hive-dark uppercase tracking-tight mb-1">
+            <h2 className="text-lg sm:text-xl font-serif font-medium text-slate-800 tracking-normal mb-1">
               {block.title}
             </h2>
           )}
@@ -377,8 +377,8 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
             <p className="text-xs text-slate-500 mb-2">{block.subtitle}</p>
           )}
 
-          {/* Pure Cutout Grid Layout: Zero Card Background, Standalone Cutouts */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6 pt-2 pb-2">
+          {/* Pure Cutout Layout: Standalone Cutouts in Flex Container */}
+          <div className="flex flex-wrap justify-start items-end gap-5 sm:gap-8 pt-1 pb-1">
             {items.map((item: any, idx: number) => {
               const imgUrl = item.imageUrl
                 ? typeof item.imageUrl === "string"

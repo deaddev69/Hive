@@ -323,9 +323,23 @@ export default function AdminHomepageMerchandisingPage() {
                       <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
                         {col.title}
                       </span>
-                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded-md bg-slate-100 dark:bg-zinc-800 text-slate-500">
-                        {col.status}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const newStatus = col.status === "published" ? "archived" : "published";
+                          await updateCol({ id: col._id, status: newStatus });
+                          toast.success(`Collection is now ${newStatus === "published" ? "Visible (Published)" : "Hidden"}`);
+                        }}
+                        title="Click to toggle Published / Hidden status on Customer UI"
+                        className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full cursor-pointer transition select-none ${
+                          col.status === "published"
+                            ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20"
+                            : "bg-amber-500/10 text-amber-600 border border-amber-500/20 hover:bg-amber-500/20"
+                        }`}
+                      >
+                        {col.status === "published" ? "PUBLISHED" : "HIDDEN"}
+                      </button>
                     </div>
                     <p className="text-[10px] text-slate-400 truncate">
                       {col.productCount || 0} items curated

@@ -10,9 +10,10 @@ export class CollectionService {
     limit: number = 12
   ): Promise<string[]> {
     if (!collectionId) return [];
+
+    const collectionRaw = await ctx.db.get(collectionId as any);
+    if (!collectionRaw || collectionRaw.status !== "published") return [];
     
-    // In future: parse rule-based collections vs manual collections.
-    // For now, fetch manual mappings from collectionProducts.
     const mappings = await ctx.db
       .query("collectionProducts")
       .withIndex("by_collection_sort", (q: any) => q.eq("collectionId", collectionId))
@@ -32,7 +33,7 @@ export class CollectionService {
     if (!collectionId) return null;
 
     const collectionRaw = await ctx.db.get(collectionId as any);
-    if (!collectionRaw) return null;
+    if (!collectionRaw || collectionRaw.status !== "published") return null;
 
     const mappings = await ctx.db
       .query("collectionProducts")
