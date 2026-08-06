@@ -798,7 +798,8 @@ export const addBlockToExperience = mutation({
       v.literal("occasionGrid"),
       v.literal("editorialGrid"),
       v.literal("twoProductGrid"),
-      v.literal("vibeGrid")
+      v.literal("vibeGrid"),
+      v.literal("premiumGrid")
     )),
     config: v.optional(v.any()),
     sortOrder: v.number(),
@@ -921,7 +922,8 @@ export const updateBlockLayout = mutation({
         v.literal("occasionGrid"),
         v.literal("editorialGrid"),
         v.literal("twoProductGrid"),
-        v.literal("vibeGrid")
+        v.literal("vibeGrid"),
+        v.literal("premiumGrid")
       )
     ),
   },

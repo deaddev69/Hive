@@ -2072,7 +2072,8 @@ export default defineSchema({
       v.literal("occasionGrid"),
       v.literal("editorialGrid"),
       v.literal("twoProductGrid"),
-      v.literal("vibeGrid")
+      v.literal("vibeGrid"),
+      v.literal("premiumGrid")
     )),
     config: v.object({
       collectionId: v.optional(v.string()),

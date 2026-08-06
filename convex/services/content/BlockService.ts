@@ -70,7 +70,7 @@ export class BlockService {
     const requiredProductIds: string[] = [];
 
     for (const block of blocksRaw) {
-      if (block.blockType === "collection" && block.config?.collectionId) {
+      if ((block.blockType === "collection" || block.blockType === "premiumCuration") && block.config?.collectionId) {
         const pIds = await CollectionService.getCollectionRequirements(
           ctx,
           block.config.collectionId,
@@ -118,7 +118,7 @@ export class BlockService {
     for (const block of blocksRaw) {
       const data: any = {};
 
-      if (block.blockType === "collection" && block.config?.collectionId) {
+      if ((block.blockType === "collection" || block.blockType === "premiumCuration") && block.config?.collectionId) {
         const hydratedCol = await CollectionService.hydrateCollection(ctx, block.config.collectionId, resolvedProductsMap);
         if (hydratedCol) {
           const matchedProducts = hydratedCol.productIds
