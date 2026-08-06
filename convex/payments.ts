@@ -2,7 +2,7 @@
 // Online payment intent creation, validation, signature verification, and post-payment order placement.
 // Scope is fully auth-gated to the active customer.
 
-import { mutation, internalMutation, action, internalAction, MutationCtx, internalQuery } from "./_generated/server";
+import { mutation, internalMutation, action, internalAction, MutationCtx, internalQuery, query } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { getAuthenticatedUser } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
@@ -79,6 +79,107 @@ async function verifyRazorpaySignature(
     return false;
   }
 }
+
+/**
+ * Public query to calculate exact backend pricing breakdown for checkout items.
+ * Single source of truth for the Review Order page and checkout summary UI.
+ */
+export const getCheckoutPricing = query({
+  args: {
+    items: v.array(v.object({
+      productId: v.string(),
+      quantity: v.number(),
+      price: v.number(),
+      size: v.string(),
+    })),
+    deliveryFee: v.optional(v.number()),
+    promoCode: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    let subtotalPaise = 0;
+    let totalBasePricePaise = 0;
+    let totalPlatformMarkupPaise = 0;
+    let totalPlatformFeePaise = 0;
+    let totalFixedPlatformFeePaise = 0;
+    const itemsBreakdown = [];
+
+    for (const item of args.items) {
+      const bySlug = await ctx.db
+        .query("products")
+        .withIndex("by_slug", (q) => q.eq("slug", item.productId))
+        .unique();
+      let productRow: any = bySlug;
+      if (!productRow) {
+        try { productRow = await ctx.db.get(item.productId as any); } catch {}
+      }
+
+      if (productRow) {
+        const clientPricePaise = Math.round(item.price * 100);
+        let snap: any;
+        try {
+          snap = await calculateItemFinancials(ctx, productRow, clientPricePaise, item.quantity);
+        } catch {
+          // Fallback if price is stale: calculate with actual product price
+          snap = await calculateItemFinancials(ctx, productRow, Math.round(productRow.price * 100), item.quantity);
+        }
+
+        itemsBreakdown.push({
+          productId: item.productId,
+          productName: productRow.name,
+          quantity: item.quantity,
+          size: item.size,
+          priceAtPurchaseRupees: snap.priceAtPurchase / 100,
+          snapshot: snap,
+        });
+
+        subtotalPaise += snap.priceAtPurchase * item.quantity;
+        totalBasePricePaise += snap.basePriceAtPurchase * item.quantity;
+        totalPlatformMarkupPaise += snap.platformMarkupAmount * item.quantity;
+        totalPlatformFeePaise += snap.platformFeeAmount * item.quantity;
+        totalFixedPlatformFeePaise += snap.fixedPlatformFeeAtPurchase * item.quantity;
+      } else {
+        const pricePaise = Math.round(item.price * 100);
+        subtotalPaise += pricePaise * item.quantity;
+      }
+    }
+
+    const subtotalRupees = subtotalPaise / 100;
+
+    let discountPaise = 0;
+    if (args.promoCode === "WELCOME10") {
+      discountPaise = Math.round(subtotalPaise * 0.10);
+    } else if (args.promoCode === "HIVE50") {
+      discountPaise = Math.min(subtotalPaise, 5000);
+    }
+
+    let deliveryFeePaise = (args.deliveryFee !== undefined) 
+      ? Math.round(args.deliveryFee * 100) 
+      : (subtotalRupees >= 10000 ? 0 : 9900);
+    if (subtotalRupees >= 10000 || args.promoCode === "FREESHIP") {
+      deliveryFeePaise = 0;
+    }
+
+    const totalPaise = Math.max(0, subtotalPaise - discountPaise + deliveryFeePaise);
+    const totalPlatformRevenuePaise = totalPlatformMarkupPaise + totalPlatformFeePaise + totalFixedPlatformFeePaise;
+    const gstPaise = Math.floor(totalPlatformRevenuePaise * 0.18);
+
+    return {
+      subtotalRupees: subtotalPaise / 100,
+      subtotalPaise,
+      fixedPlatformFeeRupees: 7,
+      fixedPlatformFeePaise: 700,
+      gstRupees: gstPaise / 100,
+      gstPaise,
+      deliveryFeeRupees: deliveryFeePaise / 100,
+      deliveryFeePaise,
+      discountRupees: discountPaise / 100,
+      discountPaise,
+      totalRupees: totalPaise / 100,
+      totalPaise,
+      items: itemsBreakdown,
+    };
+  },
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mutation: initCheckoutSessionInternal (Internal Mutation)

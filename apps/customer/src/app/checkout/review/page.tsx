@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -78,7 +78,7 @@ export default function OrderReviewPage() {
   const selectedDate = useCheckoutStore((state) => state.selectedDate);
   const selectedSlot = useCheckoutStore((state) => state.selectedSlot);
   const appliedPromo = useCheckoutStore((state) => state.appliedPromo);
-  const discountAmount = useCheckoutStore((state) => state.discountAmount);
+  const rawDiscountAmount = useCheckoutStore((state) => state.discountAmount);
   const deliveryInstructions = useCheckoutStore((state) => state.deliveryInstructions);
   const checkoutItems = useCheckoutStore((state) => state.checkoutItems);
 
@@ -172,7 +172,7 @@ export default function OrderReviewPage() {
   const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
 
   const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
-  const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const rawSubtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
   
   let boutiqueId = orderItems?.[0]?.boutiqueId;
   if (!boutiqueId && cartData?.items) {
@@ -265,14 +265,30 @@ export default function OrderReviewPage() {
     return <OrderReviewSkeleton />;
   }
 
-  let deliveryFee = (deliveryQuote && deliveryQuote.serviceable && typeof deliveryQuote.customerPaidFee === "number")
+  const itemsForPricing = useMemo(() => {
+    return orderItems.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price,
+      size: item.size,
+    }));
+  }, [orderItems]);
+
+  const rawDeliveryFee = (deliveryQuote && deliveryQuote.serviceable && typeof deliveryQuote.customerPaidFee === "number")
     ? deliveryQuote.customerPaidFee / 100
-    : (subtotal >= 10000 ? 0 : 99);
-  if (subtotal >= 10000 || appliedPromo === "FREESHIP") {
-    deliveryFee = 0;
-  }
-  const taxAmount = 0;
-  const total = Math.max(0, subtotal - discountAmount + deliveryFee + taxAmount);
+    : undefined;
+
+  const backendPricing = useQuery(api.payments.getCheckoutPricing, {
+    items: itemsForPricing,
+    deliveryFee: rawDeliveryFee,
+    promoCode: appliedPromo || undefined,
+  });
+
+  const subtotal = backendPricing?.subtotalRupees ?? rawSubtotal;
+  const deliveryFee = backendPricing?.deliveryFeeRupees ?? (rawSubtotal >= 10000 ? 0 : 99);
+  const discountAmount = backendPricing?.discountRupees ?? (appliedPromo === "WELCOME10" ? Math.round(rawSubtotal * 0.10) : appliedPromo === "HIVE50" ? Math.min(rawSubtotal, 50) : 0);
+  const gstAmount = backendPricing?.gstRupees ?? 0;
+  const total = backendPricing?.totalRupees ?? Math.max(0, subtotal - discountAmount + deliveryFee);
 
   // Promo handling
   const handleApplyPromo = (e: React.FormEvent) => {
@@ -750,6 +766,7 @@ export default function OrderReviewPage() {
           <div className="lg:col-span-4 space-y-4 hidden lg:block">
             <CustomerPriceBreakdown
               subtotal={subtotal}
+              gstAmount={gstAmount}
               deliveryFee={deliveryFee}
               discount={discountAmount}
               total={total}

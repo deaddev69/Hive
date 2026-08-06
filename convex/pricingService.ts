@@ -133,18 +133,24 @@ export async function calculateItemFinancials(
 ): Promise<ItemFinancialSnapshot> {
   const settings = await getPlatformSettings(ctx);
 
-  const basePriceRupees =
-    productRow.basePrice !== undefined
-      ? productRow.basePrice
-      : Math.floor(productRow.price / (1 + (settings.markupRate || 0.15)));
+  let expectedCustomerPriceRupees: number;
+  let basePriceRupees: number;
+  let platformMarkupRateAtPurchase: number;
 
-  const platformMarkupRateAtPurchase = selectMarkupRate(basePriceRupees, settings);
-  const platformFeeRateAtPurchase = settings.platformFeeRate;
+  if (productRow.basePrice !== undefined && productRow.basePrice > 0) {
+    basePriceRupees = productRow.basePrice;
+    platformMarkupRateAtPurchase = selectMarkupRate(basePriceRupees, settings);
+    const pricing = calculateProductPricing(productRow.basePrice, productRow.baseDiscountPrice, settings);
+    expectedCustomerPriceRupees = (productRow.baseDiscountPrice && productRow.baseDiscountPrice > 0)
+      ? (pricing.customerDiscountPrice || pricing.customerPrice)
+      : pricing.customerPrice;
+  } else {
+    expectedCustomerPriceRupees = productRow.discountPrice ?? productRow.price;
+    basePriceRupees = Math.floor(expectedCustomerPriceRupees / (1 + (settings.markupRate || 0.15)));
+    platformMarkupRateAtPurchase = selectMarkupRate(basePriceRupees, settings);
+  }
 
-  // Re-calculate customer price dynamically including ₹7 fixed platform fee and Charm Pricing (Nearest 9)
-  const rawCustomerPriceRupees = basePriceRupees * (1 + platformMarkupRateAtPurchase) + FIXED_PLATFORM_FEE_RUPEES;
-  const customerPriceRupees = Math.ceil(rawCustomerPriceRupees / 10) * 10 - 1;
-  const expectedCustomerPricePaise = Math.round(customerPriceRupees * 100);
+  const expectedCustomerPricePaise = Math.round(expectedCustomerPriceRupees * 100);
 
   // Validate against client-provided price (in paise) to prevent price manipulation and handle stale carts.
   if (Math.abs(expectedCustomerPricePaise - clientPricePaise) > 100) {
@@ -154,6 +160,7 @@ export async function calculateItemFinancials(
     });
   }
 
+  const platformFeeRateAtPurchase = settings.platformFeeRate;
   const basePriceAtPurchasePaise = Math.round(basePriceRupees * 100);
   const platformFeeAmountPaise = Math.round(basePriceAtPurchasePaise * platformFeeRateAtPurchase);
   const fixedPlatformFeeAtPurchase = FIXED_PLATFORM_FEE_PAISE; // 700 Paise (₹7.00)

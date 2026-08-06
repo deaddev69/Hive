@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -306,10 +306,25 @@ export default function CheckoutAddressPage() {
   const selectedAddress = addresses.find((a) => a._id === selectedAddressId) ?? null;
   const isServiceable = selectedAddress ? isAddressServiceable(selectedAddress) : false;
   const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
-  const subtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  const deliveryFee = subtotal >= 10000 ? 0 : 99; // rupees
-  const tax = 0;
-  const total = subtotal + (isServiceable ? deliveryFee : 0);
+  const rawSubtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+
+  const itemsForPricing = useMemo(() => {
+    return orderItems.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price,
+      size: item.size,
+    }));
+  }, [orderItems]);
+
+  const backendPricing = useQuery(api.payments.getCheckoutPricing, {
+    items: itemsForPricing,
+  });
+
+  const subtotal = backendPricing?.subtotalRupees ?? rawSubtotal;
+  const deliveryFee = backendPricing?.deliveryFeeRupees ?? (rawSubtotal >= 10000 ? 0 : 99);
+  const gstAmount = backendPricing?.gstRupees ?? 0;
+  const total = backendPricing?.totalRupees ?? (subtotal + (isServiceable ? deliveryFee : 0));
 
   const totalQuantity = orderItems.reduce((sum, item) => sum + item.quantity, 0);
   const uniqueBoutiqueNames = Array.from(
@@ -728,6 +743,7 @@ export default function CheckoutAddressPage() {
           <div className="lg:col-span-4 space-y-4 hidden lg:block">
             <CustomerPriceBreakdown
               subtotal={subtotal}
+              gstAmount={gstAmount}
               deliveryFee={deliveryFee}
               total={total}
               isEstimatedDelivery={true}
