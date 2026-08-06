@@ -360,39 +360,26 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     return <TrustStrip />;
   }
 
-  // 6. PINTEREST VIBE GRID (3D POP-OUT CARD ARCHITECTURE - MATCHING REFERENCE)
+  // 6. PINTEREST VIBE GRID (PURE TRANSPARENT CUTOUT ARCHITECTURE - NO BACKGROUND BOX)
   if (block.blockType === "vibeGrid") {
     const items = block.config?.items || [];
     if (items.length === 0) return null;
 
     return (
-      <section className="w-full bg-white py-4 border-b border-hive-border/20 overflow-hidden">
+      <section className="w-full bg-white py-2 border-b border-hive-border/20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex flex-col gap-1">
-            {block.title && (
-              <h2 className="text-xl sm:text-2xl font-serif font-extrabold text-hive-dark uppercase tracking-tight">
-                {block.title}
-              </h2>
-            )}
-            {block.subtitle && (
-              <p className="text-xs text-slate-500">{block.subtitle}</p>
-            )}
-          </div>
+          {block.title && (
+            <h2 className="text-xl sm:text-2xl font-serif font-extrabold text-hive-dark uppercase tracking-tight mb-1">
+              {block.title}
+            </h2>
+          )}
+          {block.subtitle && (
+            <p className="text-xs text-slate-500 mb-2">{block.subtitle}</p>
+          )}
 
-          {/* Grid Layout matching reference spacing with tight vertical margin */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 pt-12 pb-2">
+          {/* Pure Cutout Grid Layout: Zero Card Background, Standalone Cutouts */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6 pt-2 pb-2">
             {items.map((item: any, idx: number) => {
-              // Curated vibrant studio color palettes matching reference (Denim Blue, Warm Sand, Emerald, Deep Amber, Royal Indigo)
-              const gradients = [
-                "from-blue-600 via-blue-700 to-slate-900",
-                "from-amber-600 via-amber-700 to-stone-900",
-                "from-emerald-700 via-teal-800 to-slate-950",
-                "from-indigo-700 via-purple-900 to-slate-950",
-                "from-rose-700 via-pink-900 to-stone-950",
-                "from-slate-700 via-slate-800 to-slate-950",
-              ];
-              const bgClass = item.backgroundColor || gradients[idx % gradients.length];
-
               const imgUrl = item.imageUrl
                 ? typeof item.imageUrl === "string"
                   ? item.imageUrl
@@ -405,39 +392,31 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                   onClick={() => {
                     if (item.targetUrl) router.push(item.targetUrl);
                   }}
-                  className="relative pt-12 group cursor-pointer w-full select-none"
+                  className="relative group cursor-pointer flex flex-col items-center justify-end select-none transition-transform duration-300 transform group-hover:-translate-y-1"
                 >
-                  {/* 3D Backdrop Card (Studio background with rounded-[28px]) */}
-                  <div
-                    className={`relative aspect-[1/1.12] rounded-[28px] bg-gradient-to-br ${bgClass} flex flex-col justify-end p-3.5 shadow-lg group-hover:shadow-2xl transition-all duration-500 transform group-hover:-translate-y-2 overflow-visible`}
-                  >
-                    {/* 3D Pop-out Model Cutout Image (Scaled h-[180%] w-[140%] to FORCE head & shoulders far out of top border) */}
-                    {imgUrl && (
-                      <div className="absolute inset-x-0 top-0 bottom-0 pointer-events-none overflow-visible">
-                        <img
-                          src={imgUrl}
-                          alt={item.brandName || "Vibe"}
-                          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[135%] sm:w-[145%] h-[170%] sm:h-[185%] object-contain object-bottom drop-shadow-[0_15px_22px_rgba(0,0,0,0.45)] z-10 transition-all duration-500 ease-out group-hover:scale-105 group-hover:-translate-y-1.5"
-                        />
-                      </div>
-                    )}
-
-                    {/* Dark gradient overlay at the bottom for crisp white text contrast */}
-                    <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/90 via-black/40 to-transparent rounded-b-[28px] z-10 pointer-events-none" />
-
-                    {/* High-Fashion White Typography Overlay (NO Black Pills/Boxes!) */}
-                    <div className="relative z-20 text-center pb-1 flex flex-col items-center justify-end">
-                      {item.brandName && (
-                        <h3 className="text-white font-serif font-black text-base sm:text-xl tracking-wider uppercase leading-tight drop-shadow-lg truncate w-full">
-                          {item.brandName}
-                        </h3>
-                      )}
-                      {item.offerText && (
-                        <p className="text-white/95 font-sans font-extrabold text-[11px] sm:text-xs tracking-widest uppercase mt-0.5 drop-shadow-md">
-                          {item.offerText}
-                        </p>
-                      )}
+                  {/* Standalone Model Cutout Image (Directly on white page, no background card box) */}
+                  {imgUrl && (
+                    <div className="relative w-full aspect-[3/4] flex items-end justify-center overflow-visible">
+                      <img
+                        src={imgUrl}
+                        alt={item.brandName || "Vibe Cutout"}
+                        className="max-h-full w-auto object-contain object-bottom drop-shadow-md transition-transform duration-300 group-hover:scale-105"
+                      />
                     </div>
+                  )}
+
+                  {/* Clean Typography Overlay/Underlay directly underneath cutout */}
+                  <div className="text-center mt-2 flex flex-col items-center justify-center w-full">
+                    {item.brandName && (
+                      <h3 className="text-slate-900 font-serif font-black text-sm sm:text-base tracking-wider uppercase leading-tight truncate w-full">
+                        {item.brandName}
+                      </h3>
+                    )}
+                    {item.offerText && (
+                      <span className="text-amber-600 font-sans font-extrabold text-[10px] sm:text-xs tracking-widest uppercase mt-0.5">
+                        {item.offerText}
+                      </span>
+                    )}
                   </div>
                 </div>
               );
