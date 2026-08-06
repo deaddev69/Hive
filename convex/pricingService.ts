@@ -13,8 +13,9 @@ export interface ItemFinancialSnapshot {
   basePriceAtPurchase: number; // Boutique base price in Paise
   platformMarkupRateAtPurchase: number; // e.g. 0.15
   platformFeeRateAtPurchase: number; // e.g. 0.02
+  fixedPlatformFeeAtPurchase: number; // 700 Paise (₹7.00)
   platformMarkupAmount: number; // Platform markup in Paise
-  platformFeeAmount: number; // Store platform fee in Paise
+  platformFeeAmount: number; // Store platform fee in Paise (2%)
   subtotal: number; // priceAtPurchase * quantity in Paise
 }
 
@@ -24,6 +25,9 @@ export interface StoreSettlement {
   totalBasePricePaise: number;
   totalPlatformFeePaise: number;
 }
+
+export const FIXED_PLATFORM_FEE_PAISE = 700; // ₹7.00 Fixed Platform Fee
+export const FIXED_PLATFORM_FEE_RUPEES = 7;
 
 export const DEFAULT_TIER_SLABS = [
   { min_price: 0, max_price: 499, rate: 18 },
@@ -81,7 +85,7 @@ export function selectMarkupRate(basePriceRupees: number, settings: PlatformSett
 export const getPlatformMarkupRate = selectMarkupRate;
 
 /**
- * Calculate dynamic customer pricing with Charm Pricing (rounding to nearest 9 ending).
+ * Calculate dynamic customer pricing with ₹7 Fixed Fee and Charm Pricing (rounding to nearest 9 ending).
  */
 export function calculateProductPricing(
   basePriceRupees: number,
@@ -89,7 +93,7 @@ export function calculateProductPricing(
   settings: PlatformSettings
 ) {
   const markupRate = selectMarkupRate(basePriceRupees, settings);
-  const rawCustomerPrice = basePriceRupees * (1 + markupRate);
+  const rawCustomerPrice = basePriceRupees * (1 + markupRate) + FIXED_PLATFORM_FEE_RUPEES;
   const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
 
   let customerDiscountPrice: number | undefined = undefined;
@@ -97,7 +101,7 @@ export function calculateProductPricing(
 
   if (baseDiscountPriceRupees && baseDiscountPriceRupees > 0) {
     discountMarkupRate = selectMarkupRate(baseDiscountPriceRupees, settings);
-    const rawDiscountPrice = baseDiscountPriceRupees * (1 + discountMarkupRate);
+    const rawDiscountPrice = baseDiscountPriceRupees * (1 + discountMarkupRate) + FIXED_PLATFORM_FEE_RUPEES;
     customerDiscountPrice = Math.ceil(rawDiscountPrice / 10) * 10 - 1;
   }
 
@@ -118,6 +122,7 @@ export function calculateProductPricing(
 
 /**
  * Calculate the exact financial snapshot for an item at checkout based on current platform settings.
+ * Includes ₹7 Fixed Platform Fee snapshot (700 Paise).
  * Validates the client's provided price against the dynamically calculated price.
  */
 export async function calculateItemFinancials(
@@ -128,7 +133,6 @@ export async function calculateItemFinancials(
 ): Promise<ItemFinancialSnapshot> {
   const settings = await getPlatformSettings(ctx);
 
-  // Fallback to reverse-calculating basePrice if missing on legacy product records
   const basePriceRupees =
     productRow.basePrice !== undefined
       ? productRow.basePrice
@@ -137,8 +141,8 @@ export async function calculateItemFinancials(
   const platformMarkupRateAtPurchase = selectMarkupRate(basePriceRupees, settings);
   const platformFeeRateAtPurchase = settings.platformFeeRate;
 
-  // Re-calculate customer price dynamically using Charm Pricing (Nearest 9)
-  const rawCustomerPriceRupees = basePriceRupees * (1 + platformMarkupRateAtPurchase);
+  // Re-calculate customer price dynamically including ₹7 fixed platform fee and Charm Pricing (Nearest 9)
+  const rawCustomerPriceRupees = basePriceRupees * (1 + platformMarkupRateAtPurchase) + FIXED_PLATFORM_FEE_RUPEES;
   const customerPriceRupees = Math.ceil(rawCustomerPriceRupees / 10) * 10 - 1;
   const expectedCustomerPricePaise = Math.round(customerPriceRupees * 100);
 
@@ -150,15 +154,19 @@ export async function calculateItemFinancials(
     });
   }
 
-  const platformMarkupAmountPaise = Math.round((customerPriceRupees - basePriceRupees) * 100);
-  const platformFeeAmountPaise = Math.round(basePriceRupees * platformFeeRateAtPurchase * 100);
   const basePriceAtPurchasePaise = Math.round(basePriceRupees * 100);
+  const platformFeeAmountPaise = Math.round(basePriceAtPurchasePaise * platformFeeRateAtPurchase);
+  const fixedPlatformFeeAtPurchase = FIXED_PLATFORM_FEE_PAISE; // 700 Paise (₹7.00)
+  
+  // Platform markup is customer price minus base price minus ₹7 fixed fee
+  const platformMarkupAmountPaise = Math.max(0, expectedCustomerPricePaise - basePriceAtPurchasePaise - fixedPlatformFeeAtPurchase);
 
   return {
     priceAtPurchase: expectedCustomerPricePaise,
     basePriceAtPurchase: basePriceAtPurchasePaise,
     platformMarkupRateAtPurchase,
     platformFeeRateAtPurchase,
+    fixedPlatformFeeAtPurchase,
     platformMarkupAmount: platformMarkupAmountPaise,
     platformFeeAmount: platformFeeAmountPaise,
     subtotal: expectedCustomerPricePaise * quantity,
@@ -167,6 +175,8 @@ export async function calculateItemFinancials(
 
 /**
  * Calculate boutique payout amount for a single item based on its financial snapshot.
+ * ONLY includes net Store Settlement (Base Price - 2% Seller Platform Processing Fee).
+ * NEVER includes Customer Markup, 18% GST, ₹7 Platform Fee, or Delivery Fee.
  */
 export function calculateBoutiquePayout(orderItem: {
   basePriceAtPurchase?: number; // in Paise
@@ -174,17 +184,18 @@ export function calculateBoutiquePayout(orderItem: {
   priceAtPurchase?: number; // in Paise
   price?: number; // in Paise fallback
 }): number {
-  const priceAtPurchase = orderItem.priceAtPurchase ?? orderItem.price ?? 0;
   if (orderItem.basePriceAtPurchase !== undefined && orderItem.platformFeeAmount !== undefined) {
     return orderItem.basePriceAtPurchase - orderItem.platformFeeAmount;
   }
-  // Legacy fallback for orders created before snapshot schema
-  return Math.floor(priceAtPurchase * 0.82);
+  // Legacy fallback: 98% of priceAtPurchase
+  const price = orderItem.priceAtPurchase ?? orderItem.price ?? 0;
+  return Math.floor(price * 0.82);
 }
 
 /**
  * Calculate computed StoreSettlement for a boutique based on order items.
  * Single source of truth for Razorpay Route Transfer amounts and merchant accruals.
+ * Route transfer amount equals ONLY the net Store Settlement.
  */
 export function calculateStoreSettlement(
   items: Array<{
@@ -212,35 +223,38 @@ export function calculateStoreSettlement(
     }
   }
 
+  // Ensure output is integer Paise
+  const roundedMerchantPayablePaise = Math.round(merchantPayablePaise);
+
   return {
-    merchantPayablePaise,
-    merchantPayableRupees: merchantPayablePaise / 100,
-    totalBasePricePaise,
-    totalPlatformFeePaise,
+    merchantPayablePaise: roundedMerchantPayablePaise,
+    merchantPayableRupees: roundedMerchantPayablePaise / 100,
+    totalBasePricePaise: Math.round(totalBasePricePaise),
+    totalPlatformFeePaise: Math.round(totalPlatformFeePaise),
   };
 }
 
 /**
  * Calculate expected order totals (Subtotal, Delivery Fee, Discount, Final Total).
+ * Performs integer rounding once.
  */
 export function calculateOrderTotals(
   itemsFinancials: Array<{ priceAtPurchase: number; quantity: number }>,
   deliveryFeePaise: number,
   discountPaise: number
 ) {
-  const subtotalPaise = itemsFinancials.reduce(
-    (sum, item) => sum + item.priceAtPurchase * item.quantity,
-    0
+  const subtotalPaise = Math.round(
+    itemsFinancials.reduce((sum, item) => sum + item.priceAtPurchase * item.quantity, 0)
   );
-  const totalPaise = Math.max(0, subtotalPaise - discountPaise + deliveryFeePaise);
+  const totalPaise = Math.max(0, subtotalPaise - Math.round(discountPaise) + Math.round(deliveryFeePaise));
 
   return {
     subtotalPaise,
     subtotalRupees: subtotalPaise / 100,
-    deliveryFeePaise,
-    deliveryFeeRupees: deliveryFeePaise / 100,
-    discountPaise,
-    discountRupees: discountPaise / 100,
+    deliveryFeePaise: Math.round(deliveryFeePaise),
+    deliveryFeeRupees: Math.round(deliveryFeePaise) / 100,
+    discountPaise: Math.round(discountPaise),
+    discountRupees: Math.round(discountPaise) / 100,
     totalPaise,
     totalRupees: totalPaise / 100,
   };
@@ -267,23 +281,23 @@ export function calculateInvoiceFinancials(
     productImage: item.productImage,
     size: item.size,
     quantity: item.quantity,
-    unitPricePaise: item.priceAtPurchase,
-    unitPriceRupees: item.priceAtPurchase / 100,
-    totalPricePaise: item.priceAtPurchase * item.quantity,
-    totalPriceRupees: (item.priceAtPurchase * item.quantity) / 100,
+    unitPricePaise: Math.round(item.priceAtPurchase),
+    unitPriceRupees: Math.round(item.priceAtPurchase) / 100,
+    totalPricePaise: Math.round(item.priceAtPurchase * item.quantity),
+    totalPriceRupees: Math.round(item.priceAtPurchase * item.quantity) / 100,
   }));
 
   const subtotalPaise = invoiceItems.reduce((sum, item) => sum + item.totalPricePaise, 0);
-  const totalAmountPaise = Math.max(0, subtotalPaise - discountPaise + deliveryFeePaise);
+  const totalAmountPaise = Math.max(0, subtotalPaise - Math.round(discountPaise) + Math.round(deliveryFeePaise));
 
   return {
     items: invoiceItems,
     subtotalPaise,
     subtotalRupees: subtotalPaise / 100,
-    deliveryFeePaise,
-    deliveryFeeRupees: deliveryFeePaise / 100,
-    discountPaise,
-    discountRupees: discountPaise / 100,
+    deliveryFeePaise: Math.round(deliveryFeePaise),
+    deliveryFeeRupees: Math.round(deliveryFeePaise) / 100,
+    discountPaise: Math.round(discountPaise),
+    discountRupees: Math.round(discountPaise) / 100,
     taxPaise: 0,
     taxRupees: 0,
     totalAmountPaise,
@@ -292,19 +306,22 @@ export function calculateInvoiceFinancials(
 }
 
 /**
- * Calculate boutique earnings and platform commission metrics for dashboards.
+ * Calculate boutique earnings, platform revenue, and 18% GST metrics.
+ * GST (18%) is calculated on: Seller Platform Processing Fee (2%) + Customer Markup + ₹7 Fixed Platform Fee.
  */
 export function calculateBoutiqueEarnings(
   items: Array<{
     basePriceAtPurchase?: number;
     platformMarkupAmount?: number;
     platformFeeAmount?: number;
+    fixedPlatformFeeAtPurchase?: number;
     priceAtPurchase: number;
     quantity: number;
   }>
 ) {
   let totalPlatformMarkupPaise = 0;
   let totalPlatformFeePaise = 0;
+  let totalFixedPlatformFeePaise = 0;
   let totalBoutiquePayoutPaise = 0;
 
   for (const item of items) {
@@ -312,21 +329,26 @@ export function calculateBoutiqueEarnings(
     if (item.platformMarkupAmount !== undefined && item.platformFeeAmount !== undefined) {
       totalPlatformMarkupPaise += item.platformMarkupAmount * qty;
       totalPlatformFeePaise += item.platformFeeAmount * qty;
+      totalFixedPlatformFeePaise += (item.fixedPlatformFeeAtPurchase ?? FIXED_PLATFORM_FEE_PAISE) * qty;
     }
     totalBoutiquePayoutPaise += calculateBoutiquePayout(item) * qty;
   }
 
-  const totalCommissionPaise = totalPlatformMarkupPaise + totalPlatformFeePaise;
+  // Total Platform Revenue = Seller 2% Fee + Customer Markup + ₹7 Fixed Fee
+  const totalCommissionPaise = totalPlatformMarkupPaise + totalPlatformFeePaise + totalFixedPlatformFeePaise;
+  
+  // 18% GST on Total Platform Revenue
   const gstPaise = Math.floor(totalCommissionPaise * 0.18);
   const netCommissionPaise = totalCommissionPaise - gstPaise;
 
   return {
-    totalPlatformMarkupPaise,
-    totalPlatformFeePaise,
-    totalCommissionPaise,
-    gstPaise,
-    netCommissionPaise,
-    totalBoutiquePayoutPaise,
-    totalBoutiquePayoutRupees: totalBoutiquePayoutPaise / 100,
+    totalPlatformMarkupPaise: Math.round(totalPlatformMarkupPaise),
+    totalPlatformFeePaise: Math.round(totalPlatformFeePaise),
+    totalFixedPlatformFeePaise: Math.round(totalFixedPlatformFeePaise),
+    totalCommissionPaise: Math.round(totalCommissionPaise),
+    gstPaise: Math.round(gstPaise),
+    netCommissionPaise: Math.round(netCommissionPaise),
+    totalBoutiquePayoutPaise: Math.round(totalBoutiquePayoutPaise),
+    totalBoutiquePayoutRupees: Math.round(totalBoutiquePayoutPaise) / 100,
   };
 }

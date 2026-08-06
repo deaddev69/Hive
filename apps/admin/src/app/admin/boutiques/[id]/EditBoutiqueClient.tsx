@@ -459,8 +459,13 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
               <p className="text-[11px] text-hive-text-muted leading-snug">
                 Paste the Razorpay Route Linked Account ID generated from the Razorpay Dashboard.
               </p>
-              {razorpayAccountId.trim() && !razorpayAccountId.trim().startsWith("acc_") && (
-                <p className="text-[11px] text-red-500 font-semibold">Must start with &quot;acc_&quot;</p>
+              {status === "APPROVED" && !razorpayAccountId.trim() && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2 font-medium mt-1">
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Route Account Missing:</strong> This boutique is approved but does not have a Razorpay Route Account ID (<code className="font-mono bg-amber-100 px-1 py-0.5 rounded text-amber-900">acc_...</code>). Online payment transfers will remain on hold until configured.
+                  </span>
+                </div>
               )}
             </div>
           </div>

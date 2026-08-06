@@ -443,6 +443,29 @@ export const initCheckoutSessionInternal = internalMutation({
     const storeSettlement = calculateStoreSettlement(itemsParsed);
     const merchantPayablePaise = storeSettlement.merchantPayablePaise;
 
+    // Group items by boutique razorpayAccountId for multi-boutique Route transfers
+    const boutiqueSettlementMap = new Map<string, any[]>();
+    for (let i = 0; i < resolvedItems.length; i++) {
+      const bId = resolvedItems[i].boutiqueId;
+      const b = (await ctx.db.get(bId)) as any;
+      if (b && b.razorpayAccountId) {
+        const list = boutiqueSettlementMap.get(b.razorpayAccountId) || [];
+        list.push(itemsParsed[i]);
+        boutiqueSettlementMap.set(b.razorpayAccountId, list);
+      }
+    }
+
+    const transfersList: Array<{ account: string; amount: number }> = [];
+    for (const [accountId, itemsList] of boutiqueSettlementMap.entries()) {
+      const settlement = calculateStoreSettlement(itemsList);
+      if (settlement.merchantPayablePaise > 0) {
+        transfersList.push({
+          account: accountId,
+          amount: Math.round(settlement.merchantPayablePaise),
+        });
+      }
+    }
+
     // Save temporary Checkout Session
     const checkoutSessionId = await ctx.db.insert("checkoutSessions", {
       userId: user._id,
@@ -495,7 +518,8 @@ export const initCheckoutSessionInternal = internalMutation({
       userPhone: finalPhone,
       customerName: user.email?.split("@")[0] || "Hive Customer",
       razorpayAccountId: primaryBoutique?.razorpayAccountId || undefined,
-      merchantPayablePaise,
+      merchantPayablePaise: Math.round(merchantPayablePaise),
+      transfersList,
     };
   },
 });
@@ -1133,11 +1157,21 @@ export const createCheckoutSession = action({
         },
       };
 
-      if (initResult.razorpayAccountId) {
+      if (Array.isArray(initResult.transfersList) && initResult.transfersList.length > 0) {
+        orderPayload.transfers = initResult.transfersList.map((t: any) => ({
+          account: t.account,
+          amount: Math.round(t.amount),
+          currency: "INR",
+          on_hold: true,
+          notes: {
+            checkoutSessionId: initResult.checkoutSessionId,
+          },
+        }));
+      } else if (initResult.razorpayAccountId) {
         orderPayload.transfers = [
           {
             account: initResult.razorpayAccountId,
-            amount: initResult.merchantPayablePaise,
+            amount: Math.round(initResult.merchantPayablePaise),
             currency: "INR",
             on_hold: true,
             notes: {

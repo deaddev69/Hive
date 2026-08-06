@@ -506,17 +506,25 @@ export default function AdminBoutiquesPage() {
                         </div>
 
                         {/* Status Label */}
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                          isApproved ? "bg-green-50 text-green-700 border-green-200" :
-                          isPending ? "bg-amber-50 text-amber-700 border-amber-200" :
-                          isRejected ? "bg-red-50 text-red-700 border-red-200" :
-                          "bg-slate-50 text-slate-700 border-slate-200"
-                        }`}>
-                          {isApproved && <CheckCircle2 className="w-3 h-3" />}
-                          {isPending && <AlertCircle className="w-3 h-3" />}
-                          {isRejected && <XCircle className="w-3 h-3" />}
-                          <span>{boutique.status}</span>
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                            isApproved ? "bg-green-50 text-green-700 border-green-200" :
+                            isPending ? "bg-amber-50 text-amber-700 border-amber-200" :
+                            isRejected ? "bg-red-50 text-red-700 border-red-200" :
+                            "bg-slate-50 text-slate-700 border-slate-200"
+                          }`}>
+                            {isApproved && <CheckCircle2 className="w-3 h-3" />}
+                            {isPending && <AlertCircle className="w-3 h-3" />}
+                            {isRejected && <XCircle className="w-3 h-3" />}
+                            <span>{boutique.status}</span>
+                          </span>
+                          {isApproved && !boutique.razorpayAccountId && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300" title="Approved seller is missing Razorpay Route Account ID">
+                              <AlertCircle className="w-2.5 h-2.5 text-amber-700" />
+                              <span>Route Account Missing</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Description */}

@@ -134,6 +134,19 @@ export const releasePayout: any = action({
       return;
     }
 
+    if (order.status !== "delivered") {
+      console.log(`Order ${args.orderId} cannot be released: order status is '${order.status}', expected 'delivered'.`);
+      return;
+    }
+
+    const now = Date.now();
+    const claimWindowMs = 48 * 3600 * 1000;
+    const deliveredAt = order.deliveredAt || order.createdAt;
+    if (now < deliveredAt + claimWindowMs) {
+      console.log(`Order ${args.orderId} cannot be released: 48h claim window has not elapsed yet.`);
+      return;
+    }
+
     if (!order.razorpayTransferId) {
       console.log(`Order ${args.orderId} has no active transfer ID.`);
       return;
@@ -141,6 +154,13 @@ export const releasePayout: any = action({
 
     if (order.transferStatus === "processed") {
       console.log(`Order ${args.orderId} transfer is already processed.`);
+      return;
+    }
+
+    // Precondition check: verify no active unresolved claims/disputes for this order
+    const hasActiveClaims = await ctx.runQuery((internal.claims as any).getOpenClaimByOrderId, { orderId: args.orderId });
+    if (hasActiveClaims) {
+      console.log(`Order ${args.orderId} release blocked: order has an active unresolved claim/dispute.`);
       return;
     }
 

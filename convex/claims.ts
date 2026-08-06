@@ -1,7 +1,7 @@
 // convex/claims.ts
 // Customer claim mutations and queries.
 
-import { mutation } from "./_generated/server";
+import { mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { validateUploadedFile } from "./lib/uploads";
@@ -173,5 +173,23 @@ export const submitClaimCustomer = mutation({
     });
 
     return claimId;
+  },
+});
+
+export const getOpenClaimByOrderId = internalQuery({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const claim = await ctx.db
+      .query("claims")
+      .withIndex("by_orderId", (q) => q.eq("orderId", args.orderId))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("status"), "submitted"),
+          q.eq(q.field("status"), "under_review"),
+          q.eq(q.field("status"), "approved")
+        )
+      )
+      .first();
+    return claim !== null;
   },
 });
