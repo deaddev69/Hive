@@ -481,7 +481,7 @@ export default function BoutiqueProducts() {
                           {totalStock === 0 ? "Out of stock" : `${totalStock} in stock`}
                         </span>
                         <span className="w-1 h-1 rounded-full bg-slate-200" />
-                        <span className="font-extrabold text-slate-900 font-mono text-[14.5px]">₹{(prod.basePrice || prod.price).toLocaleString("en-IN")}</span>
+                        <span className="font-extrabold text-slate-900 font-mono text-[14.5px]">₹{((prod.basePrice || prod.price) / 100).toLocaleString("en-IN")}</span>
                       </div>
                     </div>
                   </div>

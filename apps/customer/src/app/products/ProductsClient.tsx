@@ -10,6 +10,7 @@ import { CatalogHeader } from "@/components/catalog/CatalogHeader";
 import { CatalogToolbar } from "@/components/catalog/CatalogToolbar";
 import { CatalogPagination } from "@/components/catalog/CatalogPagination";
 import { CatalogEmptyState } from "@/components/catalog/CatalogEmptyState";
+import { CategoryPillRail } from "@/components/catalog/CategoryPillRail";
 import { ProductCard } from "@/components/product/ProductCard";
 import { QuickViewModal } from "@/components/product/QuickViewModal";
 import { useQuery } from "convex/react";
@@ -242,6 +243,8 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
           {activeBoutique ? activeBoutique.boutiqueName : (selectedCategoryNames.length > 0 ? selectedCategoryNames.join(", ") : "All Products")}
         </h1>
       </div>
+
+      <CategoryPillRail />
 
       {/* Designer exclusive collections banner */}
       {boutiqueIdFromUrl && (
