@@ -360,71 +360,84 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     return <TrustStrip />;
   }
 
-  // 6. PINTEREST VIBE GRID
+  // 6. PINTEREST VIBE GRID (3D POP-OUT CARD ARCHITECTURE)
   if (block.blockType === "vibeGrid") {
     const items = block.config?.items || [];
     if (items.length === 0) return null;
 
     return (
-      <section className="w-full bg-white py-6">
+      <section className="w-full bg-white py-10 border-b border-hive-border/20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          {block.title && (
-            <h2 className="text-xl font-bold text-hive-dark mb-4 tracking-tight">
-              {block.title}
-            </h2>
-          )}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-3 sm:gap-x-4 gap-y-12 pt-12">
+          <div className="flex flex-col gap-1 mb-2">
+            <span className="text-[10px] font-bold text-amber-600 tracking-widest uppercase">
+              VIBE & MOOD NAVIGATION
+            </span>
+            {block.title && (
+              <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
+                {block.title}
+              </h2>
+            )}
+            {block.subtitle && (
+              <p className="text-xs text-slate-500">{block.subtitle}</p>
+            )}
+          </div>
+
+          {/* Dynamic Responsive Container: Horizontal Scroll on Mobile, Balanced Flex Wrap on Desktop */}
+          <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible gap-6 sm:gap-8 pt-14 pb-6 scrollbar-none snap-x scroll-pl-6">
             {items.map((item: any, idx: number) => {
               const gradients = [
-                "from-slate-800 to-slate-900",
-                "from-amber-700 to-amber-900",
-                "from-emerald-800 to-emerald-950",
-                "from-blue-800 to-blue-950",
-                "from-rose-800 to-rose-950",
-                "from-stone-800 to-stone-900"
+                "from-slate-900 via-slate-800 to-slate-950",
+                "from-amber-950 via-stone-900 to-slate-950",
+                "from-emerald-950 via-teal-900 to-slate-950",
+                "from-blue-950 via-indigo-900 to-slate-950",
+                "from-rose-950 via-pink-900 to-slate-950",
+                "from-zinc-900 via-stone-900 to-slate-950",
               ];
-              // Use dark gradients for premium contrast, but fallback to item.backgroundColor if they have one (they don't yet)
               const bgClass = item.backgroundColor || gradients[idx % gradients.length];
-              
-              const imgUrl = item.imageUrl 
-                ? (typeof item.imageUrl === "string" 
-                    ? item.imageUrl 
-                    : (item.imageUrl?.url || `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${item.imageUrl.objectKey}`))
+
+              const imgUrl = item.imageUrl
+                ? typeof item.imageUrl === "string"
+                  ? item.imageUrl
+                  : item.imageUrl?.url || `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${item.imageUrl.objectKey}`
                 : null;
-              
+
               return (
                 <div
                   key={idx}
                   onClick={() => {
                     if (item.targetUrl) router.push(item.targetUrl);
                   }}
-                  className="relative pt-8 group cursor-pointer"
+                  className="relative pt-14 group cursor-pointer w-44 sm:w-48 lg:w-52 flex-shrink-0 snap-start select-none"
                 >
-                  <div className={`relative aspect-[4/5] rounded-3xl bg-gradient-to-br ${bgClass} flex flex-col justify-end p-4 shadow-md group-hover:shadow-xl transition-all duration-300 transform group-hover:-translate-y-1`}>
-                    
-                    {/* Pop-out Image (Transparent PNG) */}
+                  {/* 3D Backdrop Card (Rounded container situated at bottom half) */}
+                  <div
+                    className={`relative aspect-[3/4.2] rounded-[28px] bg-gradient-to-br ${bgClass} flex flex-col justify-end p-2.5 shadow-xl group-hover:shadow-2xl group-hover:shadow-amber-500/10 border border-white/10 transition-all duration-500 transform group-hover:-translate-y-2 overflow-visible`}
+                  >
+                    {/* 3D Pop-out Transparent Model Cutout Image */}
                     {imgUrl && (
-                      <img 
-                        src={imgUrl} 
-                        alt={item.brandName || "Vibe"}
-                        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[125%] object-contain object-bottom drop-shadow-2xl z-10 transition-transform duration-500 group-hover:scale-105" 
-                      />
+                      <div className="absolute inset-x-0 top-0 bottom-0 pointer-events-none overflow-visible">
+                        <img
+                          src={imgUrl}
+                          alt={item.brandName || "Vibe"}
+                          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[115%] h-[135%] object-contain object-bottom drop-shadow-[0_15px_15px_rgba(0,0,0,0.6)] z-10 transition-all duration-500 ease-out group-hover:scale-108 group-hover:-translate-y-1"
+                        />
+                      </div>
                     )}
-                    
-                    {/* Dark gradient overlay at the bottom to ensure text is readable */}
-                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent rounded-b-3xl z-10" />
 
-                    {/* Bottom Text */}
-                    <div className="relative z-20 text-center mb-1 drop-shadow-md">
+                    {/* Dark gradient overlay at the bottom for readability */}
+                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/90 via-black/40 to-transparent rounded-b-[28px] z-10 pointer-events-none" />
+
+                    {/* Frosted Glass Pill & Label Container */}
+                    <div className="relative z-20 p-3 rounded-2xl bg-black/40 backdrop-blur-md border border-white/15 text-center shadow-lg transition-transform duration-300 group-hover:scale-[1.02]">
                       {item.brandName && (
-                        <h3 className="text-white font-serif font-bold text-lg sm:text-xl tracking-widest uppercase leading-tight">
+                        <h3 className="text-white font-serif font-bold text-base sm:text-lg tracking-widest uppercase leading-tight drop-shadow-md truncate">
                           {item.brandName}
                         </h3>
                       )}
                       {item.offerText && (
-                        <p className="text-white/90 text-[10px] sm:text-xs font-extrabold uppercase mt-1 tracking-wider">
+                        <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-[10px] tracking-wider uppercase shadow-sm">
                           {item.offerText}
-                        </p>
+                        </span>
                       )}
                     </div>
                   </div>
