@@ -9,19 +9,20 @@ export function mapDbProduct(p: any): ProductCardData & {
 } {
   let rawPrice = p.price || 0;
   let rawCompare = p.compareAtPrice;
-  if (rawPrice >= 10000) rawPrice = Math.round(rawPrice / 100);
-  if (rawCompare && rawCompare >= 10000) rawCompare = Math.round(rawCompare / 100);
+  rawPrice = rawPrice ? rawPrice / 100 : 0;
+  if (rawCompare) rawCompare = rawCompare / 100;
 
   const hasDiscount =
     p.discountPrice !== undefined &&
     p.discountPrice !== null &&
     p.discountPrice < p.price;
-  let price = hasDiscount ? p.discountPrice! : rawPrice;
-  if (hasDiscount && price >= 10000) price = Math.round(price / 100);
+    
+  let discountPrice = hasDiscount ? p.discountPrice! / 100 : undefined;
+  let price = hasDiscount && discountPrice ? discountPrice : rawPrice;
   const compareAtPrice = hasDiscount ? rawPrice : undefined;
   
-  const discountPercent = hasDiscount 
-    ? Math.round(((compareAtPrice! - price) / compareAtPrice!) * 100) 
+  const discountPercent = hasDiscount && compareAtPrice
+    ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100) 
     : 0;
 
   return {

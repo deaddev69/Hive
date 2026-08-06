@@ -501,8 +501,10 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   useEffect(() => {
     if (productToEdit) {
       setValue("name", productToEdit.name || "");
-      setValue("price", productToEdit.basePrice?.toString() || productToEdit.price?.toString() || "");
-      setValue("discountPrice", productToEdit.baseDiscountPrice?.toString() || productToEdit.discountPrice?.toString() || "");
+      const bp = productToEdit.basePrice ?? productToEdit.price;
+      setValue("price", bp ? (bp / 100).toString() : "");
+      const dp = productToEdit.baseDiscountPrice ?? productToEdit.discountPrice;
+      setValue("discountPrice", dp ? (dp / 100).toString() : "");
       
       const rawCatIds = productToEdit.details?.categoryIds
         ? productToEdit.details.categoryIds.split(",")
@@ -864,8 +866,8 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         name: data.name,
         description: data.description,
         categoryId: resolvedCatId as any,
-        price: parseFloat(data.price),
-        discountPrice: data.discountPrice ? parseFloat(data.discountPrice) : undefined,
+        price: Math.round(parseFloat(data.price) * 100),
+        discountPrice: data.discountPrice ? Math.round(parseFloat(data.discountPrice) * 100) : undefined,
         images: finalImages,
         sizes: selectedSizes,
         stockBySize,

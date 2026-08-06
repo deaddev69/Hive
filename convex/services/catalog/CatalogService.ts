@@ -61,10 +61,8 @@ export class CatalogService {
           }
         }
 
-        const rawPrice = product.price || 0;
-        const price = rawPrice >= 10000 ? Math.round(rawPrice / 100) : rawPrice;
-        const rawCompare = product.compareAtPrice;
-        const compareAtPrice = rawCompare && rawCompare >= 10000 ? Math.round(rawCompare / 100) : rawCompare;
+        const price = product.price || 0;
+        const compareAtPrice = product.compareAtPrice;
 
         return {
           id: product._id.toString(),

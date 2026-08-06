@@ -40,8 +40,9 @@ function getProductOccasion(product: any): string {
 // Helper to map DB product to ProductCardData interface
 function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number>; boutiqueId?: string; boutique?: any } {
   const hasDiscount = p.discountPrice !== undefined && p.discountPrice < p.price;
-  const price = hasDiscount ? p.discountPrice! : p.price;
-  const compareAtPrice = hasDiscount ? p.price : undefined;
+  const rawPrice = hasDiscount ? p.discountPrice! : p.price;
+  const price = rawPrice ? rawPrice / 100 : 0;
+  const compareAtPrice = hasDiscount && p.price ? p.price / 100 : undefined;
 
   return {
     id: p._id,

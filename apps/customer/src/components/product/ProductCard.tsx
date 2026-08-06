@@ -246,11 +246,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
 
         {/* Price (Single line, packed tightly) */}
         <div className="text-base font-extrabold text-slate-900 leading-tight flex items-center flex-wrap gap-1.5 mt-0.5">
-          <span>₹{(product.price / 100).toLocaleString("en-IN")}</span>
+          <span>₹{product.price.toLocaleString("en-IN")}</span>
           {product.compareAtPrice && product.compareAtPrice > product.price && (
             <>
               <span className="text-xs text-slate-400 line-through font-normal" style={{ textDecoration: "line-through" }}>
-                ₹{(product.compareAtPrice / 100).toLocaleString("en-IN")}
+                ₹{product.compareAtPrice.toLocaleString("en-IN")}
               </span>
               <span className="text-xs font-bold text-green-600">
                 {Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}% OFF
