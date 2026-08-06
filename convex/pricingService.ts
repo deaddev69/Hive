@@ -133,26 +133,34 @@ export async function calculateItemFinancials(
 ): Promise<ItemFinancialSnapshot> {
   const settings = await getPlatformSettings(ctx);
 
-  let expectedCustomerPriceRupees: number;
-  let basePriceRupees: number;
+  // ─── IMPORTANT: DB stores ALL prices (price, discountPrice, basePrice, baseDiscountPrice) in PAISE ───
+  // The frontend mapDbProduct divides by 100 for display, and the cart stores in rupees.
+  // clientPricePaise = Math.round(cartRupees * 100), so it's in paise and should match DB directly.
+
+  let expectedCustomerPricePaise: number;
+  let basePricePaise: number;
   let platformMarkupRateAtPurchase: number;
 
   if (productRow.basePrice !== undefined && productRow.basePrice > 0) {
-    basePriceRupees = productRow.basePrice;
-    platformMarkupRateAtPurchase = selectMarkupRate(basePriceRupees, settings);
+    // New products: basePrice is in paise, calculateProductPricing expects paise (despite param name)
+    basePricePaise = productRow.basePrice;
+    const basePriceForTier = basePricePaise / 100; // Convert to rupees for tier lookup
+    platformMarkupRateAtPurchase = selectMarkupRate(basePriceForTier, settings);
+    // calculateProductPricing takes the same unit as basePrice (paise here), returns paise
     const pricing = calculateProductPricing(productRow.basePrice, productRow.baseDiscountPrice, settings);
-    expectedCustomerPriceRupees = (productRow.baseDiscountPrice && productRow.baseDiscountPrice > 0)
+    expectedCustomerPricePaise = (productRow.baseDiscountPrice && productRow.baseDiscountPrice > 0)
       ? (pricing.customerDiscountPrice || pricing.customerPrice)
       : pricing.customerPrice;
   } else {
-    expectedCustomerPriceRupees = productRow.discountPrice ?? productRow.price;
-    basePriceRupees = Math.floor(expectedCustomerPriceRupees / (1 + (settings.markupRate || 0.15)));
-    platformMarkupRateAtPurchase = selectMarkupRate(basePriceRupees, settings);
+    // Legacy products without basePrice: price/discountPrice are in paise
+    expectedCustomerPricePaise = productRow.discountPrice ?? productRow.price;
+    // Reverse-engineer base price from customer price (both in paise)
+    basePricePaise = Math.floor(expectedCustomerPricePaise / (1 + (settings.markupRate || 0.15)));
+    const basePriceForTier = basePricePaise / 100;
+    platformMarkupRateAtPurchase = selectMarkupRate(basePriceForTier, settings);
   }
 
-  const expectedCustomerPricePaise = Math.round(expectedCustomerPriceRupees * 100);
-
-  // Validate against client-provided price (in paise) to prevent price manipulation and handle stale carts.
+  // Validate against client-provided price (both in paise) to prevent price manipulation
   if (Math.abs(expectedCustomerPricePaise - clientPricePaise) > 100) {
     throw new ConvexError({
       code: "STALE_CART_PRICE",
@@ -161,16 +169,15 @@ export async function calculateItemFinancials(
   }
 
   const platformFeeRateAtPurchase = settings.platformFeeRate;
-  const basePriceAtPurchasePaise = Math.round(basePriceRupees * 100);
-  const platformFeeAmountPaise = Math.round(basePriceAtPurchasePaise * platformFeeRateAtPurchase);
+  const platformFeeAmountPaise = Math.round(basePricePaise * platformFeeRateAtPurchase);
   const fixedPlatformFeeAtPurchase = FIXED_PLATFORM_FEE_PAISE; // 700 Paise (₹7.00)
   
-  // Platform markup is customer price minus base price minus ₹7 fixed fee
-  const platformMarkupAmountPaise = Math.max(0, expectedCustomerPricePaise - basePriceAtPurchasePaise - fixedPlatformFeeAtPurchase);
+  // Platform markup = customer price - base price - ₹7 fixed fee (all in paise)
+  const platformMarkupAmountPaise = Math.max(0, expectedCustomerPricePaise - basePricePaise - fixedPlatformFeeAtPurchase);
 
   return {
     priceAtPurchase: expectedCustomerPricePaise,
-    basePriceAtPurchase: basePriceAtPurchasePaise,
+    basePriceAtPurchase: basePricePaise,
     platformMarkupRateAtPurchase,
     platformFeeRateAtPurchase,
     fixedPlatformFeeAtPurchase,
