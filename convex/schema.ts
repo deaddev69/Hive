@@ -2091,10 +2091,13 @@ export default defineSchema({
       items: v.optional(
         v.array(
           v.object({
-            label: v.string(),
+            label: v.optional(v.string()),
             emoji: v.optional(v.string()),
             targetUrl: v.optional(v.string()),
             backgroundColor: v.optional(v.string()),
+            imageUrl: v.optional(v.any()),
+            brandName: v.optional(v.string()),
+            offerText: v.optional(v.string()),
           })
         )
       ),
