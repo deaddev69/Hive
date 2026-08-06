@@ -1498,6 +1498,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   }
                 }
                 
+                const custPrice = Math.ceil((baseVal * (1 + rate) + 7) / 10) * 10 - 1;
                 const feeRate = platformSettings.platformFeeRate ?? 0.02;
                 const feeAmount = baseVal * feeRate;
                 const netPayout = baseVal - feeAmount;
