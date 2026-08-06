@@ -377,8 +377,8 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
             <p className="text-xs text-slate-500 mb-2">{block.subtitle}</p>
           )}
 
-          {/* Pure Cutout Layout: Standalone Cutouts in Flex Container */}
-          <div className="flex flex-wrap justify-start items-start gap-4 sm:gap-6 mt-1 mb-1">
+          {/* Pure Cutout Layout: Mobile Horizontal Swipe Rail / Desktop Flex Row */}
+          <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible gap-4 sm:gap-6 mt-1 mb-1 pb-2 scrollbar-none snap-x scroll-pl-4">
             {items.map((item: any, idx: number) => {
               const imgUrl = item.imageUrl
                 ? typeof item.imageUrl === "string"
@@ -392,7 +392,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                   onClick={() => {
                     if (item.targetUrl) router.push(item.targetUrl);
                   }}
-                  className="relative group cursor-pointer flex flex-col items-center justify-start select-none w-28 sm:w-32 md:w-36 flex-shrink-0 transition-transform duration-300 transform group-hover:-translate-y-1"
+                  className="relative group cursor-pointer flex flex-col items-center justify-start select-none w-28 sm:w-32 md:w-36 flex-shrink-0 snap-start transition-transform duration-300 transform group-hover:-translate-y-1"
                 >
                   {/* Standalone Model Cutout Image (Dynamic Height, Zero White Space Gap) */}
                   {imgUrl && (
