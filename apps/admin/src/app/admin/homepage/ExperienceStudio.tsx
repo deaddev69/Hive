@@ -5,7 +5,7 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { toast } from "@hive/utils";
 import {
-  Sparkles, Plus, Trash2, Settings, Smartphone, Layout, Copy, Edit, X, Eye, EyeOff, Search, Layers, ShoppingBag, Zap, ChevronDown, ChevronUp, Upload, Loader2, Link as LinkIcon, Star, Grid
+  Sparkles, Plus, Trash2, Settings, Smartphone, Layout, Copy, Edit, X, Eye, EyeOff, Search, Layers, ShoppingBag, Zap, ChevronDown, ChevronUp, Upload, Loader2, Link as LinkIcon, Star, Grid, GripVertical
 } from "lucide-react";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 
@@ -246,8 +246,44 @@ export function ExperienceStudio() {
       toast.error(err.message);
     }
   };
+  // Drag & Drop Reordering Handlers
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
-  // Up/Down Reordering Handlers
+  const handleDragStart = (idx: number, e: React.DragEvent) => {
+    setDraggedIdx(idx);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (idx: number, e: React.DragEvent) => {
+    e.preventDefault();
+    if (dragOverIdx !== idx) setDragOverIdx(idx);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIdx(null);
+    setDragOverIdx(null);
+  };
+
+  const handleDrop = async (idx: number, e: React.DragEvent) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === idx) {
+      handleDragEnd();
+      return;
+    }
+    
+    const newBlocks = [...blocks];
+    const [draggedBlock] = newBlocks.splice(draggedIdx, 1);
+    newBlocks.splice(idx, 0, draggedBlock);
+    
+    setBlocks(newBlocks);
+    handleDragEnd();
+
+    const layoutUpdates = newBlocks.map((b, i) => ({ id: b._id, sortOrder: i + 1 }));
+    await updateLayout({ blocks: layoutUpdates });
+  };
+
+  // Up/Down Reordering Handlers (Keeping them as fallbacks/accessibility)
   const handleMoveUp = async (idx: number) => {
     if (idx === 0) return;
     const newBlocks = [...blocks];
@@ -360,8 +396,19 @@ export function ExperienceStudio() {
                     const isHidden = block.status === "archived";
 
                     return (
-                      <div key={block._id} className={`bg-white dark:bg-zinc-900 rounded-2xl border ${isHidden ? "border-dashed border-slate-300 opacity-60" : "border-slate-200"} dark:border-zinc-800 shadow-xs hover:border-slate-300 transition-all overflow-hidden`}>
+                      <div 
+                        key={block._id} 
+                        draggable
+                        onDragStart={(e) => handleDragStart(idx, e)}
+                        onDragOver={(e) => handleDragOver(idx, e)}
+                        onDrop={(e) => handleDrop(idx, e)}
+                        onDragEnd={handleDragEnd}
+                        className={`bg-white dark:bg-zinc-900 rounded-2xl border ${isHidden ? "border-dashed border-slate-300 opacity-60" : "border-slate-200"} ${dragOverIdx === idx ? "border-amber-500 border-2 shadow-lg scale-[1.01]" : ""} ${draggedIdx === idx ? "opacity-50" : ""} dark:border-zinc-800 shadow-xs hover:border-slate-300 transition-all overflow-hidden`}
+                      >
                         <div className="p-4 flex items-center gap-4">
+                          <div className="flex flex-col items-center gap-1 cursor-grab active:cursor-grabbing text-slate-400 hover:text-amber-500">
+                            <GripVertical className="w-5 h-5" />
+                          </div>
                           <div className="flex flex-col items-center gap-1">
                             <button onClick={() => handleMoveUp(idx)} disabled={idx === 0} className={`p-0.5 rounded ${idx === 0 ? "text-slate-200" : "text-slate-400 hover:text-amber-500"} cursor-pointer`}><ChevronUp className="w-4 h-4"/></button>
                             <button onClick={() => handleMoveDown(idx)} disabled={idx === blocks.length - 1} className={`p-0.5 rounded ${idx === blocks.length - 1 ? "text-slate-200" : "text-slate-400 hover:text-amber-500"} cursor-pointer`}><ChevronDown className="w-4 h-4"/></button>
@@ -537,6 +584,39 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
 
   const updateConfig = (key: string, value: any) => {
     setFormData(prev => ({ ...prev, config: { ...prev.config, [key]: value } }));
+  };
+
+  const handleVibeImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, itemIdx: number) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    setUploading(true);
+    try {
+      const { presignedUrl, sessionId } = await generateUploadUrl({
+        mimeType: file.type,
+        fileSize: file.size,
+        ownerType: "admin",
+        ownerId: "vibe_item",
+        context: "banner_image",
+      });
+      await fetch(presignedUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      const finalizedAsset = await commitUpload({ sessionId });
+      
+      const newItems = [...(formData.config.items || [])];
+      // Assuming finalizedAsset.url or similar is what we want, or the objectKey.
+      // Wait, handleFileUpload sets finalizedAsset which is an object { objectKey: string, url?: string }.
+      newItems[itemIdx].imageUrl = finalizedAsset;
+      updateConfig("items", newItems);
+      toast.success("Vibe image uploaded successfully!");
+    } catch (err) {
+      console.error("Vibe image upload failed:", err);
+      toast.error("Failed to upload vibe image.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, key: string) => {
@@ -778,40 +858,86 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
               <div className="space-y-3">
                 {(formData.config.items || []).map((item: any, idx: number) => (
                   <div key={idx} className="flex gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    <input 
-                      type="text" 
-                      placeholder="Emoji (💖)" 
-                      className="w-16 h-10 px-2 rounded-lg border border-slate-200 text-lg text-center" 
-                      value={item.emoji || ""}
-                      onChange={(e) => {
-                        const newItems = [...(formData.config.items || [])];
-                        newItems[idx].emoji = e.target.value;
-                        updateConfig("items", newItems);
-                      }}
-                    />
                     <div className="flex-1 space-y-2">
-                      <input 
-                        type="text" 
-                        placeholder="Label (Feeling cute)" 
-                        className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm" 
-                        value={item.label || ""}
-                        onChange={(e) => {
-                          const newItems = [...(formData.config.items || [])];
-                          newItems[idx].label = e.target.value;
-                          updateConfig("items", newItems);
-                        }}
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Target URL (/collections/cute)" 
-                        className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm" 
+                      <div className="flex items-start gap-3">
+                        <div className="shrink-0 flex flex-col gap-1 items-center">
+                          <label className="cursor-pointer">
+                            <input 
+                              type="file" 
+                              accept="image/png" 
+                              className="hidden" 
+                              onChange={(e) => handleVibeImageUpload(e, idx)} 
+                            />
+                            <div className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 hover:bg-slate-100 transition overflow-hidden">
+                              {item.imageUrl ? (
+                                <img src={
+                                  typeof item.imageUrl === "string" ? item.imageUrl : (item.imageUrl?.url || `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${item.imageUrl.objectKey}`)
+                                } alt="Vibe" className="w-full h-full object-cover" />
+                              ) : (
+                                <Upload className="w-4 h-4 text-slate-400" />
+                              )}
+                            </div>
+                          </label>
+                          <span className="text-[9px] font-bold text-slate-400 text-center">Transparent<br/>PNG</span>
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <input 
+                            type="text" 
+                            placeholder="Brand Name (e.g. SASSAFRAS)" 
+                            className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm font-bold uppercase" 
+                            value={item.brandName || ""}
+                            onChange={(e) => {
+                              const newItems = [...(formData.config.items || [])];
+                              newItems[idx].brandName = e.target.value;
+                              updateConfig("items", newItems);
+                            }}
+                          />
+                          <input 
+                            type="text" 
+                            placeholder="Offer Text (e.g. UPTO 80% OFF)" 
+                            className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-bold uppercase" 
+                            value={item.offerText || ""}
+                            onChange={(e) => {
+                              const newItems = [...(formData.config.items || [])];
+                              newItems[idx].offerText = e.target.value;
+                              updateConfig("items", newItems);
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <select
+                        className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm font-medium bg-white"
                         value={item.targetUrl || ""}
                         onChange={(e) => {
                           const newItems = [...(formData.config.items || [])];
                           newItems[idx].targetUrl = e.target.value;
                           updateConfig("items", newItems);
                         }}
-                      />
+                      >
+                        <option value="">-- Target URL (Optional) --</option>
+                        <optgroup label="General">
+                          <option value="/collections">All Collections (Default)</option>
+                          <option value="/products">All Products</option>
+                        </optgroup>
+                        {categories && categories.length > 0 && (
+                          <optgroup label="Shop by Category">
+                            {categories.map((c: any) => (
+                              <option key={`cat-${c._id}`} value={`/category/${c.slug}`}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {collections && collections.length > 0 && (
+                          <optgroup label="Curated Collections">
+                            {collections.map((c: any) => (
+                              <option key={`col-${c._id}`} value={`/collections/${c.slug}`}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
                     </div>
                     <button 
                       onClick={() => {

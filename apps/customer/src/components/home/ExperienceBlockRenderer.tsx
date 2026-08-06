@@ -373,17 +373,24 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               {block.title}
             </h2>
           )}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-3 sm:gap-x-4 gap-y-12 pt-12">
             {items.map((item: any, idx: number) => {
               const gradients = [
-                "from-pink-50 to-rose-100",
-                "from-amber-50 to-orange-100",
-                "from-slate-50 to-gray-100",
-                "from-indigo-50 to-purple-100",
-                "from-rose-50 to-pink-100",
-                "from-stone-50 to-stone-200"
+                "from-slate-800 to-slate-900",
+                "from-amber-700 to-amber-900",
+                "from-emerald-800 to-emerald-950",
+                "from-blue-800 to-blue-950",
+                "from-rose-800 to-rose-950",
+                "from-stone-800 to-stone-900"
               ];
+              // Use dark gradients for premium contrast, but fallback to item.backgroundColor if they have one (they don't yet)
               const bgClass = item.backgroundColor || gradients[idx % gradients.length];
+              
+              const imgUrl = item.imageUrl 
+                ? (typeof item.imageUrl === "string" 
+                    ? item.imageUrl 
+                    : (item.imageUrl?.url || `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${item.imageUrl.objectKey}`))
+                : null;
               
               return (
                 <div
@@ -391,13 +398,36 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                   onClick={() => {
                     if (item.targetUrl) router.push(item.targetUrl);
                   }}
-                  className={`relative flex flex-col items-center justify-center p-4 aspect-[4/3] rounded-3xl cursor-pointer hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 bg-gradient-to-br ${bgClass} overflow-hidden group`}
+                  className="relative pt-8 group cursor-pointer"
                 >
-                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  {item.emoji && <span className="text-3xl sm:text-4xl mb-2 drop-shadow-sm group-hover:scale-110 transition-transform duration-300">{item.emoji}</span>}
-                  <span className="text-sm font-semibold text-slate-800 text-center px-1 leading-tight z-10">
-                    {item.label}
-                  </span>
+                  <div className={`relative aspect-[4/5] rounded-3xl bg-gradient-to-br ${bgClass} flex flex-col justify-end p-4 shadow-md group-hover:shadow-xl transition-all duration-300 transform group-hover:-translate-y-1`}>
+                    
+                    {/* Pop-out Image (Transparent PNG) */}
+                    {imgUrl && (
+                      <img 
+                        src={imgUrl} 
+                        alt={item.brandName || "Vibe"}
+                        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[125%] object-contain object-bottom drop-shadow-2xl z-10 transition-transform duration-500 group-hover:scale-105" 
+                      />
+                    )}
+                    
+                    {/* Dark gradient overlay at the bottom to ensure text is readable */}
+                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent rounded-b-3xl z-10" />
+
+                    {/* Bottom Text */}
+                    <div className="relative z-20 text-center mb-1 drop-shadow-md">
+                      {item.brandName && (
+                        <h3 className="text-white font-serif font-bold text-lg sm:text-xl tracking-widest uppercase leading-tight">
+                          {item.brandName}
+                        </h3>
+                      )}
+                      {item.offerText && (
+                        <p className="text-white/90 text-[10px] sm:text-xs font-extrabold uppercase mt-1 tracking-wider">
+                          {item.offerText}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               );
             })}

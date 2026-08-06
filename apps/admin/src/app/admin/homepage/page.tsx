@@ -134,6 +134,29 @@ export default function AdminHomepageMerchandisingPage() {
     setColImageUrl("");
   };
 
+  const [showEditColModal, setShowEditColModal] = useState(false);
+  const updateCol = useMutation(api.homepageAdmin.updateCollection);
+
+  const handleUpdateCollection = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCollectionId) return;
+    try {
+      await updateCol({
+        id: selectedCollectionId as any,
+        name: colTitle,
+        description: colSubtitle || undefined,
+        coverImage: colImageUrl || undefined,
+      });
+      toast.success("Collection updated successfully!");
+      setShowEditColModal(false);
+      setColTitle("");
+      setColSubtitle("");
+      setColImageUrl("");
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   const filteredCollections = collections?.filter((c: any) => {
     if (filterTab === "all") return true;
     if (filterTab === "manual") return c.sourceMode === "MANUAL";
@@ -261,9 +284,18 @@ export default function AdminHomepageMerchandisingPage() {
             <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
               Collections ({collections?.length || 0})
             </h2>
-            <span className="text-[10px] text-amber-600 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full">
-              Click to Merchandize
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-amber-600 font-bold bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full hidden sm:inline-block">
+                Click to Merchandize
+              </span>
+              <button
+                onClick={() => setShowColModal(true)}
+                className="p-1.5 text-slate-500 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition"
+                title="Create New Collection"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2 max-h-[680px] overflow-y-auto pr-1">
@@ -334,9 +366,23 @@ export default function AdminHomepageMerchandisingPage() {
                   <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">
                     {selectedCollection.sourceMode} Collection
                   </span>
-                  <h2 className="text-lg font-serif font-bold text-slate-900 dark:text-white">
-                    {(devicePreview === "iphone" || devicePreview === "desktop") ? "Customer Preview: " : "Merchandizing: "} {selectedCollection.title}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-serif font-bold text-slate-900 dark:text-white">
+                      {(devicePreview === "iphone" || devicePreview === "desktop") ? "Customer Preview: " : "Merchandizing: "} {selectedCollection.title}
+                    </h2>
+                    <button 
+                      onClick={() => {
+                        setColTitle(selectedCollection.title || "");
+                        setColSubtitle(selectedCollection.subtitle || "");
+                        setColImageUrl(selectedCollection.coverImage || "");
+                        setShowEditColModal(true);
+                      }}
+                      className="p-1 hover:text-amber-500 text-slate-400 bg-slate-100 dark:bg-zinc-800 rounded transition cursor-pointer"
+                      title="Edit Collection"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Catalog Search & Add Bar (Only in Merchandizing mode) */}
@@ -585,6 +631,92 @@ export default function AdminHomepageMerchandisingPage() {
                 className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs"
               >
                 Create Collection
+              </button>
+            </div>
+          </form>
+        </div>
+      {/* ── Edit Collection Modal with Cloudflare R2 Upload ────────────────── */}
+      {showEditColModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <form
+            onSubmit={handleUpdateCollection}
+            className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-xl"
+          >
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Edit Collection</h3>
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-zinc-300 mb-1">Collection Title</label>
+                <input
+                  type="text"
+                  required
+                  value={colTitle}
+                  onChange={(e) => setColTitle(e.target.value)}
+                  placeholder="e.g. Feeling Cute"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-zinc-300 mb-1">Subtitle</label>
+                <input
+                  type="text"
+                  value={colSubtitle}
+                  onChange={(e) => setColSubtitle(e.target.value)}
+                  placeholder="e.g. Curated aesthetic outfits"
+                  className="w-full p-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl"
+                />
+              </div>
+
+              {/* R2 Image Upload */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-zinc-300 mb-1">
+                  Collection Cover Image (Cloudflare R2)
+                </label>
+                <div className="flex gap-2 items-center mb-1.5">
+                  <label className="flex-1 cursor-pointer flex items-center justify-center gap-1.5 p-2.5 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl transition">
+                    {uploadingImage ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                    <span>{uploadingImage ? "Uploading to R2..." : "Upload Cover Image to R2"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const url = await handleFileUploadToR2(file);
+                          if (url) setColImageUrl(url);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <input
+                  type="url"
+                  value={colImageUrl}
+                  onChange={(e) => setColImageUrl(e.target.value)}
+                  placeholder="Or paste external image URL..."
+                  className="w-full p-2.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl font-mono text-[11px]"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowEditColModal(false)}
+                className="px-4 py-2 text-slate-500 font-bold text-xs hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-xs"
+              >
+                Save Changes
               </button>
             </div>
           </form>
