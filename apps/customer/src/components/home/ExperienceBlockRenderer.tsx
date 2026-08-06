@@ -392,28 +392,28 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                   onClick={() => {
                     if (item.targetUrl) router.push(item.targetUrl);
                   }}
-                  className="relative group cursor-pointer flex flex-col items-center justify-end select-none transition-transform duration-300 transform group-hover:-translate-y-1"
+                  className="relative group cursor-pointer flex flex-col items-center justify-end select-none w-28 sm:w-32 md:w-36 flex-shrink-0 transition-transform duration-300 transform group-hover:-translate-y-1"
                 >
-                  {/* Standalone Model Cutout Image (Directly on white page, no background card box) */}
+                  {/* Standalone Model Cutout Image (Compact & Proportioned) */}
                   {imgUrl && (
-                    <div className="relative w-full aspect-[3/4] flex items-end justify-center overflow-visible">
+                    <div className="relative w-full h-44 sm:h-48 flex items-end justify-center overflow-visible">
                       <img
                         src={imgUrl}
                         alt={item.brandName || "Vibe Cutout"}
-                        className="max-h-full w-auto object-contain object-bottom drop-shadow-md transition-transform duration-300 group-hover:scale-105"
+                        className="max-h-full max-w-full object-contain object-bottom drop-shadow-md transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
                   )}
 
-                  {/* Clean Typography Overlay/Underlay directly underneath cutout */}
-                  <div className="text-center mt-2 flex flex-col items-center justify-center w-full">
+                  {/* Clean Typography Underlay */}
+                  <div className="text-center mt-1.5 flex flex-col items-center justify-center w-full">
                     {item.brandName && (
-                      <h3 className="text-slate-900 font-serif font-black text-sm sm:text-base tracking-wider uppercase leading-tight truncate w-full">
+                      <h3 className="text-slate-900 font-serif font-bold text-xs sm:text-sm tracking-wider uppercase leading-tight truncate w-full">
                         {item.brandName}
                       </h3>
                     )}
                     {item.offerText && (
-                      <span className="text-amber-600 font-sans font-extrabold text-[10px] sm:text-xs tracking-widest uppercase mt-0.5">
+                      <span className="text-amber-600 font-sans font-extrabold text-[9px] sm:text-[10px] tracking-widest uppercase mt-0.5">
                         {item.offerText}
                       </span>
                     )}
