@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { HelpCircle, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 
 export interface CustomerPriceBreakdownProps {
   subtotal: number; // in Rupees
@@ -12,6 +12,8 @@ export interface CustomerPriceBreakdownProps {
   total: number; // in Rupees (backend total - never recomputed)
   isEstimatedDelivery?: boolean; // true on Address step
   showHelpSection?: boolean; // default true
+  isLoading?: boolean;
+  isError?: boolean;
   className?: string;
 }
 
@@ -33,47 +35,67 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
   total,
   isEstimatedDelivery = false,
   showHelpSection = true,
+  isLoading = false,
+  isError = false,
   className = "",
 }) => {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const deliveryLabel = isEstimatedDelivery ? "Estimated Delivery Fee" : "Delivery Partner Fee";
 
+  if (isError) {
+    return (
+      <div className={`bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl p-4 text-xs font-semibold space-y-1.5 flex flex-col items-center justify-center text-center ${className}`}>
+        <AlertCircle className="w-5 h-5 text-rose-600" />
+        <p className="font-bold text-sm">Unable to load checkout pricing.</p>
+        <p className="text-rose-600">Please refresh and try again.</p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className={`bg-white border border-hive-border/50 rounded-2xl p-5 shadow-sm space-y-4 animate-pulse ${className}`}>
+        <div className="h-4 w-28 bg-neutral-200 rounded" />
+        <div className="space-y-3 pt-2">
+          <div className="flex justify-between items-center"><div className="h-3 w-20 bg-neutral-100 rounded" /><div className="h-3 w-16 bg-neutral-100 rounded" /></div>
+          <div className="flex justify-between items-center"><div className="h-3 w-28 bg-neutral-100 rounded" /><div className="h-3 w-12 bg-neutral-100 rounded" /></div>
+          <div className="flex justify-between items-center"><div className="h-3 w-16 bg-neutral-100 rounded" /><div className="h-3 w-14 bg-neutral-100 rounded" /></div>
+          <div className="flex justify-between items-center"><div className="h-3 w-24 bg-neutral-100 rounded" /><div className="h-3 w-12 bg-neutral-100 rounded" /></div>
+          <div className="flex justify-between items-center pt-3 border-t border-neutral-100"><div className="h-4 w-24 bg-neutral-200 rounded" /><div className="h-4 w-20 bg-neutral-200 rounded" /></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Main Price Details Card */}
       <div className="bg-white border border-hive-border/50 rounded-2xl p-5 shadow-sm space-y-3.5 text-left">
         <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/30 pb-2.5">
-          Price Details
+          PRICE DETAILS
         </h3>
 
         <div className="space-y-2.5 text-xs font-semibold text-hive-text-muted">
-          {/* Items Total */}
+          {/* 1. Items Total */}
           <div className="flex justify-between items-center">
             <span>Items Total</span>
             <span className="font-mono text-hive-dark">{formatCurrency(subtotal)}</span>
           </div>
 
-          {/* Platform Fee */}
+          {/* 2. Platform Service Fee */}
           <div className="flex justify-between items-center">
-            <span className="flex items-center gap-1">
-              Platform Fee
-              <span className="text-[10px] font-bold text-hive-gold bg-hive-gold/10 px-1.5 py-0.5 rounded">
-                ₹{platformFee}
-              </span>
-            </span>
+            <span>Platform Service Fee</span>
             <span className="font-mono text-hive-dark">{formatCurrency(platformFee)}</span>
           </div>
 
-          {/* GST (18%) */}
-          {gstAmount > 0 && (
-            <div className="flex justify-between items-center">
-              <span>GST (18%)</span>
-              <span className="font-mono text-hive-dark">{formatCurrency(gstAmount)}</span>
-            </div>
-          )}
+          {/* 3. GST (18%) */}
+          <div className="flex justify-between items-center">
+            <span>GST (18%)</span>
+            <span className="font-mono text-hive-dark">{formatCurrency(gstAmount)}</span>
+          </div>
 
-          {/* Delivery Partner Fee */}
+          {/* 4. Delivery Partner Fee */}
           <div className="flex justify-between items-center">
             <span>{deliveryLabel}</span>
             <span className="font-mono text-hive-dark">
@@ -87,15 +109,15 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
             </span>
           </div>
 
-          {/* Coupon Discount if active */}
+          {/* 5. Discount (if discount > 0) */}
           {discount > 0 && (
             <div className="flex justify-between items-center text-emerald-700 font-bold">
-              <span>Coupon Discount</span>
+              <span>Discount</span>
               <span className="font-mono">-{formatCurrency(discount)}</span>
             </div>
           )}
 
-          {/* Grand Total Divider */}
+          {/* 6. Grand Total */}
           <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-2">
             <span className="text-sm font-extrabold text-hive-dark">Grand Total</span>
             <span className="text-base font-extrabold text-hive-dark font-mono">
@@ -125,26 +147,9 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
           </button>
 
           {isHelpOpen && (
-            <ul className="space-y-1.5 text-[11px] text-neutral-600 font-medium pl-1 pt-1 border-t border-neutral-200/50 leading-relaxed animate-[fadeIn_0.2s_ease-out]">
-              <li className="flex items-start gap-1.5">
-                <span className="text-hive-gold font-bold">•</span>
-                <span>
-                  <strong>Platform Fee</strong> helps operate the Hive marketplace.
-                </span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <span className="text-hive-gold font-bold">•</span>
-                <span>
-                  <strong>GST</strong> is charged as per applicable tax regulations.
-                </span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <span className="text-hive-gold font-bold">•</span>
-                <span>
-                  <strong>Delivery Partner Fee</strong> goes to our logistics partner.
-                </span>
-              </li>
-            </ul>
+            <p className="text-[11px] text-neutral-600 font-medium pt-1.5 border-t border-neutral-200/50 leading-relaxed animate-[fadeIn_0.2s_ease-out]">
+              Your order total consists of the product price, a fixed ₹7 Platform Service Fee, applicable GST on platform services, and the delivery partner fee. These charges help us securely process your order, support local boutiques, and provide reliable delivery.
+            </p>
           )}
         </div>
       )}

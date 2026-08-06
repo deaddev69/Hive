@@ -774,6 +774,7 @@ export default function OrderReviewPage() {
               total={total}
               isEstimatedDelivery={false}
               showHelpSection={true}
+              isLoading={orderItems.length > 0 && backendPricing === undefined}
             />
 
               {/* Promo code widget */}

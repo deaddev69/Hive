@@ -750,6 +750,7 @@ export default function CheckoutAddressPage() {
               total={total}
               isEstimatedDelivery={true}
               showHelpSection={true}
+              isLoading={orderItems.length > 0 && backendPricing === undefined}
             />
             <button
               type="button"
