@@ -155,12 +155,15 @@ export const getCheckoutPricing = query({
 
           subtotalPaise += snap.priceAtPurchase * item.quantity;
           totalBasePricePaise += snap.basePriceAtPurchase * item.quantity;
-          totalPlatformMarkupPaise += snap.platformMarkupAmount * item.quantity;
-          totalPlatformFeePaise += snap.platformFeeAmount * item.quantity;
-          totalFixedPlatformFeePaise += snap.fixedPlatformFeeAtPurchase * item.quantity;
+          totalPlatformMarkupPaise += (snap.platformMarkupAmount || 0) * item.quantity;
+          totalPlatformFeePaise += (snap.platformFeeAmount || 0) * item.quantity;
+          totalFixedPlatformFeePaise += (snap.fixedPlatformFeeAtPurchase || 700) * item.quantity;
         } else {
           const pricePaise = Math.round(item.price * 100);
           subtotalPaise += pricePaise * item.quantity;
+          totalFixedPlatformFeePaise += 700 * item.quantity;
+          totalPlatformFeePaise += Math.round(pricePaise * 0.02);
+          totalPlatformMarkupPaise += Math.round(pricePaise * 0.14);
           itemsBreakdown.push({
             productId: item.productId,
             productName: "Item",
@@ -188,9 +191,14 @@ export const getCheckoutPricing = query({
         deliveryFeePaise = 0;
       }
 
-      const totalPaise = Math.max(0, subtotalPaise - discountPaise + deliveryFeePaise);
+      const fixedPlatformFeePaise = 700; // ₹7.00 Fixed Platform Service Fee
       const totalPlatformRevenuePaise = totalPlatformMarkupPaise + totalPlatformFeePaise + totalFixedPlatformFeePaise;
-      const gstPaise = Math.floor(totalPlatformRevenuePaise * 0.18);
+      const gstPaise = Math.round(totalPlatformRevenuePaise * 0.18);
+
+      const totalPaise = Math.max(
+        0,
+        subtotalPaise + fixedPlatformFeePaise + gstPaise + deliveryFeePaise - discountPaise
+      );
 
       return {
         subtotalRupees: subtotalPaise / 100,
@@ -211,19 +219,23 @@ export const getCheckoutPricing = query({
       console.error("[getCheckoutPricing] Error computing breakdown, returning fallback:", err);
       const fallbackSubtotal = args.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
       const fallbackDelivery = (args.deliveryFee !== undefined) ? args.deliveryFee : (fallbackSubtotal >= 10000 ? 0 : 99);
+      const fallbackSubtotalPaise = Math.round(fallbackSubtotal * 100);
+      const fallbackDeliveryPaise = Math.round(fallbackDelivery * 100);
+      const fallbackFeePaise = 700;
+      const fallbackTotalPaise = Math.max(0, fallbackSubtotalPaise + fallbackFeePaise + fallbackDeliveryPaise);
       return {
         subtotalRupees: fallbackSubtotal,
-        subtotalPaise: Math.round(fallbackSubtotal * 100),
+        subtotalPaise: fallbackSubtotalPaise,
         fixedPlatformFeeRupees: 7,
         fixedPlatformFeePaise: 700,
         gstRupees: 0,
         gstPaise: 0,
         deliveryFeeRupees: fallbackDelivery,
-        deliveryFeePaise: Math.round(fallbackDelivery * 100),
+        deliveryFeePaise: fallbackDeliveryPaise,
         discountRupees: 0,
         discountPaise: 0,
-        totalRupees: Math.max(0, fallbackSubtotal + fallbackDelivery),
-        totalPaise: Math.round(Math.max(0, fallbackSubtotal + fallbackDelivery) * 100),
+        totalRupees: fallbackTotalPaise / 100,
+        totalPaise: fallbackTotalPaise,
         items: [],
       };
     }
@@ -526,13 +538,30 @@ export const initCheckoutSessionInternal = internalMutation({
       throw new ConvexError(`Delivery fee validation failed. Expected: ₹${expectedDeliveryFee}, Got: ₹${args.deliveryFee}`);
     }
 
-    // Verify total calculation
-    const expectedTotal = Math.max(0, args.subtotal - expectedDiscount + expectedDeliveryFee);
+    // Calculate totalPlatformRevenue to derive GST
+    let totalPlatformMarkupPaise = 0;
+    let totalPlatformFeePaise = 0;
+    let totalFixedPlatformFeePaise = 0;
+
+    for (const resolved of resolvedItems) {
+      const snap = resolved.financialSnapshot || {};
+      const qty = resolved.item.quantity || 1;
+      totalPlatformMarkupPaise += (snap.platformMarkupAmount || 0) * qty;
+      totalPlatformFeePaise += (snap.platformFeeAmount || 0) * qty;
+      totalFixedPlatformFeePaise += (snap.fixedPlatformFeeAtPurchase || 700) * qty;
+    }
+
+    const totalPlatformRevenuePaise = totalPlatformMarkupPaise + totalPlatformFeePaise + totalFixedPlatformFeePaise;
+    const expectedGstPaise = Math.round(totalPlatformRevenuePaise * 0.18);
+    const expectedGstRupees = expectedGstPaise / 100;
+
+    // Verify total calculation: Subtotal + ₹7 Platform Fee + GST + Delivery Fee - Discount
+    const expectedTotal = Math.max(0, args.subtotal + 7 + expectedGstRupees - expectedDiscount + expectedDeliveryFee);
     const expectedTotalPaise = Math.round(expectedTotal * 100);
     const clientTotalPaise = Math.round(args.total * 100);
     
     if (Math.abs(expectedTotalPaise - clientTotalPaise) > 100) {
-      throw new ConvexError(`Order total mismatch. Expected: ₹${expectedTotal}, Got: ₹${args.total}`);
+      throw new ConvexError(`Order total mismatch. Expected: ₹${expectedTotal.toFixed(2)}, Got: ₹${args.total.toFixed(2)}`);
     }
 
     const now = Date.now();
