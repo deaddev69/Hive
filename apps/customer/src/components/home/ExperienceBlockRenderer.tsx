@@ -378,7 +378,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           )}
 
           {/* Pure Cutout Layout: Standalone Cutouts in Flex Container */}
-          <div className="flex flex-wrap justify-start items-end gap-5 sm:gap-8 pt-1 pb-1">
+          <div className="flex flex-wrap justify-start items-start gap-4 sm:gap-6 mt-1 mb-1">
             {items.map((item: any, idx: number) => {
               const imgUrl = item.imageUrl
                 ? typeof item.imageUrl === "string"
@@ -392,15 +392,15 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                   onClick={() => {
                     if (item.targetUrl) router.push(item.targetUrl);
                   }}
-                  className="relative group cursor-pointer flex flex-col items-center justify-end select-none w-28 sm:w-32 md:w-36 flex-shrink-0 transition-transform duration-300 transform group-hover:-translate-y-1"
+                  className="relative group cursor-pointer flex flex-col items-center justify-start select-none w-28 sm:w-32 md:w-36 flex-shrink-0 transition-transform duration-300 transform group-hover:-translate-y-1"
                 >
-                  {/* Standalone Model Cutout Image (Compact & Proportioned) */}
+                  {/* Standalone Model Cutout Image (Dynamic Height, Zero White Space Gap) */}
                   {imgUrl && (
-                    <div className="relative w-full h-44 sm:h-48 flex items-end justify-center overflow-visible">
+                    <div className="relative w-full h-auto flex items-start justify-center overflow-visible">
                       <img
                         src={imgUrl}
                         alt={item.brandName || "Vibe Cutout"}
-                        className="max-h-full max-w-full object-contain object-bottom drop-shadow-md transition-transform duration-300 group-hover:scale-105"
+                        className="w-full h-auto max-h-56 object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
                   )}
