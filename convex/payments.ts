@@ -1067,6 +1067,7 @@ export const updateCheckoutSessionWithRazorpayOrderId = internalMutation({
     checkoutSessionId: v.id("checkoutSessions"),
     paymentId: v.id("payments"),
     razorpayOrderId: v.string(),
+    razorpayTransferId: v.optional(v.string()),
     status: v.optional(v.union(v.literal("created"), v.literal("failed"))),
   },
   handler: async (ctx, args) => {
@@ -1075,11 +1076,15 @@ export const updateCheckoutSessionWithRazorpayOrderId = internalMutation({
       razorpayOrderId: args.razorpayOrderId,
     });
 
-    await ctx.db.patch(args.paymentId, {
+    const paymentPatch: any = {
       razorpayOrderId: args.razorpayOrderId,
       status: args.status || "created",
       updatedAt: now,
-    });
+    };
+    if (args.razorpayTransferId) {
+      paymentPatch.razorpayTransferId = args.razorpayTransferId;
+    }
+    await ctx.db.patch(args.paymentId, paymentPatch);
 
     await ctx.db.insert("paymentEvents", {
       source: "razorpay",
@@ -1199,17 +1204,20 @@ export const createCheckoutSession = action({
 
       const orderData = await response.json();
       const razorpayOrderId = orderData.id;
+      const initialTransferId = orderData.transfers?.[0]?.id || undefined;
 
       await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId as any, {
         checkoutSessionId: initResult.checkoutSessionId,
         paymentId: initResult.paymentId,
         razorpayOrderId,
+        razorpayTransferId: initialTransferId,
         status: "created",
       });
 
       return {
         checkoutSessionId: initResult.checkoutSessionId,
         razorpayOrderId,
+        razorpayTransferId: initialTransferId,
         paymentId: initResult.paymentId,
       };
     } catch (err: any) {
