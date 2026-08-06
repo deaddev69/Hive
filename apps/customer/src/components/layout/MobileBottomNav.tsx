@@ -59,7 +59,7 @@ export const MobileBottomNav: React.FC = () => {
             href={item.href}
             className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-center select-none relative ${
               isActive
-                ? "text-hive-gold font-bold"
+                ? "text-slate-900 font-extrabold"
                 : "text-hive-text-muted dark:text-neutral-400 hover:text-hive-dark"
             }`}
           >

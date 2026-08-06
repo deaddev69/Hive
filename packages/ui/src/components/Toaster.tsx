@@ -28,20 +28,17 @@ export function Toaster() {
   };
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2.5 w-full max-w-md px-4 pointer-events-none font-sans">
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2.5 w-full max-w-sm px-4 pointer-events-none font-sans">
       {toasts.map((t) => {
         let Icon = Sparkles;
-        let iconContainerClass = "bg-[#E8890C]/15 text-[#E8890C] ring-1 ring-[#E8890C]/40 shadow-[0_0_12px_rgba(232,137,12,0.3)]";
-        let cardBorderClass = "border-[#d4af37]/35 shadow-[0_20px_45px_-10px_rgba(26,18,0,0.85),0_0_20px_rgba(212,175,55,0.15)]";
+        let iconContainerClass = "text-slate-400";
         
         if (t.type === "success") {
           Icon = CheckCircle2;
-          iconContainerClass = "bg-[#d4af37]/15 text-[#d4af37] ring-1 ring-[#d4af37]/45 shadow-[0_0_12px_rgba(212,175,55,0.3)]";
-          cardBorderClass = "border-[#d4af37]/40 shadow-[0_20px_45px_-10px_rgba(26,18,0,0.85),0_0_22px_rgba(212,175,55,0.18)]";
+          iconContainerClass = "text-emerald-500";
         } else if (t.type === "error") {
           Icon = AlertCircle;
-          iconContainerClass = "bg-rose-500/15 text-rose-400 ring-1 ring-rose-500/35 shadow-[0_0_12px_rgba(251,113,133,0.3)]";
-          cardBorderClass = "border-rose-500/30 shadow-[0_20px_45px_-10px_rgba(26,18,0,0.85),0_0_20px_rgba(244,63,94,0.15)]";
+          iconContainerClass = "text-rose-500";
         }
 
         const isMultiLine = Boolean(t.description);
@@ -50,27 +47,26 @@ export function Toaster() {
           <div
             key={t.id}
             className={cn(
-              "flex items-start gap-3.5 w-full p-4 bg-[#1A1200]/95 backdrop-blur-xl border pointer-events-auto transition-all duration-300 ease-out animate-in fade-in zoom-in-95 slide-in-from-top-4",
-              isMultiLine ? "rounded-2xl" : "rounded-full py-2.5 px-4 items-center",
-              cardBorderClass
+              "flex items-start gap-3 w-full p-3.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-slate-800 pointer-events-auto transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] animate-in fade-in zoom-in-95 slide-in-from-top-6 shadow-[0_8px_30px_rgb(0,0,0,0.08)]",
+              isMultiLine ? "rounded-2xl" : "rounded-full items-center py-2.5 px-4"
             )}
           >
-            <div className={cn("p-1.5 rounded-full flex-shrink-0 mt-0.5", iconContainerClass, !isMultiLine && "mt-0")}>
+            <div className={cn("flex-shrink-0 mt-0.5", iconContainerClass, !isMultiLine && "mt-0")}>
               <Icon className="w-4 h-4" strokeWidth={2.5} />
             </div>
             <div className="flex-1 min-w-0 pr-1">
-              <h4 className="text-[13.5px] font-bold text-white leading-snug tracking-wide">
+              <h4 className="text-[13px] font-bold text-slate-900 dark:text-white leading-snug tracking-tight">
                 {t.title}
               </h4>
               {t.description && (
-                <p className="text-[12px] text-[#F0E4C8]/90 font-normal leading-relaxed mt-0.5">
+                <p className="text-[12px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed mt-0.5">
                   {t.description}
                 </p>
               )}
             </div>
             <button
               onClick={() => removeToast(t.id)}
-              className="text-[#F0E4C8]/60 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10 active:scale-90 flex-shrink-0"
+              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-90 flex-shrink-0"
               aria-label="Close notification"
             >
               <X className="w-3.5 h-3.5" strokeWidth={2.5} />

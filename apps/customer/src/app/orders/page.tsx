@@ -39,6 +39,7 @@ export default function MyOrdersPage() {
   const [mounted, setMounted] = useState(false);
   const { token } = useSessionStore();
   const [reviewingOrder, setReviewingOrder] = useState<any | null>(null);
+  const [activeTab, setActiveTab] = useState<"active" | "completed" | "cancelled">("active");
 
   const convexOrders = useQuery(api.orders.listMyOrders, { token: token || undefined });
 
@@ -58,6 +59,15 @@ export default function MyOrdersPage() {
   ).length;
 
   const deliveredOrdersCount = sortedOrders.filter((o) => o.status === "delivered").length;
+  
+  const cancelledOrdersCount = sortedOrders.filter((o) => ["cancelled", "refunded"].includes(o.status)).length;
+
+  const filteredOrders = sortedOrders.filter(o => {
+    if (activeTab === "active") return ["pending_payment", "pending_confirmation", "confirmed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery"].includes(o.status);
+    if (activeTab === "completed") return o.status === "delivered";
+    if (activeTab === "cancelled") return ["cancelled", "refunded"].includes(o.status);
+    return false;
+  });
 
   // Map every Convex status value → one of the 6 UI badge states.
   const mapStatus = (s: string): string => {
@@ -107,32 +117,41 @@ export default function MyOrdersPage() {
           </div>
         </div>
 
-        {/* Editorial Stats Row */}
+        {/* Premium Tab Bar */}
         {sortedOrders.length > 0 && (
-          <div className="flex flex-wrap gap-x-8 gap-y-3 py-2 border-b border-[#1c1917]/[0.08] -mt-2">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-serif font-light text-[#1C1917]">{sortedOrders.length}</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Total Orders</span>
-            </div>
-            <span className="text-stone-300 hidden sm:inline">•</span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-serif font-light text-[#1C1917]">{activeOrdersCount}</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Active</span>
-            </div>
-            <span className="text-stone-300 hidden sm:inline">•</span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-serif font-light text-[#1C1917]">{deliveredOrdersCount}</span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Delivered</span>
-            </div>
+          <div className="flex gap-8 border-b border-stone-200 -mt-2 relative">
+            {[
+              { id: "active", label: "Active", count: activeOrdersCount },
+              { id: "completed", label: "Completed", count: deliveredOrdersCount },
+              { id: "cancelled", label: "Cancelled", count: cancelledOrdersCount },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`relative pb-4 pt-2 text-sm font-bold uppercase tracking-wider transition-colors duration-300 ${
+                  activeTab === tab.id ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                {tab.label}
+                <span className="ml-2 text-[10px] font-black bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded-full">
+                  {tab.count}
+                </span>
+                {activeTab === tab.id && (
+                  <span className="absolute bottom-0 left-0 w-full h-[2px] bg-slate-900 rounded-t-full transition-all duration-300 shadow-[0_-2px_10px_rgba(0,0,0,0.2)]" />
+                )}
+              </button>
+            ))}
           </div>
         )}
 
         {/* Order List / Empty State */}
-        {sortedOrders.length === 0 ? (
-          <EmptyOrdersState onRedirect={() => router.push("/products")} />
+        {filteredOrders.length === 0 ? (
+          <div className="py-12 text-center text-stone-500 font-medium">
+            No {activeTab} orders found.
+          </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {sortedOrders.map((order) => (
+            {filteredOrders.map((order) => (
               <OrderCard key={order._id} order={order} mapStatus={mapStatus} onOpenReview={(ord) => setReviewingOrder(ord)} />
             ))}
           </div>
@@ -335,22 +354,26 @@ function OrderCard({
 // Component: OrderStatusBadge
 // ─────────────────────────────────────────────────────────────────────────────
 function OrderStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    placed: { label: "Placed", className: "text-amber-700 bg-amber-50/40 border-amber-200/30" },
-    confirmed: { label: "Confirmed", className: "text-[#4D7C0F] bg-green-50/40 border-green-200/30" },
-    picked_up: { label: "Picked Up", className: "text-[#4D7C0F] bg-green-50/40 border-green-200/30" },
-    out_for_delivery: { label: "Out For Delivery", className: "text-[#D97706] bg-amber-50/40 border-amber-200/30" },
-    delivered: { label: "Delivered", className: "text-[#4D7C0F] bg-green-50/40 border-green-200/30" },
-    cancelled: { label: "Cancelled", className: "text-red-700 bg-red-50/40 border-red-200/30" },
+  const map: Record<string, { label: string; dot: string; text: string }> = {
+    placed: { label: "Placed", dot: "bg-amber-500", text: "text-amber-700" },
+    confirmed: { label: "Confirmed", dot: "bg-green-500", text: "text-green-700" },
+    picked_up: { label: "Picked Up", dot: "bg-green-500", text: "text-green-700" },
+    out_for_delivery: { label: "Out For Delivery", dot: "bg-amber-500", text: "text-amber-700" },
+    delivered: { label: "Delivered", dot: "bg-green-500", text: "text-green-700" },
+    cancelled: { label: "Cancelled", dot: "bg-stone-400", text: "text-stone-500" },
   };
-  const { label, className } = map[status] ?? {
+  const { label, dot, text } = map[status] ?? {
     label: "Processing",
-    className: "text-[#78716C] bg-stone-50 border-stone-200/50",
+    dot: "bg-stone-400",
+    text: "text-stone-500",
   };
   return (
-    <span className={`text-[9px] font-bold border px-2 py-0.5 rounded uppercase tracking-wider inline-block ${className}`}>
-      {label}
-    </span>
+    <div className="flex items-center gap-1.5 px-2 py-0.5 border border-stone-200 rounded-full bg-white/50 backdrop-blur-sm shadow-sm">
+      <span className={`w-1.5 h-1.5 rounded-full ${dot} shadow-[0_0_4px_rgba(0,0,0,0.1)]`} />
+      <span className={`text-[9px] font-bold uppercase tracking-widest ${text}`}>
+        {label}
+      </span>
+    </div>
   );
 }
 

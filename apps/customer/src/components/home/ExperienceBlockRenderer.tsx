@@ -240,6 +240,44 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
 
     const isCarousel = block.renderer === "productCarousel";
     const isTwoGrid = block.renderer === "twoProductGrid";
+    const isPremiumGrid = block.renderer === "premiumGrid";
+
+    if (isPremiumGrid) {
+      return (
+        <section className="w-full bg-[#111111] text-white py-12 md:py-16">
+          <div className="max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col items-center gap-10">
+            <div className="flex flex-col items-center text-center max-w-2xl gap-3">
+              <span className="text-[10px] tracking-[0.25em] text-white/50 uppercase font-bold">Premium Segment</span>
+              <h2 className="text-3xl md:text-5xl font-serif font-light tracking-tight">
+                {block.title || block.data.collection?.name}
+              </h2>
+              {block.subtitle && <p className="text-sm md:text-base text-white/60 font-light mt-2">{block.subtitle}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10 sm:gap-x-8 sm:gap-y-16 w-full">
+              {blockProducts.slice(0, block.config?.maxProducts || 6).map((product: any) => (
+                <div key={product.id} className="premium-card-wrapper scale-100 transition-transform duration-700 hover:scale-[1.02]">
+                  <ProductCard product={product} hidePrice={true} />
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-4">
+              <button 
+                onClick={() => {
+                  if(block.data.collection?.slug) {
+                    router.push(`/collections/${block.data.collection.slug}`);
+                  }
+                }}
+                className="px-8 py-3 bg-white text-black text-xs uppercase tracking-widest font-bold hover:bg-white/90 transition-colors"
+              >
+                Discover Collection
+              </button>
+            </div>
+          </div>
+        </section>
+      );
+    }
 
     return (
       <section className={`w-full bg-white py-6 border-b border-hive-border/20 ${block.config?.theme === "dark" ? "bg-slate-900 text-white" : ""}`}>
@@ -281,8 +319,8 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     );
   }
 
-  // 4. RECENTLY VIEWED / RECOMMENDED
-  if (block.blockType === "recentlyViewed" || block.blockType === "recommended") {
+  // 4. RECENTLY VIEWED / RECOMMENDED / NEW ARRIVALS
+  if (block.blockType === "recentlyViewed" || block.blockType === "recommended" || block.blockType === "newArrivals") {
     const mostLovedProducts = (block.data.products || [])
       .filter((p: any) => p.active !== false && p.stock !== 0)
       .map(mapDbProduct);
@@ -290,8 +328,9 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     if (mostLovedProducts.length === 0) return null;
     
     const isRecommended = block.blockType === "recommended";
-    const bgClass = isRecommended ? "bg-white" : "bg-[#FAF6F0]";
-    const tagText = isRecommended ? "CURATED FOR YOU" : "CUSTOMER FAVORITES";
+    const isNewArrivals = block.blockType === "newArrivals";
+    const bgClass = isNewArrivals ? "bg-white" : (isRecommended ? "bg-white" : "bg-[#FAF6F0]");
+    const tagText = isNewArrivals ? "FRESH ARRIVALS" : (isRecommended ? "CURATED FOR YOU" : "CUSTOMER FAVORITES");
     
     return (
       <section className={`w-full ${bgClass} py-6 border-b border-hive-border/20`}>
@@ -301,7 +340,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               {tagText}
             </span>
             <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
-              {block.title || (isRecommended ? "Recommended" : "Most Loved")}
+              {block.title || (isNewArrivals ? "New on Hive" : (isRecommended ? "Recommended" : "Most Loved"))}
             </h2>
           </div>
           <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">

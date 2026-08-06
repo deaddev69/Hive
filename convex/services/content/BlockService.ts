@@ -91,6 +91,13 @@ export class BlockService {
           .order("desc")
           .take(12);
         requiredProductIds.push(...recommended.map((p: any) => p._id.toString()));
+      } else if (block.blockType === "newArrivals") {
+        const newArrivals = await ctx.db
+          .query("products")
+          .withIndex("by_active", (q: any) => q.eq("active", true))
+          .order("desc")
+          .take(block.config?.maxProducts || 12);
+        requiredProductIds.push(...newArrivals.map((p: any) => p._id.toString()));
       }
     }
 
@@ -148,6 +155,13 @@ export class BlockService {
           .slice(0, block.config?.maxProducts || 12);
           
         data.products = recommendedProducts;
+      } else if (block.blockType === "newArrivals") {
+        const products = Array.from(resolvedProductsMap.values());
+        const newArrivalProducts = products
+          .sort((a, b) => ((b as any).createdAt || 0) - ((a as any).createdAt || 0))
+          .slice(0, block.config?.maxProducts || 12);
+          
+        data.products = newArrivalProducts;
       } else if (block.blockType === "hero") {
         // Hero block always pulls the global carousel banners from the banners table
         const activeBanners = await ctx.db

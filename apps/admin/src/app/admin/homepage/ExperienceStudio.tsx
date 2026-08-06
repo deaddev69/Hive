@@ -119,6 +119,24 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     description: "Rounded cards with emojis and soft gradients for mood-based navigation.",
     defaultConfig: { title: "How are you dressing today?", renderer: "vibeGrid", config: { items: [] } },
     fields: ["title", "vibeItems"]
+  },
+  {
+    id: "newArrivals",
+    name: "New Arrivals (Auto)",
+    category: "Commerce",
+    icon: Sparkles,
+    description: "Automatically pulls the newest active products from the catalog.",
+    defaultConfig: { title: "Fresh on Hive", renderer: "productCarousel", config: { maxProducts: 12 } },
+    fields: ["title", "maxProducts"]
+  },
+  {
+    id: "collection",
+    name: "Premium Curation",
+    category: "Collections",
+    icon: Star,
+    description: "High-fashion Zudio/Zara style layout that hides prices to build exclusivity.",
+    defaultConfig: { title: "The Premium Edit", renderer: "premiumGrid", config: { maxProducts: 6 } },
+    fields: ["title", "subtitle", "collectionId", "maxProducts"]
   }
 ];
 

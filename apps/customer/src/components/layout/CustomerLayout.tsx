@@ -34,7 +34,7 @@ export const CustomerLayout: React.FC<{ children: React.ReactNode }> = ({ childr
       )}
       
       {/* Root Layout Main */}
-      <main className="flex-grow w-full flex flex-col">{children}</main>
+      <main className="flex-grow w-full flex flex-col pb-20 md:pb-0">{children}</main>
       
       {/* Hide footer completely on mobile views across the entire site */}
       <div className="hidden md:block">
