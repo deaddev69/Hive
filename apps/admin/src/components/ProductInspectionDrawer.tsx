@@ -84,17 +84,38 @@ export function ProductInspectionDrawer({
 
   const activeImage = images[0] || "";
 
+  const platformSettings = useQuery(api.adminSettings.getPlatformSettings);
+
   // Markup price calculation helper for the PDP preview
   const previewCustomerPrices = useMemo(() => {
-    // Mimic the getPlatformMarkupRate formula: 15% default markup rate
-    const markupRate = 0.15;
-    
-    const rawCustomerPrice = basePrice * (1 + markupRate);
+    if (!basePrice || basePrice <= 0) return { price: 0, discountPrice: undefined, discountPercent: 0 };
+    const settings = platformSettings || { markupRate: 0.15, platformFeeRate: 0.02, markupType: "tiered" };
+
+    let rate = settings.markupRate;
+    if (settings.markupType === "tiered" && Array.isArray(settings.markupTiers)) {
+      const tier = settings.markupTiers.find((t: any) => {
+        const minMatch = basePrice >= t.min_price;
+        const maxMatch = t.max_price === null || t.max_price === undefined || basePrice <= t.max_price;
+        return minMatch && maxMatch;
+      });
+      if (tier) rate = tier.rate / 100;
+    }
+
+    const rawCustomerPrice = basePrice * (1 + rate);
     const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
-    
+
     let customerDiscountPrice = undefined;
     if (baseDiscountPrice && baseDiscountPrice > 0) {
-      const rawCustomerDiscountPrice = baseDiscountPrice * (1 + markupRate);
+      let discRate = settings.markupRate;
+      if (settings.markupType === "tiered" && Array.isArray(settings.markupTiers)) {
+        const tier = settings.markupTiers.find((t: any) => {
+          const minMatch = baseDiscountPrice >= t.min_price;
+          const maxMatch = t.max_price === null || t.max_price === undefined || baseDiscountPrice <= t.max_price;
+          return minMatch && maxMatch;
+        });
+        if (tier) discRate = tier.rate / 100;
+      }
+      const rawCustomerDiscountPrice = baseDiscountPrice * (1 + discRate);
       customerDiscountPrice = Math.ceil(rawCustomerDiscountPrice / 10) * 10 - 1;
     }
 
@@ -107,7 +128,7 @@ export function ProductInspectionDrawer({
       discountPrice: customerDiscountPrice,
       discountPercent
     };
-  }, [basePrice, baseDiscountPrice]);
+  }, [basePrice, baseDiscountPrice, platformSettings]);
 
   // Fit recommendations config
   const fitRecommendationConfig: Record<string, { label: string; advice: string }> = {

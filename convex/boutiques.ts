@@ -224,6 +224,7 @@ export const createBoutique = mutation({
     staffEmail2:      v.optional(v.string()),
     staffPhone1:      v.optional(v.string()),
     staffPhone2:      v.optional(v.string()),
+    razorpayAccountId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const adminUser = await requireRole(ctx, "admin");
@@ -231,6 +232,8 @@ export const createBoutique = mutation({
     try {
       const normalizedPhone = normalizePhoneNumber(args.phone);
       validateBoutiqueDetails({ ...args, phone: normalizedPhone });
+
+      await validateAndCheckDuplicateRazorpayAccountId(ctx, args.razorpayAccountId);
 
       const rawToken = generateInviteToken();
       const hashed = await hashInviteToken(rawToken);
@@ -265,6 +268,7 @@ export const createBoutique = mutation({
         area:             args.area,
         searchKeywords:    args.searchKeywords,
         serviceType:       args.serviceType,
+        razorpayAccountId: args.razorpayAccountId?.trim() || undefined,
 
         ownerEmail:       emailNormalized,
         ownerUserId:      undefined, // Unclaimed until invite is claimed
@@ -421,6 +425,8 @@ export const updateBoutique = mutation({
 
     const normalizedPhone = normalizePhoneNumber(args.phone);
     validateBoutiqueDetails({ ...args, phone: normalizedPhone });
+
+    await validateAndCheckDuplicateRazorpayAccountId(ctx, args.razorpayAccountId, args.id);
 
     const normalizedNotificationPhone = args.notificationPhone
       ? normalizePhoneNumber(args.notificationPhone)
@@ -2455,6 +2461,25 @@ async function checkForDuplicateBoutique(ctx: any, email: string, phone: string)
     if (b.status !== "REJECTED" && b.status !== "SUSPENDED") {
       throw new ConvexError(`A boutique with phone ${phone} already exists (Status: ${b.status}).`);
     }
+  }
+}
+
+async function validateAndCheckDuplicateRazorpayAccountId(ctx: any, razorpayAccountId?: string, excludeBoutiqueId?: string) {
+  if (!razorpayAccountId) return;
+  const trimmed = razorpayAccountId.trim();
+  if (!trimmed) return;
+
+  if (!trimmed.startsWith("acc_")) {
+    throw new ConvexError(`Razorpay Linked Account ID must start with "acc_". Received: "${trimmed}"`);
+  }
+
+  const existing = await ctx.db
+    .query("boutiques")
+    .withIndex("by_razorpayAccountId", (q: any) => q.eq("razorpayAccountId", trimmed))
+    .first();
+
+  if (existing && existing._id !== excludeBoutiqueId) {
+    throw new ConvexError(`The Razorpay Account ID "${trimmed}" is already assigned to boutique "${existing.boutiqueName}".`);
   }
 }
 

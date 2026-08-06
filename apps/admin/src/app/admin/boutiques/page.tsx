@@ -42,6 +42,7 @@ export default function AdminBoutiquesPage() {
   const [staffEmail2, setStaffEmail2] = useState("");
   const [staffPhone1, setStaffPhone1] = useState("");
   const [staffPhone2, setStaffPhone2] = useState("");
+  const [razorpayAccountId, setRazorpayAccountId] = useState("");
   
   // Coordinates (latitude and longitude) are mandatory
   const [latitude, setLatitude] = useState<number>(9.9816);
@@ -69,6 +70,7 @@ export default function AdminBoutiquesPage() {
     setStaffEmail2("");
     setStaffPhone1("");
     setStaffPhone2("");
+    setRazorpayAccountId("");
     setCity("Ernakulam");
     setState("Kerala");
     setPincode("682011");
@@ -110,6 +112,12 @@ export default function AdminBoutiquesPage() {
       return;
     }
 
+    const trimmedAccountId = razorpayAccountId.trim();
+    if (trimmedAccountId && !trimmedAccountId.startsWith("acc_")) {
+      alert("Razorpay Linked Account ID must start with \"acc_\". Example: acc_TLcH6m3i3GBI2n");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const result = await createBoutique({
@@ -130,6 +138,7 @@ export default function AdminBoutiquesPage() {
         staffEmail2: staffEmail2 || undefined,
         staffPhone1: staffPhone1 || undefined,
         staffPhone2: staffPhone2 || undefined,
+        razorpayAccountId: trimmedAccountId || undefined,
       });
       const claimLink = `https://seller.hivenow.in/invite/${result.rawToken}`;
       prompt(
@@ -321,6 +330,27 @@ export default function AdminBoutiquesPage() {
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10"
               />
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Razorpay Route Account ID (Optional)</label>
+            <input
+              type="text"
+              placeholder="acc_xxxxxxxxxxxxxx"
+              value={razorpayAccountId}
+              onChange={(e) => setRazorpayAccountId(e.target.value)}
+              className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-hive-cream/10 font-mono text-slate-800 ${
+                razorpayAccountId.trim() && !razorpayAccountId.trim().startsWith("acc_")
+                  ? "border-red-400"
+                  : "border-hive-border/60"
+              }`}
+            />
+            <p className="text-[11px] text-hive-text-muted leading-snug">
+              Paste the Razorpay Route Linked Account ID generated manually from the Razorpay Dashboard.
+            </p>
+            {razorpayAccountId.trim() && !razorpayAccountId.trim().startsWith("acc_") && (
+              <p className="text-[11px] text-red-500 font-semibold">Must start with &quot;acc_&quot;</p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">

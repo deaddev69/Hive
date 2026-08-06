@@ -1498,9 +1498,9 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   }
                 }
                 
-                const custPrice = Math.ceil((baseVal * (1 + rate)) / 10) * 10 - 1;
-                const netPayout = baseVal * 0.98;
-                const feeAmount = baseVal * 0.02;
+                const feeRate = platformSettings.platformFeeRate ?? 0.02;
+                const feeAmount = baseVal * feeRate;
+                const netPayout = baseVal - feeAmount;
                 return (
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-xs font-bold text-slate-600 flex flex-col gap-2">
                     <div className="flex justify-between flex-wrap gap-2">
@@ -1512,7 +1512,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                       <span className="font-mono">₹{baseVal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between flex-wrap text-[11px] text-slate-500 font-normal">
-                      <span>Platform Fee (2%):</span>
+                      <span>Platform Fee ({(feeRate * 100).toFixed(0)}%):</span>
                       <span className="font-mono">₹{feeAmount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between flex-wrap border-t border-slate-100 pt-2 text-[#020617] font-bold">

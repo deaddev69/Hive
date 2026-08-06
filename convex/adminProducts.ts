@@ -7,7 +7,7 @@ import { requireRole } from "./lib/auth";
 import { updateBoutiqueProductCount } from "./boutiques";
 import { getPublicUrl } from "./media/api";
 import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
-import { getPlatformMarkupRate } from "./pricingHelpers";
+import { getPlatformSettings, calculateProductPricing } from "./pricingService";
 import { triggerNotification } from "./lib/notifications";
 
 
@@ -755,41 +755,16 @@ export const updateProductDetailsAdmin = mutation({
     }
 
     // Compute Pricing markup
-    let basePrice = args.price !== undefined ? args.price : product.basePrice;
+    let basePrice = args.price !== undefined ? args.price : (product.basePrice ?? product.price ?? 0);
     let customerPrice = product.price;
     let baseDiscountPrice = args.discountPrice !== undefined ? args.discountPrice : product.baseDiscountPrice;
     let customerDiscountPrice = product.discountPrice;
 
-    if (args.price !== undefined) {
-      const settings = await ctx.db.query("platformSettings").first() || {
-        markupRate: 0.15,
-        platformFeeRate: 0.02,
-      };
-      const markupRate = getPlatformMarkupRate(args.price, settings);
-      const rawCustomerPrice = args.price * (1 + markupRate);
-      customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
-    }
-
-    if (args.discountPrice !== undefined) {
-      if (args.discountPrice) {
-        const settings = await ctx.db.query("platformSettings").first() || {
-          markupRate: 0.15,
-          platformFeeRate: 0.02,
-        };
-        const markupRate = getPlatformMarkupRate(args.discountPrice, settings);
-        const rawCustomerDiscountPrice = args.discountPrice * (1 + markupRate);
-        customerDiscountPrice = Math.ceil(rawCustomerDiscountPrice / 10) * 10 - 1;
-      } else {
-        customerDiscountPrice = undefined;
-      }
-    } else if (args.price !== undefined && baseDiscountPrice) {
-      const settings = await ctx.db.query("platformSettings").first() || {
-        markupRate: 0.15,
-        platformFeeRate: 0.02,
-      };
-      const markupRate = getPlatformMarkupRate(baseDiscountPrice, settings);
-      const rawCustomerDiscountPrice = baseDiscountPrice * (1 + markupRate);
-      customerDiscountPrice = Math.ceil(rawCustomerDiscountPrice / 10) * 10 - 1;
+    if (args.price !== undefined || args.discountPrice !== undefined) {
+      const settings = await getPlatformSettings(ctx);
+      const pricing = calculateProductPricing(basePrice, baseDiscountPrice, settings);
+      customerPrice = pricing.customerPrice;
+      customerDiscountPrice = pricing.customerDiscountPrice;
     }
 
     // Prepare updates

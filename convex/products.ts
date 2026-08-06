@@ -13,7 +13,7 @@ import { updateBoutiqueProductCount } from "./boutiques";
 import { normalizeEmail } from "./users";
 import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
 import { internal } from "./_generated/api";
-import { getPlatformMarkupRate } from "./pricingHelpers";
+import { getPlatformMarkupRate, getPlatformSettings, calculateProductPricing } from "./pricingService";
 import { checkRateLimit } from "./lib/rateLimit";
 import { getPublicUrl } from "./media/api";
 import { haversineKm } from "./lib/serviceability";
@@ -458,18 +458,10 @@ export const createProduct = mutation({
       }
     }
 
-    const settings = await ctx.db.query("platformSettings").first() || {
-      markupRate: 0.15,
-      platformFeeRate: 0.02,
-    };
-    const markupRate = getPlatformMarkupRate(args.price, settings);
-    
-    const rawCustomerPrice = args.price * (1 + markupRate);
-    const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
-    
-    const customerDiscountPrice = args.discountPrice 
-      ? Math.ceil((args.discountPrice * (1 + markupRate)) / 10) * 10 - 1 
-      : undefined;
+    const settings = await getPlatformSettings(ctx);
+    const pricing = calculateProductPricing(args.price, args.discountPrice, settings);
+    const customerPrice = pricing.customerPrice;
+    const customerDiscountPrice = pricing.customerDiscountPrice;
 
     const productId = await ctx.db.insert("products", {
       boutiqueId: boutique._id,
@@ -709,18 +701,10 @@ export const updateProduct = mutation({
       ? (merchantTier === "Bronze" ? "pending" : "approved")
       : undefined;
 
-    const settings = await ctx.db.query("platformSettings").first() || {
-      markupRate: 0.15,
-      platformFeeRate: 0.02,
-    };
-    const markupRate = getPlatformMarkupRate(args.price, settings);
-    
-    const rawCustomerPrice = args.price * (1 + markupRate);
-    const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
-    
-    const customerDiscountPrice = args.discountPrice 
-      ? Math.ceil((args.discountPrice * (1 + markupRate)) / 10) * 10 - 1 
-      : undefined;
+    const settings = await getPlatformSettings(ctx);
+    const pricing = calculateProductPricing(args.price, args.discountPrice, settings);
+    const customerPrice = pricing.customerPrice;
+    const customerDiscountPrice = pricing.customerDiscountPrice;
 
     // Resolve categoryId if passed as slug or name string
     let resolvedCategoryId: any = args.categoryId;

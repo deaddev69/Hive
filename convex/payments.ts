@@ -13,7 +13,7 @@ import { calculateDeliveryFeeRupees } from "./lib/deliveryPricing";
 import { anyApi } from "convex/server";
 import { parseMoney } from "./lib/money";
 import { calculateDeliveryQuoteAction } from "./routing";
-import { calculateItemFinancials, calculateBoutiquePayout } from "./pricingHelpers";
+import { calculateItemFinancials, calculateBoutiquePayout, calculateStoreSettlement } from "./pricingService";
 
 import { checkRateLimit } from "./lib/rateLimit";
 import { triggerNotification } from "./lib/notifications";
@@ -440,14 +440,8 @@ export const initCheckoutSessionInternal = internalMutation({
       };
     });
 
-    let merchantPayablePaise = 0;
-    for (const item of itemsParsed) {
-      merchantPayablePaise += calculateBoutiquePayout({
-        priceAtPurchase: item.price,
-        basePriceAtPurchase: item.basePriceAtPurchase,
-        platformFeeAmount: item.platformFeeAmount,
-      }) * item.quantity;
-    }
+    const storeSettlement = calculateStoreSettlement(itemsParsed);
+    const merchantPayablePaise = storeSettlement.merchantPayablePaise;
 
     // Save temporary Checkout Session
     const checkoutSessionId = await ctx.db.insert("checkoutSessions", {
