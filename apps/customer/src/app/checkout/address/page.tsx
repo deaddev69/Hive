@@ -283,6 +283,22 @@ export default function CheckoutAddressPage() {
     [mapLat, mapLng]
   );
 
+  const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
+  const rawSubtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+
+  const itemsForPricing = useMemo(() => {
+    return orderItems.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price,
+      size: item.size,
+    }));
+  }, [orderItems]);
+
+  const backendPricing = useQuery(api.payments.getCheckoutPricing, {
+    items: itemsForPricing,
+  });
+
   if (!mounted || !sessionLoaded) return <AddressSkeleton />;
 
   if (!isSignedIn) {
@@ -305,21 +321,6 @@ export default function CheckoutAddressPage() {
 
   const selectedAddress = addresses.find((a) => a._id === selectedAddressId) ?? null;
   const isServiceable = selectedAddress ? isAddressServiceable(selectedAddress) : false;
-  const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
-  const rawSubtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
-
-  const itemsForPricing = useMemo(() => {
-    return orderItems.map((item) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      price: item.price,
-      size: item.size,
-    }));
-  }, [orderItems]);
-
-  const backendPricing = useQuery(api.payments.getCheckoutPricing, {
-    items: itemsForPricing,
-  });
 
   const subtotal = backendPricing?.subtotalRupees ?? rawSubtotal;
   const deliveryFee = backendPricing?.deliveryFeeRupees ?? (rawSubtotal >= 10000 ? 0 : 99);

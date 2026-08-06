@@ -173,7 +173,16 @@ export default function OrderReviewPage() {
 
   const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
   const rawSubtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  
+
+  const itemsForPricing = useMemo(() => {
+    return orderItems.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      price: item.price,
+      size: item.size,
+    }));
+  }, [orderItems]);
+
   let boutiqueId = orderItems?.[0]?.boutiqueId;
   if (!boutiqueId && cartData?.items) {
     const firstItem = orderItems?.[0];
@@ -190,6 +199,22 @@ export default function OrderReviewPage() {
   const [isQuoteLoading, setIsQuoteLoading] = useState(false);
   
   const [quoteId] = useState(() => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)));
+
+  const rawDeliveryFee = (deliveryQuote && deliveryQuote.serviceable && typeof deliveryQuote.customerPaidFee === "number")
+    ? deliveryQuote.customerPaidFee / 100
+    : undefined;
+
+  const backendPricing = useQuery(api.payments.getCheckoutPricing, {
+    items: itemsForPricing,
+    deliveryFee: rawDeliveryFee,
+    promoCode: appliedPromo || undefined,
+  });
+
+  const subtotal = backendPricing?.subtotalRupees ?? rawSubtotal;
+  const deliveryFee = backendPricing?.deliveryFeeRupees ?? (rawSubtotal >= 10000 ? 0 : 99);
+  const discountAmount = backendPricing?.discountRupees ?? (appliedPromo === "WELCOME10" ? Math.round(rawSubtotal * 0.10) : appliedPromo === "HIVE50" ? Math.min(rawSubtotal, 50) : 0);
+  const gstAmount = backendPricing?.gstRupees ?? 0;
+  const total = backendPricing?.totalRupees ?? Math.max(0, subtotal - discountAmount + deliveryFee);
 
   useEffect(() => {
     let active = true;
@@ -220,9 +245,6 @@ export default function OrderReviewPage() {
 
     return () => { active = false; };
   }, [selectedAddress?.id, selectedAddress?.lat, selectedAddress?.lng, selectedAddress?.pincode, boutiqueId, subtotal, skipQuote, getDeliveryQuoteAction, quoteId]);
-
-
-
 
   // Hydration checker
   useEffect(() => {
@@ -264,31 +286,6 @@ export default function OrderReviewPage() {
   if (!isAuthenticated) {
     return <OrderReviewSkeleton />;
   }
-
-  const itemsForPricing = useMemo(() => {
-    return orderItems.map((item) => ({
-      productId: item.productId,
-      quantity: item.quantity,
-      price: item.price,
-      size: item.size,
-    }));
-  }, [orderItems]);
-
-  const rawDeliveryFee = (deliveryQuote && deliveryQuote.serviceable && typeof deliveryQuote.customerPaidFee === "number")
-    ? deliveryQuote.customerPaidFee / 100
-    : undefined;
-
-  const backendPricing = useQuery(api.payments.getCheckoutPricing, {
-    items: itemsForPricing,
-    deliveryFee: rawDeliveryFee,
-    promoCode: appliedPromo || undefined,
-  });
-
-  const subtotal = backendPricing?.subtotalRupees ?? rawSubtotal;
-  const deliveryFee = backendPricing?.deliveryFeeRupees ?? (rawSubtotal >= 10000 ? 0 : 99);
-  const discountAmount = backendPricing?.discountRupees ?? (appliedPromo === "WELCOME10" ? Math.round(rawSubtotal * 0.10) : appliedPromo === "HIVE50" ? Math.min(rawSubtotal, 50) : 0);
-  const gstAmount = backendPricing?.gstRupees ?? 0;
-  const total = backendPricing?.totalRupees ?? Math.max(0, subtotal - discountAmount + deliveryFee);
 
   // Promo handling
   const handleApplyPromo = (e: React.FormEvent) => {
