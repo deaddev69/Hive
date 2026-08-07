@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Button, Card, CardContent } from "@hive/ui";
-import { ArrowLeft, Loader2, Save, Store, MapPin, CreditCard, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Store, MapPin, CreditCard, ShieldCheck, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
