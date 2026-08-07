@@ -22,6 +22,7 @@ export const getAllHomepageCollections = query({
     
     const combined = platformCols.map((c) => ({
       _id: c._id.toString(),
+      name: c.name,
       title: c.name,
       subtitle: c.description,
       coverImage: c.coverImage,

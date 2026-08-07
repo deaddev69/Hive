@@ -774,7 +774,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                   <optgroup label="Curated Collections">
                     {collections.map((c: any) => (
                       <option key={`col-${c._id}`} value={`/collections/${c.slug}`}>
-                        {c.name}
+                        {c.name || c.title}
                       </option>
                     ))}
                   </optgroup>
@@ -932,7 +932,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                           <optgroup label="Curated Collections">
                             {collections.map((c: any) => (
                               <option key={`col-${c._id}`} value={`/collections/${c.slug}`}>
-                                {c.name}
+                                {c.name || c.title}
                               </option>
                             ))}
                           </optgroup>
