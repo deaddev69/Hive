@@ -968,6 +968,7 @@ export default defineSchema({
     customerId:         v.id("users"),
     razorpayOrderId:    v.optional(v.string()),
     razorpayPaymentId:  v.optional(v.string()),
+    razorpayTransferId: v.optional(v.string()),   // Razorpay Route transfer ID
     paymentProvider:    v.optional(v.string()),     // "razorpay" | ...
     amount:             v.number(),                 // paise
     currency:           v.string(),                 // "INR"
