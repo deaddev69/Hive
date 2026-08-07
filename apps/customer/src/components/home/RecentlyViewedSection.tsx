@@ -23,7 +23,7 @@ export function RecentlyViewedSection() {
   if (!products || products.length === 0) return null;
 
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 select-none">
+    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 select-none">
       <div className="flex items-end justify-between mb-4">
         <div>
           <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 block mb-1">

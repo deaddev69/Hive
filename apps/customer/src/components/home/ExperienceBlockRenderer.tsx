@@ -278,8 +278,8 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     }
 
     return (
-      <section className={`w-full bg-white py-6 border-b border-hive-border/20 ${block.config?.theme === "dark" ? "bg-slate-900 text-white" : ""}`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
+      <section className={`w-full bg-white py-3 sm:py-4 border-b border-hive-border/20 ${block.config?.theme === "dark" ? "bg-slate-900 text-white" : ""}`}>
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-3.5 sm:gap-4 text-left">
           <div className="flex flex-col gap-1 cursor-pointer group" onClick={() => {
             if(block.data.collection?.slug) {
               router.push(`/collections/${block.data.collection.slug}`);
@@ -331,8 +331,8 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     const tagText = isNewArrivals ? "FRESH ARRIVALS" : (isRecommended ? "CURATED FOR YOU" : "CUSTOMER FAVORITES");
     
     return (
-      <section className={`w-full ${bgClass} py-6 border-b border-hive-border/20`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-6 text-left">
+      <section className={`w-full ${bgClass} py-3 sm:py-4 border-b border-hive-border/20`}>
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-3.5 sm:gap-4 text-left">
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
               {tagText}
@@ -341,7 +341,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               {block.title || (isNewArrivals ? "New on Hive" : (isRecommended ? "Recommended" : "Most Loved"))}
             </h2>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">
+          <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">
             {mostLovedProducts.map((product: any) => (
               <div key={product.id} className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start">
                 <ProductCard product={product} />

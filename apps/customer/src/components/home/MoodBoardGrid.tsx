@@ -24,7 +24,7 @@ export function MoodBoardGrid({ title = "How are you dressing today?", subtitle,
   ];
 
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
       <div className="mb-4">
         <h2 className="text-lg font-bold text-slate-900">{title}</h2>
         {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}

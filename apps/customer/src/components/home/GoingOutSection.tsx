@@ -23,7 +23,7 @@ export function GoingOutSection() {
   if (!products || products.length === 0) return null;
 
   return (
-    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 select-none">
+    <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 select-none">
       <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-zinc-950 via-zinc-900 to-amber-950 p-6 sm:p-10 border border-zinc-800 text-white shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
           
