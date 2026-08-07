@@ -459,9 +459,15 @@ export const createProduct = mutation({
     }
 
     const settings = await getPlatformSettings(ctx);
-    const pricing = calculateProductPricing(args.price, args.discountPrice, settings);
-    const customerPrice = pricing.customerPrice;
-    const customerDiscountPrice = pricing.customerDiscountPrice;
+    // args.price is in PAISE (frontend does × 100). calculateProductPricing expects RUPEES.
+    const basePriceRupees = args.price / 100;
+    const baseDiscountPriceRupees = args.discountPrice ? args.discountPrice / 100 : undefined;
+    const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings);
+    // Convert customer prices back to PAISE for DB storage
+    const customerPrice = Math.round(pricing.customerPrice * 100);
+    const customerDiscountPrice = pricing.customerDiscountPrice
+      ? Math.round(pricing.customerDiscountPrice * 100)
+      : undefined;
 
     const productId = await ctx.db.insert("products", {
       boutiqueId: boutique._id,
@@ -702,9 +708,15 @@ export const updateProduct = mutation({
       : undefined;
 
     const settings = await getPlatformSettings(ctx);
-    const pricing = calculateProductPricing(args.price, args.discountPrice, settings);
-    const customerPrice = pricing.customerPrice;
-    const customerDiscountPrice = pricing.customerDiscountPrice;
+    // args.price is in PAISE (frontend does × 100). calculateProductPricing expects RUPEES.
+    const basePriceRupees = args.price / 100;
+    const baseDiscountPriceRupees = args.discountPrice ? args.discountPrice / 100 : undefined;
+    const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings);
+    // Convert customer prices back to PAISE for DB storage
+    const customerPrice = Math.round(pricing.customerPrice * 100);
+    const customerDiscountPrice = pricing.customerDiscountPrice
+      ? Math.round(pricing.customerDiscountPrice * 100)
+      : undefined;
 
     // Resolve categoryId if passed as slug or name string
     let resolvedCategoryId: any = args.categoryId;

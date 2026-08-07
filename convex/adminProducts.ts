@@ -754,17 +754,23 @@ export const updateProductDetailsAdmin = mutation({
       autoDeactivatedBecauseOutOfStock = false;
     }
 
-    // Compute Pricing markup
-    let basePrice = args.price !== undefined ? args.price : (product.basePrice ?? product.price ?? 0);
+    // Compute Pricing markup — all DB values and args.price are in PAISE
+    let basePricePaise = args.price !== undefined ? args.price : (product.basePrice ?? product.price ?? 0);
     let customerPrice = product.price;
-    let baseDiscountPrice = args.discountPrice !== undefined ? args.discountPrice : product.baseDiscountPrice;
+    let baseDiscountPricePaise = args.discountPrice !== undefined ? args.discountPrice : product.baseDiscountPrice;
     let customerDiscountPrice = product.discountPrice;
 
     if (args.price !== undefined || args.discountPrice !== undefined) {
       const settings = await getPlatformSettings(ctx);
-      const pricing = calculateProductPricing(basePrice, baseDiscountPrice, settings);
-      customerPrice = pricing.customerPrice;
-      customerDiscountPrice = pricing.customerDiscountPrice;
+      // calculateProductPricing expects RUPEES, convert paise→rupees
+      const basePriceRupees = basePricePaise / 100;
+      const baseDiscountPriceRupees = baseDiscountPricePaise ? baseDiscountPricePaise / 100 : undefined;
+      const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings);
+      // Convert customer prices back to PAISE for DB storage
+      customerPrice = Math.round(pricing.customerPrice * 100);
+      customerDiscountPrice = pricing.customerDiscountPrice
+        ? Math.round(pricing.customerDiscountPrice * 100)
+        : undefined;
     }
 
     // Prepare updates
@@ -782,7 +788,7 @@ export const updateProductDetailsAdmin = mutation({
       updates.price = customerPrice;
     }
     if (args.discountPrice !== undefined || args.price !== undefined) {
-      updates.baseDiscountPrice = baseDiscountPrice;
+      updates.baseDiscountPrice = baseDiscountPricePaise;
       updates.discountPrice = customerDiscountPrice;
     }
     if (args.sizes !== undefined) updates.sizes = args.sizes;

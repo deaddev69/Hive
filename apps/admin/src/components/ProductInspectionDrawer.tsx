@@ -38,10 +38,13 @@ export function ProductInspectionDrawer({
   const [description, setDescription] = useState(product?.description || "");
   const [categoryId, setCategoryId] = useState(product?.categoryId || "");
   
-  // Prices in Rupees
-  const [basePrice, setBasePrice] = useState<number>(product?.basePrice || Math.round(product?.price / 1.15));
+  // Prices in Rupees (DB stores in PAISE, convert on init)
+  const [basePrice, setBasePrice] = useState<number>(
+    product?.basePrice ? Math.round(product.basePrice / 100) : Math.round((product?.price || 0) / 100 / 1.15)
+  );
   const [baseDiscountPrice, setBaseDiscountPrice] = useState<number | undefined>(
-    product?.baseDiscountPrice || (product?.discountPrice ? Math.round(product?.discountPrice / 1.15) : undefined)
+    product?.baseDiscountPrice ? Math.round(product.baseDiscountPrice / 100)
+      : (product?.discountPrice ? Math.round(product.discountPrice / 100 / 1.15) : undefined)
   );
 
   // Sizing & Inventory
@@ -188,8 +191,8 @@ export function ProductInspectionDrawer({
         name,
         description,
         categoryId: categoryId as any,
-        price: basePrice,
-        discountPrice: baseDiscountPrice && baseDiscountPrice > 0 ? baseDiscountPrice : undefined,
+        price: Math.round(basePrice * 100),
+        discountPrice: baseDiscountPrice && baseDiscountPrice > 0 ? Math.round(baseDiscountPrice * 100) : undefined,
         sizes,
         stockBySize,
         details: cleanedDetails,

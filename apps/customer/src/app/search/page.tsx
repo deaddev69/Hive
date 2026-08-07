@@ -43,9 +43,10 @@ function getProductOccasion(product: any): string {
 
 // Helper to map DB product to ProductCardData interface
 function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number>; boutiqueId?: string; boutique?: any } {
-  const hasDiscount = p.discountPrice !== undefined && p.discountPrice < p.price;
-  const price = hasDiscount ? p.discountPrice! : p.price;
-  const compareAtPrice = hasDiscount ? p.price : undefined;
+  // DB stores all prices in PAISE — divide by 100 for display in Rupees
+  const hasDiscount = p.discountPrice !== undefined && p.discountPrice !== null && p.discountPrice < p.price;
+  const price = hasDiscount ? p.discountPrice! / 100 : (p.price || 0) / 100;
+  const compareAtPrice = hasDiscount && p.price ? p.price / 100 : undefined;
 
   return {
     id: p._id,

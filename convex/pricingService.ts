@@ -142,15 +142,17 @@ export async function calculateItemFinancials(
   let platformMarkupRateAtPurchase: number;
 
   if (productRow.basePrice !== undefined && productRow.basePrice > 0) {
-    // New products: basePrice is in paise, calculateProductPricing expects paise (despite param name)
+    // basePrice is stored in PAISE in the DB
     basePricePaise = productRow.basePrice;
-    const basePriceForTier = basePricePaise / 100; // Convert to rupees for tier lookup
-    platformMarkupRateAtPurchase = selectMarkupRate(basePriceForTier, settings);
-    // calculateProductPricing takes the same unit as basePrice (paise here), returns paise
-    const pricing = calculateProductPricing(productRow.basePrice, productRow.baseDiscountPrice, settings);
+    const basePriceRupees = basePricePaise / 100; // Convert to rupees for tier lookup & pricing
+    platformMarkupRateAtPurchase = selectMarkupRate(basePriceRupees, settings);
+    // calculateProductPricing expects RUPEES, returns RUPEES
+    const baseDiscountPriceRupees = productRow.baseDiscountPrice ? productRow.baseDiscountPrice / 100 : undefined;
+    const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings);
+    // Convert customer prices back to PAISE
     expectedCustomerPricePaise = (productRow.baseDiscountPrice && productRow.baseDiscountPrice > 0)
-      ? (pricing.customerDiscountPrice || pricing.customerPrice)
-      : pricing.customerPrice;
+      ? Math.round((pricing.customerDiscountPrice || pricing.customerPrice) * 100)
+      : Math.round(pricing.customerPrice * 100);
   } else {
     // Legacy products without basePrice: price/discountPrice are in paise
     expectedCustomerPricePaise = productRow.discountPrice ?? productRow.price;
