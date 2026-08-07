@@ -33,7 +33,7 @@ export const getCollection = query({
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
 
-    if (!collection) return null;
+    if (!collection || collection.status !== "published") return null;
 
     // 2. Hydrate
     const hydrated = await CollectionService.hydrateCollection(ctx, collection._id, new Map());

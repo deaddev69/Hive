@@ -16,6 +16,8 @@ import {
   Tag,
   CheckCircle2,
   Edit,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -88,7 +90,7 @@ export default function AdminHomepageMerchandisingPage() {
   };
 
   // Operational Filters & Preview Controls
-  const [filterTab, setFilterTab] = useState<"all" | "manual" | "rule" | "draft" | "archived">("all");
+  const [filterTab, setFilterTab] = useState<"all" | "published" | "hidden" | "manual" | "rule">("all");
   const [devicePreview, setDevicePreview] = useState<"desktop" | "iphone" | "android">("iphone");
   const [personaPreview, setPersonaPreview] = useState<"guest" | "logged_in">("guest");
 
@@ -164,10 +166,10 @@ export default function AdminHomepageMerchandisingPage() {
 
   const filteredCollections = collections?.filter((c: any) => {
     if (filterTab === "all") return true;
+    if (filterTab === "published") return c.status === "published";
+    if (filterTab === "hidden") return c.status !== "published";
     if (filterTab === "manual") return c.sourceMode === "MANUAL";
     if (filterTab === "rule") return c.sourceMode === "RULE";
-    if (filterTab === "draft") return c.status === "draft";
-    if (filterTab === "archived") return c.status === "archived";
     return true;
   });
 
@@ -220,7 +222,7 @@ export default function AdminHomepageMerchandisingPage() {
           {/* ── Operational Status Filter Tabs & Persona Toolbar ──────────────────── */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-zinc-900 px-5 py-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800">
         <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
-          {(["all", "manual", "rule", "draft", "archived"] as const).map((tab) => (
+          {(["all", "published", "hidden", "manual", "rule"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -317,35 +319,47 @@ export default function AdminHomepageMerchandisingPage() {
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 relative flex items-center justify-center text-lg font-bold">
                     {col.coverImage ? (
-                      <img src={col.coverImage} alt={col.title} className="absolute inset-0 w-full h-full object-cover" />
+                      <img src={col.coverImage} alt={col.name || col.title || "Collection"} className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <span className="text-slate-300"><Layers className="w-5 h-5"/></span>
                     )}
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                        {col.title}
+                        {col.name || col.title || "Untitled Collection"}
                       </span>
                       <button
                         type="button"
                         onClick={async (e) => {
                           e.stopPropagation();
-                          const newStatus = col.status === "published" ? "archived" : "published";
+                          const newStatus = col.status === "published" ? "draft" : "published";
                           await updateCol({ id: col._id, status: newStatus });
-                          toast.success(`Collection is now ${newStatus === "published" ? "Visible (Published)" : "Hidden"}`);
+                          toast.success(
+                            newStatus === "published"
+                              ? `"${col.name || col.title}" is now PUBLISHED and visible on Customer UI`
+                              : `"${col.name || col.title}" is now HIDDEN from Customer UI`
+                          );
                         }}
-                        title="Click to toggle Published / Hidden status on Customer UI"
-                        className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full cursor-pointer transition select-none ${
+                        title={col.status === "published" ? "Click to Hide from Customer UI" : "Click to Publish to Customer UI"}
+                        className={`inline-flex items-center gap-1 text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full cursor-pointer transition select-none ${
                           col.status === "published"
                             ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20"
                             : "bg-amber-500/10 text-amber-600 border border-amber-500/20 hover:bg-amber-500/20"
                         }`}
                       >
-                        {col.status === "published" ? "PUBLISHED" : "HIDDEN"}
+                        {col.status === "published" ? (
+                          <>
+                            <Eye className="w-2.5 h-2.5" /> PUBLISHED
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-2.5 h-2.5" /> HIDDEN
+                          </>
+                        )}
                       </button>
                     </div>
-                    <p className="text-[10px] text-slate-400 truncate">
+                    <p className="text-[10px] text-slate-400 truncate mt-0.5">
                       {col.productCount || 0} items curated
                     </p>
                   </div>
