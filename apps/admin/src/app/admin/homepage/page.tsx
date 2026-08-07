@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 // Deployment trigger comment (Attempt 4)
 // Using native <img> for R2 CDN images (bypasses Vercel image proxy)
 import {
@@ -22,6 +23,9 @@ import { formatCurrency, toast } from "@hive/utils";
 import { ExperienceStudio } from "./ExperienceStudio";
 
 export default function AdminHomepageMerchandisingPage() {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewStatus, setPreviewStatus] = useState<"draft" | "published">("draft");
   const [isPublishing, setIsPublishing] = useState(false);

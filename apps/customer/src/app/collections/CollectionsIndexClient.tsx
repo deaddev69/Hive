@@ -5,7 +5,24 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { ArrowRight, Grid2x2, LayoutGrid, Sparkles } from "lucide-react";
-import { CollectionCard } from "@/components/catalog/CollectionCard";
+const FALLBACK_IMAGES: Record<string, string> = {
+  "todays-edit": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
+  "fresh-on-hive": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80",
+  "trending-in-kochi": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80",
+  "going-out-today": "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80",
+  "wedding-season": "https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=800&q=80",
+  "quiet-luxury": "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=800&q=80",
+  "linen-love": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80",
+  "under-999": "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&w=800&q=80",
+};
+
+const DEFAULT_IMAGES = [
+  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=800&q=80",
+];
 
 export function CollectionsIndexClient() {
   const collections = useQuery(api.customerHome.getAllCollections);
@@ -74,22 +91,27 @@ export function CollectionsIndexClient() {
       <div className="max-w-[1440px] mx-auto px-6 lg:px-8 w-full py-12 flex flex-col gap-12">
         <div className="flex flex-col gap-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {collections.map((collection: any) => (
-              <div key={collection._id} className="h-full">
-                {/* Fallback mock-like object until CollectionCard is fully typed */}
-                <CollectionCard 
-                  collection={{
-                    ...collection,
-                    id: collection._id,
-                    title: collection.name,
-                    productCount: 12,
-                    isFeatured: false,
-                    imageUrl: collection.coverImage || "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80",
-                    tags: ["Curated"],
-                  } as any} 
-                />
-              </div>
-            ))}
+            {collections.map((collection: any, idx: number) => {
+              const fallbackImage = FALLBACK_IMAGES[collection.slug] || DEFAULT_IMAGES[idx % DEFAULT_IMAGES.length];
+              const imageUrl = collection.coverImage || fallbackImage;
+              const count = typeof collection.productCount === "number" ? collection.productCount : 12;
+
+              return (
+                <div key={collection._id} className="h-full">
+                  <CollectionCard 
+                    collection={{
+                      ...collection,
+                      id: collection._id,
+                      title: collection.name,
+                      productCount: count,
+                      isFeatured: collection.slug === "todays-edit" || collection.slug === "trending-in-kochi",
+                      imageUrl,
+                      tags: ["Boutique Curated"],
+                    } as any} 
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

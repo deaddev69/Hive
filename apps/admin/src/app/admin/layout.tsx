@@ -28,7 +28,7 @@ const NAV_GROUPS = [
     title: "MERCHANDISING",
     items: [
       { label: "Experiences", href: "/admin/homepage", icon: Sparkles },
-      { label: "Collections", href: "/admin/homepage?tab=collections", icon: FolderKanban },
+      { label: "Collections", href: "/admin/collections", icon: FolderKanban },
       { label: "Banners", href: "/admin/banners", icon: ImageIcon },
     ]
   },

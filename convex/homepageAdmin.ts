@@ -562,14 +562,14 @@ export const seedDefaultHomepageData = mutation({
     const colIdMap: Record<string, string> = {};
     if (existingCols.length === 0) {
       const defaultCols = [
-        { name: "Today's Edit", description: "Hand-picked daily editorial picks", slug: "todays-edit" },
-        { name: "Fresh on Hive", description: "New arrivals in the last 14 days", slug: "fresh-on-hive" },
-        { name: "Trending in Kochi", description: "Popular styles across Panampilly Nagar & Edappally", slug: "trending-in-kochi" },
-        { name: "Going Out Today", description: "Evening co-ords & party wear", slug: "going-out-today" },
-        { name: "Wedding Season", description: "Festive sarees, bridal lehengas & sherwanis", slug: "wedding-season" },
-        { name: "Quiet Luxury", description: "Minimalist linen, silks & structured cuts", slug: "quiet-luxury" },
-        { name: "Linen Love", description: "100% pure Kerala handloom linens", slug: "linen-love" },
-        { name: "Under ₹999", description: "Affordable boutique finds", slug: "under-999" },
+        { name: "Today's Edit", description: "Hand-picked daily editorial picks", slug: "todays-edit", coverImage: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80" },
+        { name: "Fresh on Hive", description: "New arrivals in the last 14 days", slug: "fresh-on-hive", coverImage: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80" },
+        { name: "Trending in Kochi", description: "Popular styles across Panampilly Nagar & Edappally", slug: "trending-in-kochi", coverImage: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80" },
+        { name: "Going Out Today", description: "Evening co-ords & party wear", slug: "going-out-today", coverImage: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80" },
+        { name: "Wedding Season", description: "Festive sarees, bridal lehengas & sherwanis", slug: "wedding-season", coverImage: "https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=800&q=80" },
+        { name: "Quiet Luxury", description: "Minimalist linen, silks & structured cuts", slug: "quiet-luxury", coverImage: "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=800&q=80" },
+        { name: "Linen Love", description: "100% pure Kerala handloom linens", slug: "linen-love", coverImage: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80" },
+        { name: "Under ₹999", description: "Affordable boutique finds", slug: "under-999", coverImage: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?auto=format&fit=crop&w=800&q=80" },
       ];
 
       for (const col of defaultCols) {
@@ -577,6 +577,7 @@ export const seedDefaultHomepageData = mutation({
           name: col.name,
           description: col.description,
           slug: col.slug,
+          coverImage: col.coverImage,
           sourceMode: "MANUAL",
           status: "published",
           createdAt: now,
