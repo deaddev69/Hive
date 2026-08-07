@@ -89,9 +89,9 @@ export function CollectionsIndexClient() {
         </div>
       </div>
 
-      <div className="max-w-[1440px] mx-auto px-6 lg:px-8 w-full py-12 flex flex-col gap-12">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 w-full py-6 sm:py-12 flex flex-col gap-12">
         <div className="flex flex-col gap-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 gap-3.5 sm:gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {collections.map((collection: any, idx: number) => {
               const fallbackImage = FALLBACK_IMAGES[collection.slug] || DEFAULT_IMAGES[idx % DEFAULT_IMAGES.length];
               const imageUrl = collection.coverImage || fallbackImage;
