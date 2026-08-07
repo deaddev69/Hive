@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { ArrowRight, Grid2x2, LayoutGrid, Sparkles } from "lucide-react";
+import { CollectionCard } from "@/components/catalog/CollectionCard";
 const FALLBACK_IMAGES: Record<string, string> = {
   "todays-edit": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
   "fresh-on-hive": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80",
