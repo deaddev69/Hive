@@ -1,6 +1,7 @@
 import { mutation } from "./_generated/server";
 import { requireRole } from "./lib/auth";
 import { getPlatformMarkupRate } from "./pricingHelpers";
+import { calculateProductPricing } from "./pricingService";
 
 /**
  * Migration to backfill the productPerformance table for all historical orders and claims.
@@ -283,6 +284,7 @@ export const migratePlatformSettingsToTiered = mutation({
 
 /**
  * Migration to recalculate all product prices from base prices using active platform settings.
+ * basePrice is stored in PAISE. calculateProductPricing expects RUPEES.
  */
 export const recalculateAllProductPrices = mutation({
   args: {},
@@ -310,26 +312,22 @@ export const recalculateAllProductPrices = mutation({
     let updatedCount = 0;
 
     for (const product of products) {
-      const basePrice = product.basePrice !== undefined ? product.basePrice : product.price;
-      const rate = getPlatformMarkupRate(basePrice, settings as any);
-      
-      const rawCustomerPrice = basePrice * (1 + rate);
-      const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
-      
-      let customerDiscountPrice: any = undefined;
-      if (product.baseDiscountPrice !== undefined) {
-        const rawDiscount = product.baseDiscountPrice * (1 + rate);
-        customerDiscountPrice = Math.ceil(rawDiscount / 10) * 10 - 1;
-      } else if (product.discountPrice !== undefined && product.basePrice !== undefined) {
-        // Fallback: reverse-calculate base discount price if missing
-        const oldRate = settings.markupRate || 0.15;
-        const baseDiscount = Math.floor(product.discountPrice / (1 + oldRate));
-        const rawDiscount = baseDiscount * (1 + rate);
-        customerDiscountPrice = Math.ceil(rawDiscount / 10) * 10 - 1;
-      }
+      const basePricePaise = product.basePrice !== undefined ? product.basePrice : product.price;
+      // Convert PAISE → RUPEES for pricing calculation
+      const basePriceRupees = basePricePaise / 100;
+      const baseDiscountPriceRupees = product.baseDiscountPrice ? product.baseDiscountPrice / 100 : undefined;
+
+      // calculateProductPricing expects RUPEES, returns RUPEES
+      const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings as any);
+
+      // Convert customer prices back to PAISE for DB storage
+      const customerPrice = Math.round(pricing.customerPrice * 100);
+      const customerDiscountPrice = pricing.customerDiscountPrice
+        ? Math.round(pricing.customerDiscountPrice * 100)
+        : undefined;
 
       await ctx.db.patch(product._id, {
-        basePrice,
+        basePrice: basePricePaise,
         price: customerPrice,
         discountPrice: customerDiscountPrice,
         updatedAt: Date.now()
