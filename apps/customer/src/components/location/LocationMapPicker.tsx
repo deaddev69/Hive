@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { Search, MapPin, Loader2, Navigation, AlertCircle, X } from "lucide-react";
+import { Search, MapPin, Loader2, Navigation, AlertCircle, X, Plus, Minus } from "lucide-react";
 import { APIProvider, Map, AdvancedMarker, useMapsLibrary, useMap } from "@vis.gl/react-google-maps";
 import { toast } from "@hive/utils";
 
@@ -25,6 +25,7 @@ export interface LocationMapPickerProps {
   readOnly?: boolean;
   height?: string;
   showCurrentLocation?: boolean;
+  hidePOIs?: boolean;
   topOverlay?: React.ReactNode;
   children?: (props: { gpsButton: React.ReactNode }) => React.ReactNode;
 }
@@ -224,6 +225,7 @@ function MapPickerInner({
   onReverseGeocode,
   readOnly = false,
   height = "100%", // Default changed to full height
+  hidePOIs = true,
   topOverlay,
   children,
 }: LocationMapPickerProps) {
@@ -237,9 +239,46 @@ function MapPickerInner({
 
   const center = { lat, lng };
 
+  // Fallback programmatic POI & transit hiding styles
+  const poiStyles: google.maps.MapTypeStyle[] = hidePOIs
+    ? [
+        {
+          featureType: "poi",
+          elementType: "all",
+          stylers: [{ visibility: "off" }],
+        },
+        {
+          featureType: "transit",
+          elementType: "labels",
+          stylers: [{ visibility: "off" }],
+        },
+      ]
+    : [];
+
   const handleMapClick = (e: any) => {
-    if (readOnly || !e.detail || !e.detail.latLng) return;
-    map?.panTo(e.detail.latLng);
+    if (readOnly) return;
+    const latLng = e.detail?.latLng || e.latLng;
+    if (!latLng) return;
+    const clickLat = typeof latLng.lat === "function" ? latLng.lat() : latLng.lat;
+    const clickLng = typeof latLng.lng === "function" ? latLng.lng() : latLng.lng;
+    if (typeof clickLat === "number" && typeof clickLng === "number") {
+      if (onChange) onChange(clickLat, clickLng);
+      map?.panTo({ lat: clickLat, lng: clickLng });
+    }
+  };
+
+  const handleZoomIn = () => {
+    if (map) {
+      const currentZoom = map.getZoom() || 14;
+      map.setZoom(currentZoom + 1);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (map) {
+      const currentZoom = map.getZoom() || 14;
+      map.setZoom(currentZoom - 1);
+    }
   };
 
   const handlePlaceSelect = useCallback((place: google.maps.places.PlaceResult) => {
@@ -359,6 +398,26 @@ function MapPickerInner({
               </div>
             );
           })()}
+
+          {/* Floating Touch-Friendly Zoom Buttons (Middle-Right) */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2 pointer-events-auto">
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              aria-label="Zoom in"
+              className="w-11 h-11 bg-white hover:bg-slate-50 active:scale-95 rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-slate-100 flex items-center justify-center text-slate-800 transition-all select-none cursor-pointer"
+            >
+              <Plus className="w-5 h-5 stroke-[2.5]" />
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              aria-label="Zoom out"
+              className="w-11 h-11 bg-white hover:bg-slate-50 active:scale-95 rounded-full shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-slate-100 flex items-center justify-center text-slate-800 transition-all select-none cursor-pointer"
+            >
+              <Minus className="w-5 h-5 stroke-[2.5]" />
+            </button>
+          </div>
         </>
       )}
 
@@ -372,7 +431,8 @@ function MapPickerInner({
           zoom={14}
           onClick={handleMapClick}
           disableDefaultUI={true}
-          clickableIcons={false}
+          clickableIcons={!hidePOIs}
+          styles={poiStyles}
           zoomControl={false}
           gestureHandling={readOnly ? "none" : "greedy"}
           onDragstart={() => setIsDragging(true)}
