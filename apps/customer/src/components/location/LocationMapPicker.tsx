@@ -309,7 +309,7 @@ function MapPickerInner({
     );
   }, [map, onChange, onReverseGeocode, geocodingLib]);
 
-  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID";
+  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID || process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID";
 
   return (
     <div className="absolute inset-0 w-full h-full">
@@ -372,6 +372,7 @@ function MapPickerInner({
           zoom={14}
           onClick={handleMapClick}
           disableDefaultUI={true}
+          clickableIcons={false}
           zoomControl={false}
           gestureHandling={readOnly ? "none" : "greedy"}
           onDragstart={() => setIsDragging(true)}
@@ -402,14 +403,24 @@ function MapPickerInner({
           }}
         />
         
-        {/* Exact Center Overlay Pin */}
-        <div 
-          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none transition-transform duration-200 ease-out z-10 ${
-            isDragging && !readOnly ? "-translate-y-[calc(100%+8px)] scale-105" : ""
-          }`}
-        >
-          <MapPin className="w-9 h-9 text-hive-gold fill-hive-gold drop-shadow-lg" />
-        </div>
+        {/* Swiggy-Style Fixed Center Pin */}
+        {!readOnly && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-10 flex flex-col items-center select-none">
+            {/* Floating Badge */}
+            <div className={`bg-[#EAB308] text-black text-[10px] font-extrabold px-3 py-1 rounded-full shadow-md mb-1.5 border border-black/10 uppercase tracking-wider transition-transform duration-200 ${isDragging ? '-translate-y-2 scale-105 shadow-xl' : 'translate-y-0'}`}>
+              Delivering Here
+            </div>
+
+            {/* Pin Head */}
+            <div className={`w-8 h-8 bg-[#EAB308] rounded-full flex items-center justify-center shadow-lg border-2 border-white transition-transform duration-200 ${isDragging ? '-translate-y-2 scale-105 shadow-xl' : 'translate-y-0'}`}>
+              <div className="w-2.5 h-2.5 bg-black rounded-full" />
+            </div>
+
+            {/* Pin Stem & Shadow */}
+            <div className={`w-1 h-3 bg-[#EAB308] transition-transform duration-200 ${isDragging ? '-translate-y-2' : 'translate-y-0'}`} />
+            <div className={`w-3 h-1 bg-black/20 rounded-full blur-[1px] transition-all duration-200 ${isDragging ? 'scale-125 opacity-40' : 'scale-100 opacity-70'}`} />
+          </div>
+        )}
         
         {readOnly && (
           <div className="absolute inset-0 bg-black/5 pointer-events-none" />
@@ -420,8 +431,9 @@ function MapPickerInner({
 }
 
 export default function LocationMapPicker(props: LocationMapPickerProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY || "";
   return (
-    <APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY || ""}>
+    <APIProvider apiKey={apiKey}>
       <MapPickerInner {...props} />
     </APIProvider>
   );

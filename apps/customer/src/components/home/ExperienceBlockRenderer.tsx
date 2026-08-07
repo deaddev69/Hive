@@ -93,7 +93,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           {banners.length === 0 ? null : banners.length === 1 ? (
                 // Single Full-Bleed Graphic Image Banner
                 <div
-                  className="banner-card group relative w-full aspect-[2/1] sm:aspect-[16/6] md:aspect-[21/7] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+                  className="banner-card group relative w-full aspect-[2/1] sm:aspect-none sm:h-[220px] md:h-[250px] lg:h-[270px] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
                   onClick={() => {
                     if (banners[0].targetUrl) router.push(banners[0].targetUrl);
                   }}
@@ -126,7 +126,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                     {banners.slice(0, 3).map((banner: any, idx: number) => (
                       <div
                         key={banner._id || idx}
-                        className="banner-card group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+                        className="banner-card group relative aspect-[16/8] md:h-[180px] lg:h-[200px] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
                         style={{ animationDelay: `${idx * 150}ms` }}
                         onClick={() => {
                           if (banner.targetUrl) router.push(banner.targetUrl);

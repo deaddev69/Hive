@@ -31,7 +31,7 @@ export function HeroCampaignBanner() {
 
   return (
     <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 select-none">
-      <div className="relative h-[420px] sm:h-[480px] md:h-[520px] rounded-3xl overflow-hidden shadow-xl bg-zinc-950 group">
+      <div className="relative h-[420px] sm:h-[320px] md:h-[340px] lg:h-[360px] rounded-3xl overflow-hidden shadow-xl bg-zinc-950 group">
         
         {/* Animated Background Image Carousel */}
         <AnimatePresence mode="wait">

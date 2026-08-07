@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Modal, LoadingState } from "@hive/ui";
 import { useLocation } from "@/context/LocationContext";
-import { MapPin, Loader2, AlertCircle, ArrowRight, X, ShieldCheck, Truck, Lock } from "lucide-react";
+import { MapPin, Loader2, AlertCircle, ArrowRight, X, ShieldCheck, Truck, Lock, Navigation, Compass } from "lucide-react";
 
 export const LocationPermissionModal: React.FC = () => {
   const { 
@@ -11,13 +11,28 @@ export const LocationPermissionModal: React.FC = () => {
     setGateOpen, 
     setDrawerOpen, 
     detectLocation, 
-    geocodePincode,
     setBrowseAllProducts 
   } = useLocation();
 
   const [loadingStep, setLoadingStep] = useState<"idle" | "detecting" | "geocoding">("idle");
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [pincodeError, setPincodeError] = useState<string | null>(null);
+
+  const handleDetectLocation = async () => {
+    setLoadingStep("detecting");
+    setGpsError(null);
+    try {
+      const result = await detectLocation();
+      if (result.success) {
+        setGateOpen(false);
+      } else {
+        setGpsError(result.error || "Location access denied by browser. Please select your area manually.");
+      }
+    } catch (err: any) {
+      setGpsError(err?.message || "Failed to detect location. Please select manually.");
+    } finally {
+      setLoadingStep("idle");
+    }
+  };
 
   const handleChooseManually = () => {
     setGateOpen(false);
@@ -38,11 +53,14 @@ export const LocationPermissionModal: React.FC = () => {
     >
       <div className="flex flex-col gap-4 sm:gap-6 text-center items-center py-2 font-sans overflow-y-auto no-scrollbar">
         {loadingStep === "detecting" || loadingStep === "geocoding" ? (
-          <div className="py-6">
+          <div className="py-10 flex flex-col items-center justify-center gap-4">
             <LoadingState 
               message={loadingStep === "detecting" ? "Scanning your location..." : "Finding local boutiques near you..."} 
               size="md" 
             />
+            <p className="text-xs text-slate-500 font-medium max-w-xs animate-pulse">
+              Please allow location access when prompted by your browser...
+            </p>
           </div>
         ) : (
           <>
@@ -96,30 +114,23 @@ export const LocationPermissionModal: React.FC = () => {
                 <polygon points="330,76 380,50 375,40" fill="#FDE047" opacity="0.1" />
 
                 {/* Palm Trees */}
-                {/* Left Tree */}
                 <path d="M110 130 Q108 110, 112 95" stroke="#A16207" strokeWidth="2.5" fill="none" />
                 <path d="M112 95 Q100 90, 95 98 M112 95 Q105 82, 100 85 M112 95 Q112 80, 115 82 M112 95 Q122 82, 125 88 M112 95 Q125 92, 122 100" stroke="#15803D" strokeWidth="1.8" fill="none" />
                 
-                {/* Right Tree */}
                 <path d="M280 130 Q283 112, 278 98" stroke="#A16207" strokeWidth="2.5" fill="none" />
                 <path d="M278 98 Q265 92, 262 100 M278 98 Q270 85, 266 88 M278 98 Q278 82, 281 84 M278 98 Q288 85, 291 90 M278 98 Q290 95, 287 103" stroke="#15803D" strokeWidth="1.8" fill="none" />
 
                 {/* Large Kochi Location Pin (Center) */}
                 <g transform="translate(180, 15)">
-                  {/* Pin Shadow */}
                   <ellipse cx="20" cy="110" rx="12" ry="4" fill="#E5E7EB" />
                   
-                  {/* Pulse Ring */}
                   <circle cx="20" cy="108" r="8" fill="none" stroke="#F59E0B" strokeWidth="1.5" opacity="0.5">
                     <animate attributeName="r" values="8;18;8" dur="3s" repeatCount="indefinite" />
                     <animate attributeName="opacity" values="0.5;0;0.5" dur="3s" repeatCount="indefinite" />
                   </circle>
 
-                  {/* Pin Shape */}
                   <path d="M20 105 C8 90, 0 75, 0 53 C0 30, 9 20, 20 20 C31 20, 40 30, 40 53 C40 75, 32 90, 20 105 Z" fill="#D97706" />
-                  {/* Pin Highlight */}
                   <path d="M20 105 C8 90, 0 75, 0 53 C0 30, 9 20, 20 20 Z" fill="#F59E0B" opacity="0.15" />
-                  {/* Inner Dot */}
                   <circle cx="20" cy="48" r="8" fill="#FFFFFF" />
                 </g>
               </svg>
@@ -131,7 +142,7 @@ export const LocationPermissionModal: React.FC = () => {
                 Hive is launching in <span className="text-[#D97706]">Kochi!</span>
               </h3>
               <p className="text-xs text-slate-600 dark:text-neutral-350 max-w-[340px] mx-auto leading-relaxed font-semibold">
-                We currently deliver across selected areas in Kochi. Choose your location to discover nearby boutiques and place orders today.
+                We deliver fashion from verified local boutiques in Kochi. Allow location access or pick your neighborhood to view available inventory.
               </p>
             </div>
 
@@ -162,61 +173,56 @@ export const LocationPermissionModal: React.FC = () => {
 
             {/* Error display if any */}
             {gpsError && (
-              <div className="w-full flex items-start gap-2 text-xs text-red-600 bg-red-50 p-3 rounded-lg text-left">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div className="w-full flex items-start gap-2 text-xs text-red-600 bg-red-50 p-3 rounded-xl text-left border border-red-200">
+                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-500" />
                 <div>
-                  <p className="font-bold">GPS Location Unavailable</p>
-                  <p className="text-[11px] mt-0.5 text-red-500">{gpsError}</p>
+                  <p className="font-bold text-red-700">Location Access Denied</p>
+                  <p className="text-[11px] mt-0.5 text-red-600">{gpsError}</p>
                 </div>
               </div>
             )}
 
             {/* Action Buttons */}
-            <div className="w-full flex flex-col gap-2 sm:gap-3.5 px-1">
-              {/* Option 1: Choose Kochi Location */}
+            <div className="w-full flex flex-col gap-2 sm:gap-3 px-1">
+              {/* Option 1: Use Current Location (GPS) - User Gesture Trigger for Native Browser Prompt */}
               <button
                 type="button"
-                onClick={handleChooseManually}
+                onClick={handleDetectLocation}
                 className="w-full h-12 rounded-xl bg-[#D97706] hover:bg-[#B45309] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-[0.15em] flex items-center justify-between px-5 transition-all shadow-md cursor-pointer select-none"
               >
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <span>Choose Kochi Location</span>
+                  <Navigation className="w-4 h-4 fill-white stroke-none" />
+                  <span>Use Current Location (GPS)</span>
                 </div>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
-              {/* Option 2: Browse Anyway */}
+              {/* Option 2: Select Location Manually */}
               <button
                 type="button"
-                onClick={handleJustBrowse}
-                className="w-full h-14 rounded-xl bg-white dark:bg-neutral-900 border border-[#D97706]/30 dark:border-neutral-800 hover:border-[#D97706]/60 dark:hover:border-neutral-700 active:scale-[0.98] text-stone-900 dark:text-white flex items-center justify-between px-5 transition-all shadow-sm cursor-pointer select-none"
+                onClick={handleChooseManually}
+                className="w-full h-11 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 active:scale-[0.98] text-stone-900 dark:text-white font-bold text-xs uppercase tracking-[0.15em] flex items-center justify-between px-5 transition-all cursor-pointer select-none border border-stone-200 dark:border-neutral-700"
               >
-                <div className="flex items-center gap-3.5 text-left">
-                  <div className="w-8 h-8 rounded-lg bg-[#FCF6EC] dark:bg-amber-950/20 flex items-center justify-center text-[#D97706]">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold uppercase tracking-[0.15em] text-stone-900 dark:text-white leading-none">Browse Anyway</span>
-                    <span className="text-[10px] text-slate-500 dark:text-neutral-400 font-semibold mt-1 leading-none">See all boutiques</span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-[#D97706]" />
+                  <span>Select Area Manually</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-400" />
               </button>
 
+              {/* Option 3: Browse All Boutiques */}
+              <button
+                type="button"
+                onClick={handleJustBrowse}
+                className="w-full py-2 text-[11px] font-bold text-slate-500 hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer select-none"
+              >
+                Browse All Boutiques →
+              </button>
+
               {/* Privacy Footer */}
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 dark:text-neutral-400 font-semibold mt-2 text-center select-none">
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 dark:text-neutral-400 font-semibold mt-1 text-center select-none">
                 <Lock className="w-3.5 h-3.5 text-slate-400" />
-                <span>Your location is only used to show available boutiques and delivery options. </span>
-                <button
-                  type="button"
-                  onClick={handleChooseManually}
-                  className="text-[#D97706] hover:underline font-extrabold cursor-pointer"
-                >
-                  Learn more &gt;
-                </button>
+                <span>Your location is only used to show nearby boutiques & delivery options.</span>
               </div>
             </div>
           </>
