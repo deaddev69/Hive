@@ -112,7 +112,10 @@ export const getAllPostsAdmin = query({
     search: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, "admin");
+    const user = await getCurrentUserOrNull(ctx);
+    if (!user || user.role !== "admin") {
+      return [];
+    }
 
     let posts = await ctx.db.query("blogPosts").collect();
 
@@ -146,10 +149,13 @@ export const getPostByIdAdmin = query({
     id: v.id("blogPosts"),
   },
   handler: async (ctx, args) => {
-    await requireRole(ctx, "admin");
+    const user = await getCurrentUserOrNull(ctx);
+    if (!user || user.role !== "admin") {
+      return null;
+    }
     const post = await ctx.db.get(args.id);
     if (!post) {
-      throw new ConvexError("Blog post not found.");
+      return null;
     }
     return post;
   },

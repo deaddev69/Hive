@@ -67,6 +67,15 @@ export default function AdminBlogManagementPage() {
   const publishedCount = posts?.filter((p: any) => p.status === "published").length ?? 0;
   const draftCount = posts?.filter((p: any) => p.status === "draft").length ?? 0;
 
+  if (posts === undefined) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+        <p className="text-sm text-slate-500 font-medium">Loading blog articles...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 sm:p-10 max-w-7xl mx-auto space-y-8">
       {/* Header Banner */}
