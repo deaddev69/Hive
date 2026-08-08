@@ -293,13 +293,13 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                 )}
                 
                 {blockTitle && (
-                  <h2 className={`text-3xl md:text-5xl font-cormorant font-normal tracking-tight ${isLightBg ? "text-stone-900" : "text-white"} drop-shadow-xs`}>
+                  <h2 className={`text-3xl md:text-5xl lg:text-6xl font-cormorant font-normal tracking-tight ${isLightBg ? "text-stone-900" : "text-white"} leading-[1.15] drop-shadow-xs`}>
                     {blockTitle}
                   </h2>
                 )}
                 
                 {blockSubtitle && (
-                  <p className={`text-sm md:text-base font-cormorant italic mt-0.5 ${isLightBg ? "text-stone-600" : "text-white/80"}`}>
+                  <p className={`text-sm md:text-base lg:text-lg font-cormorant italic mt-1 ${isLightBg ? "text-stone-600" : "text-stone-300"} font-normal leading-relaxed`}>
                     {blockSubtitle}
                   </p>
                 )}
@@ -413,7 +413,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     if (items.length === 0) return null;
 
     return (
-      <section className="w-full bg-white py-5 sm:py-8 border-b border-hive-border/20 overflow-hidden">
+      <section className="w-full bg-white pt-6 pb-12 sm:pt-8 sm:pb-16 border-b border-hive-border/20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {block.title && (
             <h2 className="text-lg sm:text-xl font-serif font-medium text-slate-800 tracking-normal mb-0.5">
