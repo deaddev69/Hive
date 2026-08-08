@@ -159,8 +159,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
       {/* ── Image area (3:4 or 4:5 Aspect Ratio, rounded-2xl or rounded-[20px]) ── */}
       <div className={cn(
         "relative w-full overflow-hidden bg-stone-50 transform translate-z-0 transition-all",
-        premiumMode ? "aspect-[4/5] rounded-[20px]" : "aspect-[3/4] rounded-2xl"
-      )} style={{ aspectRatio: premiumMode ? "4/5" : "3/4" }}>
+        premiumMode ? "aspect-square rounded-[24px]" : "aspect-[3/4] rounded-2xl"
+      )} style={{ aspectRatio: premiumMode ? "1/1" : "3/4" }}>
         
         {/* Product image link */}
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block w-full h-full z-10">

@@ -280,19 +280,28 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
             </div>
           )}
 
+          {/* Left Paisley Motif Watermark */}
+          <div className="absolute top-2 left-0 w-28 sm:w-44 h-44 pointer-events-none z-[1] opacity-30 select-none overflow-hidden">
+            <svg className="w-full h-full text-amber-800/70" viewBox="0 0 100 120" fill="currentColor">
+              <path d="M20 100 C 10 70, 30 30, 60 10 C 80 0, 95 15, 80 35 C 65 55, 35 60, 40 85 C 45 105, 70 100, 60 115 Z" opacity="0.3" />
+              <path d="M30 90 C 22 68, 38 38, 58 22 C 72 12, 82 22, 70 36 C 58 50, 38 54, 42 74 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
+              <circle cx="55" cy="30" r="3" />
+            </svg>
+          </div>
+
+          {/* Right Floral Botanical Vignette Watermark */}
+          <div className="absolute top-2 right-0 w-28 sm:w-44 h-44 pointer-events-none z-[1] opacity-30 select-none overflow-hidden">
+            <svg className="w-full h-full text-amber-800/70" viewBox="0 0 100 120" fill="currentColor">
+              <path d="M80 100 C 90 70, 70 30, 40 10 C 20 0, 5 15, 20 35 C 35 55, 65 60, 60 85 C 55 105, 30 100, 40 115 Z" opacity="0.3" />
+              <path d="M70 90 C 78 68, 62 38, 42 22 C 28 12, 18 22, 30 36 C 42 50, 62 54, 58 74 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
+              <circle cx="45" cy="30" r="3" />
+            </svg>
+          </div>
+
           <div className={`relative z-10 max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col items-center gap-8 ${isLightBg ? "text-amber-950" : "text-white"}`}>
             {/* Luxury Header - Only rendered if at least one header field is provided */}
             {hasHeader && (
-              <div className="flex flex-col items-center text-center max-w-2xl gap-1.5">
-                {/* Royal Emblem Ornament */}
-                <div className="mb-0.5 text-amber-700 dark:text-amber-400 opacity-90">
-                  <svg className="w-6 h-6 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                    <path d="M12 2L13.8 8.2L20 10L13.8 11.8L12 18L10.2 11.8L4 10L10.2 8.2L12 2Z" fill="currentColor" fillOpacity="0.15" />
-                    <circle cx="12" cy="10" r="1.5" fill="currentColor" />
-                    <path d="M12 5.5L12.8 8.5L15.5 9.3L12.8 10.1L12 13.1L11.2 10.1L8.5 9.3L11.2 8.5L12 5.5Z" strokeWidth="0.8" />
-                  </svg>
-                </div>
-                
+              <div className="flex flex-col items-center text-center max-w-2xl gap-1.5 pt-2">
                 {badgeTitle && (
                   <span className={`text-[10px] tracking-[0.3em] font-bold uppercase ${isLightBg ? "text-amber-800" : "text-amber-400"}`}>
                     {badgeTitle}
