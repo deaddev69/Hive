@@ -232,22 +232,7 @@ export function PushNotificationManager({
 
   return (
     <>
-      {/* Dev / Staff Test Trigger */}
-      <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
-        <button
-          onClick={() =>
-            startOrderAlarm({
-              title: "🚨 NEW ORDER RECEIVED!",
-              body: "Order #HIVE-TEST-001 • 1 Item",
-              netPayout: 1200.00,
-            })
-          }
-          className="bg-zinc-900 hover:bg-black text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-lg border border-zinc-700 flex items-center gap-2 transition-all hover:scale-105 active:scale-95 cursor-pointer"
-        >
-          <BellRing className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-          <span>Test Alarm 🚨</span>
-        </button>
-      </div>
+      {/* Dev / Staff Test Trigger Removed */}
 
       {/* Premium Swiggy/Zomato Partner Style Ringing Overlay (Full Viewport z-[100]) */}
       {isRinging && alertMode === "store" && (

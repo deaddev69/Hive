@@ -2010,7 +2010,8 @@ export default defineSchema({
   })
     .index("by_slug", ["slug"])
     .index("by_status", ["status"])
-    .index("by_seedSource", ["seedSource"]),
+    .index("by_seedSource", ["seedSource"])
+    .index("by_createdAt", ["createdAt"]),
 
   // ─── HOMEPAGE V2: COLLECTION PRODUCTS MAPPING ──────────────────────────────
   collectionProducts: defineTable({

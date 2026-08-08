@@ -22,6 +22,20 @@ import { ExperienceBlockRenderer } from "@/components/home/ExperienceBlockRender
 
 
 
+class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallback: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode, fallback: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
 function HomePageSkeleton() {
   return (
     <div className="flex flex-col items-center bg-white min-h-screen text-hive-text w-full select-none gap-8 pt-8">
@@ -224,9 +238,10 @@ export function HomeClient() {
   }
 
   return (
-    <div className="flex flex-col items-center bg-white min-h-screen text-hive-text w-full select-none">
-      
-      {/* Visually hidden H1 for SEO compliance */}
+    <ErrorBoundary fallback={<div className="p-4 bg-red-50 text-red-700 min-h-screen">Failed to load dynamic content. Please refresh.</div>}>
+      <div className="flex flex-col items-center bg-white min-h-screen text-hive-text w-full select-none">
+        
+        {/* Visually hidden H1 for SEO compliance */}
       <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
 
       {/* ⚡ Full-Width Yellow Ticker Banner (Marquee) */}
@@ -296,6 +311,7 @@ export function HomeClient() {
           animation-play-state: paused;
         }
       `}</style>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

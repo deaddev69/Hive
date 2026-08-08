@@ -81,12 +81,22 @@ export const getFreshArrivals = query({
 
 // Record a product view for a user
 export const trackProductView = mutation({
-  args: { userId: v.id("users"), productId: v.id("products") },
+  args: { productId: v.id("products") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return;
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .first();
+
+    if (!user) return;
+
     const existing = await ctx.db
       .query("recentlyViewed")
       .withIndex("by_user_product", (q) =>
-        q.eq("userId", args.userId).eq("productId", args.productId)
+        q.eq("userId", user._id).eq("productId", args.productId)
       )
       .first();
 
@@ -98,7 +108,7 @@ export const trackProductView = mutation({
     } else {
       // Insert new view record
       await ctx.db.insert("recentlyViewed", {
-        userId: args.userId,
+        userId: user._id,
         productId: args.productId,
         viewedAt: now,
       });

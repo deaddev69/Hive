@@ -25,6 +25,7 @@ export interface ProductCardProps {
   darkTheme?: boolean;
   customCtaText?: string;
   premiumMode?: boolean;
+  priority?: boolean;
 }
 
 // Clean database/AI suffixes from product titles
@@ -37,7 +38,7 @@ export function cleanProductTitle(name: string): string {
     .trim();
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, isRecommendation, hidePrice, hideQuickView, darkTheme, customCtaText, premiumMode }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, isRecommendation, hidePrice, hideQuickView, darkTheme, customCtaText, premiumMode, priority }) => {
   const { toggleItem, hasItem } = useWishlistStore();
   const [hydrated, setHydrated] = useState(false);
   const [pulse, setPulse] = useState(false);
@@ -170,7 +171,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
               alt={product.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
-              loading="lazy"
+              priority={priority}
+              loading={priority ? undefined : "lazy"}
               className={cn(
                 "object-cover w-full h-full pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-200 ease-out",
                 isClosed && "grayscale-[25%] opacity-85"

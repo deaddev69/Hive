@@ -1,13 +1,29 @@
 import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { auth } from "@clerk/nextjs/server";
 
 export async function POST(req: Request) {
   try {
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
     if (!file) {
       return NextResponse.json({ error: "No file provided for upload." }, { status: 400 });
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json({ error: "File exceeds 5MB limit." }, { status: 400 });
+    }
+
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+    if (!allowedMimeTypes.includes(file.type)) {
+      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, WEBP, and SVG are allowed." }, { status: 400 });
     }
 
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || process.env.R2_ACCOUNT_ID;

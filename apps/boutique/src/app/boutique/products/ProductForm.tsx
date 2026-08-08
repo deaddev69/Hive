@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Cropper from "react-easy-crop";
 
 // Constant arrays
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "FREE"];
@@ -107,7 +108,7 @@ function autoCorrectCapitalization(str: string): string {
 
 const cropImage = (
   srcUrl: string,
-  cropSettings: { zoom: number; x: number; y: number; aspect: "1:1" | "4:5" | "original" },
+  croppedAreaPixels: { x: number; y: number; width: number; height: number },
   originalFile: File
 ): Promise<File> => {
   return new Promise((resolve) => {
@@ -121,51 +122,23 @@ const cropImage = (
         return;
       }
 
-      let targetWidth = 1000;
-      let targetHeight = 1000;
-      if (cropSettings.aspect === "4:5") {
-        targetHeight = 1250;
-      } else if (cropSettings.aspect === "original") {
-        const origAspect = img.naturalWidth / img.naturalHeight;
-        targetHeight = Math.round(targetWidth / origAspect);
-      }
-
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
-
-      const { zoom, x, y } = cropSettings;
-
-      const viewAspect = targetWidth / targetHeight;
-      const imgAspect = img.naturalWidth / img.naturalHeight;
-
-      let renderWidth = targetWidth;
-      let renderHeight = targetHeight;
-
-      if (imgAspect > viewAspect) {
-        renderWidth = targetHeight * imgAspect;
-      } else {
-        renderHeight = targetWidth / imgAspect;
-      }
-
-      const finalRenderW = renderWidth * zoom;
-      const finalRenderH = renderHeight * zoom;
-
-      const containerWidth = 400;
-      const containerHeight = cropSettings.aspect === "4:5" ? 500 : 400;
-
-      const scaleX = targetWidth / containerWidth;
-      const scaleY = targetHeight / containerHeight;
-
-      const canvasOffsetX = x * scaleX;
-      const canvasOffsetY = y * scaleY;
+      canvas.width = croppedAreaPixels.width;
+      canvas.height = croppedAreaPixels.height;
 
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, targetWidth, targetHeight);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const drawX = (targetWidth - finalRenderW) / 2 + canvasOffsetX;
-      const drawY = (targetHeight - finalRenderH) / 2 + canvasOffsetY;
-
-      ctx.drawImage(img, drawX, drawY, finalRenderW, finalRenderH);
+      ctx.drawImage(
+        img,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0,
+        0,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height
+      );
 
       canvas.toBlob(
         (blob) => {
@@ -332,7 +305,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     url: string;
     file?: File;
     storageId?: string;
-    cropSettings?: { zoom: number; x: number; y: number; aspect: "1:1" | "4:5" | "original" };
+    cropSettings?: { zoom: number; x: number; y: number; aspect: "1:1" | "4:5" | "original"; croppedAreaPixels?: any };
   }[]>([]);
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState<number>(0);
   const [isZoomModalOpen, setIsZoomModalOpen] = useState<boolean>(false);
@@ -366,13 +339,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     pattern: "",
     fabricFamily: "",
   });
-
-  // Zoom / Drag references for Step 2 Cropper
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const initialOffset = useRef({ x: 0, y: 0 });
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
 
   // Uploading / Submitting status
   const [submitting, setSubmitting] = useState(false);
@@ -711,6 +677,38 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     setSelectedPreviewIndex(0);
   };
 
+  const moveImageLeft = (idx: number) => {
+    if (idx <= 0) return;
+    setLocalPreviews((prev) => {
+      const arr = [...prev];
+      const temp = arr[idx - 1];
+      arr[idx - 1] = arr[idx];
+      arr[idx] = temp;
+      return arr;
+    });
+    if (selectedPreviewIndex === idx) {
+      setSelectedPreviewIndex(idx - 1);
+    } else if (selectedPreviewIndex === idx - 1) {
+      setSelectedPreviewIndex(idx);
+    }
+  };
+
+  const moveImageRight = (idx: number) => {
+    if (idx >= localPreviews.length - 1) return;
+    setLocalPreviews((prev) => {
+      const arr = [...prev];
+      const temp = arr[idx + 1];
+      arr[idx + 1] = arr[idx];
+      arr[idx] = temp;
+      return arr;
+    });
+    if (selectedPreviewIndex === idx) {
+      setSelectedPreviewIndex(idx + 1);
+    } else if (selectedPreviewIndex === idx + 1) {
+      setSelectedPreviewIndex(idx);
+    }
+  };
+
   const toggleSize = (size: string) => {
     setSelectedSizes((prev) => {
       if (prev.includes(size)) {
@@ -919,7 +917,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
   const [imageNaturalSize, setImageNaturalSize] = useState({ width: 1, height: 1 });
 
-  const updateActiveCrop = (updates: Partial<{ zoom: number; x: number; y: number; aspect: "1:1" | "4:5" | "original" }>) => {
+  const updateActiveCrop = (updates: Partial<{ zoom: number; x: number; y: number; aspect: "1:1" | "4:5" | "original"; croppedAreaPixels?: any }>) => {
     setLocalPreviews((prev) => {
       const next = [...prev];
       if (next[selectedPreviewIndex]) {
@@ -936,76 +934,15 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     });
   };
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const activePreview = localPreviews[selectedPreviewIndex];
-    if (!activePreview) return;
-    const settings = activePreview.cropSettings || { zoom: 1, x: 0, y: 0, aspect: "1:1" as const };
-
-    setIsDragging(true);
-    dragStart.current = { x: e.clientX, y: e.clientY };
-    initialOffset.current = { x: settings.x, y: settings.y };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const activePreview = localPreviews[selectedPreviewIndex];
-    if (!isDragging || !activePreview) return;
-    const settings = activePreview.cropSettings || { zoom: 1, x: 0, y: 0, aspect: "1:1" as const };
-
-    const deltaX = e.clientX - dragStart.current.x;
-    const deltaY = e.clientY - dragStart.current.y;
-    const newX = initialOffset.current.x + deltaX;
-    const newY = initialOffset.current.y + deltaY;
-
-    if (viewportRef.current && imgRef.current) {
-      const containerRect = viewportRef.current.getBoundingClientRect();
-      const imgWidth = imageNaturalSize.width;
-      const imgHeight = imageNaturalSize.height;
-
-      if (imgWidth && imgHeight) {
-        const containerW = containerRect.width;
-        const containerH = containerRect.height;
-        const viewAspect = containerW / containerH;
-        const imgAspect = imgWidth / imgHeight;
-
-        let baseW = containerW;
-        let baseH = containerH;
-
-        if (imgAspect > viewAspect) {
-          baseW = containerH * imgAspect;
-        } else {
-          baseH = containerW / imgAspect;
-        }
-
-        const scaledW = baseW * settings.zoom;
-        const scaledH = baseH * settings.zoom;
-
-        const limitX = Math.max(0, (scaledW - containerW) / 2);
-        const limitY = Math.max(0, (scaledH - containerH) / 2);
-
-        const clampedX = Math.max(-limitX, Math.min(limitX, newX));
-        const clampedY = Math.max(-limitY, Math.min(limitY, newY));
-
-        updateActiveCrop({ x: clampedX, y: clampedY });
-      }
-    }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    setIsDragging(false);
-    e.currentTarget.releasePointerCapture(e.pointerId);
-  };
-
   const handleApplyCrop = async () => {
     setCroppingInProgress(true);
     try {
       const croppedPreviews = await Promise.all(
         localPreviews.map(async (item) => {
-          if (!item.file || !item.cropSettings) {
+          if (!item.file || !item.cropSettings || !item.cropSettings.croppedAreaPixels) {
             return item;
           }
-          const croppedFile = await cropImage(item.url, item.cropSettings, item.file);
+          const croppedFile = await cropImage(item.url, item.cropSettings.croppedAreaPixels, item.file);
           const croppedUrl = URL.createObjectURL(croppedFile);
           return {
             ...item,
@@ -1064,36 +1001,25 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           {/* Top Interactive Viewport Frame */}
           <div className="w-full bg-slate-100 flex justify-center items-center py-4 relative shrink-0">
             <div
-              ref={viewportRef}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-              className="w-full relative bg-slate-950 overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing rounded-2xl shadow-inner select-none"
+              className="w-full relative bg-slate-950 overflow-hidden flex items-center justify-center rounded-2xl shadow-inner select-none"
               style={{
                 height: `${getViewportHeight()}px`,
                 maxWidth: "400px"
               }}
             >
               {activePreview ? (
-                <img
-                  ref={imgRef}
-                  src={activePreview.url}
-                  alt="Crop preview"
-                  className="absolute max-w-none pointer-events-none select-none"
-                  style={{
-                    transform: `translate(-50%, -50%) scale(${cropSettings.zoom}) translate(${cropSettings.x}px, ${cropSettings.y}px)`,
-                    left: "50%",
-                    top: "50%",
-                    height: "100%",
-                    width: "auto",
-                    objectFit: "cover"
-                  }}
-                  onLoad={(e) => {
-                    const img = e.currentTarget;
-                    setImageNaturalSize({ width: img.naturalWidth, height: img.naturalHeight });
-                  }}
-                />
+                <div className="absolute inset-0 touch-none">
+                  <Cropper
+                    image={activePreview.url}
+                    crop={{ x: cropSettings.x || 0, y: cropSettings.y || 0 }}
+                    zoom={cropSettings.zoom || 1}
+                    aspect={cropSettings.aspect === "4:5" ? 4 / 5 : cropSettings.aspect === "original" ? (imageNaturalSize.width / imageNaturalSize.height || 1) : 1}
+                    onCropChange={(crop) => updateActiveCrop({ x: crop.x, y: crop.y })}
+                    onZoomChange={(zoom) => updateActiveCrop({ zoom })}
+                    onCropComplete={(croppedArea, croppedAreaPixels) => updateActiveCrop({ croppedAreaPixels })}
+                    onMediaLoaded={(mediaSize) => setImageNaturalSize({ width: mediaSize.naturalWidth, height: mediaSize.naturalHeight })}
+                  />
+                </div>
               ) : (
                 <div 
                   onClick={() => fileInputRef.current?.click()}
@@ -1254,6 +1180,29 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                         Set Cover
                       </button>
                     )}
+
+                    <div className="absolute top-1/2 left-1 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {idx > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); moveImageLeft(idx); }}
+                          className="w-6 h-6 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-white shadow-md cursor-pointer"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="absolute top-1/2 right-1 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {idx < localPreviews.length - 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); moveImageRight(idx); }}
+                          className="w-6 h-6 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-white shadow-md cursor-pointer"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

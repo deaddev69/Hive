@@ -2,6 +2,20 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { enrichProducts, getTotalStock } from "./products";
 
+async function enforceAdmin(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new Error("Unauthenticated call");
+  }
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_token", (q: any) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+    .first();
+  if (!user || user.role !== "admin") {
+    throw new Error("Unauthorized access");
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN QUERIES
 // ─────────────────────────────────────────────────────────────────────────────
@@ -18,7 +32,7 @@ export const getAllEditorialBanners = query({
 export const getAllHomepageCollections = query({
   args: {},
   handler: async (ctx) => {
-    const platformCols = await ctx.db.query("collections").collect();
+    const platformCols = await ctx.db.query("collections").withIndex("by_createdAt").collect();
     
     const combined = platformCols.map((c) => ({
       _id: c._id.toString(),
@@ -110,6 +124,7 @@ export const createCampaign = mutation({
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const newId = await ctx.db.insert("editorialBanners", {
       ...args,
       status: "draft",
@@ -132,6 +147,7 @@ export const updateEditorialBanner = mutation({
     isPublished: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const { id, ...updates } = args;
     await ctx.db.patch(id, updates);
   },
@@ -140,6 +156,7 @@ export const updateEditorialBanner = mutation({
 export const deleteEditorialBanner = mutation({
   args: { id: v.id("editorialBanners") },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     await ctx.db.delete(args.id);
   },
 });
@@ -150,6 +167,7 @@ export const updateCampaign = mutation({
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     await ctx.db.patch(args.id, { status: args.status });
   },
 });
