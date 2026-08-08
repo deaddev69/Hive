@@ -293,13 +293,13 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                 )}
                 
                 {blockTitle && (
-                  <h2 className={`text-3xl md:text-5xl font-serif font-normal tracking-tight ${isLightBg ? "text-stone-900" : "text-white"} drop-shadow-xs`}>
+                  <h2 className={`text-3xl md:text-5xl font-cormorant font-normal tracking-tight ${isLightBg ? "text-stone-900" : "text-white"} drop-shadow-xs`}>
                     {blockTitle}
                   </h2>
                 )}
                 
                 {blockSubtitle && (
-                  <p className={`text-sm md:text-base font-serif italic mt-0.5 ${isLightBg ? "text-stone-600" : "text-white/80"}`}>
+                  <p className={`text-sm md:text-base font-cormorant italic mt-0.5 ${isLightBg ? "text-stone-600" : "text-white/80"}`}>
                     {blockSubtitle}
                   </p>
                 )}

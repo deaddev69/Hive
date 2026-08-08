@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Inter, Outfit, Cormorant_Garamond } from "next/font/google";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
 import { CustomerLayout } from "@/components/layout/CustomerLayout";
 import "./globals.css";
@@ -13,6 +13,14 @@ const inter = Inter({
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-satoshi", // Reusing the variable or just letting tailwind use sans
+  display: "swap",
+});
+
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-cormorant",
   display: "swap",
 });
 
@@ -38,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${inter.variable} ${outfit.variable} ${cormorant.variable}`} suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#F5C22B" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
