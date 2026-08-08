@@ -1035,20 +1035,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 </div>
               )}
 
-              {/* Grid overlay lines */}
-              {isDragging && (
-                <div className="absolute inset-0 pointer-events-none grid grid-cols-3 grid-rows-3 border border-white/20">
-                  <div className="border-r border-b border-white/30" />
-                  <div className="border-r border-b border-white/30" />
-                  <div className="border-b border-white/30" />
-                  <div className="border-r border-b border-white/30" />
-                  <div className="border-r border-b border-white/30" />
-                  <div className="border-b border-white/30" />
-                  <div className="border-r border-white/30" />
-                  <div className="border-r border-white/30" />
-                  <div />
-                </div>
-              )}
+
 
               {/* Aspect Ratio Button Overlay */}
               {activePreview && (
