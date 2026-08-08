@@ -21,10 +21,14 @@ import {
   Phone,
   FileText,
   ChevronDown,
+  ChevronRight,
   Zap,
   ArrowLeft,
   ArrowRight,
   Check,
+  User,
+  UserCheck,
+  Tag,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -661,167 +665,194 @@ export const Navbar: React.FC = () => {
         }`}
       >
         {/* ── Dedicated Drawer Header ─────────────────────────────── */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100 flex-shrink-0 gap-3">
+        <div className="flex items-center justify-between px-5 py-3.5 bg-[#FAF9F6] border-b border-stone-200/70 flex-shrink-0 gap-3">
           {isAuthenticated && user ? (
-            <span className="text-sm font-medium text-stone-850 truncate text-left">
-              Hi, {user.name?.split(" ")[0] || "User"}
-            </span>
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <div className="w-8.5 h-8.5 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white font-serif font-bold text-xs flex items-center justify-center shadow-xs shrink-0">
+                {(user.name?.[0] || "U").toUpperCase()}
+              </div>
+              <div className="flex flex-col text-left truncate">
+                <span className="text-xs font-extrabold text-stone-900 truncate leading-tight">
+                  Hi, {user.name?.split(" ")[0] || "User"}
+                </span>
+                <span className="text-[10px] text-stone-500 font-medium flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-amber-600 shrink-0" />
+                  <span className="truncate">{hydrated && (locality || city) ? locality || city : "Location"}</span>
+                </span>
+              </div>
+            </div>
           ) : (
-            <HiveLogo />
+            <div className="flex items-center gap-2">
+              <HiveLogo />
+              {hydrated && (locality || city) && (
+                <span className="text-[10px] text-stone-500 font-medium flex items-center gap-1 bg-stone-100/80 px-2 py-0.5 rounded-full border border-stone-200/60">
+                  <MapPin className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                  <span className="truncate">{locality || city}</span>
+                </span>
+              )}
+            </div>
           )}
           
           <button
             onClick={() => setMobileMenuOpen(false)}
-            className="w-8 h-8 rounded-full bg-stone-50 hover:bg-stone-100 flex items-center justify-center text-stone-500 hover:text-stone-800 active:scale-95 transition-all flex-shrink-0"
+            className="w-8 h-8 rounded-full bg-stone-200/60 hover:bg-stone-200 flex items-center justify-center text-stone-600 hover:text-stone-900 active:scale-95 transition-all flex-shrink-0"
             aria-label="Close menu"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* ── Location Context line ──────────────────────────────── */}
-        <div className="px-5 py-2.5 text-left border-b border-stone-100 flex items-center gap-1.5 text-[11px] text-stone-400 font-medium select-none flex-shrink-0">
-          <MapPin className="w-3.5 h-3.5 text-stone-400 flex-shrink-0" />
-          <span className="truncate max-w-[200px]">{hydrated && (locality || city) ? locality || city : "Set Location"}</span>
-        </div>
-
         {/* ── Scrollable body ─────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto overscroll-contain">
 
-          {/* ── Campaign hero ──────────────────────────────────────── */}
-          <div className="px-4 pt-4 pb-3">
+          {/* ── Compact Luxury Campaign Banner ────────────────────────────── */}
+          <div className="px-4 pt-3.5 pb-1.5">
             <Link
               href={hydrated && locality ? `/search?q=${encodeURIComponent(locality + " collections")}` : "/search?q=monsoon+collection"}
               onClick={() => setMobileMenuOpen(false)}
-              className="relative block w-full h-[200px] rounded-2xl overflow-hidden active:scale-[0.98] transition-transform shadow-[0_4px_20px_rgba(0,0,0,0.04)]"
+              className="relative block w-full h-[105px] rounded-2xl overflow-hidden active:scale-[0.98] transition-transform shadow-xs"
             >
               <img
                 src="/images/drawer/campaign-monsoon.png"
                 alt="Monsoon Edit 2026"
                 className="absolute inset-0 w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-black/5" />
-              <div className="absolute bottom-0 left-0 right-0 px-5 pb-5 text-left">
-                <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-amber-300/90 mb-1.5">
-                  {hydrated && locality ? `${locality.toUpperCase()} TRENDS` : "PREMIUM EDIT"}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-transparent" />
+              <div className="absolute inset-y-0 left-0 px-4 flex flex-col justify-center text-left max-w-[240px]">
+                <p className="text-[8.5px] font-extrabold uppercase tracking-[0.25em] text-amber-300 mb-0.5">
+                  {hydrated && locality ? `${locality.toUpperCase()} EDITS` : "PREMIUM EDIT"}
                 </p>
-                <p className="text-[18px] font-serif font-bold text-white leading-snug mb-0.5 whitespace-pre-line">
-                  {hydrated && locality ? "Curated collections\nfound nearby" : `Handpicked designer\ncollections`}
+                <p className="text-[14px] font-serif font-bold text-white leading-tight mb-1">
+                  Curated Styles Near You
                 </p>
-                <p className="text-[12px] font-medium text-white/70 mt-1">View Collection →</p>
+                <p className="text-[10.5px] font-semibold text-amber-200 hover:underline flex items-center gap-1">
+                  <span>Explore Edits</span>
+                  <span>→</span>
+                </p>
               </div>
             </Link>
           </div>
 
           {/* ── Grouped Navigation ─────────────────────────────────── */}
-          <div className="px-5 py-4 flex flex-col gap-6 border-b border-stone-100 select-none text-left">
-            {/* SHOP Group */}
-            <div className="flex flex-col gap-2">
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-stone-400">Categories</p>
-              <div className="flex flex-col gap-3 pl-1">
+          <div className="px-4 py-3 flex flex-col gap-4 border-b border-stone-100 select-none text-left">
+            {/* SHOP / CATEGORIES Group */}
+            <div className="flex flex-col gap-1.5">
+              <p className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-stone-400 px-1">Explore Collections</p>
+              <div className="grid grid-cols-3 gap-2">
                 <Link
                   href="/products/women"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-[13px] font-medium text-stone-850 hover:text-hive-gold active:text-hive-gold transition-colors"
+                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-stone-50/80 hover:bg-amber-50/60 border border-stone-200/50 hover:border-amber-300/60 transition-all text-center group"
                 >
-                  Women
+                  <Sparkles className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[11.5px] font-bold text-stone-800">Women</span>
                 </Link>
                 <Link
                   href="/products/men"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-[13px] font-medium text-stone-850 hover:text-hive-gold active:text-hive-gold transition-colors"
+                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-stone-50/80 hover:bg-amber-50/60 border border-stone-200/50 hover:border-amber-300/60 transition-all text-center group"
                 >
-                  Men
+                  <User className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[11.5px] font-bold text-stone-800">Men</span>
                 </Link>
                 <Link
                   href="/products/sale"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-[13px] font-medium text-red-500 hover:text-red-650 transition-colors"
+                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-red-50/60 hover:bg-red-50 border border-red-200/60 transition-all text-center group"
                 >
-                  Sale
+                  <Tag className="w-4 h-4 text-red-600 group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[11.5px] font-bold text-red-600">Sale</span>
                 </Link>
               </div>
             </div>
 
             {/* ACCOUNT Group */}
-            <div className="flex flex-col gap-2">
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-stone-400">Account</p>
-              <div className="flex flex-col gap-3 pl-1">
+            <div className="flex flex-col gap-1.5">
+              <p className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-stone-400 px-1">My Account</p>
+              <div className="grid grid-cols-3 gap-2">
                 <Link
                   href="/orders"
                   prefetch={false}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-[13px] font-medium text-stone-850 hover:text-hive-gold active:text-hive-gold transition-colors"
+                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-stone-50/80 hover:bg-amber-50/60 border border-stone-200/50 hover:border-amber-300/60 transition-all text-center group"
                 >
-                  Orders
+                  <Package className="w-4 h-4 text-stone-700 group-hover:text-amber-600 group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[11.5px] font-bold text-stone-800">Orders</span>
                 </Link>
                 <Link
                   href="/wishlist"
                   prefetch={false}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-[13px] font-medium text-stone-850 hover:text-hive-gold active:text-hive-gold transition-colors"
+                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-stone-50/80 hover:bg-amber-50/60 border border-stone-200/50 hover:border-amber-300/60 transition-all text-center group"
                 >
-                  Wishlist
+                  <Heart className="w-4 h-4 text-stone-700 group-hover:text-red-500 group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[11.5px] font-bold text-stone-800">Wishlist</span>
                 </Link>
                 <Link
                   href="/account"
                   prefetch={false}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-[13px] font-medium text-stone-850 hover:text-hive-gold active:text-hive-gold transition-colors"
+                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-stone-50/80 hover:bg-amber-50/60 border border-stone-200/50 hover:border-amber-300/60 transition-all text-center group"
                 >
-                  Account
+                  <UserCheck className="w-4 h-4 text-stone-700 group-hover:text-amber-600 group-hover:scale-110 transition-transform mb-1" />
+                  <span className="text-[11.5px] font-bold text-stone-800">Profile</span>
                 </Link>
               </div>
             </div>
 
-            {/* PARTNERS Group */}
-            <div className="flex flex-col gap-2">
-              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-stone-400">Partners</p>
-              <div className="pl-1 flex flex-col gap-2">
-                {isApprovedMerchant ? (
-                  <a
-                    href={SELLER_PORTAL_URL}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block mt-1"
-                  >
-                    <span className="inline-flex w-full items-center justify-center gap-2 py-3 px-4 rounded-xl border border-hive-gold bg-white text-hive-dark text-[10px] font-semibold tracking-[0.2em] uppercase hover:bg-hive-gold hover:text-hive-dark transition-all duration-200 text-center cursor-pointer">
-                      <Store className="w-3.5 h-3.5 text-hive-gold" />
-                      Manage Boutique
-                    </span>
-                  </a>
-                ) : isPendingMerchant ? (
-                  <Link
-                    href="/become-seller"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block mt-1"
-                  >
-                    <span className="inline-block w-full py-3 px-4 rounded-xl border border-stone-200 bg-stone-50 text-stone-500 text-[10px] font-semibold tracking-[0.2em] uppercase hover:bg-stone-100 transition-all duration-200 text-center cursor-pointer italic">
-                      Application Under Review
-                    </span>
-                  </Link>
-                ) : (
-                  <>
-                    <Link
-                      href="/become-seller"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block mt-1"
-                    >
-                      <span className="inline-block w-full py-3 px-4 rounded-xl border border-hive-gold bg-white text-hive-dark text-[10px] font-semibold tracking-[0.2em] uppercase hover:bg-hive-gold hover:text-hive-dark transition-all duration-200 text-center cursor-pointer">
-                        Sell on Hive
-                      </span>
-                    </Link>
-                    <a
-                      href={SELLER_PORTAL_URL}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block mt-1"
-                    >
-                      <span className="inline-block w-full py-3 px-4 rounded-xl border border-stone-200 bg-stone-50 text-stone-600 text-[10px] font-semibold tracking-[0.2em] uppercase hover:bg-stone-100 transition-all duration-200 text-center cursor-pointer">
-                        Partner Portal
-                      </span>
-                    </a>
-                  </>
-                )}
-              </div>
+            {/* PARTNERS Golden Banner */}
+            <div className="flex flex-col gap-1.5 pt-1">
+              <p className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-stone-400 px-1">Boutique Partners</p>
+              {isApprovedMerchant ? (
+                <a
+                  href={SELLER_PORTAL_URL}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block"
+                >
+                  <div className="w-full p-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs flex items-center justify-between group active:scale-[0.98] transition-transform">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center">
+                        <Store className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex flex-col text-left">
+                        <span className="text-xs font-bold leading-tight">Manage Boutique</span>
+                        <span className="text-[10px] text-amber-100 font-medium">Boutique Merchant Portal</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-white/80 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </a>
+              ) : isPendingMerchant ? (
+                <Link
+                  href="/become-seller"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block"
+                >
+                  <div className="w-full p-3 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 flex items-center justify-between">
+                    <span className="text-xs font-bold italic">Application Under Review</span>
+                    <span className="text-[10px] bg-amber-200/80 px-2 py-0.5 rounded-full font-bold">Pending</span>
+                  </div>
+                </Link>
+              ) : (
+                <Link
+                  href="/become-seller"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block"
+                >
+                  <div className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-100/70 to-amber-50 border border-amber-300/70 text-amber-950 shadow-xs flex items-center justify-between group active:scale-[0.98] transition-transform">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8.5 h-8.5 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                        <Store className="w-4.5 h-4.5" />
+                      </div>
+                      <div className="flex flex-col text-left">
+                        <span className="text-xs font-extrabold tracking-tight">Sell on Hive</span>
+                        <span className="text-[10px] text-amber-800 font-medium">List your boutique products →</span>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-amber-700 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
 
