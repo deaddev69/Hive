@@ -311,31 +311,39 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
           {openAccordion === "returns" && (
             <div className="text-xs text-stone-600 leading-relaxed font-medium pt-1 space-y-2.5 text-left animate-fade-in">
               {!isReturnsAccepted ? (
-                <div className="p-3.5 bg-stone-50 border border-stone-200/80 rounded-2xl space-y-2 text-xs text-slate-800 font-medium">
-                  <p className="font-bold text-red-700 flex items-center gap-1.5">
-                    <span>🔒 Final Sale — Voluntary Returns Disabled</span>
+                <div className="p-3.5 bg-stone-50/80 border border-stone-200/80 rounded-xl space-y-2 text-xs text-stone-800 font-medium">
+                  <div className="flex items-center gap-2 font-bold text-stone-900">
+                    <RotateCcw className="w-3.5 h-3.5 text-stone-600 flex-shrink-0" />
+                    <span>Final Sale Item</span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 leading-relaxed pl-5">
+                    Voluntary size exchanges or change-of-mind returns are disabled for this boutique item.
                   </p>
-                  <p className="text-[11px] text-stone-600 leading-relaxed">
-                    This boutique seller accepts returns for damaged, defective, or incorrect items. Voluntary change-of-mind size returns are disabled.
-                  </p>
-                  <p className="text-[11px] font-extrabold text-slate-900 border-t border-stone-200/80 pt-2 mt-1">
-                    🛡️ Compulsory Guarantee: Damaged, defective, or wrong items are 100% guaranteed for full refund or replacement.
-                  </p>
+                  <div className="pt-2 border-t border-stone-200/60 flex items-start gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-stone-700 flex-shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-stone-700 leading-relaxed font-semibold">
+                      Hive Guarantee: Damaged, defective, or incorrect items remain 100% covered with free replacement or full refund.
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div className="p-3.5 bg-emerald-50/50 border border-emerald-200/60 rounded-2xl space-y-2 text-xs text-emerald-950 font-medium">
-                  <p className="font-bold text-emerald-800 flex items-center gap-1.5">
-                    <span>🛡️ 24-Hour Easy Returns & Exchanges</span>
+                <div className="p-3.5 bg-stone-50/80 border border-stone-200/80 rounded-xl space-y-2 text-xs text-stone-800 font-medium">
+                  <div className="flex items-center gap-2 font-bold text-stone-900">
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
+                    <span>24-Hour Easy Returns & Size Exchange</span>
+                  </div>
+                  <p className="text-[11px] text-stone-600 leading-relaxed pl-5.5">
+                    Enjoy a 24-hour return and size exchange window starting from doorstep delivery time.
                   </p>
-                  <p className="text-[11px] text-emerald-900/80 leading-relaxed">
-                    This boutique accepts 24-hour voluntary returns and size exchanges from the moment your order is delivered.
-                  </p>
-                  <p className="text-[11px] font-extrabold text-slate-900 border-t border-emerald-200/60 pt-2 mt-1">
-                    🛡️ Compulsory Guarantee: Damaged, defective, or wrong items are 100% guaranteed for full refund or replacement.
-                  </p>
+                  <div className="pt-2 border-t border-stone-200/60 flex items-start gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-700 flex-shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-stone-700 leading-relaxed font-semibold">
+                      Hive Guarantee: Damaged, defective, or wrong items are fully covered with free replacement or 100% refund.
+                    </p>
+                  </div>
                 </div>
               )}
-              <p className="text-[11px] text-stone-500">
+              <p className="text-[11px] text-stone-500 pt-0.5">
                 • <strong>Refund Timeline</strong>: Once approved, refunds credit back to your original payment method within 5–7 business days.
               </p>
             </div>
