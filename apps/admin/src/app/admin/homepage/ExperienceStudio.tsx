@@ -392,7 +392,7 @@ export function ExperienceStudio() {
               {activeTab === "blocks" && (
                 <div className="max-w-3xl mx-auto space-y-4">
                   {blocks.map((block, idx) => {
-                    const schema = BLOCK_REGISTRY.find(s => s.id === block.blockType) || BLOCK_REGISTRY[0];
+                    const schema = BLOCK_REGISTRY.find(s => s.id === block.blockType && s.defaultConfig?.renderer === block.renderer) || BLOCK_REGISTRY.find(s => s.id === block.blockType) || BLOCK_REGISTRY[0];
                     const isHidden = block.status === "archived";
 
                     return (
@@ -750,7 +750,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
             </div>
           )}
 
-          {schema.fields.includes("bgImageUpload") && (
+          {(schema.fields.includes("bgImageUpload") || formData.renderer === "premiumGrid") && (
             <div className="space-y-2 border-t border-b border-slate-100 py-3">
               <label className="block text-[11px] font-bold text-slate-700">
                 Custom Block Background Image (Optional)
