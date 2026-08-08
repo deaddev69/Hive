@@ -394,3 +394,73 @@ export const getOrderDeliveredBoutiqueTemplate = (data: EmailTemplateInput) => {
 
   return baseLayout(`Delivered - Order ${data.orderNumber}`, bodyContent);
 };
+
+export const getOrderDeclinedCustomerTemplate = (data: {
+  orderNumber: string;
+  customerName: string;
+  items: Array<{ productName: string; size: string; quantity: number; priceAtPurchase: number; imageUrl?: string }>;
+  total: number;
+  refundReference?: string;
+}) => {
+  const firstItem = data.items[0];
+  const itemTitle = firstItem ? firstItem.productName : "your ordered item";
+  const itemSize = firstItem ? firstItem.size : "";
+  const itemQty = firstItem ? firstItem.quantity : 1;
+  const itemImg = firstItem?.imageUrl || "https://hivenow.in/icon-512x512.png";
+
+  const bodyContent = `
+    <div style="text-align: center; margin-bottom: 16px;">
+      <span style="background-color: #fffbeb; border: 1px solid #fde68a; color: #b45309; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 14px; border-radius: 50px; display: inline-block;">
+        ⚡ High Demand Alert & Instant Refund
+      </span>
+    </div>
+
+    <h1 style="font-size: 22px; font-weight: 800; color: #1c1917; text-align: center; margin: 0 0 18px 0;">
+      Order Update & Refund Initiated
+    </h1>
+
+    <p style="font-size: 14px; line-height: 1.65; color: #44403c; margin: 0 0 24px 0;">
+      Hi <strong>${data.customerName}</strong>,<br/><br/>
+      Hive experienced high demand for <strong>${itemTitle}</strong>, and this item is currently unavailable.<br/><br/>
+      Don't worry — we have initiated an <strong>instant full refund of ${formatCurrency(data.total)}</strong> back to your original payment method, which will reflect within 1 hour.
+    </p>
+
+    <div style="background-color: #faf7f2; border: 1px solid #e7e5e4; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+      <table width="100%" cellPadding="0" cellSpacing="0" border="0" style="font-size: 13px;">
+        <tr>
+          <td style="color: #78716c; font-weight: 600; padding: 4px 0;">Order Number:</td>
+          <td style="color: #1c1917; font-weight: 700; text-align: right; padding: 4px 0;">${data.orderNumber}</td>
+        </tr>
+        <tr>
+          <td style="color: #78716c; font-weight: 600; padding: 4px 0;">Refund Amount:</td>
+          <td style="color: #b45309; font-weight: 800; font-size: 15px; text-align: right; padding: 4px 0;">${formatCurrency(data.total)}</td>
+        </tr>
+        ${data.refundReference ? `
+        <tr>
+          <td style="color: #78716c; font-weight: 600; padding: 4px 0;">Razorpay Refund Ref:</td>
+          <td style="color: #44403c; font-family: monospace; text-align: right; padding: 4px 0;">${data.refundReference}</td>
+        </tr>` : ""}
+        <tr>
+          <td style="color: #78716c; font-weight: 600; padding: 4px 0;">Expected Credit:</td>
+          <td style="color: #059669; font-weight: 700; text-align: right; padding: 4px 0;">Within 1 Hour</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="border-top: 1px solid #e7e5e4; padding-top: 20px;">
+      <table width="100%" border="0" cellPadding="0" cellSpacing="0">
+        <tr>
+          <td width="56" style="vertical-align: top; padding-right: 14px;">
+            <img src="${itemImg}" width="52" height="52" style="border-radius: 10px; object-fit: cover; border: 1px solid #e7e5e4; display: block;"/>
+          </td>
+          <td style="vertical-align: top;">
+            <div style="font-size: 14px; font-weight: 700; color: #1c1917;">${itemTitle}</div>
+            <div style="font-size: 12px; color: #78716c; margin-top: 2px;">Size: ${itemSize} | Qty: ${itemQty}</div>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+
+  return baseLayout(`Order Update - ${data.orderNumber}`, bodyContent);
+};

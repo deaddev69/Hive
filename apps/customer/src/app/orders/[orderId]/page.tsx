@@ -23,6 +23,7 @@ import {
   AlertCircle,
   Package,
   RotateCcw,
+  Zap,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -168,7 +169,8 @@ export default function OrderDetailPage() {
     );
   }
 
-  const isCancelled = order.status === "cancelled" || order.status === "booking_failed";
+  const isDeclined = order.status === "declined" || order.status === "cancelled_by_merchant";
+  const isCancelled = isDeclined || order.status === "cancelled" || order.status === "booking_failed";
 
   // Parse delivery metadata with smart fallbacks
   const paymentMethodRaw = order.notes?.match(/Payment: (\w+)/)?.[1] ?? "online";
@@ -193,10 +195,10 @@ export default function OrderDetailPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 pb-16">
       
       {/* ── Top Navigation Bar ──────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-slate-200/80 dark:border-zinc-800 px-4 py-3.5 flex items-center justify-between shadow-xs">
+      <header className="bg-white dark:bg-zinc-900 border-b border-slate-200/80 dark:border-zinc-800 px-4 py-3 sticky top-0 z-30 flex items-center justify-between shadow-xs">
         <Link
           href="/orders"
-          className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors text-slate-700 dark:text-zinc-300 flex items-center gap-1 text-xs font-bold"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:white transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>My Orders</span>
