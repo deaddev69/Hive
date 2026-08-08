@@ -677,36 +677,51 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     setSelectedPreviewIndex(0);
   };
 
-  const moveImageLeft = (idx: number) => {
-    if (idx <= 0) return;
-    setLocalPreviews((prev) => {
-      const arr = [...prev];
-      const temp = arr[idx - 1];
-      arr[idx - 1] = arr[idx];
-      arr[idx] = temp;
-      return arr;
-    });
-    if (selectedPreviewIndex === idx) {
-      setSelectedPreviewIndex(idx - 1);
-    } else if (selectedPreviewIndex === idx - 1) {
-      setSelectedPreviewIndex(idx);
+  const [draggedItemIndex, setDraggedItemIndex] = useState<number | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedItemIndex(index);
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = "move";
+      // This is required for Firefox to allow dragging
+      e.dataTransfer.setData("text/plain", index.toString());
     }
   };
 
-  const moveImageRight = (idx: number) => {
-    if (idx >= localPreviews.length - 1) return;
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault(); // necessary to allow dropping
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = "move";
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedItemIndex === null || draggedItemIndex === dropIndex) {
+      setDraggedItemIndex(null);
+      return;
+    }
+    
     setLocalPreviews((prev) => {
       const arr = [...prev];
-      const temp = arr[idx + 1];
-      arr[idx + 1] = arr[idx];
-      arr[idx] = temp;
+      const draggedItem = arr[draggedItemIndex];
+      arr.splice(draggedItemIndex, 1);
+      arr.splice(dropIndex, 0, draggedItem);
       return arr;
     });
-    if (selectedPreviewIndex === idx) {
-      setSelectedPreviewIndex(idx + 1);
-    } else if (selectedPreviewIndex === idx + 1) {
-      setSelectedPreviewIndex(idx);
+
+    if (selectedPreviewIndex === draggedItemIndex) {
+      setSelectedPreviewIndex(dropIndex);
+    } else if (
+      selectedPreviewIndex > draggedItemIndex && selectedPreviewIndex <= dropIndex
+    ) {
+      setSelectedPreviewIndex(selectedPreviewIndex - 1);
+    } else if (
+      selectedPreviewIndex < draggedItemIndex && selectedPreviewIndex >= dropIndex
+    ) {
+      setSelectedPreviewIndex(selectedPreviewIndex + 1);
     }
+    setDraggedItemIndex(null);
   };
 
   const toggleSize = (size: string) => {
@@ -1122,14 +1137,19 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   <div
                     key={idx}
                     onClick={() => handleTileClick(idx)}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, idx)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, idx)}
                     className={cn(
                       "aspect-square rounded-xl overflow-hidden border relative cursor-pointer group transition-all",
                       isSelectedForPreview 
                         ? "border-[#E9B929] ring-2 ring-[#E9B929]/20 shadow-xs" 
-                        : "border-slate-200 hover:border-slate-350"
+                        : "border-slate-200 hover:border-slate-350",
+                      draggedItemIndex === idx && "opacity-50 scale-95"
                     )}
                   >
-                    <img src={prev.url} alt={`Thumb ${idx}`} className="w-full h-full object-cover" />
+                    <img src={prev.url} alt={`Thumb ${idx}`} className="w-full h-full object-cover pointer-events-none" />
                     
                     {/* Badge number */}
                     <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#E9B929] text-slate-900 flex items-center justify-center text-[10px] font-black shadow-sm">
@@ -1150,7 +1170,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                     </button>
                     
                     {idx === 0 && (
-                      <div className="absolute bottom-1 left-1 bg-[#E9B929]/90 text-slate-900 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                      <div className="absolute bottom-1 left-1 bg-[#E9B929]/90 text-slate-900 text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider pointer-events-none">
                         Cover
                       </div>
                     )}
@@ -1167,29 +1187,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                         Set Cover
                       </button>
                     )}
-
-                    <div className="absolute top-1/2 left-1 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {idx > 0 && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); moveImageLeft(idx); }}
-                          className="w-6 h-6 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-white shadow-md cursor-pointer"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                    <div className="absolute top-1/2 right-1 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {idx < localPreviews.length - 1 && (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); moveImageRight(idx); }}
-                          className="w-6 h-6 rounded-full bg-white/90 text-slate-900 flex items-center justify-center hover:bg-white shadow-md cursor-pointer"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
                   </div>
                 );
               })}
