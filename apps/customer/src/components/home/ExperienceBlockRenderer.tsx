@@ -271,10 +271,12 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           <div className={`relative z-10 max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col items-center gap-8 ${isLightBg ? "text-amber-950" : "text-white"}`}>
             {/* Luxury Header with Gold Top Emblem */}
             <div className="flex flex-col items-center text-center max-w-2xl gap-1.5">
-              {/* Gold Ornament Emblem */}
-              <div className="mb-1 text-amber-700 dark:text-amber-400">
-                <svg className="w-5 h-5 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M12 2L15 8L21 9L16.5 13.5L18 19.5L12 16L6 19.5L7.5 13.5L3 9L9 8L12 2Z" fill="currentColor" fillOpacity="0.2" />
+              {/* Royal Emblem Ornament */}
+              <div className="mb-0.5 text-amber-700 dark:text-amber-400 opacity-90">
+                <svg className="w-6 h-6 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                  <path d="M12 2L13.8 8.2L20 10L13.8 11.8L12 18L10.2 11.8L4 10L10.2 8.2L12 2Z" fill="currentColor" fillOpacity="0.15" />
+                  <circle cx="12" cy="10" r="1.5" fill="currentColor" />
+                  <path d="M12 5.5L12.8 8.5L15.5 9.3L12.8 10.1L12 13.1L11.2 10.1L8.5 9.3L11.2 8.5L12 5.5Z" strokeWidth="0.8" />
                 </svg>
               </div>
               
@@ -307,6 +309,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                     hideQuickView={true} 
                     darkTheme={!isLightBg}
                     customCtaText={cardCtaText}
+                    premiumMode={true}
                   />
                 </div>
               ))}

@@ -24,6 +24,7 @@ export interface ProductCardProps {
   hideQuickView?: boolean;
   darkTheme?: boolean;
   customCtaText?: string;
+  premiumMode?: boolean;
 }
 
 // Clean database/AI suffixes from product titles
@@ -36,7 +37,7 @@ export function cleanProductTitle(name: string): string {
     .trim();
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, isRecommendation, hidePrice, hideQuickView, darkTheme, customCtaText }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, isRecommendation, hidePrice, hideQuickView, darkTheme, customCtaText, premiumMode }) => {
   const { toggleItem, hasItem } = useWishlistStore();
   const [hydrated, setHydrated] = useState(false);
   const [pulse, setPulse] = useState(false);
@@ -155,8 +156,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   return (
     <div className="relative w-full h-full flex flex-col group select-none transition-all duration-300 bg-transparent border-none">
       
-      {/* ── Image area (3:4 Aspect Ratio, rounded-2xl) ── */}
-      <div className="relative w-full aspect-[3/4] overflow-hidden bg-stone-50 rounded-2xl transform translate-z-0" style={{ aspectRatio: "3/4" }}>
+      {/* ── Image area (3:4 or 4:5 Aspect Ratio, rounded-2xl or rounded-[20px]) ── */}
+      <div className={cn(
+        "relative w-full overflow-hidden bg-stone-50 transform translate-z-0 transition-all",
+        premiumMode ? "aspect-[4/5] rounded-[20px]" : "aspect-[3/4] rounded-2xl"
+      )} style={{ aspectRatio: premiumMode ? "4/5" : "3/4" }}>
         
         {/* Product image link */}
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block w-full h-full z-10">
@@ -207,7 +211,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           onClick={toggleFavorite}
           aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
           className={cn(
-            "absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+            "absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+            premiumMode 
+              ? "bg-white/90 border border-stone-200/50 text-stone-700 hover:text-amber-800 hover:bg-white"
+              : "bg-white/80 backdrop-blur-md border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white",
             pulse && "scale-110"
           )}
         >
@@ -239,8 +246,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         <Link 
           href={`/shop/${boutique?.slug || (product as any).boutiqueId || (product as any).boutique?.id || ""}`}
           className={cn(
-            "text-[10px] uppercase font-semibold transition-colors leading-tight block truncate",
-            darkTheme ? "text-amber-400 hover:text-amber-300 font-bold" : "text-slate-500 hover:text-slate-700"
+            "text-[10px] uppercase transition-colors leading-tight block truncate",
+            premiumMode 
+              ? "text-stone-500 font-medium tracking-widest"
+              : (darkTheme ? "text-amber-400 hover:text-amber-300 font-bold" : "text-slate-500 hover:text-slate-700 font-semibold")
           )}
         >
           {product.boutiqueName || boutique?.name || boutique?.boutiqueName || "Hive Boutique"}
@@ -248,7 +257,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
 
         {/* Product Title */}
         <Link href={`/products/${product.slug}`} className="hover:opacity-80 transition-opacity block leading-tight">
-          <h3 className={cn("text-sm font-medium truncate", darkTheme ? "text-white" : "text-slate-900")}>
+          <h3 className={cn(
+            "text-sm truncate",
+            premiumMode 
+              ? "font-serif text-stone-800 dark:text-stone-100 font-normal" 
+              : (darkTheme ? "font-medium text-white" : "font-medium text-slate-900")
+          )}>
             {cleanProductTitle(product.name)}
           </h3>
         </Link>
@@ -259,8 +273,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
             <Link 
               href={`/products/${product.slug}`} 
               className={cn(
-                "group/cta inline-flex items-center gap-1 mt-1 text-xs font-serif italic font-medium transition-all duration-300",
-                darkTheme ? "text-amber-300 hover:text-white" : "text-amber-900 hover:text-amber-700 dark:text-amber-300"
+                "group/cta inline-flex items-center gap-1 mt-0.5 text-xs font-serif italic transition-all duration-300",
+                premiumMode 
+                  ? "text-stone-700 font-normal hover:text-stone-950 dark:text-stone-300"
+                  : (darkTheme ? "text-amber-300 hover:text-white font-medium" : "text-amber-900 hover:text-amber-700 dark:text-amber-300 font-medium")
               )}
             >
               <span>{customCtaText}</span>
