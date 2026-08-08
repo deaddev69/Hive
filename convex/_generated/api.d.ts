@@ -26,6 +26,7 @@ import type * as analytics from "../analytics.js";
 import type * as audienceSegments from "../audienceSegments.js";
 import type * as auth from "../auth.js";
 import type * as banners from "../banners.js";
+import type * as blogs from "../blogs.js";
 import type * as boutiques from "../boutiques.js";
 import type * as campaigns from "../campaigns.js";
 import type * as cart from "../cart.js";
@@ -169,6 +170,7 @@ declare const fullApi: ApiFromModules<{
   audienceSegments: typeof audienceSegments;
   auth: typeof auth;
   banners: typeof banners;
+  blogs: typeof blogs;
   boutiques: typeof boutiques;
   campaigns: typeof campaigns;
   cart: typeof cart;

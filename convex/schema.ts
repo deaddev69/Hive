@@ -2236,4 +2236,39 @@ export default defineSchema({
   })
     .index("by_campaignId", ["campaignId"])
     .index("by_sentAt", ["sentAt"]),
+
+  // ─── NATIVE SEO BLOG ENGINE ──────────────────────────────────────────────
+  blogPosts: defineTable({
+    title: v.string(),
+    slug: v.string(), // e.g., "top-10-salwar-sets-kochi"
+    content: v.string(), // Stores HTML or Markdown
+    coverImageUrl: v.optional(v.string()), // Uploaded to R2 bucket
+    excerpt: v.string(), // Used for <meta name="description">
+    status: v.union(v.literal("draft"), v.literal("published")),
+    authorId: v.string(), // Tied to Clerk user ID
+    publishedAt: v.optional(v.number()), // Published timestamp
+    // Optional enhanced metadata fields for SEO & Rich Articles
+    category: v.optional(v.string()),
+    readTime: v.optional(v.string()),
+    authorName: v.optional(v.string()),
+    seoTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+    primaryKeyword: v.optional(v.string()),
+    secondaryKeywords: v.optional(v.array(v.string())),
+    actionableTips: v.optional(v.array(v.string())),
+    faqs: v.optional(
+      v.array(
+        v.object({
+          question: v.string(),
+          answer: v.string(),
+        })
+      )
+    ),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_status", ["status"])
+    .index("by_authorId", ["authorId"]),
 });
+

@@ -1,24 +1,54 @@
 import React from "react";
 import Link from "next/link";
 import { Metadata } from "next";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../../convex/_generated/api";
 import { getAllBlogs } from "../../data/blogs";
-import { BookOpen, Clock, ArrowRight, Sparkles } from "lucide-react";
+import { BookOpen, Clock, ArrowRight, Sparkles, PlusCircle } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Blog | Hive - Kochi’s Hyperlocal Fashion Marketplace",
-  description: "Explore practical fashion guides, saree draping tips, Kerala climate styling advice, and hyperlocal boutique shopping guides tailored for Kochi.",
-  keywords: ["Kochi fashion blog", "Kerala boutique styling", "cotton kurtis guide", "saree draping tips", "hyperlocal marketplace Kerala"],
+  title: "Fashion Journal & Styling Guides | Hive Kochi",
+  description:
+    "Explore practical fashion guides, saree draping tips, Kerala climate styling advice, and hyperlocal boutique shopping guides tailored for Kochi.",
+  keywords: [
+    "Kochi fashion blog",
+    "Kerala boutique styling",
+    "cotton kurtis guide",
+    "saree draping tips",
+    "hyperlocal marketplace Kerala",
+  ],
+  alternates: {
+    canonical: "https://hivenow.in/blog",
+  },
   openGraph: {
     title: "Hive Fashion & Styling Blog | Kochi's Local Showroom Guide",
-    description: "Expert advice on shopping local showrooms online, choosing breathable fabrics for Kerala weather, and finding exact fits right from Kochi boutiques.",
+    description:
+      "Expert advice on shopping local showrooms online, choosing breathable fabrics for Kerala weather, and finding exact fits right from Kochi boutiques.",
     url: "https://hivenow.in/blog",
     siteName: "Hive Marketplace",
-    type: "website"
-  }
+    type: "website",
+  },
 };
 
-export default function BlogDirectoryPage() {
-  const blogs = getAllBlogs();
+export default async function BlogDirectoryPage() {
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  let dbPosts: any[] = [];
+
+  if (convexUrl) {
+    try {
+      const client = new ConvexHttpClient(convexUrl);
+      const fetched = await client.query(api.blogs.getPublishedPosts, {});
+      dbPosts = fetched || [];
+    } catch (err) {
+      console.error("Failed to fetch live published posts for blog directory:", err);
+    }
+  }
+
+  const staticBlogs = getAllBlogs();
+
+  // Combine database posts and static articles (preventing duplicate slugs)
+  const existingSlugs = new Set(dbPosts.map((p) => p.slug));
+  const filteredStatic = staticBlogs.filter((b) => !existingSlugs.has(b.slug));
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -36,54 +66,144 @@ export default function BlogDirectoryPage() {
         </p>
       </div>
 
-      {/* Blogs Grid */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {blogs.map((post) => (
-          <article
-            key={post.id}
-            className="group flex flex-col bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-amber-400/60 transition-all duration-300"
-          >
-            {/* Top Category Badge & Read Time */}
-            <div className="p-6 pb-4 flex items-center justify-between gap-3 border-b border-slate-100">
-              <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider group-hover:bg-amber-100 group-hover:text-amber-900 transition-colors">
-                {post.category}
-              </span>
-              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
-                <Clock className="w-3.5 h-3.5" />
-                {post.readTime}
-              </div>
-            </div>
+      {/* Dynamic Convex Database Articles (if available) */}
+      {dbPosts.length > 0 && (
+        <div className="max-w-6xl mx-auto mb-12">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-700 mb-6">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            Latest Published Guides
+          </div>
 
-            {/* Content Body */}
-            <div className="p-6 flex-1 flex flex-col justify-between">
-              <div>
-                <div className="text-xs font-semibold text-amber-600 mb-2">
-                  {post.publishedAt} • By {post.author.name}
-                </div>
-                <h2 className="text-xl font-serif font-bold text-slate-900 group-hover:text-amber-600 transition-colors line-clamp-2">
-                  <Link href={`/blog/${post.slug}`} className="focus:outline-none">
-                    {post.h1Title}
-                  </Link>
-                </h2>
-                <p className="mt-3 text-sm text-slate-600 line-clamp-3 leading-relaxed">
-                  {post.excerpt}
-                </p>
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {dbPosts.map((post) => {
+              const formattedDate = post.publishedAt
+                ? new Date(post.publishedAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : "Published";
 
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
-                <Link
-                  href={`/blog/${post.slug}`}
-                  className="inline-flex items-center gap-2 text-sm font-bold text-slate-900 group-hover:text-amber-600 transition-colors"
+              return (
+                <article
+                  key={post._id}
+                  className="group flex flex-col bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-amber-400/60 transition-all duration-300"
                 >
-                  Read Full Guide
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </Link>
-                <BookOpen className="w-4 h-4 text-slate-300 group-hover:text-amber-400 transition-colors" />
-              </div>
+                  {/* Cover Image */}
+                  {post.coverImageUrl && (
+                    <div className="aspect-[16/9] w-full overflow-hidden bg-slate-100 border-b border-slate-100">
+                      <img
+                        src={post.coverImageUrl}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* Top Category Badge & Read Time */}
+                  <div className="p-6 pb-4 flex items-center justify-between gap-3 border-b border-slate-100">
+                    <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider group-hover:bg-amber-100 group-hover:text-amber-900 transition-colors">
+                      {post.category || "Guide"}
+                    </span>
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+                      <Clock className="w-3.5 h-3.5" />
+                      {post.readTime || "5 min read"}
+                    </div>
+                  </div>
+
+                  {/* Content Body */}
+                  <div className="p-6 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="text-xs font-semibold text-amber-600 mb-2">
+                        {formattedDate} • By {post.authorName || "Hive Editorial Team"}
+                      </div>
+                      <h2 className="text-xl font-serif font-bold text-slate-900 group-hover:text-amber-600 transition-colors line-clamp-2">
+                        <Link href={`/blog/${post.slug}`} className="focus:outline-none">
+                          {post.title}
+                        </Link>
+                      </h2>
+                      <p className="mt-3 text-sm text-slate-600 line-clamp-3 leading-relaxed">
+                        {post.excerpt}
+                      </p>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                      <Link
+                        href={`/blog/${post.slug}`}
+                        className="inline-flex items-center gap-2 text-sm font-bold text-slate-900 group-hover:text-amber-600 transition-colors"
+                      >
+                        Read Full Guide
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      </Link>
+                      <BookOpen className="w-4 h-4 text-slate-300 group-hover:text-amber-400 transition-colors" />
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Curated Editorial Series */}
+      {filteredStatic.length > 0 && (
+        <div className="max-w-6xl mx-auto">
+          {dbPosts.length > 0 && (
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 mb-6">
+              <span className="w-2 h-2 rounded-full bg-slate-300" />
+              Foundational Editorial Series
             </div>
-          </article>
-        ))}
-      </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredStatic.map((post) => (
+              <article
+                key={post.id}
+                className="group flex flex-col bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-amber-400/60 transition-all duration-300"
+              >
+                {/* Top Category Badge & Read Time */}
+                <div className="p-6 pb-4 flex items-center justify-between gap-3 border-b border-slate-100">
+                  <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider group-hover:bg-amber-100 group-hover:text-amber-900 transition-colors">
+                    {post.category}
+                  </span>
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+                    <Clock className="w-3.5 h-3.5" />
+                    {post.readTime}
+                  </div>
+                </div>
+
+                {/* Content Body */}
+                <div className="p-6 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="text-xs font-semibold text-amber-600 mb-2">
+                      {post.publishedAt} • By {post.author.name}
+                    </div>
+                    <h2 className="text-xl font-serif font-bold text-slate-900 group-hover:text-amber-600 transition-colors line-clamp-2">
+                      <Link href={`/blog/${post.slug}`} className="focus:outline-none">
+                        {post.h1Title}
+                      </Link>
+                    </h2>
+                    <p className="mt-3 text-sm text-slate-600 line-clamp-3 leading-relaxed">
+                      {post.excerpt}
+                    </p>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <Link
+                      href={`/blog/${post.slug}`}
+                      className="inline-flex items-center gap-2 text-sm font-bold text-slate-900 group-hover:text-amber-600 transition-colors"
+                    >
+                      Read Full Guide
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                    <BookOpen className="w-4 h-4 text-slate-300 group-hover:text-amber-400 transition-colors" />
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Strategy Banner Footer */}
       <div className="max-w-6xl mx-auto mt-20 p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-slate-900 to-slate-800 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-8">
