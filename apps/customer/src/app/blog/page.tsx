@@ -83,7 +83,7 @@ export default async function BlogDirectoryPage() {
     })),
     ...filteredStatic.map((b) => ({
       slug: b.slug,
-      title: b.h1Title || b.metaTitle,
+      title: b.metaTitle || b.h1Title,
       excerpt: b.excerpt,
       category: b.category,
       readTime: b.readTime,
@@ -219,14 +219,14 @@ export default async function BlogDirectoryPage() {
                 className="group flex flex-col bg-white rounded-3xl overflow-hidden border border-slate-200/80 shadow-sm hover:shadow-xl hover:border-amber-300 transition-all duration-300"
               >
                 {/* Cover Image */}
-                <div className="aspect-[16/10] w-full overflow-hidden bg-slate-100 relative">
+                <div className="aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-amber-50 to-slate-100 relative">
                   <img
                     src={post.coverImageUrl}
                     alt={post.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute top-3 left-3">
-                    <span className="px-3 py-0.5 rounded-full bg-white/90 backdrop-blur-md text-slate-900 text-[11px] font-black uppercase tracking-wider shadow-sm">
+                    <span className="px-3 py-1 rounded-full bg-white/95 backdrop-blur-md text-slate-900 text-[11px] font-black uppercase tracking-wider shadow-sm border border-slate-200/50">
                       {post.category}
                     </span>
                   </div>

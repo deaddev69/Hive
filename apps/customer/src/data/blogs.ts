@@ -281,7 +281,7 @@ While sleeveless cuts offer maximum ventilation, **elbow-length (3/4th) sleeves 
     category: "Men's Styling",
     readTime: "5 min read",
     publishedAt: "July 28, 2026",
-    coverImageUrl: "/images/vibe_model_1.png",
+    coverImageUrl: "/vibe_model_1.png",
     author: {
       name: "Rohan Varghese",
       role: "Menswear Stylist & Fabric Consultant"
@@ -433,7 +433,7 @@ Settled centuries ago by the Devanga weaving community in Thrissur, Kuthampully 
     category: "Women's Fashion",
     readTime: "6 min read",
     publishedAt: "August 5, 2026",
-    coverImageUrl: "/images/vibe_model_2.png",
+    coverImageUrl: "/vibe_model_2.png",
     author: {
       name: "Sneha Kurian",
       role: "Contemporary Silhouette Editor"
@@ -496,7 +496,7 @@ Kochi's independent designers are crafting co-ord sets out of **hand-block print
     category: "Kochi Guides",
     readTime: "5 min read",
     publishedAt: "August 7, 2026",
-    coverImageUrl: "/images/vibe_model_3.png",
+    coverImageUrl: "/vibe_model_3.png",
     author: {
       name: "Diya Thomas",
       role: "Lifestyle & Culture Curator"
