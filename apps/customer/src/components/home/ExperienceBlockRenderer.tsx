@@ -413,7 +413,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     if (items.length === 0) return null;
 
     return (
-      <section className="w-full bg-white pt-6 pb-12 sm:pt-8 sm:pb-16 border-b border-hive-border/20 overflow-hidden">
+      <section className="w-full bg-white pt-2 pb-2 sm:pt-3 sm:pb-3 border-b border-hive-border/20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {block.title && (
             <h2 className="text-lg sm:text-xl font-serif font-medium text-slate-800 tracking-normal mb-0.5">
