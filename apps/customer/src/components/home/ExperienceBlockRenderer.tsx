@@ -179,7 +179,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     const categories = block.data.categories || [];
     if (categories.length === 0) return null;
     return (
-      <section className="w-full bg-white pt-1 pb-1 border-b border-hive-border/20">
+      <section className="w-full bg-white py-4 sm:py-6 border-b border-hive-border/20">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-2 text-left">
           <div className="flex flex-col gap-1">
             <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
@@ -327,7 +327,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     }
 
     return (
-      <section className={`w-full bg-white pt-1.5 pb-2 sm:pt-2 sm:pb-2.5 border-b border-hive-border/20 ${block.config?.theme === "dark" ? "bg-slate-900 text-white" : ""}`}>
+      <section className={`w-full bg-white py-5 sm:py-8 border-b border-hive-border/20 ${block.config?.theme === "dark" ? "bg-slate-900 text-white" : ""}`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-2 sm:gap-2.5 text-left">
           <div className="flex flex-col gap-1 cursor-pointer group" onClick={() => {
             if(block.data.collection?.slug) {
@@ -380,7 +380,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     const tagText = isNewArrivals ? "FRESH ARRIVALS" : (isRecommended ? "CURATED FOR YOU" : "CUSTOMER FAVORITES");
     
     return (
-      <section className={`w-full ${bgClass} pt-1.5 pb-2 sm:pt-2 sm:pb-2.5 border-b border-hive-border/20`}>
+      <section className={`w-full ${bgClass} py-5 sm:py-8 border-b border-hive-border/20`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-2 sm:gap-2.5 text-left">
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
@@ -413,7 +413,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     if (items.length === 0) return null;
 
     return (
-      <section className="w-full bg-white pt-1 pb-1 border-b border-hive-border/20 overflow-hidden">
+      <section className="w-full bg-white py-5 sm:py-8 border-b border-hive-border/20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {block.title && (
             <h2 className="text-lg sm:text-xl font-serif font-medium text-slate-800 tracking-normal mb-0.5">
@@ -424,8 +424,8 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
             <p className="text-xs text-slate-500 mb-1">{block.subtitle}</p>
           )}
 
-          {/* Pure Cutout Layout: Mobile Horizontal Swipe Rail / Desktop Flex Row */}
-          <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible gap-4 sm:gap-6 mt-0.5 mb-0 pb-0.5 scrollbar-none snap-x scroll-pl-4">
+          {/* Pure Cutout Layout: Mobile Edge-to-Edge Swipe Rail / Desktop Flex Row */}
+          <div className="flex flex-nowrap sm:flex-wrap overflow-x-auto sm:overflow-visible gap-4 sm:gap-6 mt-1 mb-0 pb-1 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-pl-6">
             {items.map((item: any, idx: number) => {
               const imgUrl = item.imageUrl
                 ? typeof item.imageUrl === "string"
