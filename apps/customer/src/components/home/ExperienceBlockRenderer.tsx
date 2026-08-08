@@ -259,6 +259,13 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
 
       return (
         <section className={`relative w-full overflow-hidden py-12 md:py-16 border-b border-hive-border/20 ${isLightBg ? "bg-[#FAF7F2]" : "bg-[#111111]"}`}>
+          {/* Top Soft Feather Gradient Blend Layer for Seamless Section Transition */}
+          <div className={`absolute top-0 inset-x-0 h-12 md:h-20 z-[2] pointer-events-none ${
+            isLightBg 
+              ? "bg-gradient-to-b from-white via-white/60 to-transparent" 
+              : "bg-gradient-to-b from-slate-900/80 via-black/40 to-transparent"
+          }`} />
+
           {/* Background Image / Pattern Overlay */}
           {bgImgUrl && (
             <div className="absolute inset-0 w-full h-full z-0">
