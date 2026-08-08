@@ -130,9 +130,9 @@ export const getAllPostsAdmin = query({
       const searchLower = args.search.toLowerCase().trim();
       posts = posts.filter(
         (p) =>
-          p.title.toLowerCase().includes(searchLower) ||
-          p.slug.toLowerCase().includes(searchLower) ||
-          p.excerpt.toLowerCase().includes(searchLower) ||
+          (p.title && p.title.toLowerCase().includes(searchLower)) ||
+          (p.slug && p.slug.toLowerCase().includes(searchLower)) ||
+          (p.excerpt && p.excerpt.toLowerCase().includes(searchLower)) ||
           (p.category && p.category.toLowerCase().includes(searchLower))
       );
     }
