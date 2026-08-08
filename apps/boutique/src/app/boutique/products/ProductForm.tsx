@@ -10,7 +10,7 @@ import { Button, Modal, cn, HivePublishingOverlay } from "@hive/ui";
 import { toast } from "@hive/utils";
 import { 
   Upload, X, ArrowLeft, ArrowRight, Check, AlertCircle, ChevronDown, 
-  ChevronUp, Loader2, Sparkles, Image as ImageIcon, Save, CheckCircle2, Search, Plus
+  ChevronUp, ChevronLeft, ChevronRight, Loader2, Sparkles, Image as ImageIcon, Save, CheckCircle2, Search, Plus
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
