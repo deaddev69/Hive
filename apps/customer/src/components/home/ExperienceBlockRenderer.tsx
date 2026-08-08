@@ -248,6 +248,8 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           : bgImg.url || (bgImg.objectKey ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${bgImg.objectKey}` : null)
         : null;
 
+      const targetUrl = block.config?.targetUrl || (block.data?.collection?.slug ? `/collections/${block.data.collection.slug}` : "/collections");
+
       return (
         <section className="relative w-full overflow-hidden py-10 md:py-14 border-b border-hive-border/20">
           {/* Background Image / Solid Fallback with Dark Vignette Overlay */}
@@ -260,7 +262,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                 sizes="100vw"
                 className="object-cover object-center"
               />
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px]" />
+              <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
             </div>
           ) : (
             <div className="absolute inset-0 w-full h-full bg-[#111111] z-0" />
@@ -275,22 +277,18 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               {block.subtitle && <p className="text-sm md:text-base text-white/80 font-light mt-1 drop-shadow-sm">{block.subtitle}</p>}
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-8 sm:gap-x-8 sm:gap-y-12 w-full">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-6 sm:gap-x-6 sm:gap-y-10 w-full">
               {blockProducts.slice(0, block.config?.maxProducts || 6).map((product: any) => (
-                <div key={product.id} className="premium-card-wrapper scale-100 transition-transform duration-700 hover:scale-[1.02] bg-white/90 dark:bg-zinc-900/90 rounded-2xl p-2 shadow-xl backdrop-blur-sm">
-                  <ProductCard product={product} hidePrice={false} hideQuickView={true} />
+                <div key={product.id} className="premium-card-wrapper scale-100 transition-all duration-500 hover:scale-[1.02] bg-black/45 hover:bg-black/65 border border-white/15 hover:border-amber-400/40 rounded-2xl p-2.5 shadow-2xl backdrop-blur-md">
+                  <ProductCard product={product} hidePrice={false} hideQuickView={true} darkTheme={true} />
                 </div>
               ))}
             </div>
             
             <div className="mt-2">
               <button 
-                onClick={() => {
-                  if(block.data.collection?.slug) {
-                    router.push(`/collections/${block.data.collection.slug}`);
-                  }
-                }}
-                className="px-8 py-3 bg-white text-black text-xs uppercase tracking-widest font-bold hover:bg-amber-400 transition-colors rounded-xl shadow-lg cursor-pointer"
+                onClick={() => router.push(targetUrl)}
+                className="px-8 py-3 bg-white hover:bg-amber-400 text-black text-xs uppercase tracking-widest font-bold transition-all duration-300 rounded-xl shadow-xl cursor-pointer hover:scale-105"
               >
                 Discover Collection
               </button>

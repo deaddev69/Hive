@@ -22,6 +22,7 @@ export interface ProductCardProps {
   isRecommendation?: boolean;
   hidePrice?: boolean;
   hideQuickView?: boolean;
+  darkTheme?: boolean;
 }
 
 // Clean database/AI suffixes from product titles
@@ -34,7 +35,7 @@ export function cleanProductTitle(name: string): string {
     .trim();
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, isRecommendation, hidePrice, hideQuickView }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, isRecommendation, hidePrice, hideQuickView, darkTheme }) => {
   const { toggleItem, hasItem } = useWishlistStore();
   const [hydrated, setHydrated] = useState(false);
   const [pulse, setPulse] = useState(false);
@@ -236,28 +237,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         {/* Boutique Name */}
         <Link 
           href={`/shop/${boutique?.slug || (product as any).boutiqueId || (product as any).boutique?.id || ""}`}
-          className="text-[10px] uppercase font-semibold text-slate-500 hover:text-slate-700 transition-colors leading-tight block truncate"
+          className={cn(
+            "text-[10px] uppercase font-semibold transition-colors leading-tight block truncate",
+            darkTheme ? "text-amber-400 hover:text-amber-300 font-bold" : "text-slate-500 hover:text-slate-700"
+          )}
         >
           {product.boutiqueName || boutique?.name || boutique?.boutiqueName || "Hive Boutique"}
         </Link>
 
         {/* Product Title */}
-        <Link href={`/products/${product.slug}`} className="hover:text-stone-600 transition-colors block leading-tight">
-          <h3 className="text-sm font-medium text-slate-900 truncate">
+        <Link href={`/products/${product.slug}`} className="hover:opacity-80 transition-opacity block leading-tight">
+          <h3 className={cn("text-sm font-medium truncate", darkTheme ? "text-white" : "text-slate-900")}>
             {cleanProductTitle(product.name)}
           </h3>
         </Link>
 
         {/* Price (Single line, packed tightly) */}
         {hidePrice ? null : (
-          <div className="text-base font-extrabold text-slate-900 leading-tight flex items-center flex-wrap gap-1.5 mt-0.5">
+          <div className={cn("text-base font-extrabold leading-tight flex items-center flex-wrap gap-1.5 mt-0.5", darkTheme ? "text-amber-300" : "text-slate-900")}>
             <span>₹{product.price.toLocaleString("en-IN")}</span>
             {product.compareAtPrice && product.compareAtPrice > product.price && (
               <>
-                <span className="text-xs text-slate-400 line-through font-normal" style={{ textDecoration: "line-through" }}>
+                <span className={cn("text-xs line-through font-normal", darkTheme ? "text-white/50" : "text-slate-400")} style={{ textDecoration: "line-through" }}>
                   ₹{product.compareAtPrice.toLocaleString("en-IN")}
                 </span>
-                <span className="text-xs font-bold text-green-600">
+                <span className={cn("text-xs font-bold", darkTheme ? "text-amber-400" : "text-green-600")}>
                   {Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}% OFF
                 </span>
               </>
