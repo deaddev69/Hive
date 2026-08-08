@@ -2090,6 +2090,7 @@ export default defineSchema({
       desktopImage: v.optional(v.any()),
       mobileImage: v.optional(v.any()),
       bgImage: v.optional(v.any()),
+      badgeTitle: v.optional(v.string()),
       cardCtaText: v.optional(v.string()),
       bgOverlayTheme: v.optional(v.string()),
       targetUrl: v.optional(v.string()),

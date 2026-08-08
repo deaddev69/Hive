@@ -26,7 +26,7 @@ interface BlockSchema {
     renderer: string;
     config: any;
   };
-  fields: ("title" | "subtitle" | "collectionId" | "campaignId" | "maxProducts" | "showSeeAll" | "renderer" | "bannerUpload" | "targetUrl" | "vibeItems" | "bgImageUpload" | "cardCtaText" | "bgOverlayTheme")[];
+  fields: ("badgeTitle" | "title" | "subtitle" | "collectionId" | "campaignId" | "maxProducts" | "showSeeAll" | "renderer" | "bannerUpload" | "targetUrl" | "vibeItems" | "bgImageUpload" | "cardCtaText" | "bgOverlayTheme")[];
 }
 
 const BLOCK_REGISTRY: BlockSchema[] = [
@@ -135,8 +135,8 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     category: "Collections",
     icon: Star,
     description: "High-fashion Zudio/Zara style layout with custom background image and premium styling.",
-    defaultConfig: { title: "The Premium Edit", renderer: "premiumGrid", config: { maxProducts: 6, cardCtaText: "Take a closer look →", bgOverlayTheme: "light" } },
-    fields: ["title", "subtitle", "collectionId", "maxProducts", "renderer", "bgImageUpload", "cardCtaText", "bgOverlayTheme"]
+    defaultConfig: { title: "", renderer: "premiumGrid", config: { maxProducts: 6, badgeTitle: "", cardCtaText: "Take a closer look →", bgOverlayTheme: "light" } },
+    fields: ["badgeTitle", "title", "subtitle", "collectionId", "maxProducts", "renderer", "bgImageUpload", "cardCtaText", "bgOverlayTheme"]
   }
 ];
 
@@ -656,6 +656,21 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
         
         {/* Dynamic Fields */}
         <div className="space-y-4">
+          {(schema.fields.includes("badgeTitle") || formData.renderer === "premiumGrid") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-1">
+                Category / Badge Title (Optional)
+              </label>
+              <input 
+                type="text" 
+                placeholder="e.g. PREMIUM EDIT, HERITAGE SELECTION"
+                className="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium" 
+                value={formData.config.badgeTitle || ""} 
+                onChange={e => updateConfig("badgeTitle", e.target.value)} 
+              />
+              <span className="text-[10px] text-slate-400">Small gold tracking badge displayed at top. Leave blank to omit badge.</span>
+            </div>
+          )}
           {schema.fields.includes("title") && (
             <div>
               <label className="block text-[11px] font-bold text-slate-500 mb-1">Title</label>

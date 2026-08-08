@@ -252,6 +252,11 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
       const isLightBg = bgOverlayTheme === "light";
       const cardCtaText = block.config?.cardCtaText || "Take a closer look →";
 
+      const badgeTitle = block.config?.badgeTitle?.trim();
+      const blockTitle = block.title?.trim();
+      const blockSubtitle = block.subtitle?.trim();
+      const hasHeader = Boolean(badgeTitle || blockTitle || blockSubtitle);
+
       return (
         <section className={`relative w-full overflow-hidden py-12 md:py-16 border-b border-hive-border/20 ${isLightBg ? "bg-[#FAF7F2]" : "bg-[#111111]"}`}>
           {/* Background Image / Pattern Overlay */}
@@ -259,7 +264,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
             <div className="absolute inset-0 w-full h-full z-0">
               <Image
                 src={bgImgUrl}
-                alt={block.title || "Premium Curation Background"}
+                alt={blockTitle || "Premium Curation Background"}
                 fill
                 sizes="100vw"
                 className="object-cover object-center"
@@ -269,35 +274,37 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           )}
 
           <div className={`relative z-10 max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col items-center gap-8 ${isLightBg ? "text-amber-950" : "text-white"}`}>
-            {/* Luxury Header with Gold Top Emblem */}
-            <div className="flex flex-col items-center text-center max-w-2xl gap-1.5">
-              {/* Royal Emblem Ornament */}
-              <div className="mb-0.5 text-amber-700 dark:text-amber-400 opacity-90">
-                <svg className="w-6 h-6 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-                  <path d="M12 2L13.8 8.2L20 10L13.8 11.8L12 18L10.2 11.8L4 10L10.2 8.2L12 2Z" fill="currentColor" fillOpacity="0.15" />
-                  <circle cx="12" cy="10" r="1.5" fill="currentColor" />
-                  <path d="M12 5.5L12.8 8.5L15.5 9.3L12.8 10.1L12 13.1L11.2 10.1L8.5 9.3L11.2 8.5L12 5.5Z" strokeWidth="0.8" />
-                </svg>
+            {/* Luxury Header - Only rendered if at least one header field is provided */}
+            {hasHeader && (
+              <div className="flex flex-col items-center text-center max-w-2xl gap-1.5">
+                {/* Royal Emblem Ornament */}
+                <div className="mb-0.5 text-amber-700 dark:text-amber-400 opacity-90">
+                  <svg className="w-6 h-6 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                    <path d="M12 2L13.8 8.2L20 10L13.8 11.8L12 18L10.2 11.8L4 10L10.2 8.2L12 2Z" fill="currentColor" fillOpacity="0.15" />
+                    <circle cx="12" cy="10" r="1.5" fill="currentColor" />
+                    <path d="M12 5.5L12.8 8.5L15.5 9.3L12.8 10.1L12 13.1L11.2 10.1L8.5 9.3L11.2 8.5L12 5.5Z" strokeWidth="0.8" />
+                  </svg>
+                </div>
+                
+                {badgeTitle && (
+                  <span className={`text-[10px] tracking-[0.3em] font-bold uppercase ${isLightBg ? "text-amber-800" : "text-amber-400"}`}>
+                    {badgeTitle}
+                  </span>
+                )}
+                
+                {blockTitle && (
+                  <h2 className={`text-3xl md:text-5xl font-serif font-normal tracking-tight ${isLightBg ? "text-stone-900" : "text-white"} drop-shadow-xs`}>
+                    {blockTitle}
+                  </h2>
+                )}
+                
+                {blockSubtitle && (
+                  <p className={`text-sm md:text-base font-serif italic mt-0.5 ${isLightBg ? "text-stone-600" : "text-white/80"}`}>
+                    {blockSubtitle}
+                  </p>
+                )}
               </div>
-              
-              <span className={`text-[10px] tracking-[0.3em] font-bold uppercase ${isLightBg ? "text-amber-800" : "text-amber-400"}`}>
-                PREMIUM EDIT
-              </span>
-              
-              <h2 className={`text-3xl md:text-5xl font-serif font-normal tracking-tight ${isLightBg ? "text-stone-900" : "text-white"} drop-shadow-xs`}>
-                {block.title || block.data.collection?.name || "The Finest, Curated for You."}
-              </h2>
-              
-              {block.subtitle ? (
-                <p className={`text-sm md:text-base font-serif italic mt-0.5 ${isLightBg ? "text-stone-600" : "text-white/80"}`}>
-                  {block.subtitle}
-                </p>
-              ) : (
-                <p className={`text-sm md:text-base font-serif italic mt-0.5 ${isLightBg ? "text-stone-600" : "text-white/80"}`}>
-                  Timeless pieces. Thoughtfully chosen.
-                </p>
-              )}
-            </div>
+            )}
 
             {/* Floating Borderless Standalone Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 w-full mt-2">
