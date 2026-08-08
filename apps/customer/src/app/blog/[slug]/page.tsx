@@ -4,7 +4,7 @@ import { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../convex/_generated/api";
-import { getBlogBySlug, getAllBlogs } from "../../../data/blogs";
+import { getBlogBySlug, getAllBlogs, getRelatedBlogs } from "../../../data/blogs";
 import { SITE_URL } from "@/lib/seo";
 import ReactMarkdown from "react-markdown";
 import {
@@ -15,6 +15,8 @@ import {
   CheckCircle2,
   HelpCircle,
   ShoppingBag,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 
 interface Props {
@@ -39,7 +41,7 @@ type FetchResult =
   | null;
 
 /**
- * Fetch blog post or check permanent 301 redirect mapping
+ * Fetch blog post or check permanent 301/308 redirect mapping
  */
 async function fetchPostOrRedirect(slug: string): Promise<FetchResult> {
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -196,6 +198,8 @@ export default async function BlogPostPage({ params }: Props) {
     permanentRedirect(`/blog/${result.newSlug}`);
   }
 
+  const relatedStories = getRelatedBlogs(slug, 3);
+
   // Rendering for Convex dynamic database posts
   if (result.source === "convex") {
     const post = result.data;
@@ -288,7 +292,7 @@ export default async function BlogPostPage({ params }: Props) {
         });
 
     return (
-      <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen bg-slate-50/70 py-12 px-4 sm:px-6 lg:px-8">
         {/* Inject Structured Schema Markup (JSON-LD) for Google SEO */}
         <script
           type="application/ld+json"
@@ -413,6 +417,43 @@ export default async function BlogPostPage({ params }: Props) {
             </div>
           )}
 
+          {/* More Stories from The Hive Journal */}
+          {relatedStories.length > 0 && (
+            <div className="p-8 sm:p-12 border-t border-slate-200/80 bg-white">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-serif font-bold text-xl text-slate-900">
+                  More Stories from The Hive Journal
+                </h3>
+                <Link
+                  href="/blog"
+                  className="text-xs font-bold text-amber-700 hover:text-amber-900 inline-flex items-center gap-1"
+                >
+                  View All <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {relatedStories.map((story) => (
+                  <Link
+                    key={story.slug}
+                    href={`/blog/${story.slug}`}
+                    className="group flex flex-col bg-slate-50 rounded-2xl p-4 border border-slate-200/70 hover:border-amber-300 hover:shadow-md transition-all"
+                  >
+                    <div className="text-[11px] font-bold text-amber-700 uppercase tracking-wider mb-1.5">
+                      {story.category}
+                    </div>
+                    <h4 className="font-serif font-bold text-sm text-slate-900 group-hover:text-amber-600 transition-colors line-clamp-2 leading-snug">
+                      {story.h1Title || story.metaTitle}
+                    </h4>
+                    <span className="mt-3 text-[11px] font-semibold text-slate-400">
+                      {story.readTime}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Hyperlocal Conversion CTA Banner */}
           <div className="p-8 sm:p-12 bg-slate-900 text-white flex flex-col sm:flex-row items-center justify-between gap-8">
             <div>
@@ -459,7 +500,7 @@ export default async function BlogPostPage({ params }: Props) {
       : null;
 
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50/70 py-12 px-4 sm:px-6 lg:px-8">
       {/* Inject Structured Schema Markup (JSON-LD) for Google SEO */}
       <script
         type="application/ld+json"
@@ -509,6 +550,17 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         </div>
 
+        {/* Featured Cover Image */}
+        {blog.coverImageUrl && (
+          <div className="px-8 sm:px-12 pt-8">
+            <img
+              src={blog.coverImageUrl}
+              alt={blog.h1Title}
+              className="w-full h-auto max-h-[500px] object-cover rounded-2xl shadow-sm border border-slate-100"
+            />
+          </div>
+        )}
+
         {/* Main Markdown Article Body */}
         <div className="p-8 sm:p-12 prose prose-slate max-w-none prose-headings:font-serif prose-headings:font-bold prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl prose-p:leading-relaxed prose-p:text-slate-700 prose-li:text-slate-700">
           <ReactMarkdown>{blog.content}</ReactMarkdown>
@@ -555,6 +607,43 @@ export default async function BlogPostPage({ params }: Props) {
                     {faq.answer}
                   </p>
                 </details>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* More Stories from The Hive Journal */}
+        {relatedStories.length > 0 && (
+          <div className="p-8 sm:p-12 border-t border-slate-200/80 bg-white">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-serif font-bold text-xl text-slate-900">
+                More Stories from The Hive Journal
+              </h3>
+              <Link
+                href="/blog"
+                className="text-xs font-bold text-amber-700 hover:text-amber-900 inline-flex items-center gap-1"
+              >
+                View All <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {relatedStories.map((story) => (
+                <Link
+                  key={story.slug}
+                  href={`/blog/${story.slug}`}
+                  className="group flex flex-col bg-slate-50 rounded-2xl p-4 border border-slate-200/70 hover:border-amber-300 hover:shadow-md transition-all"
+                >
+                  <div className="text-[11px] font-bold text-amber-700 uppercase tracking-wider mb-1.5">
+                    {story.category}
+                  </div>
+                  <h4 className="font-serif font-bold text-sm text-slate-900 group-hover:text-amber-600 transition-colors line-clamp-2 leading-snug">
+                    {story.h1Title || story.metaTitle}
+                  </h4>
+                  <span className="mt-3 text-[11px] font-semibold text-slate-400">
+                    {story.readTime}
+                  </span>
+                </Link>
               ))}
             </div>
           </div>
