@@ -280,21 +280,66 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
             </div>
           )}
 
-          {/* Left Paisley Motif Watermark */}
-          <div className="absolute top-2 left-0 w-28 sm:w-44 h-44 pointer-events-none z-[1] opacity-30 select-none overflow-hidden">
-            <svg className="w-full h-full text-amber-800/70" viewBox="0 0 100 120" fill="currentColor">
-              <path d="M20 100 C 10 70, 30 30, 60 10 C 80 0, 95 15, 80 35 C 65 55, 35 60, 40 85 C 45 105, 70 100, 60 115 Z" opacity="0.3" />
-              <path d="M30 90 C 22 68, 38 38, 58 22 C 72 12, 82 22, 70 36 C 58 50, 38 54, 42 74 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
-              <circle cx="55" cy="30" r="3" />
+          {/* Left Jaipur Kalka Paisley Block-Print Watermark */}
+          <div className="absolute top-0 left-0 w-32 sm:w-52 h-52 pointer-events-none z-[1] opacity-35 select-none overflow-hidden">
+            <svg className="w-full h-full text-amber-900/60" viewBox="0 0 120 140" fill="none" stroke="currentColor">
+              {/* Outer Scalloped Paisley Contour */}
+              <path
+                d="M25 125 C 10 95, 20 50, 60 20 C 85 2, 105 20, 85 45 C 65 70, 35 75, 42 105 C 48 128, 75 120, 65 135 Z"
+                fill="currentColor"
+                fillOpacity="0.06"
+                strokeWidth="1.2"
+              />
+              {/* Inner Paisley Body */}
+              <path
+                d="M32 115 C 20 90, 28 52, 60 28 C 78 12, 92 26, 78 45 C 62 65, 38 68, 44 94 C 48 112, 65 108, 58 120 Z"
+                strokeWidth="0.8"
+                strokeDasharray="2 2"
+              />
+              {/* Central Lotus Flower Core */}
+              <circle cx="58" cy="42" r="8" fill="currentColor" fillOpacity="0.12" strokeWidth="1" />
+              <circle cx="58" cy="42" r="3" fill="currentColor" fillOpacity="0.25" />
+              {/* Lotus Petals */}
+              <path d="M58 30 C 56 34, 56 38, 58 42 C 60 38, 60 34, 58 30 Z" fill="currentColor" fillOpacity="0.2" />
+              <path d="M58 42 C 62 40, 66 40, 70 42 C 66 44, 62 44, 58 42 Z" fill="currentColor" fillOpacity="0.2" />
+              <path d="M58 42 C 56 46, 56 50, 58 54 C 60 50, 60 46, 58 42 Z" fill="currentColor" fillOpacity="0.2" />
+              <path d="M46 42 C 50 40, 54 40, 58 42 C 54 44, 50 44, 46 42 Z" fill="currentColor" fillOpacity="0.2" />
+              {/* Scalloped Dot Micro-Borders */}
+              <circle cx="28" cy="100" r="1.5" fill="currentColor" />
+              <circle cx="24" cy="85" r="1.5" fill="currentColor" />
+              <circle cx="26" cy="70" r="1.5" fill="currentColor" />
+              <circle cx="34" cy="55" r="1.5" fill="currentColor" />
+              <circle cx="46" cy="40" r="1.5" fill="currentColor" />
+              <circle cx="62" cy="28" r="1.5" fill="currentColor" />
+              <circle cx="75" cy="24" r="1.5" fill="currentColor" />
+              {/* Curling Tendril Vines & Leaf Buds */}
+              <path d="M42 105 C 30 115, 18 108, 12 95 C 8 85, 15 78, 22 84" strokeWidth="1" strokeLinecap="round" />
+              <circle cx="12" cy="95" r="2" fill="currentColor" />
+              <circle cx="22" cy="84" r="1.5" fill="currentColor" />
             </svg>
           </div>
 
-          {/* Right Floral Botanical Vignette Watermark */}
-          <div className="absolute top-2 right-0 w-28 sm:w-44 h-44 pointer-events-none z-[1] opacity-30 select-none overflow-hidden">
-            <svg className="w-full h-full text-amber-800/70" viewBox="0 0 100 120" fill="currentColor">
-              <path d="M80 100 C 90 70, 70 30, 40 10 C 20 0, 5 15, 20 35 C 35 55, 65 60, 60 85 C 55 105, 30 100, 40 115 Z" opacity="0.3" />
-              <path d="M70 90 C 78 68, 62 38, 42 22 C 28 12, 18 22, 30 36 C 42 50, 62 54, 58 74 Z" fill="none" stroke="currentColor" strokeWidth="1.5" />
-              <circle cx="45" cy="30" r="3" />
+          {/* Right Mughal Floral Vignette Block-Print Watermark */}
+          <div className="absolute top-0 right-0 w-32 sm:w-52 h-52 pointer-events-none z-[1] opacity-35 select-none overflow-hidden">
+            <svg className="w-full h-full text-amber-900/60" viewBox="0 0 120 140" fill="none" stroke="currentColor">
+              {/* Central Mughal Floral Blossom */}
+              <circle cx="65" cy="45" r="14" fill="currentColor" fillOpacity="0.08" strokeWidth="1.2" />
+              <circle cx="65" cy="45" r="6" fill="currentColor" fillOpacity="0.2" strokeWidth="0.8" />
+              <circle cx="65" cy="45" r="2" fill="currentColor" />
+              {/* 8 Radiating Floral Petals */}
+              <path d="M65 27 C 62 33, 62 39, 65 45 C 68 39, 68 33, 65 27 Z" fill="currentColor" fillOpacity="0.18" />
+              <path d="M65 45 C 71 42, 77 42, 83 45 C 77 48, 71 48, 65 45 Z" fill="currentColor" fillOpacity="0.18" />
+              <path d="M65 45 C 62 51, 62 57, 65 63 C 68 57, 68 51, 65 45 Z" fill="currentColor" fillOpacity="0.18" />
+              <path d="M47 45 C 53 42, 59 42, 65 45 C 59 48, 53 48, 47 45 Z" fill="currentColor" fillOpacity="0.18" />
+              {/* Corner Botanical Vines & Leaves */}
+              <path d="M65 63 C 75 80, 90 95, 105 105" strokeWidth="1.2" strokeLinecap="round" />
+              <path d="M78 74 C 88 72, 96 78, 92 86 C 84 88, 78 80, 78 74 Z" fill="currentColor" fillOpacity="0.15" strokeWidth="0.8" />
+              <path d="M88 88 C 98 86, 106 92, 102 100 C 94 102, 88 94, 88 88 Z" fill="currentColor" fillOpacity="0.15" strokeWidth="0.8" />
+              {/* Micro-Pistil Dots */}
+              <circle cx="65" cy="23" r="1.5" fill="currentColor" />
+              <circle cx="87" cy="45" r="1.5" fill="currentColor" />
+              <circle cx="65" cy="67" r="1.5" fill="currentColor" />
+              <circle cx="43" cy="45" r="1.5" fill="currentColor" />
             </svg>
           </div>
 
