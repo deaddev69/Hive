@@ -182,7 +182,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
       <section className="w-full bg-white py-4 sm:py-6 border-b border-hive-border/20">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-2 text-left">
           <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
+            <h2 className="text-2xl font-serif font-semibold text-hive-dark tracking-wide">
               {block.title || "Shop by Category"}
             </h2>
             {block.subtitle && <p className="text-xs text-slate-500">{block.subtitle}</p>}
@@ -334,7 +334,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               router.push(`/collections/${block.data.collection.slug}`);
             }
           }}>
-            <h2 className={`text-2xl font-serif font-semibold uppercase tracking-wide group-hover:underline ${block.config?.theme === "dark" ? "text-white" : "text-hive-dark"}`}>
+            <h2 className={`text-2xl font-serif font-semibold tracking-wide group-hover:underline ${block.config?.theme === "dark" ? "text-white" : "text-hive-dark"}`}>
               {block.title || block.data.collection?.name}
             </h2>
             {block.subtitle && <p className={`text-sm ${block.config?.theme === "dark" ? "text-slate-400" : "text-slate-500"}`}>{block.subtitle}</p>}
