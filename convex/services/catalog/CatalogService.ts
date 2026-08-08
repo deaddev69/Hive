@@ -21,6 +21,7 @@ export class CatalogService {
     const validProducts = products.filter((p) => {
       if (!p) return false;
       if (p.active === false) return false;
+      if (p.approvalStatus && p.approvalStatus !== "approved") return false;
       
       const stockBySize = p.stockBySize || {};
       const totalStock = Object.values(stockBySize).reduce((acc: number, count: any) => acc + (count || 0), 0);

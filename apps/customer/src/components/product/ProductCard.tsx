@@ -21,6 +21,7 @@ export interface ProductCardProps {
   onQuickView?: (slug: string) => void;
   isRecommendation?: boolean;
   hidePrice?: boolean;
+  hideQuickView?: boolean;
 }
 
 // Clean database/AI suffixes from product titles
@@ -33,7 +34,7 @@ export function cleanProductTitle(name: string): string {
     .trim();
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, isRecommendation, hidePrice }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, isRecommendation, hidePrice, hideQuickView }) => {
   const { toggleItem, hasItem } = useWishlistStore();
   const [hydrated, setHydrated] = useState(false);
   const [pulse, setPulse] = useState(false);
@@ -219,13 +220,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         </button>
 
         {/* Quick View eye icon overlay (Top-right, stacked neatly below heart with vertical gap) */}
-        <button
-          onClick={handleQuickViewOpen}
-          aria-label="Quick look"
-          className="absolute top-14 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        >
-          <Eye className="w-4 h-4 text-hive-dark stroke-[2]" />
-        </button>
+        {!hideQuickView && (
+          <button
+            onClick={handleQuickViewOpen}
+            aria-label="Quick look"
+            className="absolute top-14 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          >
+            <Eye className="w-4 h-4 text-hive-dark stroke-[2]" />
+          </button>
+        )}
       </div>
 
       {/* ── Card content (Compressed, sits tightly below the image) ── */}
@@ -246,11 +249,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         </Link>
 
         {/* Price (Single line, packed tightly) */}
-        {hidePrice ? (
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-            View to reveal
-          </div>
-        ) : (
+        {hidePrice ? null : (
           <div className="text-base font-extrabold text-slate-900 leading-tight flex items-center flex-wrap gap-1.5 mt-0.5">
             <span>₹{product.price.toLocaleString("en-IN")}</span>
             {product.compareAtPrice && product.compareAtPrice > product.price && (

@@ -26,7 +26,7 @@ interface BlockSchema {
     renderer: string;
     config: any;
   };
-  fields: ("title" | "subtitle" | "collectionId" | "campaignId" | "maxProducts" | "showSeeAll" | "renderer" | "bannerUpload" | "targetUrl" | "vibeItems")[];
+  fields: ("title" | "subtitle" | "collectionId" | "campaignId" | "maxProducts" | "showSeeAll" | "renderer" | "bannerUpload" | "targetUrl" | "vibeItems" | "bgImageUpload")[];
 }
 
 const BLOCK_REGISTRY: BlockSchema[] = [
@@ -134,9 +134,9 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     name: "Premium Curation",
     category: "Collections",
     icon: Star,
-    description: "High-fashion Zudio/Zara style layout that hides prices to build exclusivity.",
+    description: "High-fashion Zudio/Zara style layout with custom background image and premium styling.",
     defaultConfig: { title: "The Premium Edit", renderer: "premiumGrid", config: { maxProducts: 6 } },
-    fields: ["title", "subtitle", "collectionId", "maxProducts"]
+    fields: ["title", "subtitle", "collectionId", "maxProducts", "renderer", "bgImageUpload"]
   }
 ];
 
@@ -574,6 +574,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
 
   const desktopInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
+  const bgInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     title: block.title || "",
@@ -746,6 +747,57 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {schema.fields.includes("bgImageUpload") && (
+            <div className="space-y-2 border-t border-b border-slate-100 py-3">
+              <label className="block text-[11px] font-bold text-slate-700">
+                Custom Block Background Image (Optional)
+              </label>
+              <p className="text-[11px] text-slate-500 mb-2">
+                Upload a unique background image to give this curation block a distinct visual mood.
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  ref={bgInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={e => handleFileUpload(e, "bgImage")}
+                />
+                <button
+                  type="button"
+                  disabled={uploading}
+                  onClick={() => bgInputRef.current?.click()}
+                  className="px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-2 hover:bg-amber-400 disabled:opacity-50 cursor-pointer shadow-sm"
+                >
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  Upload Background Image
+                </button>
+                {formData.config.bgImage && (
+                  <button
+                    type="button"
+                    onClick={() => updateConfig("bgImage", null)}
+                    className="text-xs text-red-500 hover:text-red-600 font-bold px-2 py-1 cursor-pointer"
+                  >
+                    Clear Background
+                  </button>
+                )}
+              </div>
+              {formData.config.bgImage && (
+                <div className="mt-2 relative aspect-[16/6] rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-[140px]">
+                  <img
+                    src={
+                      typeof formData.config.bgImage === "string" 
+                        ? formData.config.bgImage
+                        : (formData.config.bgImage?.url || (formData.config.bgImage?.objectKey ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.bgImage.objectKey}` : ""))
+                    }
+                    alt="Background Preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
             </div>
           )}
           {schema.fields.includes("targetUrl") && (

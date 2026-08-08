@@ -2089,6 +2089,7 @@ export default defineSchema({
       spacing: v.optional(v.string()),
       desktopImage: v.optional(v.any()),
       mobileImage: v.optional(v.any()),
+      bgImage: v.optional(v.any()),
       targetUrl: v.optional(v.string()),
       campaignId: v.optional(v.string()),
       items: v.optional(

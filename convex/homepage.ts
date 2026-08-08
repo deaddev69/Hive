@@ -63,15 +63,19 @@ export const getCollectionProducts = query({
   },
 });
 
-// Automatic "Fresh on Hive" Section (Latest active products)
+// Automatic "Fresh on Hive" Section (Latest active & approved products)
 export const getFreshArrivals = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const products = await ctx.db
       .query("products")
       .withIndex("by_active", (q) => q.eq("active", true))
       .order("desc")
-      .take(args.limit ?? 20);
+      .take(50);
+      
+    return products
+      .filter((p) => !p.approvalStatus || p.approvalStatus === "approved")
+      .slice(0, args.limit ?? 20);
   },
 });
 

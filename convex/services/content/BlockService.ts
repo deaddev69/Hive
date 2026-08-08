@@ -85,18 +85,22 @@ export class BlockService {
           .take(12);
         requiredProductIds.push(...history.map((h: any) => h.productId.toString()));
       } else if (block.blockType === "recommended") {
-        const recommended = await ctx.db
+        const recommended = (await ctx.db
           .query("products")
           .withIndex("by_active", (q: any) => q.eq("active", true))
           .order("desc")
-          .take(12);
+          .take(40))
+          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
+          .slice(0, 12);
         requiredProductIds.push(...recommended.map((p: any) => p._id.toString()));
       } else if (block.blockType === "newArrivals") {
-        const newArrivals = await ctx.db
+        const newArrivals = (await ctx.db
           .query("products")
           .withIndex("by_active", (q: any) => q.eq("active", true))
           .order("desc")
-          .take(block.config?.maxProducts || 12);
+          .take(40))
+          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
+          .slice(0, block.config?.maxProducts || 12);
         requiredProductIds.push(...newArrivals.map((p: any) => p._id.toString()));
       }
     }
@@ -133,6 +137,9 @@ export class BlockService {
             description: hydratedCol.description,
           };
           data.products = matchedProducts;
+        }
+        if (block.config?.bgImage || block.config?.desktopImage) {
+          data.bgImage = await resolveBannerImage(ctx, block.config.bgImage || block.config.desktopImage);
         }
       } else if (block.blockType === "recentlyViewed" && userContext?.userId) {
         const history = await ctx.db

@@ -241,33 +241,56 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     const isPremiumGrid = block.renderer === "premiumGrid";
 
     if (isPremiumGrid) {
+      const bgImg = block.data?.bgImage || block.config?.bgImage || block.config?.desktopImage;
+      const bgImgUrl = bgImg
+        ? typeof bgImg === "string"
+          ? bgImg
+          : bgImg.url || (bgImg.objectKey ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${bgImg.objectKey}` : null)
+        : null;
+
       return (
-        <section className="w-full bg-[#111111] text-white py-12 md:py-16">
-          <div className="max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col items-center gap-10">
-            <div className="flex flex-col items-center text-center max-w-2xl gap-3">
-              <span className="text-[10px] tracking-[0.25em] text-white/50 uppercase font-bold">Premium Segment</span>
-              <h2 className="text-3xl md:text-5xl font-serif font-light tracking-tight">
+        <section className="relative w-full overflow-hidden py-10 md:py-14 border-b border-hive-border/20">
+          {/* Background Image / Solid Fallback with Dark Vignette Overlay */}
+          {bgImgUrl ? (
+            <div className="absolute inset-0 w-full h-full z-0">
+              <Image
+                src={bgImgUrl}
+                alt={block.title || "Premium Curation Background"}
+                fill
+                sizes="100vw"
+                className="object-cover object-center"
+              />
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px]" />
+            </div>
+          ) : (
+            <div className="absolute inset-0 w-full h-full bg-[#111111] z-0" />
+          )}
+
+          <div className="relative z-10 max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col items-center gap-8 text-white">
+            <div className="flex flex-col items-center text-center max-w-2xl gap-2">
+              <span className="text-[10px] tracking-[0.25em] text-amber-400 uppercase font-bold">Premium Segment</span>
+              <h2 className="text-3xl md:text-5xl font-serif font-light tracking-tight text-white drop-shadow-md">
                 {block.title || block.data.collection?.name}
               </h2>
-              {block.subtitle && <p className="text-sm md:text-base text-white/60 font-light mt-2">{block.subtitle}</p>}
+              {block.subtitle && <p className="text-sm md:text-base text-white/80 font-light mt-1 drop-shadow-sm">{block.subtitle}</p>}
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10 sm:gap-x-8 sm:gap-y-16 w-full">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-8 sm:gap-x-8 sm:gap-y-12 w-full">
               {blockProducts.slice(0, block.config?.maxProducts || 6).map((product: any) => (
-                <div key={product.id} className="premium-card-wrapper scale-100 transition-transform duration-700 hover:scale-[1.02]">
-                  <ProductCard product={product} hidePrice={true} />
+                <div key={product.id} className="premium-card-wrapper scale-100 transition-transform duration-700 hover:scale-[1.02] bg-white/90 dark:bg-zinc-900/90 rounded-2xl p-2 shadow-xl backdrop-blur-sm">
+                  <ProductCard product={product} hidePrice={false} hideQuickView={true} />
                 </div>
               ))}
             </div>
             
-            <div className="mt-4">
+            <div className="mt-2">
               <button 
                 onClick={() => {
                   if(block.data.collection?.slug) {
                     router.push(`/collections/${block.data.collection.slug}`);
                   }
                 }}
-                className="px-8 py-3 bg-white text-black text-xs uppercase tracking-widest font-bold hover:bg-white/90 transition-colors"
+                className="px-8 py-3 bg-white text-black text-xs uppercase tracking-widest font-bold hover:bg-amber-400 transition-colors rounded-xl shadow-lg cursor-pointer"
               >
                 Discover Collection
               </button>
