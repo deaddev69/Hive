@@ -380,7 +380,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     const tagText = isNewArrivals ? "FRESH ARRIVALS" : (isRecommended ? "CURATED FOR YOU" : "CUSTOMER FAVORITES");
     
     return (
-      <section className={`w-full ${bgClass} py-5 sm:py-8 border-b border-hive-border/20`}>
+      <section className={`w-full ${bgClass} pt-1.5 pb-4 sm:pt-2 sm:pb-6 border-b border-hive-border/20`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-2 sm:gap-2.5 text-left">
           <div className="flex flex-col gap-1">
             <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
@@ -413,7 +413,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     if (items.length === 0) return null;
 
     return (
-      <section className="w-full bg-white pt-2 pb-2 sm:pt-3 sm:pb-3 border-b border-hive-border/20 overflow-hidden">
+      <section className="w-full bg-white pt-1 pb-0 sm:pt-1.5 sm:pb-0.5 border-b border-hive-border/20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {block.title && (
             <h2 className="text-lg sm:text-xl font-serif font-medium text-slate-800 tracking-normal mb-0.5">
