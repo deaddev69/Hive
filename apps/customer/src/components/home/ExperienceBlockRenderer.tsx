@@ -258,19 +258,12 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
       const hasHeader = Boolean(badgeTitle || blockTitle || blockSubtitle);
 
       return (
-        <section className={`relative w-full overflow-hidden py-12 md:py-16 border-b border-hive-border/20 ${isLightBg ? "bg-[#FAF7F2]" : "bg-[#111111]"}`}>
+        <section className={`relative w-full overflow-hidden pt-10 pb-8 sm:pt-14 sm:pb-12 ${isLightBg ? "bg-[#FAF7F2]" : "bg-[#111111]"}`}>
           {/* Top Soft Feather Gradient Blend Layer for Seamless Section Transition */}
-          <div className={`absolute top-0 inset-x-0 h-12 md:h-20 z-[2] pointer-events-none ${
+          <div className={`absolute top-0 inset-x-0 h-10 md:h-16 z-[2] pointer-events-none ${
             isLightBg 
-              ? "bg-gradient-to-b from-white via-white/60 to-transparent" 
+              ? "bg-gradient-to-b from-white via-white/50 to-transparent" 
               : "bg-gradient-to-b from-slate-900/80 via-black/40 to-transparent"
-          }`} />
-
-          {/* Bottom Soft Feather Gradient Blend Layer for Seamless Section Transition */}
-          <div className={`absolute bottom-0 inset-x-0 h-12 md:h-20 z-[2] pointer-events-none ${
-            isLightBg 
-              ? "bg-gradient-to-t from-white via-white/60 to-transparent" 
-              : "bg-gradient-to-t from-slate-900/80 via-black/40 to-transparent"
           }`} />
 
           {/* Background Image / Pattern Overlay */}
