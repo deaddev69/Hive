@@ -266,6 +266,13 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               : "bg-gradient-to-b from-slate-900/80 via-black/40 to-transparent"
           }`} />
 
+          {/* Bottom Soft Feather Gradient Blend Layer for Seamless Section Transition */}
+          <div className={`absolute bottom-0 inset-x-0 h-12 md:h-20 z-[2] pointer-events-none ${
+            isLightBg 
+              ? "bg-gradient-to-t from-white via-white/60 to-transparent" 
+              : "bg-gradient-to-t from-slate-900/80 via-black/40 to-transparent"
+          }`} />
+
           {/* Background Image / Pattern Overlay */}
           {bgImgUrl && (
             <div className="absolute inset-0 w-full h-full z-0">
