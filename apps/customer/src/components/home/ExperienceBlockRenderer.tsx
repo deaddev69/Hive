@@ -248,12 +248,14 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           : bgImg.url || (bgImg.objectKey ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${bgImg.objectKey}` : null)
         : null;
 
-      const targetUrl = block.config?.targetUrl || (block.data?.collection?.slug ? `/collections/${block.data.collection.slug}` : "/collections");
+      const bgOverlayTheme = block.config?.bgOverlayTheme || "light";
+      const isLightBg = bgOverlayTheme === "light";
+      const cardCtaText = block.config?.cardCtaText || "Take a closer look →";
 
       return (
-        <section className="relative w-full overflow-hidden py-10 md:py-14 border-b border-hive-border/20">
-          {/* Background Image / Solid Fallback with Dark Vignette Overlay */}
-          {bgImgUrl ? (
+        <section className={`relative w-full overflow-hidden py-12 md:py-16 border-b border-hive-border/20 ${isLightBg ? "bg-[#FAF7F2]" : "bg-[#111111]"}`}>
+          {/* Background Image / Pattern Overlay */}
+          {bgImgUrl && (
             <div className="absolute inset-0 w-full h-full z-0">
               <Image
                 src={bgImgUrl}
@@ -262,36 +264,52 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                 sizes="100vw"
                 className="object-cover object-center"
               />
-              <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
+              <div className={`absolute inset-0 ${isLightBg ? "bg-[#FAF7F2]/30" : "bg-black/55 backdrop-blur-[1px]"}`} />
             </div>
-          ) : (
-            <div className="absolute inset-0 w-full h-full bg-[#111111] z-0" />
           )}
 
-          <div className="relative z-10 max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col items-center gap-8 text-white">
-            <div className="flex flex-col items-center text-center max-w-2xl gap-2">
-              <span className="text-[10px] tracking-[0.25em] text-amber-400 uppercase font-bold">Premium Segment</span>
-              <h2 className="text-3xl md:text-5xl font-serif font-light tracking-tight text-white drop-shadow-md">
-                {block.title || block.data.collection?.name}
+          <div className={`relative z-10 max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col items-center gap-8 ${isLightBg ? "text-amber-950" : "text-white"}`}>
+            {/* Luxury Header with Gold Top Emblem */}
+            <div className="flex flex-col items-center text-center max-w-2xl gap-1.5">
+              {/* Gold Ornament Emblem */}
+              <div className="mb-1 text-amber-700 dark:text-amber-400">
+                <svg className="w-5 h-5 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M12 2L15 8L21 9L16.5 13.5L18 19.5L12 16L6 19.5L7.5 13.5L3 9L9 8L12 2Z" fill="currentColor" fillOpacity="0.2" />
+                </svg>
+              </div>
+              
+              <span className={`text-[10px] tracking-[0.3em] font-bold uppercase ${isLightBg ? "text-amber-800" : "text-amber-400"}`}>
+                PREMIUM EDIT
+              </span>
+              
+              <h2 className={`text-3xl md:text-5xl font-serif font-normal tracking-tight ${isLightBg ? "text-stone-900" : "text-white"} drop-shadow-xs`}>
+                {block.title || block.data.collection?.name || "The Finest, Curated for You."}
               </h2>
-              {block.subtitle && <p className="text-sm md:text-base text-white/80 font-light mt-1 drop-shadow-sm">{block.subtitle}</p>}
+              
+              {block.subtitle ? (
+                <p className={`text-sm md:text-base font-serif italic mt-0.5 ${isLightBg ? "text-stone-600" : "text-white/80"}`}>
+                  {block.subtitle}
+                </p>
+              ) : (
+                <p className={`text-sm md:text-base font-serif italic mt-0.5 ${isLightBg ? "text-stone-600" : "text-white/80"}`}>
+                  Timeless pieces. Thoughtfully chosen.
+                </p>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-6 sm:gap-x-6 sm:gap-y-10 w-full">
+            {/* Floating Borderless Standalone Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 w-full mt-2">
               {blockProducts.slice(0, block.config?.maxProducts || 6).map((product: any) => (
-                <div key={product.id} className="premium-card-wrapper scale-100 transition-all duration-500 hover:scale-[1.02] bg-black/45 hover:bg-black/65 border border-white/15 hover:border-amber-400/40 rounded-2xl p-2.5 shadow-2xl backdrop-blur-md">
-                  <ProductCard product={product} hidePrice={false} hideQuickView={true} darkTheme={true} />
+                <div key={product.id} className="premium-card-wrapper scale-100 transition-transform duration-500 hover:-translate-y-1 bg-transparent p-0 border-none shadow-none">
+                  <ProductCard 
+                    product={product} 
+                    hidePrice={true} 
+                    hideQuickView={true} 
+                    darkTheme={!isLightBg}
+                    customCtaText={cardCtaText}
+                  />
                 </div>
               ))}
-            </div>
-            
-            <div className="mt-2">
-              <button 
-                onClick={() => router.push(targetUrl)}
-                className="px-8 py-3 bg-white hover:bg-amber-400 text-black text-xs uppercase tracking-widest font-bold transition-all duration-300 rounded-xl shadow-xl cursor-pointer hover:scale-105"
-              >
-                Discover Collection
-              </button>
             </div>
           </div>
         </section>

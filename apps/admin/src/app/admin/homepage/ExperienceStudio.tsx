@@ -26,7 +26,7 @@ interface BlockSchema {
     renderer: string;
     config: any;
   };
-  fields: ("title" | "subtitle" | "collectionId" | "campaignId" | "maxProducts" | "showSeeAll" | "renderer" | "bannerUpload" | "targetUrl" | "vibeItems" | "bgImageUpload")[];
+  fields: ("title" | "subtitle" | "collectionId" | "campaignId" | "maxProducts" | "showSeeAll" | "renderer" | "bannerUpload" | "targetUrl" | "vibeItems" | "bgImageUpload" | "cardCtaText" | "bgOverlayTheme")[];
 }
 
 const BLOCK_REGISTRY: BlockSchema[] = [
@@ -135,8 +135,8 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     category: "Collections",
     icon: Star,
     description: "High-fashion Zudio/Zara style layout with custom background image and premium styling.",
-    defaultConfig: { title: "The Premium Edit", renderer: "premiumGrid", config: { maxProducts: 6 } },
-    fields: ["title", "subtitle", "collectionId", "maxProducts", "renderer", "bgImageUpload"]
+    defaultConfig: { title: "The Premium Edit", renderer: "premiumGrid", config: { maxProducts: 6, cardCtaText: "Take a closer look →", bgOverlayTheme: "light" } },
+    fields: ["title", "subtitle", "collectionId", "maxProducts", "renderer", "bgImageUpload", "cardCtaText", "bgOverlayTheme"]
   }
 ];
 
@@ -798,6 +798,38 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                   />
                 </div>
               )}
+            </div>
+          )}
+
+          {(schema.fields.includes("cardCtaText") || formData.renderer === "premiumGrid") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                Card CTA Text (Replaces Price)
+              </label>
+              <input 
+                type="text"
+                placeholder="e.g. Take a closer look →"
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm font-medium"
+                value={formData.config.cardCtaText || ""}
+                onChange={e => updateConfig("cardCtaText", e.target.value)}
+              />
+              <span className="text-[10px] text-slate-400">Leave blank to default to "Take a closer look →"</span>
+            </div>
+          )}
+
+          {(schema.fields.includes("bgOverlayTheme") || formData.renderer === "premiumGrid") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                Background Overlay Tone
+              </label>
+              <select
+                className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm font-medium bg-white"
+                value={formData.config.bgOverlayTheme || "light"}
+                onChange={e => updateConfig("bgOverlayTheme", e.target.value)}
+              >
+                <option value="light">Light Wallpaper (Ivory / Warm Traditional - Subtle Contrast)</option>
+                <option value="dark">Dark Vignette (Luxury Dark Theme)</option>
+              </select>
             </div>
           )}
           {schema.fields.includes("targetUrl") && (

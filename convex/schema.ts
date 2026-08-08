@@ -2090,6 +2090,8 @@ export default defineSchema({
       desktopImage: v.optional(v.any()),
       mobileImage: v.optional(v.any()),
       bgImage: v.optional(v.any()),
+      cardCtaText: v.optional(v.string()),
+      bgOverlayTheme: v.optional(v.string()),
       targetUrl: v.optional(v.string()),
       campaignId: v.optional(v.string()),
       items: v.optional(

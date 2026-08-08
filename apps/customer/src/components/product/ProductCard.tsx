@@ -23,6 +23,7 @@ export interface ProductCardProps {
   hidePrice?: boolean;
   hideQuickView?: boolean;
   darkTheme?: boolean;
+  customCtaText?: string;
 }
 
 // Clean database/AI suffixes from product titles
@@ -35,7 +36,7 @@ export function cleanProductTitle(name: string): string {
     .trim();
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, isRecommendation, hidePrice, hideQuickView, darkTheme }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, isRecommendation, hidePrice, hideQuickView, darkTheme, customCtaText }) => {
   const { toggleItem, hasItem } = useWishlistStore();
   const [hydrated, setHydrated] = useState(false);
   const [pulse, setPulse] = useState(false);
@@ -252,8 +253,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           </h3>
         </Link>
 
-        {/* Price (Single line, packed tightly) */}
-        {hidePrice ? null : (
+        {/* Price or Custom CTA Link */}
+        {hidePrice ? (
+          customCtaText ? (
+            <Link 
+              href={`/products/${product.slug}`} 
+              className={cn(
+                "group/cta inline-flex items-center gap-1 mt-1 text-xs font-serif italic font-medium transition-all duration-300",
+                darkTheme ? "text-amber-300 hover:text-white" : "text-amber-900 hover:text-amber-700 dark:text-amber-300"
+              )}
+            >
+              <span>{customCtaText}</span>
+            </Link>
+          ) : null
+        ) : (
           <div className={cn("text-base font-extrabold leading-tight flex items-center flex-wrap gap-1.5 mt-0.5", darkTheme ? "text-amber-300" : "text-slate-900")}>
             <span>₹{product.price.toLocaleString("en-IN")}</span>
             {product.compareAtPrice && product.compareAtPrice > product.price && (
