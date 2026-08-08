@@ -3,9 +3,10 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
 import { KOCHI_LOCATIONS } from "@/lib/locations";
 import { getAllBlogs } from "../data/blogs";
+import { SITE_URL } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://www.hivenow.in";
+  const baseUrl = SITE_URL;
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
   
   // 1. Static base pages

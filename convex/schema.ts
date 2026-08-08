@@ -2270,5 +2270,15 @@ export default defineSchema({
     .index("by_slug", ["slug"])
     .index("by_status", ["status"])
     .index("by_authorId", ["authorId"]),
+
+  // ─── BLOG SLUG REDIRECTS (PERMANENT 301 REDIRECTS) ───────────────────────
+  blogSlugRedirects: defineTable({
+    oldSlug: v.string(), // The previous published slug
+    newSlug: v.string(), // The target published slug
+    postId: v.id("blogPosts"), // The associated article
+    createdAt: v.number(),
+  })
+    .index("by_oldSlug", ["oldSlug"])
+    .index("by_postId", ["postId"]),
 });
 

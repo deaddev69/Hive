@@ -47,6 +47,30 @@ export const getPostBySlug = query({
 });
 
 /**
+ * 2. Public Query: Look up if an old slug was previously mapped to a new slug for 301 redirects.
+ */
+export const getSlugRedirect = query({
+  args: {
+    oldSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const redirect = await ctx.db
+      .query("blogSlugRedirects")
+      .withIndex("by_oldSlug", (q) => q.eq("oldSlug", args.oldSlug))
+      .first();
+
+    if (!redirect) {
+      return null;
+    }
+
+    return {
+      newSlug: redirect.newSlug,
+      postId: redirect.postId,
+    };
+  },
+});
+
+/**
  * 2. Public Query: Fetch all published blog posts for the blog directory and sitemap.
  */
 export const getPublishedPosts = query({
@@ -266,6 +290,40 @@ export const updatePost = mutation({
       publishedAt = now;
     }
 
+    // If slug changed on an already-published post, maintain the 301 permanent redirect chain
+    if (cleanSlug !== post.slug && post.status === "published") {
+      const existingRedirect = await ctx.db
+        .query("blogSlugRedirects")
+        .withIndex("by_oldSlug", (q) => q.eq("oldSlug", post.slug))
+        .first();
+
+      if (existingRedirect) {
+        await ctx.db.patch(existingRedirect._id, {
+          newSlug: cleanSlug,
+          createdAt: now,
+        });
+      } else {
+        await ctx.db.insert("blogSlugRedirects", {
+          oldSlug: post.slug,
+          newSlug: cleanSlug,
+          postId: args.id,
+          createdAt: now,
+        });
+      }
+
+      // If any previous redirects pointed to oldSlug, forward them to the new cleanSlug
+      const previousRedirects = await ctx.db
+        .query("blogSlugRedirects")
+        .filter((q) => q.eq(q.field("newSlug"), post.slug))
+        .collect();
+
+      for (const prev of previousRedirects) {
+        await ctx.db.patch(prev._id, {
+          newSlug: cleanSlug,
+        });
+      }
+    }
+
     await ctx.db.patch(args.id, {
       title: args.title.trim(),
       slug: cleanSlug,
@@ -353,6 +411,16 @@ export const deletePost = mutation({
     const post = await ctx.db.get(args.id);
     if (!post) {
       throw new ConvexError("Blog post not found.");
+    }
+
+    // Clean up any associated redirect records
+    const associatedRedirects = await ctx.db
+      .query("blogSlugRedirects")
+      .withIndex("by_postId", (q) => q.eq("postId", args.id))
+      .collect();
+
+    for (const r of associatedRedirects) {
+      await ctx.db.delete(r._id);
     }
 
     await ctx.db.delete(args.id);

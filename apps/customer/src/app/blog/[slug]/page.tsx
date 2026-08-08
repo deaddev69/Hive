@@ -1,10 +1,11 @@
 import React from "react";
 import Link from "next/link";
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../convex/_generated/api";
 import { getBlogBySlug, getAllBlogs } from "../../../data/blogs";
+import { SITE_URL } from "@/lib/seo";
 import ReactMarkdown from "react-markdown";
 import {
   ArrowLeft,
@@ -14,19 +15,33 @@ import {
   CheckCircle2,
   HelpCircle,
   ShoppingBag,
-  Share2,
-  Sparkles,
-  BookOpen,
 } from "lucide-react";
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
+type FetchResult =
+  | {
+      type: "post";
+      source: "convex";
+      data: any;
+    }
+  | {
+      type: "post";
+      source: "static";
+      data: any;
+    }
+  | {
+      type: "redirect";
+      newSlug: string;
+    }
+  | null;
+
 /**
- * Fetch blog post from Convex backend (or fallback to static data)
+ * Fetch blog post or check permanent 301 redirect mapping
  */
-async function fetchPost(slug: string) {
+async function fetchPostOrRedirect(slug: string): Promise<FetchResult> {
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
   if (convexUrl) {
     try {
@@ -34,8 +49,18 @@ async function fetchPost(slug: string) {
       const dbPost = await client.query(api.blogs.getPostBySlug, { slug });
       if (dbPost) {
         return {
-          source: "convex" as const,
+          type: "post",
+          source: "convex",
           data: dbPost,
+        };
+      }
+
+      // Check if this slug was previously published and redirected
+      const redirect = await client.query(api.blogs.getSlugRedirect, { oldSlug: slug });
+      if (redirect && redirect.newSlug && redirect.newSlug !== slug) {
+        return {
+          type: "redirect",
+          newSlug: redirect.newSlug,
         };
       }
     } catch (err) {
@@ -47,7 +72,8 @@ async function fetchPost(slug: string) {
   const staticPost = getBlogBySlug(slug);
   if (staticPost) {
     return {
-      source: "static" as const,
+      type: "post",
+      source: "static",
       data: staticPost,
     };
   }
@@ -60,73 +86,97 @@ async function fetchPost(slug: string) {
  */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const result = await fetchPost(slug);
+  const result = await fetchPostOrRedirect(slug);
 
   if (!result) {
     return {
-      title: "Article Not Found | Hive Blog",
+      title: "Article Not Found",
       description: "The requested blog article could not be found.",
     };
   }
 
+  if (result.type === "redirect") {
+    permanentRedirect(`/blog/${result.newSlug}`);
+  }
+
+  const defaultOgImage = `${SITE_URL}/icon-512x512.png`;
+
   if (result.source === "convex") {
     const post = result.data;
-    const title = post.seoTitle || `${post.title} | Hive`;
+    // Return raw title so Next.js root layout template "%s | Hive" appends "| Hive" exactly once
+    const rawTitle = post.seoTitle || post.title;
     const description = post.metaDescription || post.excerpt;
     const keywords = post.primaryKeyword
       ? [post.primaryKeyword, ...(post.secondaryKeywords || [])]
       : ["Kochi fashion blog", "Kerala boutique styling", "Hyperlocal marketplace Kerala"];
 
-    const ogImages = post.coverImageUrl ? [post.coverImageUrl] : [];
+    const ogImage = post.coverImageUrl || defaultOgImage;
+    const canonicalUrl = `${SITE_URL}/blog/${post.slug}`;
 
     return {
-      title,
+      title: rawTitle,
       description,
       keywords,
       alternates: {
-        canonical: `https://hivenow.in/blog/${post.slug}`,
+        canonical: canonicalUrl,
       },
       openGraph: {
-        title: post.title,
+        title: rawTitle,
         description,
-        url: `https://hivenow.in/blog/${post.slug}`,
+        url: canonicalUrl,
         siteName: "Hive Marketplace",
         type: "article",
         publishedTime: post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
         authors: [post.authorName || "Hive Editorial Team"],
-        images: ogImages,
+        images: [
+          {
+            url: ogImage,
+            alt: post.title,
+          },
+        ],
       },
       twitter: {
         card: "summary_large_image",
-        title: post.title,
+        title: rawTitle,
         description,
-        images: ogImages,
+        images: [ogImage],
       },
     };
   }
 
   // Static post fallback metadata
   const blog = result.data;
+  const rawTitle = blog.seoTitle ? blog.seoTitle.replace(/\s*\|\s*Hive.*$/i, "") : blog.h1Title;
+  const ogImage = blog.coverImageUrl || defaultOgImage;
+  const canonicalUrl = `${SITE_URL}/blog/${blog.slug}`;
+
   return {
-    title: blog.seoTitle,
+    title: rawTitle,
     description: blog.metaDescription,
     keywords: [blog.primaryKeyword, ...blog.secondaryKeywords],
     alternates: {
-      canonical: `https://hivenow.in/blog/${blog.slug}`,
+      canonical: canonicalUrl,
     },
     openGraph: {
-      title: blog.metaTitle,
+      title: rawTitle,
       description: blog.metaDescription,
-      url: `https://hivenow.in/blog/${blog.slug}`,
+      url: canonicalUrl,
       siteName: "Hive Marketplace",
       type: "article",
       publishedTime: blog.publishedAt,
       authors: [blog.author.name],
+      images: [
+        {
+          url: ogImage,
+          alt: blog.h1Title,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
-      title: blog.metaTitle,
+      title: rawTitle,
       description: blog.metaDescription,
+      images: [ogImage],
     },
   };
 }
@@ -136,10 +186,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  */
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const result = await fetchPost(slug);
+  const result = await fetchPostOrRedirect(slug);
 
   if (!result) {
     notFound();
+  }
+
+  if (result.type === "redirect") {
+    permanentRedirect(`/blog/${result.newSlug}`);
   }
 
   // Rendering for Convex dynamic database posts
@@ -152,11 +206,11 @@ export default async function BlogPostPage({ params }: Props) {
       "@type": "BlogPosting",
       mainEntityOfPage: {
         "@type": "WebPage",
-        "@id": `https://hivenow.in/blog/${post.slug}`,
+        "@id": `${SITE_URL}/blog/${post.slug}`,
       },
       headline: post.title,
       description: post.excerpt,
-      image: post.coverImageUrl ? [post.coverImageUrl] : undefined,
+      image: post.coverImageUrl ? [post.coverImageUrl] : [`${SITE_URL}/icon-512x512.png`],
       datePublished: post.publishedAt
         ? new Date(post.publishedAt).toISOString()
         : new Date(post._creationTime).toISOString(),
@@ -172,7 +226,7 @@ export default async function BlogPostPage({ params }: Props) {
         name: "Hive",
         logo: {
           "@type": "ImageObject",
-          url: "https://hivenow.in/icon.png",
+          url: `${SITE_URL}/icon.png`,
         },
       },
     };
@@ -185,22 +239,39 @@ export default async function BlogPostPage({ params }: Props) {
           "@type": "ListItem",
           position: 1,
           name: "Home",
-          item: "https://hivenow.in",
+          item: SITE_URL,
         },
         {
           "@type": "ListItem",
           position: 2,
           name: "Blog",
-          item: "https://hivenow.in/blog",
+          item: `${SITE_URL}/blog`,
         },
         {
           "@type": "ListItem",
           position: 3,
           name: post.title,
-          item: `https://hivenow.in/blog/${post.slug}`,
+          item: `${SITE_URL}/blog/${post.slug}`,
         },
       ],
     };
+
+    // Conditional FAQPage Schema (Only generated when post.faqs exists and has entries)
+    const faqSchema =
+      post.faqs && post.faqs.length > 0
+        ? {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: post.faqs.map((faq: { question: string; answer: string }) => ({
+              "@type": "Question",
+              name: faq.question,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: faq.answer,
+              },
+            })),
+          }
+        : null;
 
     const isHtmlContent = post.content.trim().startsWith("<") || post.content.includes("</");
 
@@ -227,6 +298,12 @@ export default async function BlogPostPage({ params }: Props) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
         />
+        {faqSchema && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+          />
+        )}
 
         <article className="max-w-4xl mx-auto bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
           {/* Top Navigation & Header */}
@@ -364,6 +441,23 @@ export default async function BlogPostPage({ params }: Props) {
   // Rendering for static fallback posts
   const blog = result.data;
 
+  // Conditional FAQPage Schema for static articles if they contain faqs
+  const staticFaqSchema =
+    blog.faqs && blog.faqs.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: blog.faqs.map((faq: { question: string; answer: string }) => ({
+            "@type": "Question",
+            name: faq.question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: faq.answer,
+            },
+          })),
+        }
+      : null;
+
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
       {/* Inject Structured Schema Markup (JSON-LD) for Google SEO */}
@@ -371,6 +465,12 @@ export default async function BlogPostPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(blog.schemaMarkup) }}
       />
+      {staticFaqSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(staticFaqSchema) }}
+        />
+      )}
 
       <article className="max-w-4xl mx-auto bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
         {/* Top Navigation & Header */}
