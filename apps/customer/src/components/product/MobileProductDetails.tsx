@@ -26,7 +26,7 @@ export function MobileProductDetails({
   selectedSize, 
   setSelectedSize 
 }: MobileProductDetailsProps) {
-  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+  const [openAccordion, setOpenAccordion] = useState<string | null>("returns");
   const router = useRouter();
 
   // ── Single source of truth for stock ──────────────────────────────────────────
@@ -294,7 +294,7 @@ export function MobileProductDetails({
             onClick={() => setOpenAccordion(openAccordion === "returns" ? null : "returns")}
             className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900 focus:outline-none"
           >
-            <span>Delivery & 24h Return Policy</span>
+            <span>DELIVERY & 24H RETURN POLICY</span>
             <span className="text-stone-400 text-xs font-normal">
               {openAccordion === "returns" ? "−" : "+"}
             </span>

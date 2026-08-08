@@ -12,12 +12,12 @@ interface HiveLogoProps {
 
 const sizeClasses = {
   navbar: {
-    sm: "h-9 w-9 sm:h-10 sm:w-10",
-    md: "h-12 w-12 sm:h-16 sm:w-16",
+    sm: "h-10 w-10 sm:h-12 sm:w-12",
+    md: "h-13 w-13 sm:h-[4.25rem] sm:w-[4.25rem]",
   },
   pwa: {
-    sm: "h-5 sm:h-6 w-auto",
-    md: "h-6 sm:h-8 w-auto",
+    sm: "h-6 sm:h-7 w-auto",
+    md: "h-7 sm:h-9 w-auto",
   },
 };
 
