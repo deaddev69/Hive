@@ -176,8 +176,8 @@ export default function BoutiqueOrders() {
   const updateStatus = useMutation(api.orders.updateBoutiqueOrderStatus);
   const retryDispatch = useAction(api.orders.retryBoutiqueOrderDispatch);
   const readyForPickup = useAction(api.orders.readyForPickupAction);
-  const acceptReservation = useMutation((api as any).reservations.confirmReservationByStore);
-  const declineReservation = useMutation((api as any).reservations.declineReservationByStore);
+  const acceptReservation = useMutation((api as any).reservations.storeConfirmAvailable);
+  const declineReservation = useMutation((api as any).reservations.storeDeclineUnavailable);
   const [retryingOrderId, setRetryingOrderId] = React.useState<string | null>(null);
   const [dispatchingOrderId, setDispatchingOrderId] = React.useState<string | null>(null);
   const [pendingActionId, setPendingActionId] = React.useState<string | null>(null);
