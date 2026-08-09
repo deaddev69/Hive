@@ -561,7 +561,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
     setLoading(true);
     try {
       const res = await createReservationMutation({
-        productId: (product.slug ?? (product as any)._id ?? product.id) as any,
+        productId: ((product as any)._id ?? product.id) as any,
         size: selectedSize,
         quantity: 1,
       });
@@ -579,7 +579,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       }
 
       addItem({
-        productId: (product.slug ?? (product as any)._id ?? product.id) as any,
+        productId: ((product as any)._id ?? product.id) as any,
         size: selectedSize,
         price: product.price,
         name: product.name,
