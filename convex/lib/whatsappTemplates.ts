@@ -13,7 +13,11 @@ export function getWhatsAppTemplate(template: string, payload: any): { templateN
 
     case "out_for_delivery":
       templateName = "hive_out_for_delivery";
-      parameters = [payload.orderNumber || ""];
+      parameters = [
+        payload.orderNumber || "",
+        payload.driverName || "our delivery partner",
+        payload.driverPhone || "support"
+      ];
       break;
 
     case "delivered":
@@ -29,30 +33,7 @@ export function getWhatsAppTemplate(template: string, payload: any): { templateN
       ];
       break;
 
-    case "driver_assigned":
-      templateName = "hive_driver_assigned";
-      parameters = [payload.orderNumber || "", payload.driverName || "", payload.driverPhone || ""];
-      break;
 
-    case "merchant_invite":
-      templateName = "merchant_invite";
-      parameters = [payload.inviteLink || ""];
-      break;
-      
-    case "merchant_welcome":
-      templateName = "merchant_welcome";
-      parameters = [];
-      break;
-
-    case "first_product_approved":
-      templateName = "first_product_approved";
-      parameters = [];
-      break;
-
-    case "first_order_arrived":
-      templateName = "first_order_arrived";
-      parameters = [payload.orderNumber || ""];
-      break;
 
     case "reservation_item_available":
       templateName = "hive_reservation_confirmed";
