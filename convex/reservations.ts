@@ -10,10 +10,21 @@ import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { triggerNotification } from "./lib/notifications";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
-import { getPublicUrl } from "./media/api";
 
 const RESERVATION_TIMER_MS = 30 * 60 * 1000; // 30 minutes
 const PAYMENT_TIMER_MS = 30 * 60 * 1000;     // 30 minutes
+
+function getPublicUrl(asset: any, variant: "thumbnail" | "pdp" | "zoom" | "original" = "original") {
+  if (typeof asset === "string") return asset;
+  if (!asset?.objectKey) return "";
+  const domain = "pub-09a817ec6f384c4997feafc5e8387286.r2.dev";
+  if (domain.includes(".r2.dev")) {
+    const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    return `https://${cleanDomain}/${asset.objectKey}`;
+  }
+  const variantParam = variant === "original" ? "format=auto" : `variant=${variant}`;
+  return `https://${domain}/cdn-cgi/image/${variantParam}/${asset.objectKey}`;
+}
 
 // ─── Customer: Create a Reservation ──────────────────────────────────────────
 export const createReservation = mutation({
