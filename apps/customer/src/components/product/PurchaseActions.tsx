@@ -930,7 +930,6 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         onToggleWishlist={handleSaveToWishlist}
         isReservationMode={isReservationMode}
         onReserve={handleReserve}
-        reservationComplete={reservationComplete}
       />
 
       <style>{`
