@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { api } from "../../../../../convex/_generated/api";
 import { Bell } from "lucide-react";
 
 export function OrderConfirmationPushPrompt({ userId }: { userId?: string }) {
