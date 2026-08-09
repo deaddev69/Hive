@@ -193,24 +193,24 @@ export const getCheckoutPricing = query({
         deliveryFeePaise = 0;
       }
 
-      // ── Platform Revenue = Markup + Seller 2% Fee + ₹7 Fixed Fee ──
+      // ── Platform Revenue (for internal tracking only — NOT added to checkout total) ──
       const fixedPlatformFeePaise = 700;
       const totalPlatformRevenuePaise = totalPlatformMarkupPaise + totalSellerProcessingFeePaise + fixedPlatformFeePaise;
-
-      // ── GST = 18% × Platform Revenue ──
       const gstPaise = Math.round(totalPlatformRevenuePaise * 0.18);
 
-      // ── Grand Total = Items Total + ₹7 Platform Fee + GST + Delivery − Discount ──
-      const totalPaise = Math.max(0, subtotalPaise + fixedPlatformFeePaise + gstPaise + deliveryFeePaise - discountPaise);
+      // ── Grand Total = Items Total + Delivery − Discount ──
+      // ₹7 and GST are ALREADY EMBEDDED inside each item's priceAtPurchase.
+      // They must NOT be added again here.
+      const totalPaise = Math.max(0, subtotalPaise + deliveryFeePaise - discountPaise);
 
-      // ── Debug log (temporary) ──
+      // ── Debug log ──
       console.log("[getCheckoutPricing] PRICING TRACE:", JSON.stringify({
         subtotal: subtotalPaise / 100,
         platformMarkup: totalPlatformMarkupPaise / 100,
         sellerProcessingFee: totalSellerProcessingFeePaise / 100,
-        fixedPlatformFee: fixedPlatformFeePaise / 100,
-        totalPlatformRevenue: totalPlatformRevenuePaise / 100,
-        gst: gstPaise / 100,
+        fixedPlatformFee_INCLUDED: fixedPlatformFeePaise / 100,
+        totalPlatformRevenue_INCLUDED: totalPlatformRevenuePaise / 100,
+        gst_INCLUDED: gstPaise / 100,
         deliveryFee: deliveryFeePaise / 100,
         discount: discountPaise / 100,
         total: totalPaise / 100,
@@ -219,6 +219,7 @@ export const getCheckoutPricing = query({
       return {
         subtotalRupees: subtotalPaise / 100,
         subtotalPaise,
+        // These are returned for internal transparency only — already included in subtotal
         fixedPlatformFeeRupees: fixedPlatformFeePaise / 100,
         fixedPlatformFeePaise,
         gstRupees: gstPaise / 100,
@@ -235,16 +236,15 @@ export const getCheckoutPricing = query({
       console.error("[getCheckoutPricing] FALLBACK triggered:", err);
       const fallbackSubtotalPaise = args.items.reduce((sum, i) => sum + Math.round(i.price * 100) * i.quantity, 0);
       const fallbackDeliveryPaise = (args.deliveryFee !== undefined) ? Math.round(args.deliveryFee * 100) : (fallbackSubtotalPaise >= 1000000 ? 0 : 9900);
-      const fallbackFeePaise = 700;
-      const fallbackGstPaise = Math.round((fallbackSubtotalPaise * 0.12 + fallbackSubtotalPaise * 0.02 + fallbackFeePaise) * 0.18);
-      const fallbackTotalPaise = Math.max(0, fallbackSubtotalPaise + fallbackFeePaise + fallbackGstPaise + fallbackDeliveryPaise);
+      // All-in pricing: total = subtotal + delivery (no separate ₹7 or GST)
+      const fallbackTotalPaise = Math.max(0, fallbackSubtotalPaise + fallbackDeliveryPaise);
       return {
         subtotalRupees: fallbackSubtotalPaise / 100,
         subtotalPaise: fallbackSubtotalPaise,
-        fixedPlatformFeeRupees: 7,
-        fixedPlatformFeePaise: 700,
-        gstRupees: fallbackGstPaise / 100,
-        gstPaise: fallbackGstPaise,
+        fixedPlatformFeeRupees: 0,
+        fixedPlatformFeePaise: 0,
+        gstRupees: 0,
+        gstPaise: 0,
         deliveryFeeRupees: fallbackDeliveryPaise / 100,
         deliveryFeePaise: fallbackDeliveryPaise,
         discountRupees: 0,
@@ -570,8 +570,8 @@ export const initCheckoutSessionInternal = internalMutation({
     const expectedGstPaise = Math.round(totalPlatformRevenuePaise * 0.18);
     const expectedGstRupees = expectedGstPaise / 100;
 
-    // Verify total calculation: Subtotal + ₹7 Platform Fee + GST + Delivery Fee - Discount
-    const expectedTotal = Math.max(0, args.subtotal + 7 + expectedGstRupees - expectedDiscount + expectedDeliveryFee);
+    // Verify total calculation: Subtotal + Delivery Fee - Discount (₹7 and GST are already baked into item prices)
+    const expectedTotal = Math.max(0, args.subtotal - expectedDiscount + expectedDeliveryFee);
     const expectedTotalPaise = Math.round(expectedTotal * 100);
     const clientTotalPaise = Math.round(args.total * 100);
     
@@ -631,6 +631,7 @@ export const initCheckoutSessionInternal = internalMutation({
         platformFeeRateAtPurchase: snap.platformFeeRateAtPurchase,
         platformMarkupAmount: snap.platformMarkupAmount,
         platformFeeAmount: snap.platformFeeAmount,
+        gstAmountAtPurchase: snap.gstAmountAtPurchase,
       };
     });
 
@@ -1033,6 +1034,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
       platformMarkupAmount: (item as any).platformMarkupAmount,
       platformFeeAmount: (item as any).platformFeeAmount,
       fixedPlatformFeeAtPurchase: (item as any).fixedPlatformFeeAtPurchase ?? 700,
+      gstAmountAtPurchase: (item as any).gstAmountAtPurchase,
       quantity: item.quantity,
       subtotal: item.price * item.quantity,
     });

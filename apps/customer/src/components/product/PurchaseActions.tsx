@@ -855,7 +855,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             </button>
           </form>
         </div>
-      {isReservationMode ? (
+      ) : isReservationMode ? (
           <button
             type="button"
             onClick={onReserve}

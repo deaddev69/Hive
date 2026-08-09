@@ -78,21 +78,14 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
 
         <div className="space-y-2.5 text-xs font-semibold text-hive-text-muted">
           {/* 1. Items Total */}
-          <div className="flex justify-between items-center">
-            <span>Items Total</span>
-            <span className="font-mono text-hive-dark">{formatCurrency(subtotal)}</span>
-          </div>
-
-          {/* 2. Platform Service Fee */}
-          <div className="flex justify-between items-center">
-            <span>Platform Service Fee</span>
-            <span className="font-mono text-hive-dark">{formatCurrency(platformFee)}</span>
-          </div>
-
-          {/* 3. GST (18%) */}
-          <div className="flex justify-between items-center">
-            <span>GST (18%)</span>
-            <span className="font-mono text-hive-dark">{formatCurrency(gstAmount)}</span>
+          <div className="flex flex-col gap-0.5 w-full">
+            <div className="flex justify-between items-center">
+              <span>Items Total</span>
+              <span className="font-mono text-hive-dark">{formatCurrency(subtotal)}</span>
+            </div>
+            <span className="text-[10px] text-neutral-400 font-medium">
+              (Includes platform fees & applicable GST)
+            </span>
           </div>
 
           {/* 4. Delivery Partner Fee */}
@@ -148,7 +141,7 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
 
           {isHelpOpen && (
             <p className="text-[11px] text-neutral-600 font-medium pt-1.5 border-t border-neutral-200/50 leading-relaxed animate-[fadeIn_0.2s_ease-out]">
-              Your order total consists of the product price, a fixed ₹7 Platform Service Fee, applicable GST on platform services, and the delivery partner fee. These charges help us securely process your order, support local boutiques, and provide reliable delivery.
+              Your order total consists of the product price (which already includes a fixed ₹7 Platform Service Fee and applicable GST) and the delivery partner fee. These charges help us securely process your order, support local boutiques, and provide reliable delivery.
             </p>
           )}
         </div>

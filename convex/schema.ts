@@ -869,6 +869,7 @@ export default defineSchema({
     platformMarkupAmount:         v.optional(v.number()),
     platformFeeAmount:            v.optional(v.number()),
     fixedPlatformFeeAtPurchase:   v.optional(v.number()),
+    gstAmountAtPurchase:          v.optional(v.number()),
     quantity:        v.number(),
     subtotal:        v.number(),                    // paise
   })
@@ -1064,6 +1065,7 @@ export default defineSchema({
                        platformFeeRateAtPurchase: v.optional(v.number()),
                        platformMarkupAmount: v.optional(v.number()),
                        platformFeeAmount: v.optional(v.number()),
+                       gstAmountAtPurchase: v.optional(v.number()),
                      })),
     subtotal:        v.number(),
     deliveryFee:     v.number(),

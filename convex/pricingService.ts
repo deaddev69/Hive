@@ -9,13 +9,14 @@ export interface PlatformSettings {
 }
 
 export interface ItemFinancialSnapshot {
-  priceAtPurchase: number; // Customer price in Paise
+  priceAtPurchase: number; // All-in customer price in Paise (includes markup + ₹7 + GST)
   basePriceAtPurchase: number; // Boutique base price in Paise
   platformMarkupRateAtPurchase: number; // e.g. 0.15
   platformFeeRateAtPurchase: number; // e.g. 0.02
   fixedPlatformFeeAtPurchase: number; // 700 Paise (₹7.00)
   platformMarkupAmount: number; // Platform markup in Paise
   platformFeeAmount: number; // Store platform fee in Paise (2%)
+  gstAmountAtPurchase: number; // GST in Paise (18% of platform revenue)
   subtotal: number; // priceAtPurchase * quantity in Paise
 }
 
@@ -85,7 +86,10 @@ export function selectMarkupRate(basePriceRupees: number, settings: PlatformSett
 export const getPlatformMarkupRate = selectMarkupRate;
 
 /**
- * Calculate dynamic customer pricing with ₹7 Fixed Fee and Charm Pricing (rounding to nearest 9 ending).
+ * Calculate the ALL-IN customer price including markup, ₹7 Fixed Fee, and GST.
+ * GST (18%) is calculated on platform revenue: (markup + seller 2% fee + ₹7 fixed fee).
+ * The resulting customerPrice is the final canonical price stored in the DB.
+ * Checkout MUST NOT add ₹7 or GST again.
  */
 export function calculateProductPricing(
   basePriceRupees: number,
@@ -93,16 +97,37 @@ export function calculateProductPricing(
   settings: PlatformSettings
 ) {
   const markupRate = selectMarkupRate(basePriceRupees, settings);
-  const rawCustomerPrice = basePriceRupees * (1 + markupRate) + FIXED_PLATFORM_FEE_RUPEES;
-  const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
+  const platformFeeRate = settings.platformFeeRate ?? 0.02;
 
+  // Step 1: Pre-GST customer price (base + markup + ₹7)
+  const markupAmount = basePriceRupees * markupRate;
+  const preGstPrice = basePriceRupees + markupAmount + FIXED_PLATFORM_FEE_RUPEES;
+
+  // Step 2: Platform revenue = markup + seller 2% fee + ₹7
+  const sellerProcessingFee = basePriceRupees * platformFeeRate;
+  const platformRevenue = markupAmount + sellerProcessingFee + FIXED_PLATFORM_FEE_RUPEES;
+
+  // Step 3: GST = 18% of platform revenue
+  const gstAmount = platformRevenue * 0.18;
+
+  // Step 4: All-in price = pre-GST price + GST, then charm-round
+  const allInRaw = preGstPrice + gstAmount;
+  const customerPrice = Math.ceil(allInRaw / 10) * 10 - 1;
+
+  // Repeat for discount price
   let customerDiscountPrice: number | undefined = undefined;
   let discountMarkupRate = markupRate;
+  let discountGstAmount: number | undefined = undefined;
 
   if (baseDiscountPriceRupees && baseDiscountPriceRupees > 0) {
     discountMarkupRate = selectMarkupRate(baseDiscountPriceRupees, settings);
-    const rawDiscountPrice = baseDiscountPriceRupees * (1 + discountMarkupRate) + FIXED_PLATFORM_FEE_RUPEES;
-    customerDiscountPrice = Math.ceil(rawDiscountPrice / 10) * 10 - 1;
+    const dMarkupAmount = baseDiscountPriceRupees * discountMarkupRate;
+    const dPreGstPrice = baseDiscountPriceRupees + dMarkupAmount + FIXED_PLATFORM_FEE_RUPEES;
+    const dSellerFee = baseDiscountPriceRupees * platformFeeRate;
+    const dPlatformRevenue = dMarkupAmount + dSellerFee + FIXED_PLATFORM_FEE_RUPEES;
+    discountGstAmount = dPlatformRevenue * 0.18;
+    const dAllInRaw = dPreGstPrice + discountGstAmount;
+    customerDiscountPrice = Math.ceil(dAllInRaw / 10) * 10 - 1;
   }
 
   const discountPercent = customerDiscountPrice
@@ -117,6 +142,12 @@ export function calculateProductPricing(
     markupRate,
     discountMarkupRate,
     discountPercent,
+    // Transparency fields for seller preview UI
+    markupAmount,
+    platformFeeAmount: FIXED_PLATFORM_FEE_RUPEES,
+    sellerProcessingFee,
+    gstAmount,
+    discountGstAmount,
   };
 }
 
@@ -174,8 +205,12 @@ export async function calculateItemFinancials(
   const platformFeeAmountPaise = Math.round(basePricePaise * platformFeeRateAtPurchase);
   const fixedPlatformFeeAtPurchase = FIXED_PLATFORM_FEE_PAISE; // 700 Paise (₹7.00)
   
-  // Platform markup = customer price - base price - ₹7 fixed fee (all in paise)
-  const platformMarkupAmountPaise = Math.max(0, expectedCustomerPricePaise - basePricePaise - fixedPlatformFeeAtPurchase);
+  // Platform markup = base * markupRate (in paise)
+  const platformMarkupAmountPaise = Math.round(basePricePaise * platformMarkupRateAtPurchase);
+
+  // GST = 18% of platform revenue (markup + seller 2% fee + ₹7)
+  const platformRevenuePaise = platformMarkupAmountPaise + platformFeeAmountPaise + fixedPlatformFeeAtPurchase;
+  const gstAmountAtPurchase = Math.round(platformRevenuePaise * 0.18);
 
   return {
     priceAtPurchase: expectedCustomerPricePaise,
@@ -185,6 +220,7 @@ export async function calculateItemFinancials(
     fixedPlatformFeeAtPurchase,
     platformMarkupAmount: platformMarkupAmountPaise,
     platformFeeAmount: platformFeeAmountPaise,
+    gstAmountAtPurchase,
     subtotal: expectedCustomerPricePaise * quantity,
   };
 }
