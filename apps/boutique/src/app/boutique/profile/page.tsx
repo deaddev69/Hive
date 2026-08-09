@@ -606,13 +606,13 @@ export default function BoutiqueProfile() {
                 <h3 className="text-lg font-serif font-bold text-hive-dark">
                   Operations & Holidays
                 </h3>
-                <p className="text-xs text-hive-text-muted mt-0.5">Configure store timings, weekly days off, and holiday periods.</p>
+                <p className="text-xs text-hive-text-muted mt-0.5">Configure store timings (in IST), weekly days off, and holiday periods.</p>
               </div>
 
             {/* Timings */}
             <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-100">
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Opening Time</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Opening Time (IST)</label>
                 <input
                   type="time"
                   value={openingTime}
@@ -621,7 +621,7 @@ export default function BoutiqueProfile() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Closing Time</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Closing Time (IST)</label>
                 <input
                   type="time"
                   value={closingTime}
