@@ -1,5 +1,6 @@
 "use client";
 
+// QA Trigger: forcing Vercel redeployment
 import React, { useState, useEffect } from "react";
 import { useAuth, SignOutButton, useUser, useClerk } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
