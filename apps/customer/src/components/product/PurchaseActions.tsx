@@ -428,8 +428,6 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const stockMap: Record<string, number> =
     (product as any).stockBySize ?? product.inventory ?? {};
 
-  console.log("[PurchaseActions] stockMap:", stockMap, "selectedSize:", selectedSize);
-
   const inventoryCount = selectedSize ? (stockMap[selectedSize] ?? 0) : 0;
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
   const isLowStock = selectedSize ? inventoryCount > 0 && inventoryCount <= 3 : false;
@@ -858,7 +856,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       ) : isReservationMode ? (
           <button
             type="button"
-            onClick={onReserve}
+            onClick={handleReserve}
             disabled={loading}
             className="hidden lg:flex h-12 w-full rounded-2xl bg-hive-dark text-hive-gold font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:shadow cursor-pointer items-center justify-center border border-hive-gold disabled:opacity-50"
           >
