@@ -1336,6 +1336,50 @@ export const updateBoutiqueOrderStatus = mutation({
         orderId: args.orderId,
         event: args.status as "confirmed" | "packed" | "out_for_delivery" | "delivered",
       });
+
+      // Map Order States to Push & WhatsApp Templates
+      const pushMap: Record<string, { title: string, body: string, waTemplate: string }> = {
+        confirmed: {
+          title: "Order Confirmed! 🛍️",
+          body: `Your order #${order.orderNumber} has been received and is being processed.`,
+          waTemplate: "hive_order_accepted",
+        },
+        packed: {
+          title: "Order Packed 📦",
+          body: `Your order #${order.orderNumber} is packed and ready for dispatch.`,
+          waTemplate: "hive_general_update",
+        },
+        out_for_delivery: {
+          title: "Out for Delivery 🚚",
+          body: `Your order #${order.orderNumber} is on its way to you!`,
+          waTemplate: "hive_out_for_delivery",
+        },
+        delivered: {
+          title: "Order Delivered 📦",
+          body: `Your order #${order.orderNumber} was delivered successfully. Enjoy!`,
+          waTemplate: "hive_order_delivered",
+        },
+      };
+
+      const config = pushMap[args.status];
+      if (config) {
+        // 1. Dispatch Web Push Action
+        await ctx.scheduler.runAfter(0, api.customerPushActions.sendTransactionalPush, {
+          userId: order.customerId,
+          title: config.title,
+          body: config.body,
+          targetUrl: `https://hivenow.in/orders/${order._id}`,
+        });
+
+        // 2. Dispatch WhatsApp Cloud API Action (Fallback / Multi-Channel)
+        if (order.deliveryAddress?.phone) {
+          await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+            recipient: order.deliveryAddress.phone,
+            templateName: config.waTemplate,
+            parameters: [order.orderNumber],
+          });
+        }
+      }
     }
 
     if (args.status === "cancelled") {

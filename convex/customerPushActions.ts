@@ -178,3 +178,64 @@ export const dispatchPushCampaign = action({
     return { success: true, count: successCount, total: totalSubscribers };
   },
 });
+
+/**
+ * Dispatch Transactional Push Notification to a specific user.
+ */
+export const sendTransactionalPush = action({
+  args: {
+    userId: v.id("users"),
+    title: v.string(),
+    body: v.string(),
+    targetUrl: v.string(),
+    icon: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const vapidPublicKey =
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY;
+    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+
+    if (!vapidPublicKey || !vapidPrivateKey) {
+      console.warn("[sendTransactionalPush] VAPID keys missing. Push skipped.");
+      return { success: false, reason: "VAPID keys not configured" };
+    }
+
+    webPush.setVapidDetails(
+      "mailto:support@hivenow.in",
+      vapidPublicKey,
+      vapidPrivateKey
+    );
+
+    const subscriptions: any[] = await ctx.runQuery(
+      internal.customerPush.getSubscriptionsByUserIdInternal,
+      { userId: args.userId }
+    );
+
+    if (!subscriptions || subscriptions.length === 0) {
+      return { success: false, reason: "No push subscriptions found for user" };
+    }
+
+    const payload = JSON.stringify({
+      title: args.title,
+      body: args.body,
+      icon: args.icon || "/icon-192x192.png",
+      targetUrl: args.targetUrl,
+      timestamp: Date.now(),
+    });
+
+    const sendPromises = subscriptions.map((sub) =>
+      webPush
+        .sendNotification(sub.subscription, payload)
+        .catch(async (err) => {
+          if (err.statusCode === 410 || err.statusCode === 404) {
+            await ctx.runMutation(internal.customerPush.removeCustomerSubscriptionInternal, {
+              endpoint: sub.subscription.endpoint,
+            });
+          }
+        })
+    );
+
+    await Promise.all(sendPromises);
+    return { success: true, count: subscriptions.length };
+  },
+});

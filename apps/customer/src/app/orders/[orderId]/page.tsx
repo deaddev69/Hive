@@ -33,6 +33,7 @@ import { CustomerPriceBreakdown } from "@/components/checkout/CustomerPriceBreak
 import { useSessionStore } from "@/context/SessionContext";
 import { formatCurrency, toast } from "@hive/utils";
 import BeeLoader from "@/components/shared/BeeLoader";
+import { OrderConfirmationPushPrompt } from "@/components/checkout/OrderConfirmationPushPrompt";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Animated Number Ticker Component
@@ -285,10 +286,12 @@ export default function OrderDetailPage() {
                 )}
               </motion.span>
             </button>
+
+            <OrderConfirmationPushPrompt userId={order.customerId} />
           </motion.div>
         )}
 
-        {/* ── Active Order Details & Summary ─────────────────────────────────── */}
+        {/* ── Order Timeline Tracker ──────────────────────────────────────────── */}
         {!isCancelled && (
           <>
             {/* Delivery & Fitting Slot Schedule Card */}
