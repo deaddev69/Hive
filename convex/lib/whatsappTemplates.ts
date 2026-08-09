@@ -54,6 +54,21 @@ export function getWhatsAppTemplate(template: string, payload: any): { templateN
       parameters = [payload.orderNumber || ""];
       break;
 
+    case "reservation_item_available":
+      templateName = "hive_reservation_confirmed";
+      parameters = [
+        payload.productName || "your item",
+        payload.paymentExpiresAt ? new Date(payload.paymentExpiresAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "30 minutes"
+      ];
+      break;
+
+    case "reservation_unavailable":
+      templateName = "hive_reservation_unavailable";
+      parameters = [
+        payload.productName || "your item"
+      ];
+      break;
+
     default:
       // Fallback utility template
       templateName = "hive_general_update";
