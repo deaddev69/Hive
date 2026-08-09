@@ -68,7 +68,8 @@ export async function validateProductSizeAndStock(
   db: GenericDatabaseReader<DataModel>,
   productId: string,
   size: string,
-  quantity: number
+  quantity: number,
+  excludeReservationId?: string
 ): Promise<boolean> {
   if (!size || size.trim() === "") {
     throw new Error("Size selection is mandatory.");
@@ -139,13 +140,49 @@ export async function validateProductSizeAndStock(
       stock = productRow.stockBySize[normalized];
     }
 
-    if (stock === 0) {
-      throw new Error(`Size "${size}" is out of stock.`);
+    // Fetch active reservations for this product and size to prevent overselling
+    const activeReservations = await db
+      .query("reservations")
+      .withIndex("by_productId_size_status", (q) =>
+        q.eq("productId", productRow!._id).eq("size", size).eq("status", "reservation_active")
+      )
+      .collect();
+
+    const awaitingStore = await db
+      .query("reservations")
+      .withIndex("by_productId_size_status", (q) =>
+        q.eq("productId", productRow!._id).eq("size", size).eq("status", "awaiting_store_confirmation")
+      )
+      .collect();
+
+    const awaitingPayment = await db
+      .query("reservations")
+      .withIndex("by_productId_size_status", (q) =>
+        q.eq("productId", productRow!._id).eq("size", size).eq("status", "awaiting_payment")
+      )
+      .collect();
+
+    const allLocks = [...activeReservations, ...awaitingStore, ...awaitingPayment];
+    
+    // Filter out the excluded reservation if provided (e.g. when the reserver is checking out)
+    const applicableLocks = excludeReservationId 
+      ? allLocks.filter(r => r._id !== excludeReservationId)
+      : allLocks;
+
+    const lockedStock = applicableLocks.length;
+    const availableStock = Math.max(0, stock - lockedStock);
+
+    if (availableStock === 0) {
+      if (stock > 0) {
+        throw new Error(`All units of size "${size}" are currently reserved by other customers.`);
+      } else {
+        throw new Error(`Size "${size}" is out of stock.`);
+      }
     }
 
-    if (stock < quantity) {
+    if (availableStock < quantity) {
       throw new Error(
-        `Requested quantity (${quantity}) exceeds available stock (${stock}) for size "${size}".`
+        `Requested quantity (${quantity}) exceeds available stock (${availableStock}) for size "${size}".`
       );
     }
 

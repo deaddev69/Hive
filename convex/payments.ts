@@ -34,6 +34,7 @@ const cartItemArg = v.object({
   boutiqueId: v.optional(v.string()),
   isPreorder: v.optional(v.boolean()),
   scheduledProcessingDate: v.optional(v.string()),
+  reservationId: v.optional(v.string()),
 });
 
 // Constant-time hex string comparison to prevent timing attacks
@@ -472,7 +473,7 @@ export const initCheckoutSessionInternal = internalMutation({
       }
 
       // Check stock
-      await validateProductSizeAndStock(ctx.db, item.productId, item.size, item.quantity);
+      await validateProductSizeAndStock(ctx.db, item.productId, item.size, item.quantity, item.reservationId);
 
       // Enforce Serviceability before payment session
       const serviceability = checkServiceability(deliveryLat, deliveryLng, boutique);

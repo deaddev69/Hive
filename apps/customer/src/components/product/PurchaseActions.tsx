@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, ArrowRight, Bell, AlertTriangle, CheckCircle, Info, Clock, Heart, Calendar } from "lucide-react";
+import { ShoppingBag, ArrowRight, Bell, AlertTriangle, CheckCircle, Info, Clock, Heart, Calendar, Flame } from "lucide-react";
 import { cn } from "@hive/ui";
 import { ProductDetail } from "@/lib/mockProductDetails";
 import { useCartStore } from "@/store/cart-store";
@@ -795,6 +795,14 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
                 <div className="flex items-center gap-2 text-xs font-bold text-red-600 bg-red-50 px-3.5 py-1.5 rounded-xl border border-red-200 w-full">
                   <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                   <span>Out of Stock: The requested size is currently unavailable.</span>
+                </div>
+              ) : isLowStock ? (
+                <div className="flex items-center justify-between text-xs font-bold text-orange-700 bg-orange-50 px-3.5 py-2.5 rounded-xl border border-orange-200 w-full shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
+                    <span>Hurry! Only {inventoryCount} left in stock.</span>
+                  </div>
+                  <span className="text-[10px] uppercase tracking-wider text-orange-600 font-black">Selling Fast</span>
                 </div>
               ) : null}
             </>
