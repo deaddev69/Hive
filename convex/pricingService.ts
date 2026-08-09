@@ -168,38 +168,32 @@ export async function calculateItemFinancials(
   // The frontend mapDbProduct divides by 100 for display, and the cart stores in rupees.
   // clientPricePaise = Math.round(cartRupees * 100), so it's in paise and should match DB directly.
 
-  let expectedCustomerPricePaise: number;
+  // The canonical customer price stored on the product record (or discount price if set)
+  const canonicalProductPricePaise = productRow.discountPrice ?? productRow.price;
+
   let basePricePaise: number;
   let platformMarkupRateAtPurchase: number;
 
   if (productRow.basePrice !== undefined && productRow.basePrice > 0) {
-    // basePrice is stored in PAISE in the DB
     basePricePaise = productRow.basePrice;
-    const basePriceRupees = basePricePaise / 100; // Convert to rupees for tier lookup & pricing
+    const basePriceRupees = basePricePaise / 100;
     platformMarkupRateAtPurchase = selectMarkupRate(basePriceRupees, settings);
-    // calculateProductPricing expects RUPEES, returns RUPEES
-    const baseDiscountPriceRupees = productRow.baseDiscountPrice ? productRow.baseDiscountPrice / 100 : undefined;
-    const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings);
-    // Convert customer prices back to PAISE
-    expectedCustomerPricePaise = (productRow.baseDiscountPrice && productRow.baseDiscountPrice > 0)
-      ? Math.round((pricing.customerDiscountPrice || pricing.customerPrice) * 100)
-      : Math.round(pricing.customerPrice * 100);
   } else {
-    // Legacy products without basePrice: price/discountPrice are in paise
-    expectedCustomerPricePaise = productRow.discountPrice ?? productRow.price;
-    // Reverse-engineer base price from customer price (both in paise)
-    basePricePaise = Math.floor(expectedCustomerPricePaise / (1 + (settings.markupRate || 0.15)));
+    // Reverse-engineer base price from canonical customer price (both in paise)
+    basePricePaise = Math.floor(canonicalProductPricePaise / (1 + (settings.markupRate || 0.15)));
     const basePriceForTier = basePricePaise / 100;
     platformMarkupRateAtPurchase = selectMarkupRate(basePriceForTier, settings);
   }
 
-  // Validate against client-provided price (both in paise) to prevent price manipulation
-  if (Math.abs(expectedCustomerPricePaise - clientPricePaise) > 100) {
+  // Validate client price against canonical DB price to prevent price tampering while safely supporting existing catalog products
+  if (Math.abs(canonicalProductPricePaise - clientPricePaise) > 100) {
     throw new ConvexError({
       code: "STALE_CART_PRICE",
       message: "The prices of some items in your cart have been updated. Please review your new total before checking out.",
     });
   }
+
+  const expectedCustomerPricePaise = canonicalProductPricePaise;
 
   const platformFeeRateAtPurchase = settings.platformFeeRate;
   const platformFeeAmountPaise = Math.round(basePricePaise * platformFeeRateAtPurchase);
