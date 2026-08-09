@@ -706,7 +706,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       const arr = [...prev];
       const draggedItem = arr[draggedItemIndex];
       arr.splice(draggedItemIndex, 1);
-      arr.splice(dropIndex, 0, draggedItem);
+      arr.splice(dropIndex, 0, draggedItem!);
       return arr;
     });
 

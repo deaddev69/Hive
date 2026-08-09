@@ -176,8 +176,8 @@ export default function BoutiqueOrders() {
   const updateStatus = useMutation(api.orders.updateBoutiqueOrderStatus);
   const retryDispatch = useAction(api.orders.retryBoutiqueOrderDispatch);
   const readyForPickup = useAction(api.orders.readyForPickupAction);
-  const acceptReservation = useMutation(api.reservations.confirmReservationByStore);
-  const declineReservation = useMutation(api.reservations.declineReservationByStore);
+  const acceptReservation = useMutation((api as any).reservations.confirmReservationByStore);
+  const declineReservation = useMutation((api as any).reservations.declineReservationByStore);
   const [retryingOrderId, setRetryingOrderId] = React.useState<string | null>(null);
   const [dispatchingOrderId, setDispatchingOrderId] = React.useState<string | null>(null);
   const [pendingActionId, setPendingActionId] = React.useState<string | null>(null);
@@ -190,8 +190,8 @@ export default function BoutiqueOrders() {
   const [acceptedOrderIds, setAcceptedOrderIds] = React.useState<Record<string, boolean>>({});
 
   const [activeTab, setActiveTab] = React.useState<"orders" | "reservations">("orders");
-  const reservations = useQuery(api.reservations.getBoutiqueReservations);
-  const pendingReservationsCount = useQuery(api.reservations.getBoutiquePendingReservationCount) ?? 0;
+  const reservations = useQuery((api as any).reservations.getBoutiqueReservations);
+  const pendingReservationsCount = useQuery((api as any).reservations.getBoutiquePendingReservationCount) ?? 0;
 
   if (orders === undefined) {
     return <LoadingState message="Loading orders..." variant="full" />;

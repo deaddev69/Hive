@@ -587,14 +587,14 @@ export const getAllReservations_admin = query({
     const boutiqueIds = Array.from(new Set(reservations.map((r) => r.boutiqueId)));
 
     const customers = await Promise.all(
-      customerIds.map((id) => ctx.db.get(id))
+      customerIds.map((id) => ctx.db.query("customerProfiles").withIndex("by_userId", q => q.eq("userId", id)).first())
     );
     const boutiques = await Promise.all(
       boutiqueIds.map((id) => ctx.db.get(id))
     );
 
     const customerMap = Object.fromEntries(
-      customers.filter(Boolean).map((c) => [c!._id, c!.name])
+      customers.filter(Boolean).map((c) => [c!.userId, c!.displayName])
     );
     const boutiqueMap = Object.fromEntries(
       boutiques.filter(Boolean).map((b) => [b!._id, (b as any).name])

@@ -875,7 +875,7 @@ function NotificationsTab() {
 // ── Reservations Tab Component ───────────────────────────────────────────────
 function ReservationsTab() {
   const { token } = useSessionStore();
-  const reservations = useQuery(api.reservations.getMyReservations, { token: token || undefined });
+  const reservations = useQuery((api as any).reservations.getMyReservations, { token: token || undefined });
 
   return (
     <div className="flex flex-col gap-6 text-left animate-fadeIn">

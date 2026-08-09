@@ -369,7 +369,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const [crossBoutiqueModalOpen, setCrossBoutiqueModalOpen] = useState(false);
   const [reservationComplete, setReservationComplete] = useState<any>(null);
 
-  const createReservationMutation = useMutation(api.reservations.createReservation);
+  const createReservationMutation = useMutation((api as any).reservations.createReservation);
 
   const toggleItem = useWishlistStore((state) => state.toggleItem);
   const isFavorite = useWishlistStore((state) => product.slug ? state.hasItem(product.slug) : false);
