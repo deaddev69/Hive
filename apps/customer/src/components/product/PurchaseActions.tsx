@@ -285,14 +285,14 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
               type="button"
               onClick={onReserve}
               disabled={loading}
-              className="h-14 w-full rounded-2xl bg-gradient-to-r from-hive-dark via-[#2a2620] to-hive-dark text-hive-gold font-bold uppercase tracking-widest text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border border-hive-gold/60 shadow-[0_4px_15px_rgba(245,194,43,0.1)] hover:shadow-[0_0_20px_rgba(245,194,43,0.25)] hover:border-[#F5C22B] disabled:opacity-50 relative overflow-hidden group"
+              className="h-14 w-full rounded-2xl bg-gradient-to-r from-[#F9D670] via-[#F5C22B] to-[#F9D670] text-stone-900 font-black uppercase tracking-widest text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border border-[#D9A71E] shadow-[0_4px_15px_rgba(245,194,43,0.3)] hover:shadow-[0_0_20px_rgba(245,194,43,0.5)] hover:border-[#B58A18] disabled:opacity-50 relative overflow-hidden group"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-[100%] group-hover:animate-[shimmer_1.5s_infinite]" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[100%] group-hover:animate-[shimmer_1.5s_infinite]" />
               {loading ? (
-                <span className="w-4 h-4 rounded-full border-2 border-hive-gold border-t-transparent animate-spin relative z-10" />
+                <span className="w-4 h-4 rounded-full border-2 border-stone-900 border-t-transparent animate-spin relative z-10" />
               ) : (
                 <span className="flex items-center gap-1.5 relative z-10">
-                  <Calendar className="w-4 h-4 text-hive-gold/80" />
+                  <Calendar className="w-4 h-4 text-stone-900/80" />
                   RESERVE FOR TOMORROW
                 </span>
               )}
@@ -871,14 +871,14 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             type="button"
             onClick={handleReserve}
             disabled={loading}
-            className="hidden lg:flex h-12 w-full rounded-2xl bg-gradient-to-r from-hive-dark via-[#2a2620] to-hive-dark text-hive-gold font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] border border-hive-gold/60 shadow-[0_4px_15px_rgba(245,194,43,0.1)] hover:shadow-[0_0_20px_rgba(245,194,43,0.25)] hover:border-[#F5C22B] cursor-pointer items-center justify-center disabled:opacity-50 relative overflow-hidden group"
+            className="hidden lg:flex h-12 w-full rounded-2xl bg-gradient-to-r from-[#F9D670] via-[#F5C22B] to-[#F9D670] text-stone-900 font-black uppercase tracking-widest text-xs transition-all active:scale-[0.98] border border-[#D9A71E] shadow-[0_4px_15px_rgba(245,194,43,0.3)] hover:shadow-[0_0_20px_rgba(245,194,43,0.5)] hover:border-[#B58A18] cursor-pointer items-center justify-center disabled:opacity-50 relative overflow-hidden group"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-[100%] group-hover:animate-[shimmer_1.5s_infinite]" />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[100%] group-hover:animate-[shimmer_1.5s_infinite]" />
             {loading ? (
-              <span className="w-5 h-5 rounded-full border-2 border-hive-gold border-t-transparent animate-spin relative z-10" />
+              <span className="w-5 h-5 rounded-full border-2 border-stone-900 border-t-transparent animate-spin relative z-10" />
             ) : (
               <span className="flex items-center gap-2 relative z-10">
-                <Calendar className="w-4 h-4 text-hive-gold/80" />
+                <Calendar className="w-4 h-4 text-stone-900/80" />
                 RESERVE FOR TOMORROW
               </span>
             )}

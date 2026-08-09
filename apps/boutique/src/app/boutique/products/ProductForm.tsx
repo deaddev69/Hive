@@ -738,13 +738,14 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     }
 
     setGeneratingDesc(true);
-    setValue("description", "", { shouldDirty: true, shouldValidate: true });
-
+    
     try {
       const currentDescription = getValues("description");
       const roughInput = currentDescription && currentDescription.trim() 
         ? `${currentName} - ${currentDescription.trim()}`
         : `${currentName} in category ${currentCategory || "clothing"}`;
+
+      setValue("description", "", { shouldDirty: true, shouldValidate: true });
 
       const response = await fetch("/api/generate-description", {
         method: "POST",
