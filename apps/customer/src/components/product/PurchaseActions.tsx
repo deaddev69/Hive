@@ -539,7 +539,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   };
 
   const handleReserve = async () => {
-    if (!isAuthenticated || !token) {
+    if (!isAuthenticated) {
       triggerToast("Please log in to reserve an item.", "info");
       router.push(`/sign-in?redirect_url=/products/${product.slug}`);
       return;
@@ -564,7 +564,6 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         productId: (product.slug ?? (product as any)._id ?? product.id) as any,
         size: selectedSize,
         quantity: 1,
-        token,
       });
       setReservationComplete(res);
       triggerToast("Reservation placed successfully!");
