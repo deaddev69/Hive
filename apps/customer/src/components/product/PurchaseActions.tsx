@@ -224,7 +224,6 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
   onToggleWishlist,
   isReservationMode = false,
   onReserve,
-  reservationComplete,
 }) => {
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
   const isOffline = resolvedStatus === "closed" || resolvedStatus === "temporarily_unavailable";
@@ -282,12 +281,6 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
             Sold Out
           </button>
         ) : isReservationMode ? (
-          reservationComplete ? (
-            <div className="h-14 w-full rounded-2xl bg-green-50 border border-green-200 flex items-center justify-center gap-1.5 px-2 text-green-700 font-bold text-[11px] leading-tight text-center">
-              <CheckCircle className="w-4 h-4 flex-shrink-0" />
-              <span>Reservation placed ✓</span>
-            </div>
-          ) : (
             <button
               type="button"
               onClick={onReserve}
@@ -300,7 +293,6 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
                 "Reserve for tomorrow"
               )}
             </button>
-          )
         ) : !isServiceable ? (
           <button
             type="button"
@@ -383,7 +375,6 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
   const [crossBoutiqueModalOpen, setCrossBoutiqueModalOpen] = useState(false);
-  const [reservationComplete, setReservationComplete] = useState<any>(null);
 
   const createReservationMutation = useMutation((api as any).reservations.createReservation);
 
@@ -565,7 +556,6 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         size: selectedSize,
         quantity: 1,
       });
-      setReservationComplete(res);
       triggerToast("Reservation placed successfully!");
 
       const clearCartZustand = useCartStore.getState().clearCart;
@@ -591,7 +581,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         reservationExpiresAt: res.reservationExpiresAt,
         reservationId: res.reservationId,
       });
-      setSidebarOpen(true);
+      router.push("/cart");
     } catch (e: any) {
       triggerToast(e.message || "Failed to reserve", "info");
     } finally {
@@ -865,21 +855,10 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             </button>
           </form>
         </div>
-      ) : isReservationMode ? (
-        reservationComplete ? (
-          <div className="flex flex-col gap-2 p-4 bg-green-50 border border-green-200 rounded-2xl">
-            <div className="flex items-center gap-2 text-green-700 font-bold">
-              <CheckCircle className="w-5 h-5" />
-              <span>Reservation placed ✓</span>
-            </div>
-            <p className="text-[11px] text-green-600 font-medium">
-              We'll confirm availability tomorrow morning. Check your cart for details.
-            </p>
-          </div>
-        ) : (
+      {isReservationMode ? (
           <button
             type="button"
-            onClick={handleReserve}
+            onClick={onReserve}
             disabled={loading}
             className="hidden lg:flex h-12 w-full rounded-2xl bg-hive-dark text-hive-gold font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:shadow cursor-pointer items-center justify-center border border-hive-gold disabled:opacity-50"
           >
@@ -889,7 +868,6 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
               "Reserve for tomorrow"
             )}
           </button>
-        )
       ) : (
         <div className="hidden lg:flex w-full h-12 rounded-2xl shadow-sm transition-all duration-300 items-stretch">
           <AddToCartButton
