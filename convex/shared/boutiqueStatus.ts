@@ -3,6 +3,7 @@ export interface BoutiqueStatusInput {
   openingTime?: string; // e.g. "09:00"
   closingTime?: string; // e.g. "20:00"
   operatingDays?: number[]; // e.g. [1,2,3,4,5,6] (Monday=1, Sunday=0)
+  weeklyClosedDays?: number[]; // e.g. [0] for sunday closed
   holidayDates?: string[]; // e.g. ["2026-07-15"]
   status?: string; // e.g. "APPROVED"
   storeStatus?: string; // e.g. "open", "busy", "closed"
@@ -34,7 +35,16 @@ function getNextOperatingDay(
     const dateStr = `${year}-${month}-${date}`;
 
     const isHoliday = boutique.holidayDates && boutique.holidayDates.includes(dateStr);
-    const isOperatingDay = boutique.operatingDays && boutique.operatingDays.includes(day);
+    
+    // Resolve effective operating days: use weeklyClosedDays if present, fallback to operatingDays
+    let effectiveOperatingDays = [0, 1, 2, 3, 4, 5, 6];
+    if (boutique.weeklyClosedDays && boutique.weeklyClosedDays.length > 0) {
+      effectiveOperatingDays = [0, 1, 2, 3, 4, 5, 6].filter(d => !boutique.weeklyClosedDays!.includes(d));
+    } else if (boutique.operatingDays && boutique.operatingDays.length > 0) {
+      effectiveOperatingDays = boutique.operatingDays;
+    }
+
+    const isOperatingDay = effectiveOperatingDays.includes(day);
 
     if (!isHoliday && isOperatingDay) {
       return { dateStr, timeMs: currentCheckMs };
@@ -93,8 +103,19 @@ export function getBoutiqueStatus(
   }
 
 
-  // Fail-safe: if the profile is incomplete (missing openingTime or operatingDays), default to OPEN
-  if (!boutique.openingTime || !boutique.operatingDays || boutique.operatingDays.length === 0) {
+  // Resolve effective operating days for today's check
+  let effectiveOperatingDays = [0, 1, 2, 3, 4, 5, 6];
+  let hasDaysConfig = false;
+  if (boutique.weeklyClosedDays && boutique.weeklyClosedDays.length > 0) {
+    effectiveOperatingDays = [0, 1, 2, 3, 4, 5, 6].filter(d => !boutique.weeklyClosedDays!.includes(d));
+    hasDaysConfig = true;
+  } else if (boutique.operatingDays && boutique.operatingDays.length > 0) {
+    effectiveOperatingDays = boutique.operatingDays;
+    hasDaysConfig = true;
+  }
+
+  // Fail-safe: if the profile is incomplete (missing openingTime and no days config), default to OPEN
+  if (!boutique.openingTime || !hasDaysConfig) {
     return { type: "OPEN" };
   }
 
@@ -111,7 +132,7 @@ export function getBoutiqueStatus(
   }
 
   // 2. Check if today is an operating day
-  if (!boutique.operatingDays.includes(currentDay)) {
+  if (!effectiveOperatingDays.includes(currentDay)) {
     const nextDay = getNextOperatingDay(boutique, currentTimeMs + 24 * 60 * 60 * 1000);
     return {
       type: "CLOSED_EXTENDED",
