@@ -73,13 +73,23 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
 
       {/* Action Buttons */}
       <div className="mt-5 flex flex-col gap-2.5">
-        <button
-          type="button"
-          onClick={handleCheckout}
-          className="w-full h-11 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-full font-medium text-xs tracking-wider flex items-center justify-center gap-1 shadow-sm focus:outline-none"
-        >
-          Secure Checkout &rarr;
-        </button>
+        {items.some(i => i.isReservation && i.reservationStatus === "reservation_active") ? (
+          <button
+            type="button"
+            disabled
+            className="w-full h-11 bg-stone-100 text-stone-400 cursor-not-allowed rounded-full font-medium text-xs tracking-wider flex items-center justify-center gap-1 shadow-sm focus:outline-none border border-stone-200"
+          >
+            Awaiting Store Confirmation
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleCheckout}
+            className="w-full h-11 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-full font-medium text-xs tracking-wider flex items-center justify-center gap-1 shadow-sm focus:outline-none"
+          >
+            {items.some(i => i.isReservation) ? "Complete Payment \u2192" : "Secure Checkout \u2192"}
+          </button>
+        )}
 
         <button
           type="button"

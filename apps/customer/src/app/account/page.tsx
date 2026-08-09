@@ -38,6 +38,7 @@ import {
   LogOut,
 } from "lucide-react";
 import Link from "next/link";
+import { ReservationStatusCard } from "@/components/reservation/ReservationStatusCard";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toTitleCase(str?: string): string {
@@ -871,6 +872,43 @@ function NotificationsTab() {
   );
 }
 
+// ── Reservations Tab Component ───────────────────────────────────────────────
+function ReservationsTab() {
+  const { token } = useSessionStore();
+  const reservations = useQuery(api.reservations.getMyReservations, { token: token || undefined });
+
+  return (
+    <div className="flex flex-col gap-6 text-left animate-fadeIn">
+      <div className="border-b border-[#1c1917]/[0.08] pb-4">
+        <h2 className="text-xl font-serif font-medium text-[#1C1917]">My Reservations</h2>
+        <p className="text-xs text-[#78716C] mt-1">Track your pending reservations and payments.</p>
+      </div>
+
+      {reservations === undefined ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 animate-spin text-[#78716C]" />
+        </div>
+      ) : reservations.length === 0 ? (
+        <div className="text-center py-20 bg-white border border-[#1c1917]/[0.08] rounded-xl flex flex-col items-center gap-3 shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-[#FAF8F4] border border-[#1c1917]/[0.08] flex items-center justify-center">
+            <Calendar className="w-5 h-5 text-[#78716C]" />
+          </div>
+          <p className="font-serif font-medium text-[#1C1917]">No reservations found</p>
+          <p className="text-xs text-[#78716C] max-w-xs leading-relaxed">
+            Reserve items for tomorrow when a boutique is closed.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {reservations.map((reservation: any) => (
+            <ReservationStatusCard key={reservation._id} reservation={reservation} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Settings Tab Component ───────────────────────────────────────────────────
 function SettingsTab() {
   const { logout } = useSessionStore();
@@ -991,6 +1029,7 @@ function SettingsTab() {
 const NAVIGATION_ITEMS = [
   { id: "overview", label: "Overview" },
   { id: "addresses", label: "Addresses" },
+  { id: "reservations", label: "My Reservations" },
   { id: "settings", label: "Settings" },
 ] as const;
 
@@ -1150,6 +1189,10 @@ function AccountPageContent() {
 
           {activeTab === "addresses" && (
             <AddressesTab userName={user?.name || "Athul Krishna"} />
+          )}
+
+          {activeTab === "reservations" && (
+            <ReservationsTab />
           )}
 
           {activeTab === "settings" && (

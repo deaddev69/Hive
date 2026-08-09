@@ -176,6 +176,8 @@ export default function BoutiqueOrders() {
   const updateStatus = useMutation(api.orders.updateBoutiqueOrderStatus);
   const retryDispatch = useAction(api.orders.retryBoutiqueOrderDispatch);
   const readyForPickup = useAction(api.orders.readyForPickupAction);
+  const acceptReservation = useMutation(api.reservations.confirmReservationByStore);
+  const declineReservation = useMutation(api.reservations.declineReservationByStore);
   const [retryingOrderId, setRetryingOrderId] = React.useState<string | null>(null);
   const [dispatchingOrderId, setDispatchingOrderId] = React.useState<string | null>(null);
   const [pendingActionId, setPendingActionId] = React.useState<string | null>(null);
@@ -187,6 +189,10 @@ export default function BoutiqueOrders() {
   const [declineError, setDeclineError] = React.useState<boolean>(false);
   const [acceptedOrderIds, setAcceptedOrderIds] = React.useState<Record<string, boolean>>({});
 
+  const [activeTab, setActiveTab] = React.useState<"orders" | "reservations">("orders");
+  const reservations = useQuery(api.reservations.getBoutiqueReservations);
+  const pendingReservationsCount = useQuery(api.reservations.getBoutiquePendingReservationCount) ?? 0;
+
   if (orders === undefined) {
     return <LoadingState message="Loading orders..." variant="full" />;
   }
@@ -195,8 +201,34 @@ export default function BoutiqueOrders() {
     <div className="flex flex-col gap-6 text-left pb-24">
       <div className="flex flex-col gap-1 pt-1">
         <h1 className="text-3xl font-serif font-black text-[#0f172a] tracking-tight">Orders</h1>
-        <p className="text-sm font-medium text-[#64748b]">Review incoming orders.</p>
+        <p className="text-sm font-medium text-[#64748b]">Review incoming orders and reservations.</p>
       </div>
+
+      <div className="flex items-center gap-2 border-b border-hive-border/30 pb-2">
+        <button
+          onClick={() => setActiveTab("orders")}
+          className={`px-4 py-2 text-sm font-bold tracking-wide rounded-full transition-colors ${
+            activeTab === "orders" ? "bg-slate-900 text-white" : "bg-transparent text-slate-500 hover:text-slate-900"
+          }`}
+        >
+          Orders
+        </button>
+        <button
+          onClick={() => setActiveTab("reservations")}
+          className={`relative px-4 py-2 text-sm font-bold tracking-wide rounded-full transition-colors ${
+            activeTab === "reservations" ? "bg-slate-900 text-white" : "bg-transparent text-slate-500 hover:text-slate-900"
+          }`}
+        >
+          Reservations
+          {pendingReservationsCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black w-4 h-4 flex items-center justify-center rounded-full">
+              {pendingReservationsCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {activeTab === "orders" ? (
 
       <Card className="border border-hive-border bg-white shadow-sm overflow-hidden rounded-3xl">
         <CardContent className="p-0">
@@ -581,6 +613,107 @@ export default function BoutiqueOrders() {
           </div>
         </CardContent>
       </Card>
+      ) : activeTab === "reservations" ? (
+      <Card className="border border-hive-border bg-white shadow-sm overflow-hidden rounded-3xl">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead className="hidden md:table-header-group">
+                <tr className="bg-slate-50/60 border-b border-hive-border/30 text-[10px] font-extrabold uppercase tracking-wider text-[#94a3b8] select-none">
+                  <th className="px-6 py-4">Reservation Status</th>
+                  <th className="px-6 py-4">Customer Details</th>
+                  <th className="px-6 py-4">Requested Item</th>
+                  <th className="px-6 py-4">Price</th>
+                  <th className="px-6 py-4">Expiration</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-hive-border/30 font-semibold text-hive-dark">
+                {reservations?.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-hive-text-muted">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <Calendar className="w-8 h-8 text-hive-border" />
+                        <span>No reservations found for your boutique yet.</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  reservations?.map((reservation: any) => {
+                    const isPending = reservation.status === "reservation_active" || reservation.status === "awaiting_store_confirmation";
+                    
+                    return (
+                      <tr key={reservation._id} className="flex flex-col md:table-row bg-white border-b border-hive-border/30 mb-4 md:mb-0 hover:bg-slate-50/30 transition-colors p-4 md:p-0">
+                        <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs font-black text-slate-800 tracking-wide uppercase">
+                              {reservation.status.replace(/_/g, " ")}
+                            </span>
+                            {isPending && (
+                              <div className="flex flex-col gap-1 mt-1">
+                                <span className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">
+                                  Action Required
+                                </span>
+                                <div className="flex gap-2 mt-1">
+                                  <button
+                                    onClick={() => {
+                                      setPendingActionId(reservation._id);
+                                      acceptReservation({ reservationId: reservation._id }).finally(() => setPendingActionId(null));
+                                    }}
+                                    disabled={pendingActionId === reservation._id}
+                                    className="px-3 py-1 bg-[#10B981] hover:bg-[#059669] text-white text-[10px] font-bold rounded-lg shadow-sm disabled:opacity-50"
+                                  >
+                                    Confirm
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setPendingActionId(reservation._id);
+                                      declineReservation({ reservationId: reservation._id }).finally(() => setPendingActionId(null));
+                                    }}
+                                    disabled={pendingActionId === reservation._id}
+                                    className="px-3 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 text-[10px] font-bold rounded-lg disabled:opacity-50"
+                                  >
+                                    Decline
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
+                          <span className="text-xs text-slate-600">{reservation.customerId}</span>
+                        </td>
+                        <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-[40px] h-[40px] rounded-lg border border-slate-100 overflow-hidden bg-slate-50 flex-shrink-0 relative">
+                              <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-slate-400">Item</div>
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-bold text-slate-800 truncate">{reservation.productName || "Product"}</span>
+                              <span className="text-[10px] text-slate-500 font-medium">Size {reservation.size}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 font-bold text-slate-700">
+                           {/* Price placeholder */}
+                           View details
+                        </td>
+                        <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
+                          {reservation.reservationExpiresAt && (
+                            <span className="text-xs text-slate-600">
+                              {new Date(reservation.reservationExpiresAt).toLocaleString()}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+      ) : null}
 
       {/* Full-Screen Decline Modal (Apple restraint + Aesop warmth + Linear clarity) */}
       {orderToDecline !== null && (

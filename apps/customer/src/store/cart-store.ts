@@ -14,6 +14,10 @@ export interface CartItem {
   isPreorder?: boolean;
   preorderType?: string;
   scheduledProcessingDate?: string;
+  isReservation?: boolean;
+  reservationStatus?: string;
+  reservationExpiresAt?: number;
+  reservationId?: string;
 }
 
 export interface CartState {

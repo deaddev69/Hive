@@ -54,15 +54,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   const { latitude: userLat, longitude: userLng, city } = useLocation();
   const boutique = (product as any).boutique;
 
-  const boutiqueStatus = React.useMemo(() => {
-    if (!boutique) return { type: "OPEN" as const };
-    return getBoutiqueStatus(boutique, Date.now());
-  }, [boutique]);
-
-  const isClosed = boutiqueStatus.type === "PAUSED" || boutique?.isAcceptingOrders === false || boutique?.storeStatus === "closed";
-  const isPreorder = boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED";
-  const isBusy = boutique?.storeStatus === "busy";
-
   const isFavorite = hydrated ? hasItem(product.slug) : false;
 
   // Guard clause to protect empty state and avoid placeholder images in production
@@ -174,8 +165,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
               priority={priority}
               loading={priority ? undefined : "lazy"}
               className={cn(
-                "object-cover w-full h-full pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-200 ease-out",
-                isClosed && "grayscale-[25%] opacity-85"
+                "object-cover w-full h-full pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-200 ease-out"
               )}
               style={{ objectFit: "cover" }}
             />
@@ -185,28 +175,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
             </div>
           )}
         </Link>
-
-        {/* Boutique Status Badge Overlays */}
-        {boutique && (
-          <div className="absolute top-2.5 left-2.5 z-20 flex flex-col gap-1">
-            {isClosed ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-600/90 text-white rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm backdrop-blur-xs select-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                Offline
-              </span>
-            ) : isPreorder ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-600/90 text-white rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm backdrop-blur-xs select-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                Pre-Order
-              </span>
-            ) : isBusy ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-500/90 text-white rounded-lg text-[9px] font-black uppercase tracking-wider shadow-sm backdrop-blur-xs select-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                Busy
-              </span>
-            ) : null}
-          </div>
-        )}
 
         {/* Wishlist heart overlay (Top-right, circular button) */}
         <button

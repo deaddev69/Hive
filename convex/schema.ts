@@ -665,7 +665,8 @@ export default defineSchema({
                             v.literal("replacement_delivered"),
                             v.literal("refund_requested"),
                             v.literal("refunded"),
-                            v.literal("booking_failed")
+                            v.literal("booking_failed"),
+                            v.literal("reservation_converted")
                           ),
     // Snapshot of delivery address at order time (immutable)
     deliveryAddress: v.object({
@@ -805,7 +806,49 @@ export default defineSchema({
     .index("by_checkoutSessionId", ["checkoutSessionId"])
     .index("by_reservationId",     ["reservationId"]),
 
-  // ─── ORDER ITEMS ──────────────────────────────────────────────────────────
+  // ─── RESERVATIONS (Next-Day Order Flow) ─────────────────────────────────
+  reservations: defineTable({
+    customerId:           v.id("users"),
+    boutiqueId:           v.id("boutiques"),
+    productId:            v.id("products"),
+    productName:          v.string(),
+    productImageUrl:      v.string(),
+    size:                 v.string(),
+    quantity:             v.number(),               // always 1 for MVP
+    priceAtReserve:       v.number(),               // paise, snapshot at reservation time
+    status:               v.union(
+                            v.literal("reservation_active"),
+                            v.literal("awaiting_store_confirmation"),
+                            v.literal("reservation_confirmed"),
+                            v.literal("awaiting_payment"),
+                            v.literal("payment_expired"),
+                            v.literal("unavailable"),
+                            v.literal("reservation_expired"),
+                            v.literal("order_confirmed"),
+                            v.literal("cancelled")
+                          ),
+    reservationExpiresAt: v.number(),               // epoch ms (Timer 1 end)
+    paymentExpiresAt:     v.optional(v.number()),   // epoch ms (Timer 2 end, set after store confirms)
+    storeConfirmedAt:     v.optional(v.number()),
+    storeDeclinedAt:      v.optional(v.number()),
+    paymentCompletedAt:   v.optional(v.number()),
+    orderId:              v.optional(v.id("orders")),
+    scheduledConfirmDate: v.string(),               // e.g. "2026-08-10" (next operating day)
+    boutiqueName:         v.optional(v.string()),   // snapshot for display
+    expiryScheduledId:    v.optional(v.string()),   // scheduler ID for cleanup
+    paymentExpiryScheduledId: v.optional(v.string()),
+    createdAt:            v.number(),
+    updatedAt:            v.number(),
+  })
+    .index("by_customerId",            ["customerId"])
+    .index("by_boutiqueId",            ["boutiqueId"])
+    .index("by_status",                ["status"])
+    .index("by_customerId_status",     ["customerId", "status"])
+    .index("by_boutiqueId_status",     ["boutiqueId", "status"])
+    .index("by_reservationExpiresAt",  ["reservationExpiresAt"])
+    .index("by_paymentExpiresAt",      ["paymentExpiresAt"])
+    .index("by_productId_size_status", ["productId", "size", "status"]),
+
   orderItems: defineTable({
     orderId:         v.id("orders"),
     productId:       v.id("products"),

@@ -200,6 +200,9 @@ interface StickyMobilePurchaseBarProps {
   nextDayLabel?: string;
   isFavorite?: boolean;
   onToggleWishlist?: () => void;
+  isReservationMode?: boolean;
+  onReserve?: () => void;
+  reservationComplete?: any;
 }
 
 export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = ({
@@ -219,6 +222,9 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
   nextDayLabel = "",
   isFavorite = false,
   onToggleWishlist,
+  isReservationMode = false,
+  onReserve,
+  reservationComplete,
 }) => {
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
   const isOffline = resolvedStatus === "closed" || resolvedStatus === "temporarily_unavailable";
@@ -259,6 +265,26 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
             <Heart className={cn("w-4 h-4", isFavorite && "fill-amber-600 stroke-amber-600")} />
             <span>{isFavorite ? "Saved in Wishlist" : "Save to Wishlist"}</span>
           </button>
+        ) : isReservationMode ? (
+          reservationComplete ? (
+            <div className="h-14 w-full rounded-2xl bg-green-50 border border-green-200 flex items-center justify-center gap-1.5 px-2 text-green-700 font-bold text-[11px] leading-tight text-center">
+              <CheckCircle className="w-4 h-4 flex-shrink-0" />
+              <span>Reservation placed ✓</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={onReserve}
+              disabled={loading}
+              className="h-14 w-full rounded-2xl bg-hive-dark text-hive-gold font-bold uppercase tracking-wider text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border border-hive-gold disabled:opacity-50"
+            >
+              {loading ? (
+                <span className="w-4 h-4 rounded-full border-2 border-hive-gold border-t-transparent animate-spin" />
+              ) : (
+                "Reserve for tomorrow"
+              )}
+            </button>
+          )
         ) : !isServiceable ? (
           <button
             type="button"
@@ -341,6 +367,9 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
   const [crossBoutiqueModalOpen, setCrossBoutiqueModalOpen] = useState(false);
+  const [reservationComplete, setReservationComplete] = useState<any>(null);
+
+  const createReservationMutation = useMutation(api.reservations.createReservation);
 
   const toggleItem = useWishlistStore((state) => state.toggleItem);
   const isFavorite = useWishlistStore((state) => product.slug ? state.hasItem(product.slug) : false);
@@ -407,10 +436,15 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const boutiqueStatus = product.boutique
     ? getBoutiqueStatus(product.boutique as any, Date.now())
     : { type: "OPEN" as const };
-  const isStoreOffline = boutiqueStatus.type === "PAUSED" || boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED";
-  const isPreorderMode = false; // Disables pre-ordering completely to respect closed hours
-  const resolvedStatus = boutiqueStatus.type === "PAUSED" || boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED"
+  
+  const isStoreOffline = boutiqueStatus.type === "PAUSED";
+  const isReservationMode = boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED";
+  const isPreorderMode = false;
+
+  const resolvedStatus = isStoreOffline
     ? "closed" as const
+    : isReservationMode
+    ? "reservation" as const
     : (product.boutique as any).storeStatus === "busy"
     ? ("busy" as const)
     : ("open" as const);
@@ -485,6 +519,68 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       }
       setCrossBoutiqueModalOpen(false);
       triggerToast(`Saved ${cleanProductTitle(product.name)} for later`);
+    }
+  };
+
+  const handleReserve = async () => {
+    if (!isAuthenticated || !token) {
+      triggerToast("Please log in to reserve an item.", "info");
+      router.push(`/sign-in?redirect_url=/products/${product.slug}`);
+      return;
+    }
+    if (latitude === null || longitude === null) {
+      triggerToast("Please select your delivery location to purchase.", "info");
+      setGateOpen(true);
+      return;
+    }
+    if (!selectedSize) {
+      triggerToast("Please select a size first", "info");
+      return;
+    }
+    if (!isLocationServiceable) {
+      triggerToast("Currently unavailable at your location", "info");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await createReservationMutation({
+        productId: (product.slug ?? (product as any)._id ?? product.id) as any,
+        size: selectedSize,
+        quantity: 1,
+        token,
+      });
+      setReservationComplete(res);
+      triggerToast("Reservation placed successfully!");
+
+      const clearCartZustand = useCartStore.getState().clearCart;
+      clearCartZustand();
+      if (isAuthenticated && token) {
+        try {
+          await clearCartMutation({ token });
+        } catch (err) {
+          console.error("Failed to clear Convex cart:", err);
+        }
+      }
+
+      addItem({
+        productId: (product.slug ?? (product as any)._id ?? product.id) as any,
+        size: selectedSize,
+        price: product.price,
+        name: product.name,
+        imageUrl: product.images[0] || "",
+        boutiqueName: product.boutique.name,
+        boutiqueId: product.boutique.id,
+        isReservation: true,
+        reservationStatus: "reservation_active",
+        reservationExpiresAt: res.reservationExpiresAt,
+        reservationId: res.reservationId,
+      });
+      setSidebarOpen(true);
+    } catch (e: any) {
+      triggerToast(e.message || "Failed to reserve", "info");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -596,10 +692,11 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
 
   const showAlert = 
     resolvedStatus === "closed" ||
+    resolvedStatus === "reservation" ||
     resolvedStatus === "temporarily_unavailable" ||
     resolvedStatus === "busy" ||
     isPreorderMode ||
-    (!isStoreOffline && (!isLocationServiceable || !selectedSize || isOutOfStock || isLowStock));
+    (!isStoreOffline && !isReservationMode && (!isLocationServiceable || !selectedSize || isOutOfStock || isLowStock));
 
   return (
     <div id="purchase-actions-section" className={cn("w-full flex flex-col gap-4 text-left", className)}>
@@ -619,6 +716,20 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
                   ? "tomorrow"
                   : formatNextDayLabel((boutiqueStatus as any).nextOperatingDay)}
                 .
+              </p>
+            </div>
+          ) : resolvedStatus === "reservation" ? (
+            <div className="flex flex-col gap-1.5 text-xs font-bold text-hive-dark bg-[#F5EAD4]/50 backdrop-blur-md px-4 py-3 rounded-2xl border border-[#D5C29B]/85 w-full shadow-2xs">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 flex-shrink-0 text-hive-gold" />
+                <span>
+                  {boutiqueStatus.type === "CLOSED_TODAY" 
+                    ? "Get it tomorrow" 
+                    : `Get it on ${formatNextDayLabel((boutiqueStatus as any).nextOperatingDay)}`}
+                </span>
+              </div>
+              <p className="text-[10px] text-stone-600 font-medium pl-6 leading-normal">
+                Availability confirmed {boutiqueStatus.type === "CLOSED_TODAY" ? "tomorrow" : "when the store opens next"}.
               </p>
             </div>
           ) : resolvedStatus === "closed" ? (
@@ -700,6 +811,31 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
           <Heart className={cn("w-4 h-4", isFavorite && "fill-amber-600 stroke-amber-600")} />
           <span>{isFavorite ? "Saved in Wishlist" : "Save to Wishlist"}</span>
         </button>
+      ) : isReservationMode ? (
+        reservationComplete ? (
+          <div className="flex flex-col gap-2 p-4 bg-green-50 border border-green-200 rounded-2xl">
+            <div className="flex items-center gap-2 text-green-700 font-bold">
+              <CheckCircle className="w-5 h-5" />
+              <span>Reservation placed ✓</span>
+            </div>
+            <p className="text-[11px] text-green-600 font-medium">
+              We'll confirm availability tomorrow morning. Check your cart for details.
+            </p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleReserve}
+            disabled={loading}
+            className="hidden lg:flex h-12 w-full rounded-2xl bg-hive-dark text-hive-gold font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:shadow cursor-pointer items-center justify-center border border-hive-gold disabled:opacity-50"
+          >
+            {loading ? (
+              <span className="w-5 h-5 rounded-full border-2 border-hive-gold border-t-transparent animate-spin" />
+            ) : (
+              "Reserve for tomorrow"
+            )}
+          </button>
+        )
       ) : isOutOfStock ? (
         <div className="bg-[#FAF8F5] border border-hive-border/40 rounded-2xl p-4.5 space-y-3.5">
           <div className="text-xs">
@@ -795,8 +931,13 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         isServiceable={isLocationServiceable && !isStoreOffline}
         resolvedStatus={resolvedStatus}
         isPreorder={isPreorderMode}
-        preorderType={(boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED") ? boutiqueStatus.type : undefined}
-        nextDayLabel={boutiqueStatus.type === "CLOSED_EXTENDED" ? formatNextDayLabel((boutiqueStatus as any).nextOperatingDay) : ""}
+        preorderType={boutiqueStatus.type as any}
+        nextDayLabel={formatNextDayLabel((boutiqueStatus as any).nextOperatingDay)}
+        isFavorite={isFavorite}
+        onToggleWishlist={handleSaveToWishlist}
+        isReservationMode={isReservationMode}
+        onReserve={handleReserve}
+        reservationComplete={reservationComplete}
       />
 
       <style>{`
