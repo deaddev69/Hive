@@ -69,6 +69,7 @@ export default function BoutiqueProfile() {
   const [staffPhone1, setStaffPhone1] = useState("");
   const [staffPhone2, setStaffPhone2] = useState("");
   const [savingStaff, setSavingStaff] = useState(false);
+  const [savingOperations, setSavingOperations] = useState(false);
   const [isEditingStaff, setIsEditingStaff] = useState(false);
   const [staffNotificationSelection, setStaffNotificationSelection] = useState("none");
 
@@ -197,10 +198,6 @@ export default function BoutiqueProfile() {
         closedUntil: (!isAcceptingOrders || storeStatus === "closed") && closedUntilStr 
                        ? new Date(closedUntilStr).getTime() 
                        : undefined,
-        openingTime,
-        closingTime,
-        weeklyClosedDays,
-        holidayDates,
         returnsAcceptedDefault,
       };
 
@@ -219,6 +216,28 @@ export default function BoutiqueProfile() {
     } finally {
       setSaving(false);
       setUploadMsg("");
+    }
+  };
+
+  const handleUpdateOperations = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!boutique) return;
+    
+    setSavingOperations(true);
+    try {
+      await updateBoutiqueProfile({
+        phone,
+        description,
+        openingTime,
+        closingTime,
+        weeklyClosedDays,
+        holidayDates,
+      });
+      toast.success("Operations Updated", "Store timings and holidays saved successfully.");
+    } catch (err: any) {
+      toast.error("Couldn't Update Operations", "Something went wrong. Please try again.");
+    } finally {
+      setSavingOperations(false);
     }
   };
 
@@ -581,13 +600,14 @@ export default function BoutiqueProfile() {
         {/* Right Side: Read-only Settings (5 cols) */}
         <div className="lg:col-span-5 flex flex-col gap-6">
           {/* Card: Operational Hours & Holidays */}
-          <Card className="border border-hive-border bg-white rounded-3xl p-6 shadow-sm flex flex-col gap-5">
-            <div>
-              <h3 className="text-lg font-serif font-bold text-hive-dark">
-                Operations & Holidays
-              </h3>
-              <p className="text-xs text-hive-text-muted mt-0.5">Configure store timings, weekly days off, and holiday periods.</p>
-            </div>
+          <form onSubmit={handleUpdateOperations}>
+            <Card className="border border-hive-border bg-white rounded-3xl p-6 shadow-sm flex flex-col gap-5">
+              <div>
+                <h3 className="text-lg font-serif font-bold text-hive-dark">
+                  Operations & Holidays
+                </h3>
+                <p className="text-xs text-hive-text-muted mt-0.5">Configure store timings, weekly days off, and holiday periods.</p>
+              </div>
 
             {/* Timings */}
             <div className="grid grid-cols-2 gap-4 pb-4 border-b border-slate-100">
@@ -705,7 +725,23 @@ export default function BoutiqueProfile() {
                 )}
               </div>
             </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={savingOperations}
+              className="mt-2 py-3 flex items-center justify-center gap-2 w-full"
+            >
+              {savingOperations ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                "Save Operations"
+              )}
+            </Button>
           </Card>
+          </form>
 
           {/* Card: Staff Management (Owner-only) */}
           {me?.role !== "boutique" && (
