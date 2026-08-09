@@ -265,6 +265,22 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
             <Heart className={cn("w-4 h-4", isFavorite && "fill-amber-600 stroke-amber-600")} />
             <span>{isFavorite ? "Saved in Wishlist" : "Save to Wishlist"}</span>
           </button>
+        ) : !selectedSize ? (
+          <button
+            type="button"
+            onClick={onSelectSizePrompt}
+            className="h-14 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs shadow-sm hover:shadow active:scale-[0.98] transition-all cursor-pointer"
+          >
+            Select Size
+          </button>
+        ) : isOutOfStock ? (
+          <button
+            type="button"
+            disabled
+            className="h-14 w-full rounded-2xl bg-stone-100 text-stone-400 font-bold uppercase tracking-wider text-xs cursor-not-allowed"
+          >
+            Sold Out
+          </button>
         ) : isReservationMode ? (
           reservationComplete ? (
             <div className="h-14 w-full rounded-2xl bg-green-50 border border-green-200 flex items-center justify-center gap-1.5 px-2 text-green-700 font-bold text-[11px] leading-tight text-center">
@@ -811,31 +827,14 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
           <Heart className={cn("w-4 h-4", isFavorite && "fill-amber-600 stroke-amber-600")} />
           <span>{isFavorite ? "Saved in Wishlist" : "Save to Wishlist"}</span>
         </button>
-      ) : isReservationMode ? (
-        reservationComplete ? (
-          <div className="flex flex-col gap-2 p-4 bg-green-50 border border-green-200 rounded-2xl">
-            <div className="flex items-center gap-2 text-green-700 font-bold">
-              <CheckCircle className="w-5 h-5" />
-              <span>Reservation placed ✓</span>
-            </div>
-            <p className="text-[11px] text-green-600 font-medium">
-              We'll confirm availability tomorrow morning. Check your cart for details.
-            </p>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={handleReserve}
-            disabled={loading}
-            className="hidden lg:flex h-12 w-full rounded-2xl bg-hive-dark text-hive-gold font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:shadow cursor-pointer items-center justify-center border border-hive-gold disabled:opacity-50"
-          >
-            {loading ? (
-              <span className="w-5 h-5 rounded-full border-2 border-hive-gold border-t-transparent animate-spin" />
-            ) : (
-              "Reserve for tomorrow"
-            )}
-          </button>
-        )
+      ) : !selectedSize ? (
+        <button
+          type="button"
+          onClick={handleSelectSizePrompt}
+          className="hidden lg:flex h-12 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:shadow cursor-pointer items-center justify-center"
+        >
+          Select Size
+        </button>
       ) : isOutOfStock ? (
         <div className="bg-[#FAF8F5] border border-hive-border/40 rounded-2xl p-4.5 space-y-3.5">
           <div className="text-xs">
@@ -867,14 +866,31 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             </button>
           </form>
         </div>
-      ) : !selectedSize ? (
-        <button
-          type="button"
-          onClick={handleSelectSizePrompt}
-          className="hidden lg:flex h-12 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:shadow cursor-pointer items-center justify-center"
-        >
-          Select Size
-        </button>
+      ) : isReservationMode ? (
+        reservationComplete ? (
+          <div className="flex flex-col gap-2 p-4 bg-green-50 border border-green-200 rounded-2xl">
+            <div className="flex items-center gap-2 text-green-700 font-bold">
+              <CheckCircle className="w-5 h-5" />
+              <span>Reservation placed ✓</span>
+            </div>
+            <p className="text-[11px] text-green-600 font-medium">
+              We'll confirm availability tomorrow morning. Check your cart for details.
+            </p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={handleReserve}
+            disabled={loading}
+            className="hidden lg:flex h-12 w-full rounded-2xl bg-hive-dark text-hive-gold font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:shadow cursor-pointer items-center justify-center border border-hive-gold disabled:opacity-50"
+          >
+            {loading ? (
+              <span className="w-5 h-5 rounded-full border-2 border-hive-gold border-t-transparent animate-spin" />
+            ) : (
+              "Reserve for tomorrow"
+            )}
+          </button>
+        )
       ) : (
         <div className="hidden lg:flex w-full h-12 rounded-2xl shadow-sm transition-all duration-300 items-stretch">
           <AddToCartButton
