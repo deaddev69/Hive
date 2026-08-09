@@ -128,6 +128,8 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
           pauseReason: boutique.pauseReason,
           closedUntil: boutique.closedUntil,
           prepTimeMinutes: boutique.prepTimeMinutes,
+          openingTime: boutique.openingTime,
+          closingTime: boutique.closingTime,
           weeklyClosedDays: boutique.weeklyClosedDays,
           holidayDates: boutique.holidayDates,
           description: boutique.description || "",
