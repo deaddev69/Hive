@@ -38,9 +38,9 @@ function getNextOperatingDay(
     
     // Resolve effective operating days: use weeklyClosedDays if present, fallback to operatingDays
     let effectiveOperatingDays = [0, 1, 2, 3, 4, 5, 6];
-    if (boutique.weeklyClosedDays && boutique.weeklyClosedDays.length > 0) {
+    if (boutique.weeklyClosedDays !== undefined) {
       effectiveOperatingDays = [0, 1, 2, 3, 4, 5, 6].filter(d => !boutique.weeklyClosedDays!.includes(d));
-    } else if (boutique.operatingDays && boutique.operatingDays.length > 0) {
+    } else if (boutique.operatingDays !== undefined) {
       effectiveOperatingDays = boutique.operatingDays;
     }
 
@@ -106,10 +106,10 @@ export function getBoutiqueStatus(
   // Resolve effective operating days for today's check
   let effectiveOperatingDays = [0, 1, 2, 3, 4, 5, 6];
   let hasDaysConfig = false;
-  if (boutique.weeklyClosedDays && boutique.weeklyClosedDays.length > 0) {
+  if (boutique.weeklyClosedDays !== undefined) {
     effectiveOperatingDays = [0, 1, 2, 3, 4, 5, 6].filter(d => !boutique.weeklyClosedDays!.includes(d));
     hasDaysConfig = true;
-  } else if (boutique.operatingDays && boutique.operatingDays.length > 0) {
+  } else if (boutique.operatingDays !== undefined) {
     effectiveOperatingDays = boutique.operatingDays;
     hasDaysConfig = true;
   }
