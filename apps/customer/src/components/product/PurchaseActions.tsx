@@ -919,7 +919,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
 
       {/* 4. Self-Contained Success/Feedback Toast */}
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[99999] max-w-md w-[90%] sm:w-auto bg-[#1c1917]/95 border border-stone-850/50 text-white rounded-full px-5 py-3.5 flex items-center gap-3 shadow-2xl animate-[toastInCenter_0.35s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[99999] max-w-md w-[90%] sm:w-auto bg-[#1c1917]/95 border border-stone-850/50 text-white rounded-full px-5 py-3.5 flex items-center gap-3 shadow-2xl animate-[toastInCenter_0.35s_cubic-bezier(0.16,1,0.3,1)_forwards]">
           <div className={cn("w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0", toast.type === "success" ? "bg-green-500/25 text-green-400" : "bg-hive-gold/25 text-hive-gold")}>
             {toast.type === "success" ? (
               <CheckCircle className="w-3.5 h-3.5 stroke-[2.8]" />
