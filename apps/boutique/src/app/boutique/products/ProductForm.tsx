@@ -367,34 +367,16 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   // Categories helper list
   const allCategoriesList = React.useMemo(() => {
     const list: { _id: string; name: string }[] = [];
+    const nameSet = new Set<string>();
 
     (categories || []).forEach((c) => {
-      let mappedName = c.name;
-      // Auto-map "Tops & Tunics" or variations of "tops" to "Tops"
-      if (mappedName.toLowerCase().includes("tops")) {
-        mappedName = "Tops";
+      let cleanName = c.name;
+      // Auto-correct typo from legacy DB entries if present
+      if (cleanName.toLowerCase() === "ethnic wer") {
+        cleanName = "Ethnic Wear";
       }
-
-      const match = ALLOWED_CATEGORIES.find(
-        (name) => name.toLowerCase() === mappedName.toLowerCase()
-      );
-      if (match) {
-        list.push({ _id: c._id, name: match });
-      }
-    });
-
-    const dbNames = new Set(list.map((c) => c.name.toLowerCase()));
-    DEFAULT_CATEGORY_TAGS.forEach((tag) => {
-      if (!dbNames.has(tag.name.toLowerCase())) {
-        list.push({ _id: tag.id, name: tag.name });
-      }
-    });
-
-    // Sort according to ALLOWED_CATEGORIES order
-    list.sort((a, b) => {
-      const indexA = ALLOWED_CATEGORIES.findIndex(name => name.toLowerCase() === a.name.toLowerCase());
-      const indexB = ALLOWED_CATEGORIES.findIndex(name => name.toLowerCase() === b.name.toLowerCase());
-      return indexA - indexB;
+      list.push({ _id: c._id, name: cleanName });
+      nameSet.add(cleanName.toLowerCase());
     });
 
     return list;

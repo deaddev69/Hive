@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, ArrowRight, Bell, AlertTriangle, CheckCircle, Info, Clock, Heart } from "lucide-react";
+import { ShoppingBag, ArrowRight, Bell, AlertTriangle, CheckCircle, Info, Clock, Heart, Calendar } from "lucide-react";
 import { cn } from "@hive/ui";
 import { ProductDetail } from "@/lib/mockProductDetails";
 import { useCartStore } from "@/store/cart-store";
@@ -285,12 +285,16 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
               type="button"
               onClick={onReserve}
               disabled={loading}
-              className="h-14 w-full rounded-2xl bg-hive-dark text-hive-gold font-bold uppercase tracking-wider text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border border-hive-gold disabled:opacity-50"
+              className="h-14 w-full rounded-2xl bg-gradient-to-r from-hive-dark via-[#2a2620] to-hive-dark text-hive-gold font-bold uppercase tracking-widest text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border border-hive-gold/60 shadow-[0_4px_15px_rgba(245,194,43,0.1)] hover:shadow-[0_0_20px_rgba(245,194,43,0.25)] hover:border-[#F5C22B] disabled:opacity-50 relative overflow-hidden group"
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-[100%] group-hover:animate-[shimmer_1.5s_infinite]" />
               {loading ? (
-                <span className="w-4 h-4 rounded-full border-2 border-hive-gold border-t-transparent animate-spin" />
+                <span className="w-4 h-4 rounded-full border-2 border-hive-gold border-t-transparent animate-spin relative z-10" />
               ) : (
-                "Reserve for tomorrow"
+                <span className="flex items-center gap-1.5 relative z-10">
+                  <Calendar className="w-4 h-4 text-hive-gold/80" />
+                  RESERVE FOR TOMORROW
+                </span>
               )}
             </button>
         ) : !isServiceable ? (
@@ -579,7 +583,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         reservationExpiresAt: res.reservationExpiresAt,
         reservationId: res.reservationId,
       });
-      router.push("/cart");
+      // Removed router.push("/cart") so user sees the toast
     } catch (e: any) {
       triggerToast(e.message || "Failed to reserve", "info");
     } finally {
@@ -722,16 +726,20 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
               </p>
             </div>
           ) : resolvedStatus === "reservation" ? (
-            <div className="flex flex-col gap-1.5 text-xs font-bold text-hive-dark bg-[#F5EAD4]/50 backdrop-blur-md px-4 py-3 rounded-2xl border border-[#D5C29B]/85 w-full shadow-2xs">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 flex-shrink-0 text-hive-gold" />
-                <span>
+            <div className="flex flex-col gap-1.5 text-xs font-bold text-stone-100 bg-gradient-to-br from-stone-900 to-stone-950 backdrop-blur-md px-4 py-3.5 rounded-2xl border border-stone-800/80 w-full shadow-[0_4px_20px_rgba(245,194,43,0.12)] relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-hive-gold/5 to-transparent -translate-x-[100%] group-hover:animate-[shimmer_1.5s_infinite]" />
+              <div className="flex items-center gap-2 relative z-10">
+                <div className="relative flex h-2.5 w-2.5 items-center justify-center">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-hive-gold opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-hive-gold"></span>
+                </div>
+                <span className="tracking-widest text-[10px] uppercase text-hive-gold">
                   {boutiqueStatus.type === "CLOSED_TODAY" 
                     ? "Get it tomorrow" 
                     : `Get it on ${formatNextDayLabel((boutiqueStatus as any).nextOperatingDay)}`}
                 </span>
               </div>
-              <p className="text-[10px] text-stone-600 font-medium pl-6 leading-normal">
+              <p className="text-[11px] text-stone-400 font-medium pl-4 leading-normal relative z-10">
                 Availability confirmed {boutiqueStatus.type === "CLOSED_TODAY" ? "tomorrow" : "when the store opens next"}.
               </p>
             </div>
@@ -858,12 +866,16 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             type="button"
             onClick={handleReserve}
             disabled={loading}
-            className="hidden lg:flex h-12 w-full rounded-2xl bg-hive-dark text-hive-gold font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:shadow cursor-pointer items-center justify-center border border-hive-gold disabled:opacity-50"
+            className="hidden lg:flex h-12 w-full rounded-2xl bg-gradient-to-r from-hive-dark via-[#2a2620] to-hive-dark text-hive-gold font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] border border-hive-gold/60 shadow-[0_4px_15px_rgba(245,194,43,0.1)] hover:shadow-[0_0_20px_rgba(245,194,43,0.25)] hover:border-[#F5C22B] cursor-pointer items-center justify-center disabled:opacity-50 relative overflow-hidden group"
           >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-[100%] group-hover:animate-[shimmer_1.5s_infinite]" />
             {loading ? (
-              <span className="w-5 h-5 rounded-full border-2 border-hive-gold border-t-transparent animate-spin" />
+              <span className="w-5 h-5 rounded-full border-2 border-hive-gold border-t-transparent animate-spin relative z-10" />
             ) : (
-              "Reserve for tomorrow"
+              <span className="flex items-center gap-2 relative z-10">
+                <Calendar className="w-4 h-4 text-hive-gold/80" />
+                RESERVE FOR TOMORROW
+              </span>
             )}
           </button>
       ) : (

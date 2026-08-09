@@ -100,26 +100,15 @@ export default function BoutiqueProducts() {
 
   const filteredCategories = useMemo(() => {
     if (!categories) return [];
-    return categories
-      .map((c: any) => {
-        let mappedName = c.name;
-        if (mappedName.toLowerCase().includes("tops")) {
-          mappedName = "Tops";
-        }
-        const match = ALLOWED_CATEGORIES.find(
-          (name) => name.toLowerCase() === mappedName.toLowerCase()
-        );
-        if (match) {
-          return { ...c, name: match };
-        }
-        return null;
-      })
-      .filter(Boolean)
-      .sort((a: any, b: any) => {
-        const indexA = ALLOWED_CATEGORIES.findIndex(name => name.toLowerCase() === a.name.toLowerCase());
-        const indexB = ALLOWED_CATEGORIES.findIndex(name => name.toLowerCase() === b.name.toLowerCase());
-        return indexA - indexB;
-      });
+    
+    return categories.map((c: any) => {
+      let cleanName = c.name;
+      // Auto-correct typo from legacy DB entries if present
+      if (cleanName.toLowerCase() === "ethnic wer") {
+        cleanName = "Ethnic Wear";
+      }
+      return { ...c, name: cleanName };
+    });
   }, [categories]);
   
   const deleteProduct = useMutation(api.products.deleteProduct);

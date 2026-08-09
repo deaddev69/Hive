@@ -485,24 +485,19 @@ export default function CreateProductModal({
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [generatingStory, setGeneratingStory] = useState(false);
 
-  // Combine DB categories with comprehensive default tags & fix typos like "Ethnic wer"
+  // Use ONLY categories from the DB so it perfectly syncs with Admin Panel
   const allCategoriesList = React.useMemo(() => {
     const list: { _id: string; name: string }[] = [];
     const nameSet = new Set<string>();
 
     (categories || []).forEach((c) => {
       let cleanName = c.name;
+      // Auto-correct typo from legacy DB entries if present
       if (cleanName.toLowerCase() === "ethnic wer") {
         cleanName = "Ethnic Wear";
       }
       list.push({ _id: c._id, name: cleanName });
       nameSet.add(cleanName.toLowerCase());
-    });
-
-    DEFAULT_CATEGORY_TAGS.forEach((tag) => {
-      if (!nameSet.has(tag.name.toLowerCase())) {
-        list.push({ _id: tag.id, name: tag.name });
-      }
     });
 
     return list;
