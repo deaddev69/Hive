@@ -621,7 +621,7 @@ export default function BoutiqueOrders() {
               <thead className="hidden md:table-header-group">
                 <tr className="bg-slate-50/60 border-b border-hive-border/30 text-[10px] font-extrabold uppercase tracking-wider text-[#94a3b8] select-none">
                   <th className="px-6 py-4">Reservation Status</th>
-                  <th className="px-6 py-4">Customer Details</th>
+                  <th className="px-6 py-4">Reservation ID</th>
                   <th className="px-6 py-4">Requested Item</th>
                   <th className="px-6 py-4">Price</th>
                   <th className="px-6 py-4">Expiration</th>
@@ -649,18 +649,18 @@ export default function BoutiqueOrders() {
                               {reservation.status.replace(/_/g, " ")}
                             </span>
                             {isPending && (
-                              <div className="flex flex-col gap-1 mt-1">
-                                <span className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">
+                              <div className="flex flex-col gap-1 mt-1 items-start">
+                                <span className="inline-block px-2 py-0.5 border border-amber-200 bg-amber-50 text-amber-700 text-[9px] font-extrabold uppercase tracking-widest rounded-full">
                                   Action Required
                                 </span>
-                                <div className="flex gap-2 mt-1">
+                                <div className="flex gap-2 mt-2">
                                   <button
                                     onClick={() => {
                                       setPendingActionId(reservation._id);
                                       acceptReservation({ reservationId: reservation._id }).finally(() => setPendingActionId(null));
                                     }}
                                     disabled={pendingActionId === reservation._id}
-                                    className="px-3 py-1 bg-[#10B981] hover:bg-[#059669] text-white text-[10px] font-bold rounded-lg shadow-sm disabled:opacity-50"
+                                    className="px-4 py-1.5 bg-hive-dark hover:bg-stone-800 text-hive-gold text-[11px] font-bold tracking-wide rounded-xl shadow-sm disabled:opacity-50 transition-all cursor-pointer"
                                   >
                                     Confirm
                                   </button>
@@ -670,7 +670,7 @@ export default function BoutiqueOrders() {
                                       declineReservation({ reservationId: reservation._id }).finally(() => setPendingActionId(null));
                                     }}
                                     disabled={pendingActionId === reservation._id}
-                                    className="px-3 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 text-[10px] font-bold rounded-lg disabled:opacity-50"
+                                    className="px-4 py-1.5 bg-transparent border border-stone-200 text-stone-500 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50 text-[11px] font-bold tracking-wide rounded-xl disabled:opacity-50 transition-all cursor-pointer"
                                   >
                                     Decline
                                   </button>
@@ -680,12 +680,18 @@ export default function BoutiqueOrders() {
                           </div>
                         </td>
                         <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
-                          <span className="text-xs text-slate-600">{reservation.customerId}</span>
+                          <span className="text-[11px] font-mono text-slate-500 font-semibold bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                            RES-{reservation._id.slice(-5).toUpperCase()}
+                          </span>
                         </td>
                         <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-[40px] h-[40px] rounded-lg border border-slate-100 overflow-hidden bg-slate-50 flex-shrink-0 relative">
-                              <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-slate-400">Item</div>
+                            <div className="w-[44px] h-[44px] rounded-xl border border-[#f1f5f9] overflow-hidden bg-slate-50 flex-shrink-0 relative shadow-2xs">
+                              {reservation.productImageUrl ? (
+                                <img src={reservation.productImageUrl} alt={reservation.productName} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[8px] font-bold text-slate-400">No Img</div>
+                              )}
                             </div>
                             <div className="flex flex-col min-w-0">
                               <span className="text-xs font-bold text-slate-800 truncate">{reservation.productName || "Product"}</span>
@@ -694,8 +700,7 @@ export default function BoutiqueOrders() {
                           </div>
                         </td>
                         <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 font-bold text-slate-700">
-                           {/* Price placeholder */}
-                           View details
+                           ₹{(reservation.priceAtReserve ? reservation.priceAtReserve / 100 : 0).toLocaleString("en-IN")}
                         </td>
                         <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
                           {reservation.reservationExpiresAt && (
