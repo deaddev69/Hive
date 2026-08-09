@@ -565,3 +565,45 @@ export const getBoutiquePendingReservationCount = query({
     return active.length + awaiting.length;
   },
 });
+
+// ─── Admin: Get All Reservations ──────────────────────────────────────────────
+export const getAllReservations_admin = query({
+  args: {
+    token: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    // We import requireRole dynamically or manually from auth.ts
+    // For now we just use the user object to verify admin status if needed, 
+    // or rely on the general pattern in the codebase.
+    const user = await getAuthenticatedUser(ctx, args.token);
+    if (user.role !== "admin") {
+      throw new ConvexError("Unauthorized");
+    }
+
+    const reservations = await ctx.db.query("reservations").order("desc").collect();
+    
+    // Enrich with customer and boutique names
+    const customerIds = Array.from(new Set(reservations.map((r) => r.customerId)));
+    const boutiqueIds = Array.from(new Set(reservations.map((r) => r.boutiqueId)));
+
+    const customers = await Promise.all(
+      customerIds.map((id) => ctx.db.get(id))
+    );
+    const boutiques = await Promise.all(
+      boutiqueIds.map((id) => ctx.db.get(id))
+    );
+
+    const customerMap = Object.fromEntries(
+      customers.filter(Boolean).map((c) => [c!._id, c!.name])
+    );
+    const boutiqueMap = Object.fromEntries(
+      boutiques.filter(Boolean).map((b) => [b!._id, (b as any).name])
+    );
+
+    return reservations.map((r) => ({
+      ...r,
+      customerName: customerMap[r.customerId] || "Unknown Customer",
+      boutiqueName: r.boutiqueName || boutiqueMap[r.boutiqueId] || "Unknown Boutique",
+    }));
+  },
+});

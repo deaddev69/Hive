@@ -37,6 +37,7 @@ const NAV_GROUPS = [
     title: "OPERATIONS",
     items: [
       { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
+      { label: "Reservations", href: "/admin/reservations", icon: ShoppingBag },
       { label: "Claims", href: "/admin/claims", icon: ShieldAlert },
       { label: "Products", href: "/admin/products", icon: Package },
       { label: "Finance", href: "/admin/finance", icon: DollarSign },
