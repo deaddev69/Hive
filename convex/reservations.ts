@@ -10,6 +10,7 @@ import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { triggerNotification } from "./lib/notifications";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
+import { getPublicUrl } from "./media/api";
 
 const RESERVATION_TIMER_MS = 30 * 60 * 1000; // 30 minutes
 const PAYMENT_TIMER_MS = 30 * 60 * 1000;     // 30 minutes
@@ -93,10 +94,25 @@ export const createReservation = mutation({
     const nextOperatingDay = (boutiqueStatus as any).nextOperatingDay ||
       new Date(now + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-    // 7. Get product image URL
-    const productImageUrl = (product as any).imageUrls?.[0] ||
-      (product as any).images?.[0] ||
-      (product as any).imageUrl || "";
+    // 7. Get product image URL and resolve it to a string
+    const firstImg = (product as any).images?.[0];
+    let productImageUrl = "";
+    if (firstImg) {
+      if (typeof firstImg === "string") {
+        if (firstImg.startsWith("http")) {
+          productImageUrl = firstImg;
+        } else {
+          try {
+            const url = await ctx.storage.getUrl(firstImg);
+            productImageUrl = url || firstImg;
+          } catch {
+            productImageUrl = firstImg;
+          }
+        }
+      } else if (typeof firstImg === "object" && (firstImg as any).objectKey) {
+        productImageUrl = getPublicUrl(firstImg, "pdp") || "";
+      }
+    }
 
     // 8. Create the reservation record
     const reservationExpiresAt = now + RESERVATION_TIMER_MS;
