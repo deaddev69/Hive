@@ -369,6 +369,14 @@ export default function BoutiqueProfile() {
               Customize Presentation
             </h3>
 
+            {/* Global Locked Fields Information Box */}
+            <div className="bg-amber-50 border border-amber-200/60 p-4 rounded-xl text-xs text-amber-900 font-medium leading-relaxed flex gap-3 items-start shadow-sm mt-1">
+              <span className="text-amber-600 text-lg">🔒</span>
+              <p>
+                Certain profile settings (Coordinates, Delivery Radius, Return Policy) are <strong>locked once configured</strong> to ensure accurate fulfillment zones and buyer trust. To request changes to locked fields, please contact <a href="mailto:support@hivenow.in" className="font-bold underline text-amber-950">support@hivenow.in</a>.
+              </p>
+            </div>
+
             {/* Logo Upload */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Logo Representation</label>
@@ -428,14 +436,24 @@ export default function BoutiqueProfile() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Delivery Radius (Km)</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Delivery Radius (Km)</label>
+                  {!!boutique?.deliveryRadiusKm && (
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      🔒 Locked
+                    </span>
+                  )}
+                </div>
                 <input
                   type="number"
                   required
                   min={1}
                   value={deliveryRadiusKm}
                   onChange={(e) => setDeliveryRadiusKm(parseInt(e.target.value) || 1)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] text-sm bg-hive-cream/10"
+                  disabled={!!boutique?.deliveryRadiusKm}
+                  className={`w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] text-sm ${
+                    !!boutique?.deliveryRadiusKm ? "bg-slate-100 text-slate-500 cursor-not-allowed opacity-80" : "bg-hive-cream/10"
+                  }`}
                 />
               </div>
             </div>
@@ -471,14 +489,16 @@ export default function BoutiqueProfile() {
 
             {/* Map Coordinates display & pin drag */}
             <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
-              <span className="font-bold text-hive-text-muted flex justify-between">
-                <span>Coordinates</span>
+              <div className="font-bold text-hive-text-muted flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span>Coordinates</span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    🔒 Locked
+                  </span>
+                </div>
                 <span className="font-mono text-[10px] text-hive-amber">
                   Lat: {latitude.toFixed(6)}, Lng: {longitude.toFixed(6)}
                 </span>
-              </span>
-              <div className="bg-amber-50 border border-amber-200/60 p-4 rounded-xl text-xs text-amber-800 font-medium leading-relaxed">
-                Once map coordinates are set through admin, they are locked. To change your store location, you must contact admin and send a support mail to <a href="mailto:support@hivenow.in" className="font-bold underline">support@hivenow.in</a>.
               </div>
             </div>
             {/* Store Default Return Policy Toggle Card */}
@@ -499,12 +519,6 @@ export default function BoutiqueProfile() {
                   </span>
                 )}
               </div>
-
-              {boutique?.returnsAcceptedDefaultLocked && (
-                <div className="bg-amber-50 border border-amber-200/80 p-3.5 rounded-xl text-xs text-amber-900 font-medium leading-relaxed">
-                  Store Return Policy is locked once configured to protect buyer trust. To request policy modifications, please send a support request to <a href="mailto:support@hivenow.in" className="font-bold underline text-amber-950">support@hivenow.in</a>.
-                </div>
-              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Option A: Accept 24h Returns */}

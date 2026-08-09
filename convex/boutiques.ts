@@ -1060,9 +1060,14 @@ export const updateBoutiqueProfile = mutation({
       }
     }
 
-    // Validate delivery radius cap at update time
-    if (args.deliveryRadiusKm !== undefined && args.deliveryRadiusKm > 13) {
-      throw new ConvexError("Delivery radius cannot exceed 13 km. Please contact support if you need a larger coverage area.");
+    // Validate delivery radius cap and lock
+    if (args.deliveryRadiusKm !== undefined) {
+      if (boutique.deliveryRadiusKm !== undefined && args.deliveryRadiusKm !== boutique.deliveryRadiusKm) {
+        throw new ConvexError("Delivery radius is locked once configured. Please contact support to change your delivery radius.");
+      }
+      if (args.deliveryRadiusKm > 13) {
+        throw new ConvexError("Delivery radius cannot exceed 13 km. Please contact support if you need a larger coverage area.");
+      }
     }
 
     const patchData: any = {
