@@ -379,6 +379,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const [notifySuccess, setNotifySuccess] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
   const [crossBoutiqueModalOpen, setCrossBoutiqueModalOpen] = useState(false);
+  const [duplicateReservationModalOpen, setDuplicateReservationModalOpen] = useState(false);
 
   const createReservationMutation = useMutation((api as any).reservations.createReservation);
 
@@ -585,7 +586,11 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       });
       // Removed router.push("/cart") so user sees the toast
     } catch (e: any) {
-      triggerToast(e.message || "Failed to reserve", "info");
+      if (e.message?.includes("already have an active reservation")) {
+        setDuplicateReservationModalOpen(true);
+      } else {
+        triggerToast(e.message || "Failed to reserve", "info");
+      }
     } finally {
       setLoading(false);
     }
@@ -1095,6 +1100,48 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
                 setCrossBoutiqueModalOpen(false);
               }}
               className="w-full text-center text-xs text-stone-600 hover:text-stone-900 font-semibold py-2 transition-colors focus:outline-none mt-2"
+            >
+              Keep Browsing
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Duplicate Reservation Modal */}
+      <Modal
+        isOpen={duplicateReservationModalOpen}
+        onClose={() => setDuplicateReservationModalOpen(false)}
+        title=""
+      >
+        <div className="flex flex-col items-center justify-center p-2 sm:p-4 text-center">
+          <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-5 relative">
+            <div className="absolute inset-0 bg-amber-100 rounded-full animate-ping opacity-20" />
+            <ShoppingBag className="w-7 h-7 text-amber-600 relative z-10" />
+          </div>
+          <h3 className="text-xl font-black text-stone-900 mb-2 uppercase tracking-wide">
+            Item Already Reserved
+          </h3>
+          <p className="text-sm text-stone-500 font-medium mb-6 leading-relaxed max-w-[280px]">
+            You already have a secured reservation for this exact item and size in your cart! 
+            <br/><br/>
+            <span className="text-[11px] uppercase tracking-wider font-bold text-amber-700/80">
+              Limit 1 reservation per customer
+            </span>
+          </p>
+
+          <div className="flex flex-col w-full gap-2.5">
+            <button
+              onClick={() => {
+                setDuplicateReservationModalOpen(false);
+                router.push("/cart");
+              }}
+              className="h-12 w-full rounded-2xl bg-gradient-to-r from-hive-dark via-[#2a2620] to-hive-dark text-hive-gold font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] border border-hive-gold/60 shadow-[0_4px_15px_rgba(245,194,43,0.1)] hover:shadow-[0_0_20px_rgba(245,194,43,0.25)] hover:border-[#F5C22B]"
+            >
+              Go to Cart to Checkout
+            </button>
+            <button
+              onClick={() => setDuplicateReservationModalOpen(false)}
+              className="h-12 w-full rounded-2xl bg-stone-100 text-stone-600 font-bold uppercase tracking-widest text-xs transition-all hover:bg-stone-200 active:scale-[0.98]"
             >
               Keep Browsing
             </button>
