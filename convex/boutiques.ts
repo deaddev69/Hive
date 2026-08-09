@@ -1269,6 +1269,15 @@ export const getMyBoutiqueSafe = query({
         .unique();
     }
 
+    if (!boutique && userEmail) {
+      const allBoutiques = await ctx.db.query("boutiques").collect();
+      const normalizedUserEmail = userEmail.trim().toLowerCase();
+      boutique = allBoutiques.find((b: any) =>
+        (b.staffEmail1 && b.staffEmail1.trim().toLowerCase() === normalizedUserEmail) ||
+        (b.staffEmail2 && b.staffEmail2.trim().toLowerCase() === normalizedUserEmail)
+      ) as any;
+    }
+
     if (!boutique && user.role === "admin") {
       // Fallback for admins
       boutique = await ctx.db
@@ -1336,6 +1345,15 @@ export const getMyBoutiqueSafeCustomer = query({
         .query("boutiques")
         .withIndex("by_email", (q) => q.eq("email", userEmail))
         .unique();
+    }
+
+    if (!boutique && userEmail) {
+      const allBoutiques = await ctx.db.query("boutiques").collect();
+      const normalizedUserEmail = userEmail.trim().toLowerCase();
+      boutique = allBoutiques.find((b: any) =>
+        (b.staffEmail1 && b.staffEmail1.trim().toLowerCase() === normalizedUserEmail) ||
+        (b.staffEmail2 && b.staffEmail2.trim().toLowerCase() === normalizedUserEmail)
+      ) as any;
     }
 
     if (!boutique && user.role === "admin") {
