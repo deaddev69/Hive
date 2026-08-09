@@ -94,6 +94,7 @@ import type * as pushNotifications from "../pushNotifications.js";
 import type * as pwaAnalytics from "../pwaAnalytics.js";
 import type * as razorpayRoute from "../razorpayRoute.js";
 import type * as recommendations from "../recommendations.js";
+import type * as reservations from "../reservations.js";
 import type * as reviews from "../reviews.js";
 import type * as routing from "../routing.js";
 import type * as seed from "../seed.js";
@@ -238,6 +239,7 @@ declare const fullApi: ApiFromModules<{
   pwaAnalytics: typeof pwaAnalytics;
   razorpayRoute: typeof razorpayRoute;
   recommendations: typeof recommendations;
+  reservations: typeof reservations;
   reviews: typeof reviews;
   routing: typeof routing;
   seed: typeof seed;
