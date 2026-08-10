@@ -1039,6 +1039,18 @@ export async function verifyPaymentAndPlaceOrderInternal(
       quantity: item.quantity,
       subtotal: item.price * item.quantity,
     });
+
+    if ((item as any).reservationId) {
+      const reservation = await ctx.db.get((item as any).reservationId as Id<"reservations">);
+      if (reservation) {
+        await ctx.db.patch(reservation._id, {
+          status: "order_confirmed",
+          orderId,
+          paymentCompletedAt: now,
+          updatedAt: now,
+        });
+      }
+    }
   }
 
   // Create Invoice

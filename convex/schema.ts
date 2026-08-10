@@ -1066,6 +1066,7 @@ export default defineSchema({
                        platformMarkupAmount: v.optional(v.number()),
                        platformFeeAmount: v.optional(v.number()),
                        gstAmountAtPurchase: v.optional(v.number()),
+                       reservationId: v.optional(v.string()),
                      })),
     subtotal:        v.number(),
     deliveryFee:     v.number(),
