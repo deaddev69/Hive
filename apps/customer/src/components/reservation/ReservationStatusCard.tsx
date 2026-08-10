@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { formatRupees } from "@hive/utils";
+import { formatINR } from "@hive/utils";
 import { CheckCircle2, Clock, XCircle, AlertCircle, ShoppingBag } from "lucide-react";
 
 interface ReservationStatusCardProps {
@@ -23,16 +23,19 @@ export const ReservationStatusCard: React.FC<ReservationStatusCardProps> = ({ re
       case "awaiting_store_confirmation":
         return (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-green-700">
-              <CheckCircle2 className="w-4 h-4" />
-              <span className="text-sm font-bold">Reservation placed ✓</span>
+            <div className="flex items-center gap-2 text-amber-700">
+              <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
+              <span className="text-sm font-bold">Awaiting Seller Acceptance</span>
             </div>
             <p className="text-xs text-stone-600">
-              We'll confirm availability {reservation.scheduledConfirmDate ? `on ${reservation.scheduledConfirmDate}` : "tomorrow"}.
+              The boutique will confirm availability {reservation.scheduledConfirmDate ? `on ${reservation.scheduledConfirmDate}` : "tomorrow"}. You'll receive a WhatsApp message once accepted!
             </p>
           </div>
         );
-      case "awaiting_payment": {
+      case "awaiting_payment":
+      case "ACCEPTED":
+      case "seller_accepted":
+      case "PAYMENT_PENDING": {
         let timeLeft = 0;
         if (reservation.paymentExpiresAt) {
           timeLeft = Math.max(0, Math.floor((reservation.paymentExpiresAt - now) / 60000));
@@ -40,23 +43,31 @@ export const ReservationStatusCard: React.FC<ReservationStatusCardProps> = ({ re
         return (
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1">
-              <h3 className="text-sm font-bold text-stone-900">Your item is available 🎉</h3>
+              <div className="flex items-center gap-1.5 text-emerald-700">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-sm font-bold">Seller Accepted — Complete Payment 🎉</h3>
+              </div>
               <p className="text-xs text-stone-600">
-                Complete your payment to confirm the order.
+                The seller has reserved your item. Complete payment to finalize your order.
               </p>
             </div>
-            <Link 
-              href="/checkout/address" 
-              className="inline-flex items-center justify-center gap-2 bg-stone-950 text-white text-xs font-bold py-2 px-4 rounded-full max-w-fit hover:bg-stone-800 transition-colors"
-            >
-              Pay & order &rarr;
-            </Link>
-            {timeLeft > 0 && (
-              <div className="flex items-center gap-1.5 text-[10px] text-amber-600 font-bold mt-1">
-                <Clock className="w-3.5 h-3.5" />
-                Expires in {timeLeft} minutes
-              </div>
-            )}
+            
+            <div className="flex items-center gap-3 flex-wrap pt-1">
+              <Link 
+                href={`/checkout/address?reservationId=${reservation._id}`} 
+                className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-extrabold uppercase tracking-wider py-2.5 px-6 rounded-xl shadow-md active:scale-95 transition-all"
+              >
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>PAY NOW</span>
+                <span>&rarr;</span>
+              </Link>
+              {timeLeft > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-700 font-semibold bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200/60">
+                  <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                  <span>Expires in {timeLeft}m</span>
+                </div>
+              )}
+            </div>
           </div>
         );
       }
@@ -64,11 +75,11 @@ export const ReservationStatusCard: React.FC<ReservationStatusCardProps> = ({ re
       case "order_confirmed":
         return (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-green-700">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="flex items-center gap-2 text-emerald-700">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               <span className="text-sm font-bold">Order Confirmed</span>
             </div>
-            <p className="text-xs text-stone-600">Your payment was successful.</p>
+            <p className="text-xs text-stone-600">Your payment was successful and the boutique is processing your order.</p>
           </div>
         );
       case "payment_expired":
@@ -79,7 +90,7 @@ export const ReservationStatusCard: React.FC<ReservationStatusCardProps> = ({ re
               <Clock className="w-4 h-4" />
               <span className="text-sm font-bold">Reservation ended</span>
             </div>
-            <Link href="/" className="text-xs font-bold text-stone-900 hover:text-stone-700 underline">
+            <Link href="/" className="text-xs font-bold text-stone-900 hover:text-amber-700 underline">
               Explore similar styles &rarr;
             </Link>
           </div>
@@ -91,10 +102,10 @@ export const ReservationStatusCard: React.FC<ReservationStatusCardProps> = ({ re
             <div className="flex items-center gap-2 text-red-600">
               <XCircle className="w-4 h-4" />
               <span className="text-sm font-bold">
-                {reservation.status === "cancelled" ? "Reservation cancelled" : "Looks like this one isn't available anymore"}
+                {reservation.status === "cancelled" ? "Reservation cancelled" : "Looks like this item isn't available"}
               </span>
             </div>
-            <Link href="/" className="text-xs font-bold text-stone-900 hover:text-stone-700 underline">
+            <Link href="/" className="text-xs font-bold text-stone-900 hover:text-amber-700 underline">
               See similar styles &rarr;
             </Link>
           </div>
@@ -110,8 +121,8 @@ export const ReservationStatusCard: React.FC<ReservationStatusCardProps> = ({ re
   };
 
   return (
-    <div className="bg-white border border-stone-100 rounded-xl p-4 shadow-sm flex flex-col sm:flex-row gap-4 items-start">
-      <div className="w-20 h-20 rounded-lg overflow-hidden bg-stone-50 flex-shrink-0 relative border border-stone-100">
+    <div className="bg-white border border-stone-200/80 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row gap-4 items-start text-left">
+      <div className="w-20 h-20 rounded-xl overflow-hidden bg-stone-50 flex-shrink-0 relative border border-stone-100">
         {reservation.productImageUrl ? (
           <img src={reservation.productImageUrl} alt={reservation.productName} className="w-full h-full object-cover" />
         ) : (
@@ -121,15 +132,17 @@ export const ReservationStatusCard: React.FC<ReservationStatusCardProps> = ({ re
         )}
       </div>
       
-      <div className="flex-1 flex flex-col gap-1">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-sm font-bold text-stone-900">{reservation.productName}</h3>
-            <p className="text-xs text-stone-500 mt-0.5">Size {reservation.size}</p>
+      <div className="flex-1 min-w-0 flex flex-col gap-1 w-full">
+        <div className="flex justify-between items-start gap-3 w-full">
+          <div className="flex-1 min-w-0 text-left">
+            <h3 className="text-sm font-bold text-stone-900 leading-snug truncate">{reservation.productName}</h3>
+            <p className="text-xs text-stone-500 mt-0.5 font-medium">Size {reservation.size}</p>
           </div>
-          <span className="text-sm font-bold text-stone-900">{formatRupees(reservation.priceAtReserve)}</span>
+          <span className="text-sm font-extrabold text-stone-900 whitespace-nowrap flex-shrink-0 ml-2">
+            {formatINR(reservation.priceAtReserve)}
+          </span>
         </div>
-        <div className="mt-2 pt-2 border-t border-stone-50">
+        <div className="mt-2 pt-2 border-t border-stone-100 w-full">
           {renderContent()}
         </div>
       </div>
