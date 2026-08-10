@@ -38,7 +38,12 @@ export default clerkMiddleware(async (auth, req) => {
     pathname.startsWith("/boutique/unauthorized");
 
   if (!isAuthPath && !isInvitePath) {
-    const session = await auth.protect();
+    const session = await auth();
+    if (!session.userId) {
+      const signInUrl = new URL("/sign-in", req.url);
+      signInUrl.searchParams.set("redirect_url", req.url);
+      return NextResponse.redirect(signInUrl);
+    }
     const userRole = session.sessionClaims?.metadata?.role || session.sessionClaims?.role;
     if (userRole && userRole !== "boutique" && userRole !== "boutique_owner" && userRole !== "admin") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
