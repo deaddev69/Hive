@@ -23,7 +23,7 @@ export async function restoreCheckoutSessionStock(
       } catch { }
     }
 
-    if (productRow) {
+    if (productRow && !item.reservationId) {
       const currentStock = productRow.stockBySize[item.size] ?? 0;
       const newStock = currentStock + item.quantity;
       const stockBySize = { ...productRow.stockBySize };

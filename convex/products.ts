@@ -873,12 +873,11 @@ export const getBoutiqueProducts = query({
       .order("desc")
       .collect();
 
-    // Fetch all active/awaiting reservations for this boutique
+    // Fetch all active/awaiting reservations for this boutique (excluding awaiting_payment as they are physically deducted)
     const reservations1 = await ctx.db.query("reservations").withIndex("by_boutiqueId_status", (q) => q.eq("boutiqueId", boutique._id).eq("status", "reservation_active")).collect();
     const reservations2 = await ctx.db.query("reservations").withIndex("by_boutiqueId_status", (q) => q.eq("boutiqueId", boutique._id).eq("status", "awaiting_store_confirmation")).collect();
-    const reservations3 = await ctx.db.query("reservations").withIndex("by_boutiqueId_status", (q) => q.eq("boutiqueId", boutique._id).eq("status", "awaiting_payment")).collect();
     
-    const allLockedReservations = [...reservations1, ...reservations2, ...reservations3];
+    const allLockedReservations = [...reservations1, ...reservations2];
 
     // Build locked stock map: productId -> size -> count
     const lockedStockMap: Record<string, Record<string, number>> = {};

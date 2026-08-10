@@ -1,58 +1,32 @@
-import { mutation } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { query } from "./_generated/server";
 
-export const testInsert = mutation({
-  args: {},
+export const run = query({
   handler: async (ctx) => {
-    try {
-      await ctx.db.insert("boutiques", {
-        boutiqueName: "Test",
-        ownerName: "Test Owner",
-        email: "test@test.com",
-        phone: "+91 9999999999",
-        address: "Test Address",
-        latitude: 10,
-        longitude: 10,
-        city: "City",
-        state: "State",
-        pincode: "123456",
-        deliveryRadiusKm: 10,
-        description: "Desc",
-        status: "PENDING",
-        storeCategory: "women_fashion",
-        sellerModel: "boutique",
-        merchantTier: "Bronze",
-        createdAt: Date.now(),
-        area: "Area",
-        searchKeywords: [],
-        serviceType: "ready_to_ship",
-        ownerEmail: "test@test.com",
-        ownerUserId: undefined,
-        staffEmail1: undefined,
-        staffEmail2: undefined,
-        inviteTokenHash: "hash",
-        inviteStatus: "sent",
-        inviteSentAt: Date.now(),
-        inviteExpiresAt: Date.now() + 1000,
-        inviteCreatedBy: undefined,
-        activeApprovedProductCount: 0,
-        whatsAppNotificationsEnabled: true,
-        notificationPhone: "+91 9999999999",
-        name: "Test",
-        slug: "test",
-        phoneNumber: "+91 9999999999",
-        addressDetails: {
-          line1: "Test Address",
-          city: "City",
-          state: "State",
-          pincode: "123456",
-          lat: 10,
-          lng: 10,
-        }
-      } as any);
-      return "Success";
-    } catch (e: any) {
-      return e.message;
+    // Get boutiques
+    const boutiques = await ctx.db.query("boutiques").collect();
+    if (boutiques.length === 0) return { error: "No boutiques found" };
+    
+    // Just get the first one for testing
+    const boutique = boutiques[0];
+    
+    const reservations1 = await ctx.db.query("reservations").withIndex("by_boutiqueId_status", (q) => q.eq("boutiqueId", boutique._id).eq("status", "reservation_active")).collect();
+    const reservations2 = await ctx.db.query("reservations").withIndex("by_boutiqueId_status", (q) => q.eq("boutiqueId", boutique._id).eq("status", "awaiting_store_confirmation")).collect();
+    const reservations3 = await ctx.db.query("reservations").withIndex("by_boutiqueId_status", (q) => q.eq("boutiqueId", boutique._id).eq("status", "awaiting_payment")).collect();
+    
+    const allLockedReservations = [...reservations1, ...reservations2, ...reservations3];
+    
+    // Build locked stock map: productId -> size -> count
+    const lockedStockMap: Record<string, Record<string, number>> = {};
+    for (const res of allLockedReservations) {
+      if (!lockedStockMap[res.productId]) lockedStockMap[res.productId] = {};
+      if (!lockedStockMap[res.productId][res.size]) lockedStockMap[res.productId][res.size] = 0;
+      lockedStockMap[res.productId][res.size] += res.quantity || 1;
     }
+    
+    return {
+      boutiqueId: boutique._id,
+      allLockedReservations,
+      lockedStockMap
+    };
   }
 });

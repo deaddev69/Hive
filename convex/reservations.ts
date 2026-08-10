@@ -231,6 +231,33 @@ export const expirePayment = internalMutation({
         updatedAt: Date.now(),
       });
 
+      const product = await ctx.db.get(reservation.productId);
+      if (product) {
+        const currentStock = product.stockBySize[reservation.size] ?? 0;
+        const newStock = currentStock + reservation.quantity;
+        const stockBySize = { ...product.stockBySize, [reservation.size]: newStock };
+        const totalStock = Object.values(stockBySize).reduce((sum: number, val: any) => sum + (val || 0), 0);
+        
+        await ctx.db.patch(product._id, {
+          stockBySize,
+          autoDeactivatedBecauseOutOfStock: totalStock <= 0,
+          updatedAt: Date.now(),
+        });
+
+        await ctx.db.insert("inventoryMovements", {
+          productId: product._id,
+          boutiqueId: product.boutiqueId,
+          size: reservation.size,
+          beforeQty: currentStock,
+          afterQty: newStock,
+          adjustmentQty: reservation.quantity,
+          reason: "order_cancelled",
+          source: "system",
+          createdBy: reservation.customerId,
+          createdAt: Date.now(),
+        });
+      }
+
       // Notify customer
       await triggerNotification(
         ctx,
@@ -305,6 +332,34 @@ export const storeConfirmAvailable = mutation({
     await ctx.db.patch(args.reservationId, {
       paymentExpiryScheduledId: scheduledId as unknown as string,
     });
+
+    const product = await ctx.db.get(reservation.productId);
+    if (product) {
+      const currentStock = product.stockBySize[reservation.size] ?? 0;
+      const newStock = Math.max(0, currentStock - reservation.quantity);
+      const stockBySize = { ...product.stockBySize, [reservation.size]: newStock };
+      const totalStock = Object.values(stockBySize).reduce((sum: number, val: any) => sum + (val || 0), 0);
+      
+      await ctx.db.patch(product._id, {
+        stockBySize,
+        autoDeactivatedBecauseOutOfStock: totalStock <= 0,
+        updatedAt: now,
+      });
+
+      const boutiqueUser = await ctx.db.query("users").withIndex("by_clerkId", (q) => q.eq("clerkId", boutique.ownerUserId!)).first();
+      await ctx.db.insert("inventoryMovements", {
+        productId: product._id,
+        boutiqueId: product.boutiqueId,
+        size: reservation.size,
+        beforeQty: currentStock,
+        afterQty: newStock,
+        adjustmentQty: -reservation.quantity,
+        reason: "online_order",
+        source: "checkout",
+        createdBy: boutiqueUser?._id ?? reservation.customerId,
+        createdAt: now,
+      });
+    }
 
     // Notify customer via push + whatsapp
     await triggerNotification(
@@ -430,10 +485,41 @@ export const cancelReservation = mutation({
       throw new ConvexError(`Cannot cancel: Reservation is in '${reservation.status}' state.`);
     }
 
+    const wasAwaitingPayment = reservation.status === "awaiting_payment";
+
     await ctx.db.patch(args.reservationId, {
       status: "cancelled",
       updatedAt: Date.now(),
     });
+
+    if (wasAwaitingPayment) {
+      const product = await ctx.db.get(reservation.productId);
+      if (product) {
+        const currentStock = product.stockBySize[reservation.size] ?? 0;
+        const newStock = currentStock + reservation.quantity;
+        const stockBySize = { ...product.stockBySize, [reservation.size]: newStock };
+        const totalStock = Object.values(stockBySize).reduce((sum: number, val: any) => sum + (val || 0), 0);
+        
+        await ctx.db.patch(product._id, {
+          stockBySize,
+          autoDeactivatedBecauseOutOfStock: totalStock <= 0,
+          updatedAt: Date.now(),
+        });
+
+        await ctx.db.insert("inventoryMovements", {
+          productId: product._id,
+          boutiqueId: product.boutiqueId,
+          size: reservation.size,
+          beforeQty: currentStock,
+          afterQty: newStock,
+          adjustmentQty: reservation.quantity,
+          reason: "order_cancelled",
+          source: "checkout",
+          createdBy: user._id,
+          createdAt: Date.now(),
+        });
+      }
+    }
 
     return { status: "cancelled" };
   },

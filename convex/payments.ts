@@ -582,9 +582,9 @@ export const initCheckoutSessionInternal = internalMutation({
 
     const now = Date.now();
 
-    // Decrement stock for real products and log inventory movements
+    // Decrement stock for real products and log inventory movements (skip for reservations as they are already deducted)
     for (const { item, productRow, isMock } of resolvedItems) {
-      if (productRow && !isMock) {
+      if (productRow && !isMock && !item.reservationId) {
         const currentStock = productRow.stockBySize[item.size] ?? 0;
         const newStock = currentStock - item.quantity;
         const stockBySize = { ...productRow.stockBySize };
