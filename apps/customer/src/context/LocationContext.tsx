@@ -348,6 +348,15 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         (error) => {
           console.warn('[Geolocation] getCurrentPosition Error: Code = ' + error.code + ', Message = ' + error.message);
 
+          const getErrorMessage = (code: number) => {
+            switch(code) {
+              case 1: return "Location permission denied. Please allow location access in your browser settings and try again.";
+              case 2: return "Your device's location (GPS) is turned off. Please turn it on in your device settings and try again.";
+              case 3: return "Location request timed out. Please check your connection and try again.";
+              default: return "Could not determine your location. Please try again.";
+            }
+          };
+
           if (options.enableHighAccuracy) {
             console.log('[Geolocation] High accuracy failed. Retrying with enableHighAccuracy: false...');
             navigator.geolocation.getCurrentPosition(
@@ -384,28 +393,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               },
               (err2) => {
                 console.warn('[Geolocation] Fallback getCurrentPosition Error: Code = ' + err2.code + ', Message = ' + err2.message);
-                let errMsg = "Unable to detect location. Please try again.";
-                if (err2.code === err2.PERMISSION_DENIED) {
-                  errMsg = "Location access denied. Please choose your location manually.";
-                } else if (err2.code === err2.POSITION_UNAVAILABLE) {
-                  errMsg = "Location unavailable. Please choose manually.";
-                } else if (err2.code === err2.TIMEOUT) {
-                  errMsg = "Location request timed out. Please try again.";
-                }
-                resolve({ success: false, error: errMsg });
+                resolve({ success: false, error: getErrorMessage(err2.code) });
               },
               { ...options, enableHighAccuracy: false, maximumAge: 60000 }
             );
           } else {
-            let errMsg = "Unable to detect location. Please try again.";
-            if (error.code === error.PERMISSION_DENIED) {
-              errMsg = "Location access denied. Please choose your location manually.";
-            } else if (error.code === error.POSITION_UNAVAILABLE) {
-              errMsg = "Location unavailable. Please choose manually.";
-            } else if (error.code === error.TIMEOUT) {
-              errMsg = "Location request timed out. Please try again.";
-            }
-            resolve({ success: false, error: errMsg });
+            resolve({ success: false, error: getErrorMessage(error.code) });
           }
         },
         options

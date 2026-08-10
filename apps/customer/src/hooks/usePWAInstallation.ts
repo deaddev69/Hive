@@ -57,27 +57,29 @@ export function usePWAInstallation() {
 
   // Monitor user journey qualifications to show prompt
   useEffect(() => {
-    const hasDismissed = localStorage.getItem("hive_pwa_dismissed") === "true";
-    if (hasDismissed) {
-      setShowPrompt(false);
-      return;
+    const dismissedTimestamp = localStorage.getItem("hive_pwa_dismissed_at");
+    if (dismissedTimestamp) {
+      const dismissedTime = parseInt(dismissedTimestamp, 10);
+      const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
+      if (Date.now() - dismissedTime < threeDaysInMs) {
+        setShowPrompt(false);
+        return;
+      } else {
+        // Cooldown expired, clear it
+        localStorage.removeItem("hive_pwa_dismissed_at");
+      }
     }
 
-    const productViews = parseInt(localStorage.getItem("hive_pwa_product_views") || "0", 10);
-    const isQualified = productViews >= 2 || cartItemsCount > 0 || wishlistItemsCount > 0;
-
-    if (isQualified) {
-      if (isIOS) {
-        setShowPrompt(true);
-      } else if (deferredPrompt) {
-        setShowPrompt(true);
-      }
+    // Since we removed the strict product view requirement, we just rely on Chrome's
+    // heuristic (deferredPrompt) or iOS detection to show the prompt.
+    if (isIOS || deferredPrompt) {
+      setShowPrompt(true);
     }
   }, [pathname, cartItemsCount, wishlistItemsCount, isIOS, deferredPrompt]);
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    localStorage.setItem("hive_pwa_dismissed", "true");
+    localStorage.setItem("hive_pwa_dismissed_at", Date.now().toString());
   };
 
   const handleInstall = async () => {
