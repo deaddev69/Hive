@@ -18,34 +18,34 @@ export const BeeLoader: React.FC<BeeLoaderProps> = ({
   };
 
   const beeSizes = {
-    sm: 16,
-    md: 22,
-    lg: 30
+    sm: 18,
+    md: 24,
+    lg: 32
   };
 
   return (
     <div className={`flex flex-col items-center justify-center p-1 select-none font-sans ${className}`}>
       <style>{`
-        @keyframes beeWingFlutter {
-          0%, 100% { transform: rotate(0deg) scaleY(1); }
-          50%       { transform: rotate(-28deg) scaleY(0.55); }
+        @keyframes goldLinePulse {
+          0%, 100% { opacity: 0.85; transform: scale(1); }
+          50%       { opacity: 1; transform: scale(1.04); }
         }
-        @keyframes beeHoverFloat {
-          0%, 100% { transform: translateY(0px) rotate(-1deg); }
-          50%       { transform: translateY(-2.5px) rotate(1.5deg); }
+        @keyframes goldWingGleam {
+          0%, 100% { opacity: 0.4; transform: rotate(0deg); }
+          50%       { opacity: 0.95; transform: rotate(-8deg); }
         }
-        .anim-bee-wings { animation: beeWingFlutter 0.12s infinite ease-in-out; transform-origin: bottom center; }
-        .anim-bee-float { animation: beeHoverFloat 1.8s infinite ease-in-out; }
+        .anim-gold-bee { animation: goldLinePulse 2.2s infinite ease-in-out; }
+        .anim-gold-wings { animation: goldWingGleam 0.8s infinite ease-in-out; transform-origin: center center; }
       `}</style>
 
       <div className={`relative flex items-center justify-center ${dimensions[size]}`}>
-        {/* Ambient Golden Aura */}
-        <div className="absolute inset-0 rounded-full bg-amber-400/25 blur-md animate-pulse" />
+        {/* Soft 24k Golden Ambient Glow */}
+        <div className="absolute inset-0 rounded-full bg-amber-400/20 blur-md animate-pulse" />
 
-        {/* Crisp Golden Halo Orbit Ring (Rotating) */}
+        {/* Rotating Outer Halo Orbit Ring */}
         <svg 
           className="w-full h-full text-amber-500 animate-spin"
-          style={{ animationDuration: "2s" }}
+          style={{ animationDuration: "2.4s" }}
           viewBox="0 0 100 100" 
           fill="none" 
           xmlns="http://www.w3.org/2000/svg"
@@ -55,14 +55,14 @@ export const BeeLoader: React.FC<BeeLoaderProps> = ({
             cy="50" 
             r="44" 
             stroke="currentColor" 
-            strokeWidth="3.5" 
-            strokeDasharray="200 70" 
+            strokeWidth="3" 
+            strokeDasharray="210 60" 
             strokeLinecap="round"
           />
         </svg>
 
-        {/* Flying Micro-Bee Vector */}
-        <div className="anim-bee-float absolute z-10 flex items-center justify-center">
+        {/* Concept 2: Single-Stroke 24k Gold Geometric Line-Art Bee */}
+        <div className="anim-gold-bee absolute z-10 flex items-center justify-center">
           <svg
             width={beeSizes[size]}
             height={beeSizes[size]}
@@ -70,36 +70,37 @@ export const BeeLoader: React.FC<BeeLoaderProps> = ({
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            {/* Fluttering Wings */}
-            <g className="anim-bee-wings">
-              <ellipse cx="36" cy="30" rx="13" ry="22" fill="#FEF3C7" fillOpacity="0.9"
-                stroke="#F5C22B" strokeWidth="2" transform="rotate(-30 36 30)" />
-              <ellipse cx="64" cy="30" rx="13" ry="22" fill="#FEF3C7" fillOpacity="0.9"
-                stroke="#F5C22B" strokeWidth="2" transform="rotate(30 64 30)" />
+            {/* Symmetrical Geometric Wing Strokes */}
+            <g className="anim-gold-wings">
+              {/* Left Wing Line-Art */}
+              <path d="M42 42 C26 22 10 32 24 52 C32 62 44 48 42 42 Z" 
+                stroke="#F5C22B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              {/* Right Wing Line-Art */}
+              <path d="M58 42 C74 22 90 32 76 52 C68 62 56 48 58 42 Z" 
+                stroke="#F5C22B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
             </g>
-            {/* Bee Oval Body */}
-            <ellipse cx="50" cy="58" rx="26" ry="32" fill="#F5C22B" />
-            {/* Stripes */}
-            <path d="M26 50 C38 46, 62 46, 74 50 C72 56, 68 60, 50 60 C32 60, 28 56, 26 50 Z" fill="#1C1200" />
-            <path d="M28 66 C38 62, 62 62, 72 66 C70 72, 64 76, 50 76 C36 76, 30 72, 28 66 Z" fill="#1C1200" />
-            {/* Head */}
-            <circle cx="50" cy="32" r="14" fill="#1C1200" />
-            {/* Eyes */}
-            <circle cx="44" cy="29" r="3" fill="#FFFFFF" />
-            <circle cx="56" cy="29" r="3" fill="#FFFFFF" />
-            <circle cx="45" cy="30" r="1.5" fill="#1C1200" />
-            <circle cx="57" cy="30" r="1.5" fill="#1C1200" />
-            {/* Antennae */}
-            <path d="M44 20 C40 12, 36 12, 34 14" stroke="#1C1200" strokeWidth="2.5" strokeLinecap="round" />
-            <path d="M56 20 C60 12, 64 12, 66 14" stroke="#1C1200" strokeWidth="2.5" strokeLinecap="round" />
-            {/* Stinger */}
-            <polygon points="50,90 46,84 54,84" fill="#D9A71E" />
+
+            {/* Hexagonal Head Contour */}
+            <polygon points="50,14 62,22 62,34 50,42 38,34 38,22" 
+              stroke="#D9A71E" strokeWidth="2.5" strokeLinejoin="round" fill="none" />
+            
+            {/* Hexagonal Abdomen Contour */}
+            <polygon points="50,42 66,54 66,74 50,88 34,74 34,54" 
+              stroke="#D9A71E" strokeWidth="3" strokeLinejoin="round" fill="none" />
+            
+            {/* Geometric Inner Accent Lines (Stripes) */}
+            <line x1="37" y1="60" x2="63" y2="60" stroke="#F5C22B" strokeWidth="2" strokeLinecap="round" />
+            <line x1="40" y1="70" x2="60" y2="70" stroke="#F5C22B" strokeWidth="2" strokeLinecap="round" />
+
+            {/* Geometric Antennae */}
+            <polyline points="44,18 40,10 34,8" stroke="#D9A71E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <polyline points="56,18 60,10 66,8" stroke="#D9A71E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           </svg>
         </div>
       </div>
 
       {message && (
-        <span className="mt-2 text-xs font-semibold text-slate-800 tracking-wide">
+        <span className="mt-2 text-xs font-semibold text-slate-800 tracking-wide font-sans">
           {message}
         </span>
       )}

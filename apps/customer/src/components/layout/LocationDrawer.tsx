@@ -332,11 +332,13 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
                     <div className="px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
                       {pendingResult && (
                         isSaving ? (
-                          <div className="flex items-center justify-center gap-3 py-3.5 px-6 bg-white border border-slate-200/90 rounded-2xl shadow-xl shadow-slate-900/5 mx-auto max-w-xs animate-in fade-in zoom-in-95 duration-200">
+                          <div className="relative overflow-hidden flex items-center justify-center gap-3.5 py-4 px-6 bg-white/95 backdrop-blur-md border border-slate-200/80 rounded-2xl shadow-xl shadow-slate-900/5 mx-auto max-w-xs animate-in fade-in zoom-in-95 duration-200">
                             <BeeLoader size="sm" className="p-0 flex-shrink-0" />
-                            <span className="text-xs font-semibold text-slate-900 tracking-wide">
+                            <span className="text-xs font-semibold text-slate-900 tracking-wide font-sans">
                               Finding fashion near you...
                             </span>
+                            {/* Gold Progress Accent Line at bottom */}
+                            <div className="absolute bottom-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent animate-pulse" />
                           </div>
                         ) : (
                           <>
