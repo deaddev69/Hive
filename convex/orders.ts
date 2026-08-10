@@ -1373,11 +1373,21 @@ export const updateBoutiqueOrderStatus = mutation({
 
         // 2. Dispatch WhatsApp Cloud API Action (Fallback / Multi-Channel)
         if (order.deliveryAddress?.phone) {
-          await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-            recipient: order.deliveryAddress.phone,
-            templateName: config.waTemplate,
-            parameters: [order.orderNumber],
-          });
+          let waParams = [order.orderNumber];
+          if (args.status === "out_for_delivery") {
+            const driverName = (order as any).shipment?.driverName || "Hive Courier Partner";
+            const driverPhone = (order as any).shipment?.driverPhone || "+91 73066 13428";
+            waParams = [order.orderNumber, driverName, driverPhone];
+          }
+
+          if (config.waTemplate === "hive_order_delivered" || config.waTemplate === "hive_out_for_delivery") {
+            await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+              recipient: order.deliveryAddress.phone,
+              templateName: config.waTemplate,
+              parameters: waParams,
+              languageCode: "en",
+            });
+          }
         }
       }
     }
