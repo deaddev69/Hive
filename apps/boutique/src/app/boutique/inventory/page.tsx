@@ -615,10 +615,10 @@ export default function BoutiqueInventory() {
                       -
                     </button>
                     <span className={`${getStockBadgeStyle(firstAvailable)} select-all mx-1.5`}>
-                      {firstStock}
+                      {firstAvailable}
                     </span>
                     {firstLocked > 0 && (
-                      <span className="text-[9px] text-red-500 font-bold ml-1 absolute translate-x-12 whitespace-nowrap">
+                      <span className="text-[9px] text-red-500 font-bold ml-0.5 mr-1.5 whitespace-nowrap">
                         ({firstLocked} Rsvd)
                       </span>
                     )}
@@ -674,10 +674,10 @@ export default function BoutiqueInventory() {
                             -
                           </button>
                           <span className={`${getStockBadgeStyle(available)} select-all mx-1.5`}>
-                            {stock}
+                            {available}
                           </span>
                           {locked > 0 && (
-                            <span className="text-[9px] text-red-500 font-bold ml-1 absolute -right-12 translate-x-full whitespace-nowrap">
+                            <span className="text-[9px] text-red-500 font-bold ml-0.5 mr-1.5 whitespace-nowrap">
                               ({locked} Rsvd)
                             </span>
                           )}

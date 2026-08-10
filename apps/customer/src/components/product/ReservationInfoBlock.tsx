@@ -1,6 +1,6 @@
 import React from "react";
 import { Info } from "lucide-react";
-import { cn } from "@hive/utils";
+import { cn } from "@hive/ui";
 
 interface ReservationInfoBlockProps {
   className?: string;
