@@ -1,3 +1,4 @@
+// Touch commit to trigger Vercel deployment for @hive/customer
 import type { Metadata } from "next";
 import { Inter, Outfit, Cormorant_Garamond } from "next/font/google";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
