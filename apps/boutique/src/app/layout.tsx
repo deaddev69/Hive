@@ -16,7 +16,7 @@ const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-satoshi",
   display: "swap",
-});
+}); // Trigger deployment
 
 export const metadata: Metadata = {
   title: "Hive Marketplace Admin Dashboard",
