@@ -48,6 +48,7 @@ export const sendTemplateMessage = internalAction({
     recipient: v.string(),
     templateName: v.string(),
     parameters: v.array(v.string()),
+    languageCode: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     // Check rate limit first (throws if exceeded)
@@ -72,63 +73,76 @@ export const sendTemplateMessage = internalAction({
     if (isMock) {
       let bodyText = "";
       switch (args.templateName) {
-        case "merchant_invite":
-          bodyText = `Welcome to Hive 🎉\nYour merchant account is ready.\nClaim your account:\n${args.parameters[0] || ""}\nThis invite expires in 14 days.`;
+        case "hive_order_delivered":
+          bodyText = `Your order ${args.parameters[0] || ""} has been delivered successfully! 🎉`;
           break;
-        case "merchant_welcome":
-          bodyText = `Welcome to Hive 🎉\n\nYour store has been activated.\n\nComplete these steps:\n✓ Add logo\n✓ Add store hours\n✓ Add first product\n\nSeller Center:\nseller.hivenow.in`;
+        case "hive_out_for_delivery":
+          bodyText = `Your order ${args.parameters[0] || ""} is out for delivery with our courier! 🚚`;
           break;
-        case "first_product_approved":
-          bodyText = `Great news 🎉\n\nYour first product is now live on Hive.\n\nCustomers can now discover your store.`;
+        case "hive_reservation_conf":
+          bodyText = `Good news! Your reservation for ${args.parameters[0] || "item"} is confirmed.`;
           break;
-        case "first_order_arrived":
-          bodyText = `Congratulations 🎉\n\nYou received your first Hive order.\nOrder #${args.parameters[0] || ""}\n\nOpen Seller Center to manage it.`;
+        case "hive_reservation_unav":
+          bodyText = `We're sorry, but the item ${args.parameters[0] || ""} is currently unavailable.`;
+          break;
+        case "hello_world":
+          bodyText = `Welcome and congratulations! This is a test WhatsApp message from Hive.`;
           break;
         default:
           bodyText = `[Template: ${args.templateName}] Params: ${args.parameters.join(", ")}`;
           break;
       }
-      console.log(`\n--- WHATSAPP MESSAGE SENT TO ${args.recipient} ---`);
+      console.log(`\n--- WHATSAPP MESSAGE (MOCK) SENT TO ${args.recipient} ---`);
       console.log(bodyText);
-      console.log(`-----------------------------------------------\n`);
+      console.log(`----------------------------------------------------\n`);
 
       await ctx.runMutation(internal.whatsapp.updateLog, {
         id: logId,
         status: "sent",
         response: JSON.stringify({ message: "Mock message processed successfully", mock: true, text: bodyText }),
       });
-      return { success: true, mock: true };
+      return { success: true, mock: true, text: bodyText };
     }
 
     try {
-      const cleanPhone = args.recipient.replace(/[^0-9]/g, "");
+      let cleanPhone = args.recipient.replace(/[^0-9]/g, "");
+      // Ensure Indian country code prefix if 10-digit
+      if (cleanPhone.length === 10) {
+        cleanPhone = `91${cleanPhone}`;
+      }
 
-      const payload = {
+      // Resolve language code: 'en' for English templates, 'en_US' for hello_world
+      const lang = args.languageCode || (args.templateName === "hello_world" ? "en_US" : "en");
+
+      const payload: any = {
         messaging_product: "whatsapp",
         to: cleanPhone,
         type: "template",
         template: {
           name: args.templateName,
           language: {
-            code: "en_US",
+            code: lang,
           },
-          components: [
-            {
-              type: "body",
-              parameters: args.parameters.map(param => ({
-                type: "text",
-                text: param,
-              })),
-            },
-          ],
         },
       };
+
+      if (args.parameters.length > 0) {
+        payload.template.components = [
+          {
+            type: "body",
+            parameters: args.parameters.map((param) => ({
+              type: "text",
+              text: param,
+            })),
+          },
+        ];
+      }
 
       const response = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(payload),
       });
@@ -165,3 +179,26 @@ export const sendTemplateMessage = internalAction({
     }
   },
 });
+
+import { action } from "./_generated/server";
+
+/**
+ * Public test action for verifying WhatsApp template messages.
+ */
+export const testSendWhatsApp = action({
+  args: {
+    recipient: v.string(),
+    templateName: v.string(),
+    parameters: v.optional(v.array(v.string())),
+    languageCode: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<any> => {
+    return await ctx.runAction(internal.whatsapp.sendTemplateMessage, {
+      recipient: args.recipient,
+      templateName: args.templateName,
+      parameters: args.parameters ?? [],
+      languageCode: args.languageCode,
+    });
+  },
+});
+
