@@ -98,7 +98,6 @@ import type * as reservations from "../reservations.js";
 import type * as reviews from "../reviews.js";
 import type * as routing from "../routing.js";
 import type * as seed from "../seed.js";
-import type * as seedCategories from "../seedCategories.js";
 import type * as seedMutations from "../seedMutations.js";
 import type * as serviceability from "../serviceability.js";
 import type * as serviceablePincodes from "../serviceablePincodes.js";
@@ -246,7 +245,6 @@ declare const fullApi: ApiFromModules<{
   reviews: typeof reviews;
   routing: typeof routing;
   seed: typeof seed;
-  seedCategories: typeof seedCategories;
   seedMutations: typeof seedMutations;
   serviceability: typeof serviceability;
   serviceablePincodes: typeof serviceablePincodes;

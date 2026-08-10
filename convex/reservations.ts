@@ -252,7 +252,7 @@ export const expirePayment = internalMutation({
           afterQty: newStock,
           adjustmentQty: reservation.quantity,
           reason: "order_cancelled",
-          source: "system",
+          source: "checkout",
           createdBy: reservation.customerId,
           createdAt: Date.now(),
         });
