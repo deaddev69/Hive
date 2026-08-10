@@ -151,6 +151,24 @@ export default function AdminPincodesPage() {
     }
   };
 
+  const seedKochi = useMutation(api.serviceablePincodes.seedKochiPincodes);
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  const handleSeedKochi = async () => {
+    setIsSeeding(true);
+    try {
+      const res = await seedKochi();
+      toast.success(
+        "Kochi Pincodes Synced",
+        `Configured ${res.total} primary delivery zones (${res.inserted} added, ${res.updated} updated).`
+      );
+    } catch (err: any) {
+      toast.error("Sync Failed", err.message || "Failed to seed pincodes.");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
   return (
     <div className="flex-1 max-w-[1600px] w-full mx-auto p-4 md:p-8 pt-6 space-y-6">
       {/* Header */}
@@ -165,13 +183,25 @@ export default function AdminPincodesPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-stone-900 hover:bg-stone-800 active:bg-stone-950 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-[0.98] cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Pincode</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleSeedKochi}
+            disabled={isSeeding}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100/80 active:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-2xs active:scale-[0.98] cursor-pointer disabled:opacity-50"
+            title="Populate all primary Kochi Central, North, and South pincodes"
+          >
+            {isSeeding ? <Loader2 className="w-4 h-4 animate-spin text-amber-700" /> : <Navigation className="w-4 h-4 text-amber-700" />}
+            <span>Sync Greater Kochi (21 Pincodes)</span>
+          </button>
+
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-stone-900 hover:bg-stone-800 active:bg-stone-950 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-[0.98] cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Pincode</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Metrics */}
