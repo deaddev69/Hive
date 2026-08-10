@@ -953,26 +953,6 @@ export default function BoutiqueProfile() {
             </div>
           </Card>
 
-          {/* Admin Pincode Management Link */}
-          {me?.role === "admin" && (
-            <Link href="/boutique/pincodes">
-              <Card className="mt-4 border border-stone-200 hover:border-stone-300 hover:shadow-sm transition cursor-pointer">
-                <CardContent className="p-3.5 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-stone-100 flex items-center justify-center">
-                      <MapPin className="w-4 h-4 text-stone-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800">Pincode Management</p>
-                      <p className="text-[11px] text-slate-400">Add, block, or remove delivery pincodes</p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                </CardContent>
-              </Card>
-            </Link>
-          )}
-
           {/* Mobile-only Logout */}
           <div className="md:hidden mt-4">
             <SignOutButton redirectUrl="/sign-in">
