@@ -432,7 +432,7 @@ function MapPickerInner({
           onClick={handleMapClick}
           disableDefaultUI={true}
           clickableIcons={!hidePOIs}
-          styles={poiStyles}
+          {...(mapId === "DEMO_MAP_ID" ? { styles: poiStyles } : {})}
           zoomControl={false}
           gestureHandling={readOnly ? "none" : "greedy"}
           onDragstart={() => setIsDragging(true)}
