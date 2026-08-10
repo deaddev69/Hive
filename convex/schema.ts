@@ -388,6 +388,8 @@ export default defineSchema({
     .index("by_regionIds", ["regionIds"])
     .index("by_ownerUserId", ["ownerUserId"])
     .index("by_ownerEmail", ["ownerEmail"])
+    .index("by_staffEmail1", ["staffEmail1"])
+    .index("by_staffEmail2", ["staffEmail2"])
     .index("by_inviteTokenHash", ["inviteTokenHash"])
     .index("by_razorpayAccountId", ["razorpayAccountId"])
     .index("by_seedSource", ["seedSource"])

@@ -1275,12 +1275,18 @@ export const getMyBoutiqueSafe = query({
     }
 
     if (!boutique && userEmail) {
-      const allBoutiques = await ctx.db.query("boutiques").collect();
       const normalizedUserEmail = userEmail.trim().toLowerCase();
-      boutique = allBoutiques.find((b: any) =>
-        (b.staffEmail1 && b.staffEmail1.trim().toLowerCase() === normalizedUserEmail) ||
-        (b.staffEmail2 && b.staffEmail2.trim().toLowerCase() === normalizedUserEmail)
-      ) as any;
+      boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail1", q => q.eq("staffEmail1", normalizedUserEmail)).first();
+      
+      if (!boutique) {
+        boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail2", q => q.eq("staffEmail2", normalizedUserEmail)).first();
+      }
+      if (!boutique && normalizedUserEmail !== userEmail) {
+        boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail1", q => q.eq("staffEmail1", userEmail)).first();
+      }
+      if (!boutique && normalizedUserEmail !== userEmail) {
+        boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail2", q => q.eq("staffEmail2", userEmail)).first();
+      }
     }
 
     if (!boutique && user.role === "admin") {
@@ -1353,12 +1359,18 @@ export const getMyBoutiqueSafeCustomer = query({
     }
 
     if (!boutique && userEmail) {
-      const allBoutiques = await ctx.db.query("boutiques").collect();
       const normalizedUserEmail = userEmail.trim().toLowerCase();
-      boutique = allBoutiques.find((b: any) =>
-        (b.staffEmail1 && b.staffEmail1.trim().toLowerCase() === normalizedUserEmail) ||
-        (b.staffEmail2 && b.staffEmail2.trim().toLowerCase() === normalizedUserEmail)
-      ) as any;
+      boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail1", q => q.eq("staffEmail1", normalizedUserEmail)).first();
+      
+      if (!boutique) {
+        boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail2", q => q.eq("staffEmail2", normalizedUserEmail)).first();
+      }
+      if (!boutique && normalizedUserEmail !== userEmail) {
+        boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail1", q => q.eq("staffEmail1", userEmail)).first();
+      }
+      if (!boutique && normalizedUserEmail !== userEmail) {
+        boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail2", q => q.eq("staffEmail2", userEmail)).first();
+      }
     }
 
     if (!boutique && user.role === "admin") {
