@@ -848,17 +848,17 @@ export const Navbar: React.FC = () => {
                   onClick={() => setMobileMenuOpen(false)}
                   className="block group"
                 >
-                  <div className="w-full p-3.5 rounded-2xl bg-white border border-slate-200/90 hover:border-amber-400/80 shadow-sm shadow-slate-900/5 text-slate-900 flex items-center justify-between active:scale-[0.98] transition-all">
+                  <div className="w-full p-3.5 rounded-2xl bg-stone-900 border border-amber-500/30 text-white shadow-md shadow-stone-900/20 flex items-center justify-between active:scale-[0.98] transition-all">
                     <div className="flex items-center gap-3">
-                      <div className="w-8.5 h-8.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center">
-                        <Store className="w-4.5 h-4.5" />
+                      <div className="w-8.5 h-8.5 rounded-xl bg-amber-500/20 border border-amber-400/30 text-amber-400 flex items-center justify-center">
+                        <Store className="w-4.5 h-4.5 text-amber-400" />
                       </div>
                       <div className="flex flex-col text-left">
-                        <span className="text-xs font-bold text-slate-900 tracking-tight">Sell on Hive</span>
-                        <span className="text-[10.5px] text-slate-500 font-medium">Partner your boutique with us</span>
+                        <span className="text-xs font-bold text-white tracking-tight">Sell on Hive</span>
+                        <span className="text-[10.5px] text-stone-300 font-medium">Partner your boutique with us →</span>
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-1 transition-all" />
+                    <ChevronRight className="w-4 h-4 text-amber-400/80 group-hover:text-amber-300 group-hover:translate-x-1 transition-all" />
                   </div>
                 </Link>
               )}
