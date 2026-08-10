@@ -114,3 +114,56 @@ export const togglePincodeActive = mutation({
   },
 });
 
+/**
+ * Add a new serviceable pincode.
+ * Admin-only mutation.
+ */
+export const addPincode = mutation({
+  args: {
+    pincode: v.string(),
+    city: v.string(),
+    state: v.string(),
+    lat: v.number(),
+    lng: v.number(),
+    zoneCode: v.string(),
+    active: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+
+    // Check for duplicate
+    const existing = await ctx.db
+      .query("serviceablePincodes")
+      .withIndex("by_pincode", (q) => q.eq("pincode", args.pincode))
+      .first();
+
+    if (existing) {
+      throw new Error(`Pincode ${args.pincode} already exists.`);
+    }
+
+    const id = await ctx.db.insert("serviceablePincodes", {
+      pincode: args.pincode,
+      city: args.city,
+      state: args.state,
+      lat: args.lat,
+      lng: args.lng,
+      zoneCode: args.zoneCode,
+      active: args.active,
+    });
+    return { success: true, id, pincode: args.pincode };
+  },
+});
+
+/**
+ * Delete a pincode record entirely.
+ * Admin-only mutation.
+ */
+export const deletePincode = mutation({
+  args: { id: v.id("serviceablePincodes") },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+    await ctx.db.delete(args.id);
+    return { success: true };
+  },
+});
+
