@@ -327,15 +327,15 @@ export const initCheckoutSessionInternal = internalMutation({
       throw new ConvexError("Address verification is pending or rejected. Please update your address to verify serviceability.");
     }
 
-    // Strict Pincode Blocking Guard: Check if destination pincode is active & serviceable
+    // Strict Pincode Blocking Guard: Only block if pincode is explicitly in the table and marked inactive.
+    // Unknown pincodes are allowed through — the distance-based serviceability check below will handle them.
     if (addr.pincode) {
       const pincodeRecord = await ctx.db
         .query("serviceablePincodes")
         .withIndex("by_pincode", (q) => q.eq("pincode", addr.pincode))
-        .filter((q) => q.eq(q.field("active"), true))
         .first();
 
-      if (!pincodeRecord) {
+      if (pincodeRecord && pincodeRecord.active === false) {
         throw new ConvexError(`Delivery to pincode ${addr.pincode} is currently blocked or not serviceable.`);
       }
     }
