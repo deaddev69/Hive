@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { formatINR } from "@hive/utils";
+import { formatRupees } from "@hive/utils";
 import { CheckCircle2, Clock, XCircle, AlertCircle, ShoppingBag } from "lucide-react";
 
 interface ReservationStatusCardProps {
@@ -139,7 +139,7 @@ export const ReservationStatusCard: React.FC<ReservationStatusCardProps> = ({ re
             <p className="text-xs text-stone-500 mt-0.5 font-medium">Size {reservation.size}</p>
           </div>
           <span className="text-sm font-extrabold text-stone-900 whitespace-nowrap flex-shrink-0 ml-2">
-            {formatINR(reservation.priceAtReserve)}
+            {formatRupees(reservation.priceAtReserve)}
           </span>
         </div>
         <div className="mt-2 pt-2 border-t border-stone-100 w-full">
