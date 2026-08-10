@@ -4,6 +4,7 @@
 
 import { GenericDatabaseWriter, GenericDatabaseReader } from "convex/server";
 import { DataModel } from "../_generated/dataModel";
+import { ConvexError } from "convex/values";
 
 // P1-3 FIX: Mock products are ONLY available when ENABLE_DEBUG_TOOLS is explicitly "true".
 // In production, this is an empty object — no mock product IDs will ever match.
@@ -72,7 +73,7 @@ export async function validateProductSizeAndStock(
   excludeReservationId?: string
 ): Promise<boolean> {
   if (!size || size.trim() === "") {
-    throw new Error("Size selection is mandatory.");
+    throw new ConvexError("Size selection is mandatory.");
   }
 
   const normalized = normalizeSize(size);
@@ -82,7 +83,7 @@ export async function validateProductSizeAndStock(
   if (mockProduct) {
     const validSizes = mockProduct.sizes.map(normalizeSize);
     if (!validSizes.includes(normalized)) {
-      throw new Error(`Invalid size "${size}" for product "${productId}". Available sizes are: ${mockProduct.sizes.join(", ")}`);
+      throw new ConvexError(`Invalid size "${size}" for product "${productId}". Available sizes are: ${mockProduct.sizes.join(", ")}`);
     }
 
     // Check stock. Note: we support keys like FS or Free, or direct normalized matching.
@@ -98,11 +99,11 @@ export async function validateProductSizeAndStock(
     }
 
     if (stock === 0) {
-      throw new Error(`Size "${size}" is out of stock.`);
+      throw new ConvexError(`Size "${size}" is out of stock.`);
     }
 
     if (stock < quantity) {
-      throw new Error(`Requested quantity (${quantity}) exceeds available stock (${stock}) for size "${size}".`);
+      throw new ConvexError(`Requested quantity (${quantity}) exceeds available stock (${stock}) for size "${size}".`);
     }
 
     return true;
@@ -124,11 +125,11 @@ export async function validateProductSizeAndStock(
 
   if (productRow) {
     if (productRow.adminHidden === true) {
-      throw new Error("The item is temporarily unavailable for purchase.");
+      throw new ConvexError("The item is temporarily unavailable for purchase.");
     }
     const validSizes = productRow.sizes.map(normalizeSize);
     if (!validSizes.includes(normalized)) {
-      throw new Error(
+      throw new ConvexError(
         `Invalid size "${size}" for product. Available sizes: ${productRow.sizes.join(", ")}`
       );
     }
@@ -174,14 +175,14 @@ export async function validateProductSizeAndStock(
 
     if (availableStock === 0) {
       if (stock > 0) {
-        throw new Error(`All units of size "${size}" are currently reserved by other customers.`);
+        throw new ConvexError(`All units of size "${size}" are currently reserved by other customers.`);
       } else {
-        throw new Error(`Size "${size}" is out of stock.`);
+        throw new ConvexError(`Size "${size}" is out of stock.`);
       }
     }
 
     if (availableStock < quantity) {
-      throw new Error(
+      throw new ConvexError(
         `Requested quantity (${quantity}) exceeds available stock (${availableStock}) for size "${size}".`
       );
     }
@@ -190,5 +191,5 @@ export async function validateProductSizeAndStock(
   }
 
   // Fallback: if product slug/id is not found in either mock inventory or products table, raise error
-  throw new Error(`The product with slug/ID "${productId}" is no longer available.`);
+  throw new ConvexError(`The product with slug/ID "${productId}" is no longer available.`);
 }

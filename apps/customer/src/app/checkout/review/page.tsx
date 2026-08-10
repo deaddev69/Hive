@@ -376,6 +376,7 @@ export default function OrderReviewPage() {
         boutiqueName: item.boutiqueName,
         size: item.size,
         quantity: item.quantity,
+        reservationId: item.reservationId,
       };
     });
 

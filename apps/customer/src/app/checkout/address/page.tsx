@@ -153,6 +153,7 @@ export default function CheckoutAddressPage() {
 
   const [selectedAddressId, setSelectedAddressId] = useState<Id<"addresses"> | null>(null);
   const setSelectedAddressIdInCheckout = useCheckoutStore((s) => s.setSelectedAddressId);
+  const [urlResId, setUrlResId] = useState<Id<"reservations"> | null>(null);
 
   useEffect(() => {
     if (addresses.length > 0 && !selectedAddressId) {
@@ -164,6 +165,16 @@ export default function CheckoutAddressPage() {
     }
   }, [addresses.length]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const resId = searchParams.get("reservationId");
+      if (resId) {
+        setUrlResId(resId as Id<"reservations">);
+      }
+    }
+  }, []);
+
   const handleSelectAddress = (id: Id<"addresses">) => {
     setSelectedAddressId(id);
     setSelectedAddressIdInCheckout(id);
@@ -171,9 +182,33 @@ export default function CheckoutAddressPage() {
 
   const items = useCartStore((s) => s.items);
   const checkoutItems = useCheckoutStore((s) => s.checkoutItems);
+  const setCheckoutItems = useCheckoutStore((s) => s.setCheckoutItems);
   const discountAmount = useCheckoutStore((s) => s.discountAmount);
-  // Do NOT default to [] — keep undefined so we know when it's still loading
   const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques);
+
+  const reservation = useQuery(
+    (api as any).reservations.getReservationById,
+    urlResId ? { reservationId: urlResId, token: token || undefined } : "skip"
+  );
+
+  useEffect(() => {
+    if (reservation && urlResId && (!checkoutItems.length || checkoutItems[0].reservationId !== urlResId)) {
+      setCheckoutItems([{
+        productId: reservation.productId,
+        size: reservation.size,
+        price: reservation.priceAtReserve,
+        name: reservation.productName,
+        imageUrl: reservation.productImageUrl,
+        boutiqueName: reservation.boutiqueName,
+        boutiqueId: reservation.boutiqueId,
+        isReservation: true,
+        reservationStatus: reservation.status,
+        reservationExpiresAt: reservation.reservationExpiresAt,
+        reservationId: reservation._id,
+        quantity: reservation.quantity,
+      }]);
+    }
+  }, [reservation, urlResId, checkoutItems.length, setCheckoutItems]);
 
   const isAddressServiceable = (addr: Address) => {
     // While boutiques are still loading, don't block the user
