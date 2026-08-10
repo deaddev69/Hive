@@ -16,6 +16,7 @@ import { api } from "../../../../../convex/_generated/api";
 import { Modal } from "@hive/ui";
 import { useSessionStore } from "@/context/SessionContext";
 import { inrToPaise } from "@hive/utils";
+import { ReservationInfoBlock } from "./ReservationInfoBlock";
 
 function formatNextDayLabel(dateStr: string): string {
   try {
@@ -875,11 +876,12 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
           </form>
         </div>
       ) : isReservationMode ? (
+        <div className="hidden lg:flex flex-col gap-3 w-full">
           <button
             type="button"
             onClick={handleReserve}
             disabled={loading}
-            className="hidden lg:flex h-12 w-full rounded-2xl bg-gradient-to-r from-[#F9D670] via-[#F5C22B] to-[#F9D670] text-stone-900 font-black uppercase tracking-widest text-xs transition-all active:scale-[0.98] border border-[#D9A71E] shadow-[0_4px_15px_rgba(245,194,43,0.3)] hover:shadow-[0_0_20px_rgba(245,194,43,0.5)] hover:border-[#B58A18] cursor-pointer items-center justify-center disabled:opacity-50 relative overflow-hidden group"
+            className="h-12 w-full rounded-2xl bg-gradient-to-r from-[#F9D670] via-[#F5C22B] to-[#F9D670] text-stone-900 font-black uppercase tracking-widest text-xs transition-all active:scale-[0.98] border border-[#D9A71E] shadow-[0_4px_15px_rgba(245,194,43,0.3)] hover:shadow-[0_0_20px_rgba(245,194,43,0.5)] hover:border-[#B58A18] cursor-pointer items-center justify-center disabled:opacity-50 relative overflow-hidden group flex"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[100%] group-hover:animate-[shimmer_1.5s_infinite]" />
             {loading ? (
@@ -891,6 +893,8 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
               </span>
             )}
           </button>
+          <ReservationInfoBlock />
+        </div>
       ) : (
         <div className="hidden lg:flex w-full h-12 rounded-2xl shadow-sm transition-all duration-300 items-stretch">
           <AddToCartButton

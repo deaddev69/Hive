@@ -650,8 +650,10 @@ export default function BoutiqueInventory() {
                 <div className="mt-1 ml-11 pl-3 border-l-2 border-[#F5C22B]/30 space-y-2.5 animate-in fade-in duration-100">
                   {localProdSizes.slice(1).map((sz: string) => {
                     const stock = localStock[prod._id]?.[sz] ?? prod.stockBySize[sz] ?? 0;
-                    const isOut = stock === 0;
-                    const isLow = stock > 0 && stock <= 2;
+                    const locked = prod.lockedStockBySize?.[sz] ?? 0;
+                    const available = Math.max(0, stock - locked);
+                    const isOut = available === 0;
+                    const isLow = available > 0 && available <= 2;
 
                     return (
                       <div key={sz} className="flex items-center justify-between py-1 pr-1.5">

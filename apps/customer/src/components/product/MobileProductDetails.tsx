@@ -9,6 +9,8 @@ import { PurchaseActions } from "./PurchaseActions";
 import { useRouter } from "next/navigation";
 import { cleanProductTitle } from "./ProductCard";
 import Link from "next/link";
+import { getBoutiqueStatus } from "../../../../../convex/shared/boutiqueStatus";
+import { ReservationInfoBlock } from "./ReservationInfoBlock";
 
 interface MobileProductDetailsProps {
   product: ProductDetail;
@@ -40,6 +42,9 @@ export function MobileProductDetails({
   // Fit recommendation & silhouette from product
   const fitRecommendation = (product as any).fitRecommendation as "runs_small" | "true_to_size" | "runs_large" | undefined;
   const silhouette = (product as any).silhouette as "slim_fit" | "regular_fit" | "relaxed_fit" | "oversized" | undefined;
+
+  const boutiqueStatus = product.boutique ? getBoutiqueStatus(product.boutique as any, Date.now()) : { type: "OPEN" };
+  const isReservationMode = boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED";
 
   const fitBadgeConfig = {
     runs_small:   { label: "Runs Small", advice: "Consider ordering one size up." },
@@ -196,6 +201,12 @@ export function MobileProductDetails({
           onOpenSizeGuide={() => {}}
         />
       </div>
+
+      {isReservationMode && (
+        <div className="mt-3">
+          <ReservationInfoBlock />
+        </div>
+      )}
 
       {/* ── SECTION 5: TRUST REASSURANCE ── */}
       <div className="border-t border-stone-100 pt-4 mt-3 py-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase select-none">
