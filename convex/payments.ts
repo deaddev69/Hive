@@ -1132,51 +1132,53 @@ export async function verifyPaymentAndPlaceOrderInternal(
   // Calculate net payout for merchant
   const netPayoutRupees = (orderSnapshot.merchantPayable / 100);
 
-  // Notify boutique (WhatsApp if enabled, fallback to Email)
+  // 1. Always trigger Resend email notification to boutique owner & designated staff
+  await ctx.scheduler.runAfter(0, internal.emails.sendOrderEmail, {
+    orderId,
+    event: "new_order",
+  });
+
+  // 2. Dispatch WhatsApp notification to Owner and Configured Staff (hive_merchant_new_order)
   const isWhatsAppEnabled = boutique?.whatsAppNotificationsEnabled ?? true;
   const recipientPhone = boutique?.notificationPhone || boutique?.phone;
 
-  if (isWhatsAppEnabled && (recipientPhone || boutique?.staffPhone1 || boutique?.staffPhone2)) {
+  if (isWhatsAppEnabled) {
+    // Send to Store Owner
     if (recipientPhone) {
       await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
         recipient: recipientPhone,
-        templateName: "new_order_received",
+        templateName: "hive_merchant_new_order",
         parameters: [
           boutique.ownerName || "Merchant",
           orderNumber,
-          `Rs. ${netPayoutRupees.toFixed(2)}`
         ],
+        languageCode: "en",
       });
     }
 
-    if (boutique?.staffPhone1) {
+    // Send to Configured Staff Member
+    const staffSelection = (boutique as any)?.staffNotificationSelection;
+    if (staffSelection === "staff1" && (boutique as any)?.staffPhone1) {
       await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-        recipient: boutique.staffPhone1,
-        templateName: "new_order_received",
+        recipient: (boutique as any).staffPhone1,
+        templateName: "hive_merchant_new_order",
         parameters: [
           "Store Staff",
           orderNumber,
-          `Rs. ${netPayoutRupees.toFixed(2)}`
         ],
+        languageCode: "en",
       });
-    }
-
-    if (boutique?.staffPhone2) {
+    } else if (staffSelection === "staff2" && (boutique as any)?.staffPhone2) {
       await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-        recipient: boutique.staffPhone2,
-        templateName: "new_order_received",
+        recipient: (boutique as any).staffPhone2,
+        templateName: "hive_merchant_new_order",
         parameters: [
           "Store Staff",
           orderNumber,
-          `Rs. ${netPayoutRupees.toFixed(2)}`
         ],
+        languageCode: "en",
       });
     }
-  } else {
-    await ctx.scheduler.runAfter(0, internal.emails.sendOrderEmail, {
-      orderId,
-      event: "new_order",
-    });
   }
 
   // Dispatch background Web Push notification to boutique sellers / staff

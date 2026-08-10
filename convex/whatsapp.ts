@@ -73,15 +73,20 @@ export const sendTemplateMessage = internalAction({
     if (isMock) {
       let bodyText = "";
       switch (args.templateName) {
+        case "hive_merchant_new_order":
+          bodyText = `Congratulations ${args.parameters[0] || "Merchant"}! You have received a new order ${args.parameters[1] || ""}. Open your Seller Portal to accept and pack the order.`;
+          break;
         case "hive_order_delivered":
           bodyText = `Your order ${args.parameters[0] || ""} has been delivered successfully! 🎉`;
           break;
         case "hive_out_for_delivery":
           bodyText = `Your order ${args.parameters[0] || ""} is out for delivery with our courier! 🚚`;
           break;
+        case "hive_reservation_confirmed":
         case "hive_reservation_conf":
           bodyText = `Good news! Your reservation for ${args.parameters[0] || "item"} is confirmed.`;
           break;
+        case "hive_reservation_unavailable":
         case "hive_reservation_unav":
           bodyText = `We're sorry, but the item ${args.parameters[0] || ""} is currently unavailable.`;
           break;
