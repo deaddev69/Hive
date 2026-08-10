@@ -198,8 +198,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           />
         </button>
 
-        {/* Quick View eye icon overlay (Top-right, stacked neatly below heart with vertical gap) */}
-        {!hideQuickView && (
+        {/* Quick View eye icon overlay (Hidden for now as requested) */}
+        {false && !hideQuickView && (
           <button
             onClick={handleQuickViewOpen}
             aria-label="Quick look"

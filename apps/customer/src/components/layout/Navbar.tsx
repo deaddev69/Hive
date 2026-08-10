@@ -738,29 +738,37 @@ export const Navbar: React.FC = () => {
             {/* SHOP / CATEGORIES Group */}
             <div className="flex flex-col gap-1.5">
               <p className="text-[9.5px] font-extrabold uppercase tracking-[0.2em] text-stone-400 px-1">Explore Collections</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  href="/search?q=ethnic"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-stone-50/80 hover:bg-amber-50/60 border border-stone-200/50 hover:border-amber-300/60 transition-all text-left group"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform flex-shrink-0" />
+                  <span className="text-[11.5px] font-bold text-stone-800">Ethnic Wear</span>
+                </Link>
+                <Link
+                  href="/collections"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-stone-50/80 hover:bg-amber-50/60 border border-stone-200/50 hover:border-amber-300/60 transition-all text-left group"
+                >
+                  <Store className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform flex-shrink-0" />
+                  <span className="text-[11.5px] font-bold text-stone-800">Boutiques</span>
+                </Link>
                 <Link
                   href="/products/women"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-stone-50/80 hover:bg-amber-50/60 border border-stone-200/50 hover:border-amber-300/60 transition-all text-center group"
+                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-stone-50/80 hover:bg-amber-50/60 border border-stone-200/50 hover:border-amber-300/60 transition-all text-left group"
                 >
-                  <Sparkles className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform mb-1" />
-                  <span className="text-[11.5px] font-bold text-stone-800">Women</span>
-                </Link>
-                <Link
-                  href="/products/men"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-stone-50/80 hover:bg-amber-50/60 border border-stone-200/50 hover:border-amber-300/60 transition-all text-center group"
-                >
-                  <User className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform mb-1" />
-                  <span className="text-[11.5px] font-bold text-stone-800">Men</span>
+                  <ShoppingBag className="w-4 h-4 text-stone-700 group-hover:text-amber-600 group-hover:scale-110 transition-transform flex-shrink-0" />
+                  <span className="text-[11.5px] font-bold text-stone-800">All Products</span>
                 </Link>
                 <Link
                   href="/products/sale"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-red-50/60 hover:bg-red-50 border border-red-200/60 transition-all text-center group"
+                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-red-50/60 hover:bg-red-50 border border-red-200/60 transition-all text-left group"
                 >
-                  <Tag className="w-4 h-4 text-red-600 group-hover:scale-110 transition-transform mb-1" />
+                  <Tag className="w-4 h-4 text-red-600 group-hover:scale-110 transition-transform flex-shrink-0" />
                   <span className="text-[11.5px] font-bold text-red-600">Sale</span>
                 </Link>
               </div>
@@ -809,17 +817,17 @@ export const Navbar: React.FC = () => {
                   onClick={() => setMobileMenuOpen(false)}
                   className="block"
                 >
-                  <div className="w-full p-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs flex items-center justify-between group active:scale-[0.98] transition-transform">
+                  <div className="w-full p-3 rounded-2xl bg-stone-900 text-white shadow-sm flex items-center justify-between group active:scale-[0.98] transition-transform">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center">
-                        <Store className="w-4 h-4 text-white" />
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/20 backdrop-blur-xs flex items-center justify-center">
+                        <Store className="w-4 h-4 text-amber-400" />
                       </div>
                       <div className="flex flex-col text-left">
                         <span className="text-xs font-bold leading-tight">Manage Boutique</span>
-                        <span className="text-[10px] text-amber-100 font-medium">Boutique Merchant Portal</span>
+                        <span className="text-[10px] text-stone-400 font-medium">Boutique Merchant Portal</span>
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-white/80 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-4 h-4 text-stone-400 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </a>
               ) : isPendingMerchant ? (
@@ -837,19 +845,19 @@ export const Navbar: React.FC = () => {
                 <Link
                   href="/become-seller"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block"
+                  className="block group"
                 >
-                  <div className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-100/70 to-amber-50 border border-amber-300/70 text-amber-950 shadow-xs flex items-center justify-between group active:scale-[0.98] transition-transform">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8.5 h-8.5 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                  <div className="w-full p-3.5 rounded-2xl bg-white border border-slate-200/90 hover:border-amber-400/80 shadow-sm shadow-slate-900/5 text-slate-900 flex items-center justify-between active:scale-[0.98] transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8.5 h-8.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 flex items-center justify-center">
                         <Store className="w-4.5 h-4.5" />
                       </div>
                       <div className="flex flex-col text-left">
-                        <span className="text-xs font-extrabold tracking-tight">Sell on Hive</span>
-                        <span className="text-[10px] text-amber-800 font-medium">List your boutique products →</span>
+                        <span className="text-xs font-bold text-slate-900 tracking-tight">Sell on Hive</span>
+                        <span className="text-[10.5px] text-slate-500 font-medium">Partner your boutique with us</span>
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-amber-700 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-1 transition-all" />
                   </div>
                 </Link>
               )}
