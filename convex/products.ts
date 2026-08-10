@@ -1057,7 +1057,7 @@ export const getActiveProducts = query({
         }
         if (b) {
           const status = getBoutiqueStatus(b, Date.now());
-          if (status.type === "OPEN") {
+          if (status.type === "OPEN" || status.type === "CLOSED_TODAY" || status.type === "CLOSED_EXTENDED") {
             openStoreProducts.push(p);
           }
         }
