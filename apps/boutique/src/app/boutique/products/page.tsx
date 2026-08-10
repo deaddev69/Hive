@@ -6,6 +6,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent, AnimatedBackground, LoadingState } from "@hive/ui";
 import { Plus, Edit3, Trash2, Loader2, Upload, Search, Image as ImageIcon, ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "@hive/utils";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "Free"];
 
@@ -144,8 +145,9 @@ export default function BoutiqueProducts() {
     try {
       await deleteProduct({ id: deletingProductId as any });
       setDeletingProductId(null);
+      toast.success("Product Removed", "Listing has been deleted from your catalog.");
     } catch (err: any) {
-      alert("Failed to delete product: " + err.message);
+      toast.error("Couldn't Delete Product", err.message || "Failed to delete product.");
     } finally {
       setIsDeleting(false);
     }
@@ -154,8 +156,12 @@ export default function BoutiqueProducts() {
   const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     try {
       await toggleProductStatus({ id: id as any, active: !currentStatus });
+      toast.success(
+        !currentStatus ? "Product Published" : "Product Unpublished",
+        !currentStatus ? "Item is now live for buyers." : "Item hidden from customer search."
+      );
     } catch (err: any) {
-      alert("Failed to change status: " + err.message);
+      toast.error("Couldn't Change Status", err.message || "Failed to update product status.");
     }
   };
 
@@ -374,7 +380,7 @@ export default function BoutiqueProducts() {
                     type="button"
                     onClick={() => {
                       setShowMoreActions(false);
-                      alert("Bulk upload / CSV import: Select your catalog file to ingest.");
+                      toast.info("Bulk Catalog Import", "Select your catalog CSV/Excel file to ingest inventory in bulk.");
                     }}
                     className="w-full px-4 py-2.5 text-[12px] font-bold text-left text-[#334155] hover:bg-slate-50 hover:text-[#0f172a] transition-colors flex items-center gap-2 cursor-pointer"
                   >

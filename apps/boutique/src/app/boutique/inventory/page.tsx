@@ -482,9 +482,21 @@ export default function BoutiqueInventory() {
             <button
               onClick={handleGlobalVerify}
               disabled={saving || verifySuccess}
-              className={`bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-sm font-manrope`}
+              className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 px-3.5 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider transition-all select-none active:scale-[0.98] shadow-2xs font-manrope cursor-pointer disabled:opacity-50"
             >
-              {saving ? "VERIFYING..." : verifySuccess ? "✓ VERIFIED" : "CONFIRM SHELF"}
+              {saving ? (
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin text-slate-500" />
+                  <span>Verifying...</span>
+                </span>
+              ) : verifySuccess ? (
+                <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                  <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                  <span>Verified</span>
+                </span>
+              ) : (
+                "Confirm Shelf"
+              )}
             </button>
           )}
         </div>
@@ -790,13 +802,25 @@ export default function BoutiqueInventory() {
             <button
               onClick={handleSave}
               disabled={saving || saveSuccess}
-              className={`px-3.5 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all shadow-sm active:scale-95 font-manrope ${
+              className={`px-3.5 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all shadow-sm active:scale-95 font-manrope cursor-pointer ${
                 saveSuccess
-                  ? "bg-[#f8fafc] border border-[#f1f5f9]/30 text-[#0F9D58]"
+                  ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
                   : "bg-[#F5C22B] hover:bg-[#E0B024] text-slate-900 font-extrabold"
               }`}
             >
-              {saving ? "SAVING..." : saveSuccess ? "✓ Saved" : "SAVE CHANGES"}
+              {saving ? (
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>Saving...</span>
+                </span>
+              ) : saveSuccess ? (
+                <span className="flex items-center gap-1.5 text-emerald-700 font-bold">
+                  <Check className="w-3 h-3 text-emerald-600 stroke-[2.5]" />
+                  <span>Saved</span>
+                </span>
+              ) : (
+                "Save Changes"
+              )}
             </button>
           </div>
         </div>

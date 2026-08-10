@@ -16,6 +16,7 @@ import {
   Search,
   Loader2,
   X,
+  ShieldAlert,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -160,7 +161,10 @@ export default function PincodeManagementPage() {
         {/* Quick Block */}
         <Card className="border-red-100 bg-red-50/30">
           <CardContent className="p-3">
-            <p className="text-[11px] font-medium text-red-700 mb-2">⛔ Quick Block a Pincode</p>
+            <p className="text-[11px] font-semibold text-red-700 mb-2 flex items-center gap-1.5">
+              <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
+              <span>Quick Block a Pincode</span>
+            </p>
             <div className="flex gap-2">
               <input
                 type="text"

@@ -120,7 +120,7 @@ export default function BoutiqueProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      alert("Logo image is too large. Max 5MB.");
+      toast.error("Image Too Large", "Logo image must be under 5MB.");
       return;
     }
     setLogoFile(file);
@@ -131,7 +131,7 @@ export default function BoutiqueProfile() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      alert("Cover image is too large. Max 5MB.");
+      toast.error("Image Too Large", "Cover photo must be under 5MB.");
       return;
     }
     setCoverFile(file);

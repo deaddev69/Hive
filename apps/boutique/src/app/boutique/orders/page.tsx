@@ -6,7 +6,7 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Card, CardContent, LoadingState } from "@hive/ui";
-import { formatCurrency } from "@hive/utils";
+import { formatCurrency, toast } from "@hive/utils";
 import { useAuth } from "@clerk/nextjs";
 import {
   Loader2,
@@ -20,7 +20,16 @@ import {
   Check,
   Clock,
   User,
-  MapPin
+  MapPin,
+  Package,
+  Truck,
+  RotateCcw,
+  Phone,
+  Bike,
+  Info,
+  ArrowDownToLine,
+  AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 
 // ── Invoice download cell ────────────────────────────────────────────────────
@@ -30,12 +39,12 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
   const [generating, setGenerating] = React.useState(false);
 
   if (invoice === undefined) {
-    return <span className="inline-block w-14 h-4 bg-slate-50 rounded animate-pulse" />;
+    return <span className="inline-block w-14 h-4 bg-slate-100 rounded-lg animate-pulse" />;
   }
 
   if (!invoice) {
     return (
-      <span className="text-[9px] text-slate-400 font-medium italic whitespace-nowrap">
+      <span className="text-[10px] text-slate-400 font-medium italic whitespace-nowrap">
         No invoice
       </span>
     );
@@ -56,8 +65,9 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
         const err = await res.json();
         throw new Error(err.error || "Failed to generate invoice");
       }
+      toast.success("Invoice Generated", "PDF invoice is ready for download.");
     } catch (e: any) {
-      alert("Invoice PDF generation failed: " + e.message);
+      toast.error("Invoice Generation Failed", e.message || "Failed to create invoice PDF.");
     } finally {
       setGenerating(false);
     }
@@ -68,13 +78,13 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
       <button
         onClick={handleGenerate}
         disabled={generating}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-amber-200/50 bg-amber-50 text-[9px] font-bold text-amber-800 hover:bg-amber-100/50 transition-colors whitespace-nowrap disabled:opacity-50"
-        title="Trigger PDF generation"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-stone-100/80 text-[11px] font-semibold text-stone-800 transition-all active:scale-[0.98] shadow-2xs whitespace-nowrap disabled:opacity-50 cursor-pointer"
+        title="Generate official invoice PDF"
       >
         {generating ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-600" />
         ) : (
-          <FileText className="w-3.5 h-3.5 text-amber-600" />
+          <FileText className="w-3.5 h-3.5 text-stone-600" />
         )}
         Generate
       </button>
@@ -84,77 +94,75 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
   return (
     <button
       onClick={() => window.open(invoice.pdfUrl!, "_blank")}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-hive-border bg-white text-[9px] font-bold text-hive-dark hover:bg-slate-50 hover:border-[#F5C22B] transition-colors whitespace-nowrap"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 hover:border-stone-400 text-[11px] font-semibold text-stone-900 transition-all active:scale-[0.98] shadow-2xs whitespace-nowrap cursor-pointer"
       title={`Download ${invoice.invoiceNumber}`}
     >
-      <FileDown className="w-3.5 h-3.5 text-[#D9A71E]" />
+      <ArrowDownToLine className="w-3.5 h-3.5 text-stone-700" />
       Invoice
     </button>
   );
 }
 
-// Removed getStatusSelectClass as we will use a standard dropdown style now.
-
 // ── Boutique Orders Page ──────────────────────────────────────────────────────
 // ── Order Status Badge Component ───────────────────────────────────────────────
 const OrderStatusBadge = ({ status }: { status: string }) => {
-  // 1. Active Logistics States (Pulsing Dot)
+  // 1. Active Logistics States (Pulsing Amber Dot)
   if (["waiting_for_rider", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery"].includes(status) || status === "confirmed") {
     return (
-      <div className="flex items-center justify-center w-full py-3 bg-white border border-gray-200 rounded-full shadow-sm">
-        <span className="relative flex h-2.5 w-2.5 mr-3">
+      <div className="flex items-center justify-center w-full py-2.5 px-3 bg-white border border-stone-200/80 rounded-xl shadow-2xs">
+        <span className="relative flex h-2 w-2 mr-2.5">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
         </span>
-        <span className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
+        <span className="text-[11px] font-bold text-stone-800 tracking-wider uppercase">
           {status === 'confirmed' ? 'Confirmed' : status.replace(/_/g, " ")}
         </span>
       </div>
     );
   }
 
-  // 1b. Packed State (solid blue dot)
+  // 1b. Packed State (Solid Slate Indicator)
   if (status === "packed") {
     return (
-      <div className="flex items-center justify-center w-full py-3 bg-white border border-gray-200 rounded-full shadow-sm">
-        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500 mr-3"></span>
-        <span className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
+      <div className="flex items-center justify-center w-full py-2.5 px-3 bg-white border border-stone-200/80 rounded-xl shadow-2xs">
+        <span className="w-2 h-2 rounded-full bg-stone-700 mr-2.5" />
+        <span className="text-[11px] font-bold text-stone-800 tracking-wider uppercase">
           Packed
         </span>
       </div>
     );
   }
 
-  // 1c. Booking Failed State (red warning)
+  // 1c. Booking Failed State (Refined Warning)
   if (status === "booking_failed") {
     return (
-      <div className="flex items-center justify-center w-full py-3 bg-rose-50 border border-rose-200 rounded-full shadow-sm">
-        <XCircle className="w-4 h-4 mr-2 text-rose-500" strokeWidth={2.5} />
-        <span className="text-sm font-semibold text-rose-700 tracking-wide uppercase">
-          Booking Failed
+      <div className="flex items-center justify-center w-full py-2.5 px-3 bg-rose-50/60 border border-rose-200/80 rounded-xl shadow-2xs">
+        <AlertCircle className="w-3.5 h-3.5 mr-2 text-rose-600 stroke-[2.2]" />
+        <span className="text-[11px] font-bold text-rose-700 tracking-wider uppercase">
+          Pickup Failed
         </span>
       </div>
     );
   }
 
-  // 2. Delivered State (Solid Green + Icon)
+  // 2. Delivered State (Emerald Badge)
   if (status === "delivered") {
     return (
-      <div className="flex items-center justify-center w-full py-3 bg-white border border-gray-200 rounded-full shadow-sm">
-        <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-500" strokeWidth={2.5} />
-        <span className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
+      <div className="flex items-center justify-center w-full py-2.5 px-3 bg-emerald-50/40 border border-emerald-200/80 rounded-xl shadow-2xs">
+        <CheckCircle2 className="w-3.5 h-3.5 mr-2 text-emerald-600 stroke-[2.2]" />
+        <span className="text-[11px] font-bold text-emerald-800 tracking-wider uppercase">
           Delivered
         </span>
       </div>
     );
   }
 
-  // 3. Cancelled State (Solid Red + Icon)
+  // 3. Cancelled State (Rose Badge)
   if (status === "cancelled") {
     return (
-      <div className="flex items-center justify-center w-full py-3 bg-white border border-gray-200 rounded-full shadow-sm">
-        <XCircle className="w-4 h-4 mr-2 text-red-500" strokeWidth={2.5} />
-        <span className="text-sm font-semibold text-slate-700 tracking-wide uppercase">
+      <div className="flex items-center justify-center w-full py-2.5 px-3 bg-stone-50 border border-stone-200 rounded-xl shadow-2xs">
+        <XCircle className="w-3.5 h-3.5 mr-2 text-rose-500 stroke-[2.2]" />
+        <span className="text-[11px] font-bold text-stone-600 tracking-wider uppercase">
           Cancelled
         </span>
       </div>
@@ -163,8 +171,8 @@ const OrderStatusBadge = ({ status }: { status: string }) => {
 
   // Fallback for any other locked states
   return (
-    <div className="flex items-center justify-center w-full py-3 bg-gray-50 border border-gray-200 rounded-full">
-      <span className="text-sm font-semibold text-gray-500 tracking-wide uppercase">
+    <div className="flex items-center justify-center w-full py-2.5 px-3 bg-stone-50 border border-stone-200/70 rounded-xl">
+      <span className="text-[11px] font-bold text-stone-600 tracking-wider uppercase">
         {status.replace(/_/g, " ")}
       </span>
     </div>
@@ -325,12 +333,12 @@ export default function BoutiqueOrders() {
                               </div>
                             </div>
 
-                            {/* 4. Action Stack (~46px Warm Gold Accept Order CTA + subtle warm Decline button) */}
-                            <div className="pt-2.5 border-t border-[#f1f5f9]/60 flex flex-col items-center gap-1">
+                            {/* 4. Action Stack (Luxury Warm Gold Accept Order CTA + subtle Decline button) */}
+                            <div className="pt-2.5 border-t border-[#f1f5f9]/60 flex flex-col items-center gap-1.5">
                               {isAcceptedOptimistically ? (
-                                <div className="w-full py-2.5 bg-slate-50 border border-[#f1f5f9] text-[#334155] rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
-                                  <Check className="w-4 h-4 text-[#D9A71E] stroke-[2.5]" />
-                                  <span className="font-bold text-[13px]">Order Accepted — Assigning Rider...</span>
+                                <div className="w-full py-2.5 bg-stone-50 border border-stone-200/80 text-stone-800 rounded-xl flex items-center justify-center gap-2 select-none animate-in fade-in duration-200">
+                                  <Check className="w-4 h-4 text-amber-600 stroke-[2.5]" />
+                                  <span className="font-bold text-[13px]">Order Accepted — Ready to Pack</span>
                                 </div>
                               ) : (
                                 <>
@@ -343,15 +351,16 @@ export default function BoutiqueOrders() {
                                           orderId: order._id,
                                           status: "confirmed",
                                         });
+                                        toast.success("Order Accepted", "Order confirmed and ready for packing.");
                                       } catch (err: any) {
                                         setAcceptedOrderIds(prev => ({ ...prev, [order._id]: false }));
-                                        alert("Failed to accept order: " + err.message);
+                                        toast.error("Couldn't Accept Order", err.message || "Failed to confirm order.");
                                       } finally {
                                         setPendingActionId(null);
                                       }
                                     }}
                                     disabled={pendingActionId === order._id}
-                                    className="w-full py-2.5 bg-[#F5C22B] hover:bg-[#E0B024] active:bg-[#D9A71E] text-slate-900 font-extrabold rounded-xl text-[14px] font-extrabold tracking-wide disabled:opacity-50 transition-all shadow-[0_4px_14px_-3px_rgba(200,150,83,0.35)] cursor-pointer text-center"
+                                    className="w-full py-2.5 bg-[#F5C22B] hover:bg-[#E0B024] active:bg-[#D9A71E] text-stone-950 font-extrabold rounded-xl text-[13px] tracking-wide disabled:opacity-50 transition-all shadow-sm cursor-pointer text-center active:scale-[0.98]"
                                   >
                                     Accept Order
                                   </button>
@@ -361,7 +370,7 @@ export default function BoutiqueOrders() {
                                       setDeclineStep("confirm");
                                     }}
                                     disabled={pendingActionId === order._id}
-                                    className="w-full py-1.5 bg-transparent hover:bg-slate-50 active:bg-slate-100 text-[#64748b] hover:text-rose-600 rounded-lg text-[13px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
+                                    className="w-full py-1.5 bg-transparent hover:bg-stone-50 active:bg-stone-100 text-stone-500 hover:text-rose-600 rounded-lg text-[12px] font-semibold tracking-wide disabled:opacity-50 transition-all cursor-pointer text-center"
                                   >
                                     Decline
                                   </button>
@@ -460,70 +469,72 @@ export default function BoutiqueOrders() {
                         <OrderStatusBadge status={order.status} />
 
                         {order.shipment && (order.shipment.providerBookingId || order.shipment.awbNumber) && (
-                          <div className="mt-2.5 p-2.5 bg-slate-50 border border-slate-200/60 rounded-xl text-left flex flex-col gap-1 text-[11px]">
-                            <div className="flex items-center justify-between text-slate-700">
-                              <span className="uppercase text-[9px] text-slate-400 tracking-wider font-extrabold">Provider</span>
-                              <span className="capitalize font-bold text-slate-800">{order.shipment.provider || "Porter"}</span>
+                          <div className="mt-2.5 p-2.5 bg-stone-50/80 border border-stone-200/80 rounded-xl text-left flex flex-col gap-1 text-[11px]">
+                            <div className="flex items-center justify-between text-stone-700">
+                              <span className="uppercase text-[9px] text-stone-400 tracking-wider font-extrabold">Provider</span>
+                              <span className="capitalize font-bold text-stone-900">{order.shipment.provider || "Porter"}</span>
                             </div>
-                            <div className="flex items-center justify-between text-slate-600 font-mono text-[10px]">
-                              <span className="uppercase text-[9px] text-slate-400 font-sans tracking-wider font-extrabold">Booking ID</span>
-                              <span className="font-bold text-slate-900">{order.shipment.providerBookingId || order.shipment.awbNumber}</span>
+                            <div className="flex items-center justify-between text-stone-600 font-mono text-[10px]">
+                              <span className="uppercase text-[9px] text-stone-400 font-sans tracking-wider font-extrabold">Booking ID</span>
+                              <span className="font-bold text-stone-900">{order.shipment.providerBookingId || order.shipment.awbNumber}</span>
                             </div>
                             {order.shipment.trackingUrl && order.shipment.trackingUrl !== "http://test.com" && (
                               <a
                                 href={order.shipment.trackingUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-1 text-center py-1 px-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold transition-all"
+                                className="mt-1.5 flex items-center justify-center gap-1.5 py-1.5 px-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-950 text-white rounded-lg text-[10px] font-bold tracking-wide transition-all shadow-2xs cursor-pointer"
                               >
-                                Track Delivery ↗
+                                <span>Track Delivery</span>
+                                <ExternalLink className="w-3 h-3 text-stone-300" />
                               </a>
                             )}
                           </div>
                         )}
 
                         {order.shipment && (order.shipment.providerBookingId || order.shipment.awbNumber) && (
-                          <div className="mt-2.5 p-3 bg-white border border-slate-200/80 rounded-xl text-left shadow-sm">
-                            <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2 border-b border-slate-100 pb-1">
-                              Rider Information
+                          <div className="mt-2.5 p-3 bg-white border border-stone-200/80 rounded-xl text-left shadow-2xs">
+                            <h4 className="text-[10px] font-extrabold text-stone-400 uppercase tracking-wider mb-2 border-b border-stone-100 pb-1 flex items-center justify-between">
+                              <span>Rider Information</span>
+                              {order.shipment.driverName && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                             </h4>
                             {order.shipment.driverName ? (
                               <div className="flex flex-col gap-2 text-[11px]">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-slate-400">👤</span>
-                                  <span className="font-bold text-slate-800">{order.shipment.driverName}</span>
+                                  <User className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                  <span className="font-bold text-stone-900">{order.shipment.driverName}</span>
                                 </div>
                                 {order.shipment.driverPhone && (
                                   <div className="flex items-center gap-2">
-                                    <span className="text-slate-400">📞</span>
-                                    <span className="font-medium text-slate-700">{order.shipment.driverPhone}</span>
+                                    <Phone className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                    <span className="font-semibold text-stone-700 font-mono">{order.shipment.driverPhone}</span>
                                   </div>
                                 )}
                                 <div className="flex items-center gap-2">
-                                  <span className="text-slate-400">🛵</span>
-                                  <span className="font-mono text-slate-600">{order.shipment.vehiclePlate || "N/A"}</span>
+                                  <Bike className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                  <span className="font-mono text-stone-700 font-medium">{order.shipment.vehiclePlate || "2 Wheeler"}</span>
                                 </div>
                                 {order.shipment.etaMinutes != null && (
                                   <div className="flex items-center gap-2">
-                                    <span className="text-slate-400">⏱</span>
-                                    <span className="font-medium text-slate-700">{order.shipment.etaMinutes} mins away</span>
+                                    <Clock className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                    <span className="font-semibold text-amber-700">{order.shipment.etaMinutes} mins away</span>
                                   </div>
                                 )}
-                                <div className="flex gap-2 mt-1">
+                                <div className="flex gap-2 mt-1.5">
                                   {order.shipment.liveTrackingUrl && (
                                     <a
                                       href={order.shipment.liveTrackingUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex-1 text-center py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-[10px] font-bold transition-all border border-blue-200/50"
+                                      className="flex-1 text-center py-2 px-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-[10px] font-bold tracking-wide transition-all shadow-2xs cursor-pointer"
                                     >
-                                      Track Rider
+                                      Track Live
                                     </a>
                                   )}
                                   {order.shipment.driverPhone && (
                                     <a
                                       href={`tel:${order.shipment.driverPhone}`}
-                                      className="flex-1 text-center py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold transition-all border border-emerald-200/50"
+                                      className="flex-1 text-center py-2 px-2.5 bg-stone-100 hover:bg-stone-200/80 text-stone-800 rounded-lg text-[10px] font-bold tracking-wide transition-all border border-stone-200 cursor-pointer"
                                     >
                                       Call Rider
                                     </a>
@@ -531,8 +542,9 @@ export default function BoutiqueOrders() {
                                 </div>
                               </div>
                             ) : (
-                              <div className="text-[11px] font-medium text-slate-500 italic py-1">
-                                Waiting for Porter to assign a rider.
+                              <div className="inline-flex items-center gap-2 text-[11px] font-medium text-stone-500 py-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                <span>Assigning delivery partner...</span>
                               </div>
                             )}
                           </div>
@@ -547,16 +559,27 @@ export default function BoutiqueOrders() {
                                   orderId: order._id as Id<"orders">,
                                   status: "packed",
                                 });
+                                toast.success("Order Marked as Packed", "Ready to dispatch courier pickup.");
                               } catch (err: any) {
-                                alert("Failed to update status to packed: " + err.message);
+                                toast.error("Status Update Failed", err.message || "Failed to update status to packed.");
                               } finally {
                                 setPendingActionId(null);
                               }
                             }}
                             disabled={pendingActionId === order._id}
-                            className="mt-2 block w-full px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 text-[11px] font-extrabold uppercase tracking-wider rounded-xl border border-blue-200/40 transition-all duration-150 text-center select-none cursor-pointer disabled:opacity-50"
+                            className="mt-2.5 flex items-center justify-center gap-2 w-full px-3.5 py-2.5 bg-stone-900 hover:bg-stone-800 active:bg-stone-950 text-white text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all duration-200 shadow-sm active:scale-[0.98] select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {pendingActionId === order._id ? "Packing..." : "📦 Mark as Packed"}
+                            {pendingActionId === order._id ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-300" />
+                                <span>Packing...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Package className="w-3.5 h-3.5 text-stone-300" />
+                                <span>Mark as Packed</span>
+                              </>
+                            )}
                           </button>
                         )}
 
@@ -566,6 +589,7 @@ export default function BoutiqueOrders() {
                               setDispatchingOrderId(order._id);
                               try {
                                 await readyForPickup({ orderId: order._id as Id<"orders"> });
+                                toast.success("Pickup Requested", "Porter delivery partner has been notified.");
                               } catch (err: any) {
                                 const msg = (err.message || "").toLowerCase();
                                 let friendlyMessage = "Delivery partner network is currently busy. Please try again in a moment.";
@@ -574,23 +598,34 @@ export default function BoutiqueOrders() {
                                 } else if (msg.includes("unauthorized") || msg.includes("token")) {
                                   friendlyMessage = "Session expired. Please refresh the page and try again.";
                                 }
-                                alert(friendlyMessage);
+                                toast.error("Pickup Request Issue", friendlyMessage);
                               } finally {
                                 setDispatchingOrderId(null);
                               }
                             }}
                             disabled={dispatchingOrderId === order._id}
-                            className={`mt-2 block w-full px-3 py-2 text-[11px] font-extrabold uppercase tracking-wider rounded-xl border transition-all duration-150 text-center select-none cursor-pointer disabled:opacity-50 ${
+                            className={`mt-2.5 flex items-center justify-center gap-2 w-full px-3.5 py-2.5 text-[11px] font-extrabold uppercase tracking-wider rounded-xl transition-all duration-200 shadow-sm active:scale-[0.98] select-none cursor-pointer disabled:opacity-50 ${
                               order.status === "booking_failed"
-                                ? "bg-rose-50 text-rose-700 border-rose-200/40 hover:bg-rose-100/40"
-                                : "bg-emerald-50 text-emerald-700 border-emerald-200/40 hover:bg-emerald-100/40"
+                                ? "bg-rose-50 hover:bg-rose-100/70 active:bg-rose-100 text-rose-700 border border-rose-200 shadow-2xs"
+                                : "bg-[#F5C22B] hover:bg-[#E0B024] active:bg-[#D9A71E] text-stone-950"
                             }`}
                           >
-                            {dispatchingOrderId === order._id
-                              ? "Dispatching..."
-                              : order.status === "booking_failed"
-                                ? "↻ Retry Pickup"
-                                : "🚚 Request Pickup"}
+                            {dispatchingOrderId === order._id ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                <span>Dispatching...</span>
+                              </>
+                            ) : order.status === "booking_failed" ? (
+                              <>
+                                <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                                <span>Retry Pickup</span>
+                              </>
+                            ) : (
+                              <>
+                                <Truck className="w-3.5 h-3.5 text-stone-900" />
+                                <span>Request Pickup</span>
+                              </>
+                            )}
                           </button>
                         )}
                       </td>
@@ -655,24 +690,44 @@ export default function BoutiqueOrders() {
                                 </span>
                                 <div className="flex gap-2 mt-2">
                                   <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                       setPendingActionId(reservation._id);
-                                      acceptReservation({ reservationId: reservation._id }).finally(() => setPendingActionId(null));
+                                      try {
+                                        await acceptReservation({ reservationId: reservation._id });
+                                        toast.success("Reservation Confirmed", "Customer has been notified to proceed with checkout.");
+                                      } catch (err: any) {
+                                        toast.error("Confirmation Failed", err.message || "Failed to confirm reservation.");
+                                      } finally {
+                                        setPendingActionId(null);
+                                      }
                                     }}
                                     disabled={pendingActionId === reservation._id}
-                                    className="px-4 py-1.5 bg-hive-dark hover:bg-stone-800 text-hive-gold text-[11px] font-bold tracking-wide rounded-xl shadow-sm disabled:opacity-50 transition-all cursor-pointer"
+                                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 active:bg-stone-950 text-amber-400 text-[11px] font-bold tracking-wide rounded-xl shadow-2xs disabled:opacity-50 transition-all cursor-pointer active:scale-[0.98]"
                                   >
-                                    Confirm
+                                    {pendingActionId === reservation._id ? (
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                                    ) : (
+                                      <Check className="w-3.5 h-3.5 text-amber-400 stroke-[2.5]" />
+                                    )}
+                                    <span>Confirm</span>
                                   </button>
                                   <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                       setPendingActionId(reservation._id);
-                                      declineReservation({ reservationId: reservation._id }).finally(() => setPendingActionId(null));
+                                      try {
+                                        await declineReservation({ reservationId: reservation._id });
+                                        toast.success("Reservation Declined", "Customer has been notified.");
+                                      } catch (err: any) {
+                                        toast.error("Decline Failed", err.message || "Failed to decline reservation.");
+                                      } finally {
+                                        setPendingActionId(null);
+                                      }
                                     }}
                                     disabled={pendingActionId === reservation._id}
-                                    className="px-4 py-1.5 bg-transparent border border-stone-200 text-stone-500 hover:border-rose-200 hover:text-rose-600 hover:bg-rose-50 text-[11px] font-bold tracking-wide rounded-xl disabled:opacity-50 transition-all cursor-pointer"
+                                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-stone-50 hover:bg-rose-50 border border-stone-200 hover:border-rose-200 text-stone-600 hover:text-rose-600 text-[11px] font-bold tracking-wide rounded-xl disabled:opacity-50 transition-all cursor-pointer active:scale-[0.98]"
                                   >
-                                    Decline
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>Decline</span>
                                   </button>
                                 </div>
                               </div>
@@ -793,12 +848,12 @@ export default function BoutiqueOrders() {
                         }`}
                       >
                         <span className="text-[13px]">{option}</span>
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${
                           isSelected
                             ? "bg-[#F5C22B] text-slate-900 font-bold"
-                            : "border border-[#f1f5f9] text-transparent"
+                            : "border border-stone-200 text-transparent"
                         }`}>
-                          ✓
+                          {isSelected && <Check className="w-3 h-3 text-stone-950 stroke-[3]" />}
                         </span>
                       </div>
                     );
@@ -824,8 +879,8 @@ export default function BoutiqueOrders() {
                   )}
 
                   {declineReasonType === "Out of stock" && (
-                    <div className="p-3 bg-slate-50 border border-[#f1f5f9] rounded-xl text-[12px] font-medium text-[#64748b] flex items-start gap-2 mt-1">
-                      <span>💡</span>
+                    <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-xl text-[12px] font-medium text-stone-600 flex items-start gap-2 mt-1">
+                      <Info className="w-4 h-4 text-stone-500 shrink-0 mt-0.5" />
                       <span>Consider updating your inventory after declining this order.</span>
                     </div>
                   )}
@@ -841,7 +896,7 @@ export default function BoutiqueOrders() {
                       setDeclineError(false);
                     }}
                     disabled={pendingActionId === orderToDecline}
-                    className="flex-1 py-3 bg-[#F5C22B] hover:bg-[#E0B024] active:bg-[#D9A71E] text-slate-900 font-extrabold rounded-xl text-[14px] font-extrabold tracking-wide transition-all shadow-xs cursor-pointer text-center"
+                    className="flex-1 py-3 bg-[#F5C22B] hover:bg-[#E0B024] active:bg-[#D9A71E] text-stone-950 font-extrabold rounded-xl text-[13px] tracking-wide transition-all shadow-xs cursor-pointer text-center"
                   >
                     Keep Order
                   </button>
@@ -861,8 +916,9 @@ export default function BoutiqueOrders() {
                           status: "cancelled",
                           cancelReason: finalReason,
                         });
+                        toast.success("Order Declined", "Order cancelled and customer has been notified.");
                       } catch (err: any) {
-                        alert("Failed to decline order: " + err.message);
+                        toast.error("Failed to Decline Order", err.message || "Failed to cancel order.");
                       } finally {
                         setPendingActionId(null);
                         setOrderToDecline(null);
@@ -901,6 +957,7 @@ export default function BoutiqueOrders() {
                   setRetryingOrderId(retryDispatchOrderId);
                   try {
                     await retryDispatch({ orderId: retryDispatchOrderId as Id<"orders"> });
+                    toast.success("Logistics Retried", "Requesting delivery partner dispatch.");
                     setRetryDispatchOrderId(null);
                   } catch (err: any) {
                     const msg = (err.message || "").toLowerCase();
@@ -912,20 +969,20 @@ export default function BoutiqueOrders() {
                       friendlyMessage = "System connection issue. Please refresh the page and try again.";
                     }
                     
-                    alert(friendlyMessage);
+                    toast.error("Retry Failed", friendlyMessage);
                   } finally {
                     setRetryingOrderId(null);
                   }
                 }}
                 disabled={retryingOrderId === retryDispatchOrderId}
-                className="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black hover:bg-rose-700 disabled:opacity-50 transition-colors"
+                className="flex-1 px-4 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
               >
                 {retryingOrderId === retryDispatchOrderId ? "Retrying..." : "Confirm Retry"}
               </button>
               <button
                 onClick={() => setRetryDispatchOrderId(null)}
                 disabled={retryingOrderId === retryDispatchOrderId}
-                className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 disabled:opacity-50 transition-colors"
+                className="flex-1 px-4 py-2.5 bg-stone-100 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-200 disabled:opacity-50 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
