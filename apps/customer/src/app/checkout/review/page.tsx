@@ -627,10 +627,12 @@ export default function OrderReviewPage() {
   return (
     <div className="min-h-screen bg-hive-cream/30 py-6 sm:py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
       {isPlacingOrder && (
-        <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-md flex flex-col items-center justify-center gap-4 text-white">
-          <BeeLoader />
-          <p className="font-serif text-lg font-bold tracking-wide text-hive-cream">Processing your payment...</p>
-          <p className="text-xs text-hive-cream/60">Please do not refresh the page or click back.</p>
+        <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-md flex flex-col items-center justify-center p-4">
+          <div className="bg-slate-900/90 border border-amber-500/30 rounded-3xl p-8 shadow-2xl flex flex-col items-center justify-center gap-4 text-center max-w-sm w-full animate-in fade-in zoom-in-95 duration-200">
+            <BeeLoader size="lg" className="p-0" />
+            <p className="font-sans text-base font-bold tracking-wide text-amber-300">Processing your payment...</p>
+            <p className="text-xs text-slate-400 leading-relaxed">Please do not refresh the page or navigate away.</p>
+          </div>
         </div>
       )}
       <div className="max-w-6xl mx-auto flex flex-col gap-5 sm:gap-6 pb-24 sm:pb-0">
