@@ -29,8 +29,8 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
   const uniqueBoutiques = Array.from(new Set(items.map((item) => item.boutiqueName).filter(Boolean)));
   const deliveryText =
     uniqueBoutiques.length === 1
-      ? `Delivered today from ${uniqueBoutiques[0]}`
-      : "Same-day delivery available in Kochi";
+      ? `90-Minute Delivery from ${uniqueBoutiques[0]}`
+      : "90-Minute Direct Courier Delivery in Kochi";
 
   const firstItem = items[0];
   const continueShoppingUrl = firstItem?.boutiqueId

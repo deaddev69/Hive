@@ -84,32 +84,20 @@ export function HomeClient() {
   const urgencyBannerDetails = useMemo(() => {
     const now = new Date();
     const currentHour = now.getHours();
-    const currentMinutes = now.getMinutes();
-    const userLocation = locality || city || "your area";
+    const userLocation = locality || city || "Kochi";
 
-    // Same-day cutoff: 6:00 PM (18:00)
-    if (currentHour >= 8 && currentHour < 18) {
-      const remainingMinutes = (18 * 60) - (currentHour * 60 + currentMinutes);
-      const remainingHours = Math.floor(remainingMinutes / 60);
-      const remainingMinsPart = remainingMinutes % 60;
-      
-      let timeStr = "";
-      if (remainingHours > 0) {
-        timeStr += `${remainingHours} hr${remainingHours > 1 ? "s" : ""}`;
-      }
-      if (remainingMinsPart > 0) {
-        if (timeStr) timeStr += " ";
-        timeStr += `${remainingMinsPart} min${remainingMinsPart > 1 ? "s" : ""}`;
-      }
-      
+    // Boutique active delivery hours (9:00 AM to 8:00 PM)
+    if (currentHour >= 9 && currentHour < 20) {
       return {
-        text: `Order within the next ${timeStr || "2 hrs"} for same-day delivery in ${userLocation}`,
-        isToday: true
+        tag: "90-MINUTE DELIVERY",
+        text: `Designer looks hand-delivered from top boutiques to ${userLocation} in under 90 minutes`,
+        isToday: true,
       };
     } else {
       return {
-        text: `Order now for next-day delivery in ${userLocation}`,
-        isToday: false
+        tag: "NEXT-DAY DISPATCH",
+        text: `Order now for priority morning delivery to ${userLocation}`,
+        isToday: false,
       };
     }
   }, [locality, city]);
@@ -244,20 +232,27 @@ export function HomeClient() {
         {/* Visually hidden H1 for SEO compliance */}
       <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
 
-      {/* ⚡ Full-Width Yellow Ticker Banner (Marquee) */}
-      <div className="w-full overflow-hidden bg-[#F5C22B] py-1.5 border-b border-[#E0B120] whitespace-nowrap select-none shadow-sm relative leading-none min-h-[32px] sm:min-h-[36px] flex items-center">
-        <div className="inline-block animate-marquee text-[10px] sm:text-xs font-medium text-slate-800">
-          <span className="mx-4 font-bold text-slate-900">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="pr-8">{urgencyBannerDetails.text}</span>
+      {/* Luxury Editorial Ticker Banner (Marquee) */}
+      <div className="w-full overflow-hidden bg-[#F5C22B] py-2 border-b border-[#E0B120]/80 whitespace-nowrap select-none shadow-2xs relative leading-none min-h-[34px] sm:min-h-[38px] flex items-center">
+        <div className="inline-block animate-marquee text-[10.5px] sm:text-xs font-semibold text-stone-900 tracking-wide">
+          <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950">{urgencyBannerDetails.tag}</span>
+          <span className="text-stone-700 mx-1.5">◆</span>
+          <span className="pr-8 font-medium text-stone-900">{urgencyBannerDetails.text}</span>
+          <span className="text-stone-700 mx-1.5">◆</span>
           
-          <span className="mx-4 font-bold text-slate-900" aria-hidden="true">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="pr-8" aria-hidden="true">{urgencyBannerDetails.text}</span>
+          <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950" aria-hidden="true">{urgencyBannerDetails.tag}</span>
+          <span className="text-stone-700 mx-1.5" aria-hidden="true">◆</span>
+          <span className="pr-8 font-medium text-stone-900" aria-hidden="true">{urgencyBannerDetails.text}</span>
+          <span className="text-stone-700 mx-1.5" aria-hidden="true">◆</span>
 
-          <span className="mx-4 font-bold text-slate-900" aria-hidden="true">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="pr-8" aria-hidden="true">{urgencyBannerDetails.text}</span>
+          <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950" aria-hidden="true">{urgencyBannerDetails.tag}</span>
+          <span className="text-stone-700 mx-1.5" aria-hidden="true">◆</span>
+          <span className="pr-8 font-medium text-stone-900" aria-hidden="true">{urgencyBannerDetails.text}</span>
+          <span className="text-stone-700 mx-1.5" aria-hidden="true">◆</span>
 
-          <span className="mx-4 font-bold text-slate-900" aria-hidden="true">⚡ {urgencyBannerDetails.isToday ? "GET IT TODAY |" : "GET IT TOMORROW |"}</span>
-          <span className="pr-8" aria-hidden="true">{urgencyBannerDetails.text}</span>
+          <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950" aria-hidden="true">{urgencyBannerDetails.tag}</span>
+          <span className="text-stone-700 mx-1.5" aria-hidden="true">◆</span>
+          <span className="pr-8 font-medium text-stone-900" aria-hidden="true">{urgencyBannerDetails.text}</span>
         </div>
       </div>
 

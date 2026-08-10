@@ -91,7 +91,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
     const isSameDay = product.sameDayDelivery || product.sameDayDelivery === undefined;
     if (isSameDay) {
       const currentHour = new Date().getHours();
-      return (currentHour >= 8 && currentHour < 20) ? "Delivers Today" : "Delivers Tomorrow";
+      return (currentHour >= 9 && currentHour < 20) ? "90-Min Delivery" : "Delivers Tomorrow";
     }
     return "Express Delivery";
   }, [product, isInvalid]);
