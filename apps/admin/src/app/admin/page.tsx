@@ -16,8 +16,8 @@ export default function AdminDashboardPage() {
   const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState(false);
   const boutiques = useQuery(api.boutiques.getBoutiques, { excludeTestData: true });
   const categories = useQuery(api.categories.getCategories, {});
-  const banners = useQuery(api.banners.getBanners);
-  const orderMetrics = useQuery(api.adminOrders.getAdminDashboardMetrics);
+  const banners = useQuery(api.banners.getBanners, {});
+  const orderMetrics = useQuery(api.adminOrders.getAdminDashboardMetrics, {});
 
   // Track how long we've been waiting — if Convex auth is ready but queries
   // still return undefined, it means the query threw a role error (FORBIDDEN).
@@ -55,6 +55,33 @@ export default function AdminDashboardPage() {
     );
   }
 
+  return (
+    <AdminDashboardContent
+      boutiques={boutiques}
+      categories={categories}
+      banners={banners}
+      orderMetrics={orderMetrics}
+      isBroadcastModalOpen={isBroadcastModalOpen}
+      setIsBroadcastModalOpen={setIsBroadcastModalOpen}
+    />
+  );
+}
+
+function AdminDashboardContent({
+  boutiques,
+  categories,
+  banners,
+  orderMetrics,
+  isBroadcastModalOpen,
+  setIsBroadcastModalOpen,
+}: {
+  boutiques: any[];
+  categories: any[];
+  banners: any[];
+  orderMetrics: any;
+  isBroadcastModalOpen: boolean;
+  setIsBroadcastModalOpen: (val: boolean) => void;
+}) {
   const totalBoutiquesCount = boutiques.length;
   const approvedBoutiquesCount = boutiques.filter((b: any) => b.status === "APPROVED").length;
   const categoriesCount = categories.length;
@@ -288,5 +315,3 @@ export default function AdminDashboardPage() {
 
       </div>
     </div>
-  );
-}
