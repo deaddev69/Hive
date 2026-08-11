@@ -17,6 +17,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { ProductCardData } from "@/lib/mockProducts";
+import { calculateDisplayPricing } from "@/lib/pricing";
 import { Loader2 } from "lucide-react";
 import { LoadingState } from "@hive/ui";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -53,10 +54,7 @@ function getProductOccasion(product: any): string {
 
 // Map DB product → ProductCardData
 function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number>; boutiqueId?: string; boutique?: any } {
-  const hasDiscount = p.discountPrice !== undefined && p.discountPrice < p.price;
-  const rawPrice = hasDiscount ? p.discountPrice! : p.price;
-  const price = rawPrice ? rawPrice / 100 : 0;
-  const compareAtPrice = hasDiscount && p.price ? p.price / 100 : undefined;
+  const { price, compareAtPrice, discountPercent } = calculateDisplayPricing(p);
   return {
     id: p._id,
     slug: p.slug,
@@ -67,6 +65,7 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
     price,
     compareAtPrice,
+    discountPercent,
     rating: 4.8,
     reviewCount: 12,
     occasion: getProductOccasion(p),

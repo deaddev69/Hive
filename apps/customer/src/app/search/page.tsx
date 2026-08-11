@@ -10,6 +10,7 @@ import { ProductGridSkeleton } from "@/components/product/ProductGridSkeleton";
 import { Button } from "@hive/ui";
 import { Search, AlertCircle, ShoppingBag, MapPin, ArrowRight, X } from "lucide-react";
 import { ProductCardData } from "@/lib/mockProducts";
+import { calculateDisplayPricing } from "@/lib/pricing";
 
 // Helper to deduce occasion from product tags/description
 function getProductOccasion(product: any): string {
@@ -43,10 +44,7 @@ function getProductOccasion(product: any): string {
 
 // Helper to map DB product to ProductCardData interface
 function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number>; boutiqueId?: string; boutique?: any } {
-  // DB stores all prices in PAISE — divide by 100 for display in Rupees
-  const hasDiscount = p.discountPrice !== undefined && p.discountPrice !== null && p.discountPrice < p.price;
-  const price = hasDiscount ? p.discountPrice! / 100 : (p.price || 0) / 100;
-  const compareAtPrice = hasDiscount && p.price ? p.price / 100 : undefined;
+  const { price, compareAtPrice, discountPercent } = calculateDisplayPricing(p);
 
   return {
     id: p._id,
@@ -58,6 +56,7 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
     price,
     compareAtPrice,
+    discountPercent,
     rating: 4.8, // Fallback rating
     reviewCount: 12, // Fallback review count
     occasion: getProductOccasion(p),

@@ -596,6 +596,7 @@ export default function CreateProductModal({
   const [silhouette, setSilhouette] = useState<"slim_fit" | "regular_fit" | "relaxed_fit" | "oversized">("regular_fit");
 
   const [price, setPrice] = useState("");
+  const [mrp, setMrp] = useState("");
   const [discountPrice, setDiscountPrice] = useState("");
   const [sameDayEligible, setSameDayEligible] = useState(false);
   const [returnsAccepted, setReturnsAccepted] = useState(true);
@@ -708,6 +709,8 @@ export default function CreateProductModal({
         description,
         categoryId: resolvedCatId as any,
         price: parseFloat(price),
+        mrp: mrp ? parseFloat(mrp) : undefined,
+        compareAtPrice: mrp ? parseFloat(mrp) : undefined,
         discountPrice: discountPrice ? parseFloat(discountPrice) : undefined,
         images: finalImages,
         sizes: selectedSizes,
@@ -871,6 +874,8 @@ export default function CreateProductModal({
         setSilhouette(productToEdit.silhouette || "regular_fit");
         
         setPrice(productToEdit.basePrice?.toString() || productToEdit.price?.toString() || "");
+        const realMrp = (productToEdit as any).mrp ?? (productToEdit as any).compareAtPrice;
+        setMrp(realMrp ? realMrp.toString() : "");
         setDiscountPrice(productToEdit.baseDiscountPrice?.toString() || productToEdit.discountPrice?.toString() || "");
 
         setSameDayEligible(productToEdit.sameDayEligible || false);
@@ -1069,6 +1074,30 @@ export default function CreateProductModal({
                   </div>
                 );
               })()}
+            </div>
+
+            {/* Physical Tag MRP (Optional - for authentic discount badges) */}
+            <div className="bg-amber-50/40 border border-amber-200/60 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-800">Physical Tag MRP (₹)</span>
+                  <span className="text-[9px] bg-amber-200/60 text-amber-900 font-extrabold px-1.5 py-0.5 rounded uppercase">Optional</span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  Want to show a discount badge? Enter the authentic MRP printed on the physical garment tag.
+                </p>
+              </div>
+              <div className="w-full sm:w-48">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="e.g. 2499"
+                  value={mrp}
+                  onChange={(e) => setMrp(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-white border border-amber-200 rounded-lg text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-2xs font-semibold"
+                />
+              </div>
             </div>
 
             <hr className="border-slate-100 my-4" />

@@ -15,6 +15,7 @@ import { useSessionStore } from "@/context/SessionContext";
 import { checkServiceability } from "../../../../../convex/lib/serviceability";
 import { inrToPaise, toast } from "@hive/utils";
 import { mapDbProduct } from "@/lib/mapDbProduct";
+import { calculateDisplayPricing } from "@/lib/pricing";
 import { getBoutiqueStatus } from "../../../../../convex/shared/boutiqueStatus";
 import {
   ShieldCheck,
@@ -506,21 +507,26 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               </h2>
             </div>
 
-            <div className="flex flex-wrap items-baseline gap-2 mb-6">
-              <span className="text-xl font-bold text-stone-900">
-                ₹{displayProduct.price.toLocaleString("en-IN")}
-              </span>
-              {displayProduct.compareAtPrice && displayProduct.compareAtPrice > displayProduct.price && (
-                <>
-                  <span className="text-sm text-stone-400 line-through">
-                    ₹{displayProduct.compareAtPrice.toLocaleString("en-IN")}
+            {(() => {
+              const pricing = calculateDisplayPricing(displayProduct);
+              return (
+                <div className="flex flex-wrap items-baseline gap-2.5 mb-6 leading-none select-none">
+                  <span className="text-xl md:text-2xl font-black text-stone-900 tracking-tight">
+                    {pricing.formattedPrice}
                   </span>
-                  <span className="text-[10px] font-extrabold text-amber-700 bg-amber-50 px-2 py-1 rounded-full border border-amber-200/50">
-                    {discountPercent}% OFF
-                  </span>
-                </>
-              )}
-            </div>
+                  {pricing.compareAtPrice > pricing.price && (
+                    <>
+                      <span className="text-xs sm:text-sm text-stone-400 line-through font-normal">
+                        MRP {pricing.formattedMrp}
+                      </span>
+                      <span className="text-xs sm:text-sm font-extrabold text-[#E8890C] tracking-wide">
+                        ({pricing.discountPercent}% OFF)
+                      </span>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="hidden md:block mb-6">
               <div className="flex items-center justify-between mb-3">

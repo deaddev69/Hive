@@ -9,6 +9,7 @@ import { useLocation } from "@/context/LocationContext";
 import Image from "next/image";
 import { cleanProductTitle } from "../product/ProductCard";
 import { QuickViewModal } from "../product/QuickViewModal";
+import { calculateDisplayPricing } from "@/lib/pricing";
 
 interface EmptyCartStateProps {
   onClose: () => void;
@@ -46,10 +47,7 @@ function getProductOccasion(product: any): string {
 
 // Helper to map DB product to ProductCardProps shape
 function mapDbProduct(p: any): any {
-  // DB stores all prices in PAISE — divide by 100 for display in Rupees
-  const hasDiscount = p.discountPrice !== undefined && p.discountPrice !== null && p.discountPrice < p.price;
-  const price = hasDiscount ? p.discountPrice! / 100 : (p.price || 0) / 100;
-  const compareAtPrice = hasDiscount && p.price ? p.price / 100 : undefined;
+  const { price, compareAtPrice, discountPercent } = calculateDisplayPricing(p);
 
   return {
     id: p._id,
@@ -61,6 +59,7 @@ function mapDbProduct(p: any): any {
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
     price,
     compareAtPrice,
+    discountPercent,
     rating: 4.8,
     reviewCount: 12,
     occasion: getProductOccasion(p),

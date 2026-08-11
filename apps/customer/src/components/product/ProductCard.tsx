@@ -14,6 +14,7 @@ import { useSessionStore } from "@/context/SessionContext";
 import { useRouter } from "next/navigation";
 import { navigateToSignIn } from "@/lib/auth-redirect";
 
+import { calculateDisplayPricing } from "@/lib/pricing";
 import { getBoutiqueStatus } from "../../../../../convex/shared/boutiqueStatus";
 
 export interface ProductCardProps {
@@ -134,11 +135,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
     }
   };
 
-  const discountPercent = product.compareAtPrice
-    ? Math.round(
-        ((product.compareAtPrice - product.price) / product.compareAtPrice) * 100
-      )
-    : 0;
+  const pricing = calculateDisplayPricing(product);
+  const displayPrice = pricing.price;
+  const compareAtPrice = pricing.compareAtPrice;
+  const discountPercent = pricing.discountPercent;
 
   // Derive collection/category label (standardized merchandising)
   const collectionLabel = useMemoLabel(product.occasion);
@@ -253,15 +253,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
             </Link>
           ) : null
         ) : (
-          <div className={cn("text-base font-extrabold leading-tight flex items-center flex-wrap gap-1.5 mt-0.5", darkTheme ? "text-amber-300" : "text-slate-900")}>
-            <span>₹{product.price.toLocaleString("en-IN")}</span>
-            {product.compareAtPrice && product.compareAtPrice > product.price && (
+          <div className={cn("text-sm sm:text-base font-extrabold leading-tight flex items-baseline flex-wrap gap-1.5 mt-0.5", darkTheme ? "text-amber-300" : "text-slate-900")}>
+            <span>₹{displayPrice.toLocaleString("en-IN")}</span>
+            {compareAtPrice > displayPrice && (
               <>
-                <span className={cn("text-xs line-through font-normal", darkTheme ? "text-white/50" : "text-slate-400")} style={{ textDecoration: "line-through" }}>
-                  ₹{product.compareAtPrice.toLocaleString("en-IN")}
+                <span className={cn("text-[11px] sm:text-xs line-through font-normal", darkTheme ? "text-white/50" : "text-slate-400")}>
+                  ₹{compareAtPrice.toLocaleString("en-IN")}
                 </span>
-                <span className={cn("text-xs font-bold", darkTheme ? "text-amber-400" : "text-green-600")}>
-                  {Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}% OFF
+                <span className={cn("text-[10px] sm:text-[11px] font-bold tracking-tight", darkTheme ? "text-amber-400" : "text-[#E8890C]")}>
+                  ({discountPercent}% OFF)
                 </span>
               </>
             )}

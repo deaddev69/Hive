@@ -235,6 +235,7 @@ const productFormSchema = z.object({
   price: z.string().refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
     message: "Base price must be greater than ₹0",
   }),
+  mrp: z.string().optional(),
   discountPrice: z.string().optional(),
   categoryId: z.string().min(1, "Category tag is required"),
   description: z.string().min(1, "Product description is required"),
@@ -396,6 +397,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     defaultValues: {
       name: "",
       price: "",
+      mrp: "",
       discountPrice: "",
       categoryId: "",
       description: "",
@@ -422,6 +424,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
   const categoryIdWatch = watch("categoryId");
   const priceWatch = watch("price");
+  const mrpWatch = watch("mrp");
   const nameWatch = watch("name");
   const descriptionWatch = watch("description");
   const materialTypeWatch = watch("materialType");
@@ -451,6 +454,8 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       setValue("name", productToEdit.name || "");
       const bp = productToEdit.basePrice ?? productToEdit.price;
       setValue("price", bp ? (bp / 100).toString() : "");
+      const realMrp = (productToEdit as any).mrp ?? (productToEdit as any).compareAtPrice;
+      setValue("mrp", realMrp ? (realMrp / 100).toString() : "");
       const dp = productToEdit.baseDiscountPrice ?? productToEdit.discountPrice;
       setValue("discountPrice", dp ? (dp / 100).toString() : "");
       
@@ -863,6 +868,8 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         description: data.description,
         categoryId: resolvedCatId as any,
         price: Math.round(parseFloat(data.price) * 100),
+        mrp: data.mrp ? Math.round(parseFloat(data.mrp) * 100) : undefined,
+        compareAtPrice: data.mrp ? Math.round(parseFloat(data.mrp) * 100) : undefined,
         discountPrice: data.discountPrice ? Math.round(parseFloat(data.discountPrice) * 100) : undefined,
         images: finalImages,
         sizes: selectedSizes,
@@ -1395,6 +1402,29 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] shadow-xs"
                   />
                   {errors.color && <span className="text-red-500 text-xs font-bold">{errors.color.message}</span>}
+                </div>
+              </div>
+
+              {/* Physical Tag MRP (Optional - for authentic discount badges) */}
+              <div className="bg-amber-50/40 border border-amber-200/60 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-800">Physical Tag MRP (₹)</span>
+                    <span className="text-[9px] bg-amber-200/60 text-amber-900 font-extrabold px-1.5 py-0.5 rounded uppercase">Optional</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Want to show a discount badge? Enter the authentic MRP printed on the physical garment tag.
+                  </p>
+                </div>
+                <div className="w-full sm:w-48">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 2499"
+                    {...register("mrp")}
+                    className="w-full px-3.5 py-2.5 bg-white border border-amber-200 rounded-lg text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#E9B929] focus:border-[#E9B929] shadow-2xs font-semibold"
+                  />
                 </div>
               </div>
 

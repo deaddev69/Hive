@@ -3,6 +3,7 @@ import { ProductCard } from "./ProductCard";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { ProductCardData } from "@/lib/mockProducts";
+import { calculateDisplayPricing } from "@/lib/pricing";
 import { useLocation } from "@/context/LocationContext";
 import { QuickViewModal } from "./QuickViewModal";
 import { useState } from "react";
@@ -39,10 +40,7 @@ function getProductOccasion(product: any): string {
 
 // Helper to map DB product to ProductCardData interface
 function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number>; boutiqueId?: string; boutique?: any } {
-  const hasDiscount = p.discountPrice !== undefined && p.discountPrice < p.price;
-  const rawPrice = hasDiscount ? p.discountPrice! : p.price;
-  const price = rawPrice ? rawPrice / 100 : 0;
-  const compareAtPrice = hasDiscount && p.price ? p.price / 100 : undefined;
+  const { price, compareAtPrice, discountPercent } = calculateDisplayPricing(p);
 
   return {
     id: p._id,
@@ -54,6 +52,7 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
     price,
     compareAtPrice,
+    discountPercent,
     rating: 4.8, // Fallback rating
     reviewCount: 12, // Fallback review count
     occasion: getProductOccasion(p),

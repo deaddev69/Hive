@@ -100,20 +100,25 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
         </h1>
 
         {/* Pricing */}
-        <div className="flex items-baseline gap-2.5 pt-0.5 leading-none">
-          <span className="text-base md:text-lg font-bold text-stone-900">
-            ₹{product.price.toLocaleString("en-IN")}
+        <div className="flex flex-col gap-1 pt-1 select-none">
+          <div className="flex items-baseline gap-2.5 leading-none">
+            <span className="text-xl md:text-2xl font-black text-stone-900 tracking-tight">
+              ₹{product.price.toLocaleString("en-IN")}
+            </span>
+            {product.compareAtPrice && product.compareAtPrice > product.price && (
+              <>
+                <span className="text-xs md:text-sm text-stone-400 line-through font-normal">
+                  MRP ₹{product.compareAtPrice.toLocaleString("en-IN")}
+                </span>
+                <span className="text-xs md:text-sm font-extrabold text-[#E8890C] tracking-wide">
+                  ({discountPercent}% OFF)
+                </span>
+              </>
+            )}
+          </div>
+          <span className="text-[10.5px] text-stone-400 font-medium leading-none">
+            inclusive of all taxes
           </span>
-          {product.compareAtPrice && (
-            <>
-              <span className="text-xs text-stone-400 line-through font-normal">
-                ₹{product.compareAtPrice.toLocaleString("en-IN")}
-              </span>
-              <span className="text-[9px] font-bold text-amber-800 tracking-wider">
-                ({discountPercent}% OFF)
-              </span>
-            </>
-          )}
         </div>
 
         {/* Brand attribution */}

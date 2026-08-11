@@ -451,6 +451,8 @@ export default defineSchema({
     price:            v.number(),
     baseDiscountPrice:v.optional(v.number()),
     discountPrice:    v.optional(v.number()),
+    mrp:              v.optional(v.number()),         // Physical price tag MRP in paise
+    compareAtPrice:   v.optional(v.number()),         // Physical price tag MRP / compare price in paise
     images:           v.array(v.union(v.string(), ImageAsset)),
     sizes:            v.array(v.string()),
     stockBySize:      v.record(v.string(), v.number()),

@@ -7,6 +7,7 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { TrustStrip } from "@/components/trust/TrustStrip";
 import { Sparkles } from "lucide-react";
 import { MoodBoardGrid } from "@/components/home/MoodBoardGrid";
+import { calculateDisplayPricing } from "@/lib/pricing";
 
 // Helper to deduce occasion from product tags/description
 function getProductOccasion(product: any): string {
@@ -40,13 +41,7 @@ function getProductOccasion(product: any): string {
 
 // Helper to map DB product to ProductCardData interface
 export function mapDbProduct(p: any) {
-  // DB stores all prices in PAISE — always divide by 100 for display in Rupees
-  let rawPrice = (p.price || 0) / 100;
-  let rawCompare = p.compareAtPrice ? p.compareAtPrice / 100 : undefined;
-
-  const hasDiscount = p.discountPrice !== undefined && p.discountPrice !== null && p.discountPrice < p.price;
-  let price = hasDiscount ? p.discountPrice! / 100 : rawPrice;
-  const compareAtPrice = hasDiscount ? rawPrice : undefined;
+  const { price, compareAtPrice, discountPercent } = calculateDisplayPricing(p);
 
   return {
     id: p._id,
@@ -58,6 +53,7 @@ export function mapDbProduct(p: any) {
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || p.images?.[0] || "",
     price,
     compareAtPrice,
+    discountPercent,
     rating: p.rating || 4.8,
     reviewCount: p.reviewCount || 12,
     occasion: getProductOccasion(p),

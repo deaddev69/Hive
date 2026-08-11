@@ -1,4 +1,5 @@
 import { ProductCardData } from "@/lib/mockProducts";
+import { calculateDisplayPricing } from "@/lib/pricing";
 
 export function mapDbProduct(p: any): ProductCardData & {
   sizes: string[];
@@ -7,23 +8,7 @@ export function mapDbProduct(p: any): ProductCardData & {
   boutique?: any;
   discountPercent?: number;
 } {
-  let rawPrice = p.price || 0;
-  let rawCompare = p.compareAtPrice;
-  rawPrice = rawPrice ? rawPrice / 100 : 0;
-  if (rawCompare) rawCompare = rawCompare / 100;
-
-  const hasDiscount =
-    p.discountPrice !== undefined &&
-    p.discountPrice !== null &&
-    p.discountPrice < p.price;
-    
-  let discountPrice = hasDiscount ? p.discountPrice! / 100 : undefined;
-  let price = hasDiscount && discountPrice ? discountPrice : rawPrice;
-  const compareAtPrice = hasDiscount ? rawPrice : undefined;
-  
-  const discountPercent = hasDiscount && compareAtPrice
-    ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100) 
-    : 0;
+  const { price, compareAtPrice, discountPercent } = calculateDisplayPricing(p);
 
   return {
     id: p._id,
