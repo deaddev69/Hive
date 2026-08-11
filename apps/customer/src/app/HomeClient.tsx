@@ -300,6 +300,20 @@ export function HomeClient() {
         .group:hover .sheen-glow {
           transform: skewX(-20deg) translateX(150%);
         }
+        @keyframes marqueeSlow {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-50%, 0, 0); }
+        }
+        .animate-marquee-slow {
+          display: flex !important;
+          width: max-content !important;
+          animation: marqueeSlow 26s linear infinite !important;
+          will-change: transform;
+        }
+        .animate-marquee-slow:hover,
+        .animate-marquee-slow:active {
+          animation-play-state: paused !important;
+        }
       `}</style>
       </div>
     </ErrorBoundary>

@@ -90,15 +90,16 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
     const items = container.children;
     if (items[idx]) {
       const child = items[idx] as HTMLElement;
-      container.scrollTo({
-        left: child.offsetLeft - container.offsetLeft,
+      child.scrollIntoView({
         behavior: "smooth",
+        inline: "center",
+        block: "nearest",
       });
       setActiveIdx(idx);
     }
   }, []);
 
-  // Smooth horizontal auto-slide timer (4.5s interval)
+  // Smooth horizontal auto-slide timer (4s interval)
   useEffect(() => {
     if (banners.length <= 1 || isPaused) return;
 
@@ -107,17 +108,19 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
         const next = (prev + 1) % banners.length;
         if (scrollRef.current) {
           const container = scrollRef.current;
-          const child = container.children[next] as HTMLElement;
-          if (child) {
-            container.scrollTo({
-              left: child.offsetLeft - container.offsetLeft,
+          const items = container.children;
+          if (items[next]) {
+            const child = items[next] as HTMLElement;
+            child.scrollIntoView({
               behavior: "smooth",
+              inline: "center",
+              block: "nearest",
             });
           }
         }
         return next;
       });
-    }, 4500);
+    }, 4000);
 
     return () => clearInterval(interval);
   }, [banners.length, isPaused]);

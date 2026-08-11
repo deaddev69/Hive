@@ -213,7 +213,7 @@ export const syncUser = mutation({
         );
 
         if (staffBoutique) {
-          if (targetUserRole !== "boutique" && targetUserRole !== "boutique_owner" && targetUserRole !== "admin") {
+          if (targetUserRole !== "boutique" && targetUserRole !== "boutique_owner") {
             await ctx.db.patch(targetUserId, { role: "boutique", updatedAt: now });
             targetUserRole = "boutique";
 
