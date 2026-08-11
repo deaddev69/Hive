@@ -90,10 +90,9 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
     const items = container.children;
     if (items[idx]) {
       const child = items[idx] as HTMLElement;
-      child.scrollIntoView({
+      container.scrollTo({
+        left: child.offsetLeft,
         behavior: "smooth",
-        inline: "center",
-        block: "nearest",
       });
       setActiveIdx(idx);
     }
@@ -111,10 +110,9 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
           const items = container.children;
           if (items[next]) {
             const child = items[next] as HTMLElement;
-            child.scrollIntoView({
+            container.scrollTo({
+              left: child.offsetLeft,
               behavior: "smooth",
-              inline: "center",
-              block: "nearest",
             });
           }
         }
