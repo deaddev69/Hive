@@ -213,17 +213,35 @@ export const syncUser = mutation({
         );
 
         if (staffBoutique) {
-          await ctx.db.patch(targetUserId, { role: "boutique", updatedAt: now });
-          targetUserRole = "boutique";
+          if (targetUserRole !== "boutique" && targetUserRole !== "boutique_owner" && targetUserRole !== "admin") {
+            await ctx.db.patch(targetUserId, { role: "boutique", updatedAt: now });
+            targetUserRole = "boutique";
 
-          await ctx.db.insert("auditLogs", {
-            actorRole: "system",
-            action: "boutique_staff.linked",
-            entityType: "boutiques",
-            entityId: staffBoutique._id,
-            metadata: JSON.stringify({ userId: targetUserId, email: originalEmail, normalizedEmail: emailNormalized }),
-            createdAt: now,
-          });
+            await ctx.db.insert("auditLogs", {
+              actorRole: "system",
+              action: "boutique_staff.linked",
+              entityType: "boutiques",
+              entityId: staffBoutique._id,
+              metadata: JSON.stringify({ userId: targetUserId, email: originalEmail, normalizedEmail: emailNormalized }),
+              createdAt: now,
+            });
+          }
+        } else if (targetUserRole === "boutique") {
+          // If the user had boutique role solely as staff but is no longer staff on any active boutique and doesn't own one, demote to customer
+          const ownedBoutique = await ctx.db.query("boutiques").withIndex("by_ownerUserId", q => q.eq("ownerUserId", targetUserId!)).first();
+          if (!ownedBoutique) {
+            await ctx.db.patch(targetUserId, { role: "customer", updatedAt: now });
+            targetUserRole = "customer";
+
+            await ctx.db.insert("auditLogs", {
+              actorRole: "system",
+              action: "boutique_staff.revoked",
+              entityType: "boutiques",
+              entityId: "syncUser_cleanup",
+              metadata: JSON.stringify({ userId: targetUserId, email: originalEmail, normalizedEmail: emailNormalized }),
+              createdAt: now,
+            });
+          }
         }
       }
     }
@@ -936,6 +954,30 @@ export const syncUserUpdateFromWebhook = internalMutation({
       metadata: JSON.stringify({ clerkId: args.clerkId, updates }),
       createdAt: now,
     });
+
+    // Auto-detect staff on webhook update: if this email matches a boutique's staffEmail, upgrade role
+    if (emailNormalized && user.role === "customer") {
+      const allBoutiques = await ctx.db.query("boutiques").collect();
+      const staffBoutique = allBoutiques.find(b =>
+        b.status !== "DELETED" && (
+          (b.staffEmail1 && normalizeEmail(b.staffEmail1) === emailNormalized) ||
+          (b.staffEmail2 && normalizeEmail(b.staffEmail2) === emailNormalized)
+        )
+      );
+
+      if (staffBoutique) {
+        await ctx.db.patch(user._id, { role: "boutique", updatedAt: now });
+
+        await ctx.db.insert("auditLogs", {
+          actorRole: "system",
+          action: "boutique_staff.linked",
+          entityType: "boutiques",
+          entityId: staffBoutique._id,
+          metadata: JSON.stringify({ userId: user._id, email: originalEmail, normalizedEmail: emailNormalized }),
+          createdAt: now,
+        });
+      }
+    }
 
     return user._id;
   },

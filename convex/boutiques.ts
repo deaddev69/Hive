@@ -10,6 +10,7 @@ import { api, internal } from "./_generated/api";
 import { encryptData, decryptData } from "./lib/encryption";
 import { ImageAsset } from "./schema";
 import { getPublicUrl } from "./media/api";
+import { normalizeEmail } from "./users";
 
 /**
  * Fetch all boutiques.
@@ -1287,6 +1288,15 @@ export const getMyBoutiqueSafe = query({
       if (!boutique && normalizedUserEmail !== userEmail) {
         boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail2", q => q.eq("staffEmail2", userEmail)).first();
       }
+      if (!boutique) {
+        const allBoutiques = await ctx.db.query("boutiques").collect();
+        boutique = allBoutiques.find((b: any) =>
+          b.status !== "DELETED" && (
+            (b.staffEmail1 && normalizeEmail(b.staffEmail1) === normalizeEmail(userEmail)) ||
+            (b.staffEmail2 && normalizeEmail(b.staffEmail2) === normalizeEmail(userEmail))
+          )
+        ) as any;
+      }
     }
 
     if (!boutique && user.role === "admin") {
@@ -1370,6 +1380,15 @@ export const getMyBoutiqueSafeCustomer = query({
       }
       if (!boutique && normalizedUserEmail !== userEmail) {
         boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail2", q => q.eq("staffEmail2", userEmail)).first();
+      }
+      if (!boutique) {
+        const allBoutiques = await ctx.db.query("boutiques").collect();
+        boutique = allBoutiques.find((b: any) =>
+          b.status !== "DELETED" && (
+            (b.staffEmail1 && normalizeEmail(b.staffEmail1) === normalizeEmail(userEmail)) ||
+            (b.staffEmail2 && normalizeEmail(b.staffEmail2) === normalizeEmail(userEmail))
+          )
+        ) as any;
       }
     }
 
@@ -2722,11 +2741,14 @@ export const updateBoutiqueStaff = mutation({
 
     // Revoke old staff access
     for (const oldEmail of oldEmails) {
-      if (!newEmails.includes(oldEmail)) {
-        const existingUser = await ctx.db
-          .query("users")
-          .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", oldEmail))
-          .first();
+      if (!newEmails.some(ne => normalizeEmail(ne) === normalizeEmail(oldEmail))) {
+        const normOld = normalizeEmail(oldEmail);
+        const existingUser = normOld
+          ? await ctx.db
+              .query("users")
+              .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", normOld))
+              .first()
+          : null;
 
         if (existingUser && existingUser.role === "boutique") {
           await ctx.db.patch(existingUser._id, { role: "customer", updatedAt: now });
@@ -2745,13 +2767,16 @@ export const updateBoutiqueStaff = mutation({
 
     // Grant new staff access
     for (const newEmail of newEmails) {
-      if (newEmail && !oldEmails.includes(newEmail)) {
-        const existingUser = await ctx.db
-          .query("users")
-          .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", newEmail))
-          .first();
+      if (newEmail && !oldEmails.some(oe => normalizeEmail(oe) === normalizeEmail(newEmail))) {
+        const normNew = normalizeEmail(newEmail);
+        const existingUser = normNew
+          ? await ctx.db
+              .query("users")
+              .withIndex("by_normalizedEmail", (q) => q.eq("normalizedEmail", normNew))
+              .first()
+          : null;
 
-        if (existingUser && existingUser.role === "customer") {
+        if (existingUser && existingUser.role !== "admin" && existingUser.role !== "boutique_owner") {
           await ctx.db.patch(existingUser._id, { role: "boutique", updatedAt: now });
 
           await ctx.db.insert("auditLogs", {
