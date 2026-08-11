@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
@@ -19,7 +19,7 @@ export default function AdminDashboardPage() {
   const banners = useQuery(api.banners.getBanners, {});
   const orderMetrics = useQuery(api.adminOrders.getAdminDashboardMetrics, {});
 
-  // Track how long we've been waiting — if Convex auth is ready but queries
+  // Track how long we've been waiting â€” if Convex auth is ready but queries
   // still return undefined, it means the query threw a role error (FORBIDDEN).
   const [waitedLong, setWaitedLong] = useState(false);
   useEffect(() => {
@@ -115,7 +115,7 @@ function AdminDashboardContent({
             onClick={() => setIsBroadcastModalOpen(true)}
             className="mt-4 w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
           >
-            <span>Broadcast Campaign 🚀</span>
+            <span>Broadcast Campaign ðŸš€</span>
           </button>
         </div>
       </div>
@@ -315,3 +315,6 @@ function AdminDashboardContent({
 
       </div>
     </div>
+  );
+}
+
