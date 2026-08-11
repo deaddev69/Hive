@@ -30,6 +30,7 @@ export default function AdminPincodesPage() {
   const addPincode = useMutation(api.serviceablePincodes.addPincode);
   const deletePincode = useMutation(api.serviceablePincodes.deletePincode);
   const blockPincode = useMutation(api.serviceablePincodes.blockPincode);
+  const seedKochi = useMutation(api.serviceablePincodes.seedKochiPincodes);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,6 +47,7 @@ export default function AdminPincodesPage() {
   const [newLng, setNewLng] = useState("76.3082");
   const [newZoneCode, setNewZoneCode] = useState("KOCHI_CORE");
   const [newActive, setNewActive] = useState(true);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   const filteredPincodes = useMemo(() => {
     if (!pincodes) return [];
@@ -150,9 +152,6 @@ export default function AdminPincodesPage() {
       toast.error("Quick Block Failed", err.message || "Failed to block pincode.");
     }
   };
-
-  const seedKochi = useMutation(api.serviceablePincodes.seedKochiPincodes);
-  const [isSeeding, setIsSeeding] = useState(false);
 
   const handleSeedKochi = async () => {
     setIsSeeding(true);
