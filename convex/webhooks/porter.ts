@@ -11,6 +11,18 @@ function constantTimeCompare(a: string, b: string): boolean {
   return result === 0;
 }
 
+function normalizeDriverPhone(mobile: any): string | undefined {
+  if (!mobile) return undefined;
+  if (typeof mobile === "string") return mobile.trim() || undefined;
+  if (typeof mobile === "object") {
+    const num = mobile.number || mobile.mobile_number || mobile.phone_number || mobile.mobile;
+    if (typeof num === "string" && num.trim()) {
+      return num.trim();
+    }
+  }
+  return undefined;
+}
+
 export const handlePorterWebhook = httpAction(async (ctx, request) => {
   const webhookSecret = process.env.PORTER_WEBHOOK_SECRET || process.env.PORTER_API_KEY;
   const isProduction = process.env.NODE_ENV === "production" || process.env.ENABLE_DEBUG_TOOLS !== "true";
@@ -68,10 +80,11 @@ export const handlePorterWebhook = httpAction(async (ctx, request) => {
     return new Response(JSON.stringify({ success: true, message: "Unmapped status ignored" }), { status: 200 });
   }
 
-  let driverDetails: any = payload.order_details?.driver_details ? {
-    name: payload.order_details.driver_details.driver_name,
-    phone: payload.order_details.driver_details.mobile,
-    vehiclePlate: payload.order_details.driver_details.vehicle_number,
+  const rawDriver = payload.order_details?.driver_details || payload.driver_details;
+  let driverDetails: any = rawDriver ? {
+    name: rawDriver.driver_name || rawDriver.name,
+    phone: normalizeDriverPhone(rawDriver.mobile || rawDriver.phone),
+    vehiclePlate: rawDriver.vehicle_number || rawDriver.vehiclePlate,
   } : undefined;
 
   let porterRawOrder: any = undefined;

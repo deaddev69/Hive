@@ -196,6 +196,18 @@ export const getOrder = internalAction({
   },
 });
 
+function normalizeDriverPhone(mobile: any): string | undefined {
+  if (!mobile) return undefined;
+  if (typeof mobile === "string") return mobile.trim() || undefined;
+  if (typeof mobile === "object") {
+    const num = mobile.number || mobile.mobile_number || mobile.phone_number || mobile.mobile;
+    if (typeof num === "string" && num.trim()) {
+      return num.trim();
+    }
+  }
+  return undefined;
+}
+
 export const syncOrderDetails = internalAction({
   args: {
     crn: v.string(),
@@ -204,9 +216,11 @@ export const syncOrderDetails = internalAction({
     const data = await fetchOrderFromPorter(args.crn);
     
     const result: any = {};
-    if (data.driver_details?.driver_name) result.name = data.driver_details.driver_name;
-    if (data.driver_details?.mobile) result.phone = data.driver_details.mobile;
-    if (data.driver_details?.vehicle_number) result.vehiclePlate = data.driver_details.vehicle_number;
+    const driver = data.driver_details || data.order_details?.driver_details;
+    if (driver?.driver_name || driver?.name) result.name = driver.driver_name || driver.name;
+    const phone = normalizeDriverPhone(driver?.mobile || driver?.phone);
+    if (phone) result.phone = phone;
+    if (driver?.vehicle_number || driver?.vehiclePlate) result.vehiclePlate = driver.vehicle_number || driver.vehiclePlate;
     if (data.tracking_url && data.tracking_url !== "http://test.com") result.trackingUrl = data.tracking_url;
     if (data.live_tracking_url) result.liveTrackingUrl = data.live_tracking_url;
     if (data.estimated_pickup_time !== undefined) result.etaMinutes = data.estimated_pickup_time;

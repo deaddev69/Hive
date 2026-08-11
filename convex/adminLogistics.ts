@@ -92,7 +92,7 @@ export function resolveDelayResponsibility(
 // Strict shipment state transition machine
 const VALID_SHIPMENT_TRANSITIONS: Record<string, string[]> = {
   created: ["pickup_scheduled", "booking_requested", "driver_assigned"],
-  booking_requested: ["driver_assigned", "booking_failed", "cancelled"],
+  booking_requested: ["driver_assigned", "pickup_scheduled", "booking_failed", "cancelled"],
   booking_failed: ["booking_requested", "cancelled"],
   driver_assigned: ["driver_arrived", "picked_up", "in_transit", "cancelled", "pickup_scheduled", "created"],
   driver_arrived: ["picked_up", "in_transit", "cancelled", "created"],
