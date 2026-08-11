@@ -233,26 +233,33 @@ export function HomeClient() {
       <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
 
       {/* Luxury Editorial Ticker Banner (Marquee) */}
-      <div className="w-full overflow-hidden bg-[#F5C22B] py-2 border-b border-[#E0B120]/80 whitespace-nowrap select-none shadow-2xs relative leading-none min-h-[34px] sm:min-h-[38px] flex items-center">
-        <div className="inline-block animate-marquee text-[10.5px] sm:text-xs font-semibold text-stone-900 tracking-wide">
-          <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950">{urgencyBannerDetails.tag}</span>
-          <span className="text-stone-700 mx-1.5">◆</span>
-          <span className="pr-8 font-medium text-stone-900">{urgencyBannerDetails.text}</span>
-          <span className="text-stone-700 mx-1.5">◆</span>
-          
-          <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950" aria-hidden="true">{urgencyBannerDetails.tag}</span>
-          <span className="text-stone-700 mx-1.5" aria-hidden="true">◆</span>
-          <span className="pr-8 font-medium text-stone-900" aria-hidden="true">{urgencyBannerDetails.text}</span>
-          <span className="text-stone-700 mx-1.5" aria-hidden="true">◆</span>
+      <div className="w-full overflow-hidden bg-[#F5C22B] py-2 border-b border-[#E0B120]/80 select-none shadow-2xs relative leading-none min-h-[34px] sm:min-h-[38px] flex items-center">
+        <div className="animate-marquee-slow flex items-center text-[10.5px] sm:text-xs font-semibold text-stone-900 tracking-wide">
+          {/* Track 1 */}
+          <div className="flex shrink-0 items-center">
+            <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950">{urgencyBannerDetails.tag}</span>
+            <span className="text-stone-700 mx-1.5">◆</span>
+            <span className="pr-8 font-medium text-stone-900">{urgencyBannerDetails.text}</span>
+            <span className="text-stone-700 mx-1.5">◆</span>
 
-          <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950" aria-hidden="true">{urgencyBannerDetails.tag}</span>
-          <span className="text-stone-700 mx-1.5" aria-hidden="true">◆</span>
-          <span className="pr-8 font-medium text-stone-900" aria-hidden="true">{urgencyBannerDetails.text}</span>
-          <span className="text-stone-700 mx-1.5" aria-hidden="true">◆</span>
+            <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950">{urgencyBannerDetails.tag}</span>
+            <span className="text-stone-700 mx-1.5">◆</span>
+            <span className="pr-8 font-medium text-stone-900">{urgencyBannerDetails.text}</span>
+            <span className="text-stone-700 mx-1.5">◆</span>
+          </div>
 
-          <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950" aria-hidden="true">{urgencyBannerDetails.tag}</span>
-          <span className="text-stone-700 mx-1.5" aria-hidden="true">◆</span>
-          <span className="pr-8 font-medium text-stone-900" aria-hidden="true">{urgencyBannerDetails.text}</span>
+          {/* Track 2 (Duplicate for infinite seamless loop) */}
+          <div className="flex shrink-0 items-center" aria-hidden="true">
+            <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950">{urgencyBannerDetails.tag}</span>
+            <span className="text-stone-700 mx-1.5">◆</span>
+            <span className="pr-8 font-medium text-stone-900">{urgencyBannerDetails.text}</span>
+            <span className="text-stone-700 mx-1.5">◆</span>
+
+            <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950">{urgencyBannerDetails.tag}</span>
+            <span className="text-stone-700 mx-1.5">◆</span>
+            <span className="pr-8 font-medium text-stone-900">{urgencyBannerDetails.text}</span>
+            <span className="text-stone-700 mx-1.5">◆</span>
+          </div>
         </div>
       </div>
 
@@ -260,8 +267,6 @@ export function HomeClient() {
       {experienceBlocks?.map((block) => (
         <ExperienceBlockRenderer key={block._id || block.id} block={block} />
       ))}
-
-
 
       <style>{`
         .banner-card {
@@ -294,16 +299,6 @@ export function HomeClient() {
         }
         .group:hover .sheen-glow {
           transform: skewX(-20deg) translateX(150%);
-        }
-        @keyframes marquee {
-          0% { transform: translate3d(0, 0, 0); }
-          100% { transform: translate3d(-25%, 0, 0); }
-        }
-        .animate-marquee {
-          animation: marquee 16s linear infinite;
-        }
-        .animate-marquee:hover {
-          animation-play-state: paused;
         }
       `}</style>
       </div>

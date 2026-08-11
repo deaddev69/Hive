@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -77,6 +77,185 @@ export function mapDbProduct(p: any) {
   };
 }
 
+// ── HERO & EDITORIAL BANNER CAROUSEL ──────────────────────────────────────────
+function HeroBannerCarousel({ banners }: { banners: any[] }) {
+  const router = useRouter();
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollToIdx = useCallback((idx: number) => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const items = container.children;
+    if (items[idx]) {
+      const child = items[idx] as HTMLElement;
+      container.scrollTo({
+        left: child.offsetLeft - container.offsetLeft,
+        behavior: "smooth",
+      });
+      setActiveIdx(idx);
+    }
+  }, []);
+
+  // Smooth horizontal auto-slide timer (4.5s interval)
+  useEffect(() => {
+    if (banners.length <= 1 || isPaused) return;
+
+    const interval = setInterval(() => {
+      setActiveIdx((prev) => {
+        const next = (prev + 1) % banners.length;
+        if (scrollRef.current) {
+          const container = scrollRef.current;
+          const child = container.children[next] as HTMLElement;
+          if (child) {
+            container.scrollTo({
+              left: child.offsetLeft - container.offsetLeft,
+              behavior: "smooth",
+            });
+          }
+        }
+        return next;
+      });
+    }, 4500);
+
+    return () => clearInterval(interval);
+  }, [banners.length, isPaused]);
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    const scrollLeft = container.scrollLeft;
+    const itemWidth = container.clientWidth;
+    if (itemWidth > 0) {
+      const newIdx = Math.round(scrollLeft / itemWidth);
+      if (newIdx >= 0 && newIdx < banners.length && newIdx !== activeIdx) {
+        setActiveIdx(newIdx);
+      }
+    }
+  };
+
+  if (banners.length === 0) return null;
+
+  if (banners.length === 1) {
+    return (
+      <section className="w-full bg-white pt-1 pb-0.5">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div
+            className="banner-card group relative w-full aspect-[2/1] sm:aspect-none sm:h-[220px] md:h-[250px] lg:h-[270px] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+            onClick={() => {
+              if (banners[0].targetUrl) router.push(banners[0].targetUrl);
+            }}
+          >
+            {/* Desktop Image */}
+            <div className="hidden sm:block absolute inset-0 w-full h-full">
+              <Image
+                src={banners[0].desktopImage || banners[0].mobileImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
+                alt={banners[0].title || "Editorial Banner"}
+                fill
+                sizes="100vw"
+                className="object-cover pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-700 ease-out"
+              />
+            </div>
+            {/* Mobile Image */}
+            <div className="sm:hidden absolute inset-0 w-full h-full">
+              <Image
+                src={banners[0].mobileImage || banners[0].desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
+                alt={banners[0].title || "Editorial Banner"}
+                fill
+                sizes="100vw"
+                className="object-cover pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-700 ease-out"
+              />
+            </div>
+            <div className="sheen-glow" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="w-full bg-white pt-1 pb-1">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        {/* Desktop Grid */}
+        <div className="hidden md:grid grid-cols-3 gap-6 w-full">
+          {banners.slice(0, 3).map((banner: any, idx: number) => (
+            <div
+              key={banner._id || idx}
+              className="banner-card group relative aspect-[16/8] md:h-[180px] lg:h-[200px] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+              style={{ animationDelay: `${idx * 150}ms` }}
+              onClick={() => {
+                if (banner.targetUrl) router.push(banner.targetUrl);
+              }}
+            >
+              <Image
+                src={banner.desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
+                alt={banner.title || "Banner"}
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
+                className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
+              <div className="sheen-glow" />
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile Horizontal Auto-Slide Carousel */}
+        <div 
+          className="md:hidden flex flex-col w-full"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={() => setIsPaused(true)}
+          onTouchEnd={() => setIsPaused(false)}
+        >
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6 scroll-smooth"
+          >
+            {banners.map((banner: any, idx: number) => (
+              <div
+                key={banner._id || idx}
+                className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+                style={{ animationDelay: `${idx * 150}ms` }}
+                onClick={() => {
+                  if (banner.targetUrl) router.push(banner.targetUrl);
+                }}
+              >
+                <Image
+                  src={banner.mobileImage || banner.desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
+                  alt={banner.title || "Banner"}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
+                <div className="sheen-glow" />
+              </div>
+            ))}
+          </div>
+
+          {/* Dots Indicator */}
+          {banners.length > 1 && (
+            <div className="flex items-center justify-center gap-1.5 pt-2.5">
+              {banners.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => scrollToIdx(i)}
+                  aria-label={`Slide ${i + 1}`}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === activeIdx ? "w-5 bg-[#E8890C]" : "w-1.5 bg-stone-300 hover:bg-stone-400"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function ExperienceBlockRenderer({ block }: { block: any }) {
   const router = useRouter();
   const mobileScrollRef = useRef<HTMLDivElement>(null);
@@ -85,93 +264,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
   // 1. EDITORIAL BANNERS (Hero & Banners)
   if (block.blockType === "hero" || block.blockType === "banner") {
     const banners = block.data.banners || [];
-    return (
-      <section className="w-full bg-white pt-1 pb-0.5">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          {banners.length === 0 ? null : banners.length === 1 ? (
-                // Single Full-Bleed Graphic Image Banner
-                <div
-                  className="banner-card group relative w-full aspect-[2/1] sm:aspect-none sm:h-[220px] md:h-[250px] lg:h-[270px] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
-                  onClick={() => {
-                    if (banners[0].targetUrl) router.push(banners[0].targetUrl);
-                  }}
-                >
-                  {/* Desktop Image */}
-                  <div className="hidden sm:block absolute inset-0 w-full h-full">
-                    <Image
-                      src={banners[0].desktopImage || banners[0].mobileImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
-                      alt={banners[0].title || "Editorial Banner"}
-                      fill
-                      sizes="100vw"
-                      className="object-cover pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-700 ease-out"
-                    />
-                  </div>
-                  {/* Mobile Image */}
-                  <div className="sm:hidden absolute inset-0 w-full h-full">
-                    <Image
-                      src={banners[0].mobileImage || banners[0].desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
-                      alt={banners[0].title || "Editorial Banner"}
-                      fill
-                      sizes="100vw"
-                      className="object-cover pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-700 ease-out"
-                    />
-                  </div>
-                  <div className="sheen-glow" />
-                </div>
-              ) : (
-                <>
-                  <div className="hidden md:grid grid-cols-3 gap-6 w-full">
-                    {banners.slice(0, 3).map((banner: any, idx: number) => (
-                      <div
-                        key={banner._id || idx}
-                        className="banner-card group relative aspect-[16/8] md:h-[180px] lg:h-[200px] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
-                        style={{ animationDelay: `${idx * 150}ms` }}
-                        onClick={() => {
-                          if (banner.targetUrl) router.push(banner.targetUrl);
-                        }}
-                      >
-                        <Image
-                          src={banner.desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
-                          alt={banner.title || "Banner"}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 33vw"
-                          className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
-                        />
-                        <div className="sheen-glow" />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="md:hidden flex flex-col w-full pb-1">
-                    <div
-                      ref={mobileScrollRef}
-                      className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-0 -mx-6 px-6"
-                    >
-                      {banners.map((banner: any, idx: number) => (
-                        <div
-                          key={banner._id || idx}
-                          className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
-                          style={{ animationDelay: `${idx * 150}ms` }}
-                          onClick={() => {
-                            if (banner.targetUrl) router.push(banner.targetUrl);
-                          }}
-                        >
-                          <Image
-                            src={banner.mobileImage || banner.desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
-                            alt={banner.title || "Banner"}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                            className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
-                          />
-                          <div className="sheen-glow" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-        </div>
-      </section>
-    );
+    return <HeroBannerCarousel banners={banners} />;
   }
 
   // 2. CATEGORY BUBBLES

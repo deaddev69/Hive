@@ -67,6 +67,24 @@ body {
   animation: gold-glow-pulse 2s infinite ease-in-out;
 }
 
+/* Seamless infinite marquee ticker */
+@keyframes marquee {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+.animate-marquee-slow {
+  display: flex;
+  width: max-content;
+  animation: marquee 26s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-slow:hover,
+.animate-marquee-slow:active {
+  animation-play-state: paused;
+}
+
 /* Native dialog animations */
 dialog[open] {
   animation: modal-show 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
