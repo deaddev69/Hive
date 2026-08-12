@@ -11,7 +11,7 @@ import { useWishlistStore } from "@/store/wishlist-store";
 import { cleanProductTitle } from "./ProductCard";
 import { useLocation } from "@/context/LocationContext";
 import { checkServiceability } from "../../../../../convex/lib/serviceability";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Modal } from "@hive/ui";
 import { useSessionStore } from "@/context/SessionContext";
