@@ -16,6 +16,7 @@ export const savePushSubscription = mutation({
         auth: v.string(),
       }),
     }),
+    fcmToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -32,6 +33,7 @@ export const savePushSubscription = mutation({
         boutiqueId: args.boutiqueId,
         userId: args.userId,
         subscription: args.subscription,
+        fcmToken: args.fcmToken ?? existing.fcmToken,
         updatedAt: now,
       });
       return existing._id;
@@ -41,6 +43,7 @@ export const savePushSubscription = mutation({
       boutiqueId: args.boutiqueId,
       userId: args.userId,
       subscription: args.subscription,
+      fcmToken: args.fcmToken,
       createdAt: now,
       updatedAt: now,
     });

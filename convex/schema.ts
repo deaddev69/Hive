@@ -1988,6 +1988,7 @@ export default defineSchema({
         auth: v.string(),
       }),
     }),
+    fcmToken: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

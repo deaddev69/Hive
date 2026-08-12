@@ -14,6 +14,7 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(FcmTokenPlugin.class);
         super.onCreate(savedInstanceState);
         createUrgentOrderNotificationChannel();
         configureWebView();

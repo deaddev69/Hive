@@ -188,6 +188,29 @@ export function PushNotificationManager({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // Check for Custom Capacitor FcmToken Plugin (runs when loaded via Android WebView)
+    const cap = (window as any).Capacitor;
+    if (cap?.Plugins?.FcmToken && boutiqueId && userId) {
+      cap.Plugins.FcmToken.getToken()
+        .then((res: { token?: string }) => {
+          if (res?.token) {
+            console.log("[PushNotificationManager] Native FCM token fetched via bridge:", res.token);
+            saveSubscription({
+              boutiqueId,
+              userId,
+              fcmToken: res.token,
+              subscription: {
+                endpoint: `fcm://${res.token}`,
+                keys: { p256dh: "fcm_native", auth: "fcm_native" },
+              },
+            }).catch(console.error);
+          }
+        })
+        .catch((err: any) => {
+          console.warn("[PushNotificationManager] FcmToken plugin call failed:", err);
+        });
+    }
+
     // A. Native Android / iOS App Platform (Capacitor)
     if (Capacitor.isNativePlatform()) {
       (async () => {

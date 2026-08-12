@@ -105,13 +105,75 @@ export const sendOrderPushToBoutique = internalAction({
     }
 
     for (const sub of subscriptions) {
-      await ctx.runAction(internal.pushActions.sendOrderPush, {
-        subscription: sub.subscription,
-        title: args.title,
-        body: args.body,
-        netPayout: args.netPayout,
-        url: args.url,
+      if (sub.fcmToken || sub.subscription.endpoint.startsWith("fcm://")) {
+        const token = sub.fcmToken || sub.subscription.endpoint.replace("fcm://", "");
+        await ctx.runAction(internal.pushActions.sendFcmPush, {
+          token,
+          title: args.title,
+          body: args.body,
+          netPayout: args.netPayout,
+          url: args.url,
+        });
+      } else {
+        await ctx.runAction(internal.pushActions.sendOrderPush, {
+          subscription: sub.subscription,
+          title: args.title,
+          body: args.body,
+          netPayout: args.netPayout,
+          url: args.url,
+        });
+      }
+    }
+  },
+});
+
+/**
+ * Dispatch FCM Data Message to a native Android device token.
+ * Uses high priority data-only payload to trigger HiveFirebaseMessagingService
+ * even when the app is completely closed/killed.
+ */
+export const sendFcmPush = internalAction({
+  args: {
+    token: v.string(),
+    title: v.string(),
+    body: v.string(),
+    url: v.optional(v.string()),
+    netPayout: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const fcmServerKey = process.env.FCM_SERVER_KEY;
+    if (!fcmServerKey) {
+      console.warn(
+        "[sendFcmPush] FCM_SERVER_KEY not set in Convex environment variables. Skipping native FCM push."
+      );
+      return;
+    }
+
+    try {
+      const response = await fetch("https://fcm.googleapis.com/fcm/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `key=${fcmServerKey}`,
+        },
+        body: JSON.stringify({
+          to: args.token,
+          priority: "high",
+          content_available: true,
+          data: {
+            title: args.title,
+            body: args.body,
+            url: args.url || "/boutique/orders",
+            netPayout: args.netPayout ? String(args.netPayout) : "",
+            timestamp: String(Date.now()),
+          },
+        }),
       });
+
+      const text = await response.text();
+      console.log(`[sendFcmPush] FCM dispatch result (${response.status}):`, text);
+    } catch (err: any) {
+      console.error("[sendFcmPush] FCM send error:", err);
     }
   },
 });
