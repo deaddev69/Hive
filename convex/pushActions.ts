@@ -199,14 +199,21 @@ export const sendFcmPush = internalAction({
   },
   handler: async (ctx, args) => {
     // 1. Try FCM HTTP v1 using Service Account credentials
-    const saJsonStr = process.env.FIREBASE_SERVICE_ACCOUNT;
-    let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    let clientEmail = process.env.FIREBASE_CLIENT_EMAIL || "firebase-adminsdk-fbsvc@hive-fashion.iam.gserviceaccount.com";
     let projectId = process.env.FIREBASE_PROJECT_ID || "hive-fashion";
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-    if (saJsonStr) {
+    if (process.env.FIREBASE_PRIVATE_KEY_B64) {
       try {
-        const parsed = JSON.parse(saJsonStr);
+        privateKey = Buffer.from(process.env.FIREBASE_PRIVATE_KEY_B64, "base64").toString("utf-8");
+      } catch (e) {
+        console.warn("[sendFcmPush] Failed to decode FIREBASE_PRIVATE_KEY_B64:", e);
+      }
+    }
+
+    if (!privateKey && process.env.FIREBASE_SERVICE_ACCOUNT) {
+      try {
+        const parsed = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
         clientEmail = parsed.client_email || clientEmail;
         privateKey = parsed.private_key || privateKey;
         projectId = parsed.project_id || projectId;
