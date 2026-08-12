@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "in.hivenow.seller",
-  appName: "Hive Seller",
+  appName: "Hive Partners",
   webDir: "public",
   server: {
     url: "https://seller.hivenow.in",
