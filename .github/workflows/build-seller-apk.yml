@@ -36,6 +36,13 @@ jobs:
       - name: Install monorepo dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Capacitor sync (generate Android native deps)
+        run: |
+          cd apps/boutique
+          mkdir -p public
+          echo '<!-- placeholder -->' > public/index.html
+          npx cap sync android --inline
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
@@ -50,6 +57,7 @@ jobs:
         with:
           name: hive-seller-debug
           path: apps/boutique/android/app/build/outputs/apk/debug/app-debug.apk
+
 
 
 
