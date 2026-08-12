@@ -473,6 +473,7 @@ function OverviewTab({
   const router = useRouter();
   const { token, logout } = useSessionStore();
   const updateDisplayName = useMutation(api.users.updateProfileDisplayName);
+  const updatePhone = useMutation(api.users.updateProfilePhone);
 
   const [prefPhone, setPrefPhone] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
@@ -488,21 +489,37 @@ function OverviewTab({
   }, [user]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (user?.phone) {
+      setPrefPhone(user.phone);
+      setPhoneVal(user.phone);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("hive_pref_phone", user.phone);
+      }
+    } else if (typeof window !== "undefined") {
       const storedPhone = localStorage.getItem("hive_pref_phone");
       if (storedPhone) {
         setPrefPhone(storedPhone);
         setPhoneVal(storedPhone);
-      } else if (user?.phone) {
-        setPrefPhone(user.phone);
-        setPhoneVal(user.phone);
+        // Automatically sync local stored phone to Convex DB
+        updatePhone({ phone: storedPhone, token: token || undefined }).catch(err =>
+          console.error("Auto-sync phone to Convex failed:", err)
+        );
       }
     }
-  }, [user]);
+  }, [user?.phone, token, updatePhone]);
 
-  const handlePhoneChange = (val: string) => {
-    setPrefPhone(val);
-    localStorage.setItem("hive_pref_phone", val);
+  const handlePhoneChange = async (val: string) => {
+    const trimmed = val.trim();
+    if (!trimmed) return;
+    setPrefPhone(trimmed);
+    localStorage.setItem("hive_pref_phone", trimmed);
+    try {
+      await updatePhone({ phone: trimmed, token: token || undefined });
+      toast.success("Phone number updated successfully");
+    } catch (err: any) {
+      console.error("Failed to update phone number in Convex database:", err);
+      toast.error(err.message || "Failed to save phone number to database");
+    }
   };
 
   return (

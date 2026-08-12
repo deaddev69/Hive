@@ -356,6 +356,16 @@ export const addInternal = internalMutation({
       }
     }
 
+    if (args.phone) {
+      const user = await ctx.db.get(args.userId);
+      if (user && !user.phone) {
+        await ctx.db.patch(args.userId, {
+          phone: args.phone.trim(),
+          updatedAt: now,
+        });
+      }
+    }
+
     return await ctx.db.insert("addresses", {
       userId: args.userId,
       label: args.label,
@@ -558,6 +568,16 @@ export const updateInternal = internalMutation({
         if (a._id !== args.addressId && a.isDefault && !a.isDeleted) {
           await ctx.db.patch(a._id, { isDefault: false });
         }
+      }
+    }
+
+    if (args.phone) {
+      const user = await ctx.db.get(args.userId);
+      if (user && !user.phone) {
+        await ctx.db.patch(args.userId, {
+          phone: args.phone.trim(),
+          updatedAt: Date.now(),
+        });
       }
     }
     

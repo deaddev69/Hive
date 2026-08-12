@@ -1146,6 +1146,26 @@ export const updateProfileDisplayName = mutation({
   },
 });
 
+/**
+ * Updates the current authenticated user's phone number in Convex DB.
+ */
+export const updateProfilePhone = mutation({
+  args: {
+    phone: v.string(),
+    token: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx, args.token);
+    const cleanPhone = args.phone.trim();
+    await ctx.db.patch(user._id, {
+      phone: cleanPhone,
+      isPhoneVerified: true,
+      updatedAt: Date.now(),
+    });
+    return { success: true, phone: cleanPhone };
+  },
+});
+
 export const getUserByClerkId = query({
   args: { clerkId: v.string() },
   handler: async (ctx, args) => {
