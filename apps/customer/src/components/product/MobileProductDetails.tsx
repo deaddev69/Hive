@@ -91,32 +91,32 @@ export function MobileProductDetails({
     <div className="w-full flex flex-col gap-4 text-left px-2 sm:px-0">
       
       {/* ── SECTION 1: HERO (Tight, compact stack) ── */}
-      <div id="pdp-hero-section" className="space-y-1 select-none">
+      <div id="pdp-hero-section" className="space-y-0.5 select-none">
         {/* Occasion / Category label */}
         {product.occasionTags && product.occasionTags.length > 0 && product.occasionTags[0] && (
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#B45309] leading-none">
+          <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-700 leading-none">
             {formatTag(product.occasionTags[0])}
           </div>
         )}
         
         {/* Product Title */}
-        <h1 className="text-xl sm:text-2xl font-serif font-normal text-stone-900 tracking-tight leading-snug pt-0.5">
+        <h1 className="text-lg sm:text-xl font-serif font-semibold text-stone-900 tracking-tight leading-none pt-0.5">
           {cleanProductTitle(product.name)}
         </h1>
 
         {/* Pricing */}
         <div className="flex flex-col gap-1 pt-1 select-none">
-          <div className="flex items-center gap-2.5 leading-none">
-            <span className="text-2xl sm:text-3xl font-serif font-bold text-stone-900 tracking-tight">
+          <div className="flex items-baseline gap-2.5 leading-none">
+            <span className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
               ₹{product.price.toLocaleString("en-IN")}
             </span>
             {product.compareAtPrice && product.compareAtPrice > product.price && (
               <>
                 <span className="text-xs sm:text-sm text-stone-400 line-through font-normal">
-                  ₹{product.compareAtPrice.toLocaleString("en-IN")}
+                  MRP ₹{product.compareAtPrice.toLocaleString("en-IN")}
                 </span>
-                <span className="text-[11px] font-bold text-[#B45309] bg-amber-50/80 px-2 py-0.5 rounded-md border border-amber-200/60 tracking-wider uppercase">
-                  {discountPercent}% OFF
+                <span className="text-xs sm:text-sm font-extrabold text-[#E8890C] tracking-wide">
+                  ({discountPercent}% OFF)
                 </span>
               </>
             )}
@@ -127,12 +127,12 @@ export function MobileProductDetails({
         </div>
 
         {/* Brand attribution */}
-        <div className="text-xs text-stone-600 font-medium leading-none pt-1">
-          from <span className="font-bold text-stone-900">{product.boutique.name}</span>
+        <div className="text-xs text-stone-600 font-medium leading-none pt-0.5">
+          from <span className="font-bold">{product.boutique.name}</span>
         </div>
 
         {/* Fulfillment line */}
-        <div className="text-[11px] text-stone-400 font-medium pt-0.5 leading-none">
+        <div className="text-xs text-stone-500 font-medium pt-0.5 leading-none">
           Fulfilled by a Verified Hive Partner
         </div>
       </div>

@@ -242,7 +242,7 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
     >
       {/* Price — compact, secondary to CTAs */}
       <div className="flex flex-col text-left justify-center select-none flex-shrink-0 whitespace-nowrap">
-        <span className="text-xs font-bold text-stone-900 leading-none">
+        <span className="text-sm sm:text-base font-bold text-stone-900 leading-none">
           ₹{price.toLocaleString("en-IN")}
         </span>
         <span className={cn(
@@ -260,7 +260,7 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
             type="button"
             onClick={onToggleWishlist}
             className={cn(
-              "h-13 w-full rounded-2xl font-bold uppercase tracking-wider text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border cursor-pointer",
+              "h-14 w-full rounded-2xl font-bold uppercase tracking-wider text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border cursor-pointer",
               isFavorite
                 ? "bg-amber-50 border-amber-200 text-amber-700"
                 : "bg-hive-dark text-white border-transparent"
@@ -273,7 +273,7 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
           <button
             type="button"
             onClick={onSelectSizePrompt}
-            className="h-13 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs shadow-sm hover:shadow active:scale-[0.98] transition-all cursor-pointer"
+            className="h-14 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs shadow-sm hover:shadow active:scale-[0.98] transition-all cursor-pointer"
           >
             Select Size
           </button>
@@ -281,7 +281,7 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
           <button
             type="button"
             disabled
-            className="h-13 w-full rounded-2xl bg-stone-100 text-stone-400 font-bold uppercase tracking-wider text-xs cursor-not-allowed"
+            className="h-14 w-full rounded-2xl bg-stone-100 text-stone-400 font-bold uppercase tracking-wider text-xs cursor-not-allowed"
           >
             Sold Out
           </button>
@@ -289,7 +289,7 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
           <button
             type="button"
             onClick={onOpenHoldModal}
-            className="h-13 w-full rounded-2xl bg-amber-50/90 text-amber-900 border border-amber-200/80 font-bold uppercase tracking-wider text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all shadow-xs cursor-pointer"
+            className="h-14 w-full rounded-2xl bg-amber-50/90 text-amber-900 border border-amber-200/80 font-bold uppercase tracking-wider text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all shadow-xs cursor-pointer"
           >
             <Clock className="w-3.5 h-3.5 text-amber-600" />
             <span>On Hold (1 reserved)</span>
@@ -299,14 +299,14 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
             type="button"
             onClick={onReserve}
             disabled={loading}
-            className="h-13 w-full rounded-2xl bg-[#1C1917] text-[#FAF8F5] font-bold uppercase tracking-[0.14em] text-xs leading-tight px-1 flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-md hover:bg-stone-900 disabled:opacity-50"
+            className="h-14 w-full rounded-2xl bg-hive-gold text-hive-dark font-black uppercase tracking-widest text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all shadow-sm hover:bg-[#F5C22B] disabled:opacity-50"
           >
             {loading ? (
-              <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              <span className="w-4 h-4 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
             ) : (
-              <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-amber-400" />
-                <span>Reserve for Tomorrow</span>
+              <span className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-hive-dark/80" />
+                RESERVE FOR TOMORROW
               </span>
             )}
           </button>
@@ -918,14 +918,14 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             type="button"
             onClick={handleReserve}
             disabled={loading}
-            className="h-12 w-full rounded-2xl bg-[#1C1917] text-[#FAF8F5] font-bold uppercase tracking-[0.14em] text-xs transition-all active:scale-[0.98] shadow-md hover:bg-stone-900 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+            className="h-12 w-full rounded-2xl bg-hive-gold text-hive-dark font-black uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:bg-[#F5C22B] cursor-pointer flex items-center justify-center disabled:opacity-50"
           >
             {loading ? (
-              <span className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              <span className="w-5 h-5 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
             ) : (
               <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-amber-400" />
-                <span>Reserve for Tomorrow</span>
+                <Calendar className="w-4 h-4 text-hive-dark/80" />
+                RESERVE FOR TOMORROW
               </span>
             )}
           </button>

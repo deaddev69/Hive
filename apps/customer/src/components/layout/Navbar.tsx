@@ -421,9 +421,9 @@ export const Navbar: React.FC = () => {
                     </span>
                     <span className="text-stone-300 dark:text-neutral-700 select-none">•</span>
                     <span className={cn(
-                      "px-2 py-0.5 rounded-md font-bold text-[10px] tracking-wide select-none shadow-2xs",
+                      "px-2 py-0.5 rounded-md font-extrabold text-[10px] tracking-tight select-none shadow-2xs",
                       deliveryPromise.isToday 
-                        ? "bg-[#1C1917] text-[#FAF8F5] dark:bg-stone-100 dark:text-stone-900" 
+                        ? "bg-[#F5C22B] text-stone-950" 
                         : "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
                     )}>
                       {deliveryPromise.suffix}
@@ -612,9 +612,9 @@ export const Navbar: React.FC = () => {
                 </span>
                 <span className="text-stone-300 dark:text-neutral-700 select-none">•</span>
                 <span className={cn(
-                  "px-1.5 py-0.5 rounded-md font-bold text-[9.5px] tracking-wide select-none shadow-2xs",
+                  "px-1.5 py-0.5 rounded-md font-extrabold text-[9.5px] tracking-tight select-none shadow-2xs",
                   deliveryPromise.isToday 
-                    ? "bg-[#1C1917] text-[#FAF8F5] dark:bg-stone-100 dark:text-stone-900" 
+                    ? "bg-[#F5C22B] text-stone-950" 
                     : "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
                 )}>
                   {deliveryPromise.suffix}
