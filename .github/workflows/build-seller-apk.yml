@@ -24,27 +24,28 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
 
-      - name: Install monorepo dependencies
+      - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Build Android APK with Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Android APK
         run: |
           cd apps/boutique/android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hive-seller-debug
+          name: hive-seller-debug.apk
           path: apps/boutique/android/app/build/outputs/apk/debug/app-debug.apk
+
 
