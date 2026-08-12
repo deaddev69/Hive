@@ -128,6 +128,56 @@ export const sendOrderPushToBoutique = internalAction({
 });
 
 /**
+ * Generate Google OAuth2 Access Token for FCM HTTP v1 API using Service Account credentials.
+ */
+async function getFcmV1AccessToken(clientEmail: string, privateKey: string): Promise<string> {
+  const crypto = await import("node:crypto");
+  const header = { alg: "RS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const claimSet = {
+    iss: clientEmail,
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now,
+  };
+
+  const encodeBase64Url = (obj: object) =>
+    Buffer.from(JSON.stringify(obj))
+      .toString("base64")
+      .replace(/=/g, "")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
+
+  const unsignedToken = `${encodeBase64Url(header)}.${encodeBase64Url(claimSet)}`;
+
+  const signer = crypto.createSign("RSA-SHA256");
+  signer.update(unsignedToken);
+  const formattedKey = privateKey.replace(/\\n/g, "\n");
+  const signature = signer.sign(formattedKey, "base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+
+  const jwt = `${unsignedToken}.${signature}`;
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+
+  const data = await res.json();
+  if (!data.access_token) {
+    throw new Error(`OAuth2 token error: ${JSON.stringify(data)}`);
+  }
+  return data.access_token;
+}
+
+/**
  * Dispatch FCM Data Message to a native Android device token.
  * Uses high priority data-only payload to trigger HiveFirebaseMessagingService
  * even when the app is completely closed/killed.
@@ -141,39 +191,92 @@ export const sendFcmPush = internalAction({
     netPayout: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const fcmServerKey = process.env.FCM_SERVER_KEY;
-    if (!fcmServerKey) {
-      console.warn(
-        "[sendFcmPush] FCM_SERVER_KEY not set in Convex environment variables. Skipping native FCM push."
-      );
-      return;
+    // 1. Try FCM HTTP v1 using Service Account credentials
+    const saJsonStr = process.env.FIREBASE_SERVICE_ACCOUNT;
+    let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    let projectId = process.env.FIREBASE_PROJECT_ID || "hive-fashion";
+
+    if (saJsonStr) {
+      try {
+        const parsed = JSON.parse(saJsonStr);
+        clientEmail = parsed.client_email || clientEmail;
+        privateKey = parsed.private_key || privateKey;
+        projectId = parsed.project_id || projectId;
+      } catch (e) {
+        console.warn("[sendFcmPush] Failed to parse FIREBASE_SERVICE_ACCOUNT JSON:", e);
+      }
     }
 
-    try {
-      const response = await fetch("https://fcm.googleapis.com/fcm/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `key=${fcmServerKey}`,
-        },
-        body: JSON.stringify({
-          to: args.token,
-          priority: "high",
-          content_available: true,
-          data: {
-            title: args.title,
-            body: args.body,
-            url: args.url || "/boutique/orders",
-            netPayout: args.netPayout ? String(args.netPayout) : "",
-            timestamp: String(Date.now()),
-          },
-        }),
-      });
+    if (clientEmail && privateKey) {
+      try {
+        const accessToken = await getFcmV1AccessToken(clientEmail, privateKey);
+        const res = await fetch(
+          `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              message: {
+                token: args.token,
+                android: {
+                  priority: "high",
+                  ttl: "60s",
+                },
+                data: {
+                  title: args.title,
+                  body: args.body,
+                  url: args.url || "/boutique/orders",
+                  netPayout: args.netPayout ? String(args.netPayout) : "",
+                  timestamp: String(Date.now()),
+                },
+              },
+            }),
+          }
+        );
 
-      const text = await response.text();
-      console.log(`[sendFcmPush] FCM dispatch result (${response.status}):`, text);
-    } catch (err: any) {
-      console.error("[sendFcmPush] FCM send error:", err);
+        const resultText = await res.text();
+        console.log(`[sendFcmPush] FCM HTTP v1 dispatch result (${res.status}):`, resultText);
+        return;
+      } catch (v1Err: any) {
+        console.error("[sendFcmPush] FCM v1 dispatch error:", v1Err);
+      }
+    }
+
+    // 2. Fallback to FCM Legacy API if FCM_SERVER_KEY is set
+    const fcmServerKey = process.env.FCM_SERVER_KEY;
+    if (fcmServerKey) {
+      try {
+        const response = await fetch("https://fcm.googleapis.com/fcm/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `key=${fcmServerKey}`,
+          },
+          body: JSON.stringify({
+            to: args.token,
+            priority: "high",
+            content_available: true,
+            data: {
+              title: args.title,
+              body: args.body,
+              url: args.url || "/boutique/orders",
+              netPayout: args.netPayout ? String(args.netPayout) : "",
+              timestamp: String(Date.now()),
+            },
+          }),
+        });
+
+        const text = await response.text();
+        console.log(`[sendFcmPush] Legacy FCM dispatch result (${response.status}):`, text);
+      } catch (err: any) {
+        console.error("[sendFcmPush] Legacy FCM send error:", err);
+      }
+    } else {
+      console.warn("[sendFcmPush] No FCM service account or server key configured in Convex.");
     }
   },
 });
