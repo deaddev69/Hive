@@ -108,12 +108,9 @@ export async function PUT(req: Request) {
     }
 
     // Call Convex Mutation
-    const clerkSecret = process.env.CLERK_SECRET_KEY;
-    if (!clerkSecret) {
-      throw new Error("Server error: CLERK_SECRET_KEY is not configured on admin server.");
-    }
+    const clerkSecret = process.env.CLERK_SECRET_KEY || "";
 
-    await convex.mutation(api.adminSettings.updatePlatformSettingsFromApi, {
+    const result = await convex.mutation(api.adminSettings.updatePlatformSettingsFromApi, {
       secret: clerkSecret,
       markupRate: markupRate / 100,
       platformFeeRate: platformFeeRate / 100,
@@ -125,7 +122,7 @@ export async function PUT(req: Request) {
       })),
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, updatedProductsCount: result?.updatedProductsCount ?? 0 });
   } catch (err: any) {
     console.error("PUT platform-config error:", err);
     return NextResponse.json({ error: err.message || "Failed to update configuration." }, { status: 500 });

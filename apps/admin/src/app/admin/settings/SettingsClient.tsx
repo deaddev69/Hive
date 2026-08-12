@@ -4,37 +4,37 @@ import React, { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { toast } from "sonner";
-import { Loader2, Save, Plus, Trash2 } from "lucide-react";
+import { Loader2, Save, Plus, Trash2, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@hive/ui";
 
 export default function SettingsClient() {
+  const liveSettings = useQuery(api.adminSettings.getPlatformSettings);
+  const updateSettingsMutation = useMutation(api.adminSettings.updatePlatformSettings);
+  const recalculatePricesMutation = useMutation(api.adminSettings.recalculateAllProductPrices);
+
   const [markupRate, setMarkupRate] = useState<string>("");
   const [platformFeeRate, setPlatformFeeRate] = useState<string>("");
   const [markupType, setMarkupType] = useState<"flat" | "tiered">("tiered");
   const [markupTiers, setMarkupTiers] = useState<Array<{ min_price: number; max_price: number | null; rate: number }>>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Sync initial values from live query
   useEffect(() => {
-    async function loadConfig() {
-      try {
-        const res = await fetch("/api/admin/platform-config");
-        if (!res.ok) throw new Error("Failed to load platform configuration from REST API");
-        const data = await res.json();
-        setMarkupRate(data.markupRate.toString());
-        setPlatformFeeRate(data.platformFeeRate.toString());
-        setMarkupType(data.markupType);
-        setMarkupTiers(data.markupTiers);
-      } catch (err: any) {
-        toast.error(err.message || "Failed to load settings");
-      } finally {
-        setIsLoading(false);
-      }
+    if (liveSettings && !isInitialized) {
+      setMarkupRate(((liveSettings.markupRate ?? 0.15) * 100).toString());
+      setPlatformFeeRate(((liveSettings.platformFeeRate ?? 0.02) * 100).toString());
+      setMarkupType(liveSettings.markupType ?? "tiered");
+      const sortedTiers = liveSettings.markupTiers
+        ? [...liveSettings.markupTiers].sort((a, b) => a.min_price - b.min_price)
+        : [];
+      setMarkupTiers(sortedTiers);
+      setIsInitialized(true);
     }
-    loadConfig();
-  }, []);
+  }, [liveSettings, isInitialized]);
 
-  if (isLoading) {
+  if (liveSettings === undefined) {
     return (
       <div className="flex items-center justify-center p-12">
         <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
@@ -184,34 +184,70 @@ export default function SettingsClient() {
         }
       }
 
-      const res = await fetch("/api/admin/platform-config", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          markupRate: parsedMarkup,
-          platformFeeRate: parsedFee,
-          markupType,
-          markupTiers: markupTiers.map((t) => ({
-            min_price: t.min_price,
-            max_price: t.max_price,
-            rate: t.rate,
-          })),
-        }),
-      });
+      const formattedTiers = markupType === "flat" ? [] : markupTiers.map((t) => ({
+        min_price: t.min_price,
+        max_price: t.max_price,
+        rate: t.rate,
+      }));
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to update platform settings.");
+      let updatedProductsCount = 0;
+
+      try {
+        // Direct authenticated mutation via Convex React client
+        const result = await updateSettingsMutation({
+          markupRate: parsedMarkup / 100,
+          platformFeeRate: parsedFee / 100,
+          markupType,
+          markupTiers: formattedTiers,
+        });
+        updatedProductsCount = result?.updatedProductsCount ?? 0;
+      } catch (mutationErr: any) {
+        console.warn("Direct mutation error, attempting fallback REST API...", mutationErr);
+        // Fallback to REST API route
+        const res = await fetch("/api/admin/platform-config", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            markupRate: parsedMarkup,
+            platformFeeRate: parsedFee,
+            markupType,
+            markupTiers: formattedTiers,
+          }),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "Failed to update platform settings.");
+        }
+        const data = await res.json();
+        updatedProductsCount = data.updatedProductsCount ?? 0;
       }
 
-      toast.success("Platform settings updated successfully!");
+      toast.success(
+        updatedProductsCount > 0
+          ? `Platform settings saved! Automatically recalculated prices for ${updatedProductsCount} products.`
+          : "Platform settings updated successfully!"
+      );
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Failed to update platform settings.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleManualRecalculate = async () => {
+    try {
+      setIsRecalculating(true);
+      const res = await recalculatePricesMutation();
+      toast.success(`Successfully recalculated prices for ${res?.updatedProductsCount ?? 0} products!`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to recalculate product prices.");
+    } finally {
+      setIsRecalculating(false);
     }
   };
 
@@ -230,7 +266,7 @@ export default function SettingsClient() {
                 onClick={() => setMarkupType("flat")}
                 className={`h-11 px-4 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all ${
                   markupType === "flat"
-                    ? "bg-hive-dark text-hive-gold border-hive-dark"
+                    ? "bg-hive-dark text-hive-gold border-hive-dark shadow-xs"
                     : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                 }`}
               >
@@ -241,7 +277,7 @@ export default function SettingsClient() {
                 onClick={() => setMarkupType("tiered")}
                 className={`h-11 px-4 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all ${
                   markupType === "tiered"
-                    ? "bg-hive-dark text-hive-gold border-hive-dark"
+                    ? "bg-hive-dark text-hive-gold border-hive-dark shadow-xs"
                     : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
                 }`}
               >
@@ -278,7 +314,7 @@ export default function SettingsClient() {
                 Fallback Platform Markup Rate (%)
               </label>
               <p className="text-[11px] text-slate-500 mb-1">
-                The percentage added to the boutique's Base Price when Flat mode is active. (e.g. 15 for 15%)
+                The universal flat commission markup applied to all product base prices (e.g., 15 for 15%).
               </p>
               <div className="relative">
                 <input
@@ -294,14 +330,14 @@ export default function SettingsClient() {
             </div>
           )}
 
-          {/* Dynamic Tier Builder Configuration */}
+          {/* Tiered Price Slabs Configuration */}
           {markupType === "tiered" && (
-            <div className="flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="space-y-4 pt-2 border-t border-slate-100 animate-in fade-in slide-in-from-top-1 duration-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-600">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-700">
                     Tiered Commission Price Slabs
-                  </label>
+                  </h3>
                   <p className="text-[11px] text-slate-500 mt-0.5">
                     Define commission markups dynamically based on product base price ranges.
                   </p>
@@ -309,42 +345,44 @@ export default function SettingsClient() {
                 <button
                   type="button"
                   onClick={addTier}
-                  className="h-9 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 transition-colors shadow-xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Add Slab
                 </button>
               </div>
 
-              <div className="border border-slate-150 rounded-xl overflow-hidden bg-white">
-                <table className="w-full text-left border-collapse">
+              <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-150 text-[10px] font-black uppercase tracking-widest text-slate-500">
-                      <th className="py-3 px-4 w-1/3">Min Price (₹)</th>
-                      <th className="py-3 px-4 w-1/3">Max Price (₹)</th>
-                      <th className="py-3 px-4 w-1/4">Markup Rate (%)</th>
-                      <th className="py-3 px-4 w-10 text-center"></th>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-extrabold uppercase tracking-wider text-[10px]">
+                      <th className="py-2.5 px-4">Min Price (₹)</th>
+                      <th className="py-2.5 px-4">Max Price (₹)</th>
+                      <th className="py-2.5 px-4">Markup Rate (%)</th>
+                      <th className="py-2.5 px-4 text-center w-12">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                  <tbody className="divide-y divide-slate-100 bg-white">
                     {markupTiers.map((tier, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/50">
-                        <td className="py-3.5 px-4 font-mono text-[13px] text-slate-400 font-medium">
+                        <td className="py-3 px-4 font-mono font-medium text-slate-700">
                           ₹{tier.min_price}
                         </td>
                         <td className="py-3 px-4">
                           {idx === markupTiers.length - 1 ? (
-                            <span className="text-[13px] font-bold text-slate-400 font-mono pl-2">Infinite (+)</span>
+                            <span className="text-slate-400 italic text-[11px]">
+                              Infinite (and above)
+                            </span>
                           ) : (
                             <div className="relative">
-                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">₹</span>
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
                               <input
                                 type="number"
                                 min={tier.min_price}
-                                value={tier.max_price === null ? "" : tier.max_price}
+                                value={tier.max_price ?? ""}
                                 onChange={(e) => updateTierField(idx, "max_price", e.target.value)}
                                 className="w-full h-9 bg-slate-50 border border-slate-200 rounded-lg pl-6 pr-3 text-[13px] font-mono font-medium focus:ring-1 focus:ring-hive-gold outline-none"
-                                placeholder="499"
+                                placeholder="e.g. 499"
                               />
                             </div>
                           )}
@@ -382,11 +420,21 @@ export default function SettingsClient() {
           )}
         </div>
 
-        <div className="pt-4 border-t border-slate-100 flex justify-end">
+        <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={handleManualRecalculate}
+            disabled={isRecalculating || isSaving}
+            className="w-full sm:w-auto h-11 px-4 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+          >
+            {isRecalculating ? <Loader2 className="w-4 h-4 animate-spin text-hive-amber" /> : <RefreshCw className="w-4 h-4" />}
+            Sync & Recalculate All Prices
+          </button>
+
           <button
             onClick={handleSave}
-            disabled={isSaving}
-            className="h-11 px-6 bg-hive-dark text-hive-gold rounded-xl text-xs font-extrabold uppercase tracking-widest hover:bg-hive-dark/95 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
+            disabled={isSaving || isRecalculating}
+            className="w-full sm:w-auto h-11 px-6 bg-hive-dark text-hive-gold rounded-xl text-xs font-extrabold uppercase tracking-widest hover:bg-hive-dark/95 active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2 shadow-sm cursor-pointer"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Configuration
