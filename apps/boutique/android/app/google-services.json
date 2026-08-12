@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "455960950280",
+    "project_id": "hive-fashion",
+    "storage_bucket": "hive-fashion.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:455960950280:android:9b003063e31d38d98d83bd",
+        "android_client_info": {
+          "package_name": "in.hivenow.seller"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "455960950280-4j2vtj68vnbn87pk1tcnm5ese67ct869.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5iyc7XTBLc3BLXdjPv8e_g_8o3XUcmhA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "455960950280-4j2vtj68vnbn87pk1tcnm5ese67ct869.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

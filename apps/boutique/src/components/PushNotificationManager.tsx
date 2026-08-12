@@ -6,6 +6,8 @@ import { api } from "../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { BellRing, ShoppingBag, ArrowRight } from "lucide-react";
 import { Id } from "../../../../convex/_generated/dataModel";
+import { Capacitor } from "@capacitor/core";
+import { PushNotifications } from "@capacitor/push-notifications";
 
 interface PushNotificationManagerProps {
   boutiqueId?: Id<"boutiques">;
@@ -184,12 +186,69 @@ export function PushNotificationManager({
   }, [orders, startOrderAlarm]);
 
   useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      "serviceWorker" in navigator &&
-      "PushManager" in window &&
-      "Notification" in window
-    ) {
+    if (typeof window === "undefined") return;
+
+    // A. Native Android / iOS App Platform (Capacitor)
+    if (Capacitor.isNativePlatform()) {
+      (async () => {
+        try {
+          const permStatus = await PushNotifications.checkPermissions();
+          let receivePerm = permStatus.receive;
+          if (receivePerm === "prompt") {
+            const req = await PushNotifications.requestPermissions();
+            receivePerm = req.receive;
+          }
+          if (receivePerm === "granted") {
+            await PushNotifications.register();
+          }
+
+          PushNotifications.addListener("registration", (token) => {
+            console.log("[PushNotificationManager] Native FCM token registered:", token.value);
+            if (boutiqueId && userId) {
+              saveSubscription({
+                boutiqueId,
+                userId,
+                subscription: {
+                  endpoint: token.value,
+                  keys: { p256dh: "fcm_native", auth: "fcm_native" },
+                },
+              }).catch(console.error);
+            }
+          });
+
+          PushNotifications.addListener("pushNotificationReceived", (notification) => {
+            console.log("[PushNotificationManager] Native push received:", notification);
+            startOrderAlarm({
+              title: notification.title,
+              body: notification.body,
+              netPayout: notification.data?.netPayout ? parseFloat(notification.data.netPayout) : undefined,
+              orderNumber: notification.data?.orderNumber,
+              url: notification.data?.url || "/boutique/orders",
+            });
+          });
+
+          PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
+            console.log("[PushNotificationManager] Native push action performed:", action);
+            if (action.actionId === "silence") {
+              stopOrderAlarm();
+            } else {
+              stopOrderAlarm();
+              router.push(action.notification.data?.url || "/boutique/orders");
+            }
+          });
+        } catch (nativeErr) {
+          console.warn("[PushNotificationManager] Native push init failed:", nativeErr);
+        }
+      })();
+
+      return () => {
+        PushNotifications.removeAllListeners();
+        stopOrderAlarm();
+      };
+    }
+
+    // B. Web PWA Platform (Safari on iPhone, Chrome on Desktop)
+    if ("serviceWorker" in navigator && "PushManager" in window && "Notification" in window) {
       const messageListener = (event: MessageEvent) => {
         if (event.data?.type === "TRIGGER_ORDER_ALARM" || event.data?.type === "PLAY_ORDER_CHIME") {
           console.log("[PushNotificationManager] Received SW alarm event:", event.data);
@@ -228,7 +287,7 @@ export function PushNotificationManager({
         stopOrderAlarm();
       };
     }
-  }, [boutiqueId, userId, saveSubscription, startOrderAlarm, stopOrderAlarm]);
+  }, [boutiqueId, userId, saveSubscription, startOrderAlarm, stopOrderAlarm, router]);
 
   return (
     <>
