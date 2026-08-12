@@ -6,7 +6,8 @@ import android.content.ContentResolver;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Bundle;
+import android.webkit.CookieManager;
+import android.webkit.WebSettings;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -14,6 +15,33 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         createUrgentOrderNotificationChannel();
+        configureWebView();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        configureWebView();
+    }
+
+    private void configureWebView() {
+        if (this.bridge != null && this.bridge.getWebView() != null) {
+            WebSettings settings = this.bridge.getWebView().getSettings();
+            settings.setDomStorageEnabled(true);
+            settings.setDatabaseEnabled(true);
+            settings.setJavaScriptEnabled(true);
+            settings.setJavaScriptCanOpenWindowsAutomatically(true);
+            settings.setSupportMultipleWindows(true);
+
+            String ua = settings.getUserAgentString();
+            if (ua != null && ua.contains("; wv")) {
+                settings.setUserAgentString(ua.replace("; wv", ""));
+            }
+
+            CookieManager cookieManager = CookieManager.getInstance();
+            cookieManager.setAcceptCookie(true);
+            cookieManager.setAcceptThirdPartyCookies(this.bridge.getWebView(), true);
+        }
     }
 
     private void createUrgentOrderNotificationChannel() {
