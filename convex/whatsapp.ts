@@ -114,6 +114,8 @@ export const sendTemplateMessage = internalAction({
       // Ensure Indian country code prefix if 10-digit
       if (cleanPhone.length === 10) {
         cleanPhone = `91${cleanPhone}`;
+      } else if (cleanPhone.length === 11 && cleanPhone.startsWith("0")) {
+        cleanPhone = `91${cleanPhone.slice(1)}`;
       }
 
       // Resolve language code: 'en' for English templates, 'en_US' for hello_world

@@ -18,6 +18,38 @@ export const CartItemComponent: React.FC<CartItemProps> = ({ item }) => {
   const removeItem = useCartStore((state) => state.removeItem);
   const { setSidebarOpen } = useCart();
 
+  const [now, setNow] = React.useState(Date.now());
+
+  React.useEffect(() => {
+    if (item.isReservation && item.reservationExpiresAt) {
+      const timer = setInterval(() => setNow(Date.now()), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [item.isReservation, item.reservationExpiresAt]);
+
+  const isAccepted =
+    item.isReservation &&
+    (item.reservationStatus === "awaiting_payment" ||
+      item.reservationStatus === "seller_accepted" ||
+      item.reservationStatus === "ACCEPTED");
+
+  const isExpired =
+    item.isReservation &&
+    (item.reservationStatus === "reservation_expired" ||
+      item.reservationStatus === "payment_expired" ||
+      (item.reservationExpiresAt ? now > item.reservationExpiresAt : false));
+
+  const isUnavailable =
+    item.isReservation &&
+    (item.reservationStatus === "unavailable" || item.reservationStatus === "cancelled");
+
+  const isAwaitingStore = item.isReservation && !isAccepted && !isExpired && !isUnavailable;
+
+  const minutesLeft =
+    item.reservationExpiresAt && item.reservationExpiresAt > now
+      ? Math.max(1, Math.ceil((item.reservationExpiresAt - now) / 60000))
+      : 0;
+
   return (
     <div className="flex gap-4 bg-white p-4 rounded-xl border border-stone-100 relative group overflow-hidden">
       {/* Product Image */}
@@ -64,8 +96,8 @@ export const CartItemComponent: React.FC<CartItemProps> = ({ item }) => {
             </span>
           </div>
 
-          {/* Selected Size & Preorder Badge */}
-          <div className="flex items-center gap-2 mt-2">
+          {/* Selected Size & Preorder / Reservation Badge */}
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <span className="text-[10px] text-stone-500 block">
               Size {item.size}
             </span>
@@ -74,15 +106,30 @@ export const CartItemComponent: React.FC<CartItemProps> = ({ item }) => {
                 Pre-order
               </span>
             )}
-            {item.isReservation && (
-              <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border border-green-200">
+            {item.isReservation && isAccepted && (
+              <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider border border-emerald-200">
+                Seller Accepted
+              </span>
+            )}
+            {item.isReservation && isAwaitingStore && (
+              <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border border-amber-200">
                 Reserved
+              </span>
+            )}
+            {item.isReservation && isExpired && (
+              <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border border-rose-200">
+                Expired
+              </span>
+            )}
+            {item.isReservation && isUnavailable && (
+              <span className="inline-flex items-center gap-1 bg-stone-100 text-stone-600 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border border-stone-200">
+                Unavailable
               </span>
             )}
           </div>
         </Link>
 
-        {/* Bottom details: Price & Quantity */}
+        {/* Bottom details: Price & Quantity / Reservation Action */}
         <div className="flex items-center justify-between mt-2.5">
           {/* Price */}
           <span className="text-xs font-bold text-stone-900">
@@ -92,8 +139,31 @@ export const CartItemComponent: React.FC<CartItemProps> = ({ item }) => {
           {/* Quantity selector or Reserved status */}
           {item.isReservation ? (
             <div className="flex flex-col items-end gap-0.5 pr-1 text-right">
-              <span className="text-[10px] text-green-700 font-bold uppercase tracking-wider">Awaiting Confirmation</span>
-              <span className="text-[9px] text-stone-500 font-medium">Qty: 1</span>
+              {isAccepted ? (
+                <>
+                  <span className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">
+                    Ready to Pay
+                  </span>
+                  {minutesLeft > 0 && (
+                    <span className="text-[9px] text-amber-700 font-semibold bg-amber-50 px-1 rounded">
+                      ⏱ {minutesLeft}m left
+                    </span>
+                  )}
+                </>
+              ) : isExpired ? (
+                <span className="text-[10px] text-rose-600 font-bold uppercase tracking-wider">
+                  Expired
+                </span>
+              ) : isUnavailable ? (
+                <span className="text-[10px] text-stone-500 font-bold uppercase tracking-wider">
+                  Declined
+                </span>
+              ) : (
+                <span className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">
+                  Awaiting Store
+                </span>
+              )}
+              <span className="text-[9px] text-stone-400 font-medium">Qty: 1</span>
             </div>
           ) : (
             <div className="flex items-center gap-4.5 select-none pr-1">

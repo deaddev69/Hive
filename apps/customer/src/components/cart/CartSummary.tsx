@@ -19,10 +19,49 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
   const deliveryFee = subtotal >= 10000 ? 0 : 99; // in rupees
   const total = subtotal + deliveryFee;
 
+  const now = Date.now();
+
+  const hasAwaitingStore = items.some(
+    (i) =>
+      i.isReservation &&
+      (i.reservationStatus === "reservation_active" ||
+        i.reservationStatus === "awaiting_store_confirmation" ||
+        !i.reservationStatus)
+  );
+
+  const hasExpired = items.some(
+    (i) =>
+      i.isReservation &&
+      (i.reservationStatus === "reservation_expired" ||
+        i.reservationStatus === "payment_expired" ||
+        (i.reservationExpiresAt ? now > i.reservationExpiresAt : false))
+  );
+
+  const hasUnavailable = items.some(
+    (i) =>
+      i.isReservation &&
+      (i.reservationStatus === "unavailable" || i.reservationStatus === "cancelled")
+  );
+
+  const acceptedReservationItem = items.find(
+    (i) =>
+      i.isReservation &&
+      (i.reservationStatus === "awaiting_payment" ||
+        i.reservationStatus === "seller_accepted" ||
+        i.reservationStatus === "ACCEPTED") &&
+      (!i.reservationExpiresAt || now <= i.reservationExpiresAt)
+  );
+
+  const isCheckoutBlocked = hasAwaitingStore || hasExpired || hasUnavailable;
+
   const handleCheckout = () => {
     clearCheckoutItems();
     onClose();
-    router.push("/checkout/address");
+    if (acceptedReservationItem?.reservationId) {
+      router.push(`/checkout/address?reservationId=${acceptedReservationItem.reservationId}`);
+    } else {
+      router.push("/checkout/address");
+    }
   };
 
   // Dynamically resolve boutique name and ID for hyperlocal delivery status and continue shopping redirection
@@ -64,7 +103,7 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
         </span>
       </div>
 
-      {/* Dynamic Delivery Status (one line, no SaaS trust checklist) */}
+      {/* Dynamic Delivery Status */}
       <div className="mt-3.5 text-center">
         <span className="text-[11px] text-stone-500 font-normal block leading-normal">
           {deliveryText}
@@ -73,11 +112,27 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
 
       {/* Action Buttons */}
       <div className="mt-5 flex flex-col gap-2.5">
-        {items.some(i => i.isReservation && i.reservationStatus === "reservation_active") ? (
+        {hasExpired ? (
           <button
             type="button"
             disabled
-            className="w-full h-11 bg-stone-100 text-stone-400 cursor-not-allowed rounded-full font-medium text-xs tracking-wider flex items-center justify-center gap-1 shadow-sm focus:outline-none border border-stone-200"
+            className="w-full h-11 bg-rose-50 text-rose-600 cursor-not-allowed rounded-full font-medium text-xs tracking-wider flex items-center justify-center gap-1 shadow-sm focus:outline-none border border-rose-200"
+          >
+            Reservation Expired — Remove to Proceed
+          </button>
+        ) : hasUnavailable ? (
+          <button
+            type="button"
+            disabled
+            className="w-full h-11 bg-stone-100 text-stone-500 cursor-not-allowed rounded-full font-medium text-xs tracking-wider flex items-center justify-center gap-1 shadow-sm focus:outline-none border border-stone-200"
+          >
+            Item Unavailable — Remove to Proceed
+          </button>
+        ) : hasAwaitingStore ? (
+          <button
+            type="button"
+            disabled
+            className="w-full h-11 bg-amber-50/80 text-amber-800/80 cursor-not-allowed rounded-full font-medium text-xs tracking-wider flex items-center justify-center gap-1 shadow-sm focus:outline-none border border-amber-200/60"
           >
             Awaiting Store Confirmation
           </button>
@@ -87,7 +142,7 @@ export const CartSummaryComponent: React.FC<CartSummaryProps> = ({ subtotal, onC
             onClick={handleCheckout}
             className="w-full h-11 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-full font-medium text-xs tracking-wider flex items-center justify-center gap-1 shadow-sm focus:outline-none"
           >
-            {items.some(i => i.isReservation) ? "Complete Payment \u2192" : "Secure Checkout \u2192"}
+            {acceptedReservationItem ? "Complete Payment \u2192" : "Secure Checkout \u2192"}
           </button>
         )}
 

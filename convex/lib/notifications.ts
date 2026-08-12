@@ -349,7 +349,16 @@ export async function triggerNotification(
         blocks,
       });
     } else if (channel === "whatsapp") {
-      const phone = user.phone || payload.phone;
+      let phone = payload.phone || user.phone;
+      if (!phone) {
+        // Fallback: Saved Addresses
+        const savedAddr = await ctx.db
+          .query("addresses")
+          .withIndex("by_userId", (q) => q.eq("userId", userId))
+          .first();
+        if (savedAddr?.phone) phone = savedAddr.phone;
+      }
+
       if (!phone) {
         throw new Error(`No phone number found for user ${userId}`);
       }

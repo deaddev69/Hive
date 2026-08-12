@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import { useCartStore } from "@/store/cart-store";
+import { useCartReservationSync } from "@/hooks/useCartReservationSync";
 
 export interface CartState {
   itemsCount: number;
@@ -20,6 +21,9 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mounted, setMounted] = useState(false);
   const [isSidebarOpen, setSidebarOpenState] = useState(false);
+
+  // Continuously sync customer's active reservations with local cart state
+  useCartReservationSync();
 
   const getCartCount = useCartStore((state) => state.getCartCount);
 

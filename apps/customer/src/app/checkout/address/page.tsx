@@ -203,7 +203,7 @@ export default function CheckoutAddressPage() {
         boutiqueId: reservation.boutiqueId,
         isReservation: true,
         reservationStatus: reservation.status,
-        reservationExpiresAt: reservation.reservationExpiresAt,
+        reservationExpiresAt: reservation.paymentExpiresAt || reservation.reservationExpiresAt,
         reservationId: reservation._id,
         quantity: reservation.quantity,
       }]);

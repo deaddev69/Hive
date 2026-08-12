@@ -26,6 +26,8 @@ export interface CartState {
   removeItem: (productId: string, size: string) => void;
   updateQuantity: (productId: string, size: string, quantity: number) => void;
   updateAvailableStock: (productId: string, size: string, stock: number) => void;
+  updateReservationStatus: (reservationId: string, status: string, expiresAt?: number) => void;
+  updateReservationByProduct: (productId: string, size: string, status: string, reservationId?: string, expiresAt?: number) => void;
   clearCart: () => void;
   getCartTotal: () => number; // returns total in rupees
   getCartCount: () => number;
@@ -93,6 +95,36 @@ export const useCartStore = create<CartState>()(
             if (item.productId === productId && item.size === size) {
               const newQuantity = Math.min(item.quantity, stock);
               return { ...item, availableStock: stock, quantity: newQuantity };
+            }
+            return item;
+          }),
+        }));
+      },
+      updateReservationStatus: (reservationId, status, expiresAt) => {
+        set((state) => ({
+          items: state.items.map((item) => {
+            if (item.isReservation && item.reservationId === reservationId) {
+              return {
+                ...item,
+                reservationStatus: status,
+                ...(expiresAt ? { reservationExpiresAt: expiresAt } : {}),
+              };
+            }
+            return item;
+          }),
+        }));
+      },
+      updateReservationByProduct: (productId, size, status, reservationId, expiresAt) => {
+        set((state) => ({
+          items: state.items.map((item) => {
+            if (item.productId === productId && item.size === size) {
+              return {
+                ...item,
+                isReservation: true,
+                reservationStatus: status,
+                ...(reservationId ? { reservationId } : {}),
+                ...(expiresAt ? { reservationExpiresAt: expiresAt } : {}),
+              };
             }
             return item;
           }),

@@ -361,6 +361,17 @@ export const storeConfirmAvailable = mutation({
       });
     }
 
+    // Resolve customer phone number with fallbacks
+    const customerUser = await ctx.db.get(reservation.customerId);
+    let customerPhone = customerUser?.phone;
+    if (!customerPhone) {
+      const defaultAddr = await ctx.db
+        .query("addresses")
+        .withIndex("by_userId", (q) => q.eq("userId", reservation.customerId))
+        .first();
+      if (defaultAddr?.phone) customerPhone = defaultAddr.phone;
+    }
+
     // Notify customer via push + whatsapp
     await triggerNotification(
       ctx,
@@ -374,6 +385,7 @@ export const storeConfirmAvailable = mutation({
         size: reservation.size,
         paymentExpiresAt,
         boutiqueName: reservation.boutiqueName,
+        phone: customerPhone,
       })
     );
 
@@ -389,6 +401,7 @@ export const storeConfirmAvailable = mutation({
         size: reservation.size,
         paymentExpiresAt,
         boutiqueName: reservation.boutiqueName,
+        phone: customerPhone,
       })
     );
 
@@ -428,6 +441,17 @@ export const storeDeclineUnavailable = mutation({
       updatedAt: now,
     });
 
+    // Resolve customer phone number with fallbacks
+    const customerUser = await ctx.db.get(reservation.customerId);
+    let customerPhone = customerUser?.phone;
+    if (!customerPhone) {
+      const defaultAddr = await ctx.db
+        .query("addresses")
+        .withIndex("by_userId", (q) => q.eq("userId", reservation.customerId))
+        .first();
+      if (defaultAddr?.phone) customerPhone = defaultAddr.phone;
+    }
+
     // Notify customer
     await triggerNotification(
       ctx,
@@ -439,6 +463,7 @@ export const storeDeclineUnavailable = mutation({
       JSON.stringify({
         productName: reservation.productName,
         size: reservation.size,
+        phone: customerPhone,
       })
     );
 
@@ -452,6 +477,7 @@ export const storeDeclineUnavailable = mutation({
       JSON.stringify({
         productName: reservation.productName,
         size: reservation.size,
+        phone: customerPhone,
       })
     );
 
