@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - 'apps/boutique/**'
+      - '.github/workflows/build-seller-apk.yml'
 
 jobs:
   build-apk:
@@ -17,11 +18,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -31,24 +27,24 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install dependencies in apps/boutique
-        run: |
-          cd apps/boutique
-          npm install --legacy-peer-deps
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
 
-      - name: Sync Capacitor Android
-        run: |
-          cd apps/boutique
-          npx cap sync android
+      - name: Install monorepo dependencies
+        run: npm install --legacy-peer-deps
 
       - name: Build Android APK with Gradle
         run: |
           cd apps/boutique/android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hive-seller-debug.apk
+          name: hive-seller-debug
           path: apps/boutique/android/app/build/outputs/apk/debug/app-debug.apk
+
