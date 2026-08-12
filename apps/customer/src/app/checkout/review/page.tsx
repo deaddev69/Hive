@@ -172,13 +172,16 @@ export default function OrderReviewPage() {
   const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
 
   const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
-  const rawSubtotal = orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const rawSubtotal = orderItems.reduce((total, item) => {
+    const itemPrice = item.price > 10000 ? Math.round(item.price / 100) : item.price;
+    return total + itemPrice * item.quantity;
+  }, 0);
 
   const itemsForPricing = useMemo(() => {
     return orderItems.map((item) => ({
       productId: item.productId,
       quantity: item.quantity,
-      price: item.price,
+      price: item.price > 10000 ? Math.round(item.price / 100) : item.price,
       size: item.size,
     }));
   }, [orderItems]);

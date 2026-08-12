@@ -731,7 +731,10 @@ export const getReservationById = query({
       }
     }
 
-    return reservation;
+    return {
+      ...reservation,
+      priceAtReserve: reservation.priceAtReserve > 10000 ? Math.round(reservation.priceAtReserve / 100) : reservation.priceAtReserve,
+    };
   },
 });
 
@@ -749,7 +752,10 @@ export const getBoutiqueReservations = query({
       .order("desc")
       .take(100);
 
-    return reservations;
+    return reservations.map(r => ({
+      ...r,
+      priceAtReserve: r.priceAtReserve > 10000 ? Math.round(r.priceAtReserve / 100) : r.priceAtReserve,
+    }));
   },
 });
 
@@ -785,9 +791,6 @@ export const getAllReservations_admin = query({
     token: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // We import requireRole dynamically or manually from auth.ts
-    // For now we just use the user object to verify admin status if needed, 
-    // or rely on the general pattern in the codebase.
     const user = await getAuthenticatedUser(ctx, args.token);
     if (user.role !== "admin") {
       throw new ConvexError("Unauthorized");
@@ -815,6 +818,7 @@ export const getAllReservations_admin = query({
 
     return reservations.map((r) => ({
       ...r,
+      priceAtReserve: r.priceAtReserve > 10000 ? Math.round(r.priceAtReserve / 100) : r.priceAtReserve,
       customerName: customerMap[r.customerId] || "Unknown Customer",
       boutiqueName: r.boutiqueName || boutiqueMap[r.boutiqueId] || "Unknown Boutique",
     }));

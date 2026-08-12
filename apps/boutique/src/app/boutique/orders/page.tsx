@@ -756,7 +756,7 @@ export default function BoutiqueOrders() {
                           </div>
                         </td>
                         <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 font-bold text-slate-700">
-                           ₹{(reservation.priceAtReserve ? reservation.priceAtReserve / 100 : 0).toLocaleString("en-IN")}
+                           ₹{(reservation.priceAtReserve ? (reservation.priceAtReserve > 10000 ? Math.round(reservation.priceAtReserve / 100) : reservation.priceAtReserve) : 0).toLocaleString("en-IN")}
                         </td>
                         <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
                           {reservation.reservationExpiresAt && (

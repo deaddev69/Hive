@@ -43,7 +43,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     addItem({
       productId: "mock-product-id",
       size: "M",
-      price: 199900, // stored in paise
+      price: 1999, // in rupees
       name: "Boutique Cotton Kurta",
       imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&q=80&w=400",
       boutiqueName: "Zari Boutique",

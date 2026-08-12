@@ -38,25 +38,37 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       items: [],
       addItem: (newItem) => {
+        const rawPrice = newItem.price;
+        const normalizedPrice = rawPrice > 10000 ? Math.round(rawPrice / 100) : rawPrice;
         const quantity = newItem.quantity ?? 1;
         set((state) => {
-          const existing = state.items.find(
+          const sanitizedItems = state.items.map((item) => ({
+            ...item,
+            price: item.price > 10000 ? Math.round(item.price / 100) : item.price,
+          }));
+          const existing = sanitizedItems.find(
             (item) => item.productId === newItem.productId && item.size === newItem.size
           );
           if (existing) {
             return {
-              items: state.items.map((item) =>
+              items: sanitizedItems.map((item) =>
                 item.productId === newItem.productId && item.size === newItem.size
-                  ? { ...item, quantity: Math.min(item.quantity + quantity, item.availableStock ?? newItem.availableStock ?? 1), availableStock: newItem.availableStock ?? item.availableStock }
+                  ? {
+                      ...item,
+                      price: normalizedPrice,
+                      quantity: Math.min(item.quantity + quantity, item.availableStock ?? newItem.availableStock ?? 1),
+                      availableStock: newItem.availableStock ?? item.availableStock,
+                    }
                   : item
               ),
             };
           }
           return {
             items: [
-              ...state.items,
+              ...sanitizedItems,
               {
                 ...newItem,
+                price: normalizedPrice,
                 quantity: Math.min(quantity, newItem.availableStock ?? 1),
               },
             ],
@@ -134,7 +146,10 @@ export const useCartStore = create<CartState>()(
         set({ items: [] });
       },
       getCartTotal: () => {
-        return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
+        return get().items.reduce((total, item) => {
+          const itemPrice = item.price > 10000 ? Math.round(item.price / 100) : item.price;
+          return total + itemPrice * item.quantity;
+        }, 0);
       },
       getCartCount: () => {
         return get().items.reduce((count, item) => count + item.quantity, 0);

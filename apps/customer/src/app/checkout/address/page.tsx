@@ -193,10 +193,15 @@ export default function CheckoutAddressPage() {
 
   useEffect(() => {
     if (reservation && urlResId && (!checkoutItems.length || checkoutItems[0].reservationId !== urlResId)) {
+      const normalizedPrice =
+        reservation.priceAtReserve > 10000
+          ? Math.round(reservation.priceAtReserve / 100)
+          : reservation.priceAtReserve;
+
       setCheckoutItems([{
         productId: reservation.productId,
         size: reservation.size,
-        price: reservation.priceAtReserve,
+        price: normalizedPrice,
         name: reservation.productName,
         imageUrl: reservation.productImageUrl,
         boutiqueName: reservation.boutiqueName,

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Card, CardContent } from "@hive/ui";
-import { formatCurrency } from "@hive/utils";
+import { formatRupees } from "@hive/utils";
 import { ShoppingBag, Search, Filter, Loader2, Clock, CheckCircle, XCircle } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 
@@ -163,7 +163,7 @@ export default function AdminReservationsPage() {
                       {res.size} × {res.quantity}
                     </td>
                     <td className="px-5 py-4 font-bold whitespace-nowrap">
-                      {formatCurrency(res.priceAtReserve)}
+                      {formatRupees(res.priceAtReserve > 10000 ? Math.round(res.priceAtReserve / 100) : res.priceAtReserve)}
                     </td>
                     <td className="px-5 py-4">
                       <ReservationStatusBadge status={res.status} />
