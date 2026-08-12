@@ -18,10 +18,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
       - name: Set up Android SDK
@@ -33,18 +33,13 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install monorepo dependencies
         run: npm install --legacy-peer-deps
-
-      - name: Sync Capacitor in apps/boutique
-        run: |
-          cd apps/boutique
-          npx cap sync android
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build Android APK with Gradle
+      - name: Build Android APK
         run: |
           cd apps/boutique/android
           chmod +x gradlew
@@ -53,7 +48,7 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: hive-seller-debug.apk
+          name: hive-seller-debug
           path: apps/boutique/android/app/build/outputs/apk/debug/app-debug.apk
 
 
