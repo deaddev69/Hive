@@ -285,16 +285,22 @@ export async function triggerNotification(
 ) {
   const now = Date.now();
 
-  // Deduplication check using unique composite properties
+  // Deduplication check using unique composite properties (channel-aware)
   const existing = await ctx.db
     .query("notificationEvents")
-    .withIndex("by_entity_template", (q) =>
-      q.eq("entityType", entityType).eq("entityId", entityId).eq("template", template)
+    .withIndex("by_entity_template_channel", (q) =>
+      q
+        .eq("entityType", entityType)
+        .eq("entityId", entityId)
+        .eq("template", template)
+        .eq("channel", channel)
     )
     .first();
 
-  if (existing) {
-    console.log(`[triggerNotification] Silently ignoring duplicate notification for ${entityType} ${entityId} template ${template}`);
+  if (existing && existing.status !== "failed") {
+    console.log(
+      `[triggerNotification] Silently ignoring duplicate notification for ${entityType} ${entityId} template ${template} channel ${channel}`
+    );
     return existing._id;
   }
 

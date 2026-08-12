@@ -1839,7 +1839,8 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_status", ["status"])
-    .index("by_entity_template", ["entityType", "entityId", "template"]),
+    .index("by_entity_template", ["entityType", "entityId", "template"])
+    .index("by_entity_template_channel", ["entityType", "entityId", "template", "channel"]),
 
   notificationLogs: defineTable({
     channel: v.union(v.literal("email"), v.literal("whatsapp"), v.literal("sms"), v.literal("push"), v.literal("in_app"), v.literal("slack")),
