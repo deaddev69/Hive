@@ -928,7 +928,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
     boutiqueName: boutique.boutiqueName || boutique.name || "Boutique Pickup Center",
     ownerName: boutique.ownerName || "Boutique Owner",
     email: boutique.email || boutique.ownerEmail || "",
-    phone: boutique.phone || "9876543210",
+    phone: boutique.phone || "7356019103",
     address: boutique.address || "No Address",
     latitude: boutique.latitude || 0,
     longitude: boutique.longitude || 0,

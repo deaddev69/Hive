@@ -61,11 +61,11 @@ function ClaimsFormContent() {
       {/* Header */}
       <div className="border-b border-hive-border/40 pb-4 text-left">
         <span className="text-[10px] font-extrabold text-hive-amber uppercase tracking-wider block mb-1">
-          fits & Quality Support
+          Fits & Quality Support
         </span>
         <h2 className="font-serif text-xl font-bold text-hive-dark">Report Order Issue</h2>
         <p className="text-[10px] text-hive-text-muted mt-1 leading-normal">
-          Log fitting disputes or request replacements.
+          Log damaged goods, wrong items, or fitting disputes. Need instant help? Call or WhatsApp <a href="tel:+917356019103" className="font-bold text-hive-dark underline">+91 73560 19103</a>.
         </p>
       </div>
 

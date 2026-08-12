@@ -483,13 +483,22 @@ export default function OrderDetailPage() {
 
                 if (isFinalSale) {
                   return (
-                    <a
-                      href={`mailto:support@hivenow.in?subject=Report Damaged/Defective Item Order ${order.orderNumber}`}
-                      className="w-full py-3 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-800 dark:text-zinc-200 font-bold text-xs rounded-2xl flex items-center justify-center gap-2 border border-slate-200 dark:border-zinc-700 transition-all cursor-pointer"
-                    >
-                      <AlertCircle className="w-4 h-4 text-slate-600 dark:text-zinc-400" />
-                      <span>Report Damaged or Defective Item</span>
-                    </a>
+                    <div className="space-y-2">
+                      <a
+                        href={`https://wa.me/917356019103?text=${encodeURIComponent(`Hi Hive Support, I need help with my Final Sale order ${order.orderNumber} (damaged or incorrect item).`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-950 font-bold text-xs rounded-2xl flex items-center justify-center gap-2 border border-amber-300 transition-all cursor-pointer shadow-xs"
+                      >
+                        <AlertCircle className="w-4 h-4 text-amber-700" />
+                        <span>Report Damaged / Incorrect Item</span>
+                      </a>
+                      <div className="flex items-center justify-center gap-3 text-[11px] text-slate-500 font-medium pt-0.5">
+                        <span>Helpline: <a href="tel:+917356019103" className="font-bold text-slate-800 underline">+91 73560 19103</a></span>
+                        <span>•</span>
+                        <a href={`mailto:support@hivenow.in?subject=Report Damaged/Defective Item Order ${order.orderNumber}`} className="text-slate-800 underline font-medium">Email Support</a>
+                      </div>
+                    </div>
                   );
                 }
 

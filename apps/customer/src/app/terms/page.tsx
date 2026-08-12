@@ -323,7 +323,7 @@ const SECTIONS: Section[] = [
       `19.1 Grievance Mechanism. BEELYN LLP has established a grievance redressal mechanism for the Platform in accordance with applicable Indian law, including the Consumer Protection Act, 2019 and the Consumer Protection (E-Commerce) Rules, 2020.`,
       `19.2 Submitting a Grievance. Customers and Users may submit grievances relating to the Platform, Orders, or Seller conduct by writing to:`,
       `Grievance Officer — Hive by TailorBee`,
-      `BEELYN LLP 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam Town South Police Station, Ernakulam, Kerala – 682016, India. Email: support@hivenow.in`,
+      `BEELYN LLP 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam Town South Police Station, Ernakulam, Kerala – 682016, India. Email: support@hivenow.in | Phone: +91 73560 19103`,
       `19.3 Acknowledgement. BEELYN LLP endeavours to acknowledge grievances within forty-eight (48) hours of receipt.`,
       `19.4 Resolution Timeline. BEELYN LLP endeavours to resolve valid grievances within one (1) month of receipt, subject to the nature and complexity of the grievance.`,
       `19.5 Escalation. Nothing in these Terms prevents a User from approaching any competent regulatory authority, consumer forum, or court of law as permitted under Applicable Law.`
@@ -831,7 +831,7 @@ export default function TermsPage() {
           <Building className="w-4 h-4 mx-auto mb-2 text-slate-300 dark:text-neutral-600" />
           <p className="font-semibold text-slate-600 dark:text-slate-400">BEELYN LLP (LLPIN: ACS-4901)</p>
           <p className="mt-1">55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam, Kerala – 682016, India</p>
-          <p className="mt-1">Customer Care Support: support@hivenow.in</p>
+          <p className="mt-1">Customer Care Support: support@hivenow.in • Phone: +91 73560 19103</p>
         </div>
 
       </div>

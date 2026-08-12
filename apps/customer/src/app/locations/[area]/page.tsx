@@ -74,7 +74,7 @@ export default async function LocationPage({ params }: Props) {
     "image": "https://hivenow.in/logo.png",
     "@id": `https://hivenow.in/locations/${location.slug}`,
     "url": `https://hivenow.in/locations/${location.slug}`,
-    "telephone": "+91-0000000000",
+    "telephone": "+91 73560 19103",
     "priceRange": "$$",
     "address": {
       "@type": "PostalAddress",

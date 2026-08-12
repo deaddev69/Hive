@@ -100,8 +100,11 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
 
       const logoUrl = boutique?.logoUrl ? getPublicUrl(boutique.logoUrl, "thumbnail") : undefined;
 
+      const isReturnsAccepted = product.returnsAccepted ?? boutique?.returnsAcceptedDefault ?? true;
+
       return {
         ...product,
+        returnsAccepted: isReturnsAccepted,
         imageStorageIds: product.images,
         images: imageUrls.filter(Boolean),
         imageUrl,
@@ -135,6 +138,7 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
           description: boutique.description || "",
           ownerName: boutique.ownerName || "",
           logoUrl,
+          returnsAcceptedDefault: boutique.returnsAcceptedDefault ?? true,
         } : null,
       };
     })

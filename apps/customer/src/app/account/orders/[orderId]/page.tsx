@@ -512,16 +512,16 @@ function PostPurchaseActions({ order }: { order: Order }) {
         <div className="space-y-1">
           <h4 className="text-xs font-extrabold text-hive-dark">Have quality concerns or incorrect item received?</h4>
           <p className="text-[10px] text-hive-text-muted leading-relaxed">
-            Our 3-Day Return & Refund Policy protects you. Report issues or initiate returns easily.
+            Our Hive Guarantee protects you. Damaged, defective, or incorrect items remain 100% covered. Contact helpline <a href="tel:+917356019103" className="font-bold text-stone-800 underline">+91 73560 19103</a> or file a claim.
           </p>
         </div>
 
         <button
           type="button"
           onClick={() => router.push(`/claims/new?orderId=${order.id}`)}
-          className="w-full h-11 border border-hive-amber text-hive-amber hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1 shadow-sm"
+          className="w-full h-11 border border-hive-amber text-hive-amber hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-[10px] flex items-center justify-center gap-1 shadow-sm cursor-pointer"
         >
-          <span>Report An Issue</span>
+          <span>Report An Issue / Claim</span>
           <HelpCircle className="w-3.5 h-3.5" />
         </button>
       </div>

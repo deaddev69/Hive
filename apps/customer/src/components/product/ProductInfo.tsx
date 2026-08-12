@@ -62,7 +62,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       .join(" ");
   };
 
-  const isReturnsAccepted = (product as any).boutique?.returnsAcceptedDefault ?? true;
+  const isReturnsAccepted = (product as any).returnsAccepted ?? (product as any).boutique?.returnsAcceptedDefault ?? true;
 
   const hasDescription = product.description && product.description.trim() !== "";
 
@@ -308,7 +308,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
             onClick={() => setOpenAccordion(openAccordion === "returns" ? null : "returns")}
             className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900 focus:outline-none cursor-pointer"
           >
-            <span>DELIVERY & 24H RETURN POLICY</span>
+            <span>{isReturnsAccepted ? "DELIVERY & 24H RETURN POLICY" : "DELIVERY & FINAL SALE POLICY"}</span>
             <span className="text-stone-400 text-xs font-normal">
               {openAccordion === "returns" ? "−" : "+"}
             </span>
@@ -327,7 +327,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
                   <div className="pt-2 border-t border-stone-200/60 flex items-start gap-2">
                     <ShieldCheck className="w-3.5 h-3.5 text-stone-700 flex-shrink-0 mt-0.5" />
                     <p className="text-[11px] text-stone-700 leading-relaxed font-semibold">
-                      Hive Guarantee: Damaged, defective, or incorrect items remain 100% covered with free replacement or full refund.
+                      Hive Guarantee: Damaged, defective, or incorrect items remain 100% covered. Contact support at +91 73560 19103 or support@hivenow.in for replacement or refund.
                     </p>
                   </div>
                 </div>

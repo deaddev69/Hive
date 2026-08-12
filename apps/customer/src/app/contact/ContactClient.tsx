@@ -33,11 +33,22 @@ export function ContactClient() {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-sm font-bold tracking-wider uppercase text-hive-dark/50">Phone Support</h2>
+            <h2 className="text-sm font-bold tracking-wider uppercase text-hive-dark/50">Phone & WhatsApp Support</h2>
             <p className="text-hive-dark text-base">
-              +91 98765 43210
+              <a href="tel:+917356019103" className="text-hive-gold font-bold hover:underline">
+                +91 73560 19103
+              </a>
+              {" • "}
+              <a 
+                href="https://wa.me/917356019103?text=Hi%20Hive%20Support%2C%20I%20have%20an%20inquiry." 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-emerald-600 font-bold hover:underline text-sm"
+              >
+                Chat on WhatsApp
+              </a>
             </p>
-            <p className="text-xs text-hive-dark/50 mt-1">Available Mon-Fri, 10:00 AM - 6:00 PM (IST)</p>
+            <p className="text-xs text-hive-dark/50 mt-1">Available Mon-Sun, 9:00 AM - 9:00 PM (IST)</p>
           </div>
 
           <div className="space-y-2">

@@ -67,7 +67,7 @@ export function MobileProductDetails({
       .join(" ");
   };
 
-  const isReturnsAccepted = (product as any).boutique?.returnsAcceptedDefault ?? true;
+  const isReturnsAccepted = (product as any).returnsAccepted ?? (product as any).boutique?.returnsAcceptedDefault ?? true;
 
   const hasDescription = product.description && product.description.trim() !== "";
 
@@ -215,7 +215,7 @@ export function MobileProductDetails({
 
       {/* ── SECTION 5: TRUST REASSURANCE ── */}
       <div className="border-t border-stone-200/50 pt-3.5 mt-2 py-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase select-none">
-        <span className={!isReturnsAccepted ? "text-stone-600 font-semibold" : "text-stone-700 font-semibold flex items-center gap-1"}>
+        <span className={!isReturnsAccepted ? "text-stone-700 font-bold" : "text-stone-700 font-semibold flex items-center gap-1"}>
           {!isReturnsAccepted ? "🔒 Final Sale — No Voluntary Returns" : "🛡️ 24h Easy Returns"}
         </span>
         <span className="text-stone-300">•</span>
@@ -310,7 +310,7 @@ export function MobileProductDetails({
             onClick={() => setOpenAccordion(openAccordion === "returns" ? null : "returns")}
             className="w-full flex items-center justify-between py-2 text-left text-[10px] font-bold uppercase tracking-wider text-stone-900 focus:outline-none"
           >
-            <span>DELIVERY & 24H RETURN POLICY</span>
+            <span>{isReturnsAccepted ? "DELIVERY & 24H RETURN POLICY" : "DELIVERY & FINAL SALE POLICY"}</span>
             <span className="text-stone-400 text-xs font-normal">
               {openAccordion === "returns" ? "−" : "+"}
             </span>
@@ -329,7 +329,7 @@ export function MobileProductDetails({
                   <div className="pt-2 border-t border-stone-200/60 flex items-start gap-2">
                     <ShieldCheck className="w-3.5 h-3.5 text-stone-700 flex-shrink-0 mt-0.5" />
                     <p className="text-[11px] text-stone-700 leading-relaxed font-semibold">
-                      Hive Guarantee: Damaged, defective, or incorrect items remain 100% covered with free replacement or full refund.
+                      Hive Guarantee: Damaged, defective, or incorrect items remain 100% covered. Contact support at +91 73560 19103 or support@hivenow.in for replacement or refund.
                     </p>
                   </div>
                 </div>

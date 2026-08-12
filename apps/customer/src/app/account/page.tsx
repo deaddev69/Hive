@@ -1292,15 +1292,23 @@ function AccountPageContent() {
                 <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-[#78716C]">Need Help?</h5>
               </div>
               
-              <a 
-                href="mailto:support@hivenow.in"
-                className="text-xs font-bold text-[#1C1917] hover:text-[#F5A623] flex items-center gap-0.5 transition-colors group"
-              >
-                Contact Hive Support →
-              </a>
+              <div className="flex flex-col gap-1 text-xs">
+                <a 
+                  href="tel:+917356019103"
+                  className="font-bold text-[#1C1917] hover:text-[#F5A623] transition-colors"
+                >
+                  📞 +91 73560 19103
+                </a>
+                <a 
+                  href="mailto:support@hivenow.in"
+                  className="font-medium text-[#78716C] hover:text-[#1C1917] transition-colors"
+                >
+                  ✉️ support@hivenow.in
+                </a>
+              </div>
               
               <p className="text-[10px] text-[#78716C] leading-normal font-medium">
-                Our team typically replies within one business day.
+                Helpline active Mon–Sun, 9 AM – 9 PM.
               </p>
             </div>
 
@@ -1332,15 +1340,23 @@ function AccountPageContent() {
               <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-[#78716C]">Need Help?</h5>
             </div>
             
-            <a 
-              href="mailto:support@hivenow.in"
-              className="text-xs font-bold text-[#1C1917] hover:text-[#F5A623] flex items-center gap-0.5 transition-colors group"
-            >
-              Contact Hive Support →
-            </a>
+            <div className="flex flex-col gap-1 text-xs">
+              <a 
+                href="tel:+917356019103"
+                className="font-bold text-[#1C1917] hover:text-[#F5A623] transition-colors"
+              >
+                📞 +91 73560 19103
+              </a>
+              <a 
+                href="mailto:support@hivenow.in"
+                className="font-medium text-[#78716C] hover:text-[#1C1917] transition-colors"
+              >
+                ✉️ support@hivenow.in
+              </a>
+            </div>
             
             <p className="text-[10px] text-[#78716C] leading-normal font-medium">
-              Our team typically replies within one business day.
+              Helpline active Mon–Sun, 9 AM – 9 PM.
             </p>
           </div>
         </main>

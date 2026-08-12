@@ -335,7 +335,7 @@ export const createShipmentAdmin = mutation({
       city: orderPickup?.city || boutique?.addressDetails?.city || "Unknown City",
       state: orderPickup?.state || boutique?.addressDetails?.state || "Unknown State",
       pincode: orderPickup?.pincode || boutique?.addressDetails?.pincode || "000000",
-      phone: orderPickup?.phone || boutique?.phone || "9876543210",
+      phone: orderPickup?.phone || boutique?.phone || "7356019103",
     };
 
     // Resolve Customer delivery details
@@ -1130,7 +1130,7 @@ export const seedLogisticsMockDataAdmin = mutation({
         city: orderPickup?.city || boutique?.addressDetails?.city || "Unknown City",
         state: orderPickup?.state || boutique?.addressDetails?.state || "Unknown State",
         pincode: orderPickup?.pincode || boutique?.addressDetails?.pincode || "000000",
-        phone: orderPickup?.phone || boutique?.phone || "9876543210",
+        phone: orderPickup?.phone || boutique?.phone || "7356019103",
       };
 
       const deliveryAddress = {
@@ -1374,7 +1374,7 @@ export const bookShipmentAdmin = mutation({
       city: orderPickup?.city || boutique?.addressDetails?.city || "Unknown City",
       state: orderPickup?.state || boutique?.addressDetails?.state || "Unknown State",
       pincode: orderPickup?.pincode || boutique?.addressDetails?.pincode || "000000",
-      phone: orderPickup?.phone || boutique?.phone || "9876543210",
+      phone: orderPickup?.phone || boutique?.phone || "7356019103",
     };
 
     const customer = await ctx.db.get(order.customerId);

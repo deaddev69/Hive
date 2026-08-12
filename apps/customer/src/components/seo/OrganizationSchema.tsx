@@ -17,7 +17,7 @@ export function OrganizationSchema() {
     },
     contactPoint: {
       "@type": "ContactPoint",
-      telephone: "+91-0000000000", // Replace with actual number
+      telephone: "+91 73560 19103",
       contactType: "customer service",
       email: "support@hivenow.in",
     },

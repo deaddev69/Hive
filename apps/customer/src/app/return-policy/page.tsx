@@ -27,6 +27,7 @@ export default function ReturnPolicyPage() {
               LLPIN: ACS-4901<br />
               Registered Office: 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam, Kerala – 682016, India<br />
               Email Support: <a href="mailto:support@hivenow.in" className="underline font-bold text-stone-800">support@hivenow.in</a><br />
+              Phone / WhatsApp Helpline: <a href="tel:+917356019103" className="underline font-bold text-stone-800">+91 73560 19103</a><br />
               Platform Link: <a href="https://hivenow.in" className="underline font-bold text-stone-800">https://hivenow.in</a>
             </p>
           </div>
@@ -205,7 +206,8 @@ export default function ReturnPolicyPage() {
               BEELYN LLP<br />
               55/4379, Door No. 3623, Valanjambalam Junction,<br />
               Kochi M.G. Road, Ernakulam, Kerala – 682016, India<br />
-              Email: <a href="mailto:support@hivenow.in" className="underline">support@hivenow.in</a>
+              Email: <a href="mailto:support@hivenow.in" className="underline">support@hivenow.in</a><br />
+              Helpline: <a href="tel:+917356019103" className="underline font-bold">+91 73560 19103</a>
             </p>
             <p>
               14.2 Hive endeavours to acknowledge support queries within forty-eight (48) hours and to resolve valid grievances within one (1) month, in accordance with the grievance redressal mechanism described in the Customer Terms.

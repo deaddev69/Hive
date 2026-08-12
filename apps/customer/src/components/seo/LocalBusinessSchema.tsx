@@ -9,7 +9,7 @@ export function LocalBusinessSchema() {
     image: `${SITE_URL}/logo.png`,
     "@id": SITE_URL,
     url: SITE_URL,
-    telephone: "+91-0000000000",
+    telephone: "+91 73560 19103",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Ernakulam",
