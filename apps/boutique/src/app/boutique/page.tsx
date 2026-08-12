@@ -230,7 +230,15 @@ export default function BoutiqueDashboard() {
       const diffTime = today.getTime() - orderDate.getTime();
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       if (diffDays >= 0 && diffDays < 7) {
-        dailyTotals[6 - diffDays] += o.total ?? 0;
+        let payoutPaise = o.totalPayout;
+        if (payoutPaise == null || payoutPaise <= 0) {
+          payoutPaise = o.totalBasePrice
+            ? Math.round(o.totalBasePrice * 0.98)
+            : o.subtotal
+            ? Math.round(o.subtotal * 0.98)
+            : Math.round((o.total ?? 0) * 0.98);
+        }
+        dailyTotals[6 - diffDays] += Math.round(payoutPaise / 100);
       }
     });
     return dailyTotals;

@@ -249,7 +249,7 @@ export default function BoutiqueOrders() {
                   <th className="px-6 py-4">Delivery Slot / Date</th>
                   <th className="px-6 py-4">Customer Details</th>
                   <th className="px-6 py-4">Purchased Items</th>
-                  <th className="px-6 py-4">Total Amount</th>
+                  <th className="px-6 py-4">Net Payout</th>
                   <th className="px-6 py-4">Invoice</th>
                   <th className="px-6 py-4">Order Status</th>
                 </tr>
@@ -452,10 +452,15 @@ export default function BoutiqueOrders() {
                         </div>
                       </td>
 
-                      {/* Total */}
+                      {/* Net Payout */}
                       <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 font-bold text-sm border-t md:border-t-0 border-hive-border/10">
-                        <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider block mb-1">Total Amount</span>
-                        <span>{formatCurrency(order.total)}</span>
+                        <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider block mb-1">Net Payout</span>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-slate-900">
+                            ₹{Math.round((order.totalPayout ?? order.orderSnapshot?.merchantPayable ?? (order.total * 0.98)) / 100).toLocaleString("en-IN")}
+                          </span>
+                          <span className="text-[10px] font-normal text-slate-400">Net earnings</span>
+                        </div>
                       </td>
 
                       {/* Invoice */}
@@ -659,7 +664,7 @@ export default function BoutiqueOrders() {
                   <th className="px-6 py-4">Reservation Status</th>
                   <th className="px-6 py-4">Reservation ID</th>
                   <th className="px-6 py-4">Requested Item</th>
-                  <th className="px-6 py-4">Price</th>
+                  <th className="px-6 py-4">Net Payout</th>
                   <th className="px-6 py-4">Expiration</th>
                 </tr>
               </thead>
@@ -756,7 +761,13 @@ export default function BoutiqueOrders() {
                           </div>
                         </td>
                         <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4 font-bold text-slate-700">
-                           ₹{(reservation.priceAtReserve ? (reservation.priceAtReserve > 10000 ? Math.round(reservation.priceAtReserve / 100) : reservation.priceAtReserve) : 0).toLocaleString("en-IN")}
+                          <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider block mb-1">Net Payout</span>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-slate-900">
+                              ₹{(reservation.netPayout ?? reservation.priceAtReserve ?? 0).toLocaleString("en-IN")}
+                            </span>
+                            <span className="text-[10px] font-normal text-slate-400">Net payout</span>
+                          </div>
                         </td>
                         <td className="block md:table-cell px-2 md:px-6 py-2 md:py-4">
                           {reservation.reservationExpiresAt && (

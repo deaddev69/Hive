@@ -287,7 +287,7 @@ export default function BoutiqueFinance() {
           </div>
           <div className="flex flex-col mt-4">
             <span className="text-2xl font-bold text-slate-800">
-              {formatCurrency(metrics.availableBalance / 100)}
+              {formatCurrency(metrics.availableBalance)}
             </span>
             <span className="text-[10px] text-hive-text-muted font-medium mt-1">
               Released funds ready for next automatic sweep.
@@ -305,7 +305,7 @@ export default function BoutiqueFinance() {
           </div>
           <div className="flex flex-col mt-4">
             <span className="text-2xl font-bold text-slate-800">
-              {formatCurrency(metrics.pendingBalance / 100)}
+              {formatCurrency(metrics.pendingBalance)}
             </span>
             <span className="text-[10px] text-hive-text-muted font-medium mt-1">
               Held in weekly (7-day post-delivery) hold window.
@@ -323,7 +323,7 @@ export default function BoutiqueFinance() {
           </div>
           <div className="flex flex-col mt-4">
             <span className="text-2xl font-bold text-slate-800">
-              {formatCurrency(metrics.totalPaidOut / 100)}
+              {formatCurrency(metrics.totalPaidOut)}
             </span>
             <span className="text-[10px] text-hive-text-muted font-medium mt-1">
               Total earnings settled to your bank account.
@@ -418,11 +418,11 @@ export default function BoutiqueFinance() {
                           </td>
                           <td className="py-4 px-6 text-right flex flex-col items-end gap-0.5">
                             <span className={`font-extrabold text-sm ${isNegative ? "text-red-500" : "text-slate-800"}`}>
-                              {isNegative ? "-" : ""}{formatCurrency(Math.abs(s.amount) / 100)}
+                              {isNegative ? "-" : ""}{formatCurrency(Math.abs(s.amount))}
                             </span>
                             {s.snapshotMath && !isNegative && (
                               <span className="text-[9px] text-slate-400 font-medium whitespace-nowrap">
-                                {formatCurrency(s.snapshotMath.basePrice / 100)} base - {formatCurrency(s.snapshotMath.platformFee / 100)} fee
+                                {formatCurrency(s.snapshotMath.basePrice)} base - {formatCurrency(s.snapshotMath.platformFee)} fee
                               </span>
                             )}
                           </td>
@@ -483,7 +483,7 @@ export default function BoutiqueFinance() {
                             {p.paidAt ? formatDate(p.paidAt) : formatDate(p.createdAt)}
                           </td>
                           <td className="py-4 px-6 text-right font-extrabold text-slate-800 text-sm">
-                            {formatCurrency(p.amount / 100)}
+                            {formatCurrency(p.amount)}
                           </td>
                         </tr>
                       );

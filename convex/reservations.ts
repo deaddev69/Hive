@@ -752,10 +752,35 @@ export const getBoutiqueReservations = query({
       .order("desc")
       .take(100);
 
-    return reservations.map(r => ({
-      ...r,
-      priceAtReserve: r.priceAtReserve > 10000 ? Math.round(r.priceAtReserve / 100) : r.priceAtReserve,
-    }));
+    const productFetches = await Promise.all(
+      reservations.map((r) => ctx.db.get(r.productId))
+    );
+
+    return reservations.map((r, i) => {
+      const product = productFetches[i];
+      const rawCustomerPrice = r.priceAtReserve > 10000 ? Math.round(r.priceAtReserve / 100) : r.priceAtReserve;
+
+      let baseInRupees = rawCustomerPrice;
+      if (product) {
+        const rawBase = product.baseDiscountPrice ?? product.basePrice;
+        if (rawBase != null && rawBase > 0) {
+          baseInRupees = rawBase > 10000 ? Math.round(rawBase / 100) : rawBase;
+        } else if (product.price != null && product.price > 0) {
+          const prodPriceRupees = product.price > 10000 ? Math.round(product.price / 100) : product.price;
+          baseInRupees = Math.round(prodPriceRupees / 1.18);
+        }
+      }
+
+      const platformFee = Math.round(baseInRupees * 0.02);
+      const netPayout = baseInRupees - platformFee;
+
+      return {
+        ...r,
+        priceAtReserve: rawCustomerPrice,
+        basePrice: baseInRupees,
+        netPayout,
+      };
+    });
   },
 });
 
