@@ -204,6 +204,8 @@ interface StickyMobilePurchaseBarProps {
   isReservationMode?: boolean;
   onReserve?: () => void;
   reservationComplete?: any;
+  isStockHeld?: boolean;
+  onOpenHoldModal?: () => void;
 }
 
 export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = ({
@@ -225,6 +227,8 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
   onToggleWishlist,
   isReservationMode = false,
   onReserve,
+  isStockHeld = false,
+  onOpenHoldModal,
 }) => {
   const isOutOfStock = selectedSize ? inventoryCount === 0 : false;
   const isOffline = resolvedStatus === "closed" || resolvedStatus === "temporarily_unavailable";
@@ -256,7 +260,7 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
             type="button"
             onClick={onToggleWishlist}
             className={cn(
-              "h-14 w-full rounded-2xl font-bold uppercase tracking-wider text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border cursor-pointer",
+              "h-13 w-full rounded-2xl font-bold uppercase tracking-wider text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all border cursor-pointer",
               isFavorite
                 ? "bg-amber-50 border-amber-200 text-amber-700"
                 : "bg-hive-dark text-white border-transparent"
@@ -269,7 +273,7 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
           <button
             type="button"
             onClick={onSelectSizePrompt}
-            className="h-14 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs shadow-sm hover:shadow active:scale-[0.98] transition-all cursor-pointer"
+            className="h-13 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs shadow-sm hover:shadow active:scale-[0.98] transition-all cursor-pointer"
           >
             Select Size
           </button>
@@ -277,26 +281,35 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
           <button
             type="button"
             disabled
-            className="h-14 w-full rounded-2xl bg-stone-100 text-stone-400 font-bold uppercase tracking-wider text-xs cursor-not-allowed"
+            className="h-13 w-full rounded-2xl bg-stone-100 text-stone-400 font-bold uppercase tracking-wider text-xs cursor-not-allowed"
           >
             Sold Out
           </button>
+        ) : isStockHeld ? (
+          <button
+            type="button"
+            onClick={onOpenHoldModal}
+            className="h-13 w-full rounded-2xl bg-amber-50/90 text-amber-900 border border-amber-200/80 font-bold uppercase tracking-wider text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all shadow-xs cursor-pointer"
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-600" />
+            <span>On Hold (1 reserved)</span>
+          </button>
         ) : isReservationMode ? (
-            <button
-              type="button"
-              onClick={onReserve}
-              disabled={loading}
-              className="h-14 w-full rounded-2xl bg-hive-gold text-hive-dark font-black uppercase tracking-widest text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all shadow-sm hover:bg-[#F5C22B] disabled:opacity-50"
-            >
-              {loading ? (
-                <span className="w-4 h-4 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
-              ) : (
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-hive-dark/80" />
-                  RESERVE FOR TOMORROW
-                </span>
-              )}
-            </button>
+          <button
+            type="button"
+            onClick={onReserve}
+            disabled={loading}
+            className="h-13 w-full rounded-2xl bg-[#1C1917] text-[#FAF8F5] font-bold uppercase tracking-[0.14em] text-xs leading-tight px-1 flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-md hover:bg-stone-900 disabled:opacity-50"
+          >
+            {loading ? (
+              <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+            ) : (
+              <span className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-amber-400" />
+                <span>Reserve for Tomorrow</span>
+              </span>
+            )}
+          </button>
         ) : !isServiceable ? (
           <button
             type="button"
@@ -380,6 +393,13 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const [toast, setToast] = useState<{ message: string; type: "success" | "info" } | null>(null);
   const [crossBoutiqueModalOpen, setCrossBoutiqueModalOpen] = useState(false);
   const [duplicateReservationModalOpen, setDuplicateReservationModalOpen] = useState(false);
+  const [itemOnHoldModalOpen, setItemOnHoldModalOpen] = useState(false);
+
+  const reservationHold = useQuery(
+    (api as any).reservations.getProductReservationHold,
+    selectedSize ? { productId: ((product as any)._id ?? product.id) as any, size: selectedSize } : "skip"
+  );
+  const isStockHeld = Boolean(reservationHold?.isHeld);
 
   const createReservationMutation = useMutation((api as any).reservations.createReservation);
 
@@ -586,10 +606,14 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       });
       // Removed router.push("/cart") so user sees the toast
     } catch (e: any) {
-      if (e.message?.includes("already have an active reservation")) {
+      const rawMsg = typeof e?.data === "string" ? e.data : (e?.message || "");
+      if (rawMsg.includes("already have an active reservation")) {
         setDuplicateReservationModalOpen(true);
+      } else if (rawMsg.includes("currently reserved") || rawMsg.includes("out of stock") || rawMsg.includes("reserved")) {
+        setItemOnHoldModalOpen(true);
       } else {
-        triggerToast(e.message || "Failed to reserve", "info");
+        const clean = rawMsg.split("ConvexError: ")[1] || rawMsg.split("Error: ")[1] || rawMsg;
+        triggerToast(clean, "info");
       }
     } finally {
       setLoading(false);
@@ -874,20 +898,34 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             </button>
           </form>
         </div>
+      ) : isStockHeld ? (
+        <div className="hidden lg:flex flex-col gap-2 w-full select-none">
+          <button
+            type="button"
+            onClick={() => setItemOnHoldModalOpen(true)}
+            className="h-12 w-full rounded-2xl bg-amber-50/90 text-amber-900 border border-amber-200/80 font-bold uppercase tracking-wider text-xs transition-all active:scale-[0.98] shadow-xs hover:bg-amber-100/70 cursor-pointer flex items-center justify-center gap-2"
+          >
+            <Clock className="w-4 h-4 text-amber-600" />
+            <span>Item on Hold (1 unit reserved)</span>
+          </button>
+          <p className="text-[11px] text-stone-500 text-center font-medium">
+            Currently reserved by another shopper. Will release if not purchased in 30 mins.
+          </p>
+        </div>
       ) : isReservationMode ? (
         <div className="hidden lg:flex flex-col gap-3 w-full">
           <button
             type="button"
             onClick={handleReserve}
             disabled={loading}
-            className="h-12 w-full rounded-2xl bg-hive-gold text-hive-dark font-black uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:bg-[#F5C22B] cursor-pointer flex items-center justify-center disabled:opacity-50"
+            className="h-12 w-full rounded-2xl bg-[#1C1917] text-[#FAF8F5] font-bold uppercase tracking-[0.14em] text-xs transition-all active:scale-[0.98] shadow-md hover:bg-stone-900 cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {loading ? (
-              <span className="w-5 h-5 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
+              <span className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
             ) : (
               <span className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-hive-dark/80" />
-                RESERVE FOR TOMORROW
+                <Calendar className="w-4 h-4 text-amber-400" />
+                <span>Reserve for Tomorrow</span>
               </span>
             )}
           </button>
@@ -955,6 +993,8 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         onToggleWishlist={handleSaveToWishlist}
         isReservationMode={isReservationMode}
         onReserve={handleReserve}
+        isStockHeld={isStockHeld}
+        onOpenHoldModal={() => setItemOnHoldModalOpen(true)}
       />
 
       <style>{`
@@ -1112,6 +1152,46 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
               className="w-full text-center text-xs text-stone-600 hover:text-stone-900 font-semibold py-2 transition-colors focus:outline-none mt-2"
             >
               Keep Browsing
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Item on Hold Modal */}
+      <Modal
+        isOpen={itemOnHoldModalOpen}
+        onClose={() => setItemOnHoldModalOpen(false)}
+        title=""
+      >
+        <div className="flex flex-col items-center justify-center p-2 sm:p-4 text-center">
+          <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-5 relative border border-amber-200/50">
+            <Clock className="w-7 h-7 text-amber-600 relative z-10" />
+          </div>
+          <h3 className="text-lg font-serif font-bold text-stone-900 mb-2">
+            Piece Currently on Hold
+          </h3>
+          <p className="text-xs text-stone-500 font-medium mb-6 leading-relaxed max-w-[300px]">
+            Another customer has temporarily reserved the last unit of size <span className="font-bold text-stone-800">{selectedSize || "selected"}</span>. 
+            <br/><br/>
+            Reservations are held for 30 minutes. If the customer does not complete payment or the boutique declines, this piece will immediately be released back to stock.
+          </p>
+
+          <div className="flex flex-col w-full gap-2.5">
+            <button
+              onClick={() => {
+                setItemOnHoldModalOpen(false);
+                handleWishlistToggle();
+              }}
+              className="h-12 w-full rounded-2xl bg-[#1C1917] text-[#FAF8F5] font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] hover:bg-stone-900 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Heart className="w-4 h-4 text-amber-400" />
+              <span>Save to Wishlist for Updates</span>
+            </button>
+            <button
+              onClick={() => setItemOnHoldModalOpen(false)}
+              className="h-12 w-full rounded-2xl bg-stone-100 text-stone-600 font-bold uppercase tracking-widest text-xs transition-all hover:bg-stone-200 active:scale-[0.98] cursor-pointer"
+            >
+              Close
             </button>
           </div>
         </div>

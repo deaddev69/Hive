@@ -1,5 +1,17 @@
-// convex/lib/whatsappTemplates.ts
-// Maps internal Hive templates to Meta WhatsApp Cloud API templates
+function formatIndianTime(timestamp: number | string): string {
+  try {
+    const num = typeof timestamp === "string" ? parseInt(timestamp, 10) : timestamp;
+    if (isNaN(num)) return "30 minutes";
+    return new Intl.DateTimeFormat("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(new Date(num));
+  } catch {
+    return "30 minutes";
+  }
+}
 
 export function getWhatsAppTemplate(template: string, payload: any): { templateName: string, parameters: string[] } {
   let templateName = "";
@@ -39,7 +51,7 @@ export function getWhatsAppTemplate(template: string, payload: any): { templateN
       templateName = "hive_reservation_confirmed";
       parameters = [
         payload.productName || "your item",
-        payload.paymentExpiresAt ? new Date(payload.paymentExpiresAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "30 minutes"
+        payload.paymentExpiresAt ? formatIndianTime(payload.paymentExpiresAt) : "30 minutes"
       ];
       break;
 

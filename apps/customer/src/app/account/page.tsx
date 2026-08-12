@@ -36,9 +36,11 @@ import {
   ArrowRight,
   HelpCircle,
   LogOut,
+  Navigation,
 } from "lucide-react";
 import Link from "next/link";
 import { ReservationStatusCard } from "@/components/reservation/ReservationStatusCard";
+import { LocationMapPicker, ReverseGeocodeResult } from "@/components/location/LocationMapPicker";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toTitleCase(str?: string): string {
@@ -289,6 +291,59 @@ function AddressFormModal({
   saving: boolean;
 }) {
   const [form, setForm] = useState<AddressFormData>(initial);
+  const [mapLat, setMapLat] = useState<number>(initial.lat || 9.9312);
+  const [mapLng, setMapLng] = useState<number>(initial.lng || 76.2673);
+  const [mapResult, setMapResult] = useState<ReverseGeocodeResult | null>(
+    initial.formattedAddress ? {
+      city: initial.city,
+      locality: initial.line1,
+      state: initial.state,
+      pincode: initial.pincode,
+      formattedAddress: initial.formattedAddress,
+    } : null
+  );
+  const [gpsDetecting, setGpsDetecting] = useState(false);
+
+  const handleMapChange = (lat: number, lng: number) => {
+    setMapLat(lat);
+    setMapLng(lng);
+    setForm(prev => ({ ...prev, lat, lng }));
+  };
+
+  const handleReverseGeocode = (result: ReverseGeocodeResult) => {
+    setMapResult(result);
+    setForm(prev => ({
+      ...prev,
+      city: result.city || prev.city || "Kochi",
+      state: result.state || prev.state || "Kerala",
+      pincode: result.pincode || prev.pincode,
+      line1: result.locality || result.formattedAddress.split(",")[0] || prev.line1,
+      formattedAddress: result.formattedAddress,
+    }));
+  };
+
+  const handleGPSDetect = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+    setGpsDetecting(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setMapLat(latitude);
+        setMapLng(longitude);
+        setForm(prev => ({ ...prev, lat: latitude, lng: longitude }));
+        setGpsDetecting(false);
+      },
+      (err) => {
+        console.error("GPS detection error:", err);
+        toast.error("Could not fetch your location. Please select on map.");
+        setGpsDetecting(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const set = (field: keyof AddressFormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -307,19 +362,21 @@ function AddressFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-[#1C1917]/25 backdrop-blur-[2px] transition-opacity duration-300"
         onClick={onClose}
       />
 
-      {/* Sheet */}
-      <div className="relative z-10 w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-2xl border border-[#1c1917]/[0.08] shadow-2xl overflow-y-auto max-h-[90vh] animate-in fade-in slide-in-from-bottom-5 duration-300">
-        {/* Header */}
+      <div className="relative z-10 w-full sm:max-w-xl bg-white rounded-t-3xl sm:rounded-2xl border border-[#1c1917]/[0.08] shadow-2xl overflow-y-auto max-h-[90vh] animate-in fade-in slide-in-from-bottom-5 duration-300">
         <div className="px-6 py-5 border-b border-[#1c1917]/[0.08] flex items-center justify-between">
-          <h3 className="text-base font-serif font-bold text-[#1C1917]">
-            {initial.houseNumber || initial.line1 ? "Edit Address" : "Add Address"}
-          </h3>
+          <div className="flex flex-col text-left">
+            <h3 className="text-base font-serif font-bold text-[#1C1917]">
+              {initial.houseNumber || initial.line1 ? "Edit Address" : "Set Delivery Location"}
+            </h3>
+            <p className="text-xs text-[#78716C] mt-0.5">
+              Pin your location on Google Maps and enter building details
+            </p>
+          </div>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-[#FAF8F4] hover:bg-[#1c1917]/[0.04] flex items-center justify-center transition-colors cursor-pointer"
@@ -328,118 +385,167 @@ function AddressFormModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
-          {/* Label */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">
-              Address Label
+        <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 text-left">
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-widest">
+                1. Pin Location on Map
+              </span>
+              <button
+                type="button"
+                onClick={handleGPSDetect}
+                disabled={gpsDetecting}
+                className="text-[11px] font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {gpsDetecting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Locating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>Use Current GPS</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="w-full h-60 sm:h-64 rounded-2xl overflow-hidden relative border border-stone-200 shadow-inner bg-stone-100">
+              <LocationMapPicker
+                lat={mapLat}
+                lng={mapLng}
+                onChange={handleMapChange}
+                onReverseGeocode={handleReverseGeocode}
+                showCurrentLocation={false}
+                height="100%"
+              />
+            </div>
+
+            <div className="p-3 bg-[#FAF8F5] border border-stone-200/70 rounded-xl text-left w-full space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <p className="text-xs font-bold text-stone-900 truncate">
+                  {mapResult ? `${mapResult.locality || mapResult.city}, ${mapResult.pincode}` : "Pin location on map"}
+                </p>
+              </div>
+              <p className="text-[11px] text-stone-500 leading-relaxed pl-4 line-clamp-2">
+                {mapResult ? mapResult.formattedAddress : "Move the pin on the map or search your building above to set your location."}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-2 border-t border-stone-100">
+            <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-widest block">
+              2. Building & Receiver Information
+            </span>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">
+                Address Type
+              </label>
+              <div className="flex gap-2.5">
+                {LABEL_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setForm((p) => ({ ...p, label: opt }))}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      form.label === opt
+                        ? "bg-[#1C1917] text-[#FAF8F5] border-[#1C1917]"
+                        : "bg-white text-[#78716C] border-[#1c1917]/[0.08] hover:border-[#1c1917]/20"
+                    }`}
+                  >
+                    <LabelIcon label={opt} />
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Field
+              label="House / Flat / Building *"
+              placeholder="e.g. Flat 4B, Sunshine Apartments"
+              value={form.houseNumber}
+              onChange={set("houseNumber")}
+              required
+            />
+
+            <Field
+              label="Street / Area *"
+              placeholder="e.g. MG Road, Panampilly Nagar"
+              value={form.line1}
+              onChange={set("line1")}
+              required
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field
+                label="City *"
+                placeholder="City"
+                value={form.city}
+                onChange={set("city")}
+                required
+              />
+              <Field
+                label="State *"
+                placeholder="State"
+                value={form.state}
+                onChange={set("state")}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field
+                label="Pincode *"
+                placeholder="6-digit pincode"
+                value={form.pincode}
+                onChange={set("pincode")}
+                inputMode="numeric"
+                maxLength={6}
+                required
+              />
+              <Field
+                label="Landmark (optional)"
+                placeholder="e.g. Near Metro Station"
+                value={form.landmark}
+                onChange={set("landmark")}
+              />
+            </div>
+
+            <Field
+              label="Contact Phone Number *"
+              placeholder="e.g. +91 98765 43210"
+              value={form.phone}
+              onChange={set("phone")}
+              required
+            />
+
+            <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-[#1c1917]/[0.08] hover:border-[#1c1917]/20 transition-colors">
+              <div
+                className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
+                  form.isDefault
+                    ? "bg-[#1C1917] border-[#1C1917]"
+                    : "bg-white border-[#1c1917]/[0.08]"
+                }`}
+              >
+                {form.isDefault && <Check className="w-3 h-3 text-[#FAF8F5]" />}
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-bold text-[#1C1917]">Set as default address</span>
+                <span className="text-[10px] text-[#78716C] mt-0.5">Used by default during checkout</span>
+              </div>
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={form.isDefault}
+                onChange={set("isDefault")}
+              />
             </label>
-            <div className="flex gap-2.5">
-              {LABEL_OPTIONS.map((opt) => (
-                <button
-                  key={opt}
-                  type="button"
-                  onClick={() => setForm((p) => ({ ...p, label: opt }))}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                    form.label === opt
-                      ? "bg-[#1C1917] text-[#F5A623] border-[#1C1917]"
-                      : "bg-white text-[#78716C] border-[#1c1917]/[0.08] hover:border-[#1c1917]/20"
-                  }`}
-                >
-                  <LabelIcon label={opt} />
-                  {opt}
-                </button>
-              ))}
-            </div>
           </div>
 
-          {/* House / Building */}
-          <Field
-            label="House / Flat / Building"
-            placeholder="e.g. Flat 4B, Sunshine Apartments"
-            value={form.houseNumber}
-            onChange={set("houseNumber")}
-          />
-
-          {/* Street */}
-          <Field
-            label="Street / Area"
-            placeholder="e.g. MG Road, Indiranagar"
-            value={form.line1}
-            onChange={set("line1")}
-            required
-          />
-
-          {/* City + State row */}
-          <div className="grid grid-cols-2 gap-4">
-            <Field
-              label="City"
-              placeholder="City"
-              value={form.city}
-              onChange={set("city")}
-              required
-            />
-            <Field
-              label="State"
-              placeholder="State"
-              value={form.state}
-              onChange={set("state")}
-              required
-            />
-          </div>
-
-          {/* Pincode */}
-          <Field
-            label="Pincode"
-            placeholder="6-digit pincode"
-            value={form.pincode}
-            onChange={set("pincode")}
-            inputMode="numeric"
-            maxLength={6}
-            required
-          />
-
-          {/* Landmark */}
-          <Field
-            label="Landmark (optional)"
-            placeholder="e.g. Near Metro Station"
-            value={form.landmark}
-            onChange={set("landmark")}
-          />
-
-          {/* Phone Number */}
-          <Field
-            label="Contact Phone Number"
-            placeholder="e.g. +91 98765 43210"
-            value={form.phone}
-            onChange={set("phone")}
-            required
-          />
-
-          {/* Default toggle */}
-          <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-[#1c1917]/[0.08] hover:border-[#1c1917]/20 transition-colors">
-            <div
-              className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
-                form.isDefault
-                  ? "bg-[#1C1917] border-[#1C1917]"
-                  : "bg-white border-[#1c1917]/[0.08]"
-              }`}
-            >
-              {form.isDefault && <Check className="w-3 h-3 text-[#F5A623]" />}
-            </div>
-            <div className="flex flex-col text-left">
-              <span className="text-xs font-bold text-[#1C1917]">Set as default address</span>
-              <span className="text-[10px] text-[#78716C] mt-0.5">Used by default during checkout</span>
-            </div>
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={form.isDefault}
-              onChange={set("isDefault")}
-            />
-          </label>
-
-          {/* Submit */}
           <button
             type="submit"
             disabled={saving}
@@ -715,8 +821,8 @@ function AddressesTab({ userName }: { userName: string }) {
         landmark: data.landmark || undefined,
         isDefault: data.isDefault,
         phone: data.phone || undefined,
-        lat: 10.0159,
-        lng: 76.3419,
+        lat: data.lat || 9.9312,
+        lng: data.lng || 76.2673,
         token: token || undefined,
       });
       setShowForm(false);
@@ -740,8 +846,8 @@ function AddressesTab({ userName }: { userName: string }) {
         landmark: data.landmark || undefined,
         isDefault: data.isDefault,
         phone: data.phone || undefined,
-        lat: editTarget.lat || 10.0159,
-        lng: editTarget.lng || 76.3419,
+        lat: data.lat || editTarget.lat || 9.9312,
+        lng: data.lng || editTarget.lng || 76.2673,
         token: token || undefined,
       });
       setEditTarget(null);
@@ -789,6 +895,9 @@ function AddressesTab({ userName }: { userName: string }) {
         landmark: editTarget.landmark || "",
         phone: editTarget.phone || "",
         isDefault: editTarget.isDefault,
+        lat: editTarget.lat,
+        lng: editTarget.lng,
+        formattedAddress: editTarget.formattedAddress,
       }
     : EMPTY_FORM;
 

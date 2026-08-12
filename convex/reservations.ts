@@ -26,6 +26,48 @@ function getPublicUrl(asset: any, variant: "thumbnail" | "pdp" | "zoom" | "origi
   return `https://${domain}/cdn-cgi/image/${variantParam}/${asset.objectKey}`;
 }
 
+// ─── Query: Check if product size is currently held in reservation ───────────
+export const getProductReservationHold = query({
+  args: {
+    productId: v.id("products"),
+    size: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const product = await ctx.db.get(args.productId);
+    if (!product) return { isHeld: false, heldCount: 0, availableStock: 0 };
+    const stockMap: Record<string, number> = (product as any).stockBySize ?? {};
+    
+    if (args.size) {
+      const availableStock = stockMap[args.size] ?? 0;
+      const activeReservations = await ctx.db
+        .query("reservations")
+        .withIndex("by_productId_size_status", (q) =>
+          q.eq("productId", args.productId).eq("size", args.size!).eq("status", "reservation_active")
+        )
+        .collect();
+      const awaitingConfirmation = await ctx.db
+        .query("reservations")
+        .withIndex("by_productId_size_status", (q) =>
+          q.eq("productId", args.productId).eq("size", args.size!).eq("status", "awaiting_store_confirmation")
+        )
+        .collect();
+      const awaitingPayment = await ctx.db
+        .query("reservations")
+        .withIndex("by_productId_size_status", (q) =>
+          q.eq("productId", args.productId).eq("size", args.size!).eq("status", "awaiting_payment")
+        )
+        .collect();
+      const totalReserved = activeReservations.length + awaitingConfirmation.length + awaitingPayment.length;
+      return {
+        isHeld: availableStock > 0 && totalReserved >= availableStock,
+        heldCount: totalReserved,
+        availableStock,
+      };
+    }
+    return { isHeld: false, heldCount: 0, availableStock: 0 };
+  },
+});
+
 // ─── Customer: Create a Reservation ──────────────────────────────────────────
 export const createReservation = mutation({
   args: {

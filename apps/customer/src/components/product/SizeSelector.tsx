@@ -26,12 +26,12 @@ export const SizeChip: React.FC<SizeChipProps> = ({
       disabled={isOutOfStock}
       onClick={onClick}
       className={cn(
-        "h-12 w-14 border text-xs font-bold uppercase transition-all duration-200 relative outline-none flex items-center justify-center select-none rounded-xl",
+        "h-11 min-w-[3.5rem] px-3.5 rounded-xl border text-xs font-bold uppercase transition-all duration-200 relative outline-none flex items-center justify-center select-none cursor-pointer tracking-wider",
         isSelected
-          ? "bg-stone-900 border-stone-900 text-white"
+          ? "bg-[#1C1917] border-[#1C1917] text-[#FAF8F5] shadow-sm"
           : isOutOfStock
           ? "border-stone-200 bg-stone-50/50 text-stone-300 cursor-not-allowed line-through"
-          : "bg-white border-stone-200 hover:border-stone-950 hover:border-2 text-stone-850"
+          : "bg-white border-stone-200/80 hover:border-[#1C1917] text-stone-800"
       )}
     >
       <span>{size}</span>

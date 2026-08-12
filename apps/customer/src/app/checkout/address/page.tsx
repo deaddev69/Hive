@@ -875,97 +875,77 @@ export default function CheckoutAddressPage() {
           </div>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-4 text-left">
           
-          {/* GPS Auto-Detect Button - Hidden if location is already resolved */}
-          {!mapResult && (
-            <button
-              type="button"
-              onClick={handleGPSDetect}
-              disabled={gpsDetecting}
-              className="w-full h-14 bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 font-semibold uppercase tracking-[0.15em] text-xs flex items-center justify-center gap-2 rounded-lg transition-all select-none disabled:opacity-50"
-            >
-              {gpsDetecting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Detecting Location...</span>
-                </>
-              ) : (
-                <>
-                  <Navigation className="w-4 h-4" />
-                  <span>Auto-Detect My Location (GPS)</span>
-                </>
-              )}
-            </button>
-          )}
-
-          {/* Receiver Details */}
-          <div className="space-y-3">
+          {/* ── 1. Map-First Viewport (Spacious & Touch-Friendly) ── */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-hive-dark">Receiver Details</h4>
-              <div className="flex items-center gap-1.5 select-none">
-                <input
-                  id="use-account"
-                  type="checkbox"
-                  checked={useAccountDetails}
-                  onChange={(e) => setUseAccountDetails(e.target.checked)}
-                  className="w-3.5 h-3.5 accent-hive-dark cursor-pointer"
-                />
-                <label htmlFor="use-account" className="text-[10px] font-bold text-hive-text-muted cursor-pointer uppercase tracking-wider">
-                  Use my account details
-                </label>
-              </div>
+              <span className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">
+                1. Pin Exact Location on Map
+              </span>
+              <button
+                type="button"
+                onClick={handleGPSDetect}
+                disabled={gpsDetecting}
+                className="text-[11px] font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {gpsDetecting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Locating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>Use Current Location</span>
+                  </>
+                )}
+              </button>
             </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                  Receiver Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Aditi Rao"
-                  value={formReceiverName}
-                  onChange={(e) => {
-                    setFormReceiverName(e.target.value);
-                    if (useAccountDetails) setUseAccountDetails(false);
-                  }}
-                  className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
-                />
+
+            {/* Generous 260px-300px Map Container with Touch Panning */}
+            <div className="w-full h-64 sm:h-72 rounded-2xl overflow-hidden relative border border-stone-200 shadow-inner bg-stone-100">
+              <LocationMapPicker
+                lat={mapLat}
+                lng={mapLng}
+                onChange={handleMapChange}
+                onReverseGeocode={handleReverseGeocode}
+                showCurrentLocation={false}
+                height="100%"
+              />
+            </div>
+
+            {/* Detected Address Details Card */}
+            <div className="p-3.5 bg-[#FAF8F5] border border-stone-200/70 rounded-xl text-left w-full space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <p className="text-xs font-bold text-stone-900 truncate">
+                  {mapResult ? `${mapResult.locality || mapResult.city}, ${mapResult.pincode}` : "Locating area..."}
+                </p>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                  Contact Phone <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  placeholder="e.g. 9876543210"
-                  value={formPhone}
-                  onChange={(e) => {
-                    setFormPhone(e.target.value);
-                    if (useAccountDetails) setUseAccountDetails(false);
-                  }}
-                  className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
-                />
-              </div>
+              <p className="text-[11px] text-stone-500 leading-relaxed pl-4 line-clamp-2">
+                {mapResult ? mapResult.formattedAddress : "Move the pin on the map or search your building above to set your location."}
+              </p>
             </div>
           </div>
 
-          {/* Location Details */}
-          <div className="space-y-3 pt-4 border-t border-hive-border/40">
-            <h4 className="text-xs font-bold text-hive-dark">Location Details</h4>
-            
-            {/* Segmented Tabs */}
-            <div className="flex gap-2 p-1 bg-neutral-100 rounded-xl">
+          {/* ── 2. Address & Building Specifics ── */}
+          <div className="space-y-3 pt-3 border-t border-stone-100">
+            <span className="text-[10px] font-bold text-stone-500 uppercase tracking-widest block">
+              2. Building & Contact Details
+            </span>
+
+            {/* Tag Selection (Home / Work / Other) */}
+            <div className="flex gap-2 p-1 bg-stone-100/80 rounded-xl">
               {["Home", "Work", "Other"].map((opt) => (
                 <button
                   key={opt}
                   type="button"
                   onClick={() => setFormLabel(opt)}
-                  className={`flex-1 h-8 rounded-lg text-[11px] font-bold transition-all ${
+                  className={`flex-1 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                     formLabel === opt
-                      ? "bg-white text-hive-dark shadow-sm"
-                      : "text-hive-text-muted hover:text-hive-dark"
+                      ? "bg-white text-stone-900 shadow-sm"
+                      : "text-stone-500 hover:text-stone-900"
                   }`}
                 >
                   {opt}
@@ -975,99 +955,118 @@ export default function CheckoutAddressPage() {
             {!["Home", "Work", "Other"].includes(formLabel) && (
               <input
                 type="text"
-                placeholder="Custom label (e.g. Gym, Relative)"
+                placeholder="Custom label (e.g. Studio, Parents)"
                 value={formLabel}
                 onChange={(e) => setFormLabel(e.target.value)}
-                className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium mt-2"
+                className="w-full h-10 px-3 text-xs border border-stone-200 rounded-xl focus:outline-none focus:border-stone-900 bg-white font-medium"
               />
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                  Building / Floor <span className="text-red-500">*</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                  House / Flat / Floor <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Flat 4B, Hilltop Apts"
+                  placeholder="e.g. Flat 4B, 2nd Floor"
                   value={formHouseNumber}
                   onChange={(e) => setFormHouseNumber(e.target.value)}
-                  className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
+                  className="w-full h-10 px-3 text-xs border border-stone-200 rounded-xl focus:outline-none focus:border-stone-900 bg-white font-medium"
                 />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                  Street / Landmark <span className="normal-case text-hive-text-muted font-normal">(optional)</span>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                  Street / Landmark <span className="normal-case text-stone-400 font-normal">(optional)</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Opp. City Mall"
+                  placeholder="e.g. Near Infopark Gate 1"
                   value={formLandmark}
                   onChange={(e) => setFormLandmark(e.target.value)}
-                  className="w-full h-10 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium"
+                  className="w-full h-10 px-3 text-xs border border-stone-200 rounded-xl focus:outline-none focus:border-stone-900 bg-white font-medium"
                 />
               </div>
             </div>
 
-            {/* Map Preview & Area display */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-                Area / Locality
-              </label>
-              <div className="flex flex-col gap-3 p-3 bg-white border border-hive-border rounded-2xl">
-                {/* 100% Width Spacious Map Container */}
-                <div className="w-full h-40 rounded-xl overflow-hidden relative border border-hive-border/40 shadow-inner">
-                  <LocationMapPicker
-                    lat={mapLat}
-                    lng={mapLng}
-                    onChange={handleMapChange}
-                    onReverseGeocode={handleReverseGeocode}
-                    showCurrentLocation={false}
-                    height="100%"
+            {/* Receiver Name & Phone */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                  Receiver Information
+                </span>
+                <label className="flex items-center gap-1.5 cursor-pointer text-[10px] font-bold text-stone-500">
+                  <input
+                    type="checkbox"
+                    checked={useAccountDetails}
+                    onChange={(e) => setUseAccountDetails(e.target.checked)}
+                    className="w-3.5 h-3.5 accent-stone-900 cursor-pointer"
                   />
-                  <div className="absolute inset-0 border border-black/5 rounded-xl pointer-events-none" />
+                  <span>Use my account details</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Receiver Name"
+                    value={formReceiverName}
+                    onChange={(e) => {
+                      setFormReceiverName(e.target.value);
+                      if (useAccountDetails) setUseAccountDetails(false);
+                    }}
+                    className="w-full h-10 px-3 text-xs border border-stone-200 rounded-xl focus:outline-none focus:border-stone-900 bg-white font-medium"
+                  />
                 </div>
-                {/* Geocoded Address Details Block Below Map */}
-                <div className="min-w-0 p-3 bg-neutral-50/50 border border-hive-border/30 rounded-xl text-left w-full space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-hive-gold" />
-                    <p className="text-xs font-bold text-hive-dark truncate">
-                      {mapResult ? `${mapResult.city}, ${mapResult.pincode}` : "Location not set"}
-                    </p>
-                  </div>
-                  <p className="text-[10px] text-hive-text-muted leading-relaxed pl-3.5">
-                    {mapResult ? mapResult.formattedAddress : "Please detect location or move pin on map."}
-                  </p>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                    Contact Phone <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="10-digit mobile number"
+                    value={formPhone}
+                    onChange={(e) => {
+                      setFormPhone(e.target.value);
+                      if (useAccountDetails) setUseAccountDetails(false);
+                    }}
+                    className="w-full h-10 px-3 text-xs border border-stone-200 rounded-xl focus:outline-none focus:border-stone-900 bg-white font-medium"
+                  />
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Delivery Instructions */}
-          <div className="space-y-1.5 pt-4 border-t border-hive-border/40">
-            <label className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider">
-              Delivery Instructions <span className="normal-case text-hive-text-muted font-normal">(optional)</span>
-            </label>
-            <textarea
-              placeholder="e.g. Leave with security, call upon arrival..."
-              value={formDeliveryInstructions}
-              onChange={(e) => setFormDeliveryInstructions(e.target.value)}
-              className="w-full h-16 p-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium resize-none"
-            />
-          </div>
+            {/* Delivery Instructions */}
+            <div className="space-y-1 pt-2">
+              <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                Delivery Instructions <span className="normal-case text-stone-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Ring bell twice, leave at door..."
+                value={formDeliveryInstructions}
+                onChange={(e) => setFormDeliveryInstructions(e.target.value)}
+                className="w-full h-10 px-3 text-xs border border-stone-200 rounded-xl focus:outline-none focus:border-stone-900 bg-white font-medium"
+              />
+            </div>
 
-          {/* Default toggle */}
-          <div className="flex items-center gap-2 select-none text-xs font-semibold text-hive-dark">
-            <input
-              id="form-default"
-              type="checkbox"
-              checked={formIsDefault}
-              onChange={(e) => setFormIsDefault(e.target.checked)}
-              className="w-4 h-4 accent-hive-dark cursor-pointer"
-            />
-            <label htmlFor="form-default" className="cursor-pointer">
-              Make this my default delivery address
-            </label>
+            {/* Default toggle */}
+            <div className="flex items-center gap-2 pt-1 select-none text-xs font-semibold text-stone-800">
+              <input
+                id="form-default"
+                type="checkbox"
+                checked={formIsDefault}
+                onChange={(e) => setFormIsDefault(e.target.checked)}
+                className="w-4 h-4 accent-stone-900 cursor-pointer"
+              />
+              <label htmlFor="form-default" className="cursor-pointer">
+                Set as default delivery address
+              </label>
+            </div>
           </div>
 
           {formError && (
@@ -1077,11 +1076,11 @@ export default function CheckoutAddressPage() {
             </div>
           )}
 
-          <div className="flex gap-3 pt-2 border-t border-hive-border/40">
+          <div className="flex gap-3 pt-3 border-t border-stone-200/60">
             <button
               type="button"
               onClick={closeForm}
-              className="flex-1 h-14 bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 rounded-lg text-xs font-semibold uppercase tracking-[0.15em] focus:outline-none"
+              className="flex-1 h-12 bg-white border border-stone-200 text-stone-700 hover:bg-stone-50 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
             >
               Cancel
             </button>
@@ -1089,9 +1088,16 @@ export default function CheckoutAddressPage() {
               type="button"
               disabled={formSaving}
               onClick={handleSaveAddress}
-              className="flex-1 h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg text-xs font-semibold uppercase tracking-[0.15em] shadow-sm disabled:opacity-50 focus:outline-none"
+              className="flex-1 h-12 bg-[#1C1917] text-[#FAF8F5] hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
-              {formSaving ? "Saving..." : "Save Address"}
+              {formSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <span>Save Address</span>
+              )}
             </button>
           </div>
         </div>

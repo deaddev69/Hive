@@ -91,32 +91,32 @@ export function MobileProductDetails({
     <div className="w-full flex flex-col gap-4 text-left px-2 sm:px-0">
       
       {/* ── SECTION 1: HERO (Tight, compact stack) ── */}
-      <div id="pdp-hero-section" className="space-y-0.5 select-none">
+      <div id="pdp-hero-section" className="space-y-1 select-none">
         {/* Occasion / Category label */}
         {product.occasionTags && product.occasionTags.length > 0 && product.occasionTags[0] && (
-          <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-700 leading-none">
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#B45309] leading-none">
             {formatTag(product.occasionTags[0])}
           </div>
         )}
         
         {/* Product Title */}
-        <h1 className="text-lg sm:text-xl font-serif font-semibold text-stone-900 tracking-tight leading-none pt-0.5">
+        <h1 className="text-xl sm:text-2xl font-serif font-normal text-stone-900 tracking-tight leading-snug pt-0.5">
           {cleanProductTitle(product.name)}
         </h1>
 
         {/* Pricing */}
         <div className="flex flex-col gap-1 pt-1 select-none">
-          <div className="flex items-baseline gap-2.5 leading-none">
-            <span className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
+          <div className="flex items-center gap-2.5 leading-none">
+            <span className="text-2xl sm:text-3xl font-serif font-bold text-stone-900 tracking-tight">
               ₹{product.price.toLocaleString("en-IN")}
             </span>
             {product.compareAtPrice && product.compareAtPrice > product.price && (
               <>
                 <span className="text-xs sm:text-sm text-stone-400 line-through font-normal">
-                  MRP ₹{product.compareAtPrice.toLocaleString("en-IN")}
+                  ₹{product.compareAtPrice.toLocaleString("en-IN")}
                 </span>
-                <span className="text-xs sm:text-sm font-extrabold text-[#E8890C] tracking-wide">
-                  ({discountPercent}% OFF)
+                <span className="text-[11px] font-bold text-[#B45309] bg-amber-50/80 px-2 py-0.5 rounded-md border border-amber-200/60 tracking-wider uppercase">
+                  {discountPercent}% OFF
                 </span>
               </>
             )}
@@ -127,19 +127,19 @@ export function MobileProductDetails({
         </div>
 
         {/* Brand attribution */}
-        <div className="text-xs text-stone-600 font-medium leading-none pt-0.5">
-          from <span className="font-bold">{product.boutique.name}</span>
+        <div className="text-xs text-stone-600 font-medium leading-none pt-1">
+          from <span className="font-bold text-stone-900">{product.boutique.name}</span>
         </div>
 
         {/* Fulfillment line */}
-        <div className="text-xs text-stone-500 font-medium pt-0.5 leading-none">
+        <div className="text-[11px] text-stone-400 font-medium pt-0.5 leading-none">
           Fulfilled by a Verified Hive Partner
         </div>
       </div>
 
       {/* ── Structured Product Specs Grid (Fabric, Origin, Care, Fit) ── */}
       {specItems.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 mt-1 select-none">
+        <div className="grid grid-cols-2 gap-2.5 mt-1 select-none">
           {specItems.map((item, idx) => {
             const isLastOdd = specItems.length % 2 !== 0 && idx === specItems.length - 1;
             const Icon = item.icon;
@@ -147,13 +147,13 @@ export function MobileProductDetails({
               <div 
                 key={item.key} 
                 className={cn(
-                  "border border-[#EAE1D4] rounded-xl p-3.5 bg-[#FAF8F5]/50 flex items-start gap-2.5 active:scale-95 transition-all",
+                  "border border-stone-200/60 rounded-xl p-3 bg-[#FAF8F5]/60 flex items-start gap-2.5 transition-all",
                   isLastOdd && "col-span-2"
                 )}
               >
-                <Icon className="w-4 h-4 text-amber-700 stroke-[1.5] mt-0.5 shrink-0" />
+                <Icon className="w-4 h-4 text-stone-600 stroke-[1.5] mt-0.5 shrink-0" />
                 <div className="flex flex-col min-w-0 text-left">
-                  <span className="text-[9px] font-bold tracking-wider text-stone-400 uppercase leading-none mb-1.5">{item.label}</span>
+                  <span className="text-[9px] font-bold tracking-wider text-stone-400 uppercase leading-none mb-1">{item.label}</span>
                   <span className="text-xs font-semibold text-stone-850 leading-normal">
                     {item.value}
                   </span>
@@ -165,7 +165,7 @@ export function MobileProductDetails({
       )}
 
       {/* ── SECTION 2: SIZE SELECTION (no borders) ── */}
-      <div className="pt-1.5">
+      <div className="pt-1">
         <SizeSelector
           sizes={product.sizes}
           inventory={stockMap}
@@ -181,16 +181,16 @@ export function MobileProductDetails({
       {(fitRecommendation || silhouette) && (
         <div className="flex flex-col gap-2 select-none">
           {fitRecommendation && (
-            <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-stone-200/80 bg-stone-50/60 text-stone-700">
+            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/70 bg-[#FAF8F5]/40 text-stone-700">
               <Ruler className="w-4 h-4 text-stone-500 flex-shrink-0" />
               <div className="flex flex-col">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider leading-none mb-1 text-stone-800">{fitBadgeConfig[fitRecommendation].label}</span>
+                <span className="text-[10px] font-extrabold uppercase tracking-wider leading-none mb-0.5 text-stone-800">{fitBadgeConfig[fitRecommendation].label}</span>
                 <span className="text-[11px] font-medium leading-tight text-stone-500">{fitBadgeConfig[fitRecommendation].advice}</span>
               </div>
             </div>
           )}
           {silhouette && (
-            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/60 bg-stone-50/40 text-stone-600">
+            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/70 bg-[#FAF8F5]/40 text-stone-600">
               <Shirt className="w-4 h-4 text-stone-400 flex-shrink-0" />
               <span className="text-[11px] font-medium leading-tight">{silhouetteConfig[silhouette]}</span>
             </div>
@@ -214,9 +214,9 @@ export function MobileProductDetails({
       )}
 
       {/* ── SECTION 5: TRUST REASSURANCE ── */}
-      <div className="border-t border-stone-100 pt-4 mt-3 py-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase select-none">
-        <span className={!isReturnsAccepted ? "text-red-700 font-extrabold" : "text-emerald-700 font-extrabold"}>
-          {!isReturnsAccepted ? "🔒 Final Sale — No Voluntary Returns" : "🛡️ 24h Easy Returns Accepted"}
+      <div className="border-t border-stone-200/50 pt-3.5 mt-2 py-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase select-none">
+        <span className={!isReturnsAccepted ? "text-stone-600 font-semibold" : "text-stone-700 font-semibold flex items-center gap-1"}>
+          {!isReturnsAccepted ? "🔒 Final Sale — No Voluntary Returns" : "🛡️ 24h Easy Returns"}
         </span>
         <span className="text-stone-300">•</span>
         <span>{product.sameDayEligible ? "Same-Day Delivery" : "Express Delivery"}</span>

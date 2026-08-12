@@ -490,7 +490,7 @@ function MapPickerInner({
   );
 }
 
-export default function LocationMapPicker(props: LocationMapPickerProps) {
+export function LocationMapPicker(props: LocationMapPickerProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_BROWSER_KEY || "";
   return (
     <APIProvider apiKey={apiKey}>
@@ -498,3 +498,5 @@ export default function LocationMapPicker(props: LocationMapPickerProps) {
     </APIProvider>
   );
 }
+
+export default LocationMapPicker;
