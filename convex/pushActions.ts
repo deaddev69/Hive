@@ -105,15 +105,22 @@ export const sendOrderPushToBoutique = internalAction({
     }
 
     for (const sub of subscriptions) {
-      if (sub.fcmToken || sub.subscription.endpoint.startsWith("fcm://")) {
+      const isNativeFcm =
+        Boolean(sub.fcmToken) ||
+        sub.subscription?.endpoint?.startsWith("fcm://") ||
+        sub.subscription?.keys?.p256dh === "fcm_native";
+
+      if (isNativeFcm) {
         const token = sub.fcmToken || sub.subscription.endpoint.replace("fcm://", "");
-        await ctx.runAction(internal.pushActions.sendFcmPush, {
-          token,
-          title: args.title,
-          body: args.body,
-          netPayout: args.netPayout,
-          url: args.url,
-        });
+        if (token && token !== "fcm_native") {
+          await ctx.runAction(internal.pushActions.sendFcmPush, {
+            token,
+            title: args.title,
+            body: args.body,
+            netPayout: args.netPayout,
+            url: args.url,
+          });
+        }
       } else {
         await ctx.runAction(internal.pushActions.sendOrderPush, {
           subscription: sub.subscription,
