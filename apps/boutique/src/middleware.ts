@@ -34,6 +34,7 @@ export default clerkMiddleware(async (auth, req) => {
     pathname.startsWith("/seller/invite") ||
     pathname.startsWith("/invite") ||
     pathname.startsWith("/apply") ||
+    pathname.startsWith("/download") ||
     pathname.startsWith("/unauthorized") ||
     pathname.startsWith("/boutique/unauthorized");
 
