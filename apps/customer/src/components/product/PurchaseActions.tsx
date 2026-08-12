@@ -509,7 +509,12 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       }
     }
     
-    // 3. Add new item
+    // 3. Add new item or trigger reservation if in reservation mode
+    if (isReservationMode) {
+      handleReserve();
+      return;
+    }
+
     addItem({
       productId: product.slug ?? (product as any)._id ?? product.id,
       size: selectedSize,
@@ -569,6 +574,14 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
     }
     if (!isLocationServiceable) {
       triggerToast("Currently unavailable at your location", "info");
+      return;
+    }
+
+    // Check cross-boutique mismatch
+    const currentCartItems = useCartStore.getState().items;
+    const firstItem = currentCartItems[0];
+    if (firstItem && firstItem.boutiqueName && product.boutique?.name && firstItem.boutiqueName !== product.boutique.name) {
+      setCrossBoutiqueModalOpen(true);
       return;
     }
 

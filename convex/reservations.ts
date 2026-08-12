@@ -143,6 +143,26 @@ export const createReservation = mutation({
       throw new ConvexError("You already have an active reservation for this product and size.");
     }
 
+    // 5b. Enforce Single-Boutique policy: Check if user has active reservations with a different boutique
+    const activeStatuses = [
+      "reservation_active",
+      "awaiting_store_confirmation",
+      "reservation_confirmed",
+      "awaiting_payment",
+    ];
+    const userReservations = await ctx.db
+      .query("reservations")
+      .withIndex("by_customerId", (q) => q.eq("customerId", user._id))
+      .collect();
+    const crossBoutiqueActive = userReservations.find(
+      (r) => activeStatuses.includes(r.status) && r.boutiqueId !== product.boutiqueId
+    );
+    if (crossBoutiqueActive) {
+      throw new ConvexError(
+        `You already have an active reservation with ${crossBoutiqueActive.boutiqueName || "another boutique"}. Single-boutique checkout requires completing or cancelling it before reserving from a different boutique.`
+      );
+    }
+
     // 6. Determine next operating day for scheduledConfirmDate
     const nextOperatingDay = (boutiqueStatus as any).nextOperatingDay ||
       new Date(now + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -167,7 +187,11 @@ export const createReservation = mutation({
       }
     }
 
-    // 8. Create the reservation record
+    // 8. Normalize price to Rupees (DB products store prices in Paise e.g. 137900)
+    const rawProductPrice = (product as any).discountPrice ?? (product as any).price ?? 0;
+    const priceInRupees = rawProductPrice > 10000 ? Math.round(rawProductPrice / 100) : rawProductPrice;
+
+    // 9. Create the reservation record
     const reservationExpiresAt = now + RESERVATION_TIMER_MS;
     const reservationId = await ctx.db.insert("reservations", {
       customerId: user._id,
@@ -177,7 +201,7 @@ export const createReservation = mutation({
       productImageUrl,
       size: args.size,
       quantity: args.quantity,
-      priceAtReserve: (product as any).price ?? 0,
+      priceAtReserve: priceInRupees,
       status: "reservation_active",
       reservationExpiresAt,
       scheduledConfirmDate: nextOperatingDay,
@@ -646,7 +670,10 @@ export const getMyReservations = query({
       .order("desc")
       .take(50);
 
-    return reservations;
+    return reservations.map(r => ({
+      ...r,
+      priceAtReserve: r.priceAtReserve > 10000 ? Math.round(r.priceAtReserve / 100) : r.priceAtReserve,
+    }));
   },
 });
 
@@ -673,7 +700,12 @@ export const getMyActiveReservations = query({
       "awaiting_payment",
     ];
 
-    return allReservations.filter(r => activeStatuses.includes(r.status));
+    return allReservations
+      .filter(r => activeStatuses.includes(r.status))
+      .map(r => ({
+        ...r,
+        priceAtReserve: r.priceAtReserve > 10000 ? Math.round(r.priceAtReserve / 100) : r.priceAtReserve,
+      }));
   },
 });
 

@@ -93,10 +93,13 @@ export function useCartReservationSync() {
         console.log(
           `[useCartReservationSync] Adding accepted reservation ${res.productName} to bag`
         );
+        const normalizedPrice =
+          res.priceAtReserve > 10000 ? Math.round(res.priceAtReserve / 100) : res.priceAtReserve;
+
         addItem({
           productId: res.productId,
           size: res.size,
-          price: res.priceAtReserve,
+          price: normalizedPrice,
           name: res.productName,
           imageUrl: res.productImageUrl || "",
           boutiqueName: res.boutiqueName || "Boutique",

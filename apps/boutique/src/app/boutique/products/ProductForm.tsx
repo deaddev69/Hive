@@ -1432,61 +1432,30 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 const baseVal = parseFloat(priceWatch);
                 if (isNaN(baseVal) || baseVal < 0) return null;
                 
-                let rate = platformSettings.markupRate;
-                if (platformSettings.markupType === "tiered" && Array.isArray(platformSettings.markupTiers)) {
-                  const tier = platformSettings.markupTiers.find((t: any) => {
-                    const minMatch = baseVal >= t.min_price;
-                    const maxMatch = t.max_price === null || t.max_price === undefined || baseVal <= t.max_price;
-                    return minMatch && maxMatch;
-                  });
-                  if (tier) {
-                    rate = tier.rate / 100;
-                  }
-                }
-                
-                const markupAmount = baseVal * rate;
-                const preGstPrice = baseVal + markupAmount + 7;
-                const feeRate = platformSettings.platformFeeRate ?? 0.02;
-                const feeAmount = baseVal * feeRate;
-                const platformRevenue = markupAmount + feeAmount + 7;
-                const gstAmount = platformRevenue * 0.18;
-                const allInRaw = preGstPrice + gstAmount;
-                const custPrice = Math.ceil(allInRaw / 10) * 10 - 1;
-                const netPayout = baseVal - feeAmount;
+                  const feeRate = platformSettings.platformFeeRate ?? 0.02;
+                  const feeAmount = baseVal * feeRate;
+                  const netPayout = baseVal - feeAmount;
 
-                return (
-                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-xs font-bold text-slate-600 flex flex-col gap-2">
-                    <div className="flex justify-between flex-wrap gap-2 text-sm font-extrabold text-slate-900">
-                      <span>Customer Price:</span>
-                      <span className="font-mono">₹{custPrice}</span>
-                    </div>
-                    
-                    <div className="border-t border-slate-100 pt-2 flex flex-col gap-1.5 text-[11px] text-slate-500 font-normal">
-                      <div className="flex justify-between flex-wrap">
-                        <span>Base price entered:</span>
-                        <span className="font-mono">₹{baseVal.toFixed(2)}</span>
+                  return (
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-xs font-bold text-slate-600 flex flex-col gap-2">
+                      <div className="flex justify-between flex-wrap gap-2 text-sm font-extrabold text-slate-900">
+                        <span>Estimated Payout per Sale:</span>
+                        <span className="font-mono text-emerald-600 font-extrabold">₹{netPayout.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between flex-wrap">
-                        <span>Hive Markup ({(rate * 100).toFixed(0)}%):</span>
-                        <span className="font-mono">₹{markupAmount.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between flex-wrap">
-                        <span>Platform Fee:</span>
-                        <span className="font-mono">₹7.00</span>
-                      </div>
-                      <div className="flex justify-between flex-wrap">
-                        <span>GST (18%):</span>
-                        <span className="font-mono">₹{gstAmount.toFixed(2)}</span>
+                      
+                      <div className="border-t border-slate-100 pt-2 flex flex-col gap-1.5 text-[11px] text-slate-500 font-normal">
+                        <div className="flex justify-between flex-wrap">
+                          <span>Base Listing Price:</span>
+                          <span className="font-mono font-medium text-slate-700">₹{baseVal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between flex-wrap">
+                          <span>Platform Fee ({(feeRate * 100).toFixed(0)}%):</span>
+                          <span className="font-mono font-medium text-slate-700">-₹{feeAmount.toFixed(2)}</span>
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex justify-between flex-wrap border-t border-slate-100 pt-2 text-[#020617] font-bold">
-                      <span>Estimated payout per sale:</span>
-                      <span className="font-mono text-emerald-600">₹{netPayout.toFixed(2)}</span>
-                    </div>
-                  </div>
-                );
-              })()}
+                  );
+                })()}
           </div>
         </div>
 

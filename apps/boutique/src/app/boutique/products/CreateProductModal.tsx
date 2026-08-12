@@ -1050,26 +1050,17 @@ export default function CreateProductModal({
                 const baseVal = parseFloat(price);
                 if (isNaN(baseVal) || baseVal < 0) return null;
                 
-                let rate = platformSettings.markupRate;
-                if (platformSettings.markupType === "tiered" && Array.isArray(platformSettings.markupTiers)) {
-                  const tier = platformSettings.markupTiers.find((t: any) => {
-                    const minMatch = baseVal >= t.min_price;
-                    const maxMatch = t.max_price === null || t.max_price === undefined || baseVal <= t.max_price;
-                    return minMatch && maxMatch;
-                  });
-                  if (tier) {
-                    rate = tier.rate / 100;
-                  }
-                }
-                
-                const custPrice = Math.ceil((baseVal * (1 + rate)) / 10) * 10 - 1;
+                const feeRate = platformSettings.platformFeeRate ?? 0.02;
+                const feeAmount = baseVal * feeRate;
+                const netPayout = baseVal - feeAmount;
+
                 return (
-                  <div className="text-[11px] font-medium text-slate-500 mt-1 flex flex-wrap gap-x-2 divide-x divide-slate-200">
+                  <div className="text-[11px] font-medium text-slate-500 mt-1 flex flex-wrap items-center gap-x-3">
                     <div>
-                      Customer Price: <span className="font-bold text-slate-700">₹{custPrice}</span>
+                      Platform Fee ({(feeRate * 100).toFixed(0)}%): <span className="font-bold text-slate-700 font-mono">-₹{feeAmount.toFixed(2)}</span>
                     </div>
-                    <div className="pl-2">
-                      Your Net Earning: <span className="font-bold text-slate-700 font-mono">₹{baseVal.toLocaleString("en-IN", { minimumFractionDigits: 2 })} per order</span>
+                    <div>
+                      Your Net Payout: <span className="font-bold text-emerald-600 font-mono">₹{netPayout.toLocaleString("en-IN", { minimumFractionDigits: 2 })} per order</span>
                     </div>
                   </div>
                 );
