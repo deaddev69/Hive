@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -30,7 +30,6 @@ import {
   Receipt,
   AlertTriangle,
 } from "lucide-react";
-import { useMemo } from "react";
 import Link from "next/link";
 
 // ── Status badge helper ────────────────────────────────────────────────────
@@ -508,6 +507,41 @@ export default function AdminOrdersPage() {
 
   const isLoading = orders === undefined || metrics === undefined;
 
+  // ── SLA overdue computed BEFORE early returns (Rules of Hooks) ──────────────
+  const SLA_WARNING_MS = 15 * 60 * 1000;
+  const now = Date.now();
+
+  const slaOverdueOrders = useMemo(() => {
+    if (!orders) return [];
+    return orders.filter((o: any) =>
+      o.status === "pending_confirmation" &&
+      now - (o.createdAt ?? o._creationTime) > SLA_WARNING_MS
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders]);
+
+  const filtered = useMemo(() => {
+    if (!orders) return [];
+    return orders.filter((o: any) => {
+      const matchesSearch =
+        !searchTerm ||
+        o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        o.boutiqueName.toLowerCase().includes(searchTerm.toLowerCase());
+
+      if (statusFilter === "sla_overdue") {
+        return matchesSearch && o.status === "pending_confirmation" &&
+          now - (o.createdAt ?? o._creationTime) > SLA_WARNING_MS;
+      }
+
+      const matchesStatus =
+        statusFilter === "all" || o.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders, searchTerm, statusFilter]);
+
   if (isLoading) {
     if (convexAuthLoading) {
       return (
@@ -541,38 +575,7 @@ export default function AdminOrdersPage() {
     );
   }
 
-  // ── SLA overdue: pending_confirmation AND older than 15 min ───────────────
-  const SLA_WARNING_MS = 15 * 60 * 1000;
-  const SLA_CANCEL_MS  = 45 * 60 * 1000;
-  const now = Date.now();
-
-  const slaOverdueOrders = useMemo(() =>
-    orders.filter((o: any) =>
-      o.status === "pending_confirmation" &&
-      now - (o.createdAt ?? o._creationTime) > SLA_WARNING_MS
-    ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [orders]
-  );
-
-  // Filter
-  const filtered = orders.filter((o: any) => {
-    const matchesSearch =
-      !searchTerm ||
-      o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      o.boutiqueName.toLowerCase().includes(searchTerm.toLowerCase());
-
-    if (statusFilter === "sla_overdue") {
-      return matchesSearch && o.status === "pending_confirmation" &&
-        now - (o.createdAt ?? o._creationTime) > SLA_WARNING_MS;
-    }
-
-    const matchesStatus =
-      statusFilter === "all" || o.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
+  // Filter and SLA already computed above
 
   const kpiCards = [
     {
