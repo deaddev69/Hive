@@ -187,8 +187,6 @@ export const sendTemplateMessage = internalAction({
   },
 });
 
-import { action } from "./_generated/server";
-
 /**
  * Public test action for verifying WhatsApp template messages.
  */
