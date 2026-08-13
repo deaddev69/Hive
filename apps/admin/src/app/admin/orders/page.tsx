@@ -28,7 +28,9 @@ import {
   ChevronRight,
   FileDown,
   Receipt,
+  AlertTriangle,
 } from "lucide-react";
+import { useMemo } from "react";
 import Link from "next/link";
 
 // ── Status badge helper ────────────────────────────────────────────────────
@@ -414,6 +416,30 @@ function OrderDetailDrawer({
               )}
             </div>
 
+            {/* Internal Decline/SLA Info (admin eyes only) */}
+            {(order.internalCancelReason || order.slaAutoCancelledAt) && (
+              <div className="bg-red-50 rounded-2xl p-4 border border-red-200">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-red-500 uppercase tracking-wider mb-2">
+                  <AlertTriangle className="w-3 h-3" /> Cancellation Details (Internal)
+                </div>
+                {order.slaAutoCancelledAt && (
+                  <p className="text-xs text-red-700 font-bold mb-1">
+                    🚨 Auto-cancelled by SLA timer at {new Date(order.slaAutoCancelledAt).toLocaleTimeString("en-IN")}
+                  </p>
+                )}
+                {order.internalCancelReason && (
+                  <p className="text-xs text-red-600">
+                    <span className="font-semibold">Seller reason:</span> {order.internalCancelReason}
+                  </p>
+                )}
+                {order.refundStatus && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    Refund status: <span className="font-semibold capitalize">{order.refundStatus}</span>
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Order Timeline */}
             <div>
               <h3 className="text-sm font-bold text-hive-dark mb-3 flex items-center gap-2">
@@ -515,13 +541,32 @@ export default function AdminOrdersPage() {
     );
   }
 
+  // ── SLA overdue: pending_confirmation AND older than 15 min ───────────────
+  const SLA_WARNING_MS = 15 * 60 * 1000;
+  const SLA_CANCEL_MS  = 45 * 60 * 1000;
+  const now = Date.now();
+
+  const slaOverdueOrders = useMemo(() =>
+    orders.filter((o: any) =>
+      o.status === "pending_confirmation" &&
+      now - (o.createdAt ?? o._creationTime) > SLA_WARNING_MS
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [orders]
+  );
+
   // Filter
-  const filtered = orders.filter((o) => {
+  const filtered = orders.filter((o: any) => {
     const matchesSearch =
       !searchTerm ||
       o.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.boutiqueName.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (statusFilter === "sla_overdue") {
+      return matchesSearch && o.status === "pending_confirmation" &&
+        now - (o.createdAt ?? o._creationTime) > SLA_WARNING_MS;
+    }
 
     const matchesStatus =
       statusFilter === "all" || o.status === statusFilter;
@@ -557,15 +602,16 @@ export default function AdminOrdersPage() {
   ];
 
   const STATUS_OPTIONS = [
-    { value: "all", label: "All Statuses" },
+    { value: "all",                  label: "All Statuses" },
+    { value: "sla_overdue",          label: "⚠️ SLA Overdue" },
     { value: "pending_confirmation", label: "Pending Confirmation" },
-    { value: "confirmed", label: "Confirmed" },
-    { value: "packed", label: "Packed" },
-    { value: "in_transit", label: "In Transit" },
-    { value: "out_for_delivery", label: "Out for Delivery" },
-    { value: "delivered", label: "Delivered" },
-    { value: "cancelled", label: "Cancelled" },
-    { value: "refunded", label: "Refunded" },
+    { value: "confirmed",            label: "Confirmed" },
+    { value: "packed",               label: "Packed" },
+    { value: "in_transit",           label: "In Transit" },
+    { value: "out_for_delivery",     label: "Out for Delivery" },
+    { value: "delivered",            label: "Delivered" },
+    { value: "cancelled",            label: "Cancelled" },
+    { value: "refunded",             label: "Refunded" },
   ];
 
   return (
@@ -587,6 +633,44 @@ export default function AdminOrdersPage() {
           </p>
         </div>
       </div>
+
+      {/* ── SLA Overdue Banner ─────────────────────────────────────────── */}
+      {slaOverdueOrders.length > 0 && (
+        <button
+          onClick={() => setStatusFilter("sla_overdue")}
+          className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl bg-red-50 border border-red-200 text-left hover:bg-red-100 transition-colors"
+        >
+          <div className="p-2 rounded-xl bg-red-100 border border-red-200">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-red-700">
+              {slaOverdueOrders.length} order{slaOverdueOrders.length > 1 ? "s" : ""} awaiting seller acceptance &gt;15 min
+            </p>
+            <p className="text-xs text-red-500 mt-0.5">
+              Auto-cancel fires at 45 min. Click to view &amp; escalate.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {slaOverdueOrders.map((o: any) => {
+              const elapsedMin = Math.floor((now - (o.createdAt ?? o._creationTime)) / 60000);
+              const isCritical = elapsedMin >= 30;
+              return (
+                <span
+                  key={o._id}
+                  className={`text-[10px] font-bold px-2 py-1 rounded-full ${
+                    isCritical
+                      ? "bg-red-600 text-white animate-pulse"
+                      : "bg-red-200 text-red-700"
+                  }`}
+                >
+                  #{o.orderNumber} — {elapsedMin}m
+                </span>
+              );
+            })}
+          </div>
+        </button>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">

@@ -642,6 +642,10 @@ export const getOrderDetails = query({
       deliveredAt: order.deliveredAt,
       cancelledAt: order.cancelledAt,
       cancelReason: order.cancelReason,
+      internalCancelReason: (order as any).internalCancelReason ?? null,
+      slaAutoCancelledAt:   (order as any).slaAutoCancelledAt ?? null,
+      slaAlertFiredAt:      (order as any).slaAlertFiredAt ?? null,
+      refundStatus:         order.refundStatus ?? null,
       deliveryAddress: order.deliveryAddress,
       customer: {
         _id: customer?._id,

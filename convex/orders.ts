@@ -2,7 +2,7 @@
 // Order placement, list, and detail queries for the HIVE customer app.
 // All operations are auth-gated with ownership checks.
 
-import { mutation, query, internalMutation, action, internalQuery } from "./_generated/server";
+import { mutation, query, internalMutation, internalAction, action, internalQuery } from "./_generated/server";
 import { triggerNotification } from "./lib/notifications";
 import { v, ConvexError } from "convex/values";
 import { getAuthenticatedUser, getMyBoutique, getCurrentUserOrNull, requireRole } from "./lib/auth";
@@ -724,6 +724,20 @@ export const placeOrder = mutation({
       })
     );
 
+    // ── SLA Timers ────────────────────────────────────────────────────────────
+    // 15-min: Slack warning if seller hasn't accepted yet
+    await ctx.scheduler.runAfter(
+      15 * 60 * 1000,
+      internal.orders.checkOrderAcceptanceSLA,
+      { orderId, alertType: "warning" }
+    );
+    // 45-min: Auto-cancel + customer refund notification + Slack escalation
+    await ctx.scheduler.runAfter(
+      45 * 60 * 1000,
+      internal.orders.checkOrderAcceptanceSLA,
+      { orderId, alertType: "auto_cancel" }
+    );
+
     return { orderId, orderNumber };
   },
 });
@@ -1296,6 +1310,7 @@ export const updateBoutiqueOrderStatus = mutation({
       patch.confirmedAt = now;
       patch.orderAcceptedAt = now;
       patch.acceptanceTimeoutAt = undefined;
+      patch.slaAlertFiredAt = undefined; // Clear SLA alert marker on acceptance
     }
     if (args.status === "packed" && !order.packedAt) {
       patch.packedAt = now;
@@ -1316,8 +1331,10 @@ export const updateBoutiqueOrderStatus = mutation({
     }
     if (args.status === "cancelled") {
       if (!order.cancelledAt) patch.cancelledAt = now;
-      if (args.cancelReason) patch.cancelReason = args.cancelReason;
-      patch.refundStatus = "pending"; // For manual admin dashboard refunds
+      // Store raw seller reason INTERNALLY — never expose to customers
+      if (args.cancelReason) patch.internalCancelReason = args.cancelReason;
+      patch.cancelReason = "Boutique declined order"; // generic public reason
+      patch.refundStatus = "pending";
     }
 
     await ctx.db.patch(args.orderId, patch);
@@ -1402,10 +1419,59 @@ export const updateBoutiqueOrderStatus = mutation({
         }
       }
 
+      // Internal reason (for ops/admin use only)
+      const internalReason = args.cancelReason || "No reason provided";
+
+      // Branded customer-safe message — never reveals seller's raw reason
+      const brandedCustomerMessage =
+        `Due to high demand for this product, we're unable to fulfil your order right now. ` +
+        `A full refund of ₹${((order.total ?? 0) / 100).toFixed(2)} will be credited back to your original payment method within approximately 1 hour.`;
+
+      // 1. Customer WhatsApp — branded message
+      const customerUser = await ctx.db.get(order.customerId);
+      const customerPhone = order.deliveryAddress?.phone || customerUser?.phone;
+      if (customerPhone) {
+        await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+          recipient: customerPhone,
+          templateName: "order_cancelled",
+          parameters: [
+            order.orderNumber,
+            brandedCustomerMessage,
+          ],
+          languageCode: "en",
+        });
+      }
+
+      // 2. Customer Email — branded decline template
+      const invoice = await ctx.db
+        .query("invoices")
+        .withIndex("by_order_id", (q) => q.eq("orderId", order._id))
+        .unique();
+      const customerEmail = invoice?.customerEmail || customerUser?.email;
+      if (customerEmail) {
+        await ctx.scheduler.runAfter(0, internal.emails.sendOrderEmail, {
+          orderId: args.orderId,
+          event: "cancelled",
+        });
+      }
+
+      // 3. Slack alert — includes internal reason for ops
+      const slackWebhook = process.env.SLACK_WEBHOOK_URL;
+      if (slackWebhook) {
+        await ctx.scheduler.runAfter(0, internal.whatsapp.sendSlackAlert, {
+          webhook: slackWebhook,
+          text: `🚨 *Order Declined by Boutique*\n` +
+            `*Order:* #${order.orderNumber}\n` +
+            `*Boutique:* ${boutique.boutiqueName || boutique.name || "Unknown"}\n` +
+            `*Internal Reason:* ${internalReason}\n` +
+            `*Customer:* ${customerPhone || customerEmail || "Unknown"}\n` +
+            `*Refund Status:* Pending (manual processing required)`,
+        });
+      }
+
+      // 4. Boutique owner notification (existing)
       const isWhatsAppEnabled = boutique?.whatsAppNotificationsEnabled ?? true;
       const recipientPhone = boutique?.notificationPhone || boutique?.phone;
-      const cancelReason = order.cancelReason || "Cancelled by boutique owner";
-
       if (isWhatsAppEnabled && recipientPhone) {
         await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
           recipient: recipientPhone,
@@ -1413,30 +1479,9 @@ export const updateBoutiqueOrderStatus = mutation({
           parameters: [
             boutique.ownerName || "Merchant",
             order.orderNumber,
-            cancelReason
+            internalReason,
           ],
-        });
-      } else if (boutique?.email || boutique?.ownerEmail) {
-        await ctx.scheduler.runAfter(0, internal.emails.sendNotificationEmail, {
-          to: boutique.email || boutique.ownerEmail,
-          subject: `Order Cancelled - ${order.orderNumber}`,
-          html: `<p>Dear ${boutique.ownerName || "Merchant"},</p><p>Order ${order.orderNumber} has been cancelled. Reason: ${cancelReason}</p>`,
-          templateName: "order_cancelled",
-        });
-      }
-
-      const customerUser = await ctx.db.get(order.customerId);
-      const invoice = await ctx.db
-        .query("invoices")
-        .withIndex("by_order_id", (q) => q.eq("orderId", order._id))
-        .unique();
-      const customerEmail = invoice?.customerEmail || customerUser?.email;
-      if (customerEmail) {
-        await ctx.scheduler.runAfter(0, internal.emails.sendNotificationEmail, {
-          to: customerEmail,
-          subject: `Your Hive Order ${order.orderNumber} has been Cancelled`,
-          html: `<p>Dear Customer,</p><p>Your order ${order.orderNumber} has been cancelled. Reason: ${cancelReason}. A refund will be initiated if applicable.</p>`,
-          templateName: "order_cancelled_customer",
+          languageCode: "en",
         });
       }
     }
@@ -2057,3 +2102,117 @@ export const updateTransferStatus = internalMutation({
   },
 });
 
+// ─── SLA: Order Acceptance Timeout ───────────────────────────────────────────
+// Scheduled by placeOrder: fires at 15 min (warning) and 45 min (auto-cancel)
+export const checkOrderAcceptanceSLA = internalAction({
+  args: {
+    orderId:   v.id("orders"),
+    alertType: v.union(v.literal("warning"), v.literal("auto_cancel")),
+  },
+  handler: async (ctx, args) => {
+    const order: any = await ctx.runQuery(internal.orders.getOrderByIdInternal, {
+      orderId: args.orderId,
+    });
+
+    if (!order) return; // Order deleted or missing
+
+    // If already accepted/cancelled, do nothing
+    if (order.status !== "pending_confirmation") return;
+
+    const slackWebhook = process.env.SLACK_WEBHOOK_URL;
+    const boutique = order.boutiqueName || "Unknown Boutique";
+    const customerPhone = order.deliveryAddress?.phone || "Unknown";
+    const minutesElapsed = Math.round((Date.now() - order.createdAt) / 60000);
+
+    if (args.alertType === "warning") {
+      // ── 15-min: Slack warning only ─────────────────────────────────────────
+      await ctx.runMutation(internal.orders.markSlaAlertFired, { orderId: args.orderId });
+      if (slackWebhook) {
+        await ctx.runAction(internal.whatsapp.sendSlackAlert, {
+          webhook: slackWebhook,
+          text:
+            `⚠️ *Order Not Accepted \u2014 SLA Warning*\n` +
+            `*Order:* #${order.orderNumber}\n` +
+            `*Boutique:* ${boutique}\n` +
+            `*Time Elapsed:* ${minutesElapsed} min\n` +
+            `*Customer:* ${customerPhone}\n` +
+            `*Action Required:* Seller still hasn't accepted. Auto-cancel fires at 45 min.`,
+        });
+      }
+      return;
+    }
+
+    // ── 45-min: Auto-cancel ────────────────────────────────────────────────
+    // Mark as cancelled with SLA reason
+    await ctx.runMutation(internal.orders.autoSlaCancel, {
+      orderId: args.orderId,
+      reason: "Seller did not accept within 45 minutes",
+    });
+
+    const total = ((order.total ?? 0) / 100).toFixed(2);
+    const brandedMsg =
+      `We're sorry! Due to high demand, the boutique was unable to confirm your order on time. ` +
+      `A full refund of \u20b9${total} has been initiated and will be credited within approximately 1 hour.`;
+
+    // Notify customer on WhatsApp
+    if (customerPhone && customerPhone !== "Unknown") {
+      await ctx.runAction(internal.whatsapp.sendTemplateMessage, {
+        recipient: customerPhone,
+        templateName: "order_cancelled",
+        parameters: [order.orderNumber, brandedMsg],
+        languageCode: "en",
+      });
+    }
+
+    // Notify customer via email
+    await ctx.runAction(internal.emails.sendOrderEmail, {
+      orderId: args.orderId,
+      event: "cancelled",
+    });
+
+    // Slack escalation
+    if (slackWebhook) {
+      await ctx.runAction(internal.whatsapp.sendSlackAlert, {
+        webhook: slackWebhook,
+        text:
+          `🚨 *Auto-Cancelled: Seller SLA Timeout (45 min)*\n` +
+          `*Order:* #${order.orderNumber}\n` +
+          `*Boutique:* ${boutique}\n` +
+          `*Time Elapsed:* ${minutesElapsed} min\n` +
+          `*Customer:* ${customerPhone}\n` +
+          `*Refund:* \u20b9${total} — Pending manual processing\n` +
+          `*Action:* Refund customer in Razorpay dashboard`,
+      });
+    }
+  },
+});
+
+// Mark SLA 15-min alert as fired (so admin panel can show the warning badge)
+export const markSlaAlertFired = internalMutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.orderId, { slaAlertFiredAt: Date.now() });
+  },
+});
+
+// Auto-cancel an order due to SLA timeout
+export const autoSlaCancel = internalMutation({
+  args: {
+    orderId: v.id("orders"),
+    reason:  v.string(),
+  },
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId);
+    if (!order || order.status !== "pending_confirmation") return;
+    const now = Date.now();
+    await ctx.db.patch(args.orderId, {
+      status:              "cancelled",
+      cancelledAt:         now,
+      internalCancelReason: args.reason,
+      cancelReason:        "Order auto-cancelled: seller did not respond in time",
+      refundStatus:        "pending",
+      slaAutoCancelledAt:  now,
+      updatedAt:           now,
+    });
+  },
+});

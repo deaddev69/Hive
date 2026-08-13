@@ -798,6 +798,10 @@ export default defineSchema({
         v.literal("reversed")
       )
     ),
+    // Boutique Decline / SLA fields
+    internalCancelReason: v.optional(v.string()),   // Raw seller reason — NEVER exposed to customers
+    slaAlertFiredAt:      v.optional(v.number()),   // Timestamp when 15-min Slack alert was sent
+    slaAutoCancelledAt:   v.optional(v.number()),   // Timestamp when 45-min auto-cancel fired
   })
     .index("by_orderNumber",       ["orderNumber"])
     .index("by_customerId",        ["customerId"])

@@ -1,4 +1,4 @@
-import { internalAction, internalMutation } from "./_generated/server";
+import { internalAction, internalMutation, action } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 
@@ -209,3 +209,24 @@ export const testSendWhatsApp = action({
   },
 });
 
+// ─── Slack Webhook Alert ──────────────────────────────────────────────────────
+export const sendSlackAlert = internalAction({
+  args: {
+    webhook: v.string(),
+    text: v.string(),
+  },
+  handler: async (_ctx, args) => {
+    try {
+      const res = await fetch(args.webhook, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: args.text }),
+      });
+      if (!res.ok) {
+        console.error("[Slack] Failed to send alert:", res.status, await res.text());
+      }
+    } catch (err) {
+      console.error("[Slack] sendSlackAlert error:", err);
+    }
+  },
+});

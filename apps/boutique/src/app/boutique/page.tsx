@@ -189,13 +189,17 @@ export default function BoutiqueDashboard() {
 
   // Metrics calculations
   const ordersNewToday = useMemo(() => {
-    return orders?.filter(isCreatedToday).length ?? 0;
+    return orders?.filter(isCreatedToday).filter(isActiveOrder).length ?? 0;
   }, [orders]);
+
+  const isActiveOrder = (o: any) =>
+    !["cancelled", "refunded", "refund_requested", "booking_failed"].includes(o.status);
 
   const netEarningsToday = useMemo(() => {
     return (
       orders
         ?.filter(isCreatedToday)
+        ?.filter(isActiveOrder)
         ?.reduce((sum: number, o: any) => {
           let payoutPaise = o.totalPayout;
           if (payoutPaise == null || payoutPaise <= 0) {
@@ -225,6 +229,7 @@ export default function BoutiqueDashboard() {
     today.setHours(0, 0, 0, 0);
 
     orders.forEach((o: any) => {
+      if (!isActiveOrder(o)) return;
       const orderDate = new Date(o._creationTime);
       orderDate.setHours(0, 0, 0, 0);
       const diffTime = today.getTime() - orderDate.getTime();
