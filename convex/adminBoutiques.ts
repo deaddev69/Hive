@@ -270,3 +270,86 @@ export const seedBoutiqueDocumentsAdmin = mutation({
     return { seededCount };
   },
 });
+
+/**
+ * Admin: Get complete boutique & staff roster directory.
+ * Returns enriched staff emails, WhatsApp numbers, notification routing preferences,
+ * owner contact information, and store operating status across all boutiques.
+ */
+export const getBoutiqueStaffDirectoryAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireRole(ctx, "admin");
+
+    const boutiques = await ctx.db.query("boutiques").collect();
+
+    return boutiques.map((b) => ({
+      _id: b._id,
+      boutiqueName: b.boutiqueName || b.name || "Unnamed Boutique",
+      ownerName: b.ownerName || "Merchant",
+      ownerEmail: b.ownerEmail || b.email,
+      phone: b.phone || b.phoneNumber || "",
+      address: b.address || "",
+      city: b.city || "Kochi",
+      status: b.status || "PENDING",
+      storeStatus: b.storeStatus || "open",
+      isAcceptingOrders: b.isAcceptingOrders ?? true,
+
+      // Staff details
+      staffEmail1: b.staffEmail1 || null,
+      staffEmail2: b.staffEmail2 || null,
+      staffPhone1: (b as any).staffPhone1 || null,
+      staffPhone2: (b as any).staffPhone2 || null,
+      staffNotificationSelection: (b as any).staffNotificationSelection || "none",
+      whatsAppNotificationsEnabled: b.whatsAppNotificationsEnabled ?? true,
+      notificationPhone: b.notificationPhone || null,
+
+      createdAt: b.createdAt,
+      updatedAt: b.updatedAt ?? b.createdAt,
+    }));
+  },
+});
+
+/**
+ * Admin: Update boutique staff details and notification routing selection directly.
+ */
+export const updateBoutiqueStaffAdmin = mutation({
+  args: {
+    boutiqueId: v.id("boutiques"),
+    staffEmail1: v.optional(v.string()),
+    staffEmail2: v.optional(v.string()),
+    staffPhone1: v.optional(v.string()),
+    staffPhone2: v.optional(v.string()),
+    staffNotificationSelection: v.optional(v.string()),
+    whatsAppNotificationsEnabled: v.optional(v.boolean()),
+    notificationPhone: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+
+    const boutique = await ctx.db.get(args.boutiqueId);
+    if (!boutique) throw new Error("Boutique not found");
+
+    const patch: any = {
+      updatedAt: Date.now(),
+    };
+
+    if (args.staffEmail1 !== undefined) patch.staffEmail1 = args.staffEmail1 || undefined;
+    if (args.staffEmail2 !== undefined) patch.staffEmail2 = args.staffEmail2 || undefined;
+    if (args.staffPhone1 !== undefined) patch.staffPhone1 = args.staffPhone1 || undefined;
+    if (args.staffPhone2 !== undefined) patch.staffPhone2 = args.staffPhone2 || undefined;
+    if (args.staffNotificationSelection !== undefined) {
+      patch.staffNotificationSelection = args.staffNotificationSelection;
+    }
+    if (args.whatsAppNotificationsEnabled !== undefined) {
+      patch.whatsAppNotificationsEnabled = args.whatsAppNotificationsEnabled;
+    }
+    if (args.notificationPhone !== undefined) {
+      patch.notificationPhone = args.notificationPhone || undefined;
+    }
+
+    await ctx.db.patch(args.boutiqueId, patch);
+
+    return { success: true };
+  },
+});

@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
-import { Plus, Edit3, CheckCircle2, XCircle, AlertCircle, ArrowLeft, Loader2, Search, MapPin, Store, Mail } from "lucide-react";
+import { Plus, Edit3, CheckCircle2, XCircle, AlertCircle, ArrowLeft, Loader2, Search, MapPin, Store, Mail, FileDown, Users, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
@@ -202,18 +202,76 @@ export default function AdminBoutiquesPage() {
     b.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleExportCsv = () => {
+    if (!boutiques || boutiques.length === 0) return;
+    const headers = [
+      "Boutique Name",
+      "Owner Name",
+      "Owner Email",
+      "Owner Phone",
+      "Status",
+      "Store Status",
+      "Staff 1 Email",
+      "Staff 1 Phone",
+      "Staff 2 Email",
+      "Staff 2 Phone",
+      "Notification Routing",
+      "Address",
+      "City",
+      "Delivery Radius (km)"
+    ];
+
+    const rows = boutiques.map((b: any) => [
+      `"${(b.boutiqueName || "").replace(/"/g, '""')}"`,
+      `"${(b.ownerName || "").replace(/"/g, '""')}"`,
+      `"${(b.ownerEmail || b.email || "").replace(/"/g, '""')}"`,
+      `"${(b.phone || "").replace(/"/g, '""')}"`,
+      `"${(b.status || "").replace(/"/g, '""')}"`,
+      `"${(b.storeStatus || "open").replace(/"/g, '""')}"`,
+      `"${(b.staffEmail1 || "").replace(/"/g, '""')}"`,
+      `"${(b.staffPhone1 || "").replace(/"/g, '""')}"`,
+      `"${(b.staffEmail2 || "").replace(/"/g, '""')}"`,
+      `"${(b.staffPhone2 || "").replace(/"/g, '""')}"`,
+      `"${(b.staffNotificationSelection || "none").replace(/"/g, '""')}"`,
+      `"${(b.address || "").replace(/"/g, '""')}"`,
+      `"${(b.city || "").replace(/"/g, '""')}"`,
+      b.deliveryRadiusKm || 10
+    ]);
+
+    const csvContent = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `hive_merchant_staff_roster_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex flex-col gap-6 text-left">
       
       {/* Header back button */}
-      <div className="flex items-center gap-4">
-        <Link href="/admin" className="p-2 rounded-xl hover:bg-slate-200/50 transition-colors border border-transparent">
-          <ArrowLeft className="w-5 h-5 text-slate-700" />
-        </Link>
-        <div>
-          <h1 className="text-3xl font-serif font-black text-hive-dark">Hyperlocal Fashion Marketplace</h1>
-          <p className="text-sm text-hive-text-muted">Register partners, confirm locations on OSM map, and manage approvals.</p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/admin" className="p-2 rounded-xl hover:bg-slate-200/50 transition-colors border border-transparent">
+            <ArrowLeft className="w-5 h-5 text-slate-700" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-serif font-black text-hive-dark">Hyperlocal Partner &amp; Staff Directory</h1>
+            <p className="text-sm text-hive-text-muted">Register partners, manage staff rosters &amp; order notification routing.</p>
+          </div>
         </div>
+
+        <Button
+          onClick={handleExportCsv}
+          variant="outline"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold text-xs shadow-xs"
+        >
+          <FileDown className="w-4 h-4 text-emerald-600" />
+          <span>Export Roster (CSV)</span>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -535,20 +593,36 @@ export default function AdminBoutiquesPage() {
                       {/* Details row */}
                       <div className="grid grid-cols-2 gap-4 text-xs text-left bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
                         <div className="flex flex-col gap-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">Contact Info</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Owner Contact</span>
                           <span className="text-slate-700 truncate">{boutique.email}</span>
                           <span className="text-slate-700">{boutique.phone}</span>
-                          {(boutique.staffEmail1 || boutique.staffEmail2) && (
-                            <div className="mt-1 pt-1 border-t border-slate-200/50 flex flex-col gap-0.5">
-                              <span className="text-[9px] font-bold text-slate-400 uppercase">Staff Emails</span>
-                              {boutique.staffEmail1 && <span className="text-slate-600 truncate">{boutique.staffEmail1}</span>}
-                              {boutique.staffEmail2 && <span className="text-slate-600 truncate">{boutique.staffEmail2}</span>}
+                          {(boutique.staffEmail1 || boutique.staffEmail2 || boutique.staffPhone1 || boutique.staffPhone2) && (
+                            <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-col gap-1">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1">
+                                  <Users className="w-3 h-3 text-slate-400" /> Staff Roster
+                                </span>
+                                <span className="text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200/60">
+                                  Routing: {boutique.staffNotificationSelection || "none"}
+                                </span>
+                              </div>
+                              {boutique.staffEmail1 && (
+                                <span className="text-slate-600 truncate text-[11px]">
+                                  Staff 1: {boutique.staffEmail1} {boutique.staffPhone1 ? `(${boutique.staffPhone1})` : ""}
+                                </span>
+                              )}
+                              {boutique.staffEmail2 && (
+                                <span className="text-slate-600 truncate text-[11px]">
+                                  Staff 2: {boutique.staffEmail2} {boutique.staffPhone2 ? `(${boutique.staffPhone2})` : ""}
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
                         <div className="flex flex-col gap-1">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">Serviceability</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Serviceability &amp; Status</span>
                           <span className="text-slate-700">Radius: <strong>{boutique.deliveryRadiusKm} Km</strong></span>
+                          <span className="text-slate-700">Store Mode: <strong className="capitalize">{boutique.storeStatus || "open"}</strong></span>
                           <span className="text-slate-500 font-mono text-[10px]">
                             {boutique.latitude.toFixed(4)}, {boutique.longitude.toFixed(4)}
                           </span>

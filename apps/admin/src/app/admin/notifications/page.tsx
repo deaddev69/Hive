@@ -1,10 +1,8 @@
-"use client";
-
 import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent, cn } from "@hive/ui";
-import { Loader2, Mail, MessageSquare, Phone, Bell, Send, CheckCircle2, AlertTriangle, Clock, Eye, ShieldAlert } from "lucide-react";
+import { Loader2, Mail, MessageSquare, Phone, Bell, Send, CheckCircle2, AlertTriangle, Clock, Eye, ShieldAlert, FileDown, Search, Filter, CheckCheck } from "lucide-react";
 
 export default function NotificationsPage() {
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
@@ -12,7 +10,12 @@ export default function NotificationsPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [channelFilter, setChannelFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+
   const events = useQuery(api.adminNotifications.listNotificationEvents, {});
+  const analytics = useQuery(api.adminNotifications.getNotificationAnalytics);
   const resend = useMutation(api.adminNotifications.resendNotification);
 
   const toggleExpandEvent = (id: string) => {
@@ -54,7 +57,7 @@ export default function NotificationsPage() {
       case "email":
         return <Mail className="w-3.5 h-3.5 text-blue-500" />;
       case "whatsapp":
-        return <MessageSquare className="w-3.5 h-3.5 text-green-500" />;
+        return <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />;
       case "sms":
         return <Phone className="w-3.5 h-3.5 text-purple-500" />;
       case "push":
@@ -66,47 +69,106 @@ export default function NotificationsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case "read":
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
+            <CheckCheck className="w-3 h-3 text-blue-600" /> Read
+          </span>
+        );
+      case "delivered":
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Delivered
+          </span>
+        );
       case "sent":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-green-50 text-green-700 border border-green-200">
-            <CheckCircle2 className="w-2.5 h-2.5" /> Sent
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-slate-100 text-slate-700 border border-slate-200">
+            <Send className="w-2.5 h-2.5" /> Sent
           </span>
         );
       case "queued":
+      case "pending":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200 animate-pulse">
             <Clock className="w-2.5 h-2.5 animate-spin" /> Queued
           </span>
         );
       case "failed":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200">
             <AlertTriangle className="w-2.5 h-2.5" /> Failed
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-slate-50 text-slate-700 border border-slate-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-slate-50 text-slate-700 border border-slate-200">
             {status}
           </span>
         );
     }
   };
 
+  const handleExportCsv = () => {
+    if (!events || events.length === 0) return;
+    const headers = ["Timestamp", "Channel", "Template", "Target Entity", "Status", "Details"];
+    const rows = events.map((e: any) => [
+      `"${new Date(e.createdAt).toISOString()}"`,
+      `"${e.channel || ""}"`,
+      `"${e.template || ""}"`,
+      `"${e.entityType || ""} (${e.entityId || ""})"`,
+      `"${e.status || ""}"`,
+      `"${(e.payload || "").replace(/"/g, '""')}"`
+    ]);
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `hive_notification_delivery_logs_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Filter events
+  const filteredEvents = events?.filter((e: any) => {
+    const matchesChannel = channelFilter === "all" || e.channel === channelFilter;
+    const matchesStatus = statusFilter === "all" || e.status === statusFilter;
+    const matchesSearch =
+      !searchTerm ||
+      e.template.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.entityType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.entityId.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesChannel && matchesStatus && matchesSearch;
+  });
+
   // Stats summary counts
   const totalEvents = events?.length || 0;
-  const sentEvents = events?.filter(e => e.status === "sent").length || 0;
+  const sentEvents = events?.filter(e => e.status === "sent" || e.status === "delivered" || e.status === "read").length || 0;
   const failedEvents = events?.filter(e => e.status === "failed").length || 0;
-  const queuedEvents = events?.filter(e => e.status === "queued").length || 0;
+  const whatsappEvents = analytics?.whatsappTotal ?? (events?.filter(e => e.channel === "whatsapp").length || 0);
 
   return (
     <div className="flex flex-col gap-6 text-left">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-serif font-black text-hive-dark">Notification Logs</h1>
-        <p className="text-sm text-hive-text-muted">
-          Real-time delivery stats, channel tracking, template registry, and audit trails of user notifications.
-        </p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-serif font-black text-hive-dark">Notification &amp; Delivery Intelligence</h1>
+          <p className="text-sm text-hive-text-muted">
+            Real-time delivery stats, channel tracking, Meta WAMID webhooks, and audit trails.
+          </p>
+        </div>
+
+        <Button
+          onClick={handleExportCsv}
+          variant="outline"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold text-xs shadow-xs"
+        >
+          <FileDown className="w-4 h-4 text-emerald-600" />
+          <span>Export Delivery Logs (CSV)</span>
+        </Button>
       </div>
 
       {/* Stats Summary Cards */}
@@ -114,20 +176,70 @@ export default function NotificationsPage() {
         <Card className="border border-hive-border/60 bg-white shadow-sm rounded-2xl p-4 flex flex-col gap-1">
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8E867C]">Total Triggered</span>
           <span className="text-2xl font-serif font-black text-hive-dark">{totalEvents}</span>
+          <span className="text-[10px] text-emerald-600 font-bold">{analytics?.deliveryRatePercent ?? 100}% Delivery Rate</span>
         </Card>
         <Card className="border border-hive-border/60 bg-white shadow-sm rounded-2xl p-4 flex flex-col gap-1">
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8E867C]">Sent Successfully</span>
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8E867C]">Dispatched / Delivered</span>
           <span className="text-2xl font-serif font-black text-green-700">{sentEvents}</span>
+          <span className="text-[10px] text-slate-500 font-medium">WhatsApp + Email + Push</span>
+        </Card>
+        <Card className="border border-hive-border/60 bg-white shadow-sm rounded-2xl p-4 flex flex-col gap-1">
+          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8E867C]">WhatsApp Messages</span>
+          <span className="text-2xl font-serif font-black text-emerald-700">{whatsappEvents}</span>
+          <span className="text-[10px] text-emerald-600 font-bold">Meta WABA Cloud API</span>
         </Card>
         <Card className="border border-hive-border/60 bg-white shadow-sm rounded-2xl p-4 flex flex-col gap-1">
           <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8E867C]">Delivery Failed</span>
           <span className="text-2xl font-serif font-black text-red-600">{failedEvents}</span>
-        </Card>
-        <Card className="border border-hive-border/60 bg-white shadow-sm rounded-2xl p-4 flex flex-col gap-1">
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#8E867C]">Pending in Queue</span>
-          <span className="text-2xl font-serif font-black text-amber-500">{queuedEvents}</span>
+          <span className="text-[10px] text-red-500 font-medium">Requires Admin Inspection</span>
         </Card>
       </div>
+
+      {/* Filters Bar */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between bg-white p-3.5 rounded-2xl border border-hive-border/60 shadow-xs">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search by template, entity ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-xs border border-hive-border/60 rounded-xl focus:outline-none focus:ring-1.5 focus:ring-hive-gold bg-slate-50/50"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <select
+              value={channelFilter}
+              onChange={(e) => setChannelFilter(e.target.value)}
+              className="pl-3 pr-8 py-2 text-xs border border-hive-border/60 rounded-xl focus:outline-none focus:ring-1.5 focus:ring-hive-gold bg-white font-semibold cursor-pointer"
+            >
+              <option value="all">All Channels</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="email">Email</option>
+              <option value="push">Push</option>
+              <option value="sms">SMS</option>
+              <option value="slack">Slack</option>
+            </select>
+          </div>
+
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="pl-3 pr-8 py-2 text-xs border border-hive-border/60 rounded-xl focus:outline-none focus:ring-1.5 focus:ring-hive-gold bg-white font-semibold cursor-pointer"
+            >
+              <option value="all">All Statuses</option>
+              <option value="sent">Sent</option>
+              <option value="delivered">Delivered</option>
+              <option value="read">Read</option>
+              <option value="failed">Failed</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
 
       {/* Alert Banners */}
       {successMessage && (
@@ -160,7 +272,7 @@ export default function NotificationsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-hive-border/30 font-semibold text-hive-dark font-sans">
-                {events?.map((event: any) => {
+                {filteredEvents?.map((event: any) => {
                   const isExpanded = expandedEventId === event._id;
                   const payloadParsed = event.payload ? JSON.parse(event.payload) : null;
                   const isResending = resendingId === event._id;
