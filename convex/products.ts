@@ -894,9 +894,10 @@ export const getBoutiqueProducts = query({
     // Build locked stock map: productId -> size -> count
     const lockedStockMap: Record<string, Record<string, number>> = {};
     for (const res of allLockedReservations) {
+      if (!res.productId || !res.size) continue;
       if (!lockedStockMap[res.productId]) lockedStockMap[res.productId] = {};
-      if (!lockedStockMap[res.productId][res.size]) lockedStockMap[res.productId][res.size] = 0;
-      lockedStockMap[res.productId][res.size]++;
+      const prodMap = lockedStockMap[res.productId]!;
+      prodMap[res.size] = (prodMap[res.size] || 0) + 1;
     }
 
     const enriched = await enrichProducts(ctx, products, true);

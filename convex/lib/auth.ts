@@ -231,13 +231,32 @@ export async function getMyBoutique(ctx: AuthCtx, token?: string, allowSuspended
       .unique();
   }
 
-  // Look for staff email match
+  // Look for staff email match via schema index (instant O(1) indexed lookup)
   if (!boutique && userEmail) {
-    const allBoutiques = await ctx.db.query("boutiques").collect();
-    boutique = allBoutiques.find((b: any) =>
-      (b.staffEmail1 && normalizeEmail(b.staffEmail1) === normalizeEmail(userEmail)) ||
-      (b.staffEmail2 && normalizeEmail(b.staffEmail2) === normalizeEmail(userEmail))
-    ) as any;
+    const normalizedUserEmail = userEmail.trim().toLowerCase();
+    boutique = await ctx.db
+      .query("boutiques")
+      .withIndex("by_staffEmail1", (q) => q.eq("staffEmail1", normalizedUserEmail))
+      .first();
+
+    if (!boutique) {
+      boutique = await ctx.db
+        .query("boutiques")
+        .withIndex("by_staffEmail2", (q) => q.eq("staffEmail2", normalizedUserEmail))
+        .first();
+    }
+    if (!boutique && normalizedUserEmail !== userEmail) {
+      boutique = await ctx.db
+        .query("boutiques")
+        .withIndex("by_staffEmail1", (q) => q.eq("staffEmail1", userEmail))
+        .first();
+    }
+    if (!boutique && normalizedUserEmail !== userEmail) {
+      boutique = await ctx.db
+        .query("boutiques")
+        .withIndex("by_staffEmail2", (q) => q.eq("staffEmail2", userEmail))
+        .first();
+    }
   }
 
   if (!boutique && user.role === "admin") {

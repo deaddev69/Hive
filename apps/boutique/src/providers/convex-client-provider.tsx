@@ -8,11 +8,26 @@ import { ConvexReactClient } from "convex/react";
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
 
 // Resilient check against missing, empty, or fallback strings
-const isConfigInvalid = 
-  !convexUrl || 
-  convexUrl === "undefined" || 
-  convexUrl.trim() === "" || 
+const isConfigInvalid =
+  !convexUrl ||
+  convexUrl === "undefined" ||
+  convexUrl.trim() === "" ||
   convexUrl.includes("placeholder-url.convex.cloud");
+
+/**
+ * PERFORMANCE FIX: ConvexReactClient is instantiated ONCE at module scope.
+ *
+ * Previously it was inside the ConvexClientProvider render function, which
+ * meant every React re-render of the provider (e.g., on route change,
+ * auth state update, or parent re-render) would destroy the existing
+ * WebSocket connection and create a brand-new one — clearing the entire
+ * query cache and causing full-screen loading spinners on navigation.
+ *
+ * As a module-level singleton it is created exactly once per page session
+ * and survives all re-renders, keeping WebSocket connections and
+ * query subscriptions alive across the entire app lifecycle.
+ */
+const convex = isConfigInvalid ? null : new ConvexReactClient(convexUrl!);
 
 // Self-contained, lightweight fallback UI
 function ConvexConfigErrorScreen() {
@@ -26,18 +41,32 @@ function ConvexConfigErrorScreen() {
           Configuration Required
         </h2>
         <p className="mt-3 text-sm text-slate-600 leading-relaxed">
-          The backend services connection is missing. Please ensure <code className="rounded bg-rose-50 px-1.5 py-0.5 font-mono text-xs text-rose-600 border border-rose-100">NEXT_PUBLIC_CONVEX_URL</code> is set correctly in your environment variables.
+          The backend services connection is missing. Please ensure{" "}
+          <code className="rounded bg-rose-50 px-1.5 py-0.5 font-mono text-xs text-rose-600 border border-rose-100">
+            NEXT_PUBLIC_CONVEX_URL
+          </code>{" "}
+          is set correctly in your environment variables.
         </p>
         <div className="mt-6 text-xs text-left text-slate-500 rounded-xl bg-slate-50 p-4 border border-slate-100 flex flex-col gap-3">
-          <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Next Steps:</p>
+          <p className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+            Next Steps:
+          </p>
           <ul className="list-disc list-inside space-y-1 text-slate-655 leading-normal">
-            <li>Check your local <code className="font-mono text-[11px] bg-slate-200/50 px-1 rounded">.env.local</code> file.</li>
+            <li>
+              Check your local{" "}
+              <code className="font-mono text-[11px] bg-slate-200/50 px-1 rounded">
+                .env.local
+              </code>{" "}
+              file.
+            </li>
             <li>Verify your Vercel Project Environment Variables.</li>
             <li>Trigger a fresh deployment after saving changes.</li>
           </ul>
         </div>
         <button
-          onClick={() => typeof window !== "undefined" && window.location.reload()}
+          onClick={() =>
+            typeof window !== "undefined" && window.location.reload()
+          }
           className="mt-6 w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-md active:scale-[0.98] transition-all cursor-pointer"
         >
           Reload Page
@@ -48,12 +77,9 @@ function ConvexConfigErrorScreen() {
 }
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
-  if (isConfigInvalid) {
+  if (!convex) {
     return <ConvexConfigErrorScreen />;
   }
-
-  // Safe to initialize now that we have a valid absolute URL
-  const convex = new ConvexReactClient(convexUrl);
 
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>

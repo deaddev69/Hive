@@ -973,6 +973,82 @@ export const getBoutiqueOrders = query({
   },
 });
 
+/**
+ * Lightweight real-time query for PushNotificationManager sound alarms and header badge.
+ * Instead of fetching 300 orders with 1,500 joined sub-queries on every page,
+ * this fetches only the total order count and single latest order for instant notification dispatch.
+ */
+export const getBoutiqueOrderAlertState = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUserOrNull(ctx);
+    if (!user) return null;
+
+    let boutique: any = null;
+    try {
+      boutique = await getMyBoutique(ctx, undefined, true);
+    } catch {
+      return null;
+    }
+    if (!boutique) return null;
+
+    // Fetch the single latest order for this boutique
+    const latestOrder = await ctx.db
+      .query("orders")
+      .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", boutique._id))
+      .order("desc")
+      .first();
+
+    if (!latestOrder) {
+      return { totalCount: 0, latestOrder: null };
+    }
+
+    // Fast count of orders
+    const orders = await ctx.db
+      .query("orders")
+      .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", boutique._id))
+      .collect();
+
+    // Fetch items only for the 1 latest order to calculate net payout & items count
+    const items = await ctx.db
+      .query("orderItems")
+      .withIndex("by_orderId", (q) => q.eq("orderId", latestOrder._id))
+      .collect();
+
+    let totalBasePrice = 0;
+    let totalPayout = 0;
+    items.forEach((it) => {
+      const qty = it.quantity || 1;
+      const base = (it.basePriceAtPurchase != null && it.basePriceAtPurchase > 0)
+        ? it.basePriceAtPurchase
+        : (it.priceAtPurchase || 0);
+      let fee = 0;
+      if (it.platformFeeAmount != null && it.platformFeeAmount >= 0) {
+        fee = it.platformFeeAmount;
+      } else if (it.basePriceAtPurchase != null && it.basePriceAtPurchase > 0) {
+        fee = Math.round(it.basePriceAtPurchase * 0.02);
+      } else if (it.priceAtPurchase != null && it.priceAtPurchase > 0) {
+        fee = Math.round(it.priceAtPurchase * 0.18);
+      }
+      totalBasePrice += base * qty;
+      totalPayout += (base - fee) * qty;
+    });
+
+    return {
+      totalCount: orders.length,
+      latestOrder: {
+        _id: latestOrder._id,
+        orderNumber: latestOrder.orderNumber,
+        itemCount: items.length,
+        totalPayout,
+        totalBasePrice,
+        total: latestOrder.total,
+        createdAt: latestOrder.createdAt,
+      },
+    };
+  },
+});
+
 export const getOrderByIdInternal = internalQuery({
   args: { orderId: v.id("orders") },
   handler: async (ctx, args) => {
