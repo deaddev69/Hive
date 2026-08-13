@@ -13,12 +13,13 @@ export default function DownloadPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-amber-50 to-white p-6 font-sans">
       <div className="max-w-md w-full text-center space-y-8">
+
         {/* Logo */}
-        <div className="mx-auto w-28 h-28 rounded-3xl bg-[#FAB407] flex items-center justify-center shadow-xl shadow-amber-200/50">
+        <div className="mx-auto w-32 h-32 rounded-[28px] bg-[#F5B800] flex items-center justify-center shadow-xl shadow-amber-300/60 overflow-hidden">
           <img
             src="/logo.png"
             alt="Hive Partners"
-            className="w-20 h-20 object-contain"
+            className="w-full h-full object-cover"
           />
         </div>
 
@@ -36,21 +37,12 @@ export default function DownloadPage() {
         {/* Download Button */}
         <a
           href={apkUrl}
-          className="inline-flex items-center justify-center gap-3 w-full py-4 px-6 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-semibold text-base shadow-lg shadow-slate-900/20 active:scale-[0.98] transition-all"
+          className="inline-flex items-center justify-center gap-3 w-full py-4 px-6 bg-[#F5B800] hover:bg-[#e0a900] text-white rounded-2xl font-semibold text-base shadow-lg shadow-amber-400/30 active:scale-[0.98] transition-all"
+          style={{ color: "#1a1a1a" }}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-            />
+          {/* Android icon */}
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M17.523 15.341a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0zm-9.546 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0zM6.35 5.648l-1.386-2.4a.375.375 0 0 1 .651-.375l1.404 2.432A8.955 8.955 0 0 1 12 4.5c1.19 0 2.324.23 3.364.648l1.404-2.432a.375.375 0 1 1 .651.375l-1.386 2.4A9 9 0 0 1 21 13.5H3a9 9 0 0 1 3.35-7.852z"/>
           </svg>
           Download for Android
         </a>
@@ -73,7 +65,7 @@ export default function DownloadPage() {
 
         {/* Version info */}
         <p className="text-xs text-slate-400">
-          Android only &middot; v1.1 &middot; 6.8 MB
+          Android only &middot; v1.2 &middot; Latest build
         </p>
       </div>
     </div>
