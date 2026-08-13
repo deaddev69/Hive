@@ -370,10 +370,12 @@ export default function BoutiqueProfile() {
             </h3>
 
             {/* Global Locked Fields Information Box */}
-            <div className="bg-amber-50 border border-amber-200/60 p-4 rounded-xl text-xs text-amber-900 font-medium leading-relaxed flex gap-3 items-start shadow-sm mt-1">
-              <span className="text-amber-600 text-lg">🔒</span>
-              <p>
-                Certain profile settings (Coordinates, Delivery Radius, Return Policy) are <strong>locked once configured</strong> to ensure accurate fulfillment zones and buyer trust. To request changes to locked fields, please contact <a href="mailto:support@hivenow.in" className="font-bold underline text-amber-950">support@hivenow.in</a>.
+            <div className="bg-amber-50/80 border border-amber-200/80 p-4 rounded-2xl text-xs text-amber-950 font-medium leading-relaxed flex gap-3.5 items-start shadow-xs mt-1">
+              <div className="p-1.5 bg-amber-100/80 rounded-lg text-amber-800 shrink-0 mt-0.5">
+                <Lock className="w-4 h-4" />
+              </div>
+              <p className="flex-1">
+                Certain profile settings (Coordinates, Delivery Radius, Return Policy) are <strong>locked once configured</strong> to ensure accurate fulfillment zones and buyer trust. To request changes to locked fields, please contact <a href="mailto:support@hivenow.in" className="font-bold underline text-amber-950 hover:text-amber-900">support@hivenow.in</a>.
               </p>
             </div>
 
@@ -439,8 +441,9 @@ export default function BoutiqueProfile() {
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Delivery Radius (Km)</label>
                   {!!boutique?.deliveryRadiusKm && (
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                      🔒 Locked
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100/90 border border-amber-300/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-amber-800" />
+                      <span>Locked</span>
                     </span>
                   )}
                 </div>
@@ -492,8 +495,9 @@ export default function BoutiqueProfile() {
               <div className="font-bold text-hive-text-muted flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <span>Coordinates</span>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    🔒 Locked
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100/90 border border-amber-300/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-amber-800" />
+                    <span>Locked</span>
                   </span>
                 </div>
                 <span className="font-mono text-[10px] text-hive-amber">
@@ -514,8 +518,9 @@ export default function BoutiqueProfile() {
                   </p>
                 </div>
                 {boutique?.returnsAcceptedDefaultLocked && (
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-full flex items-center gap-1">
-                    🔒 Locked
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100/90 border border-amber-300/80 px-2.5 py-1 rounded-full flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-amber-800" />
+                    <span>Locked</span>
                   </span>
                 )}
               </div>
