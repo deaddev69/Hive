@@ -188,12 +188,12 @@ export default function BoutiqueDashboard() {
   };
 
   // Metrics calculations
+  const isActiveOrder = (o: any) =>
+    !["cancelled", "refunded", "refund_requested", "booking_failed"].includes(o.status);
+
   const ordersNewToday = useMemo(() => {
     return orders?.filter(isCreatedToday).filter(isActiveOrder).length ?? 0;
   }, [orders]);
-
-  const isActiveOrder = (o: any) =>
-    !["cancelled", "refunded", "refund_requested", "booking_failed"].includes(o.status);
 
   const netEarningsToday = useMemo(() => {
     return (
