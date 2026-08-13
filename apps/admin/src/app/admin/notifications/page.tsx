@@ -146,9 +146,9 @@ export default function NotificationsPage() {
 
   // Stats summary counts
   const totalEvents = events?.length || 0;
-  const sentEvents = events?.filter(e => e.status === "sent" || e.status === "delivered" || e.status === "read").length || 0;
-  const failedEvents = events?.filter(e => e.status === "failed").length || 0;
-  const whatsappEvents = analytics?.whatsappTotal ?? (events?.filter(e => e.channel === "whatsapp").length || 0);
+  const sentEvents = events?.filter((e: any) => e.status === "sent" || e.status === "delivered" || e.status === "read").length || 0;
+  const failedEvents = events?.filter((e: any) => e.status === "failed").length || 0;
+  const whatsappEvents = analytics?.whatsappTotal ?? (events?.filter((e: any) => e.channel === "whatsapp").length || 0);
 
   return (
     <div className="flex flex-col gap-6 text-left">
