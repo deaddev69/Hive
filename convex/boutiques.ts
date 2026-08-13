@@ -1288,6 +1288,15 @@ export const getMyBoutiqueSafe = query({
       if (!boutique && normalizedUserEmail !== userEmail) {
         boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail2", q => q.eq("staffEmail2", userEmail)).first();
       }
+      if (!boutique) {
+        const allBoutiques = await ctx.db.query("boutiques").collect();
+        boutique = allBoutiques.find((b: any) =>
+          b.status !== "DELETED" && (
+            (b.staffEmail1 && normalizeEmail(b.staffEmail1) === normalizeEmail(userEmail)) ||
+            (b.staffEmail2 && normalizeEmail(b.staffEmail2) === normalizeEmail(userEmail))
+          )
+        ) as any;
+      }
     }
 
     if (!boutique && user.role === "admin") {

@@ -257,6 +257,13 @@ export async function getMyBoutique(ctx: AuthCtx, token?: string, allowSuspended
         .withIndex("by_staffEmail2", (q) => q.eq("staffEmail2", userEmail))
         .first();
     }
+    if (!boutique) {
+      const allBoutiques = await ctx.db.query("boutiques").collect();
+      boutique = allBoutiques.find((b: any) =>
+        (b.staffEmail1 && normalizeEmail(b.staffEmail1) === normalizeEmail(userEmail)) ||
+        (b.staffEmail2 && normalizeEmail(b.staffEmail2) === normalizeEmail(userEmail))
+      ) as any;
+    }
   }
 
   if (!boutique && user.role === "admin") {

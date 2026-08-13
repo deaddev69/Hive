@@ -160,15 +160,14 @@ export function PushNotificationManager({
     router.push("/boutique/orders");
   };
 
-  // Real-time Convex order count listener (lightweight query optimized for zero query fan-out)
-  const alertState = useQuery(api.orders.getBoutiqueOrderAlertState);
+  // Real-time Convex order count listener
+  const orders = useQuery(api.orders.getBoutiqueOrders);
   const prevOrderCountRef = React.useRef<number | null>(null);
 
   useEffect(() => {
-    if (alertState !== undefined && alertState !== null) {
-      const currentCount = alertState.totalCount;
-      if (prevOrderCountRef.current !== null && currentCount > prevOrderCountRef.current) {
-        const latest = alertState.latestOrder;
+    if (orders !== undefined && Array.isArray(orders)) {
+      if (prevOrderCountRef.current !== null && orders.length > prevOrderCountRef.current) {
+        const latest = orders[0];
         let netPayout: number | undefined = undefined;
         if (latest) {
           const payoutPaise = latest.totalPayout ?? (latest.totalBasePrice ? Math.round(latest.totalBasePrice * 0.98) : Math.round((latest.total ?? 0) * 0.98));
@@ -178,13 +177,13 @@ export function PushNotificationManager({
         console.log("[PushNotificationManager] New order detected via real-time query! Triggering alarm...", { netPayout });
         startOrderAlarm({
           title: "🚨 NEW ORDER RECEIVED!",
-          body: `Order ${latest?.orderNumber || ""} placed for ${latest?.itemCount || 1} item(s).`,
+          body: `Order ${latest?.orderNumber || ""} placed for ${latest?.items?.length || 1} item(s).`,
           netPayout,
         });
       }
-      prevOrderCountRef.current = currentCount;
+      prevOrderCountRef.current = orders.length;
     }
-  }, [alertState, startOrderAlarm]);
+  }, [orders, startOrderAlarm]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
