@@ -17,7 +17,7 @@ export default function DownloadPage() {
         {/* Logo */}
         <div className="mx-auto w-32 h-32 rounded-[28px] bg-[#F5B800] flex items-center justify-center shadow-xl shadow-amber-300/60 overflow-hidden">
           <img
-            src="/logo.png"
+            src="/logo-icon.png"
             alt="Hive Partners"
             className="w-full h-full object-cover"
           />
