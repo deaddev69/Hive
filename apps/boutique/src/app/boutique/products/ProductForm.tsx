@@ -316,7 +316,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const [silhouette, setSilhouette] = useState<"slim_fit" | "regular_fit" | "relaxed_fit" | "oversized">("regular_fit");
   
   const [sameDayEligible, setSameDayEligible] = useState(false);
-  const [returnsAccepted, setReturnsAccepted] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [active, setActive] = useState(true);
   const [isPublishingComplete, setIsPublishingComplete] = useState(false);
@@ -541,7 +540,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       setFitRecommendation(productToEdit.fitRecommendation || "true_to_size");
       setSilhouette(productToEdit.silhouette || "regular_fit");
       setSameDayEligible(productToEdit.sameDayEligible || false);
-      setReturnsAccepted(productToEdit.returnsAccepted !== false);
       setFeatured(productToEdit.featured || false);
       setActive(productToEdit.active !== false);
 
@@ -875,7 +873,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         sizes: selectedSizes,
         stockBySize,
         sameDayEligible,
-        returnsAccepted,
         featured,
         active,
         story: data.story || "",

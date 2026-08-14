@@ -67,7 +67,7 @@ export function MobileProductDetails({
       .join(" ");
   };
 
-  const isReturnsAccepted = (product as any).returnsAccepted ?? (product as any).boutique?.returnsAcceptedDefault ?? true;
+  const isReturnsAccepted = (product as any).returnsAccepted ?? true;
 
   const hasDescription = product.description && product.description.trim() !== "";
 

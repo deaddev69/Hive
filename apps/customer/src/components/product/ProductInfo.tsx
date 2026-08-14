@@ -62,7 +62,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
       .join(" ");
   };
 
-  const isReturnsAccepted = (product as any).returnsAccepted ?? (product as any).boutique?.returnsAcceptedDefault ?? true;
+  const isReturnsAccepted = (product as any).returnsAccepted ?? true;
 
   const hasDescription = product.description && product.description.trim() !== "";
 

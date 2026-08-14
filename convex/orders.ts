@@ -766,7 +766,7 @@ async function formatOrderForCustomer(ctx: any, order: any, items: any[]) {
     items.map(async (item) => {
       const product = await ctx.db.get(item.productId);
       const boutique = await ctx.db.get(item.boutiqueId);
-      const returnsAccepted = product?.returnsAccepted ?? boutique?.returnsAcceptedDefault ?? true;
+      const returnsAccepted = boutique?.returnsAcceptedDefault ?? true;
 
       const existingReview = await ctx.db
         .query("reviews")

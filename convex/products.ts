@@ -99,8 +99,7 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
       const statusRes = enrichedData?.statusRes || null;
 
       const logoUrl = boutique?.logoUrl ? getPublicUrl(boutique.logoUrl, "thumbnail") : undefined;
-
-      const isReturnsAccepted = product.returnsAccepted ?? boutique?.returnsAcceptedDefault ?? true;
+      const isReturnsAccepted = boutique?.returnsAcceptedDefault ?? true;
 
       return {
         ...product,
@@ -493,7 +492,6 @@ export const createProduct = mutation({
       sizes: args.sizes,
       stockBySize: args.stockBySize,
       sameDayEligible: args.sameDayEligible,
-      returnsAccepted: args.returnsAccepted,
       featured: args.featured,
       active,
       autoDeactivatedBecauseOutOfStock,
@@ -755,7 +753,6 @@ export const updateProduct = mutation({
       sizes: args.sizes,
       stockBySize: args.stockBySize,
       sameDayEligible: args.sameDayEligible,
-      returnsAccepted: args.returnsAccepted,
       featured: args.featured,
       active,
       autoDeactivatedBecauseOutOfStock,
