@@ -11,6 +11,8 @@ import { getCategoryMetadata } from "@/lib/seo";
 import { BreadcrumbSchema } from "@/components/seo/BreadcrumbSchema";
 import { ProductsClient } from "../ProductsClient";
 
+export const revalidate = 0;
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
