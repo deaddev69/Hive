@@ -45,6 +45,13 @@ crons.hourly(
   internal.media.cleanup.cleanupOrphans
 );
 
+// Safety cron: Sweep unaccepted orders > 45 minutes every 5 minutes
+crons.interval(
+  "sweep_unaccepted_orders_sla_every_5_minutes",
+  { minutes: 5 },
+  internal.orders.sweepUnacceptedOrdersSLA
+);
+
 
 
 export default crons;

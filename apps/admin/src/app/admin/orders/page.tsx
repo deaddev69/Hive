@@ -518,10 +518,24 @@ export default function AdminOrdersPage() {
   const { isLoading: convexAuthLoading } = useConvexAuth();
   const orders = useQuery(api.adminOrders.getAllOrders, { limit: 200 });
   const metrics = useQuery(api.adminOrders.getAdminDashboardMetrics);
+  const triggerSlaSweep = useMutation(api.orders.triggerSlaOrderSweepAdmin);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedOrderId, setSelectedOrderId] = useState<Id<"orders"> | null>(null);
+  const [isSweeping, setIsSweeping] = useState(false);
+
+  const handleManualSweep = async () => {
+    setIsSweeping(true);
+    try {
+      const res = await triggerSlaSweep();
+      alert(`Auto-cancelled ${res.cancelledCount} overdue order(s) (>45 min).`);
+    } catch (e: any) {
+      alert("Sweep failed: " + e.message);
+    } finally {
+      setIsSweeping(false);
+    }
+  };
 
   const isLoading = orders === undefined || metrics === undefined;
 
@@ -714,6 +728,15 @@ export default function AdminOrdersPage() {
               }`}
             >
               {statusFilter === "sla_overdue" ? "Showing Overdue (Reset)" : `Filter Overdue (${slaOverdueOrders.length})`}
+            </button>
+
+            <button
+              onClick={handleManualSweep}
+              disabled={isSweeping}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white border border-red-300 text-red-700 hover:bg-red-50 transition-all cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1.5 shadow-2xs"
+              title="Auto-cancel all orders unaccepted for >45 minutes"
+            >
+              {isSweeping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "⚡ Auto-Cancel Expired (>45m)"}
             </button>
           </div>
         </div>

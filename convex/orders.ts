@@ -2224,3 +2224,72 @@ export const autoSlaCancel = internalMutation({
     });
   },
 });
+
+// Periodic safety cron: Sweep any unaccepted orders > 45 minutes
+export const sweepUnacceptedOrdersSLA = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const fortyFiveMinutesAgo = Date.now() - 45 * 60 * 1000;
+    const allPending = await ctx.db
+      .query("orders")
+      .withIndex("by_status", (q) => q.eq("status", "pending_confirmation"))
+      .collect();
+
+    const overdueOrders = allPending.filter((o) => {
+      const created = o.createdAt || o._creationTime;
+      return created < fortyFiveMinutesAgo;
+    });
+
+    const now = Date.now();
+    let count = 0;
+    for (const order of overdueOrders) {
+      await ctx.db.patch(order._id, {
+        status: "cancelled",
+        cancelledAt: now,
+        internalCancelReason: "Seller did not accept within 45 minutes (Safety Cron Sweep)",
+        cancelReason: "Order auto-cancelled: seller did not respond in time",
+        refundStatus: "pending",
+        slaAutoCancelledAt: now,
+        updatedAt: now,
+      });
+      count++;
+    }
+
+    return { cancelledCount: count };
+  },
+});
+
+// Admin manual 1-tap trigger to purge all unaccepted orders > 45 minutes
+export const triggerSlaOrderSweepAdmin = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await requireRole(ctx, "admin");
+    const fortyFiveMinutesAgo = Date.now() - 45 * 60 * 1000;
+    const allPending = await ctx.db
+      .query("orders")
+      .withIndex("by_status", (q) => q.eq("status", "pending_confirmation"))
+      .collect();
+
+    const overdueOrders = allPending.filter((o) => {
+      const created = o.createdAt || o._creationTime;
+      return created < fortyFiveMinutesAgo;
+    });
+
+    const now = Date.now();
+    let count = 0;
+    for (const order of overdueOrders) {
+      await ctx.db.patch(order._id, {
+        status: "cancelled",
+        cancelledAt: now,
+        internalCancelReason: "Seller did not accept within 45 minutes (Admin SLA Sweep)",
+        cancelReason: "Order auto-cancelled: seller did not respond in time",
+        refundStatus: "pending",
+        slaAutoCancelledAt: now,
+        updatedAt: now,
+      });
+      count++;
+    }
+
+    return { cancelledCount: count };
+  },
+});
