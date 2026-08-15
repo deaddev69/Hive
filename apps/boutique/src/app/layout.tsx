@@ -5,6 +5,7 @@ import { UserSync } from "@/components/auth/UserSync";
 import { Inter, Outfit } from "next/font/google";
 import { Toaster } from "@hive/ui";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { PwaUpdateManager } from "@/components/pwa/PwaUpdateManager";
 import "./globals.css";
 
 const inter = Inter({
@@ -45,6 +46,7 @@ export default function RootLayout({
             {children}
             <Toaster />
             <InstallPrompt />
+            <PwaUpdateManager />
           </ConvexClientProvider>
         </body>
       </html>

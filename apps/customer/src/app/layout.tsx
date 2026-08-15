@@ -40,6 +40,7 @@ export const metadata: Metadata = {
 
 import { Toaster } from "@hive/ui";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { PwaUpdateManager } from "@/components/pwa/PwaUpdateManager";
 
 export default function RootLayout({
   children,
@@ -60,6 +61,7 @@ export default function RootLayout({
           </CustomerLayout>
           <div id="modal-root" />
           <InstallPrompt />
+          <PwaUpdateManager />
         </ConvexClientProvider>
       </body>
     </html>

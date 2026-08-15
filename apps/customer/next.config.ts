@@ -10,7 +10,10 @@ const withPWA = withPWAInit({
   workboxOptions: {
     cacheId: "hive-v3",
     cleanupOutdatedCaches: true,
+    skipWaiting: true,
+    clientsClaim: true,
   },
+  reloadOnOnline: true,
 });
 
 const nextConfig: NextConfig = {

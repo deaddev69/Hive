@@ -1,6 +1,12 @@
 // Custom PWA Service Worker logic for @ducanh2912/next-pwa
 // High-Urgency Pinned Notification & Dual-Mode Lockscreen Action Handler
 
+self.addEventListener("message", (event) => {
+  if (event.data && (event.data.type === "SKIP_WAITING" || event.data === "SKIP_WAITING")) {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("push", (event) => {
   if (!event.data) return;
 

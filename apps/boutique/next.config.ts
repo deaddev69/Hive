@@ -7,6 +7,11 @@ const withPWA = withPWAInit({
   dynamicStartUrl: false,
   cacheStartUrl: false,
   customWorkerSrc: "worker",
+  workboxOptions: {
+    skipWaiting: true,
+    clientsClaim: true,
+  },
+  reloadOnOnline: true,
 });
 
 const nextConfig: NextConfig = {
