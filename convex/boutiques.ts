@@ -2291,12 +2291,12 @@ export const claimBoutiqueInvite = mutation({
       updatedAt: now,
     });
 
-    // Send welcome WhatsApp sequence #1
-    await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-      recipient: boutique.phone,
-      templateName: "merchant_welcome",
-      parameters: [boutique.boutiqueName],
-    });
+    // Send welcome WhatsApp sequence #1 (Temporarily disabled - template missing)
+    // await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+    //   recipient: boutique.phone,
+    //   templateName: "merchant_welcome",
+    //   parameters: [boutique.boutiqueName],
+    // });
 
     // 3. Log Claim Event
     await ctx.db.insert("auditLogs", {

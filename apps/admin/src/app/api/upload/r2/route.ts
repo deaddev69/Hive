@@ -4,10 +4,18 @@ import { auth } from "@clerk/nextjs/server";
 
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth();
+    const { userId, sessionClaims } = await auth();
     
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const role = (sessionClaims?.metadata as any)?.role || (sessionClaims as any)?.role;
+    if (role !== "admin" && role !== "seller") {
+      return NextResponse.json(
+        { error: "Forbidden: You must be an admin or verified seller to upload files." }, 
+        { status: 403 }
+      );
     }
 
     const formData = await req.formData();

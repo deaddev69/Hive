@@ -187,12 +187,12 @@ export const syncUser = mutation({
         await ctx.db.patch(targetUserId, { role: "boutique_owner", updatedAt: now });
         targetUserRole = "boutique_owner";
 
-        // Send welcome WhatsApp sequence #1
-        await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-          recipient: boutique.phone,
-          templateName: "merchant_welcome",
-          parameters: [boutique.boutiqueName],
-        });
+        // Send welcome WhatsApp sequence #1 (Temporarily disabled - template missing)
+        // await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+        //   recipient: boutique.phone,
+        //   templateName: "merchant_welcome",
+        //   parameters: [boutique.boutiqueName],
+        // });
 
         await ctx.db.insert("auditLogs", {
           actorRole: "system",
