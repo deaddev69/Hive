@@ -141,16 +141,12 @@ export const sendOrderEmail = internalAction({
         const bEmail = boutique?.email || boutique?.ownerEmail;
         if (bEmail) toEmails.push(bEmail);
 
-        // Include selected staff member in order notification list
+        // Send order notification email to Owner, and optionally at most Staff 1 (never secondary staff)
         const selection = (boutique as any)?.staffNotificationSelection;
         const shouldEmailStaff1 = (selection === "staff1" || selection === "both" || selection === "all") && boutique?.staffEmail1;
-        const shouldEmailStaff2 = (selection === "staff2" || selection === "both" || selection === "all") && boutique?.staffEmail2;
 
         if (shouldEmailStaff1 && boutique?.staffEmail1) {
           toEmails.push(boutique.staffEmail1);
-        }
-        if (shouldEmailStaff2 && boutique?.staffEmail2) {
-          toEmails.push(boutique.staffEmail2);
         }
         break;
 
