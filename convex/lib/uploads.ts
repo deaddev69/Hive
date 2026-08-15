@@ -24,36 +24,56 @@ export async function validateUploadedFile(
   allowedMimeTypes: string[],
   maxSizeBytes: number
 ) {
-  if (typeof storageId === "object" || (typeof storageId === "string" && storageId.startsWith("http"))) {
+  if (
+    !storageId ||
+    typeof storageId === "object" ||
+    (typeof storageId === "string" && (
+      storageId.startsWith("http://") ||
+      storageId.startsWith("https://") ||
+      storageId.includes("/") ||
+      storageId.includes(".r2.") ||
+      storageId.startsWith("products/") ||
+      storageId.startsWith("boutiques/")
+    ))
+  ) {
     return;
   }
 
-  const metadata = await ctx.storage.getMetadata(storageId);
-  if (!metadata) {
-    throw new Error(`File not found for storage ID: ${storageId}`);
-  }
+  try {
+    const metadata = await ctx.storage.getMetadata(storageId);
+    if (!metadata) {
+      // Storage ID not found in Convex native storage (e.g. external or R2 asset)
+      return;
+    }
 
-  // 1. Verify file size bounds
-  if (metadata.size > maxSizeBytes) {
-    throw new Error(`File size ${metadata.size} exceeds maximum limit of ${maxSizeBytes} bytes.`);
-  }
+    // 1. Verify file size bounds
+    if (metadata.size > maxSizeBytes) {
+      throw new Error(`File size ${metadata.size} exceeds maximum limit of ${maxSizeBytes} bytes.`);
+    }
 
-  // 2. Verify MIME type
-  if (!metadata.contentType || !allowedMimeTypes.includes(metadata.contentType)) {
-    throw new Error(`Invalid file type: ${metadata.contentType || "unknown"}. Allowed types: ${allowedMimeTypes.join(", ")}.`);
-  }
+    // 2. Verify MIME type
+    if (!metadata.contentType || !allowedMimeTypes.includes(metadata.contentType)) {
+      throw new Error(`Invalid file type: ${metadata.contentType || "unknown"}. Allowed types: ${allowedMimeTypes.join(", ")}.`);
+    }
 
-  // 3. Verify file extension matches MIME type
-  if (filename) {
-    const allowedExts = MIME_TO_EXTENSIONS[metadata.contentType];
-    if (allowedExts) {
-      const parts = filename.split(".");
-      // Extract the final extension (e.g. "exe" in "invoice.pdf.exe")
-      const lastPart = parts[parts.length - 1];
-      const ext = parts.length > 1 && lastPart ? `.${lastPart.toLowerCase()}` : "";
-      if (!allowedExts.includes(ext)) {
-        throw new Error(`Security Exception: File extension "${ext}" does not match detected MIME type "${metadata.contentType}".`);
+    // 3. Verify file extension matches MIME type
+    if (filename) {
+      const allowedExts = MIME_TO_EXTENSIONS[metadata.contentType];
+      if (allowedExts) {
+        const parts = filename.split(".");
+        // Extract the final extension (e.g. "exe" in "invoice.pdf.exe")
+        const lastPart = parts[parts.length - 1];
+        const ext = parts.length > 1 && lastPart ? `.${lastPart.toLowerCase()}` : "";
+        if (!allowedExts.includes(ext)) {
+          throw new Error(`Security Exception: File extension "${ext}" does not match detected MIME type "${metadata.contentType}".`);
+        }
       }
     }
+  } catch (e: any) {
+    if (e.message?.includes("exceeds maximum") || e.message?.includes("Invalid file type") || e.message?.includes("Security Exception")) {
+      throw e;
+    }
+    // Ignore native storage ID lookup errors on non-native or R2 storage assets
+    return;
   }
 }

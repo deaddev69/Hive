@@ -670,14 +670,14 @@ export const updateProduct = mutation({
     // Clean up replaced images from storage if necessary and they are not shared
     const removedImages = product.images.filter(img => !args.images.includes(img));
     for (const imgId of removedImages) {
-      if (typeof imgId === "string" && !imgId.startsWith("http")) {
-        const shared = await isImageShared(ctx, boutique._id, product._id, imgId as string);
-        if (!shared) {
-          try {
+      if (typeof imgId === "string" && !imgId.startsWith("http") && !imgId.includes("/")) {
+        try {
+          const shared = await isImageShared(ctx, boutique._id, product._id, imgId as string);
+          if (!shared) {
             await ctx.storage.delete(imgId as any);
-          } catch (e) {
-            console.error("Failed to delete storage file:", imgId, e);
           }
+        } catch (e) {
+          console.error("Failed to delete storage file:", imgId, e);
         }
       }
     }
