@@ -18,6 +18,7 @@ export interface CartItem {
   reservationStatus?: string;
   reservationExpiresAt?: number;
   reservationId?: string;
+  returnsAccepted?: boolean;
 }
 
 export interface CartState {

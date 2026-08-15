@@ -11,6 +11,7 @@ import {
   getOrderOutForDeliveryCustomerTemplate,
   getOrderDeliveredCustomerTemplate,
   getOrderDeliveredBoutiqueTemplate,
+  getOrderDeclinedCustomerTemplate,
 } from "./lib/emailTemplates";
 
 /**
@@ -55,7 +56,9 @@ export const sendOrderEmail = internalAction({
       v.literal("confirmed"),
       v.literal("packed"),
       v.literal("out_for_delivery"),
-      v.literal("delivered")
+      v.literal("delivered"),
+      v.literal("cancelled"),
+      v.literal("declined")
     ),
   },
   handler: async (ctx, args) => {
@@ -169,6 +172,15 @@ export const sendOrderEmail = internalAction({
 
         const cEmailTransit = invoice?.customerEmail || user?.email;
         if (cEmailTransit) toEmails.push(cEmailTransit);
+        break;
+
+      case "cancelled":
+      case "declined":
+        subject = `Your Hive Order ${order.orderNumber} - Order Update & Refund Initiated`;
+        html = getOrderDeclinedCustomerTemplate(templateData);
+
+        const cEmailDeclined = invoice?.customerEmail || user?.email;
+        if (cEmailDeclined) toEmails.push(cEmailDeclined);
         break;
 
       case "delivered":

@@ -73,6 +73,9 @@ export const sendTemplateMessage = internalAction({
     if (isMock) {
       let bodyText = "";
       switch (args.templateName) {
+        case "hive_order_declined":
+          bodyText = `Hi! We're sorry to inform you that your Hive order *#${args.parameters[0] || ""}* could not be fulfilled due to unexpectedly high demand for this product. We've initiated a full refund of ₹${args.parameters[1] || "0.00"} to your original payment method. This will be reflected within approximately 1 hour.`;
+          break;
         case "hive_merchant_new_order":
           bodyText = `Congratulations ${args.parameters[0] || "Merchant"}! You have received a new order ${args.parameters[1] || ""}. Open your Seller Portal to accept and pack the order.`;
           break;

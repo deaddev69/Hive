@@ -36,6 +36,16 @@ export function getWhatsAppTemplate(template: string, payload: any): { templateN
       templateName = "hive_order_delivered";
       parameters = [payload.orderNumber || ""];
       break;
+
+    case "order_declined":
+    case "order_cancelled":
+    case "cancelled":
+      templateName = "hive_order_declined";
+      parameters = [
+        payload.orderNumber || "",
+        payload.total ? ((payload.total) / 100).toFixed(2) : (payload.refundAmount || "0.00"),
+      ];
+      break;
       
     case "payment_received":
       templateName = "hive_payment_received";

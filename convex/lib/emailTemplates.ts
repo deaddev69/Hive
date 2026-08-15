@@ -11,6 +11,7 @@ interface EmailTemplateInput {
     size: string;
     quantity: number;
     priceAtPurchase: number;
+    basePriceAtPurchase?: number;
     imageUrl?: string;
   }>;
   subtotal: number;
@@ -19,6 +20,8 @@ interface EmailTemplateInput {
   total: number;
   notes?: string;
   pdfUrl?: string;
+  merchantPayable?: number;
+  basePriceAtPurchase?: number;
 }
 
 const formatCurrency = (paise: number) => {
@@ -189,7 +192,7 @@ const baseLayout = (title: string, bodyContent: string) => `
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <div class="logo">HIVE<span>.</span></div>
+        <img src="https://hivenow.in/logo-navbar.png" alt="HIVE" style="height: 32px; margin: 0 auto; display: block;" />
       </div>
       <div class="content">
         ${bodyContent}
@@ -213,7 +216,7 @@ export const getNewOrderBoutiqueTemplate = (data: EmailTemplateInput) => {
         <div class="item-name">${item.productName}</div>
         <div class="item-meta">Size: ${item.size} | Qty: ${item.quantity}</div>
       </td>
-      <td class="item-price">${formatCurrency(item.priceAtPurchase * item.quantity)}</td>
+      <td class="item-price">${formatCurrency((item.basePriceAtPurchase ?? item.priceAtPurchase) * item.quantity)}</td>
     </tr>`
     )
     .join("");
@@ -245,7 +248,7 @@ export const getNewOrderBoutiqueTemplate = (data: EmailTemplateInput) => {
       </tr>
       <tr class="grand-total">
         <td>Potential Payout</td>
-        <td style="text-align: right;">${formatCurrency(data.subtotal)}</td>
+        <td style="text-align: right;">${formatCurrency(data.merchantPayable ?? data.subtotal)}</td>
       </tr>
     </table>
     

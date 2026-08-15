@@ -232,9 +232,9 @@ export default function OrderDetailPage() {
               <XCircle className="w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-red-950 dark:text-red-200">Order Cancelled</h1>
+              <h1 className="text-xl font-bold text-red-950 dark:text-red-200">Order Declined / Cancelled</h1>
               <p className="text-xs text-red-700 dark:text-red-400 mt-1 leading-relaxed">
-                This order was cancelled. Any processed payments will be refunded to your original payment method within 24 hours.
+                This order was declined due to high demand. An instant full refund has been initiated to your original payment method within approximately 1 hour.
               </p>
             </div>
             <div className="inline-block px-3 py-1 bg-white dark:bg-zinc-900 border border-red-200 dark:border-red-800 rounded-full text-xs font-mono font-bold text-red-700 dark:text-red-400">

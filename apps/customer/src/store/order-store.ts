@@ -21,6 +21,7 @@ export interface Order {
   createdAt: string;
   status: "placed" | "confirmed" | "picked_up" | "out_for_delivery" | "delivered" | "cancelled";
   cancellationReason?: string;
+  returnsAccepted?: boolean;
 }
 
 export interface OrderState {

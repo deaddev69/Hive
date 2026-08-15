@@ -1,7 +1,7 @@
 import { mutation } from "./_generated/server";
 import { requireRole } from "./lib/auth";
 import { getPlatformMarkupRate } from "./pricingHelpers";
-import { calculateProductPricing } from "./pricingService";
+import { calculateProductPricing, DEFAULT_TIER_SLABS } from "./pricingService";
 
 /**
  * Migration to backfill the productPerformance table for all historical orders and claims.
@@ -252,20 +252,11 @@ export const migratePlatformSettingsToTiered = mutation({
       await requireRole(ctx, "admin");
     }
 
-    const defaultTiers = [
-      { min_price: 0, max_price: 499, rate: 18 },
-      { min_price: 500, max_price: 999, rate: 16 },
-      { min_price: 1000, max_price: 1499, rate: 14 },
-      { min_price: 1500, max_price: 2499, rate: 12 },
-      { min_price: 2500, max_price: 4999, rate: 11 },
-      { min_price: 5000, max_price: null, rate: 10 }
-    ];
-
     const settings = await ctx.db.query("platformSettings").first();
     if (settings) {
       await ctx.db.patch(settings._id, {
         markupType: "tiered",
-        markupTiers: defaultTiers,
+        markupTiers: DEFAULT_TIER_SLABS,
         updatedAt: Date.now()
       });
       return "Successfully updated existing platform settings with tiered slabs.";
@@ -274,7 +265,7 @@ export const migratePlatformSettingsToTiered = mutation({
         markupRate: 0.15,
         platformFeeRate: 0.02,
         markupType: "tiered",
-        markupTiers: defaultTiers,
+        markupTiers: DEFAULT_TIER_SLABS,
         updatedAt: Date.now()
       });
       return "Successfully seeded new platform settings with default tiered slabs.";
@@ -298,14 +289,7 @@ export const recalculateAllProductPrices = mutation({
       markupRate: 0.15,
       platformFeeRate: 0.02,
       markupType: "tiered",
-      markupTiers: [
-        { min_price: 0, max_price: 499, rate: 18 },
-        { min_price: 500, max_price: 999, rate: 16 },
-        { min_price: 1000, max_price: 1499, rate: 14 },
-        { min_price: 1500, max_price: 2499, rate: 12 },
-        { min_price: 2500, max_price: 4999, rate: 11 },
-        { min_price: 5000, max_price: null, rate: 10 }
-      ]
+      markupTiers: DEFAULT_TIER_SLABS,
     };
 
     const products = await ctx.db.query("products").collect();

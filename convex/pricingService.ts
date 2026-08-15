@@ -31,12 +31,12 @@ export const FIXED_PLATFORM_FEE_PAISE = 700; // ₹7.00 Fixed Platform Fee
 export const FIXED_PLATFORM_FEE_RUPEES = 7;
 
 export const DEFAULT_TIER_SLABS = [
-  { min_price: 0, max_price: 499, rate: 18 },
-  { min_price: 500, max_price: 999, rate: 16 },
-  { min_price: 1000, max_price: 1499, rate: 14 },
-  { min_price: 1500, max_price: 2499, rate: 12 },
-  { min_price: 2500, max_price: 4999, rate: 11 },
-  { min_price: 5000, max_price: null, rate: 10 },
+  { min_price: 0, max_price: 499, rate: 8 },
+  { min_price: 500, max_price: 999, rate: 8 },
+  { min_price: 1000, max_price: 1499, rate: 8 },
+  { min_price: 1500, max_price: 2499, rate: 8 },
+  { min_price: 2500, max_price: 4999, rate: 8 },
+  { min_price: 5000, max_price: null, rate: 5 },
 ];
 
 /**

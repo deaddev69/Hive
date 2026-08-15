@@ -99,7 +99,9 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
       const statusRes = enrichedData?.statusRes || null;
 
       const logoUrl = boutique?.logoUrl ? getPublicUrl(boutique.logoUrl, "thumbnail") : undefined;
-      const isReturnsAccepted = boutique?.returnsAcceptedDefault ?? true;
+      const isReturnsAccepted = product.returnsAccepted !== undefined
+        ? product.returnsAccepted
+        : (boutique?.returnsAcceptedDefault !== false);
 
       return {
         ...product,
@@ -137,7 +139,7 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
           description: boutique.description || "",
           ownerName: boutique.ownerName || "",
           logoUrl,
-          returnsAcceptedDefault: boutique.returnsAcceptedDefault ?? true,
+          returnsAcceptedDefault: boutique.returnsAcceptedDefault !== false,
         } : null,
       };
     })

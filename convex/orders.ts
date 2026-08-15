@@ -762,11 +762,16 @@ async function formatOrderForCustomer(ctx: any, order: any, items: any[]) {
     }
   }
 
+  const boutique = await ctx.db.get(order.boutiqueId);
+  const boutiqueReturnsDefault = boutique?.returnsAcceptedDefault !== false;
+
   const itemsWithReviewStatus = await Promise.all(
     items.map(async (item) => {
       const product = await ctx.db.get(item.productId);
-      const boutique = await ctx.db.get(item.boutiqueId);
-      const returnsAccepted = boutique?.returnsAcceptedDefault ?? true;
+      const itemBoutique = item.boutiqueId ? await ctx.db.get(item.boutiqueId) : boutique;
+      const returnsAccepted = product?.returnsAccepted !== undefined
+        ? product.returnsAccepted
+        : (itemBoutique?.returnsAcceptedDefault !== false);
 
       const existingReview = await ctx.db
         .query("reviews")
@@ -782,8 +787,9 @@ async function formatOrderForCustomer(ctx: any, order: any, items: any[]) {
     })
   );
 
-  const boutique = await ctx.db.get(order.boutiqueId);
-  const returnsAccepted = itemsWithReviewStatus.some((i) => i.returnsAccepted !== false);
+  const returnsAccepted = itemsWithReviewStatus.length > 0
+    ? itemsWithReviewStatus.every((i) => i.returnsAccepted !== false) && boutiqueReturnsDefault
+    : boutiqueReturnsDefault;
 
   return {
     ...order,
@@ -1427,16 +1433,17 @@ export const updateBoutiqueOrderStatus = mutation({
         `Due to high demand for this product, we're unable to fulfil your order right now. ` +
         `A full refund of ₹${((order.total ?? 0) / 100).toFixed(2)} will be credited back to your original payment method within approximately 1 hour.`;
 
-      // 1. Customer WhatsApp — branded message
+      // 1. Customer WhatsApp — branded decline template (hive_order_declined)
       const customerUser = await ctx.db.get(order.customerId);
       const customerPhone = order.deliveryAddress?.phone || customerUser?.phone;
       if (customerPhone) {
+        const refundAmount = ((order.total ?? 0) / 100).toFixed(2);
         await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
           recipient: customerPhone,
-          templateName: "order_cancelled",
+          templateName: "hive_order_declined",
           parameters: [
             order.orderNumber,
-            brandedCustomerMessage,
+            refundAmount,
           ],
           languageCode: "en",
         });
@@ -1466,22 +1473,6 @@ export const updateBoutiqueOrderStatus = mutation({
             `*Internal Reason:* ${internalReason}\n` +
             `*Customer:* ${customerPhone || customerEmail || "Unknown"}\n` +
             `*Refund Status:* Pending (manual processing required)`,
-        });
-      }
-
-      // 4. Boutique owner notification (existing)
-      const isWhatsAppEnabled = boutique?.whatsAppNotificationsEnabled ?? true;
-      const recipientPhone = boutique?.notificationPhone || boutique?.phone;
-      if (isWhatsAppEnabled && recipientPhone) {
-        await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-          recipient: recipientPhone,
-          templateName: "order_cancelled",
-          parameters: [
-            boutique.ownerName || "Merchant",
-            order.orderNumber,
-            internalReason,
-          ],
-          languageCode: "en",
         });
       }
     }
@@ -1667,17 +1658,7 @@ export const bulkUpdateBoutiqueOrderStatus = mutation({
         const recipientPhone = boutique?.notificationPhone || boutique?.phone;
         const cancelReason = order.cancelReason || "Cancelled by boutique owner";
 
-        if (isWhatsAppEnabled && recipientPhone) {
-          await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-            recipient: recipientPhone,
-            templateName: "order_cancelled",
-            parameters: [
-              boutique.ownerName || "Merchant",
-              order.orderNumber,
-              cancelReason
-            ],
-          });
-        } else if (boutique?.email || boutique?.ownerEmail) {
+        if (boutique?.email || boutique?.ownerEmail) {
           await ctx.scheduler.runAfter(0, internal.emails.sendNotificationEmail, {
             to: boutique.email || boutique.ownerEmail,
             subject: `Order Cancelled - ${order.orderNumber}`,
@@ -1687,6 +1668,20 @@ export const bulkUpdateBoutiqueOrderStatus = mutation({
         }
 
         const customerUser = await ctx.db.get(order.customerId);
+        const customerPhone = order.deliveryAddress?.phone || customerUser?.phone;
+        if (customerPhone) {
+          const refundAmount = ((order.total ?? 0) / 100).toFixed(2);
+          await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+            recipient: customerPhone,
+            templateName: "hive_order_declined",
+            parameters: [
+              order.orderNumber,
+              refundAmount,
+            ],
+            languageCode: "en",
+          });
+        }
+
         const invoice = await ctx.db
           .query("invoices")
           .withIndex("by_order_id", (q) => q.eq("orderId", order._id))
@@ -2158,8 +2153,8 @@ export const checkOrderAcceptanceSLA = internalAction({
     if (customerPhone && customerPhone !== "Unknown") {
       await ctx.runAction(internal.whatsapp.sendTemplateMessage, {
         recipient: customerPhone,
-        templateName: "order_cancelled",
-        parameters: [order.orderNumber, brandedMsg],
+        templateName: "hive_order_declined",
+        parameters: [order.orderNumber, total],
         languageCode: "en",
       });
     }

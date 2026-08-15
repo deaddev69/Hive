@@ -12,6 +12,7 @@ import {
   Check,
   Copy,
   PackageX,
+  XCircle,
   MapPin,
   CreditCard,
   Download,
@@ -120,6 +121,8 @@ function OrderSuccessContent() {
         createdAt: new Date(queriedOrder.createdAt).toISOString(),
         status: queriedOrder.status,
         placedDuringClosedHours: queriedOrder.placedDuringClosedHours || false,
+        returnsAccepted: queriedOrder.returnsAccepted,
+        cancelReason: queriedOrder.cancelReason,
       };
     }
     return latestOrder;
@@ -182,6 +185,8 @@ function OrderSuccessContent() {
         {/* Header Hero */}
         <OrderSuccessHero 
           orderId={resolvedOrder.id} 
+          status={resolvedOrder.status}
+          total={resolvedOrder.total}
           placedDuringClosedHours={(resolvedOrder as any).placedDuringClosedHours} 
         />
 
@@ -252,9 +257,13 @@ export default function OrderSuccessPage() {
 // ─────────────────────────────────────────────────────────────────────────────
 function OrderSuccessHero({ 
   orderId, 
+  status,
+  total,
   placedDuringClosedHours 
 }: { 
   orderId: string; 
+  status?: string;
+  total?: number;
   placedDuringClosedHours?: boolean; 
 }) {
   const [copied, setCopied] = useState(false);
@@ -265,6 +274,43 @@ function OrderSuccessHero({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const isCancelled = ["cancelled", "declined", "cancelled_by_merchant", "booking_failed"].includes(status || "");
+
+  if (isCancelled) {
+    const formattedTotal = total ? `₹${(total / 100).toFixed(2)}` : "your payment";
+    return (
+      <div className="w-full bg-white border border-red-200/80 rounded-3xl p-8 sm:p-10 shadow-xs flex flex-col items-center text-center space-y-4 relative overflow-hidden">
+        <div className="w-14 h-14 bg-red-50 text-red-600 rounded-2xl border border-red-200/60 flex items-center justify-center shadow-2xs">
+          <XCircle className="w-8 h-8 stroke-[2]" />
+        </div>
+
+        <div className="space-y-1">
+          <div className="inline-block px-3 py-1 bg-red-50 border border-red-200 rounded-full text-[11px] font-bold text-red-700 uppercase tracking-wider mb-1">
+            Order Declined by Boutique
+          </div>
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Order Declined & Refund Initiated
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-600 max-w-md font-medium leading-relaxed">
+            We&apos;re sorry! Due to unexpectedly high demand, the boutique was unable to fulfill your order. An instant full refund of <strong className="text-slate-900 font-bold">{formattedTotal}</strong> has been initiated back to your original payment method and will reflect within approximately 1 hour.
+          </p>
+        </div>
+
+        <button 
+          type="button"
+          onClick={handleCopy}
+          className="mt-1 py-2 px-3.5 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 transition-colors border border-slate-200/70 rounded-xl inline-flex items-center gap-2 text-xs cursor-pointer"
+        >
+          <span className="font-semibold text-slate-500">Order ID:</span>
+          <span className="font-mono font-bold text-slate-900 tracking-wide">{orderId}</span>
+          <div className="w-4 h-4 flex items-center justify-center text-slate-400">
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+          </div>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-white border border-slate-200/80 rounded-3xl p-8 sm:p-10 shadow-xs flex flex-col items-center text-center space-y-4 relative overflow-hidden">
@@ -277,7 +323,7 @@ function OrderSuccessHero({
           Order Confirmed
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 max-w-md font-medium leading-relaxed">
-          Thank you for your order. We've received your details and are preparing your package for delivery.
+          Thank you for your order. We&apos;ve received your details and are preparing your package for delivery.
         </p>
       </div>
 
@@ -558,6 +604,7 @@ function OrderSummaryCard({
 function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
   const router = useRouter();
   const { downloadInvoiceByOrderId, isDownloading } = useInvoiceDownload();
+  const isCancelled = ["cancelled", "declined", "cancelled_by_merchant", "booking_failed"].includes(resolvedOrder?.status || "");
 
   const handleDownload = () => {
     if (resolvedOrder?.convexId) {
@@ -566,6 +613,43 @@ function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
   };
 
   const downloading = resolvedOrder?.convexId ? isDownloading(resolvedOrder.convexId) : false;
+
+  if (isCancelled) {
+    return (
+      <div className="w-full space-y-2.5">
+        <button
+          type="button"
+          onClick={() => router.push("/products")}
+          className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+        >
+          <span>Explore Other Styles</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
+
+        <a
+          href={`https://wa.me/917356019103?text=${encodeURIComponent(`Hi Hive Support, I need help regarding my declined order ${resolvedOrder?.id || ""}.`)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full h-11 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+        >
+          <RotateCcw className="w-4 h-4 text-amber-700" />
+          <span>Need Help? Chat Support</span>
+        </a>
+
+        {resolvedOrder?.convexId && (
+          <button
+            type="button"
+            disabled={downloading}
+            onClick={handleDownload}
+            className="w-full h-11 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>{downloading ? "Generating PDF..." : "Download Order Summary"}</span>
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-2.5">

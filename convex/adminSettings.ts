@@ -1,7 +1,7 @@
 import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
-import { calculateProductPricing, PlatformSettings, getPlatformSettings as fetchPlatformSettings } from "./pricingService";
+import { calculateProductPricing, PlatformSettings, DEFAULT_TIER_SLABS, getPlatformSettings as fetchPlatformSettings } from "./pricingService";
 
 /**
  * Recalculate customer prices for all products in the database from their basePrice.
@@ -38,28 +38,46 @@ export const getPlatformSettings = query({
   args: {},
   handler: async (ctx) => {
     const settings = await ctx.db.query("platformSettings").first();
-    const defaultTiers = [
-      { min_price: 0, max_price: 499, rate: 18 },
-      { min_price: 500, max_price: 999, rate: 16 },
-      { min_price: 1000, max_price: 1499, rate: 14 },
-      { min_price: 1500, max_price: 2499, rate: 12 },
-      { min_price: 2500, max_price: 4999, rate: 11 },
-      { min_price: 5000, max_price: null, rate: 10 }
-    ];
     if (!settings) {
       // Return defaults if not initialized in DB yet
       return { 
         markupRate: 0.15, 
         platformFeeRate: 0.02,
         markupType: "tiered" as const,
-        markupTiers: defaultTiers
+        markupTiers: DEFAULT_TIER_SLABS,
       };
     }
     return {
       ...settings,
       markupType: settings.markupType ?? "tiered",
-      markupTiers: settings.markupTiers ?? defaultTiers
+      markupTiers: settings.markupTiers ?? DEFAULT_TIER_SLABS,
     };
+  },
+});
+
+export const syncOfficialHiveSlabs = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const settings = await ctx.db.query("platformSettings").first();
+    if (settings) {
+      await ctx.db.patch(settings._id, {
+        markupRate: 0.15,
+        platformFeeRate: 0.02,
+        markupType: "tiered",
+        markupTiers: DEFAULT_TIER_SLABS,
+        updatedAt: Date.now(),
+      });
+      return "Updated platformSettings with official Hive slabs (8%/5%).";
+    } else {
+      await ctx.db.insert("platformSettings", {
+        markupRate: 0.15,
+        platformFeeRate: 0.02,
+        markupType: "tiered",
+        markupTiers: DEFAULT_TIER_SLABS,
+        updatedAt: Date.now(),
+      });
+      return "Created platformSettings with official Hive slabs (8%/5%).";
+    }
   },
 });
 

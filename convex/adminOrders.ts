@@ -969,26 +969,30 @@ export const updateOrderStatus = mutation({
       const recipientPhone = boutique?.notificationPhone || boutique?.phone;
       const cancelReason = order.cancelReason || "Cancelled by administrator";
 
-      if (isWhatsAppEnabled && recipientPhone) {
-        await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-          recipient: recipientPhone,
-          templateName: "order_cancelled",
-          parameters: [
-            boutique?.ownerName || "Merchant",
-            order.orderNumber,
-            cancelReason
-          ],
-        });
-      } else if (boutique?.email || boutique?.ownerEmail) {
+      if (boutique?.email || boutique?.ownerEmail) {
         await ctx.scheduler.runAfter(0, internal.emails.sendNotificationEmail, {
           to: boutique.email || boutique.ownerEmail,
           subject: `Order Cancelled - ${order.orderNumber}`,
-          html: `<p>Dear ${boutique.ownerName || "Merchant"},</p><p>Order ${order.orderNumber} has been cancelled. Reason: ${cancelReason}</p>`,
+          html: `<p>Dear ${boutique.ownerName || "Merchant"},</p><p>Order ${order.orderNumber} has been cancelled by admin. Reason: ${cancelReason}</p>`,
           templateName: "order_cancelled",
         });
       }
 
       const customerUser = await ctx.db.get(order.customerId);
+      const customerPhone = order.deliveryAddress?.phone || customerUser?.phone;
+      if (customerPhone) {
+        const refundAmount = ((order.total ?? 0) / 100).toFixed(2);
+        await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+          recipient: customerPhone,
+          templateName: "hive_order_declined",
+          parameters: [
+            order.orderNumber,
+            refundAmount,
+          ],
+          languageCode: "en",
+        });
+      }
+
       const invoice = await ctx.db
         .query("invoices")
         .withIndex("by_order_id", (q) => q.eq("orderId", order._id))
