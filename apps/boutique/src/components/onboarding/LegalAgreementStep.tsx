@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ArrowRight, Loader2, Sparkles, Tag, Percent, RefreshCcw, AlertTriangle, Settings, Wallet, Box, Info, FileText, Download, Eye, X } from "lucide-react";
+import { Check, ArrowRight, Loader2, Sparkles, Tag, Percent, RefreshCcw, AlertTriangle, Settings, Wallet, Box, Info, FileText, Download, Eye, X, ShieldCheck, Lock } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
@@ -55,16 +55,38 @@ export default function LegalAgreementStep() {
       content: "Sending the wrong product 3 times in one week will flag your account. If this continues over 3 different weeks, your store may be removed from Hive. Any pending payments will still be settled."
     },
     {
-      title: "6. Choose Your Return Policy",
-      icon: <Settings className="w-4 h-4 text-hive-gold" />,
+      title: "6. Store Default Return Policy",
+      icon: <ShieldCheck className="w-4 h-4 text-emerald-600" />,
       content: (
-        <div className="flex flex-col gap-2 mt-1">
-          <span>You can either:</span>
-          <div className="flex flex-col gap-1 ml-2">
-            <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-green-600" /> Enable returns for all products</span>
-            <span className="flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 text-red-500" /> Disable returns for all products</span>
+        <div className="flex flex-col gap-3 mt-1">
+          <span className="text-[12px] text-slate-500 font-medium">Auto-applies when listing new products.</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
+            {/* Option A: Accept 24h Returns */}
+            <div className="p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left opacity-75 cursor-not-allowed bg-emerald-50/60 border-emerald-500/80 shadow-2xs relative">
+              <div className="flex flex-col min-w-0 pr-16">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900">Accept 24h Returns</span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
+                </div>
+                <p className="text-[11.5px] text-slate-500 font-medium leading-snug mt-1 w-[90%]">Allows 24-hour voluntary size exchanges & returns.</p>
+              </div>
+              <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100/90 border border-amber-300/80 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                    <Lock className="w-2.5 h-2.5 text-amber-800" /> Locked
+                  </span>
+              </div>
+            </div>
+
+            {/* Option B: Final Sale Default */}
+            <div className="p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left opacity-75 cursor-not-allowed bg-white border-slate-200">
+              <div className="flex flex-col min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900">Final Sale Only</span>
+                </div>
+                <p className="text-[11.5px] text-slate-500 font-medium leading-snug mt-1">No voluntary returns. Damaged items remain covered.</p>
+              </div>
+            </div>
           </div>
-          <span className="text-hive-text-muted mt-1 italic">This setting applies to your entire store, not individual products.</span>
         </div>
       )
     },
