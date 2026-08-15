@@ -89,49 +89,91 @@ export function ProductInspectionDrawer({
 
   const platformSettings = useQuery(api.adminSettings.getPlatformSettings);
 
-  // Markup price calculation helper for the PDP preview
-  const previewCustomerPrices = useMemo(() => {
-    if (!basePrice || basePrice <= 0) return { price: 0, discountPrice: undefined, discountPercent: 0 };
-    const settings = platformSettings || { markupRate: 0.15, platformFeeRate: 0.02, markupType: "tiered" };
+  const DEFAULT_TIER_SLABS = [
+    { min_price: 0, max_price: 499, rate: 8 },
+    { min_price: 500, max_price: 999, rate: 8 },
+    { min_price: 1000, max_price: 1499, rate: 8 },
+    { min_price: 1500, max_price: 2499, rate: 8 },
+    { min_price: 2500, max_price: 4999, rate: 8 },
+    { min_price: 5000, max_price: null, rate: 5 },
+  ];
 
-    let rate = settings.markupRate;
-    if (settings.markupType === "tiered" && Array.isArray(settings.markupTiers)) {
-      const tier = settings.markupTiers.find((t: any) => {
+  const pricingBreakdown = useMemo(() => {
+    if (!basePrice || isNaN(basePrice) || basePrice <= 0) return null;
+    const settings = platformSettings;
+    const markupType = settings?.markupType ?? "tiered";
+    const tiers = settings?.markupTiers ?? DEFAULT_TIER_SLABS;
+    let markupRate = settings?.markupRate ?? 0.08;
+
+    if (markupType === "tiered" && Array.isArray(tiers) && tiers.length > 0) {
+      const tier = tiers.find((t: any) => {
         const minMatch = basePrice >= t.min_price;
         const maxMatch = t.max_price === null || t.max_price === undefined || basePrice <= t.max_price;
         return minMatch && maxMatch;
       });
-      if (tier) rate = tier.rate / 100;
+      if (tier) {
+        markupRate = tier.rate / 100;
+      }
     }
 
-    const rawCustomerPrice = basePrice * (1 + rate);
-    const customerPrice = Math.ceil(rawCustomerPrice / 10) * 10 - 1;
+    const platformFeeRate = settings?.platformFeeRate ?? 0.02;
+    const markupAmount = basePrice * markupRate;
+    const preGstPrice = basePrice + markupAmount + 7;
+    const sellerProcessingFee = basePrice * platformFeeRate;
+    const platformRevenue = markupAmount + sellerProcessingFee + 7;
+    const gstAmount = platformRevenue * 0.18;
+    const allInRaw = preGstPrice + gstAmount;
+    const storefrontPrice = Math.ceil(allInRaw / 10) * 10 - 1;
+    const netPayout = basePrice - sellerProcessingFee;
+
+    return {
+      markupRate,
+      markupAmount,
+      platformFeeRate,
+      sellerProcessingFee,
+      storefrontPrice,
+      netPayout,
+    };
+  }, [basePrice, platformSettings]);
+
+  // Markup price calculation helper for the PDP preview
+  const previewCustomerPrices = useMemo(() => {
+    if (!pricingBreakdown) return { price: 0, discountPrice: undefined, discountPercent: 0 };
 
     let customerDiscountPrice = undefined;
     if (baseDiscountPrice && baseDiscountPrice > 0) {
-      let discRate = settings.markupRate;
-      if (settings.markupType === "tiered" && Array.isArray(settings.markupTiers)) {
-        const tier = settings.markupTiers.find((t: any) => {
+      const settings = platformSettings;
+      const markupType = settings?.markupType ?? "tiered";
+      const tiers = settings?.markupTiers ?? DEFAULT_TIER_SLABS;
+      let discRate = settings?.markupRate ?? 0.08;
+
+      if (markupType === "tiered" && Array.isArray(tiers) && tiers.length > 0) {
+        const tier = tiers.find((t: any) => {
           const minMatch = baseDiscountPrice >= t.min_price;
           const maxMatch = t.max_price === null || t.max_price === undefined || baseDiscountPrice <= t.max_price;
           return minMatch && maxMatch;
         });
         if (tier) discRate = tier.rate / 100;
       }
-      const rawCustomerDiscountPrice = baseDiscountPrice * (1 + discRate);
-      customerDiscountPrice = Math.ceil(rawCustomerDiscountPrice / 10) * 10 - 1;
+
+      const discMarkup = baseDiscountPrice * discRate;
+      const discPreGst = baseDiscountPrice + discMarkup + 7;
+      const discFee = baseDiscountPrice * (settings?.platformFeeRate ?? 0.02);
+      const discRevenue = discMarkup + discFee + 7;
+      const discGst = discRevenue * 0.18;
+      customerDiscountPrice = Math.ceil((discPreGst + discGst) / 10) * 10 - 1;
     }
 
     const discountPercent = customerDiscountPrice
-      ? Math.round(((customerPrice - customerDiscountPrice) / customerPrice) * 100)
+      ? Math.round(((pricingBreakdown.storefrontPrice - customerDiscountPrice) / pricingBreakdown.storefrontPrice) * 100)
       : 0;
 
     return {
-      price: customerPrice,
+      price: pricingBreakdown.storefrontPrice,
       discountPrice: customerDiscountPrice,
-      discountPercent
+      discountPercent,
     };
-  }, [basePrice, baseDiscountPrice, platformSettings]);
+  }, [pricingBreakdown, baseDiscountPrice, platformSettings]);
 
   // Fit recommendations config
   const fitRecommendationConfig: Record<string, { label: string; advice: string }> = {
@@ -776,6 +818,31 @@ export function ProductInspectionDrawer({
                     </div>
                   </div>
                 </div>
+
+                {pricingBreakdown && (
+                  <div className="p-3.5 bg-stone-50 border border-stone-200/80 rounded-xl space-y-2 text-xs">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-stone-500 tracking-wider">Storefront Display Price</span>
+                        <p className="text-sm font-bold text-stone-900 font-sans">
+                          ₹{pricingBreakdown.storefrontPrice.toLocaleString("en-IN")}
+                          <span className="text-[10px] text-stone-400 font-normal ml-1">
+                            ({(pricingBreakdown.markupRate * 100).toFixed(0)}% markup + ₹7 + GST)
+                          </span>
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-emerald-800 tracking-wider">Seller Net Payout</span>
+                        <p className="text-sm font-bold text-emerald-700 font-sans">
+                          ₹{pricingBreakdown.netPayout.toFixed(2)}
+                          <span className="text-[10px] text-stone-400 font-normal ml-1">
+                            (Base − 2% fee of ₹{pricingBreakdown.sellerProcessingFee.toFixed(2)})
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* SECTION: INVENTORY AND SIZES */}
