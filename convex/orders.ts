@@ -725,9 +725,9 @@ export const placeOrder = mutation({
     );
 
     // ── SLA Timers ────────────────────────────────────────────────────────────
-    // 15-min: Slack warning if seller hasn't accepted yet
+    // 10-min: Slack warning if seller hasn't accepted yet
     await ctx.scheduler.runAfter(
-      15 * 60 * 1000,
+      10 * 60 * 1000,
       internal.orders.checkOrderAcceptanceSLA,
       { orderId, alertType: "warning" }
     );
@@ -985,9 +985,14 @@ export const getOrderByIdInternal = internalQuery({
     const order = await ctx.db.get(args.orderId);
     if (!order) return null;
     const profile = await ctx.db.query("customerProfiles").withIndex("by_userId", (q) => q.eq("userId", order.customerId)).unique();
+    const boutique = order.boutiqueId ? await ctx.db.get(order.boutiqueId) : null;
     return {
       ...order,
       customerName: profile?.displayName || "Customer",
+      boutiquePhone: boutique?.notificationPhone || boutique?.phone,
+      boutiqueOwnerName: boutique?.ownerName || "Boutique Owner",
+      boutiqueStaffPhone1: boutique?.staffPhone1,
+      boutiqueStaffPhone2: boutique?.staffPhone2,
     };
   }
 });
@@ -2118,20 +2123,27 @@ export const checkOrderAcceptanceSLA = internalAction({
     const boutique = order.boutiqueName || "Unknown Boutique";
     const customerPhone = order.deliveryAddress?.phone || "Unknown";
     const minutesElapsed = Math.round((Date.now() - order.createdAt) / 60000);
+    const sellerPhone = order.boutiquePhone || "Not configured";
+    const staffContacts = [
+      order.boutiqueStaffPhone1 ? `Staff 1: ${order.boutiqueStaffPhone1}` : null,
+      order.boutiqueStaffPhone2 ? `Staff 2: ${order.boutiqueStaffPhone2}` : null,
+    ].filter(Boolean).join(" | ");
 
     if (args.alertType === "warning") {
-      // ── 15-min: Slack warning only ─────────────────────────────────────────
+      // ── 10-min: Slack warning only ─────────────────────────────────────────
       await ctx.runMutation(internal.orders.markSlaAlertFired, { orderId: args.orderId });
       if (slackWebhook) {
         await ctx.runAction(internal.whatsapp.sendSlackAlert, {
           webhook: slackWebhook,
           text:
-            `⚠️ *Order Not Accepted \u2014 SLA Warning*\n` +
+            `⚠️ *ORDER NOT ACCEPTED — SLA WARNING (10 MIN)*\n` +
             `*Order:* #${order.orderNumber}\n` +
-            `*Boutique:* ${boutique}\n` +
+            `*Store:* *${boutique}* (${order.boutiqueOwnerName || "Owner"})\n` +
+            `*📞 Seller Phone:* \`${sellerPhone}\`${staffContacts ? `\n*Staff Contacts:* ${staffContacts}` : ""}\n` +
+            `*Customer:* ${order.customerName || "Customer"} (\`${customerPhone}\`)\n` +
+            `*Order Value:* ₹${((order.total ?? 0) / 100).toFixed(2)} (${(order.items || []).length} item(s))\n` +
             `*Time Elapsed:* ${minutesElapsed} min\n` +
-            `*Customer:* ${customerPhone}\n` +
-            `*Action Required:* Seller still hasn't accepted. Auto-cancel fires at 45 min.`,
+            `*🚨 Ops Action Required:* Call seller immediately at \`${sellerPhone}\` to accept order before auto-cancel fires at 45 min.`,
         });
       }
       return;
@@ -2170,11 +2182,12 @@ export const checkOrderAcceptanceSLA = internalAction({
       await ctx.runAction(internal.whatsapp.sendSlackAlert, {
         webhook: slackWebhook,
         text:
-          `🚨 *Auto-Cancelled: Seller SLA Timeout (45 min)*\n` +
+          `🚨 *AUTO-CANCELLED: SELLER SLA TIMEOUT (45 MIN)*\n` +
           `*Order:* #${order.orderNumber}\n` +
-          `*Boutique:* ${boutique}\n` +
+          `*Store:* *${boutique}* (${order.boutiqueOwnerName || "Owner"})\n` +
+          `*📞 Seller Phone:* \`${sellerPhone}\`${staffContacts ? `\n*Staff Contacts:* ${staffContacts}` : ""}\n` +
+          `*Customer:* ${order.customerName || "Customer"} (\`${customerPhone}\`)\n` +
           `*Time Elapsed:* ${minutesElapsed} min\n` +
-          `*Customer:* ${customerPhone}\n` +
           `*Refund:* \u20b9${total} — Pending manual processing\n` +
           `*Action:* Refund customer in Razorpay dashboard`,
       });

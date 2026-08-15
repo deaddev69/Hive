@@ -25,10 +25,10 @@ import {
   CreditCard,
   Calendar,
   ArrowLeft,
-  ChevronRight,
   FileDown,
   Receipt,
   AlertTriangle,
+  Phone,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -297,8 +297,26 @@ function OrderDetailDrawer({
                     {order.boutique.ownerName}
                   </p>
                 )}
+                {order.boutique.phone && (
+                  <a
+                    href={`tel:${order.boutique.phone}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 mt-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold hover:bg-emerald-100 transition-colors w-fit"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    Call Seller: {order.boutique.phone}
+                  </a>
+                )}
+                {order.boutique.staffPhone1 && (
+                  <a
+                    href={`tel:${order.boutique.staffPhone1}`}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-semibold hover:bg-slate-200 transition-colors w-fit"
+                  >
+                    <Phone className="w-3 h-3" />
+                    Staff 1: {order.boutique.staffPhone1}
+                  </a>
+                )}
                 {order.boutique.email && (
-                  <p className="text-[11px] text-hive-text-muted truncate">
+                  <p className="text-[11px] text-hive-text-muted truncate mt-0.5">
                     {order.boutique.email}
                   </p>
                 )}
@@ -508,7 +526,7 @@ export default function AdminOrdersPage() {
   const isLoading = orders === undefined || metrics === undefined;
 
   // ── SLA overdue computed BEFORE early returns (Rules of Hooks) ──────────────
-  const SLA_WARNING_MS = 15 * 60 * 1000;
+  const SLA_WARNING_MS = 10 * 60 * 1000;
   const now = Date.now();
 
   const slaOverdueOrders = useMemo(() => {
@@ -606,7 +624,7 @@ export default function AdminOrdersPage() {
 
   const STATUS_OPTIONS = [
     { value: "all",                  label: "All Statuses" },
-    { value: "sla_overdue",          label: "⚠️ SLA Overdue" },
+    { value: "sla_overdue",          label: "⚠️ SLA Overdue (>10 min)" },
     { value: "pending_confirmation", label: "Pending Confirmation" },
     { value: "confirmed",            label: "Confirmed" },
     { value: "packed",               label: "Packed" },
@@ -637,42 +655,68 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* ── SLA Overdue Banner ─────────────────────────────────────────── */}
+      {/* ── SLA Overdue Executive Banner ─────────────────────────────────── */}
       {slaOverdueOrders.length > 0 && (
-        <button
-          onClick={() => setStatusFilter("sla_overdue")}
-          className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl bg-red-50 border border-red-200 text-left hover:bg-red-100 transition-colors"
-        >
-          <div className="p-2 rounded-xl bg-red-100 border border-red-200">
-            <AlertTriangle className="w-5 h-5 text-red-600" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-red-700">
-              {slaOverdueOrders.length} order{slaOverdueOrders.length > 1 ? "s" : ""} awaiting seller acceptance &gt;15 min
-            </p>
-            <p className="text-xs text-red-500 mt-0.5">
-              Auto-cancel fires at 45 min. Click to view &amp; escalate.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {slaOverdueOrders.map((o: any) => {
-              const elapsedMin = Math.floor((now - (o.createdAt ?? o._creationTime)) / 60000);
-              const isCritical = elapsedMin >= 30;
-              return (
-                <span
-                  key={o._id}
-                  className={`text-[10px] font-bold px-2 py-1 rounded-full ${
-                    isCritical
-                      ? "bg-red-600 text-white animate-pulse"
-                      : "bg-red-200 text-red-700"
-                  }`}
-                >
-                  #{o.orderNumber} — {elapsedMin}m
+        <div className="w-full rounded-2xl bg-gradient-to-r from-red-500/10 via-amber-500/5 to-red-500/10 border border-red-200/80 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="p-2.5 rounded-xl bg-red-600 text-white shadow-xs shrink-0 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-extrabold text-red-950 font-sans tracking-tight">
+                  {slaOverdueOrders.length} Order{slaOverdueOrders.length > 1 ? "s" : ""} Awaiting Seller Acceptance (&gt;10 min)
                 </span>
-              );
-            })}
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-600 text-white tracking-wide uppercase">
+                  Action Required
+                </span>
+              </div>
+              <p className="text-xs text-red-700/80 mt-0.5">
+                Auto-cancel &amp; full customer refund fires at 45 minutes. Contact boutique owners immediately.
+              </p>
+            </div>
           </div>
-        </button>
+
+          <div className="flex items-center gap-3 shrink-0 flex-wrap sm:flex-nowrap">
+            {/* Top 3 most urgent orders snippet */}
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              {slaOverdueOrders.slice(0, 3).map((o: any) => {
+                const elapsedMin = Math.floor((now - (o.createdAt ?? o._creationTime)) / 60000);
+                const isCritical = elapsedMin >= 30;
+                return (
+                  <button
+                    key={o._id}
+                    onClick={() => setSelectedOrderId(o._id)}
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border transition-all cursor-pointer whitespace-nowrap ${
+                      isCritical
+                        ? "bg-red-600 border-red-700 text-white animate-pulse shadow-xs"
+                        : "bg-white border-red-200 text-red-800 hover:bg-red-50"
+                    }`}
+                    title={`Click to view #${o.orderNumber}`}
+                  >
+                    #{o.orderNumber} ({elapsedMin}m)
+                  </button>
+                );
+              })}
+              {slaOverdueOrders.length > 3 && (
+                <span className="text-[11px] font-bold px-2 py-1 rounded-xl bg-red-100/80 text-red-800 border border-red-200">
+                  +{slaOverdueOrders.length - 3} more
+                </span>
+              )}
+            </div>
+
+            <button
+              onClick={() => setStatusFilter(statusFilter === "sla_overdue" ? "all" : "sla_overdue")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                statusFilter === "sla_overdue"
+                  ? "bg-red-900 text-white shadow-xs"
+                  : "bg-red-600 hover:bg-red-700 text-white shadow-xs active:scale-[0.98]"
+              }`}
+            >
+              {statusFilter === "sla_overdue" ? "Showing Overdue (Reset)" : `Filter Overdue (${slaOverdueOrders.length})`}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* KPI Cards */}
@@ -773,8 +817,19 @@ export default function AdminOrdersPage() {
                     <td className="px-5 py-4 max-w-[140px] truncate">
                       {order.customerName}
                     </td>
-                    <td className="px-5 py-4 max-w-[140px] truncate text-hive-text-muted">
-                      {order.boutiqueName}
+                    <td className="px-5 py-4 max-w-[150px]">
+                      <p className="truncate font-semibold text-hive-dark">{order.boutiqueName}</p>
+                      {(order as any).boutiquePhone && (
+                        <a
+                          href={`tel:${(order as any).boutiquePhone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 text-[10px] text-emerald-700 hover:text-emerald-800 font-bold hover:underline"
+                          title="Call boutique owner"
+                        >
+                          <Phone className="w-2.5 h-2.5" />
+                          {(order as any).boutiquePhone}
+                        </a>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-center">
                       <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px]">
@@ -785,7 +840,15 @@ export default function AdminOrdersPage() {
                       {formatCurrency(order.total)}
                     </td>
                     <td className="px-5 py-4">
-                      <StatusBadge status={order.status} />
+                      <div className="flex flex-col gap-1 items-start">
+                        <StatusBadge status={order.status} />
+                        {order.status === "pending_confirmation" && (now - (order.createdAt ?? (order as any)._creationTime)) > SLA_WARNING_MS && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-md animate-pulse whitespace-nowrap">
+                            <AlertTriangle className="w-2.5 h-2.5" />
+                            {Math.floor((now - (order.createdAt ?? (order as any)._creationTime)) / 60000)}m unaccepted
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-4">
                       <PaymentBadge status={order.paymentStatus} />

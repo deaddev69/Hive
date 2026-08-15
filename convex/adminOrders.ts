@@ -318,16 +318,16 @@ export const getAdminDashboardMetrics = query({
     const now = Date.now();
     const twelveHoursAgo = now - 12 * 60 * 60 * 1000;
     const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000;
-    const fifteenMinutesAgo = now - 15 * 60 * 1000;
+    const tenMinutesAgo = now - 10 * 60 * 1000;
 
     // 1. Orders Pending > 12h (in pending_confirmation or confirmed)
     const ordersPendingOver12h = [...pendingConfirmationList, ...confirmedList].filter(
       (o) => o.createdAt < twelveHoursAgo
     ).length;
 
-    // 2. Orders Waiting Acceptance > 15m
+    // 2. Orders Waiting Acceptance > 10m
     const ordersWaitingAcceptanceOver15m = pendingConfirmationList.filter(
-      (o) => o.createdAt < fifteenMinutesAgo
+      (o) => o.createdAt < tenMinutesAgo
     ).length;
 
     const totalDelayMs = pendingConfirmationList.reduce((sum, o) => sum + (now - o.createdAt), 0);
@@ -395,7 +395,7 @@ export const getAdminDashboardMetrics = query({
     // 8. Dynamic operational queues
     const thirtyMinutesAgo = now - 30 * 60 * 1000;
     const waitingOver15m = pendingConfirmationList.filter(
-      (o) => o.createdAt < fifteenMinutesAgo && o.createdAt >= thirtyMinutesAgo
+      (o) => o.createdAt < tenMinutesAgo && o.createdAt >= thirtyMinutesAgo
     ).length;
     const waitingOver30m = pendingConfirmationList.filter(
       (o) => o.createdAt < thirtyMinutesAgo
@@ -518,6 +518,8 @@ export const getAllOrders = query({
         boutiqueName: boutique?.boutiqueName || "Unknown Boutique",
         boutiqueId: order.boutiqueId,
         customerId: order.customerId,
+        boutiquePhone: boutique?.notificationPhone || boutique?.phone || null,
+        boutiqueOwnerName: boutique?.ownerName || null,
         itemsCount: items.length,
         subtotal: order.subtotal,
         deliveryFee: order.deliveryFee,
@@ -656,11 +658,13 @@ export const getOrderDetails = query({
       },
       boutique: {
         _id: boutique?._id,
-        boutiqueName: boutique?.boutiqueName,
+        boutiqueName: boutique?.boutiqueName || boutique?.name,
         ownerName: boutique?.ownerName,
         email: boutique?.email,
-        phone: boutique?.phone,
-        address: boutique?.address,
+        phone: boutique?.notificationPhone || boutique?.phone,
+        staffPhone1: boutique?.staffPhone1,
+        staffPhone2: boutique?.staffPhone2,
+        address: boutique?.address || boutique?.addressDetails?.city,
       },
       items: enrichedItems,
       timeline,

@@ -277,18 +277,39 @@ async function validateProductQuality(
   // Mutation Guard: Reject resolved HTTP/HTTPS URLs inside mutations
   // Exception: images that already exist in the product's database record are pre-approved
   // (covers CSV-imported products with external URLs that haven't been re-uploaded yet)
-  const isProduction = process.env.NODE_ENV === "production";
-  const preApproved = new Set(existingImages ?? []);
-  const containsNewUrls = args.images.some(
-    (img) =>
-      typeof img === "string" &&
-      (img.startsWith("http://") || img.startsWith("https://")) &&
-      !preApproved.has(img) &&
-      (isProduction || !img.includes("unsplash.com"))
-  );
+  const preApproved = new Set<string>();
+  (existingImages ?? []).forEach((img: any) => {
+    if (typeof img === "string") {
+      preApproved.add(img);
+    } else if (img && typeof img === "object") {
+      if (img.objectKey) preApproved.add(img.objectKey);
+      if (img.assetId) preApproved.add(img.assetId);
+      if (img.variants?.card) preApproved.add(img.variants.card);
+      if (img.variants?.pdp) preApproved.add(img.variants.pdp);
+      if (img.variants?.thumbnail) preApproved.add(img.variants.thumbnail);
+      if (img.variants?.zoom) preApproved.add(img.variants.zoom);
+    }
+  });
+
+  const containsNewUrls = args.images.some((img: any) => {
+    if (typeof img !== "string") return false;
+    if (!img.startsWith("http://") && !img.startsWith("https://")) return false;
+    if (preApproved.has(img)) return false;
+    if (
+      img.includes("unsplash.com") ||
+      img.includes(".r2.dev") ||
+      img.includes(".cloudflarestorage.com") ||
+      img.includes(".convex.cloud") ||
+      img.includes(".convex.site")
+    ) {
+      return false;
+    }
+    return true;
+  });
+
   if (containsNewUrls) {
     throw new Error(
-      "Security Exception: Expected raw Convex storage IDs for product images, but received resolved HTTP URLs. Ensure you are passing product.imageStorageIds in your mutation payload."
+      "Security Exception: Expected raw Convex storage IDs or Cloudflare R2 assets for product images, but received unsupported external URLs. Ensure you are passing valid storage references."
     );
   }
 
@@ -539,7 +560,7 @@ export const createProduct = mutation({
         const catDoc = await ctx.db.get(resolvedCategoryId);
         await triggerNotification(ctx, superadmin._id, "slack", "product_pending_approval", "product", productId, JSON.stringify({
           productName: args.name,
-          boutiqueName: boutique.name,
+          boutiqueName: boutique.boutiqueName || boutique.name || "Boutique",
           price: customerPrice,
           category: (catDoc as any)?.name || undefined,
         }));
@@ -611,10 +632,11 @@ export const updateProduct = mutation({
                        )),
     returnsAccepted: v.optional(v.boolean()),
     approvalStatus: v.optional(v.string()),
+    token: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx);
-    const boutique = await getMyBoutique(ctx);
+    const user = await getAuthenticatedUser(ctx, args.token);
+    const boutique = await getMyBoutique(ctx, args.token);
     const product = await ctx.db.get(args.id);
     if (!product || product.boutiqueId !== boutique._id) {
       throw new Error("Unauthorized: Product does not belong to your boutique.");
@@ -792,7 +814,7 @@ export const updateProduct = mutation({
           `${args.id}_edit_${now}`, 
           JSON.stringify({
             productName: args.name,
-            boutiqueName: boutique.name,
+            boutiqueName: boutique.boutiqueName || boutique.name || "Boutique",
             price: customerPrice,
             category: (catDoc as any)?.name || undefined,
             isEdit: true,
