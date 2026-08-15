@@ -1572,7 +1572,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                     <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Available Sizes *</label>
                     <span className="text-[10px] text-slate-400 font-medium">Select all sizes you have</span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2.5">
                     {SIZE_OPTIONS.map((sz) => {
                       const isSelected = selectedSizes.includes(sz);
                       return (
@@ -1581,10 +1581,10 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                           key={sz}
                           onClick={() => toggleSize(sz)}
                           className={cn(
-                            "h-11 w-13 rounded-xl border text-xs font-bold transition-all flex items-center justify-center cursor-pointer select-none",
+                            "min-h-[48px] min-w-[56px] px-3 py-2.5 rounded-xl border text-sm font-bold transition-all flex items-center justify-center cursor-pointer select-none shrink-0 active:scale-95",
                             isSelected 
                               ? "bg-slate-950 text-white border-slate-950 shadow-xs" 
-                              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                           )}
                         >
                           {sz}
@@ -1615,7 +1615,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                           hasZero && "bg-red-50/20"
                         )}>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-900">{sz}</span>
+                            <span className="text-sm font-bold text-slate-900">{sz}</span>
                             {hasZero && (
                               <span className="text-[10px] text-red-500 font-medium">(Please enter quantity)</span>
                             )}
@@ -1625,9 +1625,9 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                             <button
                               type="button"
                               onClick={() => decrementStock(sz)}
-                              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+                              className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
                             >
-                              <Minus className="w-3 h-3 stroke-[2.5]" />
+                              <Minus className="w-4 h-4 stroke-[2.5]" />
                             </button>
                             
                             <input
@@ -1636,7 +1636,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                               value={stockBySize[sz] || ""}
                               onChange={(e) => handleStockChange(sz, parseInt(e.target.value) || 0)}
                               className={cn(
-                                "w-16 px-2 py-1 border rounded-lg text-xs font-bold text-center focus:border-slate-900 focus:outline-none",
+                                "w-16 h-9 px-2 py-1 border rounded-xl text-sm font-bold text-center focus:border-slate-900 focus:outline-none",
                                 hasZero ? "border-red-300 bg-red-50/40 text-red-700" : "border-slate-200 text-slate-900"
                               )}
                               placeholder="1"
@@ -1645,9 +1645,9 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                             <button
                               type="button"
                               onClick={() => incrementStock(sz)}
-                              className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+                              className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
                             >
-                              <Plus className="w-3 h-3 stroke-[2.5]" />
+                              <Plus className="w-4 h-4 stroke-[2.5]" />
                             </button>
                           </div>
                         </div>
@@ -1662,7 +1662,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
               {/* Fit Recommendation */}
               <div className="flex flex-col gap-2">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Fit Sizing</label>
-                <div className="grid grid-cols-3 gap-2 max-w-sm">
+                <div className="grid grid-cols-3 gap-2 w-full max-w-sm">
                   {[
                     { val: "runs_small", label: "Runs Small" },
                     { val: "true_to_size", label: "True to Size" },
@@ -1673,7 +1673,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                       type="button"
                       onClick={() => setFitRecommendation(rec.val as any)}
                       className={cn(
-                        "py-2.5 px-3 text-xs font-medium rounded-xl border transition-all cursor-pointer text-center select-none",
+                        "min-h-[44px] py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer text-center select-none active:scale-95",
                         fitRecommendation === rec.val 
                           ? "bg-slate-950 text-white border-slate-950 font-bold shadow-2xs" 
                           : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
@@ -1688,7 +1688,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
               {/* Silhouette */}
               <div className="flex flex-col gap-2">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Silhouette</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-md">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-md">
                   {[
                     { val: "slim_fit", label: "Slim" },
                     { val: "regular_fit", label: "Regular" },
@@ -1700,7 +1700,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                       type="button"
                       onClick={() => setSilhouette(sil.val as any)}
                       className={cn(
-                        "py-2.5 px-3 text-xs font-medium rounded-xl border transition-all cursor-pointer text-center select-none",
+                        "min-h-[44px] py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer text-center select-none active:scale-95",
                         silhouette === sil.val 
                           ? "bg-slate-950 text-white border-slate-950 font-bold shadow-2xs" 
                           : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
