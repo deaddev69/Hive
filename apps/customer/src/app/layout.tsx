@@ -1,4 +1,4 @@
-// Trigger Vercel deployment for @hive/customer - Live reservation sync & WhatsApp fix (Aug 12, 2026)
+// Trigger Vercel deployment for @hive/customer (Aug 15, 2026 - R2 image fix & 10m SLA)
 import type { Metadata } from "next";
 import { Inter, Outfit, Cormorant_Garamond } from "next/font/google";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";

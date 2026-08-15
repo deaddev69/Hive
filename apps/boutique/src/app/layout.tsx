@@ -17,7 +17,7 @@ const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-satoshi",
   display: "swap",
-}); // Trigger deployment
+}); // Trigger Vercel deploy (Aug 15, 2026 - R2 image fix & 10m SLA)
 
 export const metadata: Metadata = {
   title: "Hive Marketplace Admin Dashboard",
