@@ -858,7 +858,7 @@ export default function BoutiqueProfile() {
                       <span>Owner Only (No Staff)</span>
                     </label>
 
-                    {staffEmail1 && (
+                    {(staffEmail1 || staffPhone1) && (
                       <label className="flex items-center gap-2.5 text-xs text-slate-800 font-semibold cursor-pointer">
                         <input
                           type="radio"
@@ -869,11 +869,11 @@ export default function BoutiqueProfile() {
                           disabled={!isEditingStaff}
                           className="w-4 h-4 accent-[#E9B929]"
                         />
-                        <span>Owner + Staff 1 ({staffEmail1})</span>
+                        <span>Owner + Staff 1 ({staffEmail1 || staffPhone1})</span>
                       </label>
                     )}
 
-                    {staffEmail2 && (
+                    {(staffEmail2 || staffPhone2) && (
                       <label className="flex items-center gap-2.5 text-xs text-slate-800 font-semibold cursor-pointer">
                         <input
                           type="radio"
@@ -884,7 +884,22 @@ export default function BoutiqueProfile() {
                           disabled={!isEditingStaff}
                           className="w-4 h-4 accent-[#E9B929]"
                         />
-                        <span>Owner + Staff 2 ({staffEmail2})</span>
+                        <span>Owner + Staff 2 ({staffEmail2 || staffPhone2})</span>
+                      </label>
+                    )}
+
+                    {(staffEmail1 || staffPhone1) && (staffEmail2 || staffPhone2) && (
+                      <label className="flex items-center gap-2.5 text-xs text-slate-800 font-semibold cursor-pointer">
+                        <input
+                          type="radio"
+                          name="staffNotification"
+                          value="both"
+                          checked={staffNotificationSelection === "both"}
+                          onChange={() => setStaffNotificationSelection("both")}
+                          disabled={!isEditingStaff}
+                          className="w-4 h-4 accent-[#E9B929]"
+                        />
+                        <span>Owner + Both Staff (Staff 1 & Staff 2)</span>
                       </label>
                     )}
                   </div>

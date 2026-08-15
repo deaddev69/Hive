@@ -143,9 +143,13 @@ export const sendOrderEmail = internalAction({
 
         // Include selected staff member in order notification list
         const selection = (boutique as any)?.staffNotificationSelection;
-        if (selection === "staff1" && boutique?.staffEmail1) {
+        const shouldEmailStaff1 = (selection === "staff1" || selection === "both" || selection === "all") && boutique?.staffEmail1;
+        const shouldEmailStaff2 = (selection === "staff2" || selection === "both" || selection === "all") && boutique?.staffEmail2;
+
+        if (shouldEmailStaff1 && boutique?.staffEmail1) {
           toEmails.push(boutique.staffEmail1);
-        } else if (selection === "staff2" && boutique?.staffEmail2) {
+        }
+        if (shouldEmailStaff2 && boutique?.staffEmail2) {
           toEmails.push(boutique.staffEmail2);
         }
         break;

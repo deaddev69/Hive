@@ -1156,9 +1156,12 @@ export async function verifyPaymentAndPlaceOrderInternal(
       });
     }
 
-    // Send to Configured Staff Member
+    // Send to Configured Staff Member(s)
     const staffSelection = (boutique as any)?.staffNotificationSelection;
-    if (staffSelection === "staff1" && (boutique as any)?.staffPhone1) {
+    const shouldSendStaff1 = (staffSelection === "staff1" || staffSelection === "both" || staffSelection === "all") && (boutique as any)?.staffPhone1;
+    const shouldSendStaff2 = (staffSelection === "staff2" || staffSelection === "both" || staffSelection === "all") && (boutique as any)?.staffPhone2;
+
+    if (shouldSendStaff1) {
       await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
         recipient: (boutique as any).staffPhone1,
         templateName: "hive_merchant_new_order",
@@ -1168,7 +1171,9 @@ export async function verifyPaymentAndPlaceOrderInternal(
         ],
         languageCode: "en",
       });
-    } else if (staffSelection === "staff2" && (boutique as any)?.staffPhone2) {
+    }
+
+    if (shouldSendStaff2) {
       await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
         recipient: (boutique as any).staffPhone2,
         templateName: "hive_merchant_new_order",
