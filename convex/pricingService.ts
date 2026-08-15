@@ -6,6 +6,10 @@ export interface PlatformSettings {
   platformFeeRate: number;
   markupType?: "flat" | "tiered";
   markupTiers?: Array<{ min_price: number; max_price: number | null; rate: number }>;
+  // Per-seller pricing tiers
+  tier1?: { name: string; slabs: Array<{ min_price: number; max_price: number | null; rate: number }> };
+  tier2?: { name: string; slabs: Array<{ min_price: number; max_price: number | null; rate: number }> };
+  tier3?: { name: string; slabs: Array<{ min_price: number; max_price: number | null; rate: number }> };
 }
 
 export interface ItemFinancialSnapshot {
@@ -57,6 +61,9 @@ export async function getPlatformSettings(ctx: QueryCtx | MutationCtx): Promise<
     platformFeeRate: settings.platformFeeRate ?? 0.02,
     markupType: settings.markupType ?? "tiered",
     markupTiers: settings.markupTiers ?? DEFAULT_TIER_SLABS,
+    tier1: settings.tier1,
+    tier2: settings.tier2,
+    tier3: settings.tier3,
   };
 }
 
@@ -64,11 +71,25 @@ export async function getPlatformSettings(ctx: QueryCtx | MutationCtx): Promise<
  * Select active platform markup rate based on Platform Settings and Base Listing Price in Rupees.
  * Strictly checks tier slabs when markupType === "tiered".
  */
-export function selectMarkupRate(basePriceRupees: number, settings: PlatformSettings): number {
+export function selectMarkupRate(basePriceRupees: number, settings: PlatformSettings, pricingTier?: string): number {
   const markupType = settings.markupType ?? "tiered";
-  const tiers = settings.markupTiers ?? DEFAULT_TIER_SLABS;
 
-  if (markupType === "tiered" && Array.isArray(tiers) && tiers.length > 0) {
+  // Resolve the correct slab list based on pricingTier
+  const tierKey = pricingTier || "tier1";
+  const tierConfig = (settings as any)[tierKey] as { name: string; slabs: Array<{ min_price: number; max_price: number | null; rate: number }> } | undefined;
+  const hasTierSpecificSlabs = tierConfig && Array.isArray(tierConfig.slabs) && tierConfig.slabs.length > 0;
+
+  // Determine which slabs to use:
+  // 1. If tier-specific slabs exist → always use them (tier system is authoritative)
+  // 2. Otherwise fall back to legacy global markupTiers (only when markupType === "tiered")
+  let tiers: Array<{ min_price: number; max_price: number | null; rate: number }> | undefined;
+  if (hasTierSpecificSlabs) {
+    tiers = tierConfig!.slabs;
+  } else if (markupType === "tiered") {
+    tiers = settings.markupTiers ?? DEFAULT_TIER_SLABS;
+  }
+
+  if (tiers && Array.isArray(tiers) && tiers.length > 0) {
     const tier = tiers.find((t) => {
       const minMatch = basePriceRupees >= t.min_price;
       const maxMatch = t.max_price === null || t.max_price === undefined || basePriceRupees <= t.max_price;
@@ -94,9 +115,10 @@ export const getPlatformMarkupRate = selectMarkupRate;
 export function calculateProductPricing(
   basePriceRupees: number,
   baseDiscountPriceRupees: number | undefined | null,
-  settings: PlatformSettings
+  settings: PlatformSettings,
+  pricingTier?: string
 ) {
-  const markupRate = selectMarkupRate(basePriceRupees, settings);
+  const markupRate = selectMarkupRate(basePriceRupees, settings, pricingTier);
   const platformFeeRate = settings.platformFeeRate ?? 0.02;
 
   // Step 1: Pre-GST customer price (base + markup + ₹7)
@@ -120,7 +142,7 @@ export function calculateProductPricing(
   let discountGstAmount: number | undefined = undefined;
 
   if (baseDiscountPriceRupees && baseDiscountPriceRupees > 0) {
-    discountMarkupRate = selectMarkupRate(baseDiscountPriceRupees, settings);
+    discountMarkupRate = selectMarkupRate(baseDiscountPriceRupees, settings, pricingTier);
     const dMarkupAmount = baseDiscountPriceRupees * discountMarkupRate;
     const dPreGstPrice = baseDiscountPriceRupees + dMarkupAmount + FIXED_PLATFORM_FEE_RUPEES;
     const dSellerFee = baseDiscountPriceRupees * platformFeeRate;
@@ -171,18 +193,27 @@ export async function calculateItemFinancials(
   // The canonical customer price stored on the product record (or discount price if set)
   const canonicalProductPricePaise = productRow.discountPrice ?? productRow.price;
 
+  // Resolve boutique pricingTier for markup selection
+  let pricingTier: string | undefined;
+  if (productRow.boutiqueId) {
+    const boutique = await ctx.db.get(productRow.boutiqueId);
+    if (boutique) {
+      pricingTier = (boutique as any).pricingTier || "tier1";
+    }
+  }
+
   let basePricePaise: number;
   let platformMarkupRateAtPurchase: number;
 
   if (productRow.basePrice !== undefined && productRow.basePrice > 0) {
     basePricePaise = productRow.basePrice;
     const basePriceRupees = basePricePaise / 100;
-    platformMarkupRateAtPurchase = selectMarkupRate(basePriceRupees, settings);
+    platformMarkupRateAtPurchase = selectMarkupRate(basePriceRupees, settings, pricingTier);
   } else {
     // Reverse-engineer base price from canonical customer price (both in paise)
     basePricePaise = Math.floor(canonicalProductPricePaise / (1 + (settings.markupRate || 0.15)));
     const basePriceForTier = basePricePaise / 100;
-    platformMarkupRateAtPurchase = selectMarkupRate(basePriceForTier, settings);
+    platformMarkupRateAtPurchase = selectMarkupRate(basePriceForTier, settings, pricingTier);
   }
 
   // Validate client price against canonical DB price to prevent price tampering while safely supporting existing catalog products

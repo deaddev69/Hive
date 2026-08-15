@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../../convex/_generated/api";
 import { Button, Card, CardContent } from "@hive/ui";
-import { ArrowLeft, Loader2, Save, Store, MapPin, CreditCard, ShieldCheck, AlertCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Store, MapPin, CreditCard, ShieldCheck, AlertCircle, Coins } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 
@@ -28,6 +28,7 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
   // Fetch boutique details
   const boutique = useQuery(api.boutiques.getBoutiqueById, boutiqueId ? { id: boutiqueId as any } : "skip");
   const updateBoutique = useMutation(api.boutiques.updateBoutique);
+  const platformSettings = useQuery(api.adminSettings.getPlatformSettings);
 
   // Form State
   const [boutiqueName, setBoutiqueName] = useState("");
@@ -50,6 +51,7 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
   const [razorpayAccountId, setRazorpayAccountId] = useState("");
   const [returnsAcceptedDefault, setReturnsAcceptedDefault] = useState(true);
   const [returnsAcceptedDefaultLocked, setReturnsAcceptedDefaultLocked] = useState(false);
+  const [pricingTier, setPricingTier] = useState<"tier1" | "tier2" | "tier3">("tier1");
   const [submitting, setSubmitting] = useState(false);
 
   // Prepopulate form when boutique query completes
@@ -76,6 +78,7 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
       setRazorpayAccountId((boutique as any).razorpayAccountId || "");
       setReturnsAcceptedDefault(boutique.returnsAcceptedDefault ?? true);
       setReturnsAcceptedDefaultLocked(boutique.returnsAcceptedDefaultLocked ?? false);
+      setPricingTier((boutique as any).pricingTier || "tier1");
     }
   }, [boutique]);
 
@@ -156,6 +159,7 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
         razorpayAccountId: razorpayAccountId.trim() || undefined,
         returnsAcceptedDefault,
         returnsAcceptedDefaultLocked,
+        pricingTier,
       });
       console.log("[EditBoutiquePage] Update successful!");
       alert("Boutique profile updated successfully!");
@@ -401,6 +405,35 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
               <option value="REJECTED">REJECTED</option>
               <option value="SUSPENDED">SUSPENDED</option>
             </select>
+          </div>
+
+          {/* ── Pricing Tier Assignment ── */}
+          <div className="flex flex-col gap-4 pt-4 border-t border-hive-border/60">
+            <h3 className="text-sm font-serif font-bold text-hive-dark flex items-center gap-2">
+              <Coins className="w-4 h-4 text-hive-amber" />
+              <span>Pricing Tier</span>
+            </h3>
+            <div className="flex flex-col gap-1.5 md:max-w-xs">
+              <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Assigned Pricing Tier</label>
+              <select
+                value={pricingTier}
+                onChange={(e) => setPricingTier(e.target.value as "tier1" | "tier2" | "tier3")}
+                className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-white font-bold text-slate-800"
+              >
+                <option value="tier1">
+                  {(platformSettings as any)?.tier1?.name || "Tier 1"}
+                </option>
+                <option value="tier2">
+                  {(platformSettings as any)?.tier2?.name || "Tier 2"}
+                </option>
+                <option value="tier3">
+                  {(platformSettings as any)?.tier3?.name || "Tier 3"}
+                </option>
+              </select>
+              <p className="text-[11px] text-hive-text-muted leading-snug">
+                This determines the platform markup price slabs applied to this seller's products. Changes take effect on next product save or price sync.
+              </p>
+            </div>
           </div>
 
           {/* ── Admin Return Policy Control ── */}

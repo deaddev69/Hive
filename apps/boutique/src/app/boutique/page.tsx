@@ -23,6 +23,7 @@ import {
   Shield,
   Star,
   ChevronDown,
+  Coins,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -76,6 +77,7 @@ export default function BoutiqueDashboard() {
   const products = useQuery(api.products.getBoutiqueProducts);
   const orders = useQuery(api.orders.getBoutiqueOrders);
   const tierStats = useQuery(api.boutiques.getBoutiqueTierAndStats, boutique ? { boutiqueId: boutique._id } : "skip");
+  const platformSettings = useQuery(api.adminSettings.getPlatformSettings);
 
   const toggleAvailability = useMutation(api.boutiques.toggleBoutiqueAvailability);
   const updateStatus = useMutation(api.boutiques.updateStoreStatus);
@@ -648,6 +650,27 @@ export default function BoutiqueDashboard() {
                   />
                 }
               />
+
+              {/* Pricing Tier — read-only, admin-assigned */}
+              {(() => {
+                const pt = (boutique as any)?.pricingTier || "tier1";
+                const tierDisplayName = pt === "tier1" ? ((platformSettings as any)?.tier1?.name || "Tier 1")
+                  : pt === "tier2" ? ((platformSettings as any)?.tier2?.name || "Tier 2")
+                  : ((platformSettings as any)?.tier3?.name || "Tier 3");
+                return (
+                  <StatusRow
+                    title="Pricing Tier"
+                    description="Your current platform pricing tier"
+                    icon={Coins}
+                    iconBgClass="bg-white"
+                    iconColorClass="text-[#D9A71E]"
+                    iconBorderClass="border-slate-200/60"
+                    badge={
+                      <StatusBadge variant="info" label={tierDisplayName} icon={Coins} />
+                    }
+                  />
+                );
+              })()}
             </div>
           </div>
 

@@ -492,7 +492,7 @@ export const createProduct = mutation({
     // args.price is in PAISE (frontend does × 100). calculateProductPricing expects RUPEES.
     const basePriceRupees = args.price / 100;
     const baseDiscountPriceRupees = args.discountPrice ? args.discountPrice / 100 : undefined;
-    const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings);
+    const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings, boutique.pricingTier || "tier1");
     // Convert customer prices back to PAISE for DB storage
     const customerPrice = Math.round(pricing.customerPrice * 100);
     const customerDiscountPrice = pricing.customerDiscountPrice
@@ -745,7 +745,7 @@ export const updateProduct = mutation({
     // args.price is in PAISE (frontend does × 100). calculateProductPricing expects RUPEES.
     const basePriceRupees = args.price / 100;
     const baseDiscountPriceRupees = args.discountPrice ? args.discountPrice / 100 : undefined;
-    const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings);
+    const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings, boutique.pricingTier || "tier1");
     // Convert customer prices back to PAISE for DB storage
     const customerPrice = Math.round(pricing.customerPrice * 100);
     const customerDiscountPrice = pricing.customerDiscountPrice

@@ -87,13 +87,18 @@ function autoCorrectCapitalization(str: string): string {
   });
 }
 
-function calculatePricingBreakdown(basePriceRupees: number, settings?: any) {
+function calculatePricingBreakdown(basePriceRupees: number, settings?: any, pricingTier?: string) {
   if (!basePriceRupees || isNaN(basePriceRupees) || basePriceRupees <= 0) {
     return null;
   }
 
   const markupType = settings?.markupType ?? "tiered";
-  const tiers = settings?.markupTiers ?? DEFAULT_TIER_SLABS;
+  // Resolve tier-specific slabs if available
+  const tierKey = pricingTier || "tier1";
+  const tierConfig = settings?.[tierKey];
+  const tiers = (tierConfig?.slabs && Array.isArray(tierConfig.slabs) && tierConfig.slabs.length > 0)
+    ? tierConfig.slabs
+    : (settings?.markupTiers ?? DEFAULT_TIER_SLABS);
   let markupRate = settings?.markupRate ?? 0.15;
 
   if (markupType === "tiered" && Array.isArray(tiers) && tiers.length > 0) {
@@ -965,9 +970,10 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
   // Real-time Pricing Breakdown
   const basePriceNum = parseFloat(priceWatch || "0");
+  const boutiquePricingTier = (myBoutiqueSafe as any)?.boutique?.pricingTier || "tier1";
   const pricingBreakdown = useMemo(() => {
-    return calculatePricingBreakdown(basePriceNum, platformSettings);
-  }, [basePriceNum, platformSettings]);
+    return calculatePricingBreakdown(basePriceNum, platformSettings, boutiquePricingTier);
+  }, [basePriceNum, platformSettings, boutiquePricingTier]);
 
   // ───────────────────────────────────────────────────────────────────────────
   // STEP 1: 📸 ADD PHOTOS (Instagram Screen)

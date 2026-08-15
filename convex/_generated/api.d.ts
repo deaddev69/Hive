@@ -25,6 +25,7 @@ import type * as adminSweep from "../adminSweep.js";
 import type * as analytics from "../analytics.js";
 import type * as audienceSegments from "../audienceSegments.js";
 import type * as auth from "../auth.js";
+import type * as backfillTiers from "../backfillTiers.js";
 import type * as banners from "../banners.js";
 import type * as blogs from "../blogs.js";
 import type * as boutiques from "../boutiques.js";
@@ -172,6 +173,7 @@ declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   audienceSegments: typeof audienceSegments;
   auth: typeof auth;
+  backfillTiers: typeof backfillTiers;
   banners: typeof banners;
   blogs: typeof blogs;
   boutiques: typeof boutiques;

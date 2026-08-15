@@ -56,6 +56,31 @@ export default defineSchema({
       max_price: v.union(v.number(), v.null()),
       rate: v.number()
     }))),
+    // ─── PER-SELLER PRICING TIERS ─────────────────────────────────────────────
+    tier1: v.optional(v.object({
+      name: v.string(),
+      slabs: v.array(v.object({
+        min_price: v.number(),
+        max_price: v.union(v.number(), v.null()),
+        rate: v.number()
+      }))
+    })),
+    tier2: v.optional(v.object({
+      name: v.string(),
+      slabs: v.array(v.object({
+        min_price: v.number(),
+        max_price: v.union(v.number(), v.null()),
+        rate: v.number()
+      }))
+    })),
+    tier3: v.optional(v.object({
+      name: v.string(),
+      slabs: v.array(v.object({
+        min_price: v.number(),
+        max_price: v.union(v.number(), v.null()),
+        rate: v.number()
+      }))
+    })),
     updatedAt: v.number(),
   }),
   // ─── MEDIA UPLOAD SESSIONS ────────────────────────────────────────────────
@@ -380,6 +405,14 @@ export default defineSchema({
     ),
     pan: v.optional(v.string()),
     seedSource: v.optional(v.union(v.literal("demo"), v.literal("production"))),
+    // ─── PRICING TIER (separate from merchantTier) ────────────────────────────
+    pricingTier: v.optional(
+                    v.union(
+                      v.literal("tier1"),
+                      v.literal("tier2"),
+                      v.literal("tier3")
+                    )
+                  ),
   })
     .index("by_slug",      ["slug"])
     .index("by_userId",    ["userId"])

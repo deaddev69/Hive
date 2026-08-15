@@ -264,6 +264,7 @@ export const createBoutique = mutation({
         storeCategory:    args.storeCategory || defaults.storeCategory,
         sellerModel:      args.sellerModel || defaults.sellerModel,
         merchantTier:     defaults.merchantTier,
+        pricingTier:      defaults.pricingTier,
         createdAt:        now,
         
         area:             args.area,
@@ -420,6 +421,13 @@ export const updateBoutique = mutation({
     razorpayAccountId: v.optional(v.string()),
     returnsAcceptedDefault: v.optional(v.boolean()),
     returnsAcceptedDefaultLocked: v.optional(v.boolean()),
+    pricingTier: v.optional(
+                  v.union(
+                    v.literal("tier1"),
+                    v.literal("tier2"),
+                    v.literal("tier3")
+                  )
+                ),
   },
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
@@ -460,6 +468,7 @@ export const updateBoutique = mutation({
       
       returnsAcceptedDefault: args.returnsAcceptedDefault,
       returnsAcceptedDefaultLocked: args.returnsAcceptedDefaultLocked,
+      pricingTier: args.pricingTier,
       
       staffEmail1:      args.staffEmail1 ? args.staffEmail1.toLowerCase() : undefined,
       staffEmail2:      args.staffEmail2 ? args.staffEmail2.toLowerCase() : undefined,
@@ -536,6 +545,7 @@ export const approveBoutique = mutation({
       storeCategory:    app.storeCategory || "women_fashion",
       sellerModel:      app.sellerModel || "boutique",
       merchantTier:     "Bronze",
+      pricingTier:      "tier1",
       createdAt:        now,
       ownerEmail:       app.email,
       ownerUserId:      app.userId,
@@ -2544,6 +2554,7 @@ function getDefaultBoutiqueConfig() {
     sellerModel: "boutique" as const,
     activeApprovedProductCount: 0,
     whatsAppNotificationsEnabled: true,
+    pricingTier: "tier1" as const,
   };
 }
 
