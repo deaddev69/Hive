@@ -794,49 +794,22 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                 </div>
               ))}
 
-              {/* Trailing Luxury Editorial End-Cap Card */}
+              {/* Trailing Minimalist End-Cap Card */}
               <div className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start flex flex-col justify-start group select-none">
                 <Link
                   href={targetUrl}
-                  className="w-full aspect-[3/4] rounded-2xl bg-gradient-to-b from-[#FAF8F5] via-[#F5EFE4] to-[#EAE3D4] border border-stone-200/90 shadow-2xs relative overflow-hidden flex flex-col items-center justify-center p-4 text-center transition-all duration-300 group-hover:shadow-md group-hover:border-amber-600/40 group-hover:-translate-y-0.5 cursor-pointer"
+                  className="w-full aspect-[3/4] rounded-2xl bg-[#FAF8F5] border border-stone-200/80 shadow-2xs relative overflow-hidden flex flex-col items-center justify-center p-4 text-center transition-all duration-300 group-hover:shadow-md group-hover:border-stone-400 group-hover:-translate-y-0.5 cursor-pointer"
                 >
-                  {/* Subtle Background Radial Gold Glow */}
-                  <div className="absolute inset-0 bg-radial from-amber-500/10 via-transparent to-transparent pointer-events-none opacity-60 group-hover:opacity-100 transition-opacity" />
-
-                  {/* Brand Logo Header */}
-                  <div className="relative z-10 flex flex-col items-center mb-1">
-                    <Image
-                      src="/hive-logo.png"
-                      alt="Hive Now"
-                      width={70}
-                      height={20}
-                      className="h-4 sm:h-4.5 w-auto object-contain opacity-70 group-hover:opacity-100 transition-opacity"
-                    />
-                  </div>
-
                   {/* Tactile Circular Button */}
-                  <div className="relative z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white text-stone-900 shadow-xs border border-stone-200/80 flex items-center justify-center group-hover:bg-stone-900 group-hover:text-white group-hover:scale-105 transition-all duration-300 my-1.5">
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white text-stone-900 shadow-2xs border border-stone-200 flex items-center justify-center group-hover:bg-stone-900 group-hover:text-white group-hover:scale-105 transition-all duration-300 mb-3">
                     <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
                   </div>
 
-                  {/* Clean Editorial Text */}
-                  <div className="relative z-10 space-y-0.5">
-                    <span className="text-xs sm:text-[13px] font-serif font-bold text-stone-900 group-hover:text-amber-950 transition-colors block">
-                      {isNewArrivals ? "See All Drops" : "Explore All"}
-                    </span>
-                    <p className="text-[9.5px] sm:text-[10px] font-sans text-stone-500">
-                      {isNewArrivals ? "Kochi Boutiques" : "Full Collection"}
-                    </p>
-                  </div>
-                </Link>
-
-                {/* Under-Card Metadata Link */}
-                <div className="pt-2 px-0.5 text-left">
-                  <span className="text-[10px] font-bold text-stone-700 group-hover:text-stone-950 uppercase tracking-wider flex items-center gap-1 transition-colors">
-                    <span>View Catalog</span>
-                    <ArrowRight className="w-3 h-3 text-stone-400 group-hover:text-stone-900 transition-transform group-hover:translate-x-0.5" />
+                  {/* Single Clean Text */}
+                  <span className="text-xs sm:text-sm font-serif font-bold text-stone-900 group-hover:underline transition-colors block">
+                    {isNewArrivals ? "See All Drops" : "See All Items"}
                   </span>
-                </div>
+                </Link>
               </div>
             </div>
           ) : isTwoGrid ? (
