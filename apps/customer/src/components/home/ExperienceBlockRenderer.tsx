@@ -39,15 +39,15 @@ function getProductOccasion(product: any): string {
   return "casual";
 }
 
-// Helper to map DB product to ProductCardData interface
+// Helper to map DB product or ResolvedProduct DTO to ProductCardData interface
 export function mapDbProduct(p: any) {
   const { price, compareAtPrice, discountPercent } = calculateDisplayPricing(p);
 
   return {
-    id: p._id,
+    id: p._id || p.id,
     slug: p.slug,
     name: p.name,
-    boutiqueName: p.boutiqueName || "Unknown Boutique",
+    boutiqueName: p.boutiqueName || p.boutique?.boutiqueName || "Unknown Boutique",
     boutiqueId: p.boutiqueId,
     boutique: p.boutique,
     imageUrl: p.imageUrl || (p.imageUrls?.[0]) || p.images?.[0] || "",
@@ -58,17 +58,17 @@ export function mapDbProduct(p: any) {
     reviewCount: p.reviewCount || 12,
     occasion: getProductOccasion(p),
     isVerifiedBoutique: p.boutique?.verified || false,
-    isNewArrival: Date.now() - p.createdAt < 7 * 24 * 60 * 60 * 1000,
-    isTrending: p.featured,
-    isBestSeller: p.featured,
-    sameDayDelivery: p.sameDayEligible,
+    isNewArrival: (p.createdAt && (Date.now() - p.createdAt < 14 * 24 * 60 * 60 * 1000)) || false,
+    isTrending: p.featured || false,
+    isBestSeller: p.featured || false,
+    sameDayDelivery: p.sameDayEligible ?? true,
     videoAvailable: p.images?.length > 1,
     favorite: false,
     sizes: p.sizes || ["Free"],
     stockBySize: p.stockBySize || { Free: 5 },
-    estimatedDistanceKm: p.estimatedDistanceKm,
-    estimatedDurationMin: p.estimatedDurationMin,
-    estimatedEtaMinutes: p.estimatedEtaMinutes,
+    estimatedDistanceKm: p.distanceKm || p.estimatedDistanceKm,
+    estimatedDurationMin: p.etaMinutes || p.estimatedDurationMin,
+    estimatedEtaMinutes: p.etaMinutes || p.estimatedEtaMinutes,
     hiveScore: p.hiveScore,
   };
 }
@@ -309,8 +309,8 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     );
   }
 
-  // 3. COLLECTIONS (Product Grids, Carousels, MoodBoards)
-  if (block.blockType === "collection") {
+  // 3. COLLECTIONS & PREMIUM CURATION (Product Grids, Carousels, MoodBoards, Premium Zara-Style Grids)
+  if (block.blockType === "collection" || block.blockType === "premiumCuration") {
     // Mood Board
     if (block.renderer === "moodGrid" || block.renderer === "editorialGrid") {
       if (block.data.collection && block.data.products) {
@@ -321,7 +321,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     }
 
     let blockProducts = (block.data.products || [])
-      .filter((p: any) => p.active !== false && p.stock !== 0)
+      .filter((p: any) => p.active !== false)
       .map(mapDbProduct);
 
     if (!blockProducts || blockProducts.length === 0) return null;
@@ -520,7 +520,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
   // 4. RECENTLY VIEWED / RECOMMENDED / NEW ARRIVALS
   if (block.blockType === "recentlyViewed" || block.blockType === "recommended" || block.blockType === "newArrivals") {
     const mostLovedProducts = (block.data.products || [])
-      .filter((p: any) => p.active !== false && p.stock !== 0)
+      .filter((p: any) => p.active !== false)
       .map(mapDbProduct);
       
     if (mostLovedProducts.length === 0) return null;

@@ -11,6 +11,7 @@ export interface ResolvedProduct {
   boutiqueName: string;
   boutiqueSlug: string;
   // Merchandising & Operations
+  createdAt?: number;
   distanceKm?: number;
   etaMinutes?: number;
   hiveScore?: number;

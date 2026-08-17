@@ -863,7 +863,7 @@ export const updateExperienceLayout = mutation({
 export const publishExperience = mutation({
   args: { experienceId: v.id("experiences") },
   handler: async (ctx, args) => {
-    const draftBlocks = await ctx.db
+    let draftBlocks = await ctx.db
       .query("experienceBlocks")
       .withIndex("by_experience_status_sort", (q) => 
         q.eq("experienceId", args.experienceId).eq("status", "draft")
@@ -876,6 +876,15 @@ export const publishExperience = mutation({
         q.eq("experienceId", args.experienceId).eq("status", "published")
       )
       .collect();
+
+    // If there are no draft blocks but there are published blocks, keep published blocks intact
+    if (draftBlocks.length === 0 && publishedBlocks.length > 0) {
+      await ctx.db.patch(args.experienceId, {
+        status: "published",
+        updatedAt: Date.now(),
+      });
+      return;
+    }
 
     // Delete current published blocks
     for (const pb of publishedBlocks) {
@@ -927,7 +936,20 @@ export const updateBlockContent = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
-    await ctx.db.patch(id, updates);
+    const block = await ctx.db.get(id);
+    if (block) {
+      await ctx.db.patch(id, updates);
+      // Sync peer blocks sharing the same blockKey within this experience
+      const peerBlocks = await ctx.db
+        .query("experienceBlocks")
+        .withIndex("by_blockKey", (q) => q.eq("blockKey", block.blockKey))
+        .collect();
+      for (const peer of peerBlocks) {
+        if (peer._id !== id && peer.experienceId === block.experienceId) {
+          await ctx.db.patch(peer._id, updates);
+        }
+      }
+    }
   },
 });
 
@@ -948,7 +970,19 @@ export const updateBlockLayout = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, { renderer: args.renderer });
+    const block = await ctx.db.get(args.id);
+    if (block) {
+      await ctx.db.patch(args.id, { renderer: args.renderer });
+      const peerBlocks = await ctx.db
+        .query("experienceBlocks")
+        .withIndex("by_blockKey", (q) => q.eq("blockKey", block.blockKey))
+        .collect();
+      for (const peer of peerBlocks) {
+        if (peer._id !== args.id && peer.experienceId === block.experienceId) {
+          await ctx.db.patch(peer._id, { renderer: args.renderer });
+        }
+      }
+    }
   },
 });
 
@@ -958,9 +992,20 @@ export const toggleBlockVisibility = mutation({
     isHidden: v.boolean(),
   },
   handler: async (ctx, args) => {
-    // We repurpose the 'status' field for visibility within the draft experience.
-    // 'draft' = visible, 'archived' = hidden
-    await ctx.db.patch(args.id, { status: args.isHidden ? "archived" : "draft" });
+    const block = await ctx.db.get(args.id);
+    if (block) {
+      const newStatus = args.isHidden ? "archived" : "draft";
+      await ctx.db.patch(args.id, { status: newStatus });
+      const peerBlocks = await ctx.db
+        .query("experienceBlocks")
+        .withIndex("by_blockKey", (q) => q.eq("blockKey", block.blockKey))
+        .collect();
+      for (const peer of peerBlocks) {
+        if (peer._id !== args.id && peer.experienceId === block.experienceId) {
+          await ctx.db.patch(peer._id, { status: newStatus });
+        }
+      }
+    }
   },
 });
 

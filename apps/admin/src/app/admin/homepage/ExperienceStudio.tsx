@@ -130,7 +130,7 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     fields: ["title", "maxProducts"]
   },
   {
-    id: "collection",
+    id: "premiumCuration",
     name: "Premium Curation",
     category: "Collections",
     icon: Star,
@@ -863,7 +863,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                 {categories && categories.length > 0 && (
                   <optgroup label="Shop by Category">
                     {categories.map((c: any) => (
-                      <option key={`cat-${c._id}`} value={`/category/${c.slug}`}>
+                      <option key={`cat-${c._id}`} value={`/products?category=${c.slug}`}>
                         {c.name}
                       </option>
                     ))}
@@ -886,7 +886,8 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
               <label className="block text-[11px] font-bold text-slate-500 mb-1">Renderer (Layout)</label>
               <select className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.renderer} onChange={e => setFormData({...formData, renderer: e.target.value})}>
                 <option value="productCarousel">Product Carousel (Horizontal Scroll)</option>
-                <option value="twoColumnGrid">2-Column Product Grid</option>
+                <option value="twoProductGrid">2-Column Product Grid</option>
+                <option value="premiumGrid">Premium Zara-Style Grid (Full Visual Width)</option>
                 <option value="largeCards">Large Cards</option>
                 <option value="moodGrid">Mood Grid</option>
                 <option value="occasionGrid">Category / Occasion Grid</option>

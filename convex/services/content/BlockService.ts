@@ -77,6 +77,15 @@ export class BlockService {
           block.config.maxProducts || 12
         );
         requiredProductIds.push(...pIds);
+      } else if (block.blockType === "premiumCuration" || (block.blockType === "collection" && block.renderer === "premiumGrid")) {
+        const topProducts = (await ctx.db
+          .query("products")
+          .withIndex("by_active", (q: any) => q.eq("active", true))
+          .order("desc")
+          .take(20))
+          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
+          .slice(0, block.config?.maxProducts || 6);
+        requiredProductIds.push(...topProducts.map((p: any) => p._id.toString()));
       } else if (block.blockType === "recentlyViewed" && userContext?.userId) {
         const history = await ctx.db
           .query("recentlyViewed")
@@ -141,6 +150,22 @@ export class BlockService {
         if (block.config?.bgImage || block.config?.desktopImage) {
           data.bgImage = await resolveBannerImage(ctx, block.config.bgImage || block.config.desktopImage);
         }
+      } else if (block.blockType === "premiumCuration" || (block.blockType === "collection" && block.renderer === "premiumGrid")) {
+        const topProducts = (await ctx.db
+          .query("products")
+          .withIndex("by_active", (q: any) => q.eq("active", true))
+          .order("desc")
+          .take(20))
+          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
+          .slice(0, block.config?.maxProducts || 6);
+
+        data.products = topProducts
+          .map((p: any) => resolvedProductsMap.get(p._id.toString()))
+          .filter(Boolean) as ResolvedProduct[];
+
+        if (block.config?.bgImage || block.config?.desktopImage) {
+          data.bgImage = await resolveBannerImage(ctx, block.config.bgImage || block.config.desktopImage);
+        }
       } else if (block.blockType === "recentlyViewed" && userContext?.userId) {
         const history = await ctx.db
           .query("recentlyViewed")
@@ -154,19 +179,31 @@ export class BlockService {
           
         data.products = matchedProducts;
       } else if (block.blockType === "recommended") {
-        // Simple algorithmic fallback: newest products
-        const products = Array.from(resolvedProductsMap.values());
-        // Sort by newest, maybe add some randomization or use featured flag
-        const recommendedProducts = products
-          .sort((a, b) => ((b as any).createdAt || 0) - ((a as any).createdAt || 0))
+        const recents = (await ctx.db
+          .query("products")
+          .withIndex("by_active", (q: any) => q.eq("active", true))
+          .order("desc")
+          .take(40))
+          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
           .slice(0, block.config?.maxProducts || 12);
+          
+        const recommendedProducts = recents
+          .map((p: any) => resolvedProductsMap.get(p._id.toString()))
+          .filter(Boolean) as ResolvedProduct[];
           
         data.products = recommendedProducts;
       } else if (block.blockType === "newArrivals") {
-        const products = Array.from(resolvedProductsMap.values());
-        const newArrivalProducts = products
-          .sort((a, b) => ((b as any).createdAt || 0) - ((a as any).createdAt || 0))
+        const newArrivals = (await ctx.db
+          .query("products")
+          .withIndex("by_active", (q: any) => q.eq("active", true))
+          .order("desc")
+          .take(40))
+          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
           .slice(0, block.config?.maxProducts || 12);
+          
+        const newArrivalProducts = newArrivals
+          .map((p: any) => resolvedProductsMap.get(p._id.toString()))
+          .filter(Boolean) as ResolvedProduct[];
           
         data.products = newArrivalProducts;
       } else if (block.blockType === "hero") {

@@ -75,6 +75,7 @@ export class CatalogService {
           boutiqueId: product.boutiqueId.toString(),
           boutiqueName: boutique?.boutiqueName || "Unknown Boutique",
           boutiqueSlug: boutique?.slug || boutique?.boutiqueName?.toLowerCase().replace(/\s+/g, "-") || "unknown",
+          createdAt: product._creationTime || product.createdAt || Date.now(),
         };
       })
     );
