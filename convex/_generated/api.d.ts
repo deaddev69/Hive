@@ -64,6 +64,7 @@ import type * as lib_killSwitches from "../lib/killSwitches.js";
 import type * as lib_mockInventory from "../lib/mockInventory.js";
 import type * as lib_money from "../lib/money.js";
 import type * as lib_notifications from "../lib/notifications.js";
+import type * as lib_orderActivity from "../lib/orderActivity.js";
 import type * as lib_porter from "../lib/porter.js";
 import type * as lib_productStats from "../lib/productStats.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
@@ -212,6 +213,7 @@ declare const fullApi: ApiFromModules<{
   "lib/mockInventory": typeof lib_mockInventory;
   "lib/money": typeof lib_money;
   "lib/notifications": typeof lib_notifications;
+  "lib/orderActivity": typeof lib_orderActivity;
   "lib/porter": typeof lib_porter;
   "lib/productStats": typeof lib_productStats;
   "lib/rateLimit": typeof lib_rateLimit;
