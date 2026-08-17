@@ -17,7 +17,9 @@ import {
   CreditCard,
   Download,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  QrCode,
+  CheckCheck
 } from "lucide-react";
 import { useOrderStore } from "@/store/order-store";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
@@ -26,15 +28,17 @@ import { api } from "../../../../../../convex/_generated/api";
 import { useSessionStore } from "@/context/SessionContext";
 import { CustomerPriceBreakdown } from "@/components/checkout/CustomerPriceBreakdown";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
+import { ReceiptPrinter, ReceiptPrinterStage } from "@/components/checkout/ReceiptPrinter";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Redesigned Order Success Page Implementation
+// Redesigned Order Success Page Implementation with Tactile Hive Receipt Printer
 // ─────────────────────────────────────────────────────────────────────────────
 function OrderSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderIdParam = searchParams.get("orderId");
   const [mounted, setMounted] = useState(false);
+  const [printerStage, setPrinterStage] = useState<ReceiptPrinterStage>("processing");
 
   const latestOrder = useOrderStore((state) => state.latestOrder);
   const { token } = useSessionStore();
@@ -68,6 +72,19 @@ function OrderSuccessContent() {
 
   useEffect(() => {
     setMounted(true);
+    // Tactile printer stage progression
+    const printTimer = setTimeout(() => {
+      setPrinterStage("printing");
+    }, 500);
+
+    const completeTimer = setTimeout(() => {
+      setPrinterStage("complete");
+    }, 2400);
+
+    return () => {
+      clearTimeout(printTimer);
+      clearTimeout(completeTimer);
+    };
   }, []);
 
   const isLoading = orderIdParam ? (queriedOrder === undefined) : false;
@@ -95,7 +112,7 @@ function OrderSuccessContent() {
           price: item.priceAtPurchase,
           quantity: item.quantity,
           imageUrl: item.imageUrl,
-          boutiqueName: item.boutiqueName || "Hive Partner",
+          boutiqueName: "Hive Express",
           boutiqueId: item.boutiqueId || queriedOrder.boutiqueId || "",
         })),
         subtotal: queriedOrder.subtotal,
@@ -172,15 +189,20 @@ function OrderSuccessContent() {
     if (s.includes("afternoon")) return "Expected 1:00 PM - 4:00 PM";
     if (s.includes("evening")) return "Expected 4:00 PM - 7:00 PM";
     if (s.includes("night")) return "Expected 7:00 PM - 9:00 PM";
-    return "Scheduled within slot window";
+    return "Scheduled within 90-min window";
   };
 
   const itemCount = resolvedOrder.items.reduce((acc: number, item: any) => acc + item.quantity, 0);
   const slotWindow = resolvedOrder.deliverySlotWindow || getEstimatedWindow(resolvedOrder.deliverySlot);
+  const orderDateStr = new Date(resolvedOrder.createdAt || Date.now()).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
   return (
-    <div className="min-h-screen bg-slate-50/60 py-10 px-4 sm:px-6 lg:px-8 select-none text-left">
-      <div className="max-w-[920px] mx-auto flex flex-col gap-6 animate-[fadeIn_0.3s_ease-out_forwards]">
+    <div className="min-h-screen bg-[#FAF9F6] py-8 sm:py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
+      <div className="max-w-[960px] mx-auto flex flex-col gap-6 animate-[fadeIn_0.3s_ease-out_forwards]">
 
         {/* Header Hero */}
         <OrderSuccessHero 
@@ -190,11 +212,125 @@ function OrderSuccessContent() {
           placedDuringClosedHours={(resolvedOrder as any).placedDuringClosedHours} 
         />
 
-        {/* 2-Column Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        {/* 2-Column Responsive Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-          {/* Left Column: Delivery Window & Journey Stepper */}
-          <div className="md:col-span-7 space-y-5">
+          {/* Left Column: Tactile Hive Receipt Printer Component */}
+          <div className="lg:col-span-6 flex flex-col items-center">
+            <ReceiptPrinter.Root stage={printerStage} className="w-full">
+              <ReceiptPrinter.Machine className="w-full">
+                <ReceiptPrinter.Header>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-stone-300">
+                      HIVE TERMINAL
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-stone-400">
+                    POS · KOCHI
+                  </span>
+                </ReceiptPrinter.Header>
+
+                <ReceiptPrinter.Screen>
+                  <ReceiptPrinter.Status />
+                  <div className="mt-1 flex items-center justify-between text-[10.5px] font-mono text-stone-400 border-t border-stone-800/80 pt-1.5">
+                    <span>ORDER #{resolvedOrder.id}</span>
+                    <span className="text-amber-400 font-bold">
+                      ₹{(resolvedOrder.total / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </ReceiptPrinter.Screen>
+              </ReceiptPrinter.Machine>
+
+              <ReceiptPrinter.Output className="w-full">
+                <ReceiptPrinter.Paper className="w-full text-left">
+                  {/* Receipt Header */}
+                  <div className="text-center pb-3 border-b border-dashed border-stone-300">
+                    <h3 className="font-serif font-extrabold text-base tracking-tight text-stone-950 uppercase">
+                      HIVE NOW
+                    </h3>
+                    <p className="text-[9.5px] text-stone-500 font-sans tracking-wide">
+                      Hive Express 90-Min · Kochi
+                    </p>
+                    <div className="mt-2 text-[10px] font-mono text-stone-600 flex items-center justify-between px-1">
+                      <span>{orderDateStr}</span>
+                      <span className="font-bold text-stone-900">VERIFIED</span>
+                    </div>
+                  </div>
+
+                  {/* Items list */}
+                  <div className="py-3 border-b border-dashed border-stone-300 space-y-1.5 text-[11px] font-mono">
+                    <div className="text-[9.5px] font-bold text-stone-400 uppercase tracking-wider pb-0.5">
+                      PURCHASED ITEMS
+                    </div>
+                    {resolvedOrder.items.map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-stone-900 truncate">
+                            {item.quantity}x {item.name}
+                          </p>
+                          <p className="text-[9.5px] text-stone-500">
+                            Size: {item.size || "Standard"}
+                          </p>
+                        </div>
+                        <span className="font-bold text-stone-900 shrink-0">
+                          ₹{((item.price * item.quantity) / 100).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Summary math */}
+                  <div className="py-3 border-b border-dashed border-stone-300 space-y-1 text-[10.5px] font-mono">
+                    <div className="flex justify-between text-stone-600">
+                      <span>Subtotal</span>
+                      <span>₹{(resolvedOrder.subtotal / 100).toFixed(2)}</span>
+                    </div>
+                    {resolvedOrder.discount > 0 && (
+                      <div className="flex justify-between text-emerald-700 font-bold">
+                        <span>Discount</span>
+                        <span>-₹{(resolvedOrder.discount / 100).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-stone-600">
+                      <span>Express Delivery</span>
+                      <span>{resolvedOrder.deliveryFee === 0 ? "FREE" : `₹${(resolvedOrder.deliveryFee / 100).toFixed(2)}`}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-sm text-stone-950 pt-1.5 border-t border-stone-200">
+                      <span>TOTAL PAID</span>
+                      <span>₹{(resolvedOrder.total / 100).toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  {/* Delivery destination */}
+                  <div className="pt-3 pb-2 text-[10px] font-mono space-y-0.5 text-stone-600">
+                    <p className="font-bold text-stone-900 uppercase">
+                      DESTINATION: {resolvedOrder.address?.name || "Customer"}
+                    </p>
+                    <p className="truncate">
+                      {resolvedOrder.address?.addressLine1 || "Kochi"}, {resolvedOrder.address?.pincode}
+                    </p>
+                    <p className="text-amber-700 font-bold pt-1">
+                      DISPATCH: {resolvedOrder.deliverySlot || "90-Min Express"}
+                    </p>
+                  </div>
+
+                  {/* Barcode representation */}
+                  <div className="pt-3 border-t border-dashed border-stone-300 flex flex-col items-center text-center">
+                    <div className="tracking-[0.35em] text-xs font-mono font-black text-stone-800 select-none">
+                      ||| | | |||| | ||| || ||||| | ||
+                    </div>
+                    <span className="text-[8.5px] font-mono text-stone-400 mt-1">
+                      {resolvedOrder.id}
+                    </span>
+                  </div>
+                </ReceiptPrinter.Paper>
+              </ReceiptPrinter.Output>
+            </ReceiptPrinter.Root>
+          </div>
+
+          {/* Right Column: Fulfillment Timeline, Trust & Actions */}
+          <div className="lg:col-span-6 space-y-5">
             <DeliveryStatusCard
               date={resolvedOrder.deliveryDate}
               slot={resolvedOrder.deliverySlot}
@@ -202,37 +338,23 @@ function OrderSuccessContent() {
               status={resolvedOrder.status}
             />
 
-            {/* Subtle Post-Purchase Trust Footer */}
-            <div className="p-4 bg-white border border-slate-200/80 rounded-2xl flex items-center justify-between text-[11px] text-slate-500 font-medium">
+            {/* Post-Purchase Trust Footer */}
+            <div className="p-4 bg-white border border-stone-200/80 rounded-2xl flex items-center justify-between text-[11px] text-stone-600 font-medium shadow-2xs">
               <span className="flex items-center gap-1.5">
-                <RotateCcw className="w-3.5 h-3.5 text-slate-700" />
-                <span>{resolvedOrder.returnsAccepted === false ? "Final Sale (Damaged / Wrong Item Covered)" : "1-Day Easy Returns"}</span>
+                <RotateCcw className="w-3.5 h-3.5 text-stone-700" />
+                <span>{resolvedOrder.returnsAccepted === false ? "Final Sale (Protected)" : "1-Day Easy Returns"}</span>
               </span>
-              <span className="text-slate-300">•</span>
+              <span className="text-stone-300 select-none">•</span>
               <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
-                <span>Verified Quality Checks</span>
+                <ShieldCheck className="w-3.5 h-3.5 text-stone-700" />
+                <span>Verified Quality</span>
               </span>
-              <span className="text-slate-300">•</span>
+              <span className="text-stone-300 select-none">•</span>
               <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-700" />
-                <span>Same-Day Dispatch</span>
+                <Clock className="w-3.5 h-3.5 text-stone-700" />
+                <span>90-Min Dispatch</span>
               </span>
             </div>
-          </div>
-
-          {/* Right Column: Order Summary & Actions */}
-          <div className="md:col-span-5 space-y-5">
-            <OrderSummaryCard
-              itemCount={itemCount}
-              totalAmount={resolvedOrder.total}
-              subtotal={resolvedOrder.subtotal}
-              deliveryFee={resolvedOrder.deliveryFee}
-              paymentMethod={paymentMethodLabel(resolvedOrder.paymentMethod)}
-              address={resolvedOrder.address}
-              items={resolvedOrder.items}
-              boutiqueName={resolvedOrder.items[0]?.boutiqueName}
-            />
 
             <SuccessActions resolvedOrder={resolvedOrder} />
           </div>
@@ -287,24 +409,24 @@ function OrderSuccessHero({
 
         <div className="space-y-1">
           <div className="inline-block px-3 py-1 bg-red-50 border border-red-200 rounded-full text-[11px] font-bold text-red-700 uppercase tracking-wider mb-1">
-            Order Declined by Boutique
+            Order Cancelled
           </div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            Order Declined & Refund Initiated
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
+            Order Cancelled & Refund Initiated
           </h1>
-          <p className="text-xs sm:text-sm text-slate-600 max-w-md font-medium leading-relaxed">
-            We&apos;re sorry! Due to unexpectedly high demand, the boutique was unable to fulfill your order. An instant full refund of <strong className="text-slate-900 font-bold">{formattedTotal}</strong> has been initiated back to your original payment method and will reflect within approximately 1 hour.
+          <p className="text-xs sm:text-sm text-stone-600 max-w-md font-medium leading-relaxed">
+            We&apos;re sorry! Due to stock availability, our fulfillment team was unable to fulfill your order. An instant full refund of <strong className="text-stone-900 font-bold">{formattedTotal}</strong> has been initiated back to your original payment method.
           </p>
         </div>
 
         <button 
           type="button"
           onClick={handleCopy}
-          className="mt-1 py-2 px-3.5 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 transition-colors border border-slate-200/70 rounded-xl inline-flex items-center gap-2 text-xs cursor-pointer"
+          className="mt-1 py-2 px-3.5 bg-stone-100 hover:bg-stone-200/80 active:bg-stone-200 transition-colors border border-stone-200/70 rounded-xl inline-flex items-center gap-2 text-xs cursor-pointer"
         >
-          <span className="font-semibold text-slate-500">Order ID:</span>
-          <span className="font-mono font-bold text-slate-900 tracking-wide">{orderId}</span>
-          <div className="w-4 h-4 flex items-center justify-center text-slate-400">
+          <span className="font-semibold text-stone-500">Order ID:</span>
+          <span className="font-mono font-bold text-stone-900 tracking-wide">{orderId}</span>
+          <div className="w-4 h-4 flex items-center justify-center text-stone-400">
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3 h-3" />}
           </div>
         </button>
@@ -313,45 +435,45 @@ function OrderSuccessHero({
   }
 
   return (
-    <div className="w-full bg-white border border-slate-200/80 rounded-3xl p-8 sm:p-10 shadow-xs flex flex-col items-center text-center space-y-4 relative overflow-hidden">
-      <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-200/60 flex items-center justify-center shadow-2xs">
-        <CheckCircle2 className="w-8 h-8 stroke-[2]" />
+    <div className="w-full bg-white border border-stone-200/80 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col items-center text-center space-y-3 relative overflow-hidden">
+      <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-200/60 flex items-center justify-center shadow-2xs">
+        <CheckCircle2 className="w-7 h-7 stroke-[2]" />
       </div>
 
       <div className="space-y-1">
-        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-950 tracking-tight">
           Order Confirmed
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 max-w-md font-medium leading-relaxed">
-          Thank you for your order. We&apos;ve received your details and are preparing your package for delivery.
+        <p className="text-xs sm:text-sm text-stone-500 max-w-md font-medium leading-relaxed">
+          Thank you for choosing Hive. Your order is received and queued for 90-min dispatch across Kochi.
         </p>
       </div>
 
       {placedDuringClosedHours && (
         <div className="w-full max-w-md py-2.5 px-4 bg-amber-50 border border-amber-200/60 rounded-xl text-center text-xs space-y-0.5">
           <span className="font-bold text-amber-900 block">
-            Boutique Currently Closed
+            After-Hours Order Recorded
           </span>
           <span className="text-amber-700 text-[11px] block">
-            Your order has been recorded and will be processed first thing when boutique working hours resume.
+            Your order has been recorded and will be dispatched first thing when 90-min delivery resumes at 9:00 AM.
           </span>
         </div>
       )}
 
       {isSupported && !isSubscribed && (
-        <div className="w-full max-w-md mt-4 mb-2 py-4 px-5 bg-slate-900 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl shadow-slate-900/10">
-          <div className="text-left space-y-1">
-            <h4 className="text-sm font-bold flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#F5A623]" /> Order Updates
+        <div className="w-full max-w-md mt-2 mb-1 py-3.5 px-4 bg-stone-900 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+          <div className="text-left space-y-0.5">
+            <h4 className="text-xs font-bold flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Order Tracking Updates
             </h4>
-            <p className="text-xs text-slate-300">Turn on notifications to track your delivery.</p>
+            <p className="text-[11px] text-stone-400">Turn on notifications to track your delivery in real-time.</p>
           </div>
           <button
             onClick={() => subscribeToPush()}
             disabled={isLoading}
-            className="w-full sm:w-auto px-4 py-2 bg-white text-slate-900 text-xs font-bold rounded-xl active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+            className="w-full sm:w-auto px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold rounded-xl active:scale-95 transition-all cursor-pointer whitespace-nowrap"
           >
-            {isLoading ? "Enabling..." : "Enable Notifications"}
+            {isLoading ? "Enabling..." : "Enable Alerts"}
           </button>
         </div>
       )}
@@ -359,11 +481,11 @@ function OrderSuccessHero({
       <button 
         type="button"
         onClick={handleCopy}
-        className="mt-1 py-2 px-3.5 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 transition-colors border border-slate-200/70 rounded-xl inline-flex items-center gap-2 text-xs cursor-pointer"
+        className="mt-1 py-1.5 px-3 bg-stone-100 hover:bg-stone-200/80 active:bg-stone-200 transition-colors border border-stone-200/70 rounded-xl inline-flex items-center gap-2 text-xs cursor-pointer"
       >
-        <span className="font-semibold text-slate-500">Order ID:</span>
-        <span className="font-mono font-bold text-slate-900 tracking-wide">{orderId}</span>
-        <div className="w-4 h-4 flex items-center justify-center text-slate-400">
+        <span className="font-semibold text-stone-500">Order ID:</span>
+        <span className="font-mono font-bold text-stone-900 tracking-wide">{orderId}</span>
+        <div className="w-4 h-4 flex items-center justify-center text-stone-400">
           {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3 h-3" />}
         </div>
       </button>
