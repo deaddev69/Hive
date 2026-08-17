@@ -103,8 +103,9 @@ export const getCatalogProductsForMerchandising = query({
 
     // Filter by category
     if (args.categoryId && args.categoryId !== "all") {
+      const targetCat = args.categoryId.toLowerCase();
       filtered = filtered.filter(
-        (p: any) => p.categoryId === args.categoryId || p.categoryName?.toLowerCase() === args.categoryId.toLowerCase()
+        (p: any) => p.categoryId === args.categoryId || p.categoryName?.toLowerCase() === targetCat
       );
     }
 
