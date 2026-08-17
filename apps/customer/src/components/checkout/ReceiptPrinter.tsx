@@ -269,26 +269,25 @@ export function ReceiptPrinterOutput({
       )}
 
       <motion.div
-        animate={{
-          opacity: isReceiptVisible ? 1 : 0,
-          transform:
-            stage === "printing" && shouldMove
-              ? shouldUseSteppedFeed
-                ? printingTransformKeyframes
-                : "translateY(0%)"
-              : isReceiptVisible || !shouldMove
-                ? "translateY(0%)"
-                : "translateY(calc(-100% + 2px))",
-        }}
+        animate={
+          stage === "processing"
+            ? { y: "-100%", opacity: 0 }
+            : stage === "printing"
+            ? {
+                y: shouldUseSteppedFeed ? printingTransformKeyframes.map((k) => k.replace("translateY(", "").replace(")", "")) : "0%",
+                opacity: 1,
+              }
+            : { y: "0%", opacity: 1 }
+        }
         aria-hidden={stage !== "complete"}
         className="relative isolate"
-        initial={false}
+        initial={{ y: "-100%", opacity: 0 }}
         transition={{
-          opacity: { duration: animate ? 0.16 : 0, ease: easeOut },
-          transform: {
-            duration: shouldMove ? 1.75 : 0,
+          opacity: { duration: animate ? 0.2 : 0, ease: easeOut },
+          y: {
+            duration: stage === "printing" && shouldMove ? 2.0 : 0.4,
             ease: shouldUseSteppedFeed ? "linear" : easeInOut,
-            times: shouldUseSteppedFeed ? printingKeyframeTimes : undefined,
+            times: shouldUseSteppedFeed && stage === "printing" ? printingKeyframeTimes : undefined,
           },
         }}
       >

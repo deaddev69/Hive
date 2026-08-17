@@ -200,17 +200,46 @@ function OrderSuccessContent() {
     year: "numeric",
   });
 
-  return (
-    <div className="min-h-screen bg-[#FAF9F6] py-8 sm:py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
-      <div className="max-w-[960px] mx-auto flex flex-col gap-6 animate-[fadeIn_0.3s_ease-out_forwards]">
+  const handleReplayPrint = () => {
+    setPrinterStage("processing");
+    setTimeout(() => {
+      setPrinterStage("printing");
+    }, 250);
+    setTimeout(() => {
+      setPrinterStage("complete");
+    }, 2300);
+  };
 
-        {/* Header Hero */}
-        <OrderSuccessHero 
-          orderId={resolvedOrder.id} 
-          status={resolvedOrder.status}
-          total={resolvedOrder.total}
-          placedDuringClosedHours={(resolvedOrder as any).placedDuringClosedHours} 
-        />
+  const isCancelled = ["cancelled", "declined", "cancelled_by_merchant", "booking_failed"].includes(resolvedOrder.status || "");
+
+  if (isCancelled) {
+    return (
+      <div className="min-h-screen bg-[#FAF9F6] py-10 px-4 sm:px-6 select-none text-left flex items-center justify-center">
+        <div className="max-w-md w-full">
+          <OrderCancelledCard 
+            orderId={resolvedOrder.id} 
+            total={resolvedOrder.total} 
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#FAF9F6] py-6 sm:py-10 px-4 sm:px-6 lg:px-8 select-none text-left">
+      <div className="max-w-[880px] mx-auto flex flex-col gap-6 animate-[fadeIn_0.3s_ease-out_forwards]">
+
+        {/* Closed Hours Notification (If applicable) */}
+        {Boolean((resolvedOrder as any).placedDuringClosedHours) && (
+          <div className="w-full py-2.5 px-4 bg-amber-50 border border-amber-200/80 rounded-2xl text-center text-xs space-y-0.5 shadow-2xs">
+            <span className="font-bold text-amber-950 block">
+              After-Hours Order Recorded
+            </span>
+            <span className="text-amber-800 text-[11px] block">
+              Your order has been recorded and will be dispatched first thing when 90-min delivery resumes at 9:00 AM.
+            </span>
+          </div>
+        )}
 
         {/* 2-Column Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -226,15 +255,27 @@ function OrderSuccessContent() {
                       HIVE TERMINAL
                     </span>
                   </div>
-                  <span className="text-[10px] font-mono text-stone-400">
-                    POS · KOCHI
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-stone-400">
+                      POS · KOCHI
+                    </span>
+                    {printerStage === "complete" && (
+                      <button
+                        type="button"
+                        onClick={handleReplayPrint}
+                        title="Replay Print Animation"
+                        className="p-1 rounded-md bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-amber-400 text-[10px] font-mono flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
                 </ReceiptPrinter.Header>
 
                 <ReceiptPrinter.Screen>
                   <ReceiptPrinter.Status />
-                  <div className="mt-1 flex items-center justify-between text-[10.5px] font-mono text-stone-400 border-t border-stone-800/80 pt-1.5">
-                    <span>ORDER #{resolvedOrder.id}</span>
+                  <div className="mt-1.5 flex items-center justify-between text-[10.5px] font-mono text-stone-400 border-t border-stone-800/80 pt-1.5">
+                    <span className="font-bold text-stone-300">ORDER #{resolvedOrder.id}</span>
                     <span className="text-amber-400 font-bold">
                       ₹{(resolvedOrder.total / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                     </span>
@@ -254,7 +295,7 @@ function OrderSuccessContent() {
                     </p>
                     <div className="mt-2 text-[10px] font-mono text-stone-600 flex items-center justify-between px-1">
                       <span>{orderDateStr}</span>
-                      <span className="font-bold text-stone-900">VERIFIED</span>
+                      <span className="font-bold text-emerald-700">PAID & VERIFIED</span>
                     </div>
                   </div>
 
@@ -310,7 +351,7 @@ function OrderSuccessContent() {
                     <p className="truncate">
                       {resolvedOrder.address?.addressLine1 || "Kochi"}, {resolvedOrder.address?.pincode}
                     </p>
-                    <p className="text-amber-700 font-bold pt-1">
+                    <p className="text-amber-800 font-bold pt-1">
                       DISPATCH: {resolvedOrder.deliverySlot || "90-Min Express"}
                     </p>
                   </div>
@@ -330,7 +371,7 @@ function OrderSuccessContent() {
           </div>
 
           {/* Right Column: Fulfillment Timeline, Trust & Actions */}
-          <div className="lg:col-span-6 space-y-5">
+          <div className="lg:col-span-6 space-y-4">
             <DeliveryStatusCard
               date={resolvedOrder.deliveryDate}
               slot={resolvedOrder.deliverySlot}
@@ -338,8 +379,8 @@ function OrderSuccessContent() {
               status={resolvedOrder.status}
             />
 
-            {/* Post-Purchase Trust Footer */}
-            <div className="p-4 bg-white border border-stone-200/80 rounded-2xl flex items-center justify-between text-[11px] text-stone-600 font-medium shadow-2xs">
+            {/* Post-Purchase Trust Strip */}
+            <div className="p-3.5 bg-white border border-stone-200/80 rounded-2xl flex items-center justify-between text-[11px] text-stone-600 font-medium shadow-2xs">
               <span className="flex items-center gap-1.5">
                 <RotateCcw className="w-3.5 h-3.5 text-stone-700" />
                 <span>{resolvedOrder.returnsAccepted === false ? "Final Sale (Protected)" : "1-Day Easy Returns"}</span>
@@ -375,21 +416,16 @@ export default function OrderSuccessPage() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Component: OrderSuccessHero
+// Component: OrderCancelledCard
 // ─────────────────────────────────────────────────────────────────────────────
-function OrderSuccessHero({ 
+function OrderCancelledCard({ 
   orderId, 
-  status,
   total,
-  placedDuringClosedHours 
 }: { 
   orderId: string; 
-  status?: string;
   total?: number;
-  placedDuringClosedHours?: boolean; 
 }) {
   const [copied, setCopied] = useState(false);
-  const { isSupported, isSubscribed, subscribeToPush, isLoading } = usePushSubscription();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(orderId);
@@ -397,91 +433,30 @@ function OrderSuccessHero({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isCancelled = ["cancelled", "declined", "cancelled_by_merchant", "booking_failed"].includes(status || "");
-
-  if (isCancelled) {
-    const formattedTotal = total ? `₹${(total / 100).toFixed(2)}` : "your payment";
-    return (
-      <div className="w-full bg-white border border-red-200/80 rounded-3xl p-8 sm:p-10 shadow-xs flex flex-col items-center text-center space-y-4 relative overflow-hidden">
-        <div className="w-14 h-14 bg-red-50 text-red-600 rounded-2xl border border-red-200/60 flex items-center justify-center shadow-2xs">
-          <XCircle className="w-8 h-8 stroke-[2]" />
-        </div>
-
-        <div className="space-y-1">
-          <div className="inline-block px-3 py-1 bg-red-50 border border-red-200 rounded-full text-[11px] font-bold text-red-700 uppercase tracking-wider mb-1">
-            Order Cancelled
-          </div>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
-            Order Cancelled & Refund Initiated
-          </h1>
-          <p className="text-xs sm:text-sm text-stone-600 max-w-md font-medium leading-relaxed">
-            We&apos;re sorry! Due to stock availability, our fulfillment team was unable to fulfill your order. An instant full refund of <strong className="text-stone-900 font-bold">{formattedTotal}</strong> has been initiated back to your original payment method.
-          </p>
-        </div>
-
-        <button 
-          type="button"
-          onClick={handleCopy}
-          className="mt-1 py-2 px-3.5 bg-stone-100 hover:bg-stone-200/80 active:bg-stone-200 transition-colors border border-stone-200/70 rounded-xl inline-flex items-center gap-2 text-xs cursor-pointer"
-        >
-          <span className="font-semibold text-stone-500">Order ID:</span>
-          <span className="font-mono font-bold text-stone-900 tracking-wide">{orderId}</span>
-          <div className="w-4 h-4 flex items-center justify-center text-stone-400">
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-          </div>
-        </button>
-      </div>
-    );
-  }
+  const formattedTotal = total ? `₹${(total / 100).toFixed(2)}` : "your payment";
 
   return (
-    <div className="w-full bg-white border border-stone-200/80 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col items-center text-center space-y-3 relative overflow-hidden">
-      <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-200/60 flex items-center justify-center shadow-2xs">
-        <CheckCircle2 className="w-7 h-7 stroke-[2]" />
+    <div className="w-full bg-white border border-red-200/80 rounded-3xl p-8 sm:p-10 shadow-xs flex flex-col items-center text-center space-y-4 relative overflow-hidden">
+      <div className="w-14 h-14 bg-red-50 text-red-600 rounded-2xl border border-red-200/60 flex items-center justify-center shadow-2xs">
+        <XCircle className="w-8 h-8 stroke-[2]" />
       </div>
 
       <div className="space-y-1">
-        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-950 tracking-tight">
-          Order Confirmed
+        <div className="inline-block px-3 py-1 bg-red-50 border border-red-200 rounded-full text-[11px] font-bold text-red-700 uppercase tracking-wider mb-1">
+          Order Cancelled
+        </div>
+        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
+          Order Cancelled & Refund Initiated
         </h1>
-        <p className="text-xs sm:text-sm text-stone-500 max-w-md font-medium leading-relaxed">
-          Thank you for choosing Hive. Your order is received and queued for 90-min dispatch across Kochi.
+        <p className="text-xs sm:text-sm text-stone-600 max-w-md font-medium leading-relaxed">
+          We&apos;re sorry! Due to stock availability, our fulfillment team was unable to fulfill your order. An instant full refund of <strong className="text-stone-900 font-bold">{formattedTotal}</strong> has been initiated back to your original payment method.
         </p>
       </div>
-
-      {placedDuringClosedHours && (
-        <div className="w-full max-w-md py-2.5 px-4 bg-amber-50 border border-amber-200/60 rounded-xl text-center text-xs space-y-0.5">
-          <span className="font-bold text-amber-900 block">
-            After-Hours Order Recorded
-          </span>
-          <span className="text-amber-700 text-[11px] block">
-            Your order has been recorded and will be dispatched first thing when 90-min delivery resumes at 9:00 AM.
-          </span>
-        </div>
-      )}
-
-      {isSupported && !isSubscribed && (
-        <div className="w-full max-w-md mt-2 mb-1 py-3.5 px-4 bg-stone-900 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-          <div className="text-left space-y-0.5">
-            <h4 className="text-xs font-bold flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Order Tracking Updates
-            </h4>
-            <p className="text-[11px] text-stone-400">Turn on notifications to track your delivery in real-time.</p>
-          </div>
-          <button
-            onClick={() => subscribeToPush()}
-            disabled={isLoading}
-            className="w-full sm:w-auto px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold rounded-xl active:scale-95 transition-all cursor-pointer whitespace-nowrap"
-          >
-            {isLoading ? "Enabling..." : "Enable Alerts"}
-          </button>
-        </div>
-      )}
 
       <button 
         type="button"
         onClick={handleCopy}
-        className="mt-1 py-1.5 px-3 bg-stone-100 hover:bg-stone-200/80 active:bg-stone-200 transition-colors border border-stone-200/70 rounded-xl inline-flex items-center gap-2 text-xs cursor-pointer"
+        className="mt-1 py-2 px-3.5 bg-stone-100 hover:bg-stone-200/80 active:bg-stone-200 transition-colors border border-stone-200/70 rounded-xl inline-flex items-center gap-2 text-xs cursor-pointer"
       >
         <span className="font-semibold text-stone-500">Order ID:</span>
         <span className="font-mono font-bold text-stone-900 tracking-wide">{orderId}</span>
