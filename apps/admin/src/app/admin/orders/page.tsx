@@ -207,7 +207,7 @@ function OrderDetailDrawer({
         onClick={onClose}
       />
       {/* Panel */}
-      <div className="relative w-full max-w-xl bg-white h-full overflow-y-auto shadow-2xl flex flex-col">
+      <div className="relative w-full max-w-full md:max-w-xl bg-white h-full overflow-y-auto shadow-2xl flex flex-col">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-hive-dark text-white px-6 py-4 flex items-center justify-between border-b border-white/10">
           <div>
@@ -826,9 +826,9 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Filters Row */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
         {/* Search */}
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative flex-1 w-full sm:max-w-sm">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -840,12 +840,12 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Status Filter */}
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="pl-8 pr-4 py-2 text-sm border border-hive-border/60 rounded-xl focus:outline-none focus:ring-1.5 focus:ring-hive-gold bg-white appearance-none"
+            className="w-full sm:w-auto pl-8 pr-4 py-2 text-sm border border-hive-border/60 rounded-xl focus:outline-none focus:ring-1.5 focus:ring-hive-gold bg-white appearance-none"
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>

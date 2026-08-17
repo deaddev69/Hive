@@ -205,13 +205,13 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
           <ArrowLeft className="w-5 h-5 text-slate-700" />
         </Link>
         <div>
-          <h1 className="text-3xl font-serif font-black text-hive-dark">Edit Boutique Profile</h1>
-          <p className="text-sm text-hive-text-muted">Update contact details, map coordinates, delivery radius, and approval verification status.</p>
+          <h1 className="text-xl sm:text-3xl font-serif font-black text-hive-dark">Edit Boutique Profile</h1>
+          <p className="text-xs sm:text-sm text-hive-text-muted">Update contact details, map coordinates, delivery radius, and approval verification status.</p>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto w-full">
-        <form onSubmit={handleSubmit} className="bg-white border border-hive-border rounded-3xl p-6 md:p-8 shadow-sm flex flex-col gap-6">
+        <form onSubmit={handleSubmit} className="bg-white border border-hive-border rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm flex flex-col gap-6">
           <h2 className="text-lg font-serif font-bold text-hive-dark pb-2 border-b border-hive-border/60 flex items-center gap-2">
             <Store className="w-5 h-5 text-hive-amber" />
             <span>Profile Editor: {boutique.boutiqueName}</span>

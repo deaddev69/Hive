@@ -228,7 +228,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Page Content Slot */}
       <main className="flex-1 overflow-x-hidden md:h-screen md:overflow-y-auto">
-        <div className="p-6 md:p-10 max-w-7xl mx-auto w-full">
+        <div className="p-4 sm:p-6 md:p-10 max-w-7xl mx-auto w-full">
           {children}
         </div>
       </main>

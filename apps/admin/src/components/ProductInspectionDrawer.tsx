@@ -307,33 +307,34 @@ export function ProductInspectionDrawer({
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/60 backdrop-blur-xs flex justify-end font-sans">
-      <div className="w-full max-w-[95vw] lg:max-w-[90vw] xl:max-w-[85vw] h-full bg-[#FCFAF8] shadow-2xl flex flex-col animate-[slideLeft_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] border-l border-stone-200">
+      <div className="w-full max-w-full md:max-w-[90vw] xl:max-w-[85vw] h-full bg-[#FCFAF8] shadow-2xl flex flex-col animate-[slideLeft_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] border-l border-stone-200">
         
         {/* TOP BAR / NAVIGATION */}
-        <div className="h-16 border-b border-stone-200/80 bg-white px-6 flex items-center justify-between shrink-0 select-none">
-          <div className="flex items-center gap-3">
+        <div className="h-16 border-b border-stone-200/80 bg-white px-3 sm:px-6 flex items-center justify-between shrink-0 select-none">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <button 
               onClick={onClose}
-              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors"
+              className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-colors shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-serif font-black text-hive-dark truncate max-w-md">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h2 className="text-xs sm:text-sm font-serif font-black text-hive-dark truncate max-w-[150px] sm:max-w-md">
                   Inspect & Edit: {product?.name}
                 </h2>
-                <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase border bg-amber-50 text-amber-700 border-amber-250">
+                <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase border bg-amber-50 text-amber-700 border-amber-250 shrink-0">
                   {product?.approvalStatus || "Pending"}
                 </span>
               </div>
-              <p className="text-[10px] text-hive-text-muted font-medium">
+              <p className="text-[10px] text-hive-text-muted font-medium truncate">
                 Uploaded by {product?.boutiqueName}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center gap-2.5">
             {/* Save Button */}
             <Button
               variant="outline"
@@ -1016,6 +1017,42 @@ export function ProductInspectionDrawer({
 
           </div>
 
+        </div>
+
+        {/* STICKY MOBILE ACTION BAR (<md) */}
+        <div className="md:hidden sticky bottom-0 left-0 right-0 z-30 bg-white border-t border-stone-200 p-3 flex items-center justify-between gap-2 shadow-lg shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleSave()}
+            disabled={saving}
+            className="flex-1 h-9 text-[11px] font-bold text-slate-700 hover:bg-slate-50 border-slate-200 flex items-center justify-center gap-1 cursor-pointer"
+          >
+            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+            Save
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRequestChanges}
+            disabled={rejecting}
+            className="flex-1 h-9 text-[11px] font-bold text-orange-650 hover:bg-orange-50 border-orange-250 flex items-center justify-center gap-1 cursor-pointer"
+          >
+            {rejecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <AlertTriangle className="w-3.5 h-3.5" />}
+            Changes
+          </Button>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleApprove}
+            disabled={approving}
+            className="flex-1 h-9 text-[11px] font-bold text-white bg-[#C59A5B] hover:bg-[#C59A5B]/90 border-transparent rounded-xl flex items-center justify-center gap-1 cursor-pointer shadow-sm"
+          >
+            {approving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+            Approve
+          </Button>
         </div>
 
       </div>

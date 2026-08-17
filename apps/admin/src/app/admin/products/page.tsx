@@ -342,14 +342,14 @@ export default function AdminProductsPage() {
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full lg:w-auto">
             {/* Searchable Boutique Dropdown */}
-            <div className="relative boutique-combobox">
+            <div className="relative boutique-combobox w-full sm:w-auto">
               <span className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider block mb-1">Boutique Search</span>
               <button
                 type="button"
                 onClick={() => setIsBoutiqueDropdownOpen(!isBoutiqueDropdownOpen)}
-                className="w-full md:w-60 px-3 py-2 border border-hive-border rounded-xl text-xs font-semibold text-hive-dark bg-white focus:outline-none flex items-center justify-between shadow-sm hover:bg-slate-50 transition-colors"
+                className="w-full sm:w-60 px-3 py-2 border border-hive-border rounded-xl text-xs font-semibold text-hive-dark bg-white focus:outline-none flex items-center justify-between shadow-sm hover:bg-slate-50 transition-colors"
               >
                 <span className="flex items-center gap-1.5 truncate">
                   <Store className="w-3.5 h-3.5 text-hive-gold shrink-0" />
@@ -359,7 +359,7 @@ export default function AdminProductsPage() {
               </button>
               
               {isBoutiqueDropdownOpen && (
-                <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-hive-border shadow-xl rounded-2xl p-2 w-full md:w-60 max-h-72 overflow-y-auto flex flex-col gap-1.5">
+                <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-hive-border shadow-xl rounded-2xl p-2 w-full sm:w-60 max-h-72 overflow-y-auto flex flex-col gap-1.5">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-hive-text-muted" />
                     <input
@@ -415,12 +415,12 @@ export default function AdminProductsPage() {
             </div>
 
             {/* Sort Dropdown */}
-            <div>
+            <div className="w-full sm:w-auto">
               <span className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider block mb-1">Sort Catalog</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="w-full md:w-48 px-3 py-2 border border-hive-border rounded-xl text-xs font-semibold text-hive-dark bg-white focus:outline-none cursor-pointer shadow-sm hover:bg-slate-50 transition-colors"
+                className="w-full sm:w-48 px-3 py-2 border border-hive-border rounded-xl text-xs font-semibold text-hive-dark bg-white focus:outline-none cursor-pointer shadow-sm hover:bg-slate-50 transition-colors"
               >
                 <option value="recently_uploaded">Recently Uploaded</option>
                 <option value="highest_risk">⚠️ Highest Risk Score</option>
@@ -431,8 +431,8 @@ export default function AdminProductsPage() {
             </div>
 
             {/* Sandbox Isolator Switch */}
-            <div className="flex items-center gap-2 mt-4 lg:mt-0">
-              <span className="text-xs font-bold text-hive-text-muted">Hide Sandbox:</span>
+            <div className="flex items-center gap-2 mt-2 sm:mt-4 lg:mt-0">
+              <span className="text-xs font-bold text-hive-text-muted shrink-0">Hide Sandbox:</span>
               <button
                 type="button"
                 onClick={() => setExcludeTestData(!excludeTestData)}
@@ -454,7 +454,7 @@ export default function AdminProductsPage() {
       </Card>
 
       {/* Filter Tabs */}
-      <div className="flex overflow-x-auto gap-2 border-b border-slate-200 pb-px font-sans">
+      <div className="flex overflow-x-auto gap-2 border-b border-slate-200 pb-1 pt-1 font-sans scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
         {[
           { key: "all", label: "All Products" },
           { key: "pending_approval", label: "Pending Approval ⏳" },

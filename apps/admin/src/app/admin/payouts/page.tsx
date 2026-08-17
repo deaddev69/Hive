@@ -156,7 +156,7 @@ export default function PayoutReconciliation() {
           />
           
           {/* Slide-over panel */}
-          <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="relative w-full max-w-full md:max-w-lg bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             {/* Drawer Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-[#FAF6F0]">
               <div className="flex items-center gap-3">

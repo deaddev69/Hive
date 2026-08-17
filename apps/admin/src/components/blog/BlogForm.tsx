@@ -391,8 +391,8 @@ export function BlogForm({ initialData, isEditing = false }: BlogFormProps) {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
                 URL Slug <span className="text-amber-500">*</span>
               </label>
-              <div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs focus-within:border-amber-500 focus-within:bg-white transition-colors">
-                <span className="text-slate-400 font-mono select-none">https://hivenow.in/blog/</span>
+              <div className="flex items-center rounded-2xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs focus-within:border-amber-500 focus-within:bg-white transition-colors overflow-hidden">
+                <span className="text-slate-400 font-mono select-none text-[10px] sm:text-xs shrink-0">https://hivenow.in/blog/</span>
                 <input
                   type="text"
                   value={slug}
@@ -401,7 +401,7 @@ export function BlogForm({ initialData, isEditing = false }: BlogFormProps) {
                     setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"));
                   }}
                   placeholder="top-10-salwar-sets-kochi"
-                  className="flex-1 bg-transparent font-mono font-medium text-slate-800 focus:outline-none pl-1"
+                  className="flex-1 min-w-0 bg-transparent font-mono font-medium text-slate-800 focus:outline-none pl-1"
                 />
               </div>
             </div>
