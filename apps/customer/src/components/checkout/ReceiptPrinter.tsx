@@ -120,16 +120,16 @@ export function ReceiptPrinterMachine({
   return (
     <div
       className={cn(
-        "relative isolate w-full overflow-hidden rounded-3xl border border-[#DDD3C0] bg-gradient-to-b from-[#F7F4EC] via-[#F2ECE0] to-[#E9E1D2] p-4 pb-7 shadow-[0_16px_36px_rgba(180,130,40,0.12)] text-stone-900",
+        "relative isolate w-full overflow-hidden rounded-3xl border border-stone-200/80 bg-[#FAF8F5] dark:bg-stone-900 p-4 pb-5 shadow-sm text-stone-900",
         className
       )}
       {...props}
     >
       {children}
-      {/* Precision Metallic Gold Beveled Paper Slit */}
+      {/* Clean Subtle Paper Slit */}
       <div
         aria-hidden="true"
-        className="absolute inset-x-6 bottom-2.5 z-40 h-2.5 rounded-full border border-[#C6BBA3] bg-gradient-to-b from-[#181614] via-[#2A2621] to-[#3D3730] shadow-inner"
+        className="absolute inset-x-6 bottom-1.5 z-40 h-1.5 rounded-full border border-stone-200 bg-stone-200/80 dark:bg-stone-800"
       />
     </div>
   );
@@ -142,7 +142,7 @@ export function ReceiptPrinterHeader({
 }: ComponentPropsWithoutRef<"div">) {
   return (
     <div
-      className={cn("relative z-10 flex items-center justify-between pb-3 px-1 text-stone-800", className)}
+      className={cn("relative z-10 flex items-center justify-between pb-2.5 px-1 text-stone-800 dark:text-stone-200", className)}
       {...props}
     >
       {children}
@@ -158,7 +158,7 @@ export function ReceiptPrinterScreen({
   return (
     <div
       className={cn(
-        "relative z-10 isolate overflow-hidden rounded-2xl border border-[#3D362D] bg-[#221F1B] p-3.5 text-stone-100 shadow-inner",
+        "relative z-10 isolate overflow-hidden rounded-2xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-950 p-3.5 text-stone-900 dark:text-white shadow-2xs",
         className
       )}
       {...props}

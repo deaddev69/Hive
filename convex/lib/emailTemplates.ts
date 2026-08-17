@@ -58,16 +58,15 @@ const baseLayout = (title: string, bodyContent: string) => `
       border: 1px solid #eef2f5;
     }
     .header {
-      background-color: #181614;
-      background: linear-gradient(180deg, #1f1c19 0%, #151311 100%);
-      padding: 28px 40px;
+      background-color: #ffffff;
+      padding: 24px 40px;
       text-align: center;
-      border-bottom: 2px solid #d97706;
+      border-bottom: 1px solid #f3f4f6;
     }
     .logo-img {
-      height: 38px;
+      height: 36px;
       width: auto;
-      max-width: 140px;
+      max-width: 150px;
       display: inline-block;
     }
     .content {
@@ -182,7 +181,7 @@ const baseLayout = (title: string, bodyContent: string) => `
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <img src="https://hivenow.in/logo-navbar.png" alt="Hive Now" class="logo-img" />
+        <img src="https://hivenow.in/hive-logo.png" alt="Hive Now" class="logo-img" />
       </div>
       <div class="content">
         ${bodyContent}
