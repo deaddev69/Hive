@@ -834,6 +834,42 @@ export const seedDefaultHomepageData = mutation({
   },
 });
 
+export const deduplicateHomepageBlocks = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const allBlocks = await ctx.db.query("experienceBlocks").collect();
+    
+    // Group blocks by experienceId + status + normalized title to detect duplicates
+    const seen = new Map<string, any>();
+    const toDelete: any[] = [];
+
+    // Sort blocks descending by _creationTime so the newest edited version is retained
+    allBlocks.sort((a, b) => b._creationTime - a._creationTime);
+
+    for (const b of allBlocks) {
+      const normTitle = (b.title || b.blockKey || "").trim().toLowerCase();
+      const groupKey = `${b.experienceId}_${b.status}_${normTitle}`;
+
+      if (seen.has(groupKey)) {
+        toDelete.push(b);
+      } else {
+        seen.set(groupKey, b);
+      }
+    }
+
+    for (const d of toDelete) {
+      await ctx.db.delete(d._id);
+    }
+
+    return {
+      totalFound: allBlocks.length,
+      deletedCount: toDelete.length,
+      remainingCount: allBlocks.length - toDelete.length,
+      deletedBlocks: toDelete.map((d) => ({ id: d._id, title: d.title, status: d.status })),
+    };
+  },
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // DUPLICATE COLLECTION & CAMPAIGN MUTATIONS
 // ─────────────────────────────────────────────────────────────────────────────
