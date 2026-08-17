@@ -127,6 +127,7 @@ export const sendOrderEmail = internalAction({
       total: order.total,
       notes: order.notes,
       pdfUrl: invoice?.pdfUrl || undefined,
+      merchantPayable: (order as any).merchantPayable ?? Math.round(order.subtotal * 0.98),
     };
 
     let subject = "";

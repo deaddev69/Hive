@@ -250,13 +250,13 @@ function OrderSuccessContent() {
               <ReceiptPrinter.Machine className="w-full">
                 <ReceiptPrinter.Header>
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-stone-300">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-300 animate-pulse shrink-0" />
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-stone-800">
                       HIVE TERMINAL
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono text-stone-400">
+                    <span className="text-[10px] font-mono font-semibold text-stone-500">
                       POS · KOCHI
                     </span>
                     {printerStage === "complete" && (
@@ -264,7 +264,7 @@ function OrderSuccessContent() {
                         type="button"
                         onClick={handleReplayPrint}
                         title="Replay Print Animation"
-                        className="p-1 rounded-md bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-amber-400 text-[10px] font-mono flex items-center gap-1 transition-colors cursor-pointer"
+                        className="p-1 rounded-md bg-stone-200/80 hover:bg-stone-300 text-stone-700 hover:text-stone-900 border border-stone-300/80 text-[10px] font-mono flex items-center gap-1 transition-colors cursor-pointer"
                       >
                         <RotateCcw className="w-3 h-3" />
                       </button>
@@ -274,7 +274,7 @@ function OrderSuccessContent() {
 
                 <ReceiptPrinter.Screen>
                   <ReceiptPrinter.Status />
-                  <div className="mt-1.5 flex items-center justify-between text-[10.5px] font-mono text-stone-400 border-t border-stone-800/80 pt-1.5">
+                  <div className="mt-1.5 flex items-center justify-between text-[10.5px] font-mono text-stone-400 border-t border-stone-700/60 pt-1.5">
                     <span className="font-bold text-stone-300">ORDER #{resolvedOrder.id}</span>
                     <span className="text-amber-400 font-bold">
                       ₹{(resolvedOrder.total / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
@@ -285,19 +285,22 @@ function OrderSuccessContent() {
 
               <ReceiptPrinter.Output className="w-full">
                 <ReceiptPrinter.Paper className="w-full text-left">
-                  {/* Receipt Header */}
-                  <div className="text-center pb-3.5 border-b border-dashed border-stone-300">
-                    <div className="inline-flex items-center justify-center gap-1 text-[11px] font-black tracking-widest text-amber-700 uppercase mb-0.5">
-                      <span>◆</span>
-                      <span>HIVE NOW</span>
-                      <span>◆</span>
-                    </div>
+                  {/* Receipt Header with Official Hive Logo */}
+                  <div className="flex flex-col items-center justify-center pb-3 border-b border-dashed border-stone-300 text-center">
+                    <Image
+                      src="/logo-navbar.png"
+                      alt="Hive Now"
+                      width={110}
+                      height={32}
+                      className="h-7 w-auto object-contain mb-1"
+                      priority
+                    />
                     <p className="text-[9.5px] text-stone-500 font-sans tracking-wide">
-                      Hive Express 90-Min Dispatch · Kochi
+                      Express 90-Min Dispatch · Kochi
                     </p>
-                    <div className="mt-2.5 text-[10px] font-mono text-stone-600 flex items-center justify-between px-1 bg-stone-100/60 rounded-md py-1">
+                    <div className="w-full mt-2 text-[10px] font-mono text-stone-600 flex items-center justify-between px-1.5 bg-stone-100/70 rounded-md py-1">
                       <span>{orderDateStr}</span>
-                      <span className="font-bold text-emerald-800 bg-emerald-100/80 px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider">
+                      <span className="font-bold text-emerald-800 bg-emerald-100/90 px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider">
                         PAID & VERIFIED
                       </span>
                     </div>

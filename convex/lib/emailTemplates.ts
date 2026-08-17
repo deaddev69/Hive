@@ -48,45 +48,42 @@ const baseLayout = (title: string, bodyContent: string) => `
       table-layout: fixed;
       background-color: #f9f9f9;
       padding: 40px 0;
-    }
-    .container {
+    }    .container {
       max-width: 600px;
       background-color: #ffffff;
       margin: 0 auto;
-      border-radius: 8px;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
       border: 1px solid #eef2f5;
     }
     .header {
-      background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-      padding: 30px 40px;
+      background-color: #181614;
+      background: linear-gradient(180deg, #1f1c19 0%, #151311 100%);
+      padding: 28px 40px;
       text-align: center;
+      border-bottom: 2px solid #d97706;
     }
-    .logo {
-      color: #f3f4f6;
-      font-size: 28px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin: 0;
-    }
-    .logo span {
-      color: #fbbf24;
+    .logo-img {
+      height: 38px;
+      width: auto;
+      max-width: 140px;
+      display: inline-block;
     }
     .content {
-      padding: 40px;
+      padding: 36px 40px;
     }
     .status-badge {
       display: inline-block;
-      padding: 6px 16px;
+      padding: 6px 14px;
       border-radius: 20px;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 700;
       background-color: #fef3c7;
-      color: #d97706;
+      color: #92400e;
       text-transform: uppercase;
-      margin-bottom: 24px;
+      letter-spacing: 0.5px;
+      margin-bottom: 20px;
     }
     h1 {
       font-size: 22px;
@@ -98,91 +95,84 @@ const baseLayout = (title: string, bodyContent: string) => `
     p {
       font-size: 15px;
       line-height: 1.6;
-      color: #4b5563;
-      margin-top: 0;
-      margin-bottom: 20px;
     }
     .divider {
       height: 1px;
-      background-color: #eef2f5;
-      margin: 30px 0;
+      background-color: #e5e7eb;
+      margin: 24px 0;
     }
     .section-title {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #9ca3af;
-      margin-bottom: 16px;
+      letter-spacing: 0.8px;
+      color: #6b7280;
+      margin-bottom: 12px;
     }
     .items-table {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 20px;
     }
-    .item-row {
-      border-bottom: 1px solid #f3f4f6;
-    }
-    .item-details {
+    .item-row td {
       padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 14px;
     }
     .item-name {
-      font-size: 15px;
       font-weight: 600;
-      color: #1f2937;
+      color: #111827;
     }
     .item-meta {
-      font-size: 13px;
+      font-size: 12px;
       color: #6b7280;
-      margin-top: 4px;
+      margin-top: 2px;
     }
     .item-price {
       text-align: right;
-      font-size: 15px;
       font-weight: 600;
       color: #111827;
-      vertical-align: middle;
     }
     .totals-table {
       width: 100%;
-      margin-top: 20px;
+      border-collapse: collapse;
+      margin-top: 10px;
     }
-    .total-row td {
+    .totals-table td {
       padding: 6px 0;
       font-size: 14px;
       color: #4b5563;
     }
     .grand-total td {
-      padding-top: 12px;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
-      color: #111827;
-      border-top: 1px solid #eef2f5;
+      color: #065f46;
+      border-top: 2px solid #e5e7eb;
+      padding-top: 12px;
     }
     .btn-container {
       text-align: center;
-      margin: 30px 0 10px;
+      margin-top: 32px;
     }
     .btn {
       display: inline-block;
       padding: 14px 28px;
-      background-color: #fbbf24;
-      color: #111827 !important;
-      font-weight: 700;
+      border-radius: 12px;
+      background-color: #181614;
+      color: #ffffff !important;
       text-decoration: none;
-      border-radius: 6px;
-      font-size: 15px;
-      box-shadow: 0 4px 6px rgba(251, 191, 36, 0.15);
-      transition: background-color 0.2s;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
     }
     .footer {
-      background-color: #f9f9f9;
-      padding: 30px 40px;
+      background-color: #fafafa;
+      padding: 24px 40px;
       text-align: center;
-      border-top: 1px solid #eef2f5;
+      border-top: 1px solid #f3f4f6;
     }
     .footer-text {
-      font-size: 13px;
+      font-size: 12px;
       color: #9ca3af;
       margin: 0;
     }
@@ -192,14 +182,14 @@ const baseLayout = (title: string, bodyContent: string) => `
   <div class="wrapper">
     <div class="container">
       <div class="header">
-        <img src="https://hivenow.in/logo-navbar.png" alt="HIVE" style="height: 32px; margin: 0 auto; display: block;" />
+        <img src="https://hivenow.in/logo-navbar.png" alt="Hive Now" class="logo-img" />
       </div>
       <div class="content">
         ${bodyContent}
       </div>
       <div class="footer">
-        <p class="footer-text">© 2026 Hive Marketplace. All rights reserved.</p>
-        <p class="footer-text" style="margin-top: 8px; font-size: 11px;">You are receiving this because of an order placed on Hive by TailorBee.</p>
+        <p class="footer-text">© 2026 Hive Marketplace (Beelyn LLP). All rights reserved.</p>
+        <p class="footer-text" style="margin-top: 6px; font-size: 11px;">Hyperlocal Fashion Aggregator · Kochi, Kerala</p>
       </div>
     </div>
   </div>
@@ -212,7 +202,7 @@ export const getNewOrderBoutiqueTemplate = (data: EmailTemplateInput) => {
     .map(
       (item) => `
     <tr class="item-row">
-      <td class="item-details">
+      <td class="item-details" style="padding: 12px 0;">
         <div class="item-name">${item.productName}</div>
         <div class="item-meta">Size: ${item.size} | Qty: ${item.quantity}</div>
       </td>
@@ -221,43 +211,50 @@ export const getNewOrderBoutiqueTemplate = (data: EmailTemplateInput) => {
     )
     .join("");
 
+  const serviceFeePaise = Math.round(data.subtotal * 0.02);
+  const netPayoutPaise = data.merchantPayable ?? (data.subtotal - serviceFeePaise);
+
   const bodyContent = `
-    <div class="status-badge" style="background-color: #dbeafe; color: #1e40af;">New Request</div>
+    <div class="status-badge" style="background-color: #fef3c7; color: #92400e;">New Order</div>
     <h1>New Order Received!</h1>
     <p>Hello <strong>${data.boutiqueName}</strong>,</p>
-    <p>A new order <strong>${data.orderNumber}</strong> has been placed containing your product(s). Please review and prepare the items for dispatch.</p>
+    <p>A new order <strong>${data.orderNumber}</strong> has been placed containing your product(s). Please prepare the items for express dispatch.</p>
     
     <div class="divider"></div>
     
-    <div class="section-title">Customer Details</div>
-    <p style="margin-bottom: 8px;"><strong>Name:</strong> ${data.customerName}</p>
-    <p style="margin-bottom: 8px;"><strong>Delivery Location:</strong><br>${data.deliveryAddress}</p>
-    ${data.notes ? `<p style="margin-bottom: 8px;"><strong>Delivery Notes:</strong> ${data.notes}</p>` : ""}
+    <div class="section-title">Delivery Destination</div>
+    <p style="margin-bottom: 6px;"><strong>Customer:</strong> ${data.customerName}</p>
+    <p style="margin-bottom: 6px;"><strong>Address:</strong><br>${data.deliveryAddress}</p>
+    ${data.notes ? `<p style="margin-bottom: 6px;"><strong>Notes:</strong> ${data.notes}</p>` : ""}
     
     <div class="divider"></div>
     
-    <div class="section-title">Order Summary</div>
+    <div class="section-title">Order Items</div>
     <table class="items-table">
       ${itemsHtml}
     </table>
     
     <table class="totals-table">
       <tr class="total-row">
-        <td>Subtotal</td>
+        <td>Items Base Total</td>
         <td style="text-align: right;">${formatCurrency(data.subtotal)}</td>
       </tr>
+      <tr class="total-row">
+        <td>Hive Service Fee (2%)</td>
+        <td style="text-align: right; color: #d97706;">-${formatCurrency(serviceFeePaise)}</td>
+      </tr>
       <tr class="grand-total">
-        <td>Potential Payout</td>
-        <td style="text-align: right;">${formatCurrency(data.merchantPayable ?? data.subtotal)}</td>
+        <td>Your Net Payout</td>
+        <td style="text-align: right; color: #065f46;">${formatCurrency(netPayoutPaise)}</td>
       </tr>
     </table>
     
     <div class="btn-container">
-      <a href="https://seller.hivenow.in/orders" class="btn" style="background-color: #1f2937; color: #ffffff !important;">Go to Dashboard</a>
+      <a href="https://seller.hivenow.in/orders" class="btn" style="background-color: #181614; color: #ffffff !important;">Open Store Dashboard</a>
     </div>
   `;
 
-  return baseLayout(`New Order Request - ${data.orderNumber}`, bodyContent);
+  return baseLayout(`New Order Received - ${data.orderNumber}`, bodyContent);
 };
 
 export const getOrderConfirmedCustomerTemplate = (data: EmailTemplateInput) => {

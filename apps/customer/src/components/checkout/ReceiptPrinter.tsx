@@ -158,7 +158,7 @@ export function ReceiptPrinterScreen({
   return (
     <div
       className={cn(
-        "relative z-10 isolate overflow-hidden rounded-2xl border border-stone-800/90 bg-[#181614] p-3.5 text-stone-200 shadow-inner",
+        "relative z-10 isolate overflow-hidden rounded-2xl border border-[#3D362D] bg-[#221F1B] p-3.5 text-stone-100 shadow-inner",
         className
       )}
       {...props}

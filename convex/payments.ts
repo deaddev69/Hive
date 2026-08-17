@@ -874,13 +874,14 @@ export async function verifyPaymentAndPlaceOrderInternal(
   const boutique = await ctx.db.get(boutiqueId) as any;
   const boutiqueName = boutique ? (boutique.boutiqueName || boutique.name || "Unknown Boutique") : "Unknown Boutique";
 
-  // Setup snapshot metrics
-  const commissionRate = boutique ? (boutique.commissionRate || 18) : 18;
-  // Commission is calculated on product revenue only (subtotal minus discount), NOT on delivery fees
+  // Setup snapshot metrics using Hive 2% partner service fee model
+  const commissionRate = boutique ? (boutique.commissionRate ?? 2) : 2;
+  // Commission is calculated on product base revenue (subtotal minus discount), NOT on delivery fees
   const commissionBase = Math.max(0, session.subtotal - (session.discount ?? 0));
-  const platformCommissionAmount = Math.floor((commissionBase * commissionRate) / 100);
-  const gstOnCommission = Math.floor((platformCommissionAmount * 18) / 100);
-  const totalPlatformDeduction = platformCommissionAmount + gstOnCommission;
+  const platformCommissionAmount = Math.round((commissionBase * commissionRate) / 100);
+  const gstOnCommission = Math.round((platformCommissionAmount * 18) / 100);
+  // Net partner payout: Base Price minus 2% Service Fee (e.g. ₹1329 - ₹26.58 = ₹1302.42)
+  const merchantPayable = Math.round(commissionBase - platformCommissionAmount);
 
   // We skip calculateDeliveryQuoteAction here because it requires an Action ctx (for fetch and runQuery), and this is a mutation.
   // The frontend already verified the delivery fee, so we just use basic defaults for snapshot metadata.
@@ -921,7 +922,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
     actualCourierCost: 0,
     commissionAmount: platformCommissionAmount,
     gstAmount: gstOnCommission,
-    merchantPayable: commissionBase - totalPlatformDeduction,
+    merchantPayable,
   };
 
   const pickupAddress = boutique ? {

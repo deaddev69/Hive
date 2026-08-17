@@ -104,7 +104,16 @@ export const sendOrderPushToBoutique = internalAction({
       return;
     }
 
-    for (const sub of subscriptions) {
+    // Deduplicate subscriptions by endpoint or FCM token to prevent duplicate notifications on the same device
+    const seenKeys = new Set<string>();
+    const uniqueSubs = subscriptions.filter((sub: any) => {
+      const key = sub.fcmToken || sub.subscription?.endpoint || String(sub._id);
+      if (!key || seenKeys.has(key)) return false;
+      seenKeys.add(key);
+      return true;
+    });
+
+    for (const sub of uniqueSubs) {
       const isNativeFcm =
         Boolean(sub.fcmToken) ||
         sub.subscription?.endpoint?.startsWith("fcm://") ||
