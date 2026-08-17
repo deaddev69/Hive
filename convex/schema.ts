@@ -2369,5 +2369,26 @@ export default defineSchema({
   })
     .index("by_oldSlug", ["oldSlug"])
     .index("by_postId", ["postId"]),
+
+  // ─── ORDER ACTIVITY (Actor Attribution) ───────────────────────────────────
+  orderActivity: defineTable({
+    orderId:     v.id("orders"),
+    boutiqueId:  v.id("boutiques"),
+    action:      v.union(
+                   v.literal("confirmed")
+                 ),
+    actorId:     v.optional(v.id("users")),          // null for system actions
+    actorRole:   v.union(
+                   v.literal("owner"),
+                   v.literal("staff"),
+                   v.literal("admin"),
+                   v.literal("system")
+                 ),
+    actorName:   v.string(),                         // Snapshot at time of action
+    actorEmail:  v.optional(v.string()),             // Snapshot at time of action
+    createdAt:   v.number(),
+  })
+    .index("by_orderId", ["orderId"])
+    .index("by_boutiqueId_createdAt", ["boutiqueId", "createdAt"]),
 });
 

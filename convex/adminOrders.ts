@@ -8,6 +8,7 @@ import { requireRole, getCurrentUserOrNull } from "./lib/auth";
 import { internal } from "./_generated/api";
 import { triggerNotification } from "./lib/notifications";
 import { markOrderFinanciallyDelivered } from "./adminFinance";
+import { recordOrderActivity } from "./lib/orderActivity";
 
 interface StatusTransitionArgs {
   oldStatus?: string;
@@ -628,6 +629,12 @@ export const getOrderDetails = query({
       },
     ];
 
+    // Fetch order activity for actor attribution
+    const activities = await ctx.db
+      .query("orderActivity")
+      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+      .collect();
+
     return {
       _id: order._id,
       orderNumber: order.orderNumber,
@@ -668,6 +675,13 @@ export const getOrderDetails = query({
       },
       items: enrichedItems,
       timeline,
+      activities: activities.map((a) => ({
+        action: a.action,
+        actorName: a.actorName,
+        actorEmail: a.actorEmail,
+        actorRole: a.actorRole,
+        createdAt: a.createdAt,
+      })),
     };
   },
 });
@@ -857,6 +871,16 @@ export const updateOrderStatus = mutation({
     if (args.status === "cancelled" && !order.cancelledAt) patch.cancelledAt = now;
 
     await ctx.db.patch(args.orderId, patch);
+
+    // Record order activity for actor attribution (admin confirmation)
+    if (args.status === "confirmed") {
+      await recordOrderActivity(ctx, {
+        orderId: args.orderId,
+        boutiqueId: order.boutiqueId,
+        action: "confirmed",
+        createdAt: now,
+      });
+    }
 
     if (args.status === "delivered") {
       await markOrderFinanciallyDelivered(ctx, args.orderId, now);

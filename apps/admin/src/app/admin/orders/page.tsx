@@ -491,6 +491,22 @@ function OrderDetailDrawer({
                       >
                         {step.label}
                       </p>
+                      {/* Actor attribution for Confirmed step */}
+                      {step.label === "Confirmed" && step.done && order.activities && (() => {
+                        const confirmActivity = order.activities.find((a: any) => a.action === "confirmed");
+                        if (!confirmActivity) return null;
+                        return (
+                          <div className="mt-1">
+                            <p className="text-[10px] font-semibold text-stone-700">
+                              {confirmActivity.actorRole === "admin" ? "Confirmed" : "Accepted"} by {confirmActivity.actorName}
+                            </p>
+                            <p className="text-[10px] text-hive-text-muted">
+                              {confirmActivity.actorRole === "owner" ? "Owner" : confirmActivity.actorRole === "admin" ? "Admin" : "Staff"}
+                              {confirmActivity.actorEmail ? ` · ${confirmActivity.actorEmail}` : ""}
+                            </p>
+                          </div>
+                        );
+                      })()}
                       {step.timestamp && (
                         <p className="text-[10px] text-hive-text-muted">
                           {new Date(step.timestamp).toLocaleString("en-IN", {

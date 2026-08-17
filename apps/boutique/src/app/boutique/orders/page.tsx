@@ -474,6 +474,24 @@ export default function BoutiqueOrders() {
                         <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider block mb-2">Order Status</span>
                         <OrderStatusBadge status={order.status} />
 
+                        {/* Acceptance attribution — compact actor badge */}
+                        {order.acceptanceActivity && (
+                          <div className="mt-2 px-2.5 py-2 bg-stone-50/80 border border-stone-200/60 rounded-xl text-left">
+                            <p className="text-[11px] font-bold text-stone-800 leading-snug">
+                              Accepted by {order.acceptanceActivity.actorName}
+                            </p>
+                            <p className="text-[10px] text-stone-500 font-medium leading-snug">
+                              {order.acceptanceActivity.actorRole === "owner" ? "Owner" : order.acceptanceActivity.actorRole === "admin" ? "Admin" : "Staff"}
+                              {" · "}
+                              {new Date(order.acceptanceActivity.createdAt).toLocaleTimeString("en-IN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                hour12: true,
+                              })}
+                            </p>
+                          </div>
+                        )}
+
                         {order.shipment && (order.shipment.providerBookingId || order.shipment.awbNumber) && (
                           <div className="mt-2.5 p-2.5 bg-stone-50/80 border border-stone-200/80 rounded-xl text-left flex flex-col gap-1 text-[11px]">
                             <div className="flex items-center justify-between text-stone-700">

@@ -18,6 +18,7 @@ import { parseMoney, formatMoney } from "./lib/money";
 import { checkKillSwitch } from "./lib/killSwitches";
 import { validateBoutiqueOperationalLimits } from "./lib/gating";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
+import { recordOrderActivity } from "./lib/orderActivity";
 import { checkServiceability } from "./lib/serviceability";
 // ─── Cart item input shape for order placement ────────────────────────────
 const cartItemArg = v.object({
@@ -914,12 +915,13 @@ export const getBoutiqueOrders = query({
     if (orders.length === 0) return [];
 
     // Batch load order items, invoices, shipments, customerProfiles, and users
-    const [itemsList, invoicesList, shipmentsList, profilesList, usersList] = await Promise.all([
+    const [itemsList, invoicesList, shipmentsList, profilesList, usersList, activityList] = await Promise.all([
       Promise.all(orders.map((o) => ctx.db.query("orderItems").withIndex("by_orderId", (q) => q.eq("orderId", o._id)).collect())),
       Promise.all(orders.map((o) => ctx.db.query("invoices").withIndex("by_order_id", (q) => q.eq("orderId", o._id)).unique())),
       Promise.all(orders.map((o) => o.shipmentId ? ctx.db.get(o.shipmentId) : null)),
       Promise.all(orders.map((o) => ctx.db.query("customerProfiles").withIndex("by_userId", (q) => q.eq("userId", o.customerId)).unique())),
-      Promise.all(orders.map((o) => ctx.db.get(o.customerId)))
+      Promise.all(orders.map((o) => ctx.db.get(o.customerId))),
+      Promise.all(orders.map((o) => ctx.db.query("orderActivity").withIndex("by_orderId", (q) => q.eq("orderId", o._id)).first())),
     ]);
 
     return orders.map((order, i) => {
@@ -952,6 +954,7 @@ export const getBoutiqueOrders = query({
         totalPayout += (base - fee) * qty;
       });
 
+      const activity = activityList[i];
       return {
         ...order,
         items,
@@ -974,6 +977,12 @@ export const getBoutiqueOrders = query({
         } : null,
         totalBasePrice,
         totalPayout,
+        acceptanceActivity: activity ? {
+          actorName: activity.actorName,
+          actorEmail: activity.actorEmail,
+          actorRole: activity.actorRole,
+          createdAt: activity.createdAt,
+        } : null,
       };
     });
   },
@@ -1350,6 +1359,16 @@ export const updateBoutiqueOrderStatus = mutation({
 
     await ctx.db.patch(args.orderId, patch);
 
+    // Record order activity for actor attribution (confirmed only for now)
+    if (args.status === "confirmed") {
+      await recordOrderActivity(ctx, {
+        orderId: args.orderId,
+        boutiqueId: order.boutiqueId,
+        action: "confirmed",
+        createdAt: now,
+      });
+    }
+
     const updatedOrder = await ctx.db.get(args.orderId);
     if (updatedOrder) {
       await handleOrderStatusChangeLedgerUpdates(ctx, updatedOrder, args.status, now);
@@ -1636,6 +1655,16 @@ export const bulkUpdateBoutiqueOrderStatus = mutation({
       if (args.status === "cancelled" && !order.cancelledAt) patch.cancelledAt = now;
 
       await ctx.db.patch(orderId, patch);
+
+      // Record order activity for actor attribution (confirmed only for now)
+      if (args.status === "confirmed") {
+        await recordOrderActivity(ctx, {
+          orderId: orderId,
+          boutiqueId: order.boutiqueId,
+          action: "confirmed",
+          createdAt: now,
+        });
+      }
 
       const updatedOrder = await ctx.db.get(orderId);
       if (updatedOrder) {
