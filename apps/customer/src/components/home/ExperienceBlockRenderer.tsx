@@ -2,10 +2,11 @@
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ProductCard } from "@/components/product/ProductCard";
 import { TrustStrip } from "@/components/trust/TrustStrip";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 import { MoodBoardGrid } from "@/components/home/MoodBoardGrid";
 import { calculateDisplayPricing } from "@/lib/pricing";
 
@@ -746,35 +747,86 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
 
   // 4. RECENTLY VIEWED / RECOMMENDED / NEW ARRIVALS
   if (block.blockType === "recentlyViewed" || block.blockType === "recommended" || block.blockType === "newArrivals") {
-    const mostLovedProducts = (block.data.products || [])
+    const isRecommended = block.blockType === "recommended";
+    const isNewArrivals = block.blockType === "newArrivals";
+    const isTwoGrid = block.renderer === "twoProductGrid";
+    const isGrid = block.renderer === "productGrid" || block.renderer === "grid";
+    const isCarousel = !isTwoGrid && !isGrid;
+    const maxItems = block.config?.maxProducts || 8;
+
+    const allProducts = (block.data.products || [])
       .filter((p: any) => p.active !== false)
       .map(mapDbProduct);
       
-    if (mostLovedProducts.length === 0) return null;
-    
-    const isRecommended = block.blockType === "recommended";
-    const isNewArrivals = block.blockType === "newArrivals";
+    if (allProducts.length === 0) return null;
+
+    const displayProducts = allProducts.slice(0, maxItems);
     const bgClass = isNewArrivals ? "bg-white" : (isRecommended ? "bg-white" : "bg-[#FAF6F0]");
     const tagText = isNewArrivals ? "FRESH ARRIVALS" : (isRecommended ? "CURATED FOR YOU" : "CUSTOMER FAVORITES");
+    const targetUrl = isNewArrivals ? "/products?sort=newest" : "/products";
     
     return (
-      <section className={`w-full ${bgClass} pt-1 pb-4 sm:pt-1.5 sm:pb-6 border-b border-hive-border/20`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-2 sm:gap-2.5 text-left">
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
-              {tagText}
-            </span>
-            <h2 className="text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
-              {block.title || (isNewArrivals ? "New on Hive" : (isRecommended ? "Recommended" : "Most Loved"))}
-            </h2>
+      <section className={`w-full ${bgClass} pt-2 pb-5 sm:pt-3 sm:pb-7 border-b border-hive-border/20`}>
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-2.5 text-left">
+          <div className="flex items-end justify-between">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
+                {tagText}
+              </span>
+              <h2 className="text-xl sm:text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
+                {block.title || (isNewArrivals ? "New on Hive" : (isRecommended ? "Recommended" : "Most Loved"))}
+              </h2>
+            </div>
+            <Link
+              href={targetUrl}
+              className="text-xs font-bold text-stone-600 hover:text-stone-900 transition-colors flex items-center gap-1 group pb-1"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-0 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">
-            {mostLovedProducts.map((product: any) => (
-              <div key={product.id} className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start">
-                <ProductCard product={product} />
+
+          {isCarousel ? (
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">
+              {displayProducts.map((product: any) => (
+                <div key={product.id} className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start">
+                  <ProductCard product={product} />
+                </div>
+              ))}
+
+              {/* Trailing View All Card */}
+              <div className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start flex flex-col justify-start">
+                <Link
+                  href={targetUrl}
+                  className="w-full aspect-[3/4] rounded-2xl border border-dashed border-stone-300 hover:border-stone-900 bg-stone-50 hover:bg-stone-100 transition-all p-4 flex flex-col items-center justify-center text-center gap-2.5 group cursor-pointer"
+                >
+                  <div className="w-9 h-9 rounded-full bg-white border border-stone-200 shadow-2xs flex items-center justify-center text-stone-700 group-hover:bg-stone-900 group-hover:text-white transition-all">
+                    <ArrowRight className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-serif font-bold text-stone-900 group-hover:underline block">
+                      Explore All
+                    </span>
+                    <p className="text-[10px] text-stone-500">
+                      {isNewArrivals ? "New In Catalog →" : "View All →"}
+                    </p>
+                  </div>
+                </Link>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : isTwoGrid ? (
+            <div className="grid grid-cols-2 gap-4 sm:gap-6 w-full max-w-3xl mx-auto">
+              {displayProducts.map((product: any) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 w-full">
+              {displayProducts.map((product: any) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
     );

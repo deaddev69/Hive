@@ -199,7 +199,7 @@ export class BlockService {
           .order("desc")
           .take(40))
           .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
-          .slice(0, block.config?.maxProducts || 12);
+          .slice(0, block.config?.maxProducts || 8);
           
         const newArrivalProducts = newArrivals
           .map((p: any) => resolvedProductsMap.get(p._id.toString()))

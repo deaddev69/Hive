@@ -126,8 +126,8 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     category: "Commerce",
     icon: Sparkles,
     description: "Automatically pulls the newest active products from the catalog.",
-    defaultConfig: { title: "Fresh on Hive", renderer: "productCarousel", config: { maxProducts: 12 } },
-    fields: ["title", "maxProducts"]
+    defaultConfig: { title: "Fresh on Hive", renderer: "productCarousel", config: { maxProducts: 8 } },
+    fields: ["title", "renderer", "maxProducts"]
   },
   {
     id: "premiumCuration",
