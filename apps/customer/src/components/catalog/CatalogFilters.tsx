@@ -45,27 +45,29 @@ export const CatalogFilters: React.FC<CatalogFiltersProps> = ({
       )}
       aria-label="Product filters"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-hive-border/60 bg-hive-cream/30">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-extrabold text-hive-dark">Filters</span>
+      {/* Header — hidden in compact mode to prevent double headers in mobile drawer */}
+      {!compact && (
+        <div className="flex items-center justify-between px-5 py-4 border-b border-hive-border/60 bg-hive-cream/30">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-extrabold text-hive-dark font-serif">Filters</span>
+            {activeCount > 0 && (
+              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-hive-gold text-hive-dark text-[10px] font-extrabold min-w-[20px]">
+                {activeCount}
+              </span>
+            )}
+          </div>
           {activeCount > 0 && (
-            <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-hive-gold text-hive-dark text-[10px] font-extrabold min-w-[20px]">
-              {activeCount}
-            </span>
+            <button
+              type="button"
+              onClick={reset}
+              className="inline-flex items-center gap-1 text-[10px] font-bold text-hive-text-muted hover:text-hive-amber transition-colors uppercase tracking-widest cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3" strokeWidth={2.5} />
+              Clear all
+            </button>
           )}
         </div>
-        {activeCount > 0 && (
-          <button
-            type="button"
-            onClick={reset}
-            className="inline-flex items-center gap-1 text-[10px] font-bold text-hive-text-muted hover:text-hive-amber transition-colors uppercase tracking-widest"
-          >
-            <RotateCcw className="w-3 h-3" strokeWidth={2.5} />
-            Clear all
-          </button>
-        )}
-      </div>
+      )}
 
       {/* Filter sections — Delivery → Price → Category */}
       <div className="flex flex-col px-5 divide-y divide-hive-border/40">

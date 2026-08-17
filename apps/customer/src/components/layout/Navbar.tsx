@@ -982,23 +982,24 @@ export const Navbar: React.FC = () => {
 
       {/* ── Full-Screen Search Overlay ────────────────────────────────── */}
       {searchOpen && (
-        <div className="absolute top-0 left-0 w-full min-h-screen bg-white dark:bg-neutral-950 z-50 flex flex-col animate-search-overlay-in font-sans pb-[64px] text-left">
+        <div className="absolute top-0 left-0 w-full min-h-screen bg-[#FCFAF7] dark:bg-neutral-950 z-50 flex flex-col animate-search-overlay-in font-sans pb-[64px] text-left">
           {/* Header row */}
-          <div className="flex items-center h-16 border-b border-gray-100 dark:border-neutral-800/60 px-4 gap-2 bg-white dark:bg-neutral-950 flex-shrink-0">
+          <div className="flex items-center h-16 border-b border-stone-200/80 dark:border-neutral-800/60 px-4 gap-2 bg-white dark:bg-neutral-950 flex-shrink-0">
             <button
               type="button"
               onClick={() => setSearchOpen(false)}
-              className="w-11 h-11 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-hive-gold hover:bg-slate-100 dark:hover:bg-neutral-900 rounded-full transition-colors cursor-pointer"
+              className="w-10 h-10 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-stone-900 hover:bg-stone-100 dark:hover:bg-neutral-900 rounded-full transition-colors cursor-pointer"
               aria-label="Back"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             
             <div className="flex-1 relative flex items-center">
+              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search..."
+                placeholder="Search collections, fabrics, styles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -1008,13 +1009,13 @@ export const Navbar: React.FC = () => {
                     setSearchOpen(false);
                   }
                 }}
-                className="w-full h-11 pl-4 pr-10 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium text-slate-800 dark:text-white placeholder-slate-400"
+                className="w-full h-11 pl-10 pr-10 rounded-2xl bg-stone-100 dark:bg-neutral-900 border border-stone-200/60 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 text-sm font-medium text-stone-900 dark:text-white placeholder-stone-400 transition-all"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  className="absolute right-3 p-1 rounded-full hover:bg-stone-200 dark:hover:bg-neutral-800 text-stone-400 hover:text-stone-600 transition-colors cursor-pointer"
                   aria-label="Clear search"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -1025,14 +1026,53 @@ export const Navbar: React.FC = () => {
 
           {/* Content area */}
           {!searchQuery.trim() ? (
-            <div className="flex-grow overflow-y-auto p-4 space-y-6 pb-20">
+            <div className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-7 pb-24">
+              {/* Recent Searches */}
+              {recentSearches.length > 0 && (
+                <div className="flex flex-col gap-2.5 text-left">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] uppercase tracking-wider text-stone-400 font-bold">
+                      Recent Searches
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRecentSearches([]);
+                        if (typeof window !== "undefined") {
+                          localStorage.removeItem("hive_recent_searches");
+                        }
+                      }}
+                      className="text-[10px] text-stone-400 hover:text-stone-600 font-semibold underline cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {recentSearches.map((recent) => (
+                      <button
+                        key={recent}
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery(recent);
+                          router.push(`/search?q=${encodeURIComponent(recent)}`);
+                          setSearchOpen(false);
+                        }}
+                        className="px-3.5 py-1.5 bg-white dark:bg-neutral-900 border border-stone-200 dark:border-neutral-800 rounded-full text-xs font-semibold text-stone-700 dark:text-stone-300 hover:border-stone-900 hover:text-stone-900 dark:hover:text-white transition-all cursor-pointer shadow-2xs"
+                      >
+                        {recent}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Trending Searches */}
               <div className="flex flex-col gap-3 text-left">
-                <span className="text-[11px] uppercase tracking-wider text-gray-400 font-medium">
+                <span className="text-[11px] uppercase tracking-wider text-stone-400 font-bold">
                   Trending Searches
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {["Sarees", "Lehengas", "Kurtis", "Bridal Wear", "Onam Collection", "Salwar Sets", "Party Wear", "Office Wear"].map((chip) => (
+                  {["Sarees", "Kurtis", "Lehengas", "Co-ords", "Festive Sets", "Party Wear", "Designer Dresses", "Handlooms"].map((chip) => (
                     <button
                       key={chip}
                       type="button"
@@ -1046,7 +1086,7 @@ export const Navbar: React.FC = () => {
                         router.push(`/search?q=${encodeURIComponent(chip)}`);
                         setSearchOpen(false);
                       }}
-                      className="px-3 py-1.5 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-850 rounded-full text-[13px] font-semibold text-slate-700 dark:text-slate-300 hover:border-hive-gold hover:text-hive-gold transition-all cursor-pointer"
+                      className="px-3.5 py-2 bg-white dark:bg-neutral-900 border border-stone-200/80 dark:border-neutral-800 rounded-2xl text-xs font-semibold text-stone-800 dark:text-stone-200 hover:border-amber-500 hover:text-amber-600 transition-all cursor-pointer shadow-2xs"
                     >
                       {chip}
                     </button>
@@ -1057,10 +1097,10 @@ export const Navbar: React.FC = () => {
               {/* Shop by Category */}
               {subcategories.length > 0 && (
                 <div className="flex flex-col gap-3 text-left">
-                  <span className="text-[11px] uppercase tracking-wider text-gray-400 font-medium">
-                    Shop by Category
+                  <span className="text-[11px] uppercase tracking-wider text-stone-400 font-bold">
+                    Curated Categories
                   </span>
-                  <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar pl-1">
+                  <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none pl-1">
                     {subcategories.map((subcat: any) => (
                       <button
                         key={subcat._id}
@@ -1071,14 +1111,14 @@ export const Navbar: React.FC = () => {
                         }}
                         className="flex flex-col items-center gap-2 flex-shrink-0 group cursor-pointer"
                       >
-                        <div className="relative w-16 h-16 rounded-full overflow-hidden border border-slate-200/80 bg-slate-50">
+                        <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-stone-200 bg-stone-100 shadow-2xs group-hover:scale-105 transition-transform duration-200">
                           <img
                             src={subcat.homepageImageUrl || subcat.imageUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80"}
                             alt={subcat.name}
                             className="w-full h-full object-cover pointer-events-none"
                           />
                         </div>
-                        <span className="text-[10px] font-bold text-slate-850 dark:text-neutral-300 text-center truncate max-w-[72px]">
+                        <span className="text-[10px] font-bold text-stone-700 dark:text-neutral-300 text-center truncate max-w-[76px]">
                           {subcat.name}
                         </span>
                       </button>

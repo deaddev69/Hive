@@ -10,11 +10,11 @@ interface OccasionFilterProps {
 }
 
 const OCCASIONS_LIST = [
-  { id: "wedding", name: "Wedding" },
-  { id: "festival", name: "Festive" },
-  { id: "workwear", name: "Office" },
-  { id: "casual", name: "Casual" },
-  { id: "party", name: "Party" },
+  { id: "wedding", name: "Wedding", icon: "✨" },
+  { id: "festival", name: "Festive", icon: "🎉" },
+  { id: "workwear", name: "Office", icon: "💼" },
+  { id: "casual", name: "Casual", icon: "🌸" },
+  { id: "party", name: "Party", icon: "🍸" },
 ];
 
 export const OccasionFilter: React.FC<OccasionFilterProps> = ({
@@ -31,7 +31,7 @@ export const OccasionFilter: React.FC<OccasionFilterProps> = ({
 
   return (
     <FilterSection title="Occasion" activeCount={selected.length}>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap gap-2 py-1">
         {OCCASIONS_LIST.map((occ) => {
           const active = selected.includes(occ.id);
           return (
@@ -40,37 +40,15 @@ export const OccasionFilter: React.FC<OccasionFilterProps> = ({
               type="button"
               onClick={() => toggle(occ.id)}
               className={cn(
-                "w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all duration-200 text-left group",
+                "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer select-none",
                 active
-                  ? "bg-hive-gold/15 border border-hive-gold/40 text-hive-amber font-bold"
-                  : "border border-transparent hover:bg-hive-comb/30 hover:border-hive-border/50 text-hive-text"
+                  ? "bg-stone-900 dark:bg-white text-white dark:text-stone-900 shadow-xs scale-[1.02]"
+                  : "bg-stone-50 dark:bg-stone-900 text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-800 hover:border-amber-400 hover:bg-stone-100"
               )}
               aria-pressed={active}
             >
-              <span className="flex items-center gap-2.5">
-                {/* Custom checkbox */}
-                <span
-                  className={cn(
-                    "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all duration-200",
-                    active
-                      ? "bg-hive-gold border-hive-amber"
-                      : "border-hive-border group-hover:border-hive-gold/60"
-                  )}
-                >
-                  {active && (
-                    <svg viewBox="0 0 10 8" className="w-2.5 h-2" fill="none">
-                      <path
-                        d="M1 4l2.5 2.5L9 1"
-                        stroke="white"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </span>
-                <span className="text-xs font-medium">{occ.name}</span>
-              </span>
+              <span className="text-xs">{occ.icon}</span>
+              <span>{occ.name}</span>
             </button>
           );
         })}

@@ -53,8 +53,8 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
 
   return (
     <FilterSection title="Category" activeCount={selected.length}>
-      <div className="flex flex-col gap-1.5">
-        {dbCategories.map((cat) => {
+      <div className="flex flex-wrap gap-2 py-1">
+        {dbCategories.map((cat: any) => {
           const active = selected.includes(cat._id);
           return (
             <button
@@ -62,37 +62,14 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
               type="button"
               onClick={() => toggle(cat._id)}
               className={cn(
-                "w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-all duration-200 text-left group",
+                "inline-flex items-center px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer select-none",
                 active
-                  ? "bg-hive-gold/15 border border-hive-gold/40 text-hive-amber font-bold"
-                  : "border border-transparent hover:bg-hive-comb/30 hover:border-hive-border/50 text-hive-text"
+                  ? "bg-stone-900 dark:bg-white text-white dark:text-stone-900 shadow-xs scale-[1.02]"
+                  : "bg-stone-50 dark:bg-stone-900 text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-800 hover:border-amber-400 hover:bg-stone-100"
               )}
               aria-pressed={active}
             >
-              <span className="flex items-center gap-2.5">
-                {/* Custom checkbox */}
-                <span
-                  className={cn(
-                    "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-all duration-200",
-                    active
-                      ? "bg-hive-gold border-hive-amber"
-                      : "border-hive-border group-hover:border-hive-gold/60"
-                  )}
-                >
-                  {active && (
-                    <svg viewBox="0 0 10 8" className="w-2.5 h-2" fill="none">
-                      <path
-                        d="M1 4l2.5 2.5L9 1"
-                        stroke="white"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  )}
-                </span>
-                <span className="text-xs font-medium">{cat.name}</span>
-              </span>
+              <span>{cat.name}</span>
             </button>
           );
         })}

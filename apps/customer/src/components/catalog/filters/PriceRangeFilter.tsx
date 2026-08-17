@@ -52,10 +52,10 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
         {/* Dual-range slider */}
         <div className="relative h-6 flex items-center">
           {/* Track */}
-          <div className="absolute w-full h-1.5 rounded-full bg-hive-border/60">
+          <div className="absolute w-full h-1.5 rounded-full bg-stone-200 dark:bg-stone-800">
             {/* Active track fill */}
             <div
-              className="absolute h-full rounded-full bg-gradient-to-r from-hive-amber to-hive-gold"
+              className="absolute h-full rounded-full bg-stone-900 dark:bg-amber-500"
               style={{ left: `${minPct}%`, right: `${100 - maxPct}%` }}
             />
           </div>
@@ -70,15 +70,15 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
             onChange={handleMin}
             className="absolute w-full h-full appearance-none bg-transparent cursor-pointer
                        [&::-webkit-slider-thumb]:appearance-none
-                       [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5
+                       [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:h-4.5
                        [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white
-                       [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-hive-gold
-                       [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:shadow-hive-gold/30
+                       [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-stone-900
+                       [&::-webkit-slider-thumb]:shadow-md
                        [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing
                        [&::-webkit-slider-thumb]:transition-all
-                       [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5
+                       [&::-moz-range-thumb]:w-4.5 [&::-moz-range-thumb]:h-4.5
                        [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white
-                       [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-hive-gold"
+                       [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-stone-900"
             aria-label="Minimum price"
             style={{ zIndex: minPrice > PRICE_MAX - 1000 ? 5 : 3 }}
           />
@@ -93,15 +93,15 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
             onChange={handleMax}
             className="absolute w-full h-full appearance-none bg-transparent cursor-pointer
                        [&::-webkit-slider-thumb]:appearance-none
-                       [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5
+                       [&::-webkit-slider-thumb]:w-4.5 [&::-webkit-slider-thumb]:h-4.5
                        [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white
-                       [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-hive-gold
-                       [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:shadow-hive-gold/30
+                       [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-stone-900
+                       [&::-webkit-slider-thumb]:shadow-md
                        [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing
                        [&::-webkit-slider-thumb]:transition-all
-                       [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5
+                       [&::-moz-range-thumb]:w-4.5 [&::-moz-range-thumb]:h-4.5
                        [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white
-                       [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-hive-gold"
+                       [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-stone-900"
             aria-label="Maximum price"
             style={{ zIndex: 4 }}
           />
@@ -113,6 +113,7 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
             { label: "Under ₹2k", min: 0, max: 2000 },
             { label: "₹2k–₹5k", min: 2000, max: 5000 },
             { label: "₹5k–₹10k", min: 5000, max: 10000 },
+            { label: "₹10k+", min: 10000, max: 50000 },
           ].map((preset) => {
             const active = minPrice === preset.min && maxPrice === preset.max;
             return (
@@ -120,10 +121,10 @@ export const PriceRangeFilter: React.FC<PriceRangeFilterProps> = ({
                 key={preset.label}
                 type="button"
                 onClick={() => onChange(preset.min, preset.max)}
-                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all duration-200 ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-200 cursor-pointer ${
                   active
-                    ? "bg-hive-gold text-hive-dark border-hive-amber"
-                    : "bg-white border-hive-border/60 text-hive-text hover:border-hive-gold/40"
+                    ? "bg-stone-900 dark:bg-white text-white dark:text-stone-900 border-stone-900 dark:border-white shadow-xs"
+                    : "bg-stone-50 dark:bg-stone-900 border-stone-200/80 dark:border-stone-800 text-stone-700 dark:text-stone-300 hover:border-amber-400 hover:bg-stone-100"
                 }`}
               >
                 {preset.label}

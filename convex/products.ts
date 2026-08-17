@@ -1997,8 +1997,7 @@ export const searchProductsInternal = internalQuery({
       return { products: [], totalMatchedCount: 0 };
     }
 
-    // Use Convex full-text search index — reads only matching products (up to 50)
-    // instead of collecting every active product in the table.
+    // Use Convex full-text search index for product names
     const approvedBoutiqueIds = await getApprovedBoutiqueIds(ctx);
     const searchResults = await ctx.db
       .query("products")
@@ -2007,21 +2006,62 @@ export const searchProductsInternal = internalQuery({
       )
       .take(50);
 
+    // Also match boutiques/sellers by name, description, area, or city
+    const allApprovedBoutiques = await ctx.db
+      .query("boutiques")
+      .withIndex("by_status", (q) => q.eq("status", "APPROVED"))
+      .collect();
+
+    const matchedBoutiques = allApprovedBoutiques.filter((b: any) => {
+      const bName = (b.boutiqueName || "").toLowerCase();
+      const bDesc = (b.description || "").toLowerCase();
+      const bCity = (b.city || "").toLowerCase();
+      const bArea = (b.area || "").toLowerCase();
+      const bAddress = (b.address || "").toLowerCase();
+      return (
+        bName.includes(term) ||
+        bDesc.includes(term) ||
+        bCity.includes(term) ||
+        bArea.includes(term) ||
+        bAddress.includes(term)
+      );
+    });
+
+    const matchedBoutiqueIds = new Set(matchedBoutiques.map((b: any) => b._id.toString()));
+
+    // If any boutiques/sellers matched, fetch their active products
+    let boutiqueProducts: any[] = [];
+    for (const bId of matchedBoutiqueIds) {
+      const bProds = await ctx.db
+        .query("products")
+        .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", bId as any))
+        .filter((q) => q.eq(q.field("active"), true))
+        .take(40);
+      boutiqueProducts.push(...bProds);
+    }
+
+    // Combine full-text search products + seller-matched products
+    const combinedProductMap = new Map<string, any>();
+    for (const p of searchResults) combinedProductMap.set(p._id.toString(), p);
+    for (const p of boutiqueProducts) combinedProductMap.set(p._id.toString(), p);
+
+    const candidateProducts = Array.from(combinedProductMap.values());
+
     // Filter to approved boutiques only, and exclude hidden/unapproved products
-    const activeProductsFromApprovedBoutiques = searchResults.filter(
-      (p) =>
+    const activeProductsFromApprovedBoutiques = candidateProducts.filter(
+      (p: any) =>
         approvedBoutiqueIds.has(p.boutiqueId) &&
         p.adminHidden !== true &&
         (!p.approvalStatus || p.approvalStatus === "approved")
     );
 
-    // Fetch categories (small table — kept as-is)
+    // Fetch categories
     const categories = await ctx.db.query("categories").collect();
-    const categoriesMap = new Map(categories.map((c) => [c._id, c]));
+    const categoriesMap = new Map(categories.map((c: any) => [c._id, c]));
 
-    // Batch-fetch only boutiques referenced by search result products (not all boutiques)
+    // Batch-fetch boutiques referenced by search result products
     const uniqueBoutiqueIds = Array.from(
-      new Set(activeProductsFromApprovedBoutiques.map((p) => p.boutiqueId.toString()))
+      new Set(activeProductsFromApprovedBoutiques.map((p: any) => p.boutiqueId.toString()))
     );
     const boutiqueFetches: any[] = await Promise.all(
       uniqueBoutiqueIds.map((id) => ctx.db.get(id as any))
@@ -2032,16 +2072,21 @@ export const searchProductsInternal = internalQuery({
 
     // Match criteria and compute relevance score (case-insensitive)
     const scoredProducts = activeProductsFromApprovedBoutiques
-      .map((p) => {
+      .map((p: any) => {
         const category = categoriesMap.get(p.categoryId);
         const boutique = boutiquesMap.get(p.boutiqueId.toString());
 
-        const productName = p.name.toLowerCase();
-        const categoryName = category?.name.toLowerCase() || "";
-        const boutiqueName = boutique?.boutiqueName.toLowerCase() || "";
-        const description = p.description.toLowerCase();
+        const productName = (p.name || "").toLowerCase();
+        const categoryName = (category?.name || "").toLowerCase();
+        const boutiqueName = (boutique?.boutiqueName || "").toLowerCase();
+        const description = (p.description || "").toLowerCase();
 
         let score = 0;
+
+        // If product belongs to an explicitly matched seller
+        if (matchedBoutiqueIds.has(p.boutiqueId.toString())) {
+          score += 150;
+        }
 
         // 1. Name Match
         if (productName === term) {
@@ -2050,7 +2095,7 @@ export const searchProductsInternal = internalQuery({
           score += 80;
         } else {
           const nameWords = productName.split(/[^a-z0-9]+/);
-          if (nameWords.some((word) => word.startsWith(term))) {
+          if (nameWords.some((word: string) => word.startsWith(term))) {
             score += 60;
           } else if (term.length >= 3 && productName.includes(term)) {
             score += 30;
@@ -2064,24 +2109,24 @@ export const searchProductsInternal = internalQuery({
           score += 40;
         } else {
           const catWords = categoryName.split(/[^a-z0-9]+/);
-          if (catWords.some((word) => word.startsWith(term))) {
+          if (catWords.some((word: string) => word.startsWith(term))) {
             score += 30;
           } else if (term.length >= 3 && categoryName.includes(term)) {
             score += 15;
           }
         }
 
-        // 3. Boutique Match
+        // 3. Boutique/Seller Match
         if (boutiqueName === term) {
-          score += 40;
+          score += 70;
         } else if (boutiqueName.startsWith(term)) {
-          score += 30;
+          score += 50;
         } else {
           const boutiqueWords = boutiqueName.split(/[^a-z0-9]+/);
           if (boutiqueWords.some((word: string) => word.startsWith(term))) {
-            score += 20;
+            score += 35;
           } else if (term.length >= 3 && boutiqueName.includes(term)) {
-            score += 10;
+            score += 20;
           }
         }
 
@@ -2096,7 +2141,7 @@ export const searchProductsInternal = internalQuery({
         const tags = (p as any).tags;
         if (Array.isArray(tags)) {
           tags.forEach((tag: string) => {
-            const lowerTag = tag.toLowerCase();
+            const lowerTag = (tag || "").toLowerCase();
             if (lowerTag === term) {
               score += 25;
             } else if (lowerTag.startsWith(term)) {
@@ -2109,38 +2154,38 @@ export const searchProductsInternal = internalQuery({
 
         return { product: p, score };
       })
-      .filter((item) => item.score > 0);
+      .filter((item: any) => item.score > 0);
 
     // Sort by score descending, then by creation date descending
-    scoredProducts.sort((a, b) => {
+    scoredProducts.sort((a: any, b: any) => {
       if (b.score !== a.score) {
         return b.score - a.score;
       }
       return b.product.createdAt - a.product.createdAt;
     });
 
-    let matched = scoredProducts.map((item) => item.product);
+    let matched = scoredProducts.map((item: any) => item.product);
 
-    // Filter by location if coordinates are provided — use already-fetched boutique map
+    // Filter by location if coordinates are provided
     if (args.userLat !== undefined && args.userLng !== undefined) {
       const deliverableBoutiqueIds = new Set(
         [...boutiquesMap.values()]
-          .filter((b) => {
+          .filter((b: any) => {
             const bLat = b.latitude;
             const bLng = b.longitude;
             if (bLat === undefined || bLng === undefined) return false;
             const dist = haversineKm(args.userLat!, args.userLng!, bLat, bLng);
             return dist <= b.deliveryRadiusKm;
           })
-          .map((b) => b._id)
+          .map((b: any) => b._id)
       );
 
-      matched = matched.filter((p) => deliverableBoutiqueIds.has(p.boutiqueId));
+      matched = matched.filter((p: any) => deliverableBoutiqueIds.has(p.boutiqueId));
     }
 
     const enriched = await enrichProducts(ctx, matched);
     const activeEnriched = enriched.filter(
-      (p) => p.active && p.boutique && p.boutique.verified && getTotalStock(p.stockBySize) > 0
+      (p: any) => p.active && p.boutique && getTotalStock(p.stockBySize) > 0
     );
 
     return {

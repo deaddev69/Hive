@@ -212,18 +212,18 @@ function SearchContent() {
 
           {/* Large Search Box in page */}
           <div className="w-full max-w-xl relative">
-             <input
+            <Search className="w-4.5 h-4.5 text-stone-400 absolute left-4 top-1/2 -translate-y-1/2" />
+            <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search collections, fabrics, styles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-12 pr-12 rounded-xl bg-white border border-slate-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium text-slate-800 placeholder-slate-400 transition-all duration-200"
+              className="w-full h-12 pl-11 pr-12 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 text-sm font-medium text-stone-900 dark:text-white placeholder-stone-400 transition-all"
             />
-            <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
             {searchTerm && (
               <button
                 onClick={handleClear}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-hive-text-muted hover:text-hive-dark p-1 hover:bg-hive-cream/80 rounded-full transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 dark:hover:text-white p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors cursor-pointer"
                 aria-label="Clear search"
               >
                 <X className="w-4 h-4" />
