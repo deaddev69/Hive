@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSessionStore } from "@/context/SessionContext";
 import { useRouter } from "next/navigation";
 import { navigateToSignIn } from "@/lib/auth-redirect";
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { toast } from "@hive/utils";
 import { LoadingState } from "@hive/ui";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
@@ -27,16 +27,17 @@ import {
   Phone,
   Mail,
   Calendar,
-  Shield,
   Loader2,
   ShoppingBag,
   Heart,
   Bell,
   Settings,
-  ArrowRight,
   HelpCircle,
   LogOut,
   Navigation,
+  MessageCircle,
+  ArrowUpRight,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { ReservationStatusCard } from "@/components/reservation/ReservationStatusCard";
@@ -50,12 +51,6 @@ function toTitleCase(str?: string): string {
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
-}
-
-function LabelIcon({ label }: { label: string }) {
-  if (label === "Work") return <Briefcase className="w-3.5 h-3.5" />;
-  if (label === "Other") return <Bookmark className="w-3.5 h-3.5" />;
-  return <Home className="w-3.5 h-3.5" />;
 }
 
 function formatAddressDisplay(addr: Address): string {
@@ -99,6 +94,9 @@ type AddressFormData = {
   landmark: string;
   phone: string;
   isDefault: boolean;
+  lat?: number;
+  lng?: number;
+  formattedAddress?: string;
 };
 
 const EMPTY_FORM: AddressFormData = {
@@ -124,12 +122,12 @@ function Field({
 } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="flex flex-col gap-1.5 text-left">
-      <label className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">
+      <label className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
         {label}
       </label>
       <input
         {...inputProps}
-        className="w-full h-11 px-4 rounded-xl border border-[#1c1917]/[0.08] bg-[#FAF8F4]/30 text-xs font-semibold text-[#1C1917] placeholder:text-stone-300 focus:outline-none focus:ring-1 focus:ring-[#1C1917] focus:border-[#1C1917] transition-all"
+        className="w-full h-11 px-4 rounded-xl border border-stone-200 bg-white text-xs font-semibold text-stone-900 placeholder:text-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900 focus:border-stone-900 transition-all"
       />
     </div>
   );
@@ -149,15 +147,15 @@ function DeleteConfirm({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-[#1C1917]/25 backdrop-blur-[2px]" onClick={onCancel} />
-      <div className="relative z-10 bg-white rounded-2xl border border-[#1c1917]/[0.08] shadow-2xl p-6 max-w-sm w-full flex flex-col gap-5 text-left animate-in fade-in zoom-in-95 duration-200">
+      <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-[2px]" onClick={onCancel} />
+      <div className="relative z-10 bg-white rounded-2xl border border-stone-200 shadow-2xl p-6 max-w-sm w-full flex flex-col gap-5 text-left animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0 mt-0.5">
             <AlertTriangle className="w-5 h-5 text-red-500" />
           </div>
           <div>
-            <h3 className="font-serif font-bold text-[#1C1917]">Delete Address?</h3>
-            <p className="text-xs text-[#78716C] mt-1 leading-relaxed">
+            <h3 className="font-serif font-bold text-stone-900">Delete Address?</h3>
+            <p className="text-xs text-stone-500 mt-1 leading-relaxed">
               This will permanently remove your <strong>{address.label}</strong> address.
             </p>
           </div>
@@ -165,7 +163,7 @@ function DeleteConfirm({
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 h-11 rounded-xl border border-[#1c1917]/[0.08] text-xs font-bold text-[#78716C] hover:bg-stone-50 transition-colors cursor-pointer"
+            className="flex-1 h-11 rounded-xl border border-stone-200 text-xs font-bold text-stone-600 hover:bg-stone-50 transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -200,54 +198,50 @@ function AddressCard({
 }) {
   return (
     <div
-      className={`relative bg-[#FFFFFF] border rounded-xl p-6 flex flex-col justify-between min-h-[190px] transition-all duration-300 ${address.isDefault
-          ? "border-[#1C1917] shadow-sm"
-          : "border-[#1c1917]/[0.08] hover:border-[#1c1917]/20"
-        }`}
+      className={`relative bg-white border rounded-2xl p-5 flex flex-col justify-between min-h-[180px] transition-all duration-300 ${
+        address.isDefault
+          ? "border-stone-900 shadow-sm ring-1 ring-stone-900/5"
+          : "border-stone-200/80 hover:border-stone-300 shadow-2xs"
+      }`}
     >
-      <div className="space-y-4">
+      <div className="space-y-3.5">
         {/* Top row: Label & Default Indicator */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-[#78716C] bg-[#1c1917]/[0.04] px-2 py-0.5 rounded">
-              {address.label}
-            </span>
-          </div>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-stone-600 bg-stone-100 px-2.5 py-0.5 rounded-full">
+            {address.label}
+          </span>
           {address.isDefault && (
-            <span className="flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-widest text-[#D97706] bg-[#FAF8F4] border border-[#1c1917]/[0.08] px-2.5 py-0.5 rounded-full">
-              <Star className="w-2.5 h-2.5 fill-[#D97706] text-[#D97706]" />
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full">
+              <Star className="w-2.5 h-2.5 fill-amber-700 text-amber-700" />
               Default
             </span>
           )}
         </div>
 
         {/* Clean Hierarchy: Name, Phone, Address */}
-        <div className="space-y-2 text-left">
-          {/* Recipient Name */}
-          <h4 className="text-sm font-medium text-[#1C1917]">{toTitleCase(userName)}</h4>
+        <div className="space-y-1.5 text-left">
+          <h4 className="text-sm font-semibold text-stone-900">{toTitleCase(userName)}</h4>
 
-          {/* Phone */}
-          <div className="flex items-center gap-1.5 text-xs text-[#78716C]">
+          <div className="flex items-center gap-1.5 text-xs text-stone-500">
             <Phone className="w-3.5 h-3.5 stroke-[1.5]" />
             <span>{address.phone || "No phone added"}</span>
           </div>
 
-          {/* Address */}
-          <div className="flex items-start gap-1.5 text-xs text-[#78716C] pt-1">
-            <MapPin className="w-3.5 h-3.5 stroke-[1.5] mt-0.5 flex-shrink-0" />
+          <div className="flex items-start gap-1.5 text-xs text-stone-600 pt-0.5">
+            <MapPin className="w-3.5 h-3.5 stroke-[1.5] mt-0.5 flex-shrink-0 text-stone-400" />
             <p className="leading-relaxed">{formatAddressDisplay(address)}</p>
           </div>
         </div>
       </div>
 
       {/* Action Row */}
-      <div className="flex items-center justify-between pt-4 border-t border-[#1c1917]/[0.06] mt-4">
+      <div className="flex items-center justify-between pt-3.5 border-t border-stone-100 mt-4">
         <div>
           {!address.isDefault && (
             <button
               onClick={onSetDefault}
               disabled={settingDefault}
-              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#D97706] hover:text-[#F5A623] transition-colors disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 hover:text-amber-900 transition-colors disabled:opacity-50 cursor-pointer"
             >
               {settingDefault ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -258,16 +252,16 @@ function AddressCard({
             </button>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3.5">
           <button
             onClick={onEdit}
-            className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#78716C] hover:text-[#1C1917] transition-colors cursor-pointer"
+            className="text-[10px] font-bold uppercase tracking-wider text-stone-600 hover:text-stone-900 transition-colors cursor-pointer"
           >
             Edit
           </button>
           <button
             onClick={onDelete}
-            className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-red-500 hover:text-red-755 transition-colors cursor-pointer"
+            className="text-[10px] font-bold uppercase tracking-wider text-stone-400 hover:text-red-600 transition-colors cursor-pointer"
           >
             Delete
           </button>
@@ -362,33 +356,32 @@ function AddressFormModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div
-        className="absolute inset-0 bg-[#1C1917]/25 backdrop-blur-[2px] transition-opacity duration-300"
+        className="absolute inset-0 bg-stone-900/40 backdrop-blur-[2px] transition-opacity duration-300"
         onClick={onClose}
       />
 
-      <div className="relative z-10 w-full sm:max-w-xl bg-white rounded-t-3xl sm:rounded-2xl border border-[#1c1917]/[0.08] shadow-2xl overflow-y-auto max-h-[90vh] animate-in fade-in slide-in-from-bottom-5 duration-300">
-        <div className="px-6 py-5 border-b border-[#1c1917]/[0.08] flex items-center justify-between">
+      <div className="relative z-10 w-full sm:max-w-xl bg-white rounded-t-3xl sm:rounded-2xl border border-stone-200 shadow-2xl overflow-y-auto max-h-[90vh] animate-in fade-in slide-in-from-bottom-5 duration-300">
+        <div className="px-6 py-5 border-b border-stone-100 flex items-center justify-between">
           <div className="flex flex-col text-left">
-            <h3 className="text-base font-serif font-bold text-[#1C1917]">
+            <h3 className="text-base font-serif font-bold text-stone-900">
               {initial.houseNumber || initial.line1 ? "Edit Address" : "Set Delivery Location"}
             </h3>
-            <p className="text-xs text-[#78716C] mt-0.5">
+            <p className="text-xs text-stone-500 mt-0.5">
               Pin your location on Google Maps and enter building details
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#FAF8F4] hover:bg-[#1c1917]/[0.04] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center transition-colors cursor-pointer"
           >
-            <X className="w-4 h-4 text-[#78716C]" />
+            <X className="w-4 h-4 text-stone-600" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 text-left">
-
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-widest">
+              <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
                 1. Pin Location on Map
               </span>
               <button
@@ -422,7 +415,7 @@ function AddressFormModal({
               />
             </div>
 
-            <div className="p-3 bg-[#FAF8F5] border border-stone-200/70 rounded-xl text-left w-full space-y-1">
+            <div className="p-3 bg-stone-50 border border-stone-200/70 rounded-xl text-left w-full space-y-1">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                 <p className="text-xs font-bold text-stone-900 truncate">
@@ -436,12 +429,12 @@ function AddressFormModal({
           </div>
 
           <div className="space-y-4 pt-2 border-t border-stone-100">
-            <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-widest block">
+            <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">
               2. Building & Receiver Information
             </span>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
                 Address Type
               </label>
               <div className="flex gap-2.5">
@@ -450,12 +443,12 @@ function AddressFormModal({
                     key={opt}
                     type="button"
                     onClick={() => setForm((p) => ({ ...p, label: opt }))}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${form.label === opt
-                        ? "bg-[#1C1917] text-[#FAF8F5] border-[#1C1917]"
-                        : "bg-white text-[#78716C] border-[#1c1917]/[0.08] hover:border-[#1c1917]/20"
-                      }`}
+                    className={`flex-1 h-10 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      form.label === opt
+                        ? "bg-stone-900 text-white shadow-xs"
+                        : "border border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
+                    }`}
                   >
-                    <LabelIcon label={opt} />
                     {opt}
                   </button>
                 ))}
@@ -463,90 +456,67 @@ function AddressFormModal({
             </div>
 
             <Field
-              label="House / Flat / Building *"
-              placeholder="e.g. Flat 4B, Sunshine Apartments"
+              label="Flat / House / Building"
               value={form.houseNumber}
               onChange={set("houseNumber")}
-              required
+              placeholder="e.g. Flat 4B, Skyline Ivy"
             />
 
             <Field
-              label="Street / Area *"
-              placeholder="e.g. MG Road, Panampilly Nagar"
+              label="Area / Street / Locality"
               value={form.line1}
               onChange={set("line1")}
+              placeholder="e.g. Panampilly Nagar Main Road"
               required
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <Field
-                label="City *"
-                placeholder="City"
+                label="City"
                 value={form.city}
                 onChange={set("city")}
+                placeholder="Kochi"
                 required
               />
               <Field
-                label="State *"
-                placeholder="State"
-                value={form.state}
-                onChange={set("state")}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field
-                label="Pincode *"
-                placeholder="6-digit pincode"
+                label="Pincode"
                 value={form.pincode}
                 onChange={set("pincode")}
-                inputMode="numeric"
-                maxLength={6}
+                placeholder="682036"
                 required
-              />
-              <Field
-                label="Landmark (optional)"
-                placeholder="e.g. Near Metro Station"
-                value={form.landmark}
-                onChange={set("landmark")}
               />
             </div>
 
             <Field
-              label="Contact Phone Number *"
-              placeholder="e.g. +91 98765 43210"
-              value={form.phone}
-              onChange={set("phone")}
-              required
+              label="Landmark (Optional)"
+              value={form.landmark}
+              onChange={set("landmark")}
+              placeholder="e.g. Near Coffee Spot"
             />
 
-            <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-[#1c1917]/[0.08] hover:border-[#1c1917]/20 transition-colors">
-              <div
-                className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${form.isDefault
-                    ? "bg-[#1C1917] border-[#1C1917]"
-                    : "bg-white border-[#1c1917]/[0.08]"
-                  }`}
-              >
-                {form.isDefault && <Check className="w-3 h-3 text-[#FAF8F5]" />}
-              </div>
-              <div className="flex flex-col text-left">
-                <span className="text-xs font-bold text-[#1C1917]">Set as default address</span>
-                <span className="text-[10px] text-[#78716C] mt-0.5">Used by default during checkout</span>
-              </div>
+            <Field
+              label="Contact Phone for Delivery"
+              value={form.phone}
+              onChange={set("phone")}
+              placeholder="+91 98075 76986"
+              type="tel"
+            />
+
+            <label className="flex items-center gap-2.5 cursor-pointer pt-1">
               <input
                 type="checkbox"
-                className="sr-only"
                 checked={form.isDefault}
                 onChange={set("isDefault")}
+                className="w-4 h-4 rounded text-stone-900 border-stone-300 focus:ring-stone-900"
               />
+              <span className="text-xs font-semibold text-stone-700">Set as default delivery address</span>
             </label>
           </div>
 
           <button
             type="submit"
             disabled={saving}
-            className="w-full h-12 bg-[#1C1917] hover:bg-[#1c1917]/90 text-[#F5A623] rounded-xl font-bold text-xs uppercase tracking-widest active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer"
+            className="w-full h-12 rounded-xl bg-stone-900 text-white font-bold text-xs uppercase tracking-wider hover:bg-stone-800 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer mt-2"
           >
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -563,7 +533,7 @@ function AddressFormModal({
   );
 }
 
-// ── Overview Tab ───────────────────────────────────────────────────────────────
+// ── Overview Tab (Shopping Hub & Personal Details) ───────────────────────────
 function OverviewTab({
   addresses,
   user,
@@ -573,15 +543,13 @@ function OverviewTab({
   user: any;
   setActiveTab: (tab: NavId) => void;
 }) {
-  const router = useRouter();
-  const { token, logout } = useSessionStore();
+  const { token } = useSessionStore();
   const updateDisplayName = useMutation(api.users.updateProfileDisplayName);
   const updatePhone = useMutation(api.users.updateProfilePhone);
 
   const [prefPhone, setPrefPhone] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameVal, setNameVal] = useState("");
-
   const [isEditingPhone, setIsEditingPhone] = useState(false);
   const [phoneVal, setPhoneVal] = useState("");
 
@@ -603,9 +571,8 @@ function OverviewTab({
       if (storedPhone) {
         setPrefPhone(storedPhone);
         setPhoneVal(storedPhone);
-        // Automatically sync local stored phone to Convex DB
         updatePhone({ phone: storedPhone, token: token || undefined }).catch(err =>
-          console.error("Auto-sync phone to Convex failed:", err)
+          console.error("Auto-sync phone failed:", err)
         );
       }
     }
@@ -620,36 +587,114 @@ function OverviewTab({
       await updatePhone({ phone: trimmed, token: token || undefined });
       toast.success("Phone number updated successfully");
     } catch (err: any) {
-      console.error("Failed to update phone number in Convex database:", err);
-      toast.error(err.message || "Failed to save phone number to database");
+      console.error("Failed to update phone number:", err);
+      toast.error(err.message || "Failed to save phone number");
     }
   };
 
   return (
-    <div className="flex flex-col gap-10 text-left animate-fadeIn">
-      {/* ── SECTION 1 — WELCOME HEADER (Desktop Only) ── */}
-      <section className="hidden lg:block space-y-2 pb-2">
-        <h1 className="text-3xl font-serif font-light text-[#1C1917] leading-tight">
-          Welcome back, {toTitleCase(user?.name?.split(" ")[0]) || "Athul"} 👋
-        </h1>
+    <div className="flex flex-col gap-8 text-left animate-fadeIn">
+      {/* ── 1. QUICK SHOPPING ESSENTIALS TILES ── */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">
+          Shopping Essentials
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {/* Orders */}
+          <Link
+            href="/orders"
+            className="p-4 bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl shadow-2xs transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between group cursor-pointer"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-stone-100 group-hover:bg-amber-50 text-stone-800 group-hover:text-amber-800 flex items-center justify-center transition-colors">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-semibold text-stone-900 group-hover:text-amber-900 transition-colors">
+                  My Orders
+                </h4>
+                <p className="text-xs text-stone-500">Past purchases & live receipts</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors" />
+          </Link>
+
+          {/* Delivery Addresses */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("addresses")}
+            className="p-4 bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl shadow-2xs transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between group cursor-pointer text-left"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-stone-100 group-hover:bg-amber-50 text-stone-800 group-hover:text-amber-800 flex items-center justify-center transition-colors">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-semibold text-stone-900 group-hover:text-amber-900 transition-colors">
+                  Delivery Addresses
+                </h4>
+                <p className="text-xs text-stone-500">
+                  {addresses.length} saved location{addresses.length === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors" />
+          </button>
+
+          {/* Fitting Reservations */}
+          <button
+            type="button"
+            onClick={() => setActiveTab("reservations")}
+            className="p-4 bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl shadow-2xs transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between group cursor-pointer text-left"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-stone-100 group-hover:bg-amber-50 text-stone-800 group-hover:text-amber-800 flex items-center justify-center transition-colors">
+                <Calendar className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-semibold text-stone-900 group-hover:text-amber-900 transition-colors">
+                  Boutique Reservations
+                </h4>
+                <p className="text-xs text-stone-500">In-store try-on bookings</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors" />
+          </button>
+
+          {/* Wishlist */}
+          <Link
+            href="/wishlist"
+            className="p-4 bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl shadow-2xs transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between group cursor-pointer"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-stone-100 group-hover:bg-rose-50 text-stone-800 group-hover:text-rose-700 flex items-center justify-center transition-colors">
+                <Heart className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="text-sm font-semibold text-stone-900 group-hover:text-rose-900 transition-colors">
+                  Saved Wishlist
+                </h4>
+                <p className="text-xs text-stone-500">Curated pieces & favorites</p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors" />
+          </Link>
+        </div>
       </section>
 
-      {/* ── SECTION 6 — PROFILE DETAILS (Single Elegant Container) ── */}
-      <section className="space-y-4 text-left">
-        <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Profile Details</h3>
-
-        <div className="bg-white border border-[#1c1917]/[0.08] rounded-xl divide-y divide-[#1c1917]/[0.06] shadow-sm overflow-hidden">
-
-          {/* Field 1: Full Name */}
-          <div
-            id="profile-name-card"
-            className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-left transition-colors duration-200 hover:bg-stone-50/30"
-          >
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#78716C]">Full Name</span>
+      {/* ── 2. PERSONAL DETAILS CARD ── */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">
+          Personal Information
+        </h3>
+        <div className="bg-white border border-stone-200/80 rounded-2xl divide-y divide-stone-100 shadow-2xs overflow-hidden">
+          {/* Full Name */}
+          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors hover:bg-stone-50/50">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Full Name</span>
               {!isEditingName && (
-                <div className="text-xs font-semibold text-[#1C1917]">
-                  {user?.name || <span className="text-stone-300 italic font-normal">No name added</span>}
+                <div className="text-sm font-semibold text-stone-900">
+                  {user?.name || <span className="text-stone-400 italic font-normal">Add your name</span>}
                 </div>
               )}
             </div>
@@ -660,8 +705,9 @@ function OverviewTab({
                   if (!nameVal.trim()) return;
                   try {
                     await updateDisplayName({ displayName: nameVal, token: token || undefined });
+                    toast.success("Name updated");
                   } catch (err) {
-                    console.error("Failed to update display name:", err);
+                    console.error("Failed to update name:", err);
                   }
                   setIsEditingName(false);
                 }}
@@ -671,12 +717,12 @@ function OverviewTab({
                   type="text"
                   value={nameVal}
                   onChange={(e) => setNameVal(e.target.value)}
-                  className="bg-[#FAF8F4]/30 border border-[#1c1917]/[0.1] rounded px-3 py-1.5 text-xs font-semibold text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#1C1917] flex-1 sm:w-64"
+                  className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 flex-1 sm:w-56"
                   autoFocus
                 />
                 <button
                   type="submit"
-                  className="px-3 py-1.5 bg-[#1C1917] text-white rounded text-[10px] font-bold uppercase tracking-wider hover:bg-stone-850 cursor-pointer"
+                  className="px-3 py-1.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 cursor-pointer"
                 >
                   Save
                 </button>
@@ -686,7 +732,7 @@ function OverviewTab({
                     setNameVal(user?.name || "");
                     setIsEditingName(false);
                   }}
-                  className="px-2 py-1.5 border border-[#1c1917]/[0.15] text-[#78716C] rounded text-[10px] font-bold uppercase hover:bg-stone-50 cursor-pointer"
+                  className="px-2.5 py-1.5 border border-stone-200 text-stone-600 rounded-xl text-xs font-bold hover:bg-stone-50 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -694,31 +740,28 @@ function OverviewTab({
             ) : (
               <button
                 onClick={() => setIsEditingName(true)}
-                className="text-[10px] font-bold uppercase tracking-widest text-[#78716C] hover:text-[#1C1917] transition-colors cursor-pointer self-start sm:self-center"
+                className="text-xs font-bold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer self-start sm:self-center"
               >
                 {user?.name ? "Edit" : "Add name →"}
               </button>
             )}
           </div>
 
-          {/* Field 2: Email */}
-          <div className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-left transition-colors duration-200 hover:bg-stone-50/30">
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#78716C]">Email</span>
-              <div className="text-xs font-semibold text-[#1C1917] break-all">{user?.email || "—"}</div>
+          {/* Email */}
+          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors hover:bg-stone-50/50">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Email Address</span>
+              <div className="text-sm font-semibold text-stone-900 break-all">{user?.email || "—"}</div>
             </div>
           </div>
 
-          {/* Field 3: Phone */}
-          <div
-            id="profile-phone-card"
-            className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-left transition-colors duration-200 hover:bg-stone-50/30"
-          >
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#78716C]">Phone Number</span>
+          {/* Phone */}
+          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors hover:bg-stone-50/50">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Phone Number</span>
               {!isEditingPhone && (
-                <div className="text-xs font-semibold text-[#1C1917]">
-                  {prefPhone || <span className="text-stone-300 italic font-normal">No phone added</span>}
+                <div className="text-sm font-semibold text-stone-900">
+                  {prefPhone || <span className="text-stone-400 italic font-normal">Add phone number</span>}
                 </div>
               )}
             </div>
@@ -732,15 +775,15 @@ function OverviewTab({
                 className="flex items-center gap-2 w-full sm:w-auto"
               >
                 <input
-                  type="text"
+                  type="tel"
                   value={phoneVal}
                   onChange={(e) => setPhoneVal(e.target.value)}
-                  className="bg-[#FAF8F4]/30 border border-[#1c1917]/[0.1] rounded px-3 py-1.5 text-xs font-semibold text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#1C1917] flex-1 sm:w-64"
+                  className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 flex-1 sm:w-56"
                   autoFocus
                 />
                 <button
                   type="submit"
-                  className="px-3 py-1.5 bg-[#1C1917] text-white rounded text-[10px] font-bold uppercase tracking-wider hover:bg-stone-850 cursor-pointer"
+                  className="px-3 py-1.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 cursor-pointer"
                 >
                   Save
                 </button>
@@ -750,7 +793,7 @@ function OverviewTab({
                     setPhoneVal(prefPhone);
                     setIsEditingPhone(false);
                   }}
-                  className="px-2 py-1.5 border border-[#1c1917]/[0.15] text-[#78716C] rounded text-[10px] font-bold uppercase hover:bg-stone-50 cursor-pointer"
+                  className="px-2.5 py-1.5 border border-stone-200 text-stone-600 rounded-xl text-xs font-bold hover:bg-stone-50 cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -758,31 +801,38 @@ function OverviewTab({
             ) : (
               <button
                 onClick={() => setIsEditingPhone(true)}
-                className="text-[10px] font-bold uppercase tracking-widest text-[#78716C] hover:text-[#1C1917] transition-colors cursor-pointer self-start sm:self-center"
+                className="text-xs font-bold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer self-start sm:self-center"
               >
-                {prefPhone ? "Edit" : "Add phone number →"}
+                {prefPhone ? "Edit" : "Add phone →"}
               </button>
             )}
           </div>
+        </div>
+      </section>
 
-          {/* Field 4: Sign Out */}
-          <div className="p-5 flex items-center justify-between gap-4 transition-colors duration-200 hover:bg-stone-50/30">
-            <div className="space-y-0.5 text-left">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#78716C]">Session Control</span>
-              <div className="text-xs font-semibold text-[#78716C]">Sign out of your account on this device</div>
-            </div>
-            <button
-              onClick={async () => {
-                await logout();
-                router.push("/");
-              }}
-              className="px-4 py-2 border border-red-200 hover:bg-red-50 text-red-500 font-bold text-[10px] uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Sign Out
-            </button>
+      {/* ── 3. CONCIERGE & SUPPORT CARD ── */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">
+          Concierge & Support
+        </h3>
+        <div className="bg-white border border-stone-200/80 rounded-2xl p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h4 className="text-sm font-semibold text-stone-900 flex items-center gap-2">
+              <MessageCircle className="w-4 h-4 text-emerald-600" /> WhatsApp Client Concierge
+            </h4>
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Assistance with styling, boutique sizes, and instant 90-min dispatch queries.
+            </p>
           </div>
-
+          <a
+            href="https://wa.me/917356019103"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs shrink-0 cursor-pointer"
+          >
+            <span>Chat on WhatsApp</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </a>
         </div>
       </section>
     </div>
@@ -793,8 +843,8 @@ function OverviewTab({
 function AddressesTab({ userName }: { userName: string }) {
   const { token } = useSessionStore();
   const addresses = useQuery(api.addresses.list, { token: token || undefined }) as Address[] | undefined;
-  const addAddress = useAction(api.addresses.add);
-  const updateAddress = useAction(api.addresses.update);
+  const addAddress = useMutation(api.addresses.create);
+  const updateAddress = useMutation(api.addresses.update);
   const removeAddress = useMutation(api.addresses.remove);
   const setDefaultAddress = useMutation(api.addresses.setDefault);
 
@@ -823,6 +873,7 @@ function AddressesTab({ userName }: { userName: string }) {
         token: token || undefined,
       });
       setShowForm(false);
+      toast.success("Address added successfully");
     } finally {
       setSaving(false);
     }
@@ -848,6 +899,7 @@ function AddressesTab({ userName }: { userName: string }) {
         token: token || undefined,
       });
       setEditTarget(null);
+      toast.success("Address updated successfully");
     } finally {
       setSaving(false);
     }
@@ -859,6 +911,7 @@ function AddressesTab({ userName }: { userName: string }) {
     try {
       await removeAddress({ addressId: deleteTarget._id, token: token || undefined });
       setDeleteTarget(null);
+      toast.success("Address removed");
     } finally {
       setDeleting(false);
     }
@@ -868,6 +921,7 @@ function AddressesTab({ userName }: { userName: string }) {
     setSettingDefaultId(id);
     try {
       await setDefaultAddress({ addressId: id, token: token || undefined });
+      toast.success("Default address updated");
     } finally {
       setSettingDefaultId(null);
     }
@@ -876,7 +930,7 @@ function AddressesTab({ userName }: { userName: string }) {
   if (addresses === undefined) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-[#78716C]" />
+        <Loader2 className="w-6 h-6 animate-spin text-stone-400" />
       </div>
     );
   }
@@ -900,15 +954,15 @@ function AddressesTab({ userName }: { userName: string }) {
 
   return (
     <div className="flex flex-col gap-6 text-left animate-fadeIn">
-      <div className="flex justify-between items-center border-b border-[#1c1917]/[0.08] pb-4">
+      <div className="flex justify-between items-center border-b border-stone-200/80 pb-4">
         <div>
-          <h2 className="text-xl font-serif font-medium text-[#1C1917]">Delivery Addresses</h2>
-          <p className="text-xs text-[#78716C] mt-1">Manage physical locations for courier hand-offs.</p>
+          <h2 className="text-xl font-serif font-medium text-stone-900">Delivery Addresses</h2>
+          <p className="text-xs text-stone-500 mt-0.5">Saved locations for express dispatch.</p>
         </div>
 
         <button
           onClick={() => setShowForm(true)}
-          className="h-10 px-4 rounded-lg bg-[#1C1917] text-[#FAF8F4] hover:bg-[#1c1917]/90 font-medium text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+          className="h-10 px-4 rounded-xl bg-stone-900 text-white hover:bg-stone-800 font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
           Add Address
@@ -916,19 +970,19 @@ function AddressesTab({ userName }: { userName: string }) {
       </div>
 
       {addresses.length === 0 && (
-        <div className="text-center py-16 bg-white border border-[#1c1917]/[0.08] rounded-xl flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-[#FAF8F4] border border-[#1c1917]/[0.08] flex items-center justify-center">
-            <MapPin className="w-5 h-5 text-[#78716C]" />
+        <div className="text-center py-16 bg-white border border-stone-200/80 rounded-2xl flex flex-col items-center gap-3 shadow-2xs">
+          <div className="w-12 h-12 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-stone-500" />
           </div>
-          <p className="font-serif font-medium text-[#1C1917]">No saved addresses</p>
-          <p className="text-xs text-[#78716C] max-w-xs leading-relaxed">
-            Add a shipping location to speed up delivery bookings and checkout.
+          <p className="font-serif font-medium text-stone-900">No saved addresses</p>
+          <p className="text-xs text-stone-500 max-w-xs leading-relaxed">
+            Add your primary shipping location for 1-tap 90-min checkout.
           </p>
         </div>
       )}
 
       {addresses.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {addresses.map((addr) => (
             <AddressCard
               key={addr._id}
@@ -973,28 +1027,6 @@ function AddressesTab({ userName }: { userName: string }) {
   );
 }
 
-// ── Notifications Tab Component ──────────────────────────────────────────────
-function NotificationsTab() {
-  return (
-    <div className="flex flex-col gap-6 text-left animate-fadeIn">
-      <div className="border-b border-[#1c1917]/[0.08] pb-4">
-        <h2 className="text-xl font-serif font-medium text-[#1C1917]">Notifications</h2>
-        <p className="text-xs text-[#78716C] mt-1">Stay updated with order logs and new collections.</p>
-      </div>
-
-      <div className="text-center py-20 bg-white border border-[#1c1917]/[0.08] rounded-xl flex flex-col items-center gap-3 shadow-sm">
-        <div className="w-12 h-12 rounded-full bg-[#FAF8F4] border border-[#1c1917]/[0.08] flex items-center justify-center">
-          <Bell className="w-5 h-5 text-[#78716C]" />
-        </div>
-        <p className="font-serif font-medium text-[#1C1917]">No new notifications</p>
-        <p className="text-xs text-[#78716C] max-w-xs leading-relaxed">
-          We'll let you know when new collections and order updates arrive.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // ── Reservations Tab Component ───────────────────────────────────────────────
 function ReservationsTab() {
   const { token } = useSessionStore();
@@ -1002,23 +1034,23 @@ function ReservationsTab() {
 
   return (
     <div className="flex flex-col gap-6 text-left animate-fadeIn">
-      <div className="border-b border-[#1c1917]/[0.08] pb-4">
-        <h2 className="text-xl font-serif font-medium text-[#1C1917]">My Reservations</h2>
-        <p className="text-xs text-[#78716C] mt-1">Track your pending reservations and payments.</p>
+      <div className="border-b border-stone-200/80 pb-4">
+        <h2 className="text-xl font-serif font-medium text-stone-900">Boutique Reservations</h2>
+        <p className="text-xs text-stone-500 mt-0.5">In-store try-on bookings and fitting holds.</p>
       </div>
 
       {reservations === undefined ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-[#78716C]" />
+          <Loader2 className="w-6 h-6 animate-spin text-stone-400" />
         </div>
       ) : reservations.length === 0 ? (
-        <div className="text-center py-20 bg-white border border-[#1c1917]/[0.08] rounded-xl flex flex-col items-center gap-3 shadow-sm">
-          <div className="w-12 h-12 rounded-full bg-[#FAF8F4] border border-[#1c1917]/[0.08] flex items-center justify-center">
-            <Calendar className="w-5 h-5 text-[#78716C]" />
+        <div className="text-center py-16 bg-white border border-stone-200/80 rounded-2xl flex flex-col items-center gap-3 shadow-2xs">
+          <div className="w-12 h-12 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center">
+            <Calendar className="w-5 h-5 text-stone-500" />
           </div>
-          <p className="font-serif font-medium text-[#1C1917]">No reservations found</p>
-          <p className="text-xs text-[#78716C] max-w-xs leading-relaxed">
-            Reserve items for tomorrow when a boutique is closed.
+          <p className="font-serif font-medium text-stone-900">No active reservations</p>
+          <p className="text-xs text-stone-500 max-w-xs leading-relaxed">
+            Reserve pieces online to try on in person at verified Kochi boutiques.
           </p>
         </div>
       ) : (
@@ -1034,109 +1066,80 @@ function ReservationsTab() {
 
 // ── Settings Tab Component ───────────────────────────────────────────────────
 function SettingsTab() {
-  const { logout } = useSessionStore();
-  const router = useRouter();
   const [notifEmail, setNotifEmail] = useState(true);
-  const [notifSMS, setNotifSMS] = useState(false);
-  const [privacyShare, setPrivacyShare] = useState(true);
-
+  const [notifSMS, setNotifSMS] = useState(true);
   const { isSupported, isSubscribed, isLoading, subscribeToPush } = usePushSubscription();
 
   return (
     <div className="flex flex-col gap-6 text-left animate-fadeIn">
-      <div className="border-b border-[#1c1917]/[0.08] pb-4">
-        <h2 className="text-xl font-serif font-medium text-[#1C1917]">Settings</h2>
-        <p className="text-xs text-[#78716C] mt-1">Manage your notification and privacy configurations.</p>
+      <div className="border-b border-stone-200/80 pb-4">
+        <h2 className="text-xl font-serif font-medium text-stone-900">Preferences & Alerts</h2>
+        <p className="text-xs text-stone-500 mt-0.5">Control how you receive delivery updates and order status.</p>
       </div>
 
-      <div className="bg-white border border-[#1c1917]/[0.08] rounded-xl divide-y divide-[#1c1917]/[0.08] overflow-hidden shadow-sm">
-
+      <div className="bg-white border border-stone-200/80 rounded-2xl divide-y divide-stone-100 overflow-hidden shadow-2xs">
         {/* Push Notifications Section */}
-        <div className="p-5 flex items-center justify-between gap-4">
+        <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
           <div className="space-y-0.5">
-            <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wide flex items-center gap-2">
-              <Bell className="w-3.5 h-3.5" /> Push Notifications
+            <h4 className="text-sm font-semibold text-stone-900 flex items-center gap-2">
+              <Bell className="w-4 h-4 text-stone-500" /> Push Notifications
             </h4>
-            <p className="text-xs text-[#78716C]">Receive flash sale alerts and order updates on this device</p>
+            <p className="text-xs text-stone-500">Live order status and dispatch updates on this device</p>
           </div>
           {isSupported ? (
             <button
               onClick={() => {
                 if (!isSubscribed && !isLoading) {
                   subscribeToPush().then((success) => {
-                    if (success) toast.success("Push Notifications Enabled!");
+                    if (success) toast.success("Push Notifications Enabled");
                   });
                 }
               }}
               disabled={isLoading || isSubscribed}
-              className={`w-10 h-6 rounded-full p-0.5 transition-colors ${isSubscribed ? "bg-[#1C1917] flex justify-end opacity-70 cursor-not-allowed" : "bg-[#1c1917]/[0.08] flex justify-start cursor-pointer hover:bg-[#1c1917]/20"
-                }`}
+              className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
+                isSubscribed ? "bg-stone-900 flex justify-end opacity-80" : "bg-stone-200 flex justify-start"
+              }`}
             >
-              <span className="w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200 flex items-center justify-center">
-                {isLoading && <Loader2 className="w-3 h-3 text-[#1C1917] animate-spin" />}
+              <span className="w-5 h-5 rounded-full bg-white shadow-xs transition-all duration-200 flex items-center justify-center">
+                {isLoading && <Loader2 className="w-3 h-3 text-stone-900 animate-spin" />}
               </span>
             </button>
           ) : (
-            <span className="text-[10px] font-bold uppercase text-red-500 bg-red-50 px-2 py-1 rounded">Not Supported</span>
+            <span className="text-[10px] font-bold uppercase text-stone-400 bg-stone-100 px-2 py-1 rounded">
+              Not Supported
+            </span>
           )}
         </div>
 
-        <div className="p-5 flex items-center justify-between gap-4">
+        {/* WhatsApp & SMS */}
+        <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
           <div className="space-y-0.5">
-            <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wide">Communication Preferences</h4>
-            <p className="text-xs text-[#78716C]">Receive order invoices and receipts via email</p>
-          </div>
-          <button
-            onClick={() => setNotifEmail(!notifEmail)}
-            className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${notifEmail ? "bg-[#1C1917] flex justify-end" : "bg-[#1c1917]/[0.08] flex justify-start"
-              }`}
-          >
-            <span className="w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200" />
-          </button>
-        </div>
-
-        <div className="p-5 flex items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wide">SMS / WhatsApp</h4>
-            <p className="text-xs text-[#78716C]">Receive delivery ETA and driver contacts on phone SMS</p>
+            <h4 className="text-sm font-semibold text-stone-900">WhatsApp Order Updates</h4>
+            <p className="text-xs text-stone-500">Receive dispatch ETA and driver contacts on WhatsApp</p>
           </div>
           <button
             onClick={() => setNotifSMS(!notifSMS)}
-            className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${notifSMS ? "bg-[#1C1917] flex justify-end" : "bg-[#1c1917]/[0.08] flex justify-start"
-              }`}
+            className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
+              notifSMS ? "bg-stone-900 flex justify-end" : "bg-stone-200 flex justify-start"
+            }`}
           >
-            <span className="w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200" />
+            <span className="w-5 h-5 rounded-full bg-white shadow-xs transition-all duration-200" />
           </button>
         </div>
 
-        <div className="p-5 flex items-center justify-between gap-4">
+        {/* Email Invoices */}
+        <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
           <div className="space-y-0.5">
-            <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wide">Privacy Settings</h4>
-            <p className="text-xs text-[#78716C]">Permit local boutiques to read profile measurements for alterations</p>
+            <h4 className="text-sm font-semibold text-stone-900">Email Invoices & Receipts</h4>
+            <p className="text-xs text-stone-500">Receive digital invoices for every completed order</p>
           </div>
           <button
-            onClick={() => setPrivacyShare(!privacyShare)}
-            className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${privacyShare ? "bg-[#1C1917] flex justify-end" : "bg-[#1c1917]/[0.08] flex justify-start"
-              }`}
+            onClick={() => setNotifEmail(!notifEmail)}
+            className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
+              notifEmail ? "bg-stone-900 flex justify-end" : "bg-stone-200 flex justify-start"
+            }`}
           >
-            <span className="w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200" />
-          </button>
-        </div>
-
-        <div className="p-5 flex items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <h4 className="text-xs font-bold text-[#1C1917] uppercase tracking-wide">Sign Out</h4>
-            <p className="text-xs text-[#78716C]">Disconnect this session from your current device</p>
-          </div>
-          <button
-            onClick={async () => {
-              await logout();
-              router.push("/");
-            }}
-            className="px-4 py-2 border border-red-200 hover:bg-red-50 text-red-500 font-bold text-[10px] uppercase tracking-widest rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            Sign Out
+            <span className="w-5 h-5 rounded-full bg-white shadow-xs transition-all duration-200" />
           </button>
         </div>
       </div>
@@ -1144,12 +1147,12 @@ function SettingsTab() {
   );
 }
 
-// ── Main Account Page ──────────────────────────────────────────────────────────
+// ── Navigation Tabs ──────────────────────────────────────────────────────────
 const NAVIGATION_ITEMS = [
-  { id: "overview", label: "Overview" },
-  { id: "addresses", label: "Addresses" },
-  { id: "reservations", label: "My Reservations" },
-  { id: "settings", label: "Settings" },
+  { id: "overview", label: "Overview", icon: User },
+  { id: "addresses", label: "Addresses", icon: MapPin },
+  { id: "reservations", label: "Reservations", icon: Calendar },
+  { id: "settings", label: "Settings", icon: Settings },
 ] as const;
 
 type NavId = (typeof NAVIGATION_ITEMS)[number]["id"];
@@ -1166,7 +1169,7 @@ export default function AccountPage() {
 
   if (isLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAF8F4]">
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5]">
         <LoadingState message="Loading your account..." variant="full" />
       </div>
     );
@@ -1177,15 +1180,10 @@ export default function AccountPage() {
 
 function AccountPageContent() {
   const [activeTab, setActiveTab] = useState<NavId>("overview");
-  const { user, token } = useSessionStore();
+  const { user, token, logout } = useSessionStore();
   const router = useRouter();
 
   const addresses = useQuery(api.addresses.list, { token: token || undefined }) as Address[] || [];
-
-  const createdYear = useMemo(() => {
-    if (!user?.createdAt) return 2026;
-    return new Date(user.createdAt).getFullYear();
-  }, [user]);
 
   // Monogram initials for profile avatar
   const initials = useMemo(() => {
@@ -1198,122 +1196,81 @@ function AccountPageContent() {
       .toUpperCase();
   }, [user]);
 
-  const handleNavClick = (tab: typeof NAVIGATION_ITEMS[number]) => {
-    const route = (tab as any).route;
-    if (route) {
-      router.push(route);
-    } else {
-      setActiveTab(tab.id);
-    }
+  const handleSignOut = async () => {
+    await logout();
+    router.push("/");
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4] text-[#1C1917] font-sans pb-24 antialiased selection:bg-[#F5A623]/20">
-
-      {/* Mobile Top Profile Identity (compact layout visible only on mobile) */}
-      <div className="lg:hidden bg-white border-b border-[#1c1917]/[0.08] px-6 pt-6 pb-4 text-left">
-        <h2 className="text-xl font-serif font-light text-[#1C1917] leading-tight">
-          Welcome back, {toTitleCase(user?.name?.split(" ")[0]) || "Athul"} 👋
-        </h2>
-      </div>
-
-      {/* Mobile Navigation Pills sticky container (replaces vertical list) */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-[#1c1917]/[0.08] px-6 py-3 flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory lg:hidden">
-        {NAVIGATION_ITEMS.map((tab) => {
-          const isTabActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => handleNavClick(tab)}
-              className={`snap-center flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${isTabActive
-                  ? "bg-[#1C1917] border-[#1C1917] text-[#FAF8F4]"
-                  : "bg-white border-[#1c1917]/[0.08] text-[#78716C] hover:text-[#1C1917]"
-                }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 lg:pt-10 flex flex-col lg:flex-row gap-12 relative items-stretch">
-
-        {/* ── LEFT PROFILE RAIL ── (hidden on mobile) */}
-        <aside className="hidden lg:flex w-full lg:w-[320px] flex-shrink-0 flex-col justify-between border-b lg:border-b-0 lg:border-r border-[#1c1917]/[0.08] pb-8 lg:pb-0 lg:pr-10 text-left">
-          <div className="space-y-8 sticky top-24">
-
-            {/* Identity card */}
-            <div className="space-y-4">
-              <div className="w-20 h-20 rounded-full bg-[#FAF8F4] border border-[#F5A623] flex items-center justify-center shadow-sm select-none">
-                <span className="font-serif text-2xl font-light text-[#1C1917] tracking-wider">
-                  {initials}
-                </span>
-              </div>
-              <div className="space-y-1">
-                <h2 className="text-xl font-serif font-medium text-[#1C1917] tracking-wide">
-                  {toTitleCase(user?.name) || "Athul Krishna"}
-                </h2>
-              </div>
+    <div className="min-h-screen bg-[#FAF8F5] text-stone-900 font-sans pb-24 antialiased selection:bg-amber-100">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10">
+        
+        {/* ── TOP IDENTITY CARD (Clean & Luxury) ── */}
+        <div className="bg-white border border-stone-200/80 rounded-3xl p-5 sm:p-7 shadow-2xs mb-6 text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#F5F2EB] border border-stone-200/80 flex items-center justify-center shadow-2xs select-none shrink-0">
+              <span className="font-serif text-xl sm:text-2xl font-normal text-stone-900 tracking-wider">
+                {initials}
+              </span>
             </div>
-
-            {/* Sidebar navigation */}
-            <nav className="flex flex-col gap-1 border-t border-[#1c1917]/[0.08] pt-6">
-              {NAVIGATION_ITEMS.map((tab) => {
-                const isTabActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => handleNavClick(tab)}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all w-full cursor-pointer text-left ${isTabActive
-                        ? "bg-white text-[#1C1917] font-medium border border-[#1c1917]/[0.08] shadow-sm"
-                        : "text-[#78716C] hover:bg-white/40 hover:text-[#1C1917]"
-                      }`}
-                  >
-                    <span>{tab.label}</span>
-                    {!(tab as any).route && <ChevronRight className="w-3.5 h-3.5 text-[#78716C]" />}
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Support Card widget */}
-            <div className="bg-white border border-[#1c1917]/[0.08] rounded-xl p-5 shadow-sm space-y-2.5">
-              <div className="flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-[#78716C]" />
-                <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-[#78716C]">Need Help?</h5>
-              </div>
-
-              <div className="flex flex-col gap-1 text-xs">
-                <a
-                  href="tel:+917356019103"
-                  className="font-bold text-[#1C1917] hover:text-[#F5A623] transition-colors"
-                >
-                  📞 +91 73560 19103
-                </a>
-                <a
-                  href="mailto:support@hivenow.in"
-                  className="font-medium text-[#78716C] hover:text-[#1C1917] transition-colors"
-                >
-                  ✉️ support@hivenow.in
-                </a>
-              </div>
-
-              <p className="text-[10px] text-[#78716C] leading-normal font-medium">
-                Helpline active Mon–Sun, 9 AM – 9 PM.
+            <div className="space-y-1">
+              <h1 className="text-xl sm:text-2xl font-serif font-normal text-stone-900">
+                {toTitleCase(user?.name) || "Athul"}
+              </h1>
+              <p className="text-xs text-stone-500 font-mono sm:font-sans">
+                {user?.phone || user?.email || "Hyperlocal Fashion Account"}
               </p>
             </div>
-
           </div>
-        </aside>
 
-        {/* ── RIGHT MAIN CONTENT AREA ── */}
-        <main className="flex-1 max-w-[900px] min-h-[60vh] flex flex-col gap-10">
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            <Link
+              href="/orders"
+              className="h-9 px-3.5 rounded-xl border border-stone-200 hover:border-stone-300 bg-white hover:bg-stone-50 text-xs font-bold text-stone-800 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <ShoppingBag className="w-3.5 h-3.5 text-stone-500" />
+              <span>Orders</span>
+            </Link>
+            <Link
+              href="/wishlist"
+              className="h-9 px-3.5 rounded-xl border border-stone-200 hover:border-stone-300 bg-white hover:bg-stone-50 text-xs font-bold text-stone-800 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <Heart className="w-3.5 h-3.5 text-rose-500" />
+              <span>Wishlist</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* ── LUXURY TAB NAVIGATION STRIP ── */}
+        <div className="bg-white border border-stone-200/80 rounded-2xl p-1.5 shadow-2xs flex items-center gap-1 mb-8 overflow-x-auto no-scrollbar">
+          {NAVIGATION_ITEMS.map((tab) => {
+            const isTabActive = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 min-w-[100px] h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  isTabActive
+                    ? "bg-stone-900 text-white shadow-xs"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isTabActive ? "text-white" : "text-stone-400"}`} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── ACTIVE TAB CONTENT ── */}
+        <main className="min-h-[400px]">
           {activeTab === "overview" && (
             <OverviewTab addresses={addresses} user={user} setActiveTab={setActiveTab} />
           )}
 
           {activeTab === "addresses" && (
-            <AddressesTab userName={user?.name || "Athul Krishna"} />
+            <AddressesTab userName={user?.name || "Athul"} />
           )}
 
           {activeTab === "reservations" && (
@@ -1323,37 +1280,23 @@ function AccountPageContent() {
           {activeTab === "settings" && (
             <SettingsTab />
           )}
-
-          {/* Support Card at bottom on mobile */}
-          <div className="bg-white border border-[#1c1917]/[0.08] rounded-xl p-6 shadow-sm space-y-3 lg:hidden mt-4">
-            <div className="flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-[#78716C]" />
-              <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-[#78716C]">Need Help?</h5>
-            </div>
-
-            <div className="flex flex-col gap-1 text-xs">
-              <a
-                href="tel:+917356019103"
-                className="font-bold text-[#1C1917] hover:text-[#F5A623] transition-colors"
-              >
-                📞 +91 73560 19103
-              </a>
-              <a
-                href="mailto:support@hivenow.in"
-                className="font-medium text-[#78716C] hover:text-[#1C1917] transition-colors"
-              >
-                ✉️ support@hivenow.in
-              </a>
-            </div>
-
-            <p className="text-[10px] text-[#78716C] leading-normal font-medium">
-              Helpline active Mon–Sun, 9 AM – 9 PM.
-            </p>
-          </div>
         </main>
 
-      </div>
+        {/* ── CLEAN UNDERSTATED FOOTER (With Discreet Sign Out) ── */}
+        <footer className="mt-14 pt-8 border-t border-stone-200/80 flex flex-col items-center justify-center gap-3 text-center">
+          <button
+            onClick={handleSignOut}
+            className="text-xs font-bold text-stone-500 hover:text-stone-900 transition-colors flex items-center gap-1.5 cursor-pointer py-1 px-3 rounded-lg hover:bg-stone-100"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sign Out</span>
+          </button>
+          <p className="text-[11px] text-stone-400">
+            Hive Now · Hyperlocal Fashion Marketplace · Kochi, Kerala
+          </p>
+        </footer>
 
+      </div>
     </div>
   );
 }
