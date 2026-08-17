@@ -485,13 +485,14 @@ export const getAllOrders = query({
     const customerIds = Array.from(new Set(orders.map((o) => o.customerId)));
     const boutiqueIds = Array.from(new Set(orders.map((o) => o.boutiqueId)));
 
-    const [customersList, boutiquesList, profilesList, itemsList, invoicesList, shipmentsList] = await Promise.all([
+    const [customersList, boutiquesList, profilesList, itemsList, invoicesList, shipmentsList, activityList] = await Promise.all([
       Promise.all(customerIds.map((id) => ctx.db.get(id))),
       Promise.all(boutiqueIds.map((id) => ctx.db.get(id))),
       Promise.all(customerIds.map((id) => ctx.db.query("customerProfiles").withIndex("by_userId", (q) => q.eq("userId", id)).unique())),
       Promise.all(orders.map((o) => ctx.db.query("orderItems").withIndex("by_orderId", (q) => q.eq("orderId", o._id)).collect())),
       Promise.all(orders.map((o) => ctx.db.query("invoices").withIndex("by_order_id", (q) => q.eq("orderId", o._id)).unique())),
-      Promise.all(orders.map((o) => o.shipmentId ? ctx.db.get(o.shipmentId) : null))
+      Promise.all(orders.map((o) => o.shipmentId ? ctx.db.get(o.shipmentId) : null)),
+      Promise.all(orders.map((o) => ctx.db.query("orderActivity").withIndex("by_orderId", (q) => q.eq("orderId", o._id)).first())),
     ]);
 
     const customerMap = new Map(customersList.filter(Boolean).map((c) => [c!._id, c]));
@@ -500,6 +501,7 @@ export const getAllOrders = query({
     const itemsMap = new Map(orders.map((o, i) => [o._id, itemsList[i]]));
     const invoiceMap = new Map(orders.map((o, i) => [o._id, invoicesList[i]]));
     const shipmentMap = new Map(orders.map((o, i) => [o._id, shipmentsList[i]]));
+    const activityMap = new Map(orders.map((o, i) => [o._id, activityList[i]]));
 
     const enriched = orders.map((order) => {
       const customer = customerMap.get(order.customerId);
@@ -508,6 +510,7 @@ export const getAllOrders = query({
       const items = itemsMap.get(order._id) || [];
       const invoice = invoiceMap.get(order._id);
       const shipment = shipmentMap.get(order._id);
+      const activity = activityMap.get(order._id);
 
       const customerName = profile?.displayName || customer?.email || "Customer";
 
@@ -537,6 +540,12 @@ export const getAllOrders = query({
         shipmentId: order.shipmentId || null,
         shipmentStatus: shipment?.status || null,
         shipmentExceptionType: shipment?.exceptionType || null,
+        acceptanceActivity: activity ? {
+          actorName: activity.actorName,
+          actorEmail: activity.actorEmail,
+          actorRole: activity.actorRole,
+          createdAt: activity.createdAt,
+        } : null,
       };
     });
 

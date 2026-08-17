@@ -323,6 +323,48 @@ function OrderDetailDrawer({
               </div>
             </div>
 
+            {/* Order Acceptance Attribution Card */}
+            {(() => {
+              const confirmActivity = order.activities?.find((a: any) => a.action === "confirmed");
+              if (confirmActivity) {
+                return (
+                  <div className="bg-amber-50/90 border border-amber-200/80 rounded-2xl p-4 flex flex-col gap-1 text-left shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <CheckCircle className="w-3.5 h-3.5 text-amber-600" />
+                        Accepted By
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-200/90 text-amber-950 text-[10px] font-extrabold uppercase tracking-wide">
+                        {confirmActivity.actorRole === "owner" ? "Store Owner" : confirmActivity.actorRole === "admin" ? "Hive Admin" : "Store Staff"}
+                      </span>
+                    </div>
+                    <p className="text-sm font-bold text-slate-900 mt-1">
+                      {confirmActivity.actorName}
+                    </p>
+                    {confirmActivity.actorEmail && (
+                      <p className="text-[11px] text-slate-600 font-mono">
+                        {confirmActivity.actorEmail}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      Accepted at: {new Date(confirmActivity.createdAt).toLocaleString("en-IN", {
+                        day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true
+                      })}
+                    </p>
+                  </div>
+                );
+              }
+              if (["confirmed", "packed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery", "delivered"].includes(order.status)) {
+                return (
+                  <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-3.5 text-left text-xs text-slate-500 flex items-center justify-between">
+                    <span className="font-semibold text-slate-700">Accepted By:</span>
+                    <span className="text-[11px] text-slate-500 italic">Store (Historical order — accepted prior to actor tracking)</span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
             {/* Delivery Address */}
             <div className="bg-slate-50 rounded-2xl p-4 border border-hive-border/40">
               <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
@@ -881,6 +923,17 @@ export default function AdminOrdersPage() {
                     <td className="px-5 py-4">
                       <div className="flex flex-col gap-1 items-start">
                         <StatusBadge status={order.status} />
+                        {order.acceptanceActivity ? (
+                          <span className="text-[10px] font-bold text-slate-700 block leading-tight mt-1">
+                            Accepted by {order.acceptanceActivity.actorName} ({order.acceptanceActivity.actorRole === "owner" ? "Owner" : order.acceptanceActivity.actorRole === "admin" ? "Admin" : "Staff"})
+                          </span>
+                        ) : (
+                          ["confirmed", "packed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery", "delivered"].includes(order.status) && (
+                            <span className="text-[9px] text-slate-400 font-medium italic block leading-tight mt-0.5">
+                              Pre-tracking order
+                            </span>
+                          )
+                        )}
                         {order.status === "pending_confirmation" && (now - (order.createdAt ?? (order as any)._creationTime)) > SLA_WARNING_MS && (
                           <span className="inline-flex items-center gap-1 text-[9px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-md animate-pulse whitespace-nowrap">
                             <AlertTriangle className="w-2.5 h-2.5" />
