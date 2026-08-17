@@ -63,18 +63,18 @@ export const MobileBottomNav: React.FC = () => {
                 : "text-hive-text-muted dark:text-neutral-400 hover:text-hive-dark"
             }`}
           >
-            <div className="relative px-4 py-1 rounded-full transition-all duration-250 flex items-center justify-center">
+            <div className="relative flex items-center justify-center">
               <Icon 
                 className={`w-5 h-5 transition-transform duration-200 ${isActive ? "scale-105" : ""}`} 
                 strokeWidth={isActive ? 2.5 : 2} 
               />
               {item.badge !== undefined && (
-                <span className="absolute -top-1 -right-1 bg-hive-gold text-hive-dark text-[9px] font-extrabold px-1.5 py-0.5 rounded-full scale-90 min-w-4 h-4 flex items-center justify-center border border-white">
+                <span className="absolute -top-1.5 -right-2 bg-amber-400 text-stone-950 text-[9px] font-extrabold px-1 py-0.2 rounded-full min-w-4 h-4 flex items-center justify-center shadow-xs border border-white">
                   {item.badge}
                 </span>
               )}
             </div>
-            <span className="text-[10px] tracking-wide mt-1 leading-none font-medium">
+            <span className="text-[10px] tracking-tight mt-1 leading-none font-medium">
               {item.label}
             </span>
           </Link>

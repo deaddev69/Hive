@@ -4,65 +4,71 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { ArrowRight, Sparkles, Store, ShieldCheck, Timer, Compass, Heart } from "lucide-react";
+import { ArrowRight, Sparkles, Store, ShieldCheck, Timer, Compass, MapPin } from "lucide-react";
 import { CollectionCard } from "@/components/catalog/CollectionCard";
+import { useLocation } from "@/context/LocationContext";
 
 const CURATED_LOOKBOOKS_PRESETS = [
   {
     id: "preset-kasavu",
     slug: "kasavu-heritage",
     title: "Kasavu & Festive Heritage",
-    description: "Handloom kasavu sarees, golden border drapes, and traditional designer sets.",
+    description: "Handloom kasavu sarees and golden border drapes.",
     imageUrl: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80",
     productCount: 18,
     category: "festive",
+    locality: "Panampilly Nagar",
     isFeatured: true,
   },
   {
     id: "preset-wedding",
     slug: "wedding-guest-luxe",
     title: "Wedding Guest & Bridal Luxe",
-    description: "Opulent lehengas, embroidered anarkalis, and statement occasionwear.",
+    description: "Opulent lehengas, embroidered anarkalis, and occasionwear.",
     imageUrl: "https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=800&q=80",
     productCount: 24,
     category: "wedding",
-    isFeatured: true,
+    locality: "Edappally",
   },
   {
     id: "preset-linen",
     slug: "monsoon-linen-drapes",
     title: "Monsoon Linen & Cottons",
-    description: "Breathable pure linen kurtis, relaxed co-ord sets, and everyday elegance.",
+    description: "Breathable pure linen kurtis and relaxed co-ord sets.",
     imageUrl: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=800&q=80",
     productCount: 15,
     category: "casual",
+    locality: "Kakkanad",
   },
   {
     id: "preset-evening",
     slug: "evening-glam-cocktails",
     title: "Evening Glam & Party Fits",
-    description: "Contemporary silhouettes, satin slip dresses, and bespoke festive tops.",
+    description: "Contemporary silhouettes, satin slip dresses, and festive tops.",
     imageUrl: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80",
     productCount: 14,
     category: "evening",
+    locality: "MG Road, Kochi",
   },
   {
     id: "preset-chikankari",
     slug: "handcrafted-chikankari",
     title: "Chikankari & Pastel Kurtis",
-    description: "Delicate needlework, soft hues, and airy fabrics from artisan boutiques.",
+    description: "Delicate needlework, soft pastel hues, and airy fabrics.",
     imageUrl: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=800&q=80",
     productCount: 20,
     category: "casual",
+    locality: "Fort Kochi",
   },
   {
     id: "preset-silk",
     slug: "pure-silk-handlooms",
     title: "Handloom Silks & Brocades",
-    description: "Rich Kanchipuram, Banarasi, and pure silk treasures curated for celebrations.",
+    description: "Rich Kanchipuram and pure silk treasures.",
     imageUrl: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80",
     productCount: 16,
     category: "wedding",
+    locality: "Panampilly Nagar",
   },
 ];
 
@@ -77,16 +83,19 @@ const FALLBACK_IMAGES: Record<string, string> = {
 };
 
 const CATEGORY_TABS = [
-  { id: "all", label: "All Lookbooks" },
+  { id: "all", label: "All Edits" },
   { id: "festive", label: "Festive & Kasavu" },
-  { id: "wedding", label: "Wedding & Guestwear" },
+  { id: "wedding", label: "Wedding Guest" },
   { id: "evening", label: "Party & Evening" },
   { id: "casual", label: "Everyday Linen" },
 ];
 
 export function CollectionsIndexClient() {
   const rawCollections = useQuery(api.customerHome.getAllCollections);
+  const { locality, city } = useLocation();
   const [activeCategory, setActiveCategory] = useState("all");
+
+  const currentArea = locality || city || "Kochi";
 
   const allLookbooks = useMemo(() => {
     if (!rawCollections) return [];
@@ -95,19 +104,19 @@ export function CollectionsIndexClient() {
       id: c._id,
       slug: c.slug,
       title: c.name,
-      description: c.description || "Hand-picked capsule edit from verified Kerala boutiques.",
+      description: c.description || `Hand-picked styles from stores near ${currentArea}`,
       imageUrl: c.coverImage || FALLBACK_IMAGES[c.slug] || CURATED_LOOKBOOKS_PRESETS[0].imageUrl,
       productCount: typeof c.productCount === "number" && c.productCount > 0 ? c.productCount : 12,
       category: c.slug.includes("wedding") ? "wedding" : c.slug.includes("trending") || c.slug.includes("todays") ? "festive" : "all",
+      locality: `${currentArea} Stores`,
       isFeatured: c.slug === "todays-edit" || c.slug === "trending-in-kochi",
     }));
 
-    // Combine DB collections with high-quality curated lookbooks presets without duplicating slugs
     const existingSlugs = new Set(dbMapped.map((c: any) => c.slug));
     const supplemental = CURATED_LOOKBOOKS_PRESETS.filter((p) => !existingSlugs.has(p.slug));
 
     return [...dbMapped, ...supplemental];
-  }, [rawCollections]);
+  }, [rawCollections, currentArea]);
 
   const filteredLookbooks = useMemo(() => {
     if (activeCategory === "all") return allLookbooks;
@@ -120,7 +129,6 @@ export function CollectionsIndexClient() {
 
   const remainingLookbooks = useMemo(() => {
     if (!featuredSpotlight) return filteredLookbooks;
-    // In "all" tab, don't repeat the hero spotlight in the main grid
     if (activeCategory === "all") {
       return filteredLookbooks.filter((c: any) => c.id !== featuredSpotlight.id);
     }
@@ -129,72 +137,67 @@ export function CollectionsIndexClient() {
 
   if (rawCollections === undefined) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-stone-900">
-        <Sparkles className="w-8 h-8 text-amber-500 animate-spin" />
-        <p className="font-serif italic text-lg text-stone-500 animate-pulse">
-          Curating boutique lookbooks...
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 text-stone-900">
+        <Sparkles className="w-6 h-6 text-amber-500 animate-spin" />
+        <p className="font-serif italic text-sm text-stone-500 animate-pulse">
+          Curating lookbooks near you...
         </p>
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-[#FAF9F6] min-h-screen pb-20">
-      {/* ── Magazine-Style Editorial Hero ─────────────────────────────── */}
-      <div className="relative w-full overflow-hidden bg-gradient-to-b from-stone-100/90 via-[#FAF8F5] to-[#FAF9F6] border-b border-stone-200/60 pt-8 pb-10 md:pt-14 md:pb-14">
-        <div className="max-w-[1440px] mx-auto px-5 sm:px-8 w-full flex flex-col gap-4 text-left">
+    <div className="w-full bg-[#FAF9F6] min-h-screen pb-12">
+      {/* ── Compact Hyperlocal Header ───────────────────────────────── */}
+      <div className="w-full bg-white border-b border-stone-200/70 pt-5 pb-4 px-4 sm:px-8">
+        <div className="max-w-[1440px] mx-auto flex flex-col gap-3 text-left">
           
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9.5px] font-extrabold text-amber-900 bg-amber-400/20 border border-amber-400/40 uppercase tracking-[0.25em]">
-              <Sparkles className="w-3 h-3 text-amber-600" />
-              Curated Lookbooks
-            </span>
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-            <div className="flex flex-col gap-2 max-w-2xl">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-stone-950 tracking-tight leading-[1.15]">
-                Curated Fashion for <br className="hidden sm:inline" />
-                <span className="italic font-normal text-amber-700">Every Occasion.</span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-800 uppercase tracking-widest mb-0.5">
+                <MapPin className="w-3 h-3 text-amber-600 shrink-0" />
+                <span>Delivering in {currentArea}</span>
+                <span className="text-stone-300 select-none">•</span>
+                <span className="text-stone-500 font-medium">90 Mins</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-950 tracking-tight">
+                Curated Lookbooks
               </h1>
-              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-xl">
-                Capsule wardrobes, festive drops, and designer edits curated directly from verified local boutiques across Kochi.
-              </p>
             </div>
 
             <Link
               href="/products"
-              className="self-start md:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white hover:bg-stone-50 border border-stone-200 text-xs font-bold text-stone-900 shadow-2xs transition-all group"
+              className="self-start sm:self-auto inline-flex items-center gap-1.5 text-xs font-bold text-stone-700 hover:text-stone-950 transition-colors"
             >
               <span>Explore All Products</span>
-              <ArrowRight className="w-3.5 h-3.5 text-stone-500 group-hover:translate-x-1 group-hover:text-stone-900 transition-all" />
+              <ArrowRight className="w-3 h-3 text-stone-500" />
             </Link>
           </div>
 
-          {/* Value Props Strip */}
-          <div className="flex flex-wrap items-center gap-4 sm:gap-8 pt-4 border-t border-stone-200/60 mt-2 text-[11px] font-semibold text-stone-600">
-            <div className="flex items-center gap-1.5">
-              <Timer className="w-3.5 h-3.5 text-amber-600" />
-              <span>90-Min Delivery in Kochi</span>
+          {/* Quick Value Props Strip */}
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-2 border-t border-stone-100 text-[10.5px] font-semibold text-stone-500">
+            <div className="flex items-center gap-1">
+              <Timer className="w-3 h-3 text-amber-600" />
+              <span>90-Min Delivery</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Store className="w-3.5 h-3.5 text-amber-600" />
-              <span>Direct Boutique Catalogs</span>
+            <div className="flex items-center gap-1">
+              <Store className="w-3 h-3 text-amber-600" />
+              <span>Nearby Boutique Stores</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-              <span>100% Authentic Quality</span>
+            <div className="flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3 text-amber-600" />
+              <span>Verified Quality</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Main Container ───────────────────────────────────────────── */}
-      <div className="max-w-[1440px] mx-auto px-4 sm:px-8 w-full pt-8 space-y-8">
+      {/* ── Main Lookbooks Content ──────────────────────────────────── */}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-8 w-full pt-5 space-y-6">
         
-        {/* ── Lead Featured Lookbook Banner (Panoramic Spotlight) ──────── */}
+        {/* ── Lead Featured Lookbook Banner (Spotlight) ───────────────── */}
         {featuredSpotlight && activeCategory === "all" && (
-          <div className="animate-in fade-in slide-in-from-bottom-2 duration-700 ease-out">
+          <div className="animate-in fade-in duration-500">
             <CollectionCard
               collection={featuredSpotlight}
               variant="featured"
@@ -202,14 +205,14 @@ export function CollectionsIndexClient() {
           </div>
         )}
 
-        {/* ── Category Filter Rail ─────────────────────────────────────── */}
-        <div className="flex items-center justify-between gap-4 overflow-x-auto pb-2 scrollbar-none border-b border-stone-200/70 pt-2">
-          <div className="flex items-center gap-2">
+        {/* ── Category Mood Filter Rail ───────────────────────────────── */}
+        <div className="flex items-center justify-between gap-4 overflow-x-auto pb-1 scrollbar-none border-b border-stone-200/60">
+          <div className="flex items-center gap-1.5 py-1">
             {CATEGORY_TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveCategory(tab.id)}
-                className={`px-4 py-2 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
                   activeCategory === tab.id
                     ? "bg-stone-950 text-white shadow-xs"
                     : "bg-white text-stone-600 hover:bg-stone-100 hover:text-stone-900 border border-stone-200/80"
@@ -220,39 +223,39 @@ export function CollectionsIndexClient() {
             ))}
           </div>
 
-          <span className="text-[11px] font-bold text-stone-400 shrink-0 hidden sm:block">
+          <span className="text-[10.5px] font-bold text-stone-400 shrink-0 hidden sm:block">
             {filteredLookbooks.length} Lookbooks
           </span>
         </div>
 
-        {/* ── Curated Lookbooks Grid ───────────────────────────────────── */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6">
+        {/* ── Curated Lookbooks Grid ─────────────────────────────────── */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
           {remainingLookbooks.map((lookbook: any, idx: number) => (
             <div
               key={lookbook.id}
-              className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both"
-              style={{ animationDelay: `${Math.min(idx * 60, 600)}ms` }}
+              className="animate-in fade-in fill-mode-both"
+              style={{ animationDelay: `${Math.min(idx * 50, 400)}ms` }}
             >
               <CollectionCard collection={lookbook} />
             </div>
           ))}
         </div>
 
-        {/* ── Empty State Fallback ────────────────────────────────────── */}
+        {/* ── Empty State Fallback ──────────────────────────────────── */}
         {remainingLookbooks.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center gap-3 bg-white rounded-3xl border border-stone-200/80 p-8 shadow-xs">
-            <Compass className="w-8 h-8 text-stone-400" />
-            <h3 className="font-serif text-lg font-bold text-stone-900">
+          <div className="flex flex-col items-center justify-center py-12 text-center gap-2 bg-white rounded-2xl border border-stone-200/80 p-6 shadow-2xs">
+            <Compass className="w-7 h-7 text-stone-400" />
+            <h3 className="font-serif text-base font-bold text-stone-900">
               No lookbooks found in this category
             </h3>
-            <p className="text-xs text-stone-500 max-w-sm">
-              Try selecting "All Lookbooks" to view our complete curation of Kerala boutique styles.
+            <p className="text-xs text-stone-500 max-w-xs">
+              Select "All Edits" to view all fashion lookbooks near you.
             </p>
             <button
               onClick={() => setActiveCategory("all")}
-              className="mt-2 px-5 py-2 rounded-full bg-stone-950 text-white text-xs font-bold hover:bg-stone-800 transition-colors"
+              className="mt-1 px-4 py-1.5 rounded-full bg-stone-950 text-white text-xs font-bold hover:bg-stone-800 transition-colors"
             >
-              View All Lookbooks
+              View All Edits
             </button>
           </div>
         )}

@@ -7,6 +7,9 @@ export interface CollectionCardProps {
   collection: Collection & {
     tagline?: string;
     curator?: string;
+    badge?: string;
+    storeCount?: number;
+    locality?: string;
   };
   variant?: "default" | "featured";
   className?: string;
@@ -21,46 +24,42 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
     return (
       <Link
         href={`/collections/${collection.slug}`}
-        className={`group relative block w-full overflow-hidden rounded-3xl bg-stone-950 shadow-md hover:shadow-2xl hover:shadow-stone-950/30 transition-all duration-500 border border-stone-800/50 hover:border-amber-500/40 ${className}`}
+        className={`group relative block w-full overflow-hidden rounded-3xl bg-stone-900 shadow-sm hover:shadow-xl transition-all duration-500 border border-stone-200/80 hover:border-amber-400/60 ${className}`}
         aria-label={`Browse ${collection.title} collection`}
       >
-        <div className="relative aspect-[16/10] sm:aspect-[21/9] w-full overflow-hidden bg-stone-900">
+        <div className="relative aspect-[16/10] sm:aspect-[21/9] w-full overflow-hidden bg-stone-100">
           <img
             src={collection.imageUrl}
             alt={collection.title}
-            className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-1000 ease-out pointer-events-none"
+            className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-700 ease-out pointer-events-none"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-950/95 via-stone-950/45 to-stone-950/20" />
-          <div className="absolute inset-0 bg-gradient-to-r from-stone-950/90 via-stone-950/40 to-transparent" />
+          {/* Subtle natural gradient - keeps photography clear */}
+          <div className="absolute inset-0 bg-gradient-to-t from-stone-950/85 via-stone-950/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-stone-950/75 via-stone-950/20 to-transparent" />
 
-          {/* Top Badges */}
-          <div className="absolute top-4 left-4 sm:top-6 sm:left-6 flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-amber-400 text-stone-950 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-[0.2em] shadow-xs flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-stone-950" />
+          {/* Single clean top badge */}
+          <div className="absolute top-3.5 left-3.5 sm:top-5 sm:left-5">
+            <span className="px-2.5 py-1 rounded-full bg-amber-400 text-stone-950 text-[9px] font-extrabold uppercase tracking-[0.18em] shadow-xs inline-flex items-center gap-1.5">
+              <Sparkles className="w-2.5 h-2.5 text-stone-950" />
               Editor's Spotlight
             </span>
           </div>
 
-          {/* Bottom Left Content */}
-          <div className="absolute bottom-0 inset-x-0 p-5 sm:p-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-            <div className="flex flex-col gap-1.5 max-w-xl text-left">
-              <span className="text-[10px] sm:text-xs font-bold text-amber-300 uppercase tracking-widest">
-                Curated Lookbook
-              </span>
-              <h2 className="text-xl sm:text-3xl md:text-4xl font-serif font-bold text-white leading-tight group-hover:text-amber-200 transition-colors">
+          {/* Bottom Content */}
+          <div className="absolute bottom-0 inset-x-0 p-4 sm:p-7 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 text-left">
+            <div className="flex flex-col gap-1 max-w-lg">
+              <h2 className="text-xl sm:text-3xl font-serif font-bold text-white leading-tight group-hover:text-amber-200 transition-colors">
                 {collection.title}
               </h2>
-              {collection.description && (
-                <p className="text-xs sm:text-sm text-stone-300 line-clamp-2 leading-relaxed font-normal">
-                  {collection.description}
-                </p>
-              )}
+              <p className="text-xs sm:text-sm text-stone-200 line-clamp-1 leading-normal font-normal">
+                {collection.description || "Hand-picked styles from stores near you"}
+              </p>
             </div>
 
-            <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
-              <span className="px-4 py-2.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white group-hover:bg-amber-400 group-hover:text-stone-950 group-hover:border-amber-400 text-xs font-bold transition-all flex items-center gap-2">
-                <span>Explore Capsule</span>
+            <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+              <span className="px-3.5 py-2 rounded-full bg-white/20 hover:bg-white backdrop-blur-md border border-white/30 text-white hover:text-stone-950 text-xs font-bold transition-all inline-flex items-center gap-1.5">
+                <span>Explore Edit</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </span>
             </div>
@@ -70,67 +69,59 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
     );
   }
 
+  const styleCount = typeof collection.productCount === "number" && collection.productCount > 0 
+    ? `${collection.productCount} styles` 
+    : "Curated styles";
+
+  const storeLocality = collection.locality || "Kochi Stores";
+
   return (
     <Link
       href={`/collections/${collection.slug}`}
-      className={`group relative block w-full overflow-hidden rounded-2xl sm:rounded-[24px] bg-stone-950 shadow-sm hover:shadow-xl hover:shadow-stone-950/25 transition-all duration-500 hover:-translate-y-1 border border-stone-800/40 hover:border-amber-500/30 ${className}`}
+      className={`group relative block w-full overflow-hidden rounded-2xl bg-stone-900 shadow-2xs hover:shadow-lg transition-all duration-400 hover:-translate-y-0.5 border border-stone-200/80 hover:border-amber-400/50 ${className}`}
       aria-label={`Browse ${collection.title} collection`}
     >
       {/* Cover Image */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-stone-900">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-stone-100">
         <img
           src={collection.imageUrl}
           alt={collection.title}
-          className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-700 ease-out pointer-events-none"
+          className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-600 ease-out pointer-events-none"
           loading="lazy"
         />
-        {/* Soft Vignette Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/95 via-stone-950/35 to-transparent" />
+        {/* Soft bottom vignette — keeps fashion photo clear */}
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
 
-        {/* Featured badge */}
-        {collection.isFeatured && (
-          <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 px-2.5 py-0.5 rounded-full bg-amber-400 text-stone-950 text-[8.5px] font-extrabold uppercase tracking-widest select-none shadow-xs">
-            Featured
-          </div>
-        )}
-
-        {/* Icon badge */}
-        {collection.icon && (
-          <div className="absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-sm select-none">
-            {collection.icon}
+        {/* Optional single badge (only if explicitly set) */}
+        {collection.badge && (
+          <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-amber-400 text-stone-950 text-[8px] font-extrabold uppercase tracking-widest select-none shadow-xs">
+            {collection.badge}
           </div>
         )}
       </div>
 
       {/* Content overlay */}
-      <div className="absolute bottom-0 left-0 right-0 p-3.5 sm:p-5 flex flex-col gap-1.5 text-left">
-        <div className="flex items-end justify-between gap-2">
-          <h3 className="text-sm sm:text-base md:text-lg font-serif font-bold text-white leading-tight group-hover:text-amber-300 transition-colors duration-300 line-clamp-2">
+      <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 flex flex-col gap-1 text-left">
+        <div className="flex items-end justify-between gap-1.5">
+          <h3 className="text-sm sm:text-base font-serif font-bold text-white leading-tight group-hover:text-amber-300 transition-colors duration-250 line-clamp-2">
             {collection.title}
           </h3>
-          <div className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center group-hover:bg-amber-400 group-hover:border-amber-400 transition-all duration-300">
+          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-white/15 backdrop-blur-xs border border-white/25 flex items-center justify-center group-hover:bg-amber-400 group-hover:border-amber-400 transition-all duration-250">
             <ArrowRight
-              className="w-3 h-3 text-white group-hover:text-stone-950 transition-colors duration-300 group-hover:translate-x-0.5"
+              className="w-3 h-3 text-white group-hover:text-stone-950 transition-colors duration-250 group-hover:translate-x-0.5"
               strokeWidth={2.5}
             />
           </div>
         </div>
 
-        {/* Description */}
-        {collection.description && (
-          <p className="hidden sm:block text-[11px] text-stone-300/80 leading-relaxed line-clamp-1 font-normal">
-            {collection.description}
-          </p>
-        )}
-
-        {/* Meta strip */}
-        <div className="flex items-center gap-2 pt-1.5 border-t border-white/10 mt-0.5">
-          <span className="text-[9.5px] font-extrabold text-amber-400 uppercase tracking-widest">
-            {collection.productCount || "12"} Pieces
+        {/* Commerce Meta Strip: style count + store location */}
+        <div className="flex items-center gap-1.5 text-[10px] text-stone-300 font-medium pt-1">
+          <span className="font-bold text-amber-300">
+            {styleCount}
           </span>
-          <span className="text-white/20 text-[9px]">·</span>
-          <span className="text-[9.5px] text-stone-400 font-medium uppercase tracking-wide truncate">
-            Boutique Edit
+          <span className="text-stone-400/60 select-none">•</span>
+          <span className="text-stone-300 truncate">
+            {storeLocality}
           </span>
         </div>
       </div>
