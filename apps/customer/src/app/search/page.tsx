@@ -180,53 +180,35 @@ function SearchContent() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#FFFDF9]/40 pb-20">
+    <div className="flex flex-col min-h-screen bg-[#FAF8F5] dark:bg-stone-950 pb-24">
       
-      {/* 1. Header with search query state */}
-      <div className="relative w-full border-b border-hive-border/40 bg-white/40 dark:bg-hive-dark/40 backdrop-blur-sm">
-        {/* Honeycomb visual background */}
-        <div className="absolute inset-0 -z-10 pointer-events-none opacity-[0.04]">
-          <svg className="w-full h-full" aria-hidden="true">
-            <defs>
-              <pattern id="search-hc" patternUnits="userSpaceOnUse" width="52" height="90">
-                <path fill="none" stroke="#F5A623" strokeWidth="1.5"
-                  d="m0,15 26-15 26,15v30l-26,15-26-15z M26,60v30" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#search-hc)" />
-          </svg>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-10 md:py-14 flex flex-col items-center gap-6">
-          <div className="flex flex-col text-center gap-2">
-            <span className="text-[10px] font-extrabold text-hive-amber tracking-widest uppercase">
-              Global Catalog Search
-            </span>
-            <h1 className="text-3xl md:text-4xl font-serif font-black text-hive-dark tracking-tight leading-tight">
-              {q ? `Search Results for "${q}"` : "Search Products"}
+      {/* 1. Sleek Editorial Top Header */}
+      <div className="w-full border-b border-stone-200/80 dark:border-stone-800 bg-white/80 dark:bg-stone-950/80 backdrop-blur-md sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-baseline gap-2.5 min-w-0">
+            <h1 className="text-base sm:text-xl font-serif font-bold text-stone-900 dark:text-white capitalize truncate">
+              {q ? q : "All Collections"}
             </h1>
-            <p className="text-xs text-hive-text-muted font-medium max-w-md">
-              Find premium handlooms, sarees, kurtis, and designer wear from verified local designers and brands.
-            </p>
+            {!isLoading && products.length > 0 && (
+              <span className="text-xs text-stone-500 dark:text-stone-400 font-medium shrink-0">
+                ({products.length} {products.length === 1 ? "style" : "styles"})
+              </span>
+            )}
           </div>
 
-          {/* Large Search Box in page */}
-          <div className="w-full max-w-xl relative">
-            <Search className="w-4.5 h-4.5 text-stone-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search collections, fabrics, styles..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-11 pr-12 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-xs focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 text-sm font-medium text-stone-900 dark:text-white placeholder-stone-400 transition-all"
-            />
-            {searchTerm && (
+          <div className="flex items-center gap-3">
+            {city && (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-stone-100 dark:bg-stone-900 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-stone-800">
+                <MapPin className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                {city}
+              </span>
+            )}
+            {q && (
               <button
                 onClick={handleClear}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 dark:hover:text-white p-1 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-full transition-colors cursor-pointer"
-                aria-label="Clear search"
+                className="text-xs font-semibold text-stone-500 hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                Clear
               </button>
             )}
           </div>
@@ -234,129 +216,81 @@ function SearchContent() {
       </div>
 
       {/* 2. Main Search Results section */}
-      <div className="max-w-7xl w-full mx-auto px-6 lg:px-8 py-8 flex-grow flex flex-col gap-6">
+      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-12 flex-grow flex flex-col gap-4">
         
-        {/* If no query, guide user to type */}
+        {/* If no query, guide user to browse */}
         {!q ? (
-          <div className="flex flex-col items-center justify-center py-20 px-6 border border-dashed border-hive-border/60 rounded-[32px] bg-white/40 text-center max-w-md mx-auto w-full">
-            <div className="p-4 rounded-full bg-hive-comb/20 border border-hive-border/40 text-hive-amber mb-4">
-              <Search className="w-8 h-8" />
+          <div className="flex flex-col items-center justify-center py-20 px-6 rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 text-center max-w-md mx-auto w-full my-auto">
+            <div className="p-3.5 rounded-2xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 mb-3">
+              <Search className="w-5 h-5" />
             </div>
-            <h3 className="text-lg font-bold font-serif text-hive-dark">
-              Type to start searching
+            <h3 className="text-base font-serif font-bold text-stone-900 dark:text-white">
+              Search Collections & Styles
             </h3>
-            <p className="text-xs text-hive-text-muted mt-2 leading-relaxed">
-              Search for terms like "saree", "silk", "kurta", or name of designer labels near you.
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">
+              Explore sarees, kurtis, co-ords, or handpicked designer labels in Kochi.
             </p>
             <Button
               variant="primary"
               onClick={() => router.push("/")}
-              className="mt-6 font-extrabold uppercase tracking-wider text-xs py-3 px-6"
+              className="mt-5 text-xs py-2.5 px-5 bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-xl"
             >
-              Go to Home Page
+              Explore Home
             </Button>
           </div>
         ) : isLoading ? (
           // Loading Skeletons
-          <div className="flex flex-col gap-6">
-            <div className="flex justify-between items-baseline border-b border-hive-border/40 pb-4">
-              <div className="h-6 w-48 bg-slate-200 animate-pulse rounded-full" />
-              <div className="h-4 w-24 bg-slate-150 animate-pulse rounded-full" />
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-baseline border-b border-stone-200/60 pb-3">
+              <div className="h-5 w-40 bg-stone-200 dark:bg-stone-800 animate-pulse rounded-lg" />
+              <div className="h-4 w-20 bg-stone-200 dark:bg-stone-800 animate-pulse rounded-lg" />
             </div>
             <ProductGridSkeleton />
           </div>
         ) : products.length > 0 ? (
           <>
-            {/* Conditional header: regular search summary OR compact fallback banner */}
-            {isFallback ? (
-              <div className="bg-amber-50/80 border border-amber-200/60 text-amber-800 p-4 rounded-2xl text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-[slideIn_0.3s_ease] mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center bg-amber-200 text-amber-800 rounded-full w-5 h-5 font-extrabold text-[10px]">!</span>
-                  <span>
-                    No exact matches found for <strong className="font-extrabold">"{q}"</strong>. Check out some popular styles below instead:
-                  </span>
-                </div>
+            {/* Subtle Fallback Notice if no exact matches */}
+            {isFallback && (
+              <div className="py-2.5 px-3.5 bg-stone-100 dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-800 text-xs text-stone-600 dark:text-stone-400 font-medium flex items-center justify-between">
+                <span>No exact matches for &ldquo;<strong>{q}</strong>&rdquo;. Showing curated styles you may like:</span>
                 <button
                   onClick={handleClear}
-                  className="text-xs font-extrabold uppercase tracking-wider text-amber-800 hover:text-amber-900 border border-amber-300 rounded-xl px-3.5 py-1.5 bg-white shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all self-end sm:self-auto"
+                  className="text-xs font-semibold text-stone-900 dark:text-white hover:underline ml-3 cursor-pointer shrink-0"
                 >
                   Clear search
                 </button>
               </div>
-            ) : (
-              <>
-                {/* Header info bar */}
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-hive-border/40 pb-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-lg md:text-xl font-bold font-serif text-hive-dark">
-                      {products.length} {products.length === 1 ? "Product" : "Products"} Found
-                    </h2>
-                    {city && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 shadow-sm">
-                        <MapPin className="w-3 h-3 text-hive-gold" />
-                        Delivering to {city}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs font-semibold text-hive-text-muted">
-                    Showing matching items
-                  </span>
-                </div>
-
-                {/* Location Filter Banner if items are hidden */}
-                {hiddenCount > 0 && !browseAnyway && (
-                  <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-[slideIn_0.3s_ease]">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center bg-amber-200 text-amber-800 rounded-full w-5 h-5 font-extrabold text-[10px]">!</span>
-                      <span>
-                        We found {searchResult?.totalMatchedCount || 0} matches, but {hiddenCount} products are outside your partner delivery radius.
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => setBrowseAnyway(true)}
-                      className="text-xs font-extrabold uppercase tracking-wider text-hive-amber hover:text-hive-gold border border-hive-gold/30 hover:border-hive-gold rounded-xl px-3.5 py-1.5 bg-white shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all"
-                    >
-                      Browse anyway
-                    </button>
-                  </div>
-                )}
-
-                {/* browseAnyway toggle reset banner if they are bypassing location */}
-                {browseAnyway && city && (
-                  <div className="bg-slate-50 border border-slate-200 text-slate-700 p-4 rounded-2xl text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-[slideIn_0.3s_ease]">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center bg-slate-200 text-slate-700 rounded-full w-5 h-5 font-extrabold text-[10px]">✓</span>
-                      <span>
-                        Showing all {products.length} matches (including non-deliverable items).
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => setBrowseAnyway(false)}
-                      className="text-xs font-extrabold uppercase tracking-wider text-slate-700 hover:text-slate-900 border border-slate-300 rounded-xl px-3.5 py-1.5 bg-white shadow-sm transition-all"
-                    >
-                      Filter by my location
-                    </button>
-                  </div>
-                )}
-              </>
             )}
 
-            {/* Search Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 animate-in fade-in duration-300">
-              {products.map((product, index) => (
-                <div
-                  key={product.id}
-                  className="animate-[cardIn_0.5s_cubic-bezier(0.215,0.61,0.355,1)_forwards] opacity-0"
-                  style={{ animationDelay: `${index * 50}ms` }}
+            {/* Location filter notice if deliverable radius excludes some */}
+            {hiddenCount > 0 && !browseAnyway && (
+              <div className="py-2 px-3.5 bg-stone-100 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 rounded-xl text-xs flex items-center justify-between gap-3">
+                <span>{hiddenCount} items are outside your immediate delivery zone.</span>
+                <button
+                  onClick={() => setBrowseAnyway(true)}
+                  className="text-xs font-bold text-stone-900 dark:text-white underline cursor-pointer shrink-0"
                 >
-                  <ProductCard product={product} isRecommendation={isFallback} />
-                </div>
+                  Show all
+                </button>
+              </div>
+            )}
+
+            {/* Product Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4.5 pt-1">
+              {products.map((product) => (
+                <ProductCard key={product.id} product={product} isRecommendation={isFallback} />
               ))}
             </div>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto w-full">
-            <p className="text-sm text-hive-text-muted">No products available at the moment.</p>
+            <p className="text-sm text-stone-500">No products available for this search.</p>
+            <button
+              onClick={handleClear}
+              className="mt-4 text-xs font-bold text-stone-900 underline cursor-pointer"
+            >
+              Clear filter
+            </button>
           </div>
         )}
       </div>

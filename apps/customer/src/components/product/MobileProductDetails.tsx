@@ -23,10 +23,10 @@ const truncateText = (text: string, limit: number = 180) => {
   return text.slice(0, limit).trim() + "...";
 };
 
-export function MobileProductDetails({ 
-  product, 
-  selectedSize, 
-  setSelectedSize 
+export function MobileProductDetails({
+  product,
+  selectedSize,
+  setSelectedSize
 }: MobileProductDetailsProps) {
   const [openAccordion, setOpenAccordion] = useState<string | null>("returns");
   const router = useRouter();
@@ -47,16 +47,16 @@ export function MobileProductDetails({
   const isReservationMode = boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED";
 
   const fitBadgeConfig = {
-    runs_small:   { label: "Runs Small", advice: "Consider ordering one size up." },
+    runs_small: { label: "Runs Small", advice: "Consider ordering one size up." },
     true_to_size: { label: "True to Size", advice: "Fits as expected for standard sizing." },
-    runs_large:   { label: "Runs Large", advice: "Consider ordering one size down." },
+    runs_large: { label: "Runs Large", advice: "Consider ordering one size down." },
   };
 
   const silhouetteConfig = {
-    slim_fit:     "Slim Fit — tailored outline, cut close to the body",
-    regular_fit:  "Regular Fit — standard drape, classic silhouette",
-    relaxed_fit:  "Relaxed Fit — extra room, comfortable cut",
-    oversized:    "Oversized Cut — intentionally loose and baggy",
+    slim_fit: "Slim Fit — tailored outline, cut close to the body",
+    regular_fit: "Regular Fit — standard drape, classic silhouette",
+    relaxed_fit: "Relaxed Fit — extra room, comfortable cut",
+    oversized: "Oversized Cut — intentionally loose and baggy",
   };
 
   // Occasion tags formatter helper
@@ -89,7 +89,7 @@ export function MobileProductDetails({
 
   return (
     <div className="w-full flex flex-col gap-4 text-left px-2 sm:px-0">
-      
+
       {/* ── SECTION 1: HERO (Tight, compact stack) ── */}
       <div id="pdp-hero-section" className="space-y-0.5 select-none">
         {/* Occasion / Category label */}
@@ -98,7 +98,7 @@ export function MobileProductDetails({
             {formatTag(product.occasionTags[0])}
           </div>
         )}
-        
+
         {/* Product Title */}
         <h1 className="text-lg sm:text-xl font-serif font-semibold text-stone-900 tracking-tight leading-none pt-0.5">
           {cleanProductTitle(product.name)}
@@ -144,8 +144,8 @@ export function MobileProductDetails({
             const isLastOdd = specItems.length % 2 !== 0 && idx === specItems.length - 1;
             const Icon = item.icon;
             return (
-              <div 
-                key={item.key} 
+              <div
+                key={item.key}
                 className={cn(
                   "border border-stone-200/60 rounded-xl p-3 bg-[#FAF8F5]/60 flex items-start gap-2.5 transition-all",
                   isLastOdd && "col-span-2"
@@ -172,7 +172,7 @@ export function MobileProductDetails({
           selectedSize={selectedSize}
           onSelectSize={setSelectedSize}
           hasMeasurements={false}
-          onOpenSizeGuide={() => {}}
+          onOpenSizeGuide={() => { }}
           fitNote={product.fitNote}
         />
       </div>
@@ -203,7 +203,7 @@ export function MobileProductDetails({
         <PurchaseActions
           product={product}
           selectedSize={selectedSize}
-          onOpenSizeGuide={() => {}}
+          onOpenSizeGuide={() => { }}
         />
       </div>
 
@@ -363,8 +363,8 @@ export function MobileProductDetails({
         <div className="space-y-3">
           <div>
             <div className="flex items-center gap-1.5">
-              <Link 
-                href={`/shop/${product.boutique.slug}`} 
+              <Link
+                href={`/shop/${product.boutique.slug}`}
                 className="text-sm font-extrabold text-stone-900 hover:text-hive-amber transition-colors leading-none"
               >
                 {product.boutique.name}
@@ -382,14 +382,14 @@ export function MobileProductDetails({
             <div className="relative group mt-1">
               {/* Ambient Glow Orb Behind Card */}
               <div className="absolute -right-3 -bottom-3 w-20 h-20 rounded-full bg-hive-gold/25 blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
-              
+
               {/* Editorial Glass Card */}
               <div className="relative z-10 bg-[#FAF6F0]/40 backdrop-blur-md border border-stone-200/60 border-l-4 border-l-hive-gold p-4 rounded-r-xl text-left flex gap-3.5 items-start hover:shadow-[0_8px_30px_rgba(240,194,67,0.18)] hover:-translate-y-0.5 transition-all duration-300">
                 {product.boutique.logoUrl && (
                   <div className="flex-shrink-0 w-11 h-11 rounded-full overflow-hidden border-2 border-white bg-stone-100 shadow-md mt-0.5">
-                    <img 
-                      src={product.boutique.logoUrl} 
-                      alt={`${product.boutique.name} Logo`} 
+                    <img
+                      src={product.boutique.logoUrl}
+                      alt={`${product.boutique.name} Logo`}
                       className="w-full h-full object-cover"
                     />
                   </div>

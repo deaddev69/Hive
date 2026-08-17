@@ -55,7 +55,7 @@ export function MoodDressingSection() {
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
                 </>
               ) : null}
-              
+
               <div className="relative z-10">
                 <span className="text-3xl block p-2 bg-amber-500/10 border border-amber-500/20 backdrop-blur-md rounded-2xl w-fit">
                   {mood.emoji || "✨"}

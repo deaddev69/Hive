@@ -51,10 +51,10 @@ export const ReservationStatusCard: React.FC<ReservationStatusCardProps> = ({ re
                 The seller has reserved your item. Complete payment to finalize your order.
               </p>
             </div>
-            
+
             <div className="flex items-center gap-3 flex-wrap pt-1">
-              <Link 
-                href={`/checkout/address?reservationId=${reservation._id}`} 
+              <Link
+                href={`/checkout/address?reservationId=${reservation._id}`}
                 className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-xs font-extrabold uppercase tracking-wider py-2.5 px-6 rounded-xl shadow-md active:scale-95 transition-all"
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
@@ -131,7 +131,7 @@ export const ReservationStatusCard: React.FC<ReservationStatusCardProps> = ({ re
           </div>
         )}
       </div>
-      
+
       <div className="flex-1 min-w-0 flex flex-col gap-1 w-full">
         <div className="flex justify-between items-start gap-3 w-full">
           <div className="flex-1 min-w-0 text-left">

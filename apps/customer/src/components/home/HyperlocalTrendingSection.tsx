@@ -25,7 +25,7 @@ export function HyperlocalTrendingSection() {
   return (
     <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 sm:py-2.5 select-none">
       <div className="bg-gradient-to-r from-emerald-950/40 via-zinc-900 to-zinc-950 border border-emerald-500/20 rounded-3xl p-5 sm:p-7 shadow-lg">
-        
+
         {/* Section Header with Kochi Badge */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div className="space-y-1">

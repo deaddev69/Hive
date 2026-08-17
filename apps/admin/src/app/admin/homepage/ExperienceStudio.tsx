@@ -142,7 +142,7 @@ const BLOCK_REGISTRY: BlockSchema[] = [
 
 export function ExperienceStudio() {
   const experiences = useQuery(api.homepageAdmin.getExperiences);
-  
+
   // Fetch dependencies for block configs
   const collections = useQuery(api.homepageAdmin.getAllHomepageCollections);
   const campaigns = useQuery(api.homepageAdmin.getAllEditorialBanners);
@@ -163,7 +163,7 @@ export function ExperienceStudio() {
   const selectedExp = experiences?.find((e: any) => e._id === selectedExpId);
   // Fetch ALL blocks (draft and archived/hidden)
   const rawBlocks = useQuery(api.homepageAdmin.getExperienceBlocks, selectedExp ? { experienceId: selectedExp._id, status: "all" } : "skip");
-  
+
   // Local state for optimistic updates
   const [blocks, setBlocks] = useState<any[]>([]);
   useEffect(() => {
@@ -177,7 +177,7 @@ export function ExperienceStudio() {
   const addBlock = useMutation(api.homepageAdmin.addBlockToExperience);
   const removeBlock = useMutation(api.homepageAdmin.removeBlockFromExperience);
   const updateLayout = useMutation(api.homepageAdmin.updateExperienceLayout);
-  
+
   // Granular Mutations
   const updateExp = useMutation(api.homepageAdmin.updateExperience);
   const updateBlockContent = useMutation(api.homepageAdmin.updateBlockContent);
@@ -276,11 +276,11 @@ export function ExperienceStudio() {
       handleDragEnd();
       return;
     }
-    
+
     const newBlocks = [...blocks];
     const [draggedBlock] = newBlocks.splice(draggedIdx, 1);
     newBlocks.splice(idx, 0, draggedBlock);
-    
+
     setBlocks(newBlocks);
     handleDragEnd();
 
@@ -313,7 +313,7 @@ export function ExperienceStudio() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-in fade-in duration-300 relative">
-      
+
       {/* ── Left Sidebar: Experiences ── */}
       <div className="lg:col-span-3 space-y-4">
         <div className="flex items-center justify-between px-1">
@@ -327,11 +327,10 @@ export function ExperienceStudio() {
             <div
               key={exp._id}
               onClick={() => setSelectedExpId(exp._id)}
-              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                selectedExpId === exp._id
+              className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${selectedExpId === exp._id
                   ? "bg-amber-500 text-slate-950 border-amber-500 shadow-md"
                   : "bg-white dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 hover:border-slate-300"
-              }`}
+                }`}
             >
               <div>
                 <h3 className="text-sm font-bold truncate">{exp.name}</h3>
@@ -360,10 +359,10 @@ export function ExperienceStudio() {
                     {selectedExp.name}
                   </h2>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <button onClick={() => setShowBlockLibrary(true)} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm transition flex items-center gap-2 cursor-pointer">
-                    <Plus className="w-4 h-4"/> Add Block
+                    <Plus className="w-4 h-4" /> Add Block
                   </button>
                   <button onClick={handlePublish} className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-sm transition active:scale-95 cursor-pointer">
                     Publish
@@ -379,11 +378,10 @@ export function ExperienceStudio() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-1.5 py-3 border-b-2 text-xs font-bold transition-all cursor-pointer ${
-                      activeTab === tab.id
+                    className={`flex items-center gap-1.5 py-3 border-b-2 text-xs font-bold transition-all cursor-pointer ${activeTab === tab.id
                         ? "border-amber-500 text-slate-900 dark:text-white"
                         : "border-transparent text-slate-400 hover:text-slate-600"
-                    }`}
+                      }`}
                   >
                     <tab.icon className="w-3.5 h-3.5" />
                     {tab.label}
@@ -393,7 +391,7 @@ export function ExperienceStudio() {
             </div>
 
             <div className="p-5 bg-slate-50 dark:bg-zinc-950/50 min-h-[500px]">
-              
+
               {activeTab === "blocks" && (
                 <div className="max-w-3xl mx-auto space-y-4">
                   {blocks.map((block, idx) => {
@@ -405,8 +403,8 @@ export function ExperienceStudio() {
                       : null;
 
                     return (
-                      <div 
-                        key={block._id} 
+                      <div
+                        key={block._id}
                         draggable
                         onDragStart={(e) => handleDragStart(idx, e)}
                         onDragOver={(e) => handleDragOver(idx, e)}
@@ -419,10 +417,10 @@ export function ExperienceStudio() {
                             <GripVertical className="w-5 h-5" />
                           </div>
                           <div className="flex flex-col items-center gap-1">
-                            <button onClick={() => handleMoveUp(idx)} disabled={idx === 0} className={`p-0.5 rounded ${idx === 0 ? "text-slate-200" : "text-slate-400 hover:text-amber-500"} cursor-pointer`}><ChevronUp className="w-4 h-4"/></button>
-                            <button onClick={() => handleMoveDown(idx)} disabled={idx === blocks.length - 1} className={`p-0.5 rounded ${idx === blocks.length - 1 ? "text-slate-200" : "text-slate-400 hover:text-amber-500"} cursor-pointer`}><ChevronDown className="w-4 h-4"/></button>
+                            <button onClick={() => handleMoveUp(idx)} disabled={idx === 0} className={`p-0.5 rounded ${idx === 0 ? "text-slate-200" : "text-slate-400 hover:text-amber-500"} cursor-pointer`}><ChevronUp className="w-4 h-4" /></button>
+                            <button onClick={() => handleMoveDown(idx)} disabled={idx === blocks.length - 1} className={`p-0.5 rounded ${idx === blocks.length - 1 ? "text-slate-200" : "text-slate-400 hover:text-amber-500"} cursor-pointer`}><ChevronDown className="w-4 h-4" /></button>
                           </div>
-                        
+
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[9px] font-extrabold text-slate-500 uppercase tracking-widest">
@@ -462,7 +460,7 @@ export function ExperienceStudio() {
                             <button onClick={() => setExpandedBlockId(expandedBlockId === block._id ? null : block._id)} className="p-2 text-slate-400 hover:text-amber-500 bg-slate-50 dark:bg-zinc-800 rounded-xl transition cursor-pointer" title="Configure"><Settings className="w-4 h-4" /></button>
                             <button onClick={() => handleDuplicateBlock(block._id)} className="p-2 text-slate-400 hover:text-blue-500 bg-slate-50 dark:bg-zinc-800 rounded-xl transition cursor-pointer" title="Duplicate"><Copy className="w-4 h-4" /></button>
                             <button onClick={() => handleToggleVisibility(block._id, block.status)} className="p-2 text-slate-400 hover:text-slate-700 bg-slate-50 dark:bg-zinc-800 rounded-xl transition cursor-pointer" title={isHidden ? "Show" : "Hide"}>
-                              {isHidden ? <Eye className="w-4 h-4"/> : <EyeOff className="w-4 h-4"/>}
+                              {isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                             </button>
                             <button onClick={() => removeBlock({ id: block._id })} className="p-2 text-slate-400 hover:text-red-500 bg-slate-50 dark:bg-zinc-800 rounded-xl transition cursor-pointer" title="Remove"><Trash2 className="w-4 h-4" /></button>
                           </div>
@@ -471,11 +469,11 @@ export function ExperienceStudio() {
                         {/* Schema-Driven Config Drawer */}
                         {expandedBlockId === block._id && (
                           <div className="bg-slate-50 dark:bg-zinc-950 p-5 border-t border-slate-100 dark:border-zinc-800">
-                            <BlockConfigEditor 
-                              block={block} 
-                              schema={schema} 
-                              collections={collections} 
-                              campaigns={campaigns} 
+                            <BlockConfigEditor
+                              block={block}
+                              schema={schema}
+                              collections={collections}
+                              campaigns={campaigns}
                               categories={categories}
                               onSave={async (updates: any) => {
                                 await updateBlockContent({
@@ -510,8 +508,8 @@ export function ExperienceStudio() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Name</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         defaultValue={selectedExp.name}
                         onBlur={(e) => updateExp({ id: selectedExp._id, name: e.target.value })}
                         className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-sm"
@@ -519,8 +517,8 @@ export function ExperienceStudio() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Slug</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         defaultValue={selectedExp.slug}
                         onBlur={(e) => updateExp({ id: selectedExp._id, slug: e.target.value })}
                         className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-sm font-mono text-slate-500"
@@ -528,8 +526,8 @@ export function ExperienceStudio() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">SEO Title</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         defaultValue={selectedExp.seoTitle || ""}
                         onBlur={(e) => updateExp({ id: selectedExp._id, seoTitle: e.target.value })}
                         placeholder="e.g. Premium Tailoring | Hive by TailorBee"
@@ -538,7 +536,7 @@ export function ExperienceStudio() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">SEO Description</label>
-                      <textarea 
+                      <textarea
                         defaultValue={selectedExp.seoDescription || ""}
                         onBlur={(e) => updateExp({ id: selectedExp._id, seoDescription: e.target.value })}
                         placeholder="e.g. Discover our curated collection..."
@@ -566,7 +564,7 @@ export function ExperienceStudio() {
           <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="p-5 flex items-center justify-between border-b">
               <h2 className="text-lg font-bold">Block Library</h2>
-              <button onClick={() => setShowBlockLibrary(false)} className="text-slate-400 hover:text-slate-900 cursor-pointer"><X className="w-5 h-5"/></button>
+              <button onClick={() => setShowBlockLibrary(false)} className="text-slate-400 hover:text-slate-900 cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-5 overflow-y-auto">
               {["Marketing", "Collections", "Commerce"].map(category => (
@@ -633,7 +631,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
         body: file,
       });
       const finalizedAsset = await commitUpload({ sessionId });
-      
+
       const newItems = [...(formData.config.items || [])];
       // Assuming finalizedAsset.url or similar is what we want, or the objectKey.
       // Wait, handleFileUpload sets finalizedAsset which is an object { objectKey: string, url?: string }.
@@ -681,7 +679,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
+
         {/* Dynamic Fields */}
         <div className="space-y-4">
           {(schema.fields.includes("badgeTitle") || formData.renderer === "premiumGrid") && (
@@ -689,12 +687,12 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
               <label className="block text-[11px] font-bold text-slate-500 mb-1">
                 Category / Badge Title (Optional)
               </label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="e.g. PREMIUM EDIT, HERITAGE SELECTION"
-                className="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium" 
-                value={formData.config.badgeTitle || ""} 
-                onChange={e => updateConfig("badgeTitle", e.target.value)} 
+                className="w-full p-2.5 rounded-xl border border-slate-200 text-sm font-medium"
+                value={formData.config.badgeTitle || ""}
+                onChange={e => updateConfig("badgeTitle", e.target.value)}
               />
               <span className="text-[10px] text-slate-400">Small gold tracking badge displayed at top. Leave blank to omit badge.</span>
             </div>
@@ -702,13 +700,13 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
           {schema.fields.includes("title") && (
             <div>
               <label className="block text-[11px] font-bold text-slate-500 mb-1">Title</label>
-              <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+              <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} />
             </div>
           )}
           {schema.fields.includes("subtitle") && (
             <div>
               <label className="block text-[11px] font-bold text-slate-500 mb-1">Subtitle</label>
-              <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.subtitle} onChange={e => setFormData({...formData, subtitle: e.target.value})} />
+              <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.subtitle} onChange={e => setFormData({ ...formData, subtitle: e.target.value })} />
             </div>
           )}
           {schema.fields.includes("bannerUpload") && (
@@ -739,11 +737,11 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                   <div className="mt-2 relative aspect-[16/6] rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-[140px]">
                     <img
                       src={
-                        typeof formData.config.desktopImage === "string" 
-                          ? formData.config.desktopImage.replace("https://cdn.hivenow.in/cdn-cgi/image/format=auto/banner_images/", "https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/banner_images/") 
-                          : (formData.config.desktopImage?.objectKey 
-                              ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.desktopImage.objectKey}` 
-                              : "")
+                        typeof formData.config.desktopImage === "string"
+                          ? formData.config.desktopImage.replace("https://cdn.hivenow.in/cdn-cgi/image/format=auto/banner_images/", "https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/banner_images/")
+                          : (formData.config.desktopImage?.objectKey
+                            ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.desktopImage.objectKey}`
+                            : "")
                       }
                       alt="Desktop Banner Preview"
                       className="w-full h-full object-cover"
@@ -778,11 +776,11 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                   <div className="mt-2 relative aspect-[2/1] rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-[120px]">
                     <img
                       src={
-                        typeof formData.config.mobileImage === "string" 
-                          ? formData.config.mobileImage.replace("https://cdn.hivenow.in/cdn-cgi/image/format=auto/banner_images/", "https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/banner_images/") 
-                          : (formData.config.mobileImage?.objectKey 
-                              ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.mobileImage.objectKey}` 
-                              : "")
+                        typeof formData.config.mobileImage === "string"
+                          ? formData.config.mobileImage.replace("https://cdn.hivenow.in/cdn-cgi/image/format=auto/banner_images/", "https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/banner_images/")
+                          : (formData.config.mobileImage?.objectKey
+                            ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.mobileImage.objectKey}`
+                            : "")
                       }
                       alt="Mobile Banner Preview"
                       className="w-full h-full object-cover"
@@ -832,7 +830,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                 <div className="mt-2 relative aspect-[16/6] rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-[140px]">
                   <img
                     src={
-                      typeof formData.config.bgImage === "string" 
+                      typeof formData.config.bgImage === "string"
                         ? formData.config.bgImage
                         : (formData.config.bgImage?.url || (formData.config.bgImage?.objectKey ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.bgImage.objectKey}` : ""))
                     }
@@ -849,7 +847,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
               <label className="block text-[11px] font-bold text-slate-700 mb-1">
                 Card CTA Text (Replaces Price)
               </label>
-              <input 
+              <input
                 type="text"
                 placeholder="e.g. Take a closer look →"
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm font-medium"
@@ -912,7 +910,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
           {schema.fields.includes("renderer") && (
             <div>
               <label className="block text-[11px] font-bold text-slate-500 mb-1">Renderer (Layout)</label>
-              <select className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.renderer} onChange={e => setFormData({...formData, renderer: e.target.value})}>
+              <select className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.renderer} onChange={e => setFormData({ ...formData, renderer: e.target.value })}>
                 <option value="productCarousel">Product Carousel (Horizontal Scroll)</option>
                 <option value="twoProductGrid">2-Column Product Grid</option>
                 <option value="premiumGrid">Premium Zara-Style Grid (Full Visual Width)</option>
@@ -944,8 +942,8 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
               <label className="block text-[11px] font-bold text-slate-500 mb-2">Assign Collection</label>
               <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                 {collections?.map((col: any) => (
-                  <div 
-                    key={col._id} 
+                  <div
+                    key={col._id}
                     onClick={() => updateConfig("collectionId", col._id)}
                     className={`p-3 rounded-xl border-2 cursor-pointer transition flex items-center justify-between ${formData.config.collectionId === col._id ? "border-amber-500 bg-amber-50" : "border-slate-200 hover:border-amber-300"}`}
                   >
@@ -965,8 +963,8 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
               <label className="block text-[11px] font-bold text-slate-500 mb-2">Assign Campaign/Banner</label>
               <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
                 {campaigns?.map((camp: any) => (
-                  <div 
-                    key={camp._id} 
+                  <div
+                    key={camp._id}
                     onClick={() => updateConfig("campaignId", camp._id)}
                     className={`p-3 rounded-xl border-2 cursor-pointer transition flex items-center justify-between ${formData.config.campaignId === camp._id ? "border-amber-500 bg-amber-50" : "border-slate-200 hover:border-amber-300"}`}
                   >
@@ -990,11 +988,11 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                       <div className="flex items-start gap-3">
                         <div className="shrink-0 flex flex-col gap-1 items-center">
                           <label className="cursor-pointer">
-                            <input 
-                              type="file" 
-                              accept="image/png" 
-                              className="hidden" 
-                              onChange={(e) => handleVibeImageUpload(e, idx)} 
+                            <input
+                              type="file"
+                              accept="image/png"
+                              className="hidden"
+                              onChange={(e) => handleVibeImageUpload(e, idx)}
                             />
                             <div className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 hover:bg-slate-100 transition overflow-hidden">
                               {item.imageUrl ? (
@@ -1006,13 +1004,13 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                               )}
                             </div>
                           </label>
-                          <span className="text-[9px] font-bold text-slate-400 text-center">Transparent<br/>PNG</span>
+                          <span className="text-[9px] font-bold text-slate-400 text-center">Transparent<br />PNG</span>
                         </div>
                         <div className="flex-1 space-y-2">
-                          <input 
-                            type="text" 
-                            placeholder="Brand Name (e.g. SASSAFRAS)" 
-                            className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm font-bold uppercase" 
+                          <input
+                            type="text"
+                            placeholder="Brand Name (e.g. SASSAFRAS)"
+                            className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm font-bold uppercase"
                             value={item.brandName || ""}
                             onChange={(e) => {
                               const newItems = [...(formData.config.items || [])];
@@ -1020,10 +1018,10 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                               updateConfig("items", newItems);
                             }}
                           />
-                          <input 
-                            type="text" 
-                            placeholder="Offer Text (e.g. UPTO 80% OFF)" 
-                            className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-bold uppercase" 
+                          <input
+                            type="text"
+                            placeholder="Offer Text (e.g. UPTO 80% OFF)"
+                            className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-bold uppercase"
                             value={item.offerText || ""}
                             onChange={(e) => {
                               const newItems = [...(formData.config.items || [])];
@@ -1067,7 +1065,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                         )}
                       </select>
                     </div>
-                    <button 
+                    <button
                       onClick={() => {
                         const newItems = [...(formData.config.items || [])];
                         newItems.splice(idx, 1);
@@ -1079,7 +1077,7 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                     </button>
                   </div>
                 ))}
-                <button 
+                <button
                   onClick={() => {
                     const newItems = [...(formData.config.items || []), { label: "", emoji: "", targetUrl: "" }];
                     updateConfig("items", newItems);

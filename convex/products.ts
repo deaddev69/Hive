@@ -1993,9 +1993,15 @@ export const searchProductsInternal = internalQuery({
     const term = args.searchTerm.toLowerCase().trim().replace(/[^a-zA-Z0-9\s]/g, "");
     
     // Minimum length check to prevent spamming high-cost queries
-    if (term.length < 3) {
+    if (term.length < 2) {
       return { products: [], totalMatchedCount: 0 };
     }
+
+    const singularTerm = term.endsWith("es")
+      ? term.slice(0, -2)
+      : term.endsWith("s")
+      ? term.slice(0, -1)
+      : "";
 
     // Use Convex full-text search index for product names
     const approvedBoutiqueIds = await getApprovedBoutiqueIds(ctx);
@@ -2005,6 +2011,43 @@ export const searchProductsInternal = internalQuery({
         q.search("name", term).eq("active", true)
       )
       .take(50);
+
+    let stemSearchResults: any[] = [];
+    if (singularTerm && singularTerm.length >= 3) {
+      stemSearchResults = await ctx.db
+        .query("products")
+        .withSearchIndex("search_products", (q) =>
+          q.search("name", singularTerm).eq("active", true)
+        )
+        .take(50);
+    }
+
+    // Fetch categories and match category names
+    const categories = await ctx.db.query("categories").collect();
+    const categoriesMap = new Map(categories.map((c: any) => [c._id, c]));
+
+    const matchedCategories = categories.filter((c: any) => {
+      const cName = (c.name || "").toLowerCase();
+      const cSlug = (c.slug || "").toLowerCase();
+      return (
+        cName.includes(term) ||
+        cSlug.includes(term) ||
+        (singularTerm && (cName.includes(singularTerm) || cSlug.includes(singularTerm)))
+      );
+    });
+
+    const matchedCategoryIds = new Set(matchedCategories.map((c: any) => c._id.toString()));
+
+    // Fetch products belonging to matched categories
+    let categoryProducts: any[] = [];
+    for (const cat of matchedCategories) {
+      const catProds = await ctx.db
+        .query("products")
+        .withIndex("by_categoryId", (q) => q.eq("categoryId", cat._id))
+        .filter((q) => q.eq(q.field("active"), true))
+        .take(40);
+      categoryProducts.push(...catProds);
+    }
 
     // Also match boutiques/sellers by name, description, area, or city
     const allApprovedBoutiques = await ctx.db
@@ -2023,7 +2066,8 @@ export const searchProductsInternal = internalQuery({
         bDesc.includes(term) ||
         bCity.includes(term) ||
         bArea.includes(term) ||
-        bAddress.includes(term)
+        bAddress.includes(term) ||
+        (singularTerm && (bName.includes(singularTerm) || bDesc.includes(singularTerm)))
       );
     });
 
@@ -2040,9 +2084,11 @@ export const searchProductsInternal = internalQuery({
       boutiqueProducts.push(...bProds);
     }
 
-    // Combine full-text search products + seller-matched products
+    // Combine full-text search products + category products + seller-matched products
     const combinedProductMap = new Map<string, any>();
     for (const p of searchResults) combinedProductMap.set(p._id.toString(), p);
+    for (const p of stemSearchResults) combinedProductMap.set(p._id.toString(), p);
+    for (const p of categoryProducts) combinedProductMap.set(p._id.toString(), p);
     for (const p of boutiqueProducts) combinedProductMap.set(p._id.toString(), p);
 
     const candidateProducts = Array.from(combinedProductMap.values());
@@ -2054,10 +2100,6 @@ export const searchProductsInternal = internalQuery({
         p.adminHidden !== true &&
         (!p.approvalStatus || p.approvalStatus === "approved")
     );
-
-    // Fetch categories
-    const categories = await ctx.db.query("categories").collect();
-    const categoriesMap = new Map(categories.map((c: any) => [c._id, c]));
 
     // Batch-fetch boutiques referenced by search result products
     const uniqueBoutiqueIds = Array.from(
@@ -2086,6 +2128,11 @@ export const searchProductsInternal = internalQuery({
         // If product belongs to an explicitly matched seller
         if (matchedBoutiqueIds.has(p.boutiqueId.toString())) {
           score += 150;
+        }
+
+        // If product belongs to an explicitly matched category
+        if (matchedCategoryIds.has(p.categoryId?.toString())) {
+          score += 130;
         }
 
         // 1. Name Match

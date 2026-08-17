@@ -200,11 +200,10 @@ function AddressCard({
 }) {
   return (
     <div
-      className={`relative bg-[#FFFFFF] border rounded-xl p-6 flex flex-col justify-between min-h-[190px] transition-all duration-300 ${
-        address.isDefault
+      className={`relative bg-[#FFFFFF] border rounded-xl p-6 flex flex-col justify-between min-h-[190px] transition-all duration-300 ${address.isDefault
           ? "border-[#1C1917] shadow-sm"
           : "border-[#1c1917]/[0.08] hover:border-[#1c1917]/20"
-      }`}
+        }`}
     >
       <div className="space-y-4">
         {/* Top row: Label & Default Indicator */}
@@ -226,7 +225,7 @@ function AddressCard({
         <div className="space-y-2 text-left">
           {/* Recipient Name */}
           <h4 className="text-sm font-medium text-[#1C1917]">{toTitleCase(userName)}</h4>
-          
+
           {/* Phone */}
           <div className="flex items-center gap-1.5 text-xs text-[#78716C]">
             <Phone className="w-3.5 h-3.5 stroke-[1.5]" />
@@ -386,7 +385,7 @@ function AddressFormModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5 text-left">
-          
+
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-[#78716C] uppercase tracking-widest">
@@ -451,11 +450,10 @@ function AddressFormModal({
                     key={opt}
                     type="button"
                     onClick={() => setForm((p) => ({ ...p, label: opt }))}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                      form.label === opt
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${form.label === opt
                         ? "bg-[#1C1917] text-[#FAF8F5] border-[#1C1917]"
                         : "bg-white text-[#78716C] border-[#1c1917]/[0.08] hover:border-[#1c1917]/20"
-                    }`}
+                      }`}
                   >
                     <LabelIcon label={opt} />
                     {opt}
@@ -525,11 +523,10 @@ function AddressFormModal({
 
             <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-[#1c1917]/[0.08] hover:border-[#1c1917]/20 transition-colors">
               <div
-                className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
-                  form.isDefault
+                className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${form.isDefault
                     ? "bg-[#1C1917] border-[#1C1917]"
                     : "bg-white border-[#1c1917]/[0.08]"
-                }`}
+                  }`}
               >
                 {form.isDefault && <Check className="w-3 h-3 text-[#FAF8F5]" />}
               </div>
@@ -640,11 +637,11 @@ function OverviewTab({
       {/* ── SECTION 6 — PROFILE DETAILS (Single Elegant Container) ── */}
       <section className="space-y-4 text-left">
         <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#78716C]">Profile Details</h3>
-        
+
         <div className="bg-white border border-[#1c1917]/[0.08] rounded-xl divide-y divide-[#1c1917]/[0.06] shadow-sm overflow-hidden">
-          
+
           {/* Field 1: Full Name */}
-          <div 
+          <div
             id="profile-name-card"
             className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-left transition-colors duration-200 hover:bg-stone-50/30"
           >
@@ -657,7 +654,7 @@ function OverviewTab({
               )}
             </div>
             {isEditingName ? (
-              <form 
+              <form
                 onSubmit={async (e) => {
                   e.preventDefault();
                   if (!nameVal.trim()) return;
@@ -670,21 +667,21 @@ function OverviewTab({
                 }}
                 className="flex items-center gap-2 w-full sm:w-auto"
               >
-                <input 
-                  type="text" 
-                  value={nameVal} 
+                <input
+                  type="text"
+                  value={nameVal}
                   onChange={(e) => setNameVal(e.target.value)}
                   className="bg-[#FAF8F4]/30 border border-[#1c1917]/[0.1] rounded px-3 py-1.5 text-xs font-semibold text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#1C1917] flex-1 sm:w-64"
                   autoFocus
                 />
-                <button 
+                <button
                   type="submit"
                   className="px-3 py-1.5 bg-[#1C1917] text-white rounded text-[10px] font-bold uppercase tracking-wider hover:bg-stone-850 cursor-pointer"
                 >
                   Save
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => {
                     setNameVal(user?.name || "");
                     setIsEditingName(false);
@@ -695,7 +692,7 @@ function OverviewTab({
                 </button>
               </form>
             ) : (
-              <button 
+              <button
                 onClick={() => setIsEditingName(true)}
                 className="text-[10px] font-bold uppercase tracking-widest text-[#78716C] hover:text-[#1C1917] transition-colors cursor-pointer self-start sm:self-center"
               >
@@ -713,7 +710,7 @@ function OverviewTab({
           </div>
 
           {/* Field 3: Phone */}
-          <div 
+          <div
             id="profile-phone-card"
             className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-left transition-colors duration-200 hover:bg-stone-50/30"
           >
@@ -726,7 +723,7 @@ function OverviewTab({
               )}
             </div>
             {isEditingPhone ? (
-              <form 
+              <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   handlePhoneChange(phoneVal);
@@ -734,21 +731,21 @@ function OverviewTab({
                 }}
                 className="flex items-center gap-2 w-full sm:w-auto"
               >
-                <input 
-                  type="text" 
-                  value={phoneVal} 
+                <input
+                  type="text"
+                  value={phoneVal}
                   onChange={(e) => setPhoneVal(e.target.value)}
                   className="bg-[#FAF8F4]/30 border border-[#1c1917]/[0.1] rounded px-3 py-1.5 text-xs font-semibold text-[#1C1917] focus:outline-none focus:ring-1 focus:ring-[#1C1917] flex-1 sm:w-64"
                   autoFocus
                 />
-                <button 
+                <button
                   type="submit"
                   className="px-3 py-1.5 bg-[#1C1917] text-white rounded text-[10px] font-bold uppercase tracking-wider hover:bg-stone-850 cursor-pointer"
                 >
                   Save
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => {
                     setPhoneVal(prefPhone);
                     setIsEditingPhone(false);
@@ -759,7 +756,7 @@ function OverviewTab({
                 </button>
               </form>
             ) : (
-              <button 
+              <button
                 onClick={() => setIsEditingPhone(true)}
                 className="text-[10px] font-bold uppercase tracking-widest text-[#78716C] hover:text-[#1C1917] transition-colors cursor-pointer self-start sm:self-center"
               >
@@ -886,19 +883,19 @@ function AddressesTab({ userName }: { userName: string }) {
 
   const editForm: AddressFormData = editTarget
     ? {
-        label: editTarget.label,
-        houseNumber: editTarget.houseNumber || "",
-        line1: editTarget.line1 || "",
-        city: editTarget.city,
-        state: editTarget.state,
-        pincode: editTarget.pincode,
-        landmark: editTarget.landmark || "",
-        phone: editTarget.phone || "",
-        isDefault: editTarget.isDefault,
-        lat: editTarget.lat,
-        lng: editTarget.lng,
-        formattedAddress: editTarget.formattedAddress,
-      }
+      label: editTarget.label,
+      houseNumber: editTarget.houseNumber || "",
+      line1: editTarget.line1 || "",
+      city: editTarget.city,
+      state: editTarget.state,
+      pincode: editTarget.pincode,
+      landmark: editTarget.landmark || "",
+      phone: editTarget.phone || "",
+      isDefault: editTarget.isDefault,
+      lat: editTarget.lat,
+      lng: editTarget.lng,
+      formattedAddress: editTarget.formattedAddress,
+    }
     : EMPTY_FORM;
 
   return (
@@ -908,7 +905,7 @@ function AddressesTab({ userName }: { userName: string }) {
           <h2 className="text-xl font-serif font-medium text-[#1C1917]">Delivery Addresses</h2>
           <p className="text-xs text-[#78716C] mt-1">Manage physical locations for courier hand-offs.</p>
         </div>
-        
+
         <button
           onClick={() => setShowForm(true)}
           className="h-10 px-4 rounded-lg bg-[#1C1917] text-[#FAF8F4] hover:bg-[#1c1917]/90 font-medium text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
@@ -1042,7 +1039,7 @@ function SettingsTab() {
   const [notifEmail, setNotifEmail] = useState(true);
   const [notifSMS, setNotifSMS] = useState(false);
   const [privacyShare, setPrivacyShare] = useState(true);
-  
+
   const { isSupported, isSubscribed, isLoading, subscribeToPush } = usePushSubscription();
 
   return (
@@ -1053,7 +1050,7 @@ function SettingsTab() {
       </div>
 
       <div className="bg-white border border-[#1c1917]/[0.08] rounded-xl divide-y divide-[#1c1917]/[0.08] overflow-hidden shadow-sm">
-        
+
         {/* Push Notifications Section */}
         <div className="p-5 flex items-center justify-between gap-4">
           <div className="space-y-0.5">
@@ -1072,9 +1069,8 @@ function SettingsTab() {
                 }
               }}
               disabled={isLoading || isSubscribed}
-              className={`w-10 h-6 rounded-full p-0.5 transition-colors ${
-                isSubscribed ? "bg-[#1C1917] flex justify-end opacity-70 cursor-not-allowed" : "bg-[#1c1917]/[0.08] flex justify-start cursor-pointer hover:bg-[#1c1917]/20"
-              }`}
+              className={`w-10 h-6 rounded-full p-0.5 transition-colors ${isSubscribed ? "bg-[#1C1917] flex justify-end opacity-70 cursor-not-allowed" : "bg-[#1c1917]/[0.08] flex justify-start cursor-pointer hover:bg-[#1c1917]/20"
+                }`}
             >
               <span className="w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200 flex items-center justify-center">
                 {isLoading && <Loader2 className="w-3 h-3 text-[#1C1917] animate-spin" />}
@@ -1092,9 +1088,8 @@ function SettingsTab() {
           </div>
           <button
             onClick={() => setNotifEmail(!notifEmail)}
-            className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
-              notifEmail ? "bg-[#1C1917] flex justify-end" : "bg-[#1c1917]/[0.08] flex justify-start"
-            }`}
+            className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${notifEmail ? "bg-[#1C1917] flex justify-end" : "bg-[#1c1917]/[0.08] flex justify-start"
+              }`}
           >
             <span className="w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200" />
           </button>
@@ -1107,9 +1102,8 @@ function SettingsTab() {
           </div>
           <button
             onClick={() => setNotifSMS(!notifSMS)}
-            className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
-              notifSMS ? "bg-[#1C1917] flex justify-end" : "bg-[#1c1917]/[0.08] flex justify-start"
-            }`}
+            className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${notifSMS ? "bg-[#1C1917] flex justify-end" : "bg-[#1c1917]/[0.08] flex justify-start"
+              }`}
           >
             <span className="w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200" />
           </button>
@@ -1122,9 +1116,8 @@ function SettingsTab() {
           </div>
           <button
             onClick={() => setPrivacyShare(!privacyShare)}
-            className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
-              privacyShare ? "bg-[#1C1917] flex justify-end" : "bg-[#1c1917]/[0.08] flex justify-start"
-            }`}
+            className={`w-10 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${privacyShare ? "bg-[#1C1917] flex justify-end" : "bg-[#1c1917]/[0.08] flex justify-start"
+              }`}
           >
             <span className="w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200" />
           </button>
@@ -1216,7 +1209,7 @@ function AccountPageContent() {
 
   return (
     <div className="min-h-screen bg-[#FAF8F4] text-[#1C1917] font-sans pb-24 antialiased selection:bg-[#F5A623]/20">
-      
+
       {/* Mobile Top Profile Identity (compact layout visible only on mobile) */}
       <div className="lg:hidden bg-white border-b border-[#1c1917]/[0.08] px-6 pt-6 pb-4 text-left">
         <h2 className="text-xl font-serif font-light text-[#1C1917] leading-tight">
@@ -1232,11 +1225,10 @@ function AccountPageContent() {
             <button
               key={tab.id}
               onClick={() => handleNavClick(tab)}
-              className={`snap-center flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
-                isTabActive
+              className={`snap-center flex-shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${isTabActive
                   ? "bg-[#1C1917] border-[#1C1917] text-[#FAF8F4]"
                   : "bg-white border-[#1c1917]/[0.08] text-[#78716C] hover:text-[#1C1917]"
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -1245,11 +1237,11 @@ function AccountPageContent() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 lg:pt-10 flex flex-col lg:flex-row gap-12 relative items-stretch">
-        
+
         {/* ── LEFT PROFILE RAIL ── (hidden on mobile) */}
         <aside className="hidden lg:flex w-full lg:w-[320px] flex-shrink-0 flex-col justify-between border-b lg:border-b-0 lg:border-r border-[#1c1917]/[0.08] pb-8 lg:pb-0 lg:pr-10 text-left">
           <div className="space-y-8 sticky top-24">
-            
+
             {/* Identity card */}
             <div className="space-y-4">
               <div className="w-20 h-20 rounded-full bg-[#FAF8F4] border border-[#F5A623] flex items-center justify-center shadow-sm select-none">
@@ -1272,11 +1264,10 @@ function AccountPageContent() {
                   <button
                     key={tab.id}
                     onClick={() => handleNavClick(tab)}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all w-full cursor-pointer text-left ${
-                      isTabActive
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold transition-all w-full cursor-pointer text-left ${isTabActive
                         ? "bg-white text-[#1C1917] font-medium border border-[#1c1917]/[0.08] shadow-sm"
                         : "text-[#78716C] hover:bg-white/40 hover:text-[#1C1917]"
-                    }`}
+                      }`}
                   >
                     <span>{tab.label}</span>
                     {!(tab as any).route && <ChevronRight className="w-3.5 h-3.5 text-[#78716C]" />}
@@ -1291,22 +1282,22 @@ function AccountPageContent() {
                 <HelpCircle className="w-4 h-4 text-[#78716C]" />
                 <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-[#78716C]">Need Help?</h5>
               </div>
-              
+
               <div className="flex flex-col gap-1 text-xs">
-                <a 
+                <a
                   href="tel:+917356019103"
                   className="font-bold text-[#1C1917] hover:text-[#F5A623] transition-colors"
                 >
                   📞 +91 73560 19103
                 </a>
-                <a 
+                <a
                   href="mailto:support@hivenow.in"
                   className="font-medium text-[#78716C] hover:text-[#1C1917] transition-colors"
                 >
                   ✉️ support@hivenow.in
                 </a>
               </div>
-              
+
               <p className="text-[10px] text-[#78716C] leading-normal font-medium">
                 Helpline active Mon–Sun, 9 AM – 9 PM.
               </p>
@@ -1339,22 +1330,22 @@ function AccountPageContent() {
               <HelpCircle className="w-4 h-4 text-[#78716C]" />
               <h5 className="text-[10px] font-extrabold uppercase tracking-widest text-[#78716C]">Need Help?</h5>
             </div>
-            
+
             <div className="flex flex-col gap-1 text-xs">
-              <a 
+              <a
                 href="tel:+917356019103"
                 className="font-bold text-[#1C1917] hover:text-[#F5A623] transition-colors"
               >
                 📞 +91 73560 19103
               </a>
-              <a 
+              <a
                 href="mailto:support@hivenow.in"
                 className="font-medium text-[#78716C] hover:text-[#1C1917] transition-colors"
               >
                 ✉️ support@hivenow.in
               </a>
             </div>
-            
+
             <p className="text-[10px] text-[#78716C] leading-normal font-medium">
               Helpline active Mon–Sun, 9 AM – 9 PM.
             </p>

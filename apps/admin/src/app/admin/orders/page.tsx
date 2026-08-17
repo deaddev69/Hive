@@ -391,11 +391,10 @@ function OrderDetailDrawer({
                 {order.items.map((item, idx) => (
                   <div
                     key={item._id}
-                    className={`flex items-center gap-3 p-3 ${
-                      idx < order.items.length - 1
+                    className={`flex items-center gap-3 p-3 ${idx < order.items.length - 1
                         ? "border-b border-hive-border/40"
                         : ""
-                    }`}
+                      }`}
                   >
                     {/* Image */}
                     <div className="w-12 h-14 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 border border-hive-border/30">
@@ -509,27 +508,24 @@ function OrderDetailDrawer({
                   <div key={idx} className="flex items-start gap-3">
                     <div className="flex flex-col items-center">
                       <div
-                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                          step.done
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${step.done
                             ? "bg-hive-gold border-hive-gold text-white"
                             : "bg-white border-slate-200 text-slate-300"
-                        }`}
+                          }`}
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
                       </div>
                       {idx < order.timeline.length - 1 && (
                         <div
-                          className={`w-0.5 h-6 mt-0.5 ${
-                            step.done ? "bg-hive-gold/30" : "bg-slate-100"
-                          }`}
+                          className={`w-0.5 h-6 mt-0.5 ${step.done ? "bg-hive-gold/30" : "bg-slate-100"
+                            }`}
                         />
                       )}
                     </div>
                     <div className="pb-4">
                       <p
-                        className={`text-xs font-semibold ${
-                          step.done ? "text-hive-dark" : "text-slate-300"
-                        }`}
+                        className={`text-xs font-semibold ${step.done ? "text-hive-dark" : "text-slate-300"
+                          }`}
                       >
                         {step.label}
                       </p>
@@ -607,7 +603,7 @@ export default function AdminOrdersPage() {
       o.status === "pending_confirmation" &&
       now - (o.createdAt ?? o._creationTime) > SLA_WARNING_MS
     );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders]);
 
   const filtered = useMemo(() => {
@@ -629,7 +625,7 @@ export default function AdminOrdersPage() {
 
       return matchesSearch && matchesStatus;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders, searchTerm, statusFilter]);
 
   if (isLoading) {
@@ -695,16 +691,16 @@ export default function AdminOrdersPage() {
   ];
 
   const STATUS_OPTIONS = [
-    { value: "all",                  label: "All Statuses" },
-    { value: "sla_overdue",          label: "⚠️ SLA Overdue (>10 min)" },
+    { value: "all", label: "All Statuses" },
+    { value: "sla_overdue", label: "⚠️ SLA Overdue (>10 min)" },
     { value: "pending_confirmation", label: "Pending Confirmation" },
-    { value: "confirmed",            label: "Confirmed" },
-    { value: "packed",               label: "Packed" },
-    { value: "in_transit",           label: "In Transit" },
-    { value: "out_for_delivery",     label: "Out for Delivery" },
-    { value: "delivered",            label: "Delivered" },
-    { value: "cancelled",            label: "Cancelled" },
-    { value: "refunded",             label: "Refunded" },
+    { value: "confirmed", label: "Confirmed" },
+    { value: "packed", label: "Packed" },
+    { value: "in_transit", label: "In Transit" },
+    { value: "out_for_delivery", label: "Out for Delivery" },
+    { value: "delivered", label: "Delivered" },
+    { value: "cancelled", label: "Cancelled" },
+    { value: "refunded", label: "Refunded" },
   ];
 
   return (
@@ -759,11 +755,10 @@ export default function AdminOrdersPage() {
                   <button
                     key={o._id}
                     onClick={() => setSelectedOrderId(o._id)}
-                    className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border transition-all cursor-pointer whitespace-nowrap ${
-                      isCritical
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border transition-all cursor-pointer whitespace-nowrap ${isCritical
                         ? "bg-red-600 border-red-700 text-white animate-pulse shadow-xs"
                         : "bg-white border-red-200 text-red-800 hover:bg-red-50"
-                    }`}
+                      }`}
                     title={`Click to view #${o.orderNumber}`}
                   >
                     #{o.orderNumber} ({elapsedMin}m)
@@ -779,11 +774,10 @@ export default function AdminOrdersPage() {
 
             <button
               onClick={() => setStatusFilter(statusFilter === "sla_overdue" ? "all" : "sla_overdue")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
-                statusFilter === "sla_overdue"
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${statusFilter === "sla_overdue"
                   ? "bg-red-900 text-white shadow-xs"
                   : "bg-red-600 hover:bg-red-700 text-white shadow-xs active:scale-[0.98]"
-              }`}
+                }`}
             >
               {statusFilter === "sla_overdue" ? "Showing Overdue (Reset)" : `Filter Overdue (${slaOverdueOrders.length})`}
             </button>

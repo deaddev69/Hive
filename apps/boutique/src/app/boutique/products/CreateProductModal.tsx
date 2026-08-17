@@ -133,9 +133,8 @@ function InlineDropdown({ label, options, placeholder, value, onChange }: Inline
                 onChange(opt);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2.5 text-[13px] text-left hover:bg-slate-50 transition-colors ${
-                value === opt ? "bg-[#F5C22B]/10 text-[#D9A71E] font-bold" : "text-slate-700"
-              }`}
+              className={`w-full px-4 py-2.5 text-[13px] text-left hover:bg-slate-50 transition-colors ${value === opt ? "bg-[#F5C22B]/10 text-[#D9A71E] font-bold" : "text-slate-700"
+                }`}
             >
               {opt}
             </button>
@@ -181,7 +180,7 @@ function CustomSelect({ label, value, onChange, options, placeholder, required }
       <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-      
+
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -203,9 +202,8 @@ function CustomSelect({ label, value, onChange, options, placeholder, required }
                 onChange(opt);
                 setIsOpen(false);
               }}
-              className={`w-full px-4 py-2.5 text-[13px] text-left hover:bg-slate-50 transition-colors ${
-                value === opt ? "bg-[#F5C22B]/10 text-[#D9A71E] font-bold" : "text-slate-700"
-              }`}
+              className={`w-full px-4 py-2.5 text-[13px] text-left hover:bg-slate-50 transition-colors ${value === opt ? "bg-[#F5C22B]/10 text-[#D9A71E] font-bold" : "text-slate-700"
+                }`}
             >
               {opt}
             </button>
@@ -261,7 +259,7 @@ function CustomMultiSelect({
       <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-      
+
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -284,9 +282,8 @@ function CustomMultiSelect({
                 onClick={() => toggleOption(opt)}
                 className={`w-full px-4 py-2 flex items-center gap-3 hover:bg-slate-50 transition-colors text-[13px] text-slate-700`}
               >
-                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
-                  isChecked ? "bg-[#F5C22B] border-[#F5C22B] text-slate-900" : "border-slate-300 bg-white"
-                }`}>
+                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${isChecked ? "bg-[#F5C22B] border-[#F5C22B] text-slate-900" : "border-slate-300 bg-white"
+                  }`}>
                   {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
                 <span className={isChecked ? "font-bold text-slate-900" : "font-medium"}>{opt}</span>
@@ -404,15 +401,13 @@ function CategoryMultiSelect({
                 type="button"
                 onClick={() => toggleCategory(c._id)}
                 disabled={isMaxReached}
-                className={`w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-slate-50 transition-colors text-[13px] ${
-                  isMaxReached ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
-                }`}
+                className={`w-full px-4 py-2.5 flex items-center justify-between text-left hover:bg-slate-50 transition-colors text-[13px] ${isMaxReached ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
-                      isChecked ? "bg-[#F5C22B] border-[#F5C22B] text-slate-900" : "border-slate-300 bg-white"
-                    }`}
+                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${isChecked ? "bg-[#F5C22B] border-[#F5C22B] text-slate-900" : "border-slate-300 bg-white"
+                      }`}
                   >
                     {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                   </div>
@@ -474,7 +469,7 @@ export default function CreateProductModal({
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [localPreviews, setLocalPreviews] = useState<{ url: string; file?: File; storageId?: string }[]>([]);
-  
+
   const [description, setDescription] = useState("");
   const [story, setStory] = useState("");
   const [materialType, setMaterialType] = useState("");
@@ -815,7 +810,7 @@ export default function CreateProductModal({
         }
 
         setCraft(productToEdit.details?.craft ? autoCorrectCapitalization(productToEdit.details.craft) : "");
-        
+
         if (productToEdit.details) {
           const cFabricContent = autoCorrectCapitalization(productToEdit.details.fabricContent || "");
           const cFabricDetail = autoCorrectCapitalization(productToEdit.details.fabricDetail || "");
@@ -865,12 +860,12 @@ export default function CreateProductModal({
             fabricFamily: initSpec(cFabricFamily, FABRIC_FAMILY_OPTIONS),
           });
         }
-        
+
         setSelectedSizes(productToEdit.sizes || []);
         setStockBySize(productToEdit.stockBySize || {});
         setFitRecommendation(productToEdit.fitRecommendation || "true_to_size");
         setSilhouette(productToEdit.silhouette || "regular_fit");
-        
+
         setPrice(productToEdit.basePrice?.toString() || productToEdit.price?.toString() || "");
         const realMrp = (productToEdit as any).mrp ?? (productToEdit as any).compareAtPrice;
         setMrp(realMrp ? realMrp.toString() : "");
@@ -976,7 +971,7 @@ export default function CreateProductModal({
             <div key={i} className={`h-1 rounded-full flex-1 ${i <= step ? "bg-[#F5C22B]" : "bg-[#F0F0F0]"}`} />
           ))}
         </div>
-        
+
         {step === 1 && (
           <>
             <hr className="border-slate-100 mb-5" />
@@ -1045,7 +1040,7 @@ export default function CreateProductModal({
               {price && platformSettings && (() => {
                 const baseVal = parseFloat(price);
                 if (isNaN(baseVal) || baseVal < 0) return null;
-                
+
                 const feeRate = platformSettings.platformFeeRate ?? 0.02;
                 const feeAmount = baseVal * feeRate;
                 const netPayout = baseVal - feeAmount;
@@ -1091,7 +1086,7 @@ export default function CreateProductModal({
 
             <div className="flex flex-col gap-1">
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">PRODUCT PHOTOS</h3>
-              <p className="text-[13px] text-slate-500 font-medium leading-relaxed">Upload high-resolution images of your product (3 to 5 photos).<br/>Click "Set Cover" to select a primary cover image.</p>
+              <p className="text-[13px] text-slate-500 font-medium leading-relaxed">Upload high-resolution images of your product (3 to 5 photos).<br />Click "Set Cover" to select a primary cover image.</p>
             </div>
 
             <div
@@ -1158,7 +1153,7 @@ export default function CreateProductModal({
               <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">PRODUCT DETAILS</h3>
               <p className="text-[13px] text-slate-500 font-medium">Specify fabric storytelling, materials, and care instructions.</p>
             </div>
-            
+
             <div className="flex flex-col gap-1 mt-1">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">PRODUCT DESCRIPTION <span className="text-red-500">*</span></label>
@@ -1284,9 +1279,8 @@ export default function CreateProductModal({
                         type="button"
                         key={sz}
                         onClick={() => toggleSize(sz)}
-                        className={`h-12 w-12 sm:h-14 sm:w-14 rounded-2xl border font-black text-xs transition-colors flex items-center justify-center ${
-                          isSelected ? "bg-[#252323] text-white border-[#252323]" : "bg-white text-slate-800 border-slate-200 hover:border-[#F5C22B]"
-                        }`}
+                        className={`h-12 w-12 sm:h-14 sm:w-14 rounded-2xl border font-black text-xs transition-colors flex items-center justify-center ${isSelected ? "bg-[#252323] text-white border-[#252323]" : "bg-white text-slate-800 border-slate-200 hover:border-[#F5C22B]"
+                          }`}
                       >
                         {sz}
                       </button>
@@ -1332,7 +1326,7 @@ export default function CreateProductModal({
                   className={`flex-1 py-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-xl transition-all ${fitRecommendation === "runs_small" ? "bg-white shadow-sm border border-[#f1f5f9] text-slate-800" : "text-slate-400 hover:text-slate-600"}`}
                 >
                   <ChevronDown className="w-3.5 h-3.5" />
-                  <span className="text-[9px] font-black tracking-widest uppercase text-center leading-tight">RUNS<br/>SMALL</span>
+                  <span className="text-[9px] font-black tracking-widest uppercase text-center leading-tight">RUNS<br />SMALL</span>
                 </button>
                 <button
                   type="button"
@@ -1340,7 +1334,7 @@ export default function CreateProductModal({
                   className={`flex-1 py-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-xl transition-all ${fitRecommendation === "true_to_size" ? "bg-white shadow-sm border border-[#f1f5f9] text-[#D9A71E]" : "text-slate-400 hover:text-slate-600"}`}
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span className="text-[9px] font-black tracking-widest uppercase text-center leading-tight text-slate-800">TRUE TO<br/>SIZE</span>
+                  <span className="text-[9px] font-black tracking-widest uppercase text-center leading-tight text-slate-800">TRUE TO<br />SIZE</span>
                 </button>
                 <button
                   type="button"
@@ -1348,7 +1342,7 @@ export default function CreateProductModal({
                   className={`flex-1 py-3 flex flex-col sm:flex-row items-center justify-center gap-1.5 rounded-xl transition-all ${fitRecommendation === "runs_large" ? "bg-white shadow-sm border border-[#f1f5f9] text-slate-800" : "text-slate-400 hover:text-slate-600"}`}
                 >
                   <ChevronUp className="w-3.5 h-3.5" />
-                  <span className="text-[9px] font-black tracking-widest uppercase text-center leading-tight">RUNS<br/>LARGE</span>
+                  <span className="text-[9px] font-black tracking-widest uppercase text-center leading-tight">RUNS<br />LARGE</span>
                 </button>
               </div>
               <span className="text-[9px] font-medium text-slate-500">Based on your experience helping customers choose sizes for this product.</span>
@@ -1381,7 +1375,7 @@ export default function CreateProductModal({
         {/* STEP 3: Product Details */}
         {step === 3 && (
           <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4">
-            
+
             <div className="flex flex-col gap-1">
               <h3 className="text-[13px] font-black uppercase tracking-widest text-slate-800">SPECIFICATIONS</h3>
               <p className="text-[11px] text-slate-500 font-medium mb-2">Fill out these characteristics to provide pure transparency and details to customers.</p>
@@ -1399,7 +1393,7 @@ export default function CreateProductModal({
                   placeholder="e.g. White"
                 />
               </div>
-              
+
               <div className="flex flex-col gap-1">
                 <InlineDropdown
                   label="FABRIC CONTENT"
@@ -1426,7 +1420,7 @@ export default function CreateProductModal({
                   />
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-1">
                 <InlineDropdown
                   label="FABRIC DETAIL"
@@ -1453,7 +1447,7 @@ export default function CreateProductModal({
                   />
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-1">
                 <InlineDropdown
                   label="NECK TYPE"
@@ -1480,7 +1474,7 @@ export default function CreateProductModal({
                   />
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-1">
                 <InlineDropdown
                   label="CLOSURE"
@@ -1507,7 +1501,7 @@ export default function CreateProductModal({
                   />
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-1">
                 <InlineDropdown
                   label="SLEEVE LENGTH"
@@ -1534,7 +1528,7 @@ export default function CreateProductModal({
                   />
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-1">
                 <InlineDropdown
                   label="SLEEVE STYLING"
@@ -1561,7 +1555,7 @@ export default function CreateProductModal({
                   />
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-1">
                 <InlineDropdown
                   label="SHAPE"
@@ -1588,7 +1582,7 @@ export default function CreateProductModal({
                   />
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-1">
                 <InlineDropdown
                   label="HEMLINE"
@@ -1615,7 +1609,7 @@ export default function CreateProductModal({
                   />
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-1">
                 <InlineDropdown
                   label="GARMENT LENGTH"
@@ -1642,7 +1636,7 @@ export default function CreateProductModal({
                   />
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-1">
                 <InlineDropdown
                   label="PATTERN"
