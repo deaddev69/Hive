@@ -1154,9 +1154,91 @@ export const Navbar: React.FC = () => {
                   <ArrowRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                 </button>
               ))}
+
               {suggestions.length === 0 && (
-                <div className="text-center py-8 text-xs text-gray-400 font-medium">
-                  No suggestions found for "{searchQuery}"
+                <div className="flex flex-col gap-6 py-3">
+                  {/* Direct 1-tap search for what they typed */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = [searchQuery, ...recentSearches.filter((s) => s !== searchQuery)].slice(0, 5);
+                      setRecentSearches(updated);
+                      if (typeof window !== "undefined") {
+                        localStorage.setItem("hive_recent_searches", JSON.stringify(updated));
+                      }
+                      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+                      setSearchOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 text-left hover:border-amber-500 transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Search className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span className="text-xs font-semibold text-stone-900 dark:text-white">
+                        Search for <strong className="font-bold">&ldquo;{searchQuery}&rdquo;</strong>
+                      </span>
+                    </div>
+                    <ArrowRight className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-900 dark:group-hover:text-white transition-colors" />
+                  </button>
+
+                  {/* Related Trending Styles */}
+                  <div className="flex flex-col gap-2.5 text-left">
+                    <span className="text-[11px] uppercase tracking-wider text-stone-400 font-bold">
+                      Related Styles
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {["Sarees", "Kurtis", "Lehengas", "Co-ords", "Festive Wear", "Party Dresses", "Handlooms"].map((chip) => (
+                        <button
+                          key={chip}
+                          type="button"
+                          onClick={() => {
+                            const updated = [chip, ...recentSearches.filter((s) => s !== chip)].slice(0, 5);
+                            setRecentSearches(updated);
+                            if (typeof window !== "undefined") {
+                              localStorage.setItem("hive_recent_searches", JSON.stringify(updated));
+                            }
+                            router.push(`/search?q=${encodeURIComponent(chip)}`);
+                            setSearchOpen(false);
+                          }}
+                          className="px-3.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-full text-xs font-semibold text-stone-700 dark:text-stone-300 hover:border-amber-500 hover:text-amber-600 transition-all cursor-pointer shadow-2xs"
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Curated Categories */}
+                  {subcategories.length > 0 && (
+                    <div className="flex flex-col gap-2.5 text-left pt-1">
+                      <span className="text-[11px] uppercase tracking-wider text-stone-400 font-bold">
+                        Browse Categories
+                      </span>
+                      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none pl-0.5">
+                        {subcategories.slice(0, 6).map((subcat: any) => (
+                          <button
+                            key={subcat._id}
+                            type="button"
+                            onClick={() => {
+                              router.push(`/products/${subcat.slug}`);
+                              setSearchOpen(false);
+                            }}
+                            className="flex flex-col items-center gap-1.5 flex-shrink-0 group cursor-pointer"
+                          >
+                            <div className="relative w-14 h-14 rounded-2xl overflow-hidden border border-stone-200 bg-stone-100 shadow-2xs group-hover:scale-105 transition-transform duration-200">
+                              <img
+                                src={subcat.homepageImageUrl || subcat.imageUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80"}
+                                alt={subcat.name}
+                                className="w-full h-full object-cover pointer-events-none"
+                              />
+                            </div>
+                            <span className="text-[10px] font-semibold text-stone-700 dark:text-neutral-300 text-center truncate max-w-[64px]">
+                              {subcat.name}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
