@@ -286,22 +286,26 @@ function OrderSuccessContent() {
               <ReceiptPrinter.Output className="w-full">
                 <ReceiptPrinter.Paper className="w-full text-left">
                   {/* Receipt Header */}
-                  <div className="text-center pb-3 border-b border-dashed border-stone-300">
-                    <h3 className="font-serif font-extrabold text-base tracking-tight text-stone-950 uppercase">
-                      HIVE NOW
-                    </h3>
+                  <div className="text-center pb-3.5 border-b border-dashed border-stone-300">
+                    <div className="inline-flex items-center justify-center gap-1 text-[11px] font-black tracking-widest text-amber-700 uppercase mb-0.5">
+                      <span>◆</span>
+                      <span>HIVE NOW</span>
+                      <span>◆</span>
+                    </div>
                     <p className="text-[9.5px] text-stone-500 font-sans tracking-wide">
-                      Hive Express 90-Min · Kochi
+                      Hive Express 90-Min Dispatch · Kochi
                     </p>
-                    <div className="mt-2 text-[10px] font-mono text-stone-600 flex items-center justify-between px-1">
+                    <div className="mt-2.5 text-[10px] font-mono text-stone-600 flex items-center justify-between px-1 bg-stone-100/60 rounded-md py-1">
                       <span>{orderDateStr}</span>
-                      <span className="font-bold text-emerald-700">PAID & VERIFIED</span>
+                      <span className="font-bold text-emerald-800 bg-emerald-100/80 px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider">
+                        PAID & VERIFIED
+                      </span>
                     </div>
                   </div>
 
                   {/* Items list */}
                   <div className="py-3 border-b border-dashed border-stone-300 space-y-1.5 text-[11px] font-mono">
-                    <div className="text-[9.5px] font-bold text-stone-400 uppercase tracking-wider pb-0.5">
+                    <div className="text-[9px] font-bold text-stone-400 uppercase tracking-wider pb-0.5">
                       PURCHASED ITEMS
                     </div>
                     {resolvedOrder.items.map((item: any, idx: number) => (
@@ -339,7 +343,7 @@ function OrderSuccessContent() {
                     </div>
                     <div className="flex justify-between font-bold text-sm text-stone-950 pt-1.5 border-t border-stone-200">
                       <span>TOTAL PAID</span>
-                      <span>₹{(resolvedOrder.total / 100).toFixed(2)}</span>
+                      <span className="text-amber-900">₹{(resolvedOrder.total / 100).toFixed(2)}</span>
                     </div>
                   </div>
 
@@ -348,7 +352,7 @@ function OrderSuccessContent() {
                     <p className="font-bold text-stone-900 uppercase">
                       DESTINATION: {resolvedOrder.address?.name || "Customer"}
                     </p>
-                    <p className="truncate">
+                    <p className="truncate text-stone-700">
                       {resolvedOrder.address?.addressLine1 || "Kochi"}, {resolvedOrder.address?.pincode}
                     </p>
                     <p className="text-amber-800 font-bold pt-1">
@@ -700,16 +704,18 @@ function OrderSummaryCard({
 // ─────────────────────────────────────────────────────────────────────────────
 function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
   const router = useRouter();
-  const { downloadInvoiceByOrderId, isDownloading } = useInvoiceDownload();
+  const { downloadInvoiceByOrderId, downloadFromOrderData, isDownloading } = useInvoiceDownload();
   const isCancelled = ["cancelled", "declined", "cancelled_by_merchant", "booking_failed"].includes(resolvedOrder?.status || "");
 
   const handleDownload = () => {
     if (resolvedOrder?.convexId) {
-      downloadInvoiceByOrderId(resolvedOrder.convexId);
+      downloadInvoiceByOrderId(resolvedOrder.convexId, resolvedOrder);
+    } else {
+      downloadFromOrderData(resolvedOrder);
     }
   };
 
-  const downloading = resolvedOrder?.convexId ? isDownloading(resolvedOrder.convexId) : false;
+  const downloading = isDownloading(resolvedOrder?.id || resolvedOrder?.convexId || "ORDER");
 
   if (isCancelled) {
     return (
@@ -717,7 +723,7 @@ function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
         <button
           type="button"
           onClick={() => router.push("/products")}
-          className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+          className="w-full h-11 bg-stone-900 hover:bg-stone-800 text-white active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer"
         >
           <span>Explore Other Styles</span>
           <ChevronRight className="w-4 h-4" />
@@ -733,17 +739,15 @@ function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
           <span>Need Help? Chat Support</span>
         </a>
 
-        {resolvedOrder?.convexId && (
-          <button
-            type="button"
-            disabled={downloading}
-            onClick={handleDownload}
-            className="w-full h-11 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>{downloading ? "Generating PDF..." : "Download Order Summary"}</span>
-          </button>
-        )}
+        <button
+          type="button"
+          disabled={downloading}
+          onClick={handleDownload}
+          className="w-full h-11 bg-white hover:bg-stone-50 border border-stone-200 text-stone-700 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>{downloading ? "Generating PDF..." : "Download Order Summary"}</span>
+        </button>
       </div>
     );
   }
@@ -753,28 +757,26 @@ function SuccessActions({ resolvedOrder }: { resolvedOrder: any }) {
       <button
         type="button"
         onClick={() => router.push(resolvedOrder?.convexId ? `/orders/${resolvedOrder.convexId}` : "/orders")}
-        className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+        className="w-full h-11 bg-stone-950 hover:bg-stone-900 text-white active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer"
       >
         <span>Track Order Details</span>
         <ChevronRight className="w-4 h-4" />
       </button>
 
-      {resolvedOrder?.convexId && (
-        <button
-          type="button"
-          disabled={downloading}
-          onClick={handleDownload}
-          className="w-full h-11 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>{downloading ? "Generating PDF..." : "Download Tax Invoice"}</span>
-        </button>
-      )}
+      <button
+        type="button"
+        disabled={downloading}
+        onClick={handleDownload}
+        className="w-full h-11 bg-white hover:bg-stone-50 border border-stone-200/90 text-stone-800 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-2xs cursor-pointer"
+      >
+        <Download className="w-3.5 h-3.5 text-amber-600" />
+        <span>{downloading ? "Generating GST PDF..." : "Download Tax Invoice"}</span>
+      </button>
 
       <button
         type="button"
         onClick={() => router.push("/products")}
-        className="w-full h-11 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+        className="w-full h-11 bg-white hover:bg-stone-50 border border-stone-200 text-stone-700 active:scale-[0.98] transition-all rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
       >
         <span>Continue Shopping</span>
       </button>

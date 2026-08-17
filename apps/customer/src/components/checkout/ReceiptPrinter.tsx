@@ -120,16 +120,16 @@ export function ReceiptPrinterMachine({
   return (
     <div
       className={cn(
-        "relative isolate w-full overflow-hidden rounded-3xl border border-stone-800 bg-stone-900 p-3.5 pb-6 shadow-2xl shadow-stone-950/40 text-stone-100",
+        "relative isolate w-full overflow-hidden rounded-3xl border border-[#DDD3C0] bg-gradient-to-b from-[#F7F4EC] via-[#F2ECE0] to-[#E9E1D2] p-4 pb-7 shadow-[0_16px_36px_rgba(180,130,40,0.12)] text-stone-900",
         className
       )}
       {...props}
     >
       {children}
-      {/* Printer paper exit slit */}
+      {/* Precision Metallic Gold Beveled Paper Slit */}
       <div
         aria-hidden="true"
-        className="absolute inset-x-6 bottom-2.5 z-40 h-2 rounded-full border border-stone-950 bg-stone-950 shadow-inner"
+        className="absolute inset-x-6 bottom-2.5 z-40 h-2.5 rounded-full border border-[#C6BBA3] bg-gradient-to-b from-[#181614] via-[#2A2621] to-[#3D3730] shadow-inner"
       />
     </div>
   );
@@ -142,7 +142,7 @@ export function ReceiptPrinterHeader({
 }: ComponentPropsWithoutRef<"div">) {
   return (
     <div
-      className={cn("relative z-10 flex items-center justify-between pb-3 px-1", className)}
+      className={cn("relative z-10 flex items-center justify-between pb-3 px-1 text-stone-800", className)}
       {...props}
     >
       {children}
@@ -158,7 +158,7 @@ export function ReceiptPrinterScreen({
   return (
     <div
       className={cn(
-        "relative z-10 isolate overflow-hidden rounded-2xl border border-stone-800 bg-stone-950 p-3.5 text-stone-200 shadow-inner",
+        "relative z-10 isolate overflow-hidden rounded-2xl border border-stone-800/90 bg-[#181614] p-3.5 text-stone-200 shadow-inner",
         className
       )}
       {...props}
@@ -233,7 +233,7 @@ export function ReceiptPrinterPaper({
   return (
     <article
       className={cn(
-        "relative z-10 min-h-72 bg-[#FCFAF5] px-5 pt-6 pb-7 font-mono text-stone-900 shadow-lg border-x border-stone-200/80",
+        "relative z-10 min-h-72 bg-[#FFFDF9] px-5 pt-6 pb-7 font-mono text-stone-900 shadow-xl border-x border-[#E8E1D3]",
         className
       )}
       style={{ clipPath: receiptClipPath, ...style }}
