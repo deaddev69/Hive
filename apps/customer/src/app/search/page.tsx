@@ -180,71 +180,59 @@ function SearchContent() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#FAF8F5] dark:bg-stone-950 pb-24">
+    <div className="flex flex-col min-h-screen bg-[#FAF8F5] dark:bg-stone-950 pb-20">
       
-      {/* 1. Sleek Editorial Top Header */}
-      <div className="w-full border-b border-stone-200/80 dark:border-stone-800 bg-white/80 dark:bg-stone-950/80 backdrop-blur-md sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-baseline gap-2.5 min-w-0">
-            <h1 className="text-base sm:text-xl font-serif font-bold text-stone-900 dark:text-white capitalize truncate">
-              {q ? q : "All Collections"}
-            </h1>
-            {!isLoading && products.length > 0 && (
-              <span className="text-xs text-stone-500 dark:text-stone-400 font-medium shrink-0">
-                ({products.length} {products.length === 1 ? "style" : "styles"})
-              </span>
-            )}
-          </div>
+      {/* 1. Ultra-Compact 1-Line Header */}
+      {q && (
+        <div className="w-full border-b border-stone-200/80 dark:border-stone-800 bg-white/90 dark:bg-stone-950/90 backdrop-blur-sm sticky top-0 z-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
+            <div className="flex items-baseline gap-2 min-w-0">
+              <h1 className="text-sm sm:text-base font-bold text-stone-900 dark:text-white capitalize truncate">
+                {q}
+              </h1>
+              {!isLoading && products.length > 0 && (
+                <span className="text-xs text-stone-400 font-normal">
+                  ({products.length} {products.length === 1 ? "item" : "items"})
+                </span>
+              )}
+            </div>
 
-          <div className="flex items-center gap-3">
-            {city && (
-              <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-stone-100 dark:bg-stone-900 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-stone-800">
-                <MapPin className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                {city}
-              </span>
-            )}
-            {q && (
-              <button
-                onClick={handleClear}
-                className="text-xs font-semibold text-stone-500 hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer"
-              >
-                Clear
-              </button>
-            )}
+            <button
+              onClick={handleClear}
+              className="text-xs font-semibold text-stone-500 hover:text-stone-900 dark:hover:text-white transition-colors cursor-pointer"
+            >
+              Clear
+            </button>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* 2. Main Search Results section */}
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-12 flex-grow flex flex-col gap-4">
+      {/* 2. Main Search Results section — zero excess whitespace */}
+      <div className="max-w-7xl w-full mx-auto px-3 sm:px-6 pt-2.5 pb-8 flex-grow flex flex-col gap-3">
         
         {/* If no query, guide user to browse */}
         {!q ? (
-          <div className="flex flex-col items-center justify-center py-20 px-6 rounded-3xl bg-white dark:bg-stone-900 border border-stone-200/80 dark:border-stone-800 text-center max-w-md mx-auto w-full my-auto">
-            <div className="p-3.5 rounded-2xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 mb-3">
-              <Search className="w-5 h-5" />
+          <div className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-sm mx-auto w-full my-auto">
+            <div className="p-3 rounded-2xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 mb-2.5">
+              <Search className="w-4 h-4" />
             </div>
-            <h3 className="text-base font-serif font-bold text-stone-900 dark:text-white">
+            <h3 className="text-sm font-bold text-stone-900 dark:text-white">
               Search Collections & Styles
             </h3>
-            <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">
-              Explore sarees, kurtis, co-ords, or handpicked designer labels in Kochi.
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
+              Explore sarees, kurtis, co-ords, or handpicked designer labels.
             </p>
             <Button
               variant="primary"
               onClick={() => router.push("/")}
-              className="mt-5 text-xs py-2.5 px-5 bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-xl"
+              className="mt-4 text-xs py-2 px-4 bg-stone-900 dark:bg-white text-white dark:text-stone-900 rounded-xl"
             >
               Explore Home
             </Button>
           </div>
         ) : isLoading ? (
           // Loading Skeletons
-          <div className="flex flex-col gap-4">
-            <div className="flex justify-between items-baseline border-b border-stone-200/60 pb-3">
-              <div className="h-5 w-40 bg-stone-200 dark:bg-stone-800 animate-pulse rounded-lg" />
-              <div className="h-4 w-20 bg-stone-200 dark:bg-stone-800 animate-pulse rounded-lg" />
-            </div>
+          <div className="flex flex-col gap-3 pt-1">
             <ProductGridSkeleton />
           </div>
         ) : products.length > 0 ? (
