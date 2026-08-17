@@ -72,6 +72,67 @@ export const getAllHomepageCollections = query({
   },
 });
 
+// Rich Catalog query for Visual Merchandising Suite
+export const getCatalogProductsForMerchandising = query({
+  args: {
+    query: v.optional(v.string()),
+    collectionId: v.optional(v.string()),
+    categoryId: v.optional(v.string()),
+    boutiqueId: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const allProducts = await ctx.db
+      .query("products")
+      .withIndex("by_active", (q) => q.eq("active", true))
+      .take(args.limit ?? 150);
+
+    let filtered = allProducts;
+
+    // Filter by search query
+    if (args.query && args.query.trim() !== "") {
+      const q = args.query.toLowerCase().trim();
+      filtered = filtered.filter(
+        (p: any) =>
+          p.name?.toLowerCase().includes(q) ||
+          (p.categoryName && p.categoryName.toLowerCase().includes(q)) ||
+          (p.boutiqueName && p.boutiqueName.toLowerCase().includes(q)) ||
+          (p.description && p.description.toLowerCase().includes(q))
+      );
+    }
+
+    // Filter by category
+    if (args.categoryId && args.categoryId !== "all") {
+      filtered = filtered.filter(
+        (p: any) => p.categoryId === args.categoryId || p.categoryName?.toLowerCase() === args.categoryId.toLowerCase()
+      );
+    }
+
+    // Filter by boutique
+    if (args.boutiqueId && args.boutiqueId !== "all") {
+      filtered = filtered.filter((p: any) => p.boutiqueId === args.boutiqueId);
+    }
+
+    const enriched = await enrichProducts(ctx, filtered);
+    const inStock = enriched.filter((p: any) => p.active && getTotalStock(p.stockBySize) > 0);
+
+    // Get set of products already in the selected collection
+    let existingProductIds = new Set<string>();
+    if (args.collectionId) {
+      const existingMappings = await ctx.db
+        .query("collectionProducts")
+        .withIndex("by_collection_sort", (q) => q.eq("collectionId", args.collectionId!))
+        .collect();
+      existingProductIds = new Set(existingMappings.map((m) => m.productId.toString()));
+    }
+
+    return inStock.map((p: any) => ({
+      ...p,
+      isAlreadyInCollection: existingProductIds.has(p._id.toString()),
+    }));
+  },
+});
+
 // Search catalog products to add to a collection
 export const searchCatalogProducts = query({
   args: { query: v.optional(v.string()), limit: v.optional(v.number()), collectionId: v.optional(v.string()) },
@@ -107,6 +168,105 @@ export const searchCatalogProducts = query({
     
     // Only return products that have stock
     return enriched.filter((p: any) => p.active && getTotalStock(p.stockBySize) > 0);
+  },
+});
+
+// Batch add multiple products to a collection
+export const addProductsToCollectionBatch = mutation({
+  args: {
+    collectionId: v.string(),
+    productIds: v.array(v.id("products")),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("collectionProducts")
+      .withIndex("by_collection_sort", (q) => q.eq("collectionId", args.collectionId))
+      .collect();
+
+    const existingSet = new Set(existing.map((m) => m.productId));
+    let nextSortOrder = existing.length > 0
+      ? Math.max(...existing.map((m) => m.sortOrder)) + 1
+      : 0;
+
+    let addedCount = 0;
+    for (const pId of args.productIds) {
+      if (!existingSet.has(pId)) {
+        await ctx.db.insert("collectionProducts", {
+          collectionId: args.collectionId,
+          productId: pId,
+          sortOrder: nextSortOrder++,
+          isPinned: false,
+          addedAt: Date.now(),
+        });
+        existingSet.add(pId);
+        addedCount++;
+      }
+    }
+    return addedCount;
+  },
+});
+
+// 1-Click Smart Auto-Populate Collection
+export const autoPopulateCollection = mutation({
+  args: {
+    collectionId: v.string(),
+    mode: v.union(
+      v.literal("category"),
+      v.literal("boutique"),
+      v.literal("new_arrivals"),
+      v.literal("best_sellers")
+    ),
+    targetId: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const targetLimit = args.limit ?? 12;
+    let queryBuilder = ctx.db
+      .query("products")
+      .withIndex("by_active", (q) => q.eq("active", true));
+
+    let candidateProducts = await queryBuilder.take(100);
+
+    if (args.mode === "category" && args.targetId) {
+      candidateProducts = candidateProducts.filter(
+        (p: any) => p.categoryId === args.targetId || p.categoryName?.toLowerCase() === args.targetId?.toLowerCase()
+      );
+    } else if (args.mode === "boutique" && args.targetId) {
+      candidateProducts = candidateProducts.filter((p: any) => p.boutiqueId === args.targetId);
+    } else if (args.mode === "best_sellers") {
+      candidateProducts = candidateProducts.filter((p: any) => p.featured || p.hiveScore > 50);
+    }
+
+    const sorted = candidateProducts
+      .filter((p: any) => getTotalStock(p.stockBySize) > 0)
+      .slice(0, targetLimit);
+
+    const existing = await ctx.db
+      .query("collectionProducts")
+      .withIndex("by_collection_sort", (q) => q.eq("collectionId", args.collectionId))
+      .collect();
+
+    const existingSet = new Set(existing.map((m) => m.productId));
+    let nextSortOrder = existing.length > 0
+      ? Math.max(...existing.map((m) => m.sortOrder)) + 1
+      : 0;
+
+    let addedCount = 0;
+    for (const p of sorted) {
+      if (!existingSet.has(p._id)) {
+        await ctx.db.insert("collectionProducts", {
+          collectionId: args.collectionId,
+          productId: p._id,
+          sortOrder: nextSortOrder++,
+          isPinned: false,
+          addedAt: Date.now(),
+        });
+        existingSet.add(p._id);
+        addedCount++;
+      }
+    }
+
+    return addedCount;
   },
 });
 

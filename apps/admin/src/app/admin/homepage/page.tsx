@@ -18,6 +18,19 @@ import {
   Edit,
   Eye,
   EyeOff,
+  Filter,
+  Check,
+  CheckSquare,
+  Square,
+  ArrowUp,
+  ArrowDown,
+  Grid,
+  Store,
+  ShoppingBag,
+  Zap,
+  SlidersHorizontal,
+  ChevronDown,
+  X,
 } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -65,6 +78,8 @@ export default function AdminHomepageMerchandisingPage() {
   const experiences = useQuery(api.homepageAdmin.getExperiences);
   const homepageExp = experiences?.find((e: any) => e.slug === "homepage");
   const collections = useQuery(api.homepageAdmin.getAllHomepageCollections);
+  const categories = useQuery(api.categories.getCategories, { onlyActive: true });
+  const boutiques = useQuery(api.boutiques.getApprovedBoutiques);
   const blocks = useQuery(api.homepageAdmin.getExperienceBlocks, homepageExp ? { experienceId: homepageExp._id, status: previewStatus } : "skip");
 
   // Mutations
@@ -98,9 +113,31 @@ export default function AdminHomepageMerchandisingPage() {
   const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
   const [productSearchQuery, setProductSearchQuery] = useState("");
 
+  // Visual Product Catalog Picker Modal State
+  const [showCatalogPickerModal, setShowCatalogPickerModal] = useState(false);
+  const [pickerSearchQuery, setPickerSearchQuery] = useState("");
+  const [pickerCategory, setPickerCategory] = useState("all");
+  const [pickerBoutique, setPickerBoutique] = useState("all");
+  const [selectedProductIdsToAdd, setSelectedProductIdsToAdd] = useState<Set<string>>(new Set());
+  const [isAddingBatch, setIsAddingBatch] = useState(false);
+  const [showAutoFillMenu, setShowAutoFillMenu] = useState(false);
+
   const catalogSearchResults = useQuery(
     api.homepageAdmin.searchCatalogProducts,
     { query: productSearchQuery, limit: 12, collectionId: selectedCollectionId ?? undefined }
+  );
+
+  const pickerProducts = useQuery(
+    api.homepageAdmin.getCatalogProductsForMerchandising,
+    showCatalogPickerModal && selectedCollectionId
+      ? {
+          query: pickerSearchQuery || undefined,
+          categoryId: pickerCategory !== "all" ? pickerCategory : undefined,
+          boutiqueId: pickerBoutique !== "all" ? pickerBoutique : undefined,
+          collectionId: selectedCollectionId,
+          limit: 120,
+        }
+      : "skip"
   );
 
   const selectedCollection = collections?.find((c: any) => c._id === selectedCollectionId);
@@ -110,8 +147,73 @@ export default function AdminHomepageMerchandisingPage() {
   );
 
   const addProduct = useMutation(api.homepageAdmin.addProductToCollection);
+  const addProductsBatch = useMutation(api.homepageAdmin.addProductsToCollectionBatch);
+  const autoPopulate = useMutation(api.homepageAdmin.autoPopulateCollection);
   const removeProduct = useMutation(api.homepageAdmin.removeProductFromCollection);
   const togglePin = useMutation(api.homepageAdmin.togglePinProduct);
+  const reorderProducts = useMutation(api.homepageAdmin.reorderCollectionProducts);
+
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProductIdsToAdd((prev) => {
+      const next = new Set(prev);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
+  };
+
+  const handleBatchAddProducts = async () => {
+    if (!selectedCollectionId || selectedProductIdsToAdd.size === 0) return;
+    try {
+      setIsAddingBatch(true);
+      const count = await addProductsBatch({
+        collectionId: selectedCollectionId,
+        productIds: Array.from(selectedProductIdsToAdd) as any[],
+      });
+      toast.success(`Added ${count} products to ${selectedCollection?.title || "collection"}!`);
+      setSelectedProductIdsToAdd(new Set());
+      setShowCatalogPickerModal(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add products");
+    } finally {
+      setIsAddingBatch(false);
+    }
+  };
+
+  const handleAutoFillAction = async (mode: "category" | "boutique" | "new_arrivals" | "best_sellers", targetId?: string) => {
+    if (!selectedCollectionId) return;
+    try {
+      setShowAutoFillMenu(false);
+      const count = await autoPopulate({
+        collectionId: selectedCollectionId,
+        mode,
+        targetId,
+        limit: 12,
+      });
+      toast.success(`Auto-populated ${count} products into collection!`);
+    } catch (err: any) {
+      toast.error(err.message || "Auto-populate failed");
+    }
+  };
+
+  const handleMoveItem = async (currentIndex: number, direction: "up" | "down") => {
+    if (!collectionProducts || !selectedCollectionId) return;
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= collectionProducts.length) return;
+
+    const reordered = [...collectionProducts];
+    const [moved] = reordered.splice(currentIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    try {
+      await reorderProducts({
+        collectionId: selectedCollectionId,
+        orderedProductIds: reordered.map((p: any) => p._id),
+      });
+    } catch (err: any) {
+      toast.error("Failed to reorder: " + err.message);
+    }
+  };
 
   // New Collection Modal State
   const [showColModal, setShowColModal] = useState(false);
@@ -418,17 +520,89 @@ export default function AdminHomepageMerchandisingPage() {
                   </div>
                 </div>
 
-                {/* Catalog Search & Add Bar (Only in Merchandizing mode) */}
+                {/* Catalog Merchandising Toolbar */}
                 {(devicePreview !== "iphone" && devicePreview !== "desktop") && (
-                  <div className="relative w-full sm:w-72">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      placeholder="Search catalog to add..."
-                      value={productSearchQuery}
-                      onChange={(e) => setProductSearchQuery(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-medium focus:outline-hidden focus:border-amber-500"
-                    />
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Visual Catalog Picker Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedProductIdsToAdd(new Set());
+                        setShowCatalogPickerModal(true);
+                      }}
+                      className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Grid className="w-3.5 h-3.5" />
+                      <span>Browse Catalog Picker</span>
+                    </button>
+
+                    {/* Smart Auto-Fill Dropdown */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowAutoFillMenu(!showAutoFillMenu)}
+                        className="px-3 py-1.5 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Zap className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Smart Auto-Fill</span>
+                        <ChevronDown className="w-3 h-3 text-slate-400" />
+                      </button>
+
+                      {showAutoFillMenu && (
+                        <>
+                          <div className="fixed inset-0 z-40" onClick={() => setShowAutoFillMenu(false)} />
+                          <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xl py-2 z-50 text-left font-sans text-xs">
+                            <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              Instant 1-Click Auto Fill
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleAutoFillAction("new_arrivals")}
+                              className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 flex items-center gap-2 font-semibold text-slate-800 dark:text-zinc-200"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                              <span>Fill New Arrivals (Top 12)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleAutoFillAction("best_sellers")}
+                              className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 flex items-center gap-2 font-semibold text-slate-800 dark:text-zinc-200"
+                            >
+                              <Star className="w-3.5 h-3.5 text-amber-500" />
+                              <span>Fill Best Sellers (Top 12)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleAutoFillAction("category", "kurtis")}
+                              className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 flex items-center gap-2 font-semibold text-slate-800 dark:text-zinc-200"
+                            >
+                              <Tag className="w-3.5 h-3.5 text-amber-500" />
+                              <span>Fill Kurtis (Top 12)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleAutoFillAction("category", "sarees")}
+                              className="w-full text-left px-3.5 py-2 hover:bg-slate-50 dark:hover:bg-zinc-800 flex items-center gap-2 font-semibold text-slate-800 dark:text-zinc-200"
+                            >
+                              <Tag className="w-3.5 h-3.5 text-amber-500" />
+                              <span>Fill Sarees (Top 12)</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Quick Search Bar */}
+                    <div className="relative w-full sm:w-56">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Quick search..."
+                        value={productSearchQuery}
+                        onChange={(e) => setProductSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-medium focus:outline-hidden focus:border-amber-500"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -478,11 +652,11 @@ export default function AdminHomepageMerchandisingPage() {
               ) : (
                 <>
                   {/* MERCHANDIZING MODE UI */}
-                  {/* Catalog Search Overlay Results */}
+                  {/* Quick Search Overlay Results */}
                   {productSearchQuery.trim().length > 0 && (
                     <div className="bg-slate-50 dark:bg-zinc-800 p-3 rounded-2xl space-y-2 border border-slate-200 dark:border-zinc-700">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Catalog Search Results (Click to Add)
+                        Catalog Quick Search (Click to Add)
                       </p>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
                         {catalogSearchResults?.map((p: any) => (
@@ -507,15 +681,22 @@ export default function AdminHomepageMerchandisingPage() {
                     </div>
                   )}
 
-                  {/* Collection Items Grid with Pinning & Removal */}
+                  {/* Collection Items Grid with Pinning, Reordering & Removal */}
                   <div className="space-y-2">
-                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                      Curated Items ({collectionProducts?.length || 0})
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                        Curated Items ({collectionProducts?.length || 0})
+                      </h3>
+                      {collectionProducts && collectionProducts.length > 0 && (
+                        <span className="text-[11px] text-slate-400">
+                          Use arrows to arrange order or star to pin #1
+                        </span>
+                      )}
+                    </div>
 
                     {collectionProducts && collectionProducts.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                        {collectionProducts.map((item: any) => (
+                        {collectionProducts.map((item: any, idx: number) => (
                           <div
                             key={item._id}
                             className={`relative bg-slate-50 dark:bg-zinc-800/80 p-2.5 rounded-2xl border transition-all flex flex-col justify-between space-y-2 ${
@@ -524,12 +705,17 @@ export default function AdminHomepageMerchandisingPage() {
                           >
                             <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100">
                               <img src={item.imageUrl || "https://placehold.co/400x400/png?text=No+Image"} alt={item.name} className="absolute inset-0 w-full h-full object-cover" />
-                              {item.isPinned && (
-                                <div className="absolute top-1 left-1 px-2 py-0.5 bg-amber-500 text-slate-950 font-extrabold text-[9px] rounded-md uppercase flex items-center gap-1">
-                                  <Star className="w-2.5 h-2.5 fill-slate-950" />
-                                  <span>PINNED #1</span>
-                                </div>
-                              )}
+                              <div className="absolute top-1 left-1 flex items-center gap-1">
+                                <span className="px-1.5 py-0.5 bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold rounded-md">
+                                  #{idx + 1}
+                                </span>
+                                {item.isPinned && (
+                                  <div className="px-1.5 py-0.5 bg-amber-500 text-slate-950 font-extrabold text-[9px] rounded-md uppercase flex items-center gap-1">
+                                    <Star className="w-2.5 h-2.5 fill-slate-950" />
+                                    <span>PINNED</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
 
                             <div className="space-y-0.5">
@@ -538,30 +724,70 @@ export default function AdminHomepageMerchandisingPage() {
                             </div>
 
                             <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-zinc-700">
-                              <button
-                                type="button"
-                                onClick={() => togglePin({ collectionId: selectedCollection._id, productId: item._id })}
-                                className={`p-1 rounded-lg transition cursor-pointer ${
-                                  item.isPinned ? "text-amber-500 bg-amber-500/10" : "text-slate-400 hover:text-amber-500"
-                                }`}
-                              >
-                                <Star className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => removeProduct({ collectionId: selectedCollection._id, productId: item._id })}
-                                className="p-1 text-slate-400 hover:text-red-500 rounded-lg transition cursor-pointer"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {/* Reorder Arrows */}
+                              <div className="flex items-center gap-0.5">
+                                <button
+                                  type="button"
+                                  disabled={idx === 0}
+                                  onClick={() => handleMoveItem(idx, "up")}
+                                  className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded cursor-pointer"
+                                  title="Move Left / Earlier"
+                                >
+                                  <ArrowUp className="w-3 h-3 -rotate-90" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={idx === collectionProducts.length - 1}
+                                  onClick={() => handleMoveItem(idx, "down")}
+                                  className="p-1 text-slate-400 hover:text-slate-700 disabled:opacity-30 rounded cursor-pointer"
+                                  title="Move Right / Later"
+                                >
+                                  <ArrowDown className="w-3 h-3 -rotate-90" />
+                                </button>
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => togglePin({ collectionId: selectedCollection._id, productId: item._id })}
+                                  className={`p-1 rounded-lg transition cursor-pointer ${
+                                    item.isPinned ? "text-amber-500 bg-amber-500/10" : "text-slate-400 hover:text-amber-500"
+                                  }`}
+                                  title={item.isPinned ? "Unpin item" : "Pin to position #1"}
+                                >
+                                  <Star className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => removeProduct({ collectionId: selectedCollection._id, productId: item._id })}
+                                  className="p-1 text-slate-400 hover:text-red-500 rounded-lg transition cursor-pointer"
+                                  title="Remove from collection"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="p-12 text-center bg-slate-50 dark:bg-zinc-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 space-y-2">
-                        <p className="text-xs font-semibold text-slate-500">No products added to this collection yet.</p>
-                        <p className="text-[11px] text-slate-400">Use the search bar above to search catalog items and add them.</p>
+                      <div className="p-12 text-center bg-slate-50 dark:bg-zinc-800/40 rounded-2xl border border-dashed border-slate-200 dark:border-zinc-800 space-y-3">
+                        <ShoppingBag className="w-8 h-8 mx-auto text-amber-500/60" />
+                        <p className="text-xs font-bold text-slate-700 dark:text-zinc-200">No products in this collection yet.</p>
+                        <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                          Click "Browse Catalog Picker" or "Smart Auto-Fill" above to add fashion products with multi-select.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedProductIdsToAdd(new Set());
+                            setShowCatalogPickerModal(true);
+                          }}
+                          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Grid className="w-3.5 h-3.5" />
+                          <span>Open Product Picker</span>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -754,6 +980,243 @@ export default function AdminHomepageMerchandisingPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+      {/* ── Visual Catalog Product Picker Modal ──────────────────────────── */}
+      {showCatalogPickerModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl max-w-5xl w-full h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-zinc-900/50">
+              <div>
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-600">
+                  Visual Merchandising Studio
+                </span>
+                <h3 className="text-lg font-serif font-bold text-slate-900 dark:text-white">
+                  Add Products to "{selectedCollection?.title || "Collection"}"
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCatalogPickerModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Filter & Search Toolbar */}
+            <div className="p-4 border-b border-slate-100 dark:border-zinc-800 space-y-3 bg-white dark:bg-zinc-900 shrink-0">
+              <div className="flex flex-col sm:flex-row gap-2.5 items-center justify-between">
+                {/* Search Bar */}
+                <div className="relative w-full sm:w-80">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, category, fabric..."
+                    value={pickerSearchQuery}
+                    onChange={(e) => setPickerSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-medium focus:outline-hidden focus:border-amber-500"
+                  />
+                </div>
+
+                {/* Boutique Store Filter */}
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Store className="w-4 h-4 text-slate-400 shrink-0" />
+                  <select
+                    value={pickerBoutique}
+                    onChange={(e) => setPickerBoutique(e.target.value)}
+                    className="py-2 px-3 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-zinc-200 focus:outline-hidden cursor-pointer"
+                  >
+                    <option value="all">All Boutiques / Stores</option>
+                    {boutiques?.map((b: any) => (
+                      <option key={b._id} value={b._id}>
+                        {b.boutiqueName || b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPickerCategory("all")}
+                  className={`px-3 py-1 rounded-full font-bold transition shrink-0 cursor-pointer ${
+                    pickerCategory === "all"
+                      ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs"
+                      : "bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200"
+                  }`}
+                >
+                  All Categories
+                </button>
+                {categories?.map((cat: any) => (
+                  <button
+                    key={cat._id}
+                    type="button"
+                    onClick={() => setPickerCategory(cat.slug || cat._id)}
+                    className={`px-3 py-1 rounded-full font-bold transition shrink-0 cursor-pointer ${
+                      pickerCategory === (cat.slug || cat._id)
+                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs"
+                        : "bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200"
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Product Cards Grid */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 bg-slate-50 dark:bg-zinc-950">
+              {pickerProducts && pickerProducts.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+                  {pickerProducts.map((product: any) => {
+                    const isSelected = selectedProductIdsToAdd.has(product._id);
+                    const isInCol = product.isAlreadyInCollection;
+
+                    return (
+                      <div
+                        key={product._id}
+                        onClick={() => {
+                          if (!isInCol) toggleProductSelection(product._id);
+                        }}
+                        className={`group relative bg-white dark:bg-zinc-900 p-2.5 rounded-2xl border transition-all flex flex-col justify-between space-y-2 cursor-pointer select-none ${
+                          isInCol
+                            ? "opacity-60 border-slate-200 dark:border-zinc-800 bg-slate-50/80"
+                            : isSelected
+                            ? "border-amber-500 ring-2 ring-amber-500/20 shadow-md scale-[1.01]"
+                            : "border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 shadow-2xs"
+                        }`}
+                      >
+                        {/* Thumbnail & Select Checkbox */}
+                        <div className="relative aspect-square rounded-xl overflow-hidden bg-slate-100">
+                          <img
+                            src={product.imageUrl || (product.images && product.images[0]) || "https://placehold.co/400x400/png?text=No+Image"}
+                            alt={product.name}
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+
+                          {/* Multi-Select Checkbox */}
+                          {!isInCol && (
+                            <div className="absolute top-1.5 left-1.5">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleProductSelection(product._id);
+                                }}
+                                className={`w-5 h-5 rounded-md flex items-center justify-center transition shadow-xs cursor-pointer ${
+                                  isSelected
+                                    ? "bg-amber-500 text-slate-950 font-bold"
+                                    : "bg-white/90 dark:bg-zinc-900/90 text-slate-400 hover:text-amber-500 border border-slate-200 dark:border-zinc-700"
+                                }`}
+                              >
+                                {isSelected ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : null}
+                              </button>
+                            </div>
+                          )}
+
+                          {isInCol && (
+                            <div className="absolute top-1.5 left-1.5 px-2 py-0.5 bg-slate-900/80 backdrop-blur-xs text-white text-[9px] font-bold rounded-md uppercase">
+                              In Collection
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Title & Metadata */}
+                        <div className="space-y-0.5">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {product.name}
+                          </h4>
+                          <p className="text-[10px] text-slate-400 truncate">
+                            {product.boutique?.name || product.boutiqueName || "Boutique"}
+                          </p>
+                          <div className="flex items-center justify-between pt-1">
+                            <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100">
+                              {formatCurrency(product.price || 0)}
+                            </span>
+                            {product.categoryName && (
+                              <span className="text-[9.5px] bg-slate-100 dark:bg-zinc-800 text-slate-500 px-1.5 py-0.5 rounded font-medium truncate max-w-[80px]">
+                                {product.categoryName}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Quick 1-Click Action */}
+                        <div className="pt-1 border-t border-slate-100 dark:border-zinc-800">
+                          {isInCol ? (
+                            <div className="w-full py-1 text-center text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg">
+                              ✓ Already Added
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!selectedCollectionId) return;
+                                await addProduct({ collectionId: selectedCollectionId, productId: product._id });
+                                toast.success(`Added ${product.name}`);
+                              }}
+                              className="w-full py-1 text-center text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-lg transition cursor-pointer flex items-center justify-center gap-1"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>1-Click Add</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-20 text-center space-y-2">
+                  <Search className="w-8 h-8 mx-auto text-slate-300" />
+                  <p className="text-xs font-bold text-slate-600 dark:text-zinc-300">No matching products found.</p>
+                  <p className="text-[11px] text-slate-400">Try changing your category filter, store filter, or search query.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Sticky Batch Footer */}
+            <div className="p-4 border-t border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
+                  {selectedProductIdsToAdd.size} item{selectedProductIdsToAdd.size === 1 ? "" : "s"} selected
+                </span>
+                {selectedProductIdsToAdd.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProductIdsToAdd(new Set())}
+                    className="text-[11px] text-slate-400 hover:text-slate-600 underline font-medium cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCatalogPickerModal(false)}
+                  className="px-4 py-2 text-slate-500 font-bold text-xs hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl"
+                >
+                  Done
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedProductIdsToAdd.size === 0 || isAddingBatch}
+                  onClick={handleBatchAddProducts}
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 font-extrabold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  {isAddingBatch ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                  <span>Add {selectedProductIdsToAdd.size > 0 ? `${selectedProductIdsToAdd.size} Selected` : "Selected"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

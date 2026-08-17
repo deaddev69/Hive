@@ -212,13 +212,18 @@ export function ExperienceStudio() {
   const handleAddBlock = async (schema: BlockSchema) => {
     if (!selectedExpId) return;
     try {
+      const config = { ...(schema.defaultConfig.config || {}) };
+      // Smart Auto-Binding: If block needs a collectionId and none is provided, bind first available collection
+      if ((schema.id === "collection" || schema.id === "premiumCuration") && !config.collectionId && collections && collections.length > 0) {
+        config.collectionId = collections[0]._id;
+      }
       await addBlock({
         experienceId: selectedExpId as any,
         blockKey: `${schema.id}_${Date.now()}`,
         blockType: schema.id as any,
-        title: schema.defaultConfig.title,
+        title: schema.defaultConfig.title || schema.name,
         renderer: schema.defaultConfig.renderer as any,
-        config: schema.defaultConfig.config,
+        config,
         sortOrder: blocks.length + 1,
       });
       setShowBlockLibrary(false);
@@ -394,6 +399,10 @@ export function ExperienceStudio() {
                   {blocks.map((block, idx) => {
                     const schema = BLOCK_REGISTRY.find(s => s.id === block.blockType && s.defaultConfig?.renderer === block.renderer) || BLOCK_REGISTRY.find(s => s.id === block.blockType) || BLOCK_REGISTRY[0];
                     const isHidden = block.status === "archived";
+                    const isColType = block.blockType === "collection" || block.blockType === "premiumCuration";
+                    const linkedCol = isColType && block.config?.collectionId
+                      ? collections?.find((c: any) => c._id === block.config.collectionId)
+                      : null;
 
                     return (
                       <div 
@@ -415,7 +424,7 @@ export function ExperienceStudio() {
                           </div>
                         
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-zinc-800 text-[9px] font-extrabold text-slate-500 uppercase tracking-widest">
                                 {schema?.name || "Unknown Block"}
                               </span>
@@ -423,10 +432,29 @@ export function ExperienceStudio() {
                                 {block.title || "Untitled Block"}
                               </h4>
                               {isHidden && <span className="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded font-bold">HIDDEN</span>}
+
+                              {/* Health Status Badges for Collection Blocks */}
+                              {isColType && (
+                                linkedCol ? (
+                                  linkedCol.productCount > 0 ? (
+                                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                                      🟢 {linkedCol.name} ({linkedCol.productCount} items)
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-md">
+                                      🟡 {linkedCol.name} (0 items)
+                                    </span>
+                                  )
+                                ) : (
+                                  <span className="text-[10px] font-bold text-red-700 bg-red-100/80 px-2 py-0.5 rounded-md">
+                                    ⚠️ No Collection Linked
+                                  </span>
+                                )
+                              )}
                             </div>
                             <p className="text-xs text-slate-400 mt-1 flex items-center gap-1 truncate">
-                              Renderer: {block.renderer || "Default"} 
-                              {block.config?.collectionId && " • Attached Collection"}
+                              Renderer: <span className="font-semibold text-slate-600 dark:text-zinc-300">{block.renderer || "Default"}</span>
+                              {block.config?.maxProducts && ` • Max ${block.config.maxProducts} products`}
                             </p>
                           </div>
 
