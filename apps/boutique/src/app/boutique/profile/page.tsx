@@ -287,35 +287,9 @@ export default function BoutiqueProfile() {
     return <LoadingState message="Loading account..." variant="full" />;
   }
 
-  const isProfileComplete = 
-    boutique.openingTime !== undefined &&
-    boutique.closingTime !== undefined &&
-    boutique.returnsAcceptedDefault !== undefined &&
-    (boutique as any).staffNotificationSelection !== undefined;
-
   return (
     <div className="flex flex-col gap-8 text-left">
-      {!isProfileComplete && (
-        <div className="bg-amber-50 border-l-4 border-[#F5C22B] p-5 shadow-sm rounded-r-2xl">
-          <div className="flex items-start gap-4">
-            <div className="p-2 bg-amber-100/50 rounded-full text-amber-700">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <h2 className="text-sm font-black uppercase tracking-wider text-amber-900 mb-1">
-                Action Required to Unlock Portal
-              </h2>
-              <p className="text-xs text-amber-800 font-medium leading-relaxed">
-                Welcome to Hive! Before you can start adding products and managing orders, please complete your 
-                <strong className="font-bold"> Operations & Holidays</strong>, 
-                <strong className="font-bold"> Shop Staff</strong>, and 
-                <strong className="font-bold"> Return Policy</strong> settings below. 
-                Your dashboard will unlock automatically once these are saved.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       <div>
         <h1 className="text-3xl font-serif font-black text-hive-dark">More & Account Hub</h1>

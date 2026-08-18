@@ -68,20 +68,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   }, [me, myBoutiqueSafe, router, pathname]);
 
   const boutique = (myBoutiqueSafe as any)?.boutique;
-  const isProfileComplete = boutique ? (
-    boutique.openingTime !== undefined &&
-    boutique.closingTime !== undefined &&
-    boutique.returnsAcceptedDefault !== undefined &&
-    boutique.staffNotificationSelection !== undefined
-  ) : false;
 
-  useEffect(() => {
-    if (myBoutiqueSafe?.exists && boutique) {
-      if (!isProfileComplete && pathname !== "/boutique/profile") {
-        router.push("/boutique/profile");
-      }
-    }
-  }, [myBoutiqueSafe, isProfileComplete, pathname, router, boutique]);
 
   // ── Loading guard ─────────────────────────────────────────────────────────
   // me===undefined → query in-flight → show spinner
@@ -183,28 +170,21 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
-              const isLocked = !isProfileComplete && item.href !== "/boutique/profile";
 
               return (
                 <Link 
                   key={item.href} 
-                  href={isLocked ? "#" : item.href}
+                  href={item.href}
                   className={`flex items-center justify-between px-4.5 py-3 rounded-xl text-sm font-semibold transition-all duration-150 ${
                     isActive 
                       ? "text-[#020617] font-bold" 
-                      : isLocked
-                        ? "text-slate-300 cursor-not-allowed"
-                        : "text-[#94a3b8] hover:text-[#020617]"
+                      : "text-[#94a3b8] hover:text-[#020617]"
                   }`}
-                  onClick={(e) => {
-                    if (isLocked) e.preventDefault();
-                  }}
                 >
                   <div className="flex items-center gap-3">
                     <Icon className="w-4 h-4" />
                     <span>{item.label}</span>
                   </div>
-                  {isLocked && <Lock className="w-3.5 h-3.5 text-slate-300" />}
                 </Link>
               );
             })}
@@ -254,45 +234,39 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
       {!pathname.includes("/products/new") && !pathname.includes("/products/edit") && (
         <nav className="md:hidden fixed bottom-4 inset-x-0 h-16 bg-white/95 backdrop-blur-md border border-slate-100/90 z-50 flex items-center justify-around px-2 shadow-[0_12px_36px_rgba(0,0,0,0.08)] rounded-2xl mx-4 pb-0 select-none">
           <Link 
-            href={!isProfileComplete ? "#" : "/boutique"}
-            onClick={(e) => { if (!isProfileComplete) e.preventDefault(); }}
+            href="/boutique"
             className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-all duration-150 relative ${
-              pathname === "/boutique" ? "text-slate-900 font-bold" : !isProfileComplete ? "text-slate-300 cursor-not-allowed" : "text-slate-400"
+              pathname === "/boutique" ? "text-slate-900 font-bold" : "text-slate-400"
             }`}
           >
             <Home className="w-5 h-5" />
             <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Home</span>
-            {!isProfileComplete && <Lock className="absolute top-2 right-4 w-3 h-3 text-slate-300" />}
             {pathname === "/boutique" && (
               <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
             )}
           </Link>
 
           <Link 
-            href={!isProfileComplete ? "#" : "/boutique/products"}
-            onClick={(e) => { if (!isProfileComplete) e.preventDefault(); }}
+            href="/boutique/products"
             className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-all duration-150 relative ${
-              pathname === "/boutique/products" && !pathname.includes("/new") ? "text-slate-900 font-bold" : !isProfileComplete ? "text-slate-300 cursor-not-allowed" : "text-slate-400"
+              pathname === "/boutique/products" && !pathname.includes("/new") ? "text-slate-900 font-bold" : "text-slate-400"
             }`}
           >
             <Tag className="w-5 h-5" />
             <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Products</span>
-            {!isProfileComplete && <Lock className="absolute top-2 right-4 w-3 h-3 text-slate-300" />}
             {pathname === "/boutique/products" && !pathname.includes("/new") && (
               <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
             )}
           </Link>
 
           <Link 
-            href={!isProfileComplete ? "#" : "/boutique/inventory"}
-            onClick={(e) => { if (!isProfileComplete) e.preventDefault(); }}
+            href="/boutique/inventory"
             className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-all duration-150 relative ${
-              pathname === "/boutique/inventory" ? "text-slate-900 font-bold" : !isProfileComplete ? "text-slate-300 cursor-not-allowed" : "text-slate-400"
+              pathname === "/boutique/inventory" ? "text-slate-900 font-bold" : "text-slate-400"
             }`}
           >
             <Package className="w-5 h-5" />
             <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Stock</span>
-            {!isProfileComplete && <Lock className="absolute top-2 right-4 w-3 h-3 text-slate-300" />}
             {pathname === "/boutique/inventory" && (
               <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
             )}
@@ -300,33 +274,27 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
 
           <div className="flex items-center justify-center w-full h-full relative">
             <Link 
-              href={!isProfileComplete ? "#" : "/boutique/products/new"}
-              onClick={(e) => { if (!isProfileComplete) e.preventDefault(); }}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all -translate-y-4 border-4 border-white cursor-pointer z-10 ${
-                !isProfileComplete
-                  ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-                  : "bg-gradient-to-tr from-[#E9B929] to-[#F5C22B] text-slate-900 shadow-[0_6px_20px_rgba(233,185,41,0.4)] active:scale-95 hover:shadow-[0_10px_24px_rgba(233,185,41,0.5)]"
-              }`}
+              href="/boutique/products/new"
+              className="w-12 h-12 rounded-full flex items-center justify-center transition-all -translate-y-4 border-4 border-white cursor-pointer z-10 bg-gradient-to-tr from-[#E9B929] to-[#F5C22B] text-slate-900 shadow-[0_6px_20px_rgba(233,185,41,0.4)] active:scale-95 hover:shadow-[0_10px_24px_rgba(233,185,41,0.5)]"
               title="Add Product"
             >
-              {isProfileComplete ? <Plus className="w-6 h-6 stroke-[3]" /> : <Lock className="w-5 h-5" />}
+              <Plus className="w-6 h-6 stroke-[3]" />
             </Link>
           </div>
 
           <Link 
-            href={!isProfileComplete ? "#" : "/boutique/orders"}
-            onClick={(e) => { if (!isProfileComplete) e.preventDefault(); }}
+            href="/boutique/orders"
             className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-all duration-150 relative ${
-              pathname === "/boutique/orders" ? "text-slate-900 font-bold" : !isProfileComplete ? "text-slate-300 cursor-not-allowed" : "text-slate-400"
+              pathname === "/boutique/orders" ? "text-slate-900 font-bold" : "text-slate-400"
             }`}
           >
             <ClipboardList className="w-5 h-5" />
             <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Orders</span>
-            {!isProfileComplete && <Lock className="absolute top-2 right-4 w-3 h-3 text-slate-300" />}
             {pathname === "/boutique/orders" && (
               <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
             )}
           </Link>
+
 
           <Link 
             href="/boutique/profile"
