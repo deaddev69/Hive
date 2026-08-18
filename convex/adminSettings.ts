@@ -1,4 +1,5 @@
 import { mutation, query, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 
@@ -124,6 +125,10 @@ export const updatePlatformConfig = mutation({
     } else {
       await ctx.db.insert("platformSettings", patchData);
     }
+
+    // Auto-recalculate all product prices after tier config changes
+    // to prevent stale storefront prices
+    await ctx.scheduler.runAfter(0, internal.adminSettings.recalculateAllProductPricesInternal, {});
 
     return { success: true };
   },

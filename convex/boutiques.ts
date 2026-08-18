@@ -502,6 +502,13 @@ export const updateBoutique = mutation({
     }
 
     await ctx.db.patch(args.id, patchData);
+
+    // If pricingTier was updated, recalculate product prices for this boutique
+    // to prevent stale all-inclusive storefront prices
+    if (args.pricingTier) {
+      await ctx.scheduler.runAfter(0, internal.adminSettings.recalculateAllProductPricesInternal, {});
+    }
+
     return args.id;
   },
 });

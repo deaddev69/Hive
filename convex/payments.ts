@@ -151,7 +151,9 @@ export const getCheckoutPricing = query({
 
         let canonicalPricePaise: number;
         if (productRow) {
-          canonicalPricePaise = productRow.discountPrice ?? productRow.price;
+          // Use basePrice (seller's original price) to avoid double-counting platform charges.
+          // The `price` field already has platform fees baked in from product creation.
+          canonicalPricePaise = productRow.baseDiscountPrice ?? productRow.basePrice ?? productRow.discountPrice ?? productRow.price;
         } else {
           // Unknown product — use client price (validation happens at checkout)
           canonicalPricePaise = Math.round(item.price * 100);
@@ -508,14 +510,15 @@ export const initCheckoutSessionInternal = internalMutation({
       let activePricePaise = 0;
       
       if (productRow && !isMock) {
-        const canonicalPricePaise = productRow.discountPrice ?? productRow.price;
-        if (Math.abs(canonicalPricePaise - Math.round(item.price * 100)) > 100) {
+        // Use basePrice (seller's original price) — the `price` field has platform fees baked in.
+        const basePricePaise = productRow.baseDiscountPrice ?? productRow.basePrice ?? productRow.discountPrice ?? productRow.price;
+        if (Math.abs(basePricePaise - Math.round(item.price * 100)) > 100) {
           throw new ConvexError({
             code: "STALE_CART_PRICE",
             message: "The prices of some items in your cart have been updated. Please review your new total before checking out.",
           });
         }
-        activePricePaise = canonicalPricePaise;
+        activePricePaise = basePricePaise;
       } else {
         activePricePaise = Math.round(item.price * 100);
       }
