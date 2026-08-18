@@ -108,6 +108,13 @@ function calculatePricingBreakdown(basePriceRupees: number, config?: any, rawTie
   const commissionPercent = tier?.sellerCommissionPercent ?? 2;
   const gstRatePercent = config?.gstRatePercent ?? 18;
 
+  // Handling charge + platform fee + GST added to customer storefront price
+  const handlingCharge = (config?.handlingChargePaise ?? 2900) / 100;
+  const platformFee = (config?.platformFeePaise ?? 2000) / 100;
+  const gstOnCharges = (handlingCharge + platformFee) * (gstRatePercent / 100);
+  const totalPlatformFees = handlingCharge + platformFee + gstOnCharges;
+  const storefrontPrice = Math.round((basePriceRupees + totalPlatformFees) * 100) / 100;
+
   // Commission is taken directly from seller base price
   const commissionAmount = (basePriceRupees * commissionPercent) / 100;
   // GST on the commission is deducted from the seller
@@ -121,10 +128,11 @@ function calculatePricingBreakdown(basePriceRupees: number, config?: any, rawTie
     commissionAmount,
     gstRatePercent,
     gstOnCommission,
-    storefrontPrice: basePriceRupees,
+    storefrontPrice,
     netPayout,
   };
 }
+
 
 const cropImage = (
   srcUrl: string,
@@ -473,14 +481,17 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   useEffect(() => {
     if (productToEdit) {
       setValue("name", productToEdit.name || "");
-      setValue("price", productToEdit.price ? (productToEdit.price / 100).toString() : "");
+      const rawBase = productToEdit.basePrice ?? productToEdit.price;
+      setValue("price", rawBase ? Math.round(rawBase / 100).toString() : "");
       if (productToEdit.mrp || productToEdit.compareAtPrice) {
-        setValue("mrp", ((productToEdit.mrp || productToEdit.compareAtPrice) / 100).toString());
+        setValue("mrp", Math.round((productToEdit.mrp || productToEdit.compareAtPrice) / 100).toString());
       }
-      if (productToEdit.discountPrice) {
-        setValue("discountPrice", (productToEdit.discountPrice / 100).toString());
+      if (productToEdit.baseDiscountPrice || productToEdit.discountPrice) {
+        const rawDisc = productToEdit.baseDiscountPrice ?? productToEdit.discountPrice;
+        setValue("discountPrice", rawDisc ? Math.round(rawDisc / 100).toString() : "");
       }
       setValue("categoryId", productToEdit.categoryId || "");
+
       setValue("description", productToEdit.description || "");
       setValue("story", productToEdit.story || "");
       

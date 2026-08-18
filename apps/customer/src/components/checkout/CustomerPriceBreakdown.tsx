@@ -150,7 +150,7 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
           <button
             type="button"
             onClick={() => setIsHelpOpen(!isHelpOpen)}
-            className="w-full flex items-center justify-between font-bold text-hive-dark text-xs focus:outline-none"
+            className="w-full flex items-center justify-between font-bold text-hive-dark text-xs focus:outline-none cursor-pointer"
           >
             <span className="flex items-center gap-1.5">
               <HelpCircle className="w-3.5 h-3.5 text-hive-gold shrink-0" />
@@ -164,12 +164,44 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
           </button>
 
           {isHelpOpen && (
-            <p className="text-[11px] text-neutral-600 font-medium pt-1.5 border-t border-neutral-200/50 leading-relaxed animate-[fadeIn_0.2s_ease-out]">
-              Your order total includes the product price, a small handling charge and platform fee (plus GST on these fees), and the delivery partner fee. These charges help us securely process your order, support local boutiques, and provide reliable delivery.
-            </p>
+            <div className="pt-2.5 border-t border-neutral-200/50 space-y-2.5 text-[11px] text-neutral-600 animate-[fadeIn_0.2s_ease-out]">
+              <p className="font-bold text-hive-dark text-xs">
+                Transparent All-Inclusive Pricing:
+              </p>
+              <div className="bg-white rounded-xl p-3 space-y-2 border border-neutral-200/70 text-[11px]">
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold text-slate-700">Product Price (All-Inclusive)</span>
+                  <span className="font-mono font-bold text-hive-dark">{formatCurrency(subtotal)}</span>
+                </div>
+                <p className="text-[10px] text-neutral-400 pl-1 leading-normal font-sans">
+                  ↳ Includes Designer Base Price + ₹20 Platform Fee + ₹29 Packaging/Handling + 18% GST (₹8.82). No surprise checkout fees!
+                </p>
+                <div className="flex justify-between items-center border-t border-neutral-100 pt-1.5">
+                  <span className="font-semibold text-slate-700">Delivery Partner Fee</span>
+                  <span className="font-mono font-bold text-hive-dark">{formatCurrency(deliveryFee)}</span>
+                </div>
+                <p className="text-[10px] text-neutral-400 pl-1 leading-normal font-sans">
+                  ↳ 100% passed to the hyper-local delivery partner for immediate doorstep fulfillment.
+                </p>
+                {discount > 0 && (
+                  <div className="flex justify-between items-center text-emerald-700 font-bold border-t border-neutral-100 pt-1.5">
+                    <span>Coupon Discount</span>
+                    <span className="font-mono">-{formatCurrency(discount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center border-t border-neutral-200 pt-2 font-extrabold text-hive-dark text-xs">
+                  <span>Grand Total</span>
+                  <span className="font-mono text-sm">{formatCurrency(total)}</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-neutral-500 leading-relaxed font-sans">
+                Zero hidden charges upon arrival. What you see is exactly what you pay.
+              </p>
+            </div>
           )}
         </div>
       )}
+
     </div>
   );
 };

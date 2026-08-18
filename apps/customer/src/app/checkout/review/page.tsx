@@ -692,7 +692,10 @@ export default function OrderReviewPage() {
               </h3>
 
               <div className="divide-y divide-hive-border/30 flex flex-col">
-                {orderItems.map((item) => (
+                {orderItems.map((item) => {
+                  const backendItem = backendPricing?.items?.find((b: any) => b.productId === item.productId);
+                  const effectivePrice = backendItem?.priceAtPurchaseRupees ?? (item.price > 10000 ? Math.round(item.price / 100) : item.price);
+                  return (
                   <div key={`${item.productId}-${item.size}`} className="flex gap-4 py-4 first:pt-0 last:pb-0">
                     <div className="relative w-14 h-18 rounded-lg overflow-hidden bg-hive-cream/30 border border-hive-border/20 flex-shrink-0">
                       {item.imageUrl ? (
@@ -715,15 +718,17 @@ export default function OrderReviewPage() {
 
                       <div className="text-right">
                         <span className="text-xs font-extrabold text-hive-dark block">
-                          {formatRupees(item.price * item.quantity)}
+                          {formatRupees(effectivePrice * item.quantity)}
                         </span>
                         <div className="text-[10px] text-stone-500 font-medium leading-none mt-1">
-                          {formatRupees(item.price)} x {item.quantity}
+                          {formatRupees(effectivePrice)} x {item.quantity}
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                );
+              })}
+
               </div>
             </div>
 

@@ -206,18 +206,28 @@ export function calculateSellerItemPricing(
 // ─── Checkout-Level Pricing ──────────────────────────────────────────────────
 
 /**
- * Calculates the all-inclusive customer price in rupees from the seller's base price.
- * Adds handling charge, platform fee, and GST on fees directly to the display price.
+ * Calculates the all-inclusive customer price in PAISE from the seller's base price in PAISE.
+ * Adds handling charge (2900 paise), platform fee (2000 paise), and GST (882 paise) directly to display price.
+ */
+export function calculateAllInclusivePricePaise(basePricePaise: number, config: PlatformConfig): number {
+  if (!basePricePaise || basePricePaise <= 0) return 0;
+  const handlingChargePaise = config.handlingChargePaise ?? DEFAULT_HANDLING_CHARGE_PAISE;
+  const platformFeePaise = config.platformFeePaise ?? DEFAULT_PLATFORM_FEE_PAISE;
+  const gstRatePercent = config.gstRatePercent ?? DEFAULT_GST_RATE_PERCENT;
+  const platformChargesGstPaise = Math.round((handlingChargePaise + platformFeePaise) * gstRatePercent / 100);
+  const totalFeesPaise = handlingChargePaise + platformFeePaise + platformChargesGstPaise;
+  return basePricePaise + totalFeesPaise;
+}
+
+/**
+ * Calculates the all-inclusive customer price in RUPEES from the seller's base price in RUPEES.
  */
 export function calculateAllInclusivePrice(basePriceRupees: number, config: PlatformConfig): number {
   if (!basePriceRupees || basePriceRupees <= 0) return 0;
-  const handlingCharge = (config.handlingChargePaise || 0) / 100;
-  const platformFee = (config.platformFeePaise || 0) / 100;
-  const gstRate = (config.gstRatePercent || 18) / 100;
-  const gstOnCharges = (handlingCharge + platformFee) * gstRate;
-  const totalFees = handlingCharge + platformFee + gstOnCharges;
-  return Math.round((basePriceRupees + totalFees) * 100) / 100;
+  const paise = Math.round(basePriceRupees * 100);
+  return calculateAllInclusivePricePaise(paise, config) / 100;
 }
+
 
 /**
  * Calculate the complete checkout pricing for a single-seller order.
@@ -239,31 +249,22 @@ export function calculateCheckoutPricing(
   const tier = resolveCommissionTier(sellerTierKey, config);
   const gstRate = config.gstRatePercent;
 
-  // Seller Base Subtotal (sum of seller base prices × quantities)
-  const sellerBaseSubtotalPaise = items.reduce(
+  // All-inclusive product subtotal (sum of all-inclusive item prices × quantities)
+  const productSubtotalPaise = items.reduce(
     (sum, item) => sum + item.sellerBasePricePaise * item.quantity, 0
   );
 
-  // Platform charges per order (handling + platform fee + GST)
-  const handlingChargePaise = config.handlingChargePaise;
-  const platformFeePaise = config.platformFeePaise;
-  const platformSubtotalPaise = handlingChargePaise + platformFeePaise;
-  const platformChargesGstPaise = Math.round(platformSubtotalPaise * gstRate / 100);
-  const totalPlatformFeesPaise = platformSubtotalPaise + platformChargesGstPaise;
-
-  // All-inclusive product subtotal displayed to customer (Item price + platform fees already included)
-  const productSubtotalPaise = sellerBaseSubtotalPaise + totalPlatformFeesPaise;
-
-  // Seller commission (on seller base subtotal)
-  const sellerCommissionPaise = Math.round(sellerBaseSubtotalPaise * tier.sellerCommissionPercent / 100);
+  // Seller commission (on seller base price)
+  const sellerCommissionPaise = Math.round(productSubtotalPaise * tier.sellerCommissionPercent / 100);
   const sellerCommissionGstPaise = Math.round(sellerCommissionPaise * gstRate / 100);
-  const sellerPayoutPaise = sellerBaseSubtotalPaise - sellerCommissionPaise - sellerCommissionGstPaise;
+  const sellerPayoutPaise = productSubtotalPaise - sellerCommissionPaise - sellerCommissionGstPaise;
 
   // Customer payable: Product Subtotal (all-inclusive) + Delivery Fee - Discount
   const totalPayablePaise = Math.max(
     0,
     productSubtotalPaise + deliveryFeePaise - discountPaise
   );
+
 
   return {
     productSubtotalPaise,

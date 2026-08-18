@@ -9,6 +9,7 @@ import {
   DEFAULT_PLATFORM_FEE_PAISE,
   DEFAULT_GST_RATE_PERCENT,
   calculateAllInclusivePrice,
+  calculateAllInclusivePricePaise,
   getPlatformConfig as fetchPlatformConfig,
   // Legacy exports for backward compat
   calculateProductPricing,
@@ -16,6 +17,7 @@ import {
   DEFAULT_TIER_SLABS,
   getPlatformSettings as fetchPlatformSettings,
 } from "./pricingService";
+
 
 
 
@@ -234,16 +236,32 @@ export const recalculateAllProductPrices = mutation({
 
 
     for (const product of products) {
-      let basePrice = product.basePrice;
-      let baseDiscountPrice = product.baseDiscountPrice;
+      let basePrice = product.basePrice ?? product.price;
+      let baseDiscountPrice = product.baseDiscountPrice ?? product.discountPrice;
 
-      if (basePrice === undefined || basePrice <= 0) {
+      if (!basePrice || basePrice <= 0) {
         basePrice = product.price;
         baseDiscountPrice = product.discountPrice;
       }
 
-      const targetPrice = calculateAllInclusivePrice(basePrice, config);
-      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePrice(baseDiscountPrice, config) : undefined;
+      // Sanitize basePrice to clean integer paise (e.g. 90000 paise for ₹900)
+      if (basePrice % 100 !== 0) {
+        if (Math.abs((basePrice - 57.82) % 100) < 1) {
+          basePrice = Math.round(basePrice - 57.82);
+        } else {
+          basePrice = Math.round(basePrice / 100) * 100;
+        }
+      }
+      if (baseDiscountPrice && baseDiscountPrice % 100 !== 0) {
+        if (Math.abs((baseDiscountPrice - 57.82) % 100) < 1) {
+          baseDiscountPrice = Math.round(baseDiscountPrice - 57.82);
+        } else {
+          baseDiscountPrice = Math.round(baseDiscountPrice / 100) * 100;
+        }
+      }
+
+      const targetPrice = calculateAllInclusivePricePaise(basePrice, config);
+      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePricePaise(baseDiscountPrice, config) : undefined;
 
       const needsUpdate =
         product.price !== targetPrice ||
@@ -281,16 +299,32 @@ export const recalculateAllProductPricesInternal = internalMutation({
     const now = Date.now();
 
     for (const product of products) {
-      let basePrice = product.basePrice;
-      let baseDiscountPrice = product.baseDiscountPrice;
+      let basePrice = product.basePrice ?? product.price;
+      let baseDiscountPrice = product.baseDiscountPrice ?? product.discountPrice;
 
-      if (basePrice === undefined || basePrice <= 0) {
+      if (!basePrice || basePrice <= 0) {
         basePrice = product.price;
         baseDiscountPrice = product.discountPrice;
       }
 
-      const targetPrice = calculateAllInclusivePrice(basePrice, config);
-      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePrice(baseDiscountPrice, config) : undefined;
+      // Sanitize basePrice to clean integer paise (e.g. 90000 paise for ₹900)
+      if (basePrice % 100 !== 0) {
+        if (Math.abs((basePrice - 57.82) % 100) < 1) {
+          basePrice = Math.round(basePrice - 57.82);
+        } else {
+          basePrice = Math.round(basePrice / 100) * 100;
+        }
+      }
+      if (baseDiscountPrice && baseDiscountPrice % 100 !== 0) {
+        if (Math.abs((baseDiscountPrice - 57.82) % 100) < 1) {
+          baseDiscountPrice = Math.round(baseDiscountPrice - 57.82);
+        } else {
+          baseDiscountPrice = Math.round(baseDiscountPrice / 100) * 100;
+        }
+      }
+
+      const targetPrice = calculateAllInclusivePricePaise(basePrice, config);
+      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePricePaise(baseDiscountPrice, config) : undefined;
 
       const needsUpdate =
         product.price !== targetPrice ||
@@ -317,6 +351,7 @@ export const recalculateAllProductPricesInternal = internalMutation({
     };
   },
 });
+
 
 
 

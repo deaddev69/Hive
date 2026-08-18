@@ -19,12 +19,14 @@ import {
   getPlatformConfig,
   calculateProductPricing,
   calculateAllInclusivePrice,
+  calculateAllInclusivePricePaise,
   DEFAULT_COMMISSION_TIERS,
   DEFAULT_HANDLING_CHARGE_PAISE,
   DEFAULT_PLATFORM_FEE_PAISE,
   DEFAULT_GST_RATE_PERCENT,
   PlatformConfig,
 } from "./pricingService";
+
 
 
 import { checkRateLimit } from "./lib/rateLimit";
@@ -503,9 +505,10 @@ export const createProduct = mutation({
 
     const config = await getPlatformConfig(ctx);
 
-    // Storefront price = seller base price + platform charges & GST (All-inclusive display)
-    const customerPrice = calculateAllInclusivePrice(args.price, config);
-    const customerDiscountPrice = args.discountPrice ? calculateAllInclusivePrice(args.discountPrice, config) : undefined;
+    // Storefront price = seller base price (in paise) + platform charges & GST (in paise) (All-inclusive display)
+    const customerPrice = calculateAllInclusivePricePaise(args.price, config);
+    const customerDiscountPrice = args.discountPrice ? calculateAllInclusivePricePaise(args.discountPrice, config) : undefined;
+
 
 
 
@@ -753,9 +756,10 @@ export const updateProduct = mutation({
 
     const config = await getPlatformConfig(ctx);
 
-    // Storefront price = seller base price + platform charges & GST (All-inclusive display)
-    const customerPrice = calculateAllInclusivePrice(args.price, config);
-    const customerDiscountPrice = args.discountPrice ? calculateAllInclusivePrice(args.discountPrice, config) : undefined;
+    // Storefront price = seller base price (in paise) + platform charges & GST (in paise) (All-inclusive display)
+    const customerPrice = calculateAllInclusivePricePaise(args.price, config);
+    const customerDiscountPrice = args.discountPrice ? calculateAllInclusivePricePaise(args.discountPrice, config) : undefined;
+
 
 
 

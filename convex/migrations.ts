@@ -1,7 +1,8 @@
 import { mutation } from "./_generated/server";
 import { requireRole } from "./lib/auth";
 import { getPlatformMarkupRate } from "./pricingHelpers";
-import { calculateProductPricing, DEFAULT_TIER_SLABS, getPlatformConfig, calculateAllInclusivePrice } from "./pricingService";
+import { calculateProductPricing, DEFAULT_TIER_SLABS, getPlatformConfig, calculateAllInclusivePricePaise } from "./pricingService";
+
 
 
 /**
@@ -292,16 +293,32 @@ export const recalculateAllProductPrices = mutation({
     const now = Date.now();
 
     for (const product of products) {
-      let basePrice = product.basePrice;
-      let baseDiscountPrice = product.baseDiscountPrice;
+      let basePrice = product.basePrice ?? product.price;
+      let baseDiscountPrice = product.baseDiscountPrice ?? product.discountPrice;
 
-      if (basePrice === undefined || basePrice <= 0) {
+      if (!basePrice || basePrice <= 0) {
         basePrice = product.price;
         baseDiscountPrice = product.discountPrice;
       }
 
-      const targetPrice = calculateAllInclusivePrice(basePrice, config);
-      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePrice(baseDiscountPrice, config) : undefined;
+      // Sanitize basePrice to clean integer paise (e.g. 90000 paise for ₹900)
+      if (basePrice % 100 !== 0) {
+        if (Math.abs((basePrice - 57.82) % 100) < 1) {
+          basePrice = Math.round(basePrice - 57.82);
+        } else {
+          basePrice = Math.round(basePrice / 100) * 100;
+        }
+      }
+      if (baseDiscountPrice && baseDiscountPrice % 100 !== 0) {
+        if (Math.abs((baseDiscountPrice - 57.82) % 100) < 1) {
+          baseDiscountPrice = Math.round(baseDiscountPrice - 57.82);
+        } else {
+          baseDiscountPrice = Math.round(baseDiscountPrice / 100) * 100;
+        }
+      }
+
+      const targetPrice = calculateAllInclusivePricePaise(basePrice, config);
+      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePricePaise(baseDiscountPrice, config) : undefined;
 
       await ctx.db.patch(product._id, {
         basePrice,
@@ -316,5 +333,6 @@ export const recalculateAllProductPrices = mutation({
     return `Successfully recalculated and updated prices for ${updatedCount} products to all-inclusive upfront pricing.`;
   },
 });
+
 
 
