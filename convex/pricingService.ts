@@ -1,24 +1,42 @@
 // convex/pricingService.ts
-// Hive Pricing Engine v2 — Commission-based model
+// Hive Pricing Engine v3 — Dynamic Tier Commission Slabs & Tier Platform Charges
 // Single authoritative pricing calculation. All other code consumes this output.
 
 import { MutationCtx, QueryCtx } from "./_generated/server";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+export interface CommissionSlab {
+  minPrice: number;                    // in Rupees (e.g. 0, 500, 1000)
+  maxPrice: number | null;             // in Rupees (e.g. 499, 999, null for open-ended)
+  commissionPercent: number;           // in Percent (e.g. 2, 3, 4, 5)
+}
+
+export interface TierPricingConfig {
+  key: string;                         // "bronze", "silver", "gold"
+  name: string;                        // "Bronze", "Silver", "Gold"
+  commissionSlabs: CommissionSlab[];
+  commissionGstPercent: number;        // e.g. 18 (%)
+  handlingChargePaise: number;         // e.g. 2900 = ₹29
+  platformFeePaise: number;            // e.g. 2000 = ₹20
+  platformGstPercent: number;          // e.g. 18 (%)
+}
+
 export interface PlatformConfig {
-  handlingChargePaise: number;       // e.g. 2900 = ₹29
-  platformFeePaise: number;          // e.g. 2000 = ₹20
-  gstRatePercent: number;            // e.g. 18
-  commissionTiers: Array<{
-    key: string;                     // "bronze", "silver", "gold"
-    name: string;                    // "Bronze", "Silver", "Gold"
-    sellerCommissionPercent: number;  // e.g. 2, 3, 5
-  }>;
+  tiers: TierPricingConfig[];
+  // Legacy / fallback fields
+  handlingChargePaise?: number;
+  platformFeePaise?: number;
+  gstRatePercent?: number;
+  commissionTiers?: Array<{ key: string; name: string; sellerCommissionPercent: number }>;
 }
 
 export interface SellerItemPricing {
   sellerBasePricePaise: number;
+  tierKey: string;
+  tierName: string;
+  slabMinPrice: number;
+  slabMaxPrice: number | null;
   sellerCommissionPercent: number;
   sellerCommissionPaise: number;
   sellerCommissionGstPaise: number;
@@ -41,6 +59,8 @@ export interface CheckoutPricing {
   // Seller settlement
   sellerTierKey: string;
   sellerTierName: string;
+  slabMinPrice?: number;
+  slabMaxPrice?: number | null;
   sellerCommissionPercent: number;
   sellerCommissionPaise: number;      // commission on product subtotal
   sellerCommissionGstPaise: number;   // GST on commission (deducted from seller)
@@ -89,6 +109,49 @@ export interface StoreSettlement {
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
+export const DEFAULT_TIERS_CONFIG: TierPricingConfig[] = [
+  {
+    key: "bronze",
+    name: "Bronze",
+    commissionSlabs: [
+      { minPrice: 0, maxPrice: 499, commissionPercent: 2 },
+      { minPrice: 500, maxPrice: 999, commissionPercent: 3 },
+      { minPrice: 1000, maxPrice: 1499, commissionPercent: 4 },
+      { minPrice: 1500, maxPrice: null, commissionPercent: 5 },
+    ],
+    commissionGstPercent: 18,
+    handlingChargePaise: 2900,
+    platformFeePaise: 2000,
+    platformGstPercent: 18,
+  },
+  {
+    key: "silver",
+    name: "Silver",
+    commissionSlabs: [
+      { minPrice: 0, maxPrice: 499, commissionPercent: 2.5 },
+      { minPrice: 500, maxPrice: 999, commissionPercent: 3.5 },
+      { minPrice: 1000, maxPrice: null, commissionPercent: 4.5 },
+    ],
+    commissionGstPercent: 18,
+    handlingChargePaise: 2500,
+    platformFeePaise: 1500,
+    platformGstPercent: 18,
+  },
+  {
+    key: "gold",
+    name: "Gold",
+    commissionSlabs: [
+      { minPrice: 0, maxPrice: 499, commissionPercent: 3 },
+      { minPrice: 500, maxPrice: 999, commissionPercent: 4 },
+      { minPrice: 1000, maxPrice: null, commissionPercent: 5 },
+    ],
+    commissionGstPercent: 18,
+    handlingChargePaise: 2000,
+    platformFeePaise: 1000,
+    platformGstPercent: 18,
+  },
+];
+
 export const DEFAULT_COMMISSION_TIERS = [
   { key: "bronze", name: "Bronze", sellerCommissionPercent: 2 },
   { key: "silver", name: "Silver", sellerCommissionPercent: 3 },
@@ -111,15 +174,72 @@ export const DEFAULT_TIER_SLABS = [
   { min_price: 5000, max_price: null, rate: 5 },
 ];
 
+// ─── Slab Validation ─────────────────────────────────────────────────────────
+
+/**
+ * Validates that commission slabs are contiguous, non-overlapping, start at 0,
+ * and have exactly one open-ended final slab (maxPrice === null).
+ */
+export function validateTierSlabs(slabs: CommissionSlab[]): { valid: boolean; error?: string } {
+  if (!Array.isArray(slabs) || slabs.length === 0) {
+    return { valid: false, error: "At least one commission slab is required." };
+  }
+
+  // Sort slabs by minPrice
+  const sorted = [...slabs].sort((a, b) => a.minPrice - b.minPrice);
+
+  if (sorted[0]!.minPrice !== 0) {
+    return { valid: false, error: "First slab must start at ₹0." };
+  }
+
+  for (let i = 0; i < sorted.length; i++) {
+    const slab = sorted[i]!;
+
+    if (slab.commissionPercent < 0 || slab.commissionPercent > 100 || isNaN(slab.commissionPercent)) {
+      return { valid: false, error: `Invalid commission percent (${slab.commissionPercent}%) at slab ₹${slab.minPrice}.` };
+    }
+
+    const isLast = i === sorted.length - 1;
+
+    if (!isLast) {
+      if (slab.maxPrice === null || slab.maxPrice === undefined) {
+        return { valid: false, error: `Only the final slab can be open-ended (maxPrice: null). Slab at ₹${slab.minPrice} must have an upper limit.` };
+      }
+      if (slab.maxPrice < slab.minPrice) {
+        return { valid: false, error: `Max price (₹${slab.maxPrice}) cannot be less than min price (₹${slab.minPrice}).` };
+      }
+      const nextSlab = sorted[i + 1]!;
+      if (nextSlab.minPrice !== slab.maxPrice + 1) {
+        if (nextSlab.minPrice <= slab.maxPrice) {
+          return { valid: false, error: `Overlap detected between slabs: ₹${slab.minPrice}–₹${slab.maxPrice} and ₹${nextSlab.minPrice}.` };
+        } else {
+          return { valid: false, error: `Gap detected between slabs: ₹${slab.minPrice}–₹${slab.maxPrice} and ₹${nextSlab.minPrice}. Next slab must start at ₹${slab.maxPrice + 1}.` };
+        }
+      }
+    } else {
+      if (slab.maxPrice !== null && slab.maxPrice !== undefined) {
+        return { valid: false, error: `Final slab (starting at ₹${slab.minPrice}) must be open-ended (max price: +).` };
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
 // ─── Config Fetching ─────────────────────────────────────────────────────────
 
 /**
  * Fetch the current platform config from the database.
- * Returns v2 commission-based config if available, otherwise constructs defaults.
+ * Returns v3 dynamic tier config if available, otherwise constructs safe defaults.
  */
 export async function getPlatformConfig(ctx: QueryCtx | MutationCtx): Promise<PlatformConfig> {
   const settings = (await ctx.db.query("platformSettings").first()) as any;
+  const tiers: TierPricingConfig[] = settings?.tiers && Array.isArray(settings.tiers) && settings.tiers.length > 0
+    ? settings.tiers
+    : DEFAULT_TIERS_CONFIG;
+
   return {
+    tiers,
     handlingChargePaise: settings?.handlingChargePaise ?? DEFAULT_HANDLING_CHARGE_PAISE,
     platformFeePaise: settings?.platformFeePaise ?? DEFAULT_PLATFORM_FEE_PAISE,
     gstRatePercent: settings?.gstRatePercent ?? DEFAULT_GST_RATE_PERCENT,
@@ -151,51 +271,90 @@ export async function getPlatformSettings(ctx: QueryCtx | MutationCtx): Promise<
   };
 }
 
-// ─── Tier Resolution ─────────────────────────────────────────────────────────
+// ─── Tier & Slab Resolution ──────────────────────────────────────────────────
 
 /**
- * Find the commission tier config for a given tier key.
- * Falls back to the first tier if not found.
+ * Find the full tier configuration for a given tier key.
+ */
+export function resolveTierConfig(
+  tierKey: string | undefined,
+  config: PlatformConfig
+): TierPricingConfig {
+  const normalizedKey = (tierKey || "bronze").toLowerCase();
+  const tiers = config.tiers && config.tiers.length > 0 ? config.tiers : DEFAULT_TIERS_CONFIG;
+  const match = tiers.find(t => t.key.toLowerCase() === normalizedKey);
+  if (match) return match;
+  return tiers[0] || DEFAULT_TIERS_CONFIG[0]!;
+}
+
+/**
+ * @deprecated Use resolveTierConfig instead. Kept for backward compat.
  */
 export function resolveCommissionTier(
   tierKey: string,
   config: PlatformConfig
 ): { key: string; name: string; sellerCommissionPercent: number } {
-  const tier = config.commissionTiers?.find(t => t.key === tierKey);
-  if (tier) return tier;
-  return config.commissionTiers?.[0] ?? DEFAULT_COMMISSION_TIERS[0]!;
+  const tier = resolveTierConfig(tierKey, config);
+  const defaultPercent = tier.commissionSlabs?.[0]?.commissionPercent ?? 2;
+  return {
+    key: tier.key,
+    name: tier.name,
+    sellerCommissionPercent: defaultPercent,
+  };
 }
 
+/**
+ * Find the applicable commission slab for a product base price in Rupees.
+ */
+export function findApplicableCommissionSlab(
+  basePriceRupees: number,
+  tierConfig: TierPricingConfig
+): CommissionSlab {
+  const roundedRupees = Math.max(0, Math.round(basePriceRupees));
+  const slabs = tierConfig.commissionSlabs || [];
+  const match = slabs.find(slab => {
+    const minMatch = roundedRupees >= slab.minPrice;
+    const maxMatch = slab.maxPrice === null || slab.maxPrice === undefined || roundedRupees <= slab.maxPrice;
+    return minMatch && maxMatch;
+  });
+
+  return match || slabs[slabs.length - 1] || { minPrice: 0, maxPrice: null, commissionPercent: 2 };
+}
 
 // ─── Item-Level Seller Pricing ───────────────────────────────────────────────
 
 /**
  * Calculate seller economics for a single product item.
- * This is used for seller dashboard preview and order item snapshots.
+ * Sourced directly from the seller's base price and tier slab.
  * 
  * @param sellerBasePricePaise - The seller's listed base price in paise
  * @param tierKey - The seller's pricing tier key (e.g. "bronze")
  * @param config - Platform config
- * @returns Seller commission breakdown
  */
 export function calculateSellerItemPricing(
   sellerBasePricePaise: number,
-  tierKey: string,
+  tierKey: string | undefined,
   config: PlatformConfig
 ): SellerItemPricing {
-  const tier = resolveCommissionTier(tierKey, config);
-  const commissionPercent = tier.sellerCommissionPercent;
-  const gstRate = config.gstRatePercent;
+  const tier = resolveTierConfig(tierKey, config);
+  const basePriceRupees = sellerBasePricePaise / 100;
+  const slab = findApplicableCommissionSlab(basePriceRupees, tier);
+  const commissionPercent = slab.commissionPercent;
+  const gstRate = tier.commissionGstPercent ?? 18;
 
-  // Commission = basePrice × commissionRate
-  const commissionPaise = Math.round(sellerBasePricePaise * commissionPercent / 100);
-  // GST on commission (deducted from seller)
-  const commissionGstPaise = Math.round(commissionPaise * gstRate / 100);
+  // Commission = basePrice × slab commission %
+  const commissionPaise = Math.round((sellerBasePricePaise * commissionPercent) / 100);
+  // GST on commission (deducted from seller payout)
+  const commissionGstPaise = Math.round((commissionPaise * gstRate) / 100);
   // Seller payout = base - commission - commission GST
-  const payoutPaise = sellerBasePricePaise - commissionPaise - commissionGstPaise;
+  const payoutPaise = Math.max(0, sellerBasePricePaise - commissionPaise - commissionGstPaise);
 
   return {
     sellerBasePricePaise,
+    tierKey: tier.key,
+    tierName: tier.name,
+    slabMinPrice: slab.minPrice,
+    slabMaxPrice: slab.maxPrice,
     sellerCommissionPercent: commissionPercent,
     sellerCommissionPaise: commissionPaise,
     sellerCommissionGstPaise: commissionGstPaise,
@@ -203,31 +362,61 @@ export function calculateSellerItemPricing(
   };
 }
 
-// ─── Checkout-Level Pricing ──────────────────────────────────────────────────
+// ─── Tier Platform Charges ───────────────────────────────────────────────────
+
+/**
+ * Calculate customer-side platform charges for a specific tier.
+ */
+export function calculateTierPlatformCharges(
+  tierKey: string | undefined,
+  config: PlatformConfig
+) {
+  const tier = resolveTierConfig(tierKey, config);
+  const handlingChargePaise = tier.handlingChargePaise ?? DEFAULT_HANDLING_CHARGE_PAISE;
+  const platformFeePaise = tier.platformFeePaise ?? DEFAULT_PLATFORM_FEE_PAISE;
+  const platformGstPercent = tier.platformGstPercent ?? DEFAULT_GST_RATE_PERCENT;
+  const platformChargesGstPaise = Math.round(((handlingChargePaise + platformFeePaise) * platformGstPercent) / 100);
+  const totalPlatformFeesPaise = handlingChargePaise + platformFeePaise + platformChargesGstPaise;
+
+  return {
+    handlingChargePaise,
+    platformFeePaise,
+    platformGstPercent,
+    platformChargesGstPaise,
+    totalPlatformFeesPaise,
+  };
+}
+
+// ─── Upfront Storefront Pricing ──────────────────────────────────────────────
 
 /**
  * Calculates the all-inclusive customer price in PAISE from the seller's base price in PAISE.
- * Adds handling charge (2900 paise), platform fee (2000 paise), and GST (882 paise) directly to display price.
+ * Adds tier-specific handling charge, platform fee, and GST.
  */
-export function calculateAllInclusivePricePaise(basePricePaise: number, config: PlatformConfig): number {
+export function calculateAllInclusivePricePaise(
+  basePricePaise: number,
+  tierKey: string | undefined,
+  config: PlatformConfig
+): number {
   if (!basePricePaise || basePricePaise <= 0) return 0;
-  const handlingChargePaise = config.handlingChargePaise ?? DEFAULT_HANDLING_CHARGE_PAISE;
-  const platformFeePaise = config.platformFeePaise ?? DEFAULT_PLATFORM_FEE_PAISE;
-  const gstRatePercent = config.gstRatePercent ?? DEFAULT_GST_RATE_PERCENT;
-  const platformChargesGstPaise = Math.round((handlingChargePaise + platformFeePaise) * gstRatePercent / 100);
-  const totalFeesPaise = handlingChargePaise + platformFeePaise + platformChargesGstPaise;
-  return basePricePaise + totalFeesPaise;
+  const charges = calculateTierPlatformCharges(tierKey, config);
+  return basePricePaise + charges.totalPlatformFeesPaise;
 }
 
 /**
  * Calculates the all-inclusive customer price in RUPEES from the seller's base price in RUPEES.
  */
-export function calculateAllInclusivePrice(basePriceRupees: number, config: PlatformConfig): number {
+export function calculateAllInclusivePrice(
+  basePriceRupees: number,
+  tierKey: string | undefined,
+  config: PlatformConfig
+): number {
   if (!basePriceRupees || basePriceRupees <= 0) return 0;
   const paise = Math.round(basePriceRupees * 100);
-  return calculateAllInclusivePricePaise(paise, config) / 100;
+  return calculateAllInclusivePricePaise(paise, tierKey, config) / 100;
 }
 
+// ─── Checkout-Level Pricing ──────────────────────────────────────────────────
 
 /**
  * Calculate the complete checkout pricing for a single-seller order.
@@ -243,21 +432,36 @@ export function calculateCheckoutPricing(
   items: Array<{ sellerBasePricePaise: number; quantity: number }>,
   deliveryFeePaise: number,
   discountPaise: number,
-  sellerTierKey: string,
+  sellerTierKey: string | undefined,
   config: PlatformConfig
 ): CheckoutPricing {
-  const tier = resolveCommissionTier(sellerTierKey, config);
-  const gstRate = config.gstRatePercent;
+  const tier = resolveTierConfig(sellerTierKey, config);
+  const charges = calculateTierPlatformCharges(sellerTierKey, config);
 
   // All-inclusive product subtotal (sum of all-inclusive item prices × quantities)
   const productSubtotalPaise = items.reduce(
     (sum, item) => sum + item.sellerBasePricePaise * item.quantity, 0
   );
 
-  // Seller commission (on seller base price)
-  const sellerCommissionPaise = Math.round(productSubtotalPaise * tier.sellerCommissionPercent / 100);
-  const sellerCommissionGstPaise = Math.round(sellerCommissionPaise * gstRate / 100);
-  const sellerPayoutPaise = productSubtotalPaise - sellerCommissionPaise - sellerCommissionGstPaise;
+  // Compute seller commission and payouts using item economics
+  let totalSellerCommissionPaise = 0;
+  let totalSellerCommissionGstPaise = 0;
+  let totalSellerPayoutPaise = 0;
+  let primarySlabMinPrice: number | undefined = undefined;
+  let primarySlabMaxPrice: number | null | undefined = undefined;
+  let primaryCommissionPercent = 0;
+
+  for (const item of items) {
+    const itemPricing = calculateSellerItemPricing(item.sellerBasePricePaise, sellerTierKey, config);
+    totalSellerCommissionPaise += itemPricing.sellerCommissionPaise * item.quantity;
+    totalSellerCommissionGstPaise += itemPricing.sellerCommissionGstPaise * item.quantity;
+    totalSellerPayoutPaise += itemPricing.sellerPayoutPaise * item.quantity;
+    if (primarySlabMinPrice === undefined) {
+      primarySlabMinPrice = itemPricing.slabMinPrice;
+      primarySlabMaxPrice = itemPricing.slabMaxPrice;
+      primaryCommissionPercent = itemPricing.sellerCommissionPercent;
+    }
+  }
 
   // Customer payable: Product Subtotal (all-inclusive) + Delivery Fee - Discount
   const totalPayablePaise = Math.max(
@@ -265,28 +469,30 @@ export function calculateCheckoutPricing(
     productSubtotalPaise + deliveryFeePaise - discountPaise
   );
 
-
   return {
     productSubtotalPaise,
-    handlingChargePaise: 0, // Included in product price
-    platformFeePaise: 0,    // Included in product price
-    platformChargesGstPaise: 0, // Included in product price
+    handlingChargePaise: charges.handlingChargePaise,
+    platformFeePaise: charges.platformFeePaise,
+    platformChargesGstPaise: charges.platformChargesGstPaise,
     deliveryFeePaise,
     discountPaise,
     totalPayablePaise,
     sellerTierKey: tier.key,
     sellerTierName: tier.name,
-    sellerCommissionPercent: tier.sellerCommissionPercent,
-    sellerCommissionPaise,
-    sellerCommissionGstPaise,
-    sellerPayoutPaise,
-    gstRatePercent: gstRate,
-    handlingChargeConfigPaise: config.handlingChargePaise,
-    platformFeeConfigPaise: config.platformFeePaise,
-    gstRateConfigPercent: config.gstRatePercent,
-    sellerCommissionConfigPercent: tier.sellerCommissionPercent,
+    slabMinPrice: primarySlabMinPrice,
+    slabMaxPrice: primarySlabMaxPrice,
+    sellerCommissionPercent: primaryCommissionPercent,
+    sellerCommissionPaise: totalSellerCommissionPaise,
+    sellerCommissionGstPaise: totalSellerCommissionGstPaise,
+    sellerPayoutPaise: totalSellerPayoutPaise,
+    gstRatePercent: tier.commissionGstPercent,
+    handlingChargeConfigPaise: tier.handlingChargePaise,
+    platformFeeConfigPaise: tier.platformFeePaise,
+    gstRateConfigPercent: tier.platformGstPercent,
+    sellerCommissionConfigPercent: primaryCommissionPercent,
   };
 }
+
 
 
 // ─── Legacy Functions (backward compat) ──────────────────────────────────────

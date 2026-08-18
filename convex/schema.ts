@@ -48,7 +48,21 @@ export default defineSchema({
 
   // ─── PLATFORM SETTINGS ────────────────────────────────────────────────────
   platformSettings: defineTable({
-    // ─── NEW: Commission-Based Pricing (v2) ────────────────────────────────────
+    // ─── v3: Dynamic Tier Commission Slabs & Tier Platform Charges ───────────
+    tiers: v.optional(v.array(v.object({
+      key: v.string(),                                  // "bronze", "silver", "gold"
+      name: v.string(),                                 // "Bronze", "Silver", "Gold"
+      commissionSlabs: v.array(v.object({
+        minPrice: v.number(),                           // e.g. 0, 500, 1000 (Rupees)
+        maxPrice: v.union(v.number(), v.null()),        // e.g. 499, 999, null for open-ended (Rupees)
+        commissionPercent: v.number(),                  // e.g. 2, 3, 4, 5 (%)
+      })),
+      commissionGstPercent: v.number(),                 // e.g. 18 (%)
+      handlingChargePaise: v.number(),                  // e.g. 2900 = ₹29
+      platformFeePaise: v.number(),                     // e.g. 2000 = ₹20
+      platformGstPercent: v.number(),                   // e.g. 18 (%)
+    }))),
+    // ─── Legacy fields (kept for backward compat) ─────────────────────────────
     handlingChargePaise: v.optional(v.number()),       // e.g. 2900 = ₹29
     platformFeePaise: v.optional(v.number()),           // e.g. 2000 = ₹20
     gstRatePercent: v.optional(v.number()),             // e.g. 18
@@ -57,6 +71,7 @@ export default defineSchema({
       name: v.string(),                                 // "Bronze", "Silver", "Gold"
       sellerCommissionPercent: v.number(),               // e.g. 2, 3, 5
     }))),
+
     // ─── LEGACY: Markup-Based Pricing (v1) — kept for migration safety ─────────
     markupRate: v.optional(v.number()),
     platformFeeRate: v.optional(v.number()),
@@ -751,7 +766,7 @@ export default defineSchema({
     deliveryFee:          v.number(),               // paise
     discount:             v.number(),               // paise
     total:                v.number(),               // paise — final customer payable
-    // ─── NEW: Immutable Pricing Snapshot (v2) ─────────────────────────────────
+    // ─── Immutable Pricing Snapshot (v3) ──────────────────────────────────
     pricingSnapshot: v.optional(v.object({
       productSubtotalPaise: v.number(),
       handlingChargePaise: v.number(),
@@ -762,6 +777,8 @@ export default defineSchema({
       totalPayablePaise: v.number(),
       sellerTierKey: v.string(),
       sellerTierName: v.string(),
+      slabMinPrice: v.optional(v.number()),
+      slabMaxPrice: v.optional(v.union(v.number(), v.null())),
       sellerCommissionPercent: v.number(),
       sellerCommissionPaise: v.number(),
       sellerCommissionGstPaise: v.number(), // GST on commission (deducted from seller)
@@ -773,6 +790,7 @@ export default defineSchema({
       gstRateConfigPercent: v.number(),
       sellerCommissionConfigPercent: v.number(),
     })),
+
     commissionAmount:     v.number(),               // paise
     paymentId:            v.optional(v.id("payments")),
     paymentStatus:        v.union(

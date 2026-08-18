@@ -93,25 +93,73 @@ function calculatePricingBreakdown(basePriceRupees: number, config?: any, rawTie
   }
 
   // Map legacy tier names to keys
-  let tierKey = rawTierKey || "bronze";
+  let tierKey = (rawTierKey || "bronze").toLowerCase();
   if (tierKey === "tier1") tierKey = "bronze";
   if (tierKey === "tier2") tierKey = "silver";
   if (tierKey === "tier3") tierKey = "gold";
 
-  const tiers = config?.commissionTiers || [
-    { key: "bronze", name: "Bronze", sellerCommissionPercent: 2 },
-    { key: "silver", name: "Silver", sellerCommissionPercent: 3 },
-    { key: "gold", name: "Gold", sellerCommissionPercent: 5 },
+  const tiers = config?.tiers && config.tiers.length > 0 ? config.tiers : [
+    {
+      key: "bronze",
+      name: "Bronze",
+      commissionSlabs: [
+        { minPrice: 0, maxPrice: 499, commissionPercent: 2 },
+        { minPrice: 500, maxPrice: 999, commissionPercent: 3 },
+        { minPrice: 1000, maxPrice: 1499, commissionPercent: 4 },
+        { minPrice: 1500, maxPrice: null, commissionPercent: 5 },
+      ],
+      commissionGstPercent: 18,
+      handlingChargePaise: 2900,
+      platformFeePaise: 2000,
+      platformGstPercent: 18,
+    },
+    {
+      key: "silver",
+      name: "Silver",
+      commissionSlabs: [
+        { minPrice: 0, maxPrice: 499, commissionPercent: 2.5 },
+        { minPrice: 500, maxPrice: 999, commissionPercent: 3.5 },
+        { minPrice: 1000, maxPrice: null, commissionPercent: 4.5 },
+      ],
+      commissionGstPercent: 18,
+      handlingChargePaise: 2500,
+      platformFeePaise: 1500,
+      platformGstPercent: 18,
+    },
+    {
+      key: "gold",
+      name: "Gold",
+      commissionSlabs: [
+        { minPrice: 0, maxPrice: 499, commissionPercent: 3 },
+        { minPrice: 500, maxPrice: 999, commissionPercent: 4 },
+        { minPrice: 1000, maxPrice: null, commissionPercent: 5 },
+      ],
+      commissionGstPercent: 18,
+      handlingChargePaise: 2000,
+      platformFeePaise: 1000,
+      platformGstPercent: 18,
+    },
   ];
 
-  const tier = tiers.find((t: any) => t.key === tierKey) || tiers[0];
-  const commissionPercent = tier?.sellerCommissionPercent ?? 2;
-  const gstRatePercent = config?.gstRatePercent ?? 18;
+  const tier = tiers.find((t: any) => t.key.toLowerCase() === tierKey) || tiers[0];
+  
+  // Find applicable slab based on rounded base price in rupees
+  const roundedRupees = Math.round(basePriceRupees);
+  const slabs = tier?.commissionSlabs || [];
+  const matchingSlab = slabs.find((s: any) => {
+    const minMatch = roundedRupees >= s.minPrice;
+    const maxMatch = s.maxPrice === null || s.maxPrice === undefined || roundedRupees <= s.maxPrice;
+    return minMatch && maxMatch;
+  }) || slabs[slabs.length - 1] || { minPrice: 0, maxPrice: null, commissionPercent: 2 };
 
-  // Handling charge + platform fee + GST added to customer storefront price
-  const handlingCharge = (config?.handlingChargePaise ?? 2900) / 100;
-  const platformFee = (config?.platformFeePaise ?? 2000) / 100;
-  const gstOnCharges = (handlingCharge + platformFee) * (gstRatePercent / 100);
+  const commissionPercent = matchingSlab.commissionPercent;
+  const gstRatePercent = tier?.commissionGstPercent ?? config?.gstRatePercent ?? 18;
+
+  // Handling charge + platform fee + GST from tier
+  const handlingCharge = (tier?.handlingChargePaise ?? config?.handlingChargePaise ?? 2900) / 100;
+  const platformFee = (tier?.platformFeePaise ?? config?.platformFeePaise ?? 2000) / 100;
+  const platformGstPercent = tier?.platformGstPercent ?? config?.gstRatePercent ?? 18;
+  const gstOnCharges = (handlingCharge + platformFee) * (platformGstPercent / 100);
   const totalPlatformFees = handlingCharge + platformFee + gstOnCharges;
   const storefrontPrice = Math.round((basePriceRupees + totalPlatformFees) * 100) / 100;
 
@@ -122,8 +170,15 @@ function calculatePricingBreakdown(basePriceRupees: number, config?: any, rawTie
   // Net payout to boutique
   const netPayout = Math.max(0, basePriceRupees - commissionAmount - gstOnCommission);
 
+  const slabLabel = matchingSlab.maxPrice === null || matchingSlab.maxPrice === undefined
+    ? `₹${matchingSlab.minPrice.toLocaleString("en-IN")}+`
+    : `₹${matchingSlab.minPrice.toLocaleString("en-IN")} – ₹${matchingSlab.maxPrice.toLocaleString("en-IN")}`;
+
   return {
     tierName: tier?.name ?? "Bronze",
+    slabLabel,
+    slabMinPrice: matchingSlab.minPrice,
+    slabMaxPrice: matchingSlab.maxPrice,
     commissionPercent,
     commissionAmount,
     gstRatePercent,
@@ -132,6 +187,7 @@ function calculatePricingBreakdown(basePriceRupees: number, config?: any, rawTie
     netPayout,
   };
 }
+
 
 
 const cropImage = (
@@ -1473,17 +1529,17 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 </div>
               </div>
 
-              {/* BESPOKE FINANCIAL PANEL (Commission Model - No Markup) */}
+              {/* BESPOKE FINANCIAL PANEL (Tier Slabs & Payout Breakdown) */}
               {pricingBreakdown && (
                 <div className="border border-slate-200/90 rounded-2xl bg-white overflow-hidden shadow-xs">
                   {/* Top 2-Column Metrics */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
                     
-                    {/* Column 1: Storefront Base Price */}
+                    {/* Column 1: Storefront Customer Price */}
                     <div className="p-5 flex flex-col justify-between">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                          Storefront Base Price
+                          Storefront Customer Price
                         </span>
                         <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
                           Customer Pays
@@ -1492,21 +1548,26 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
                       <div className="flex items-baseline gap-1 my-1">
                         <span className="text-3xl font-bold tracking-tight text-slate-900 font-sans">
-                          ₹{basePriceNum.toLocaleString("en-IN")}
+                          ₹{pricingBreakdown.storefrontPrice.toFixed(2)}
                         </span>
                       </div>
 
                       <span className="text-[11px] text-slate-400 font-normal mt-1">
-                        Product base price on Hive (no markup added)
+                        Base ₹{basePriceNum.toFixed(0)} + Handling &amp; Platform Fee (all-inclusive)
                       </span>
                     </div>
 
                     {/* Column 2: Net Payout */}
                     <div className="p-5 flex flex-col justify-between bg-emerald-50/20">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900">
-                          Your Net Payout
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900">
+                            Your Net Payout
+                          </span>
+                          <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
+                            {pricingBreakdown.tierName} &bull; {pricingBreakdown.slabLabel}
+                          </span>
+                        </div>
                         <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-full">
                           Your Earnings
                         </span>
@@ -1528,12 +1589,13 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   {/* Bottom Single-Line Calculation Formula */}
                   <div className="px-5 py-2.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
                     <span className="truncate">
-                      Base ₹{basePriceNum.toFixed(0)} &bull; Commission ({pricingBreakdown.commissionPercent}%): -₹{pricingBreakdown.commissionAmount.toFixed(2)} &bull; GST ({pricingBreakdown.gstRatePercent}%): -₹{pricingBreakdown.gstOnCommission.toFixed(2)}
+                      Base ₹{basePriceNum.toFixed(0)} &bull; {pricingBreakdown.tierName} Slab ({pricingBreakdown.slabLabel}): {pricingBreakdown.commissionPercent}% (-₹{pricingBreakdown.commissionAmount.toFixed(2)}) &bull; GST ({pricingBreakdown.gstRatePercent}%): -₹{pricingBreakdown.gstOnCommission.toFixed(2)}
                     </span>
                     <span className="text-emerald-700 font-bold font-mono shrink-0 ml-2">Net: ₹{pricingBreakdown.netPayout.toFixed(2)}</span>
                   </div>
                 </div>
               )}
+
 
             </div>
 

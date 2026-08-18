@@ -338,48 +338,43 @@ export const processPaymentCaptured = internalMutation({
       }
     }
 
-    // Compute platform charges from config
-    const { getPlatformConfig: getPlatformConfigFn } = await import("../pricingService");
+    // Compute pricing and snapshot using centralized engine
+    const { getPlatformConfig: getPlatformConfigFn, calculateCheckoutPricing: calculateCheckoutPricingFn } = await import("../pricingService");
     const platformConfig = await getPlatformConfigFn(ctx);
-    const handlingChargePaise = platformConfig.handlingChargePaise;
-    const platformFeePaise = platformConfig.platformFeePaise;
-    const gstRatePercent = platformConfig.gstRatePercent;
-    const platformChargesGstPaise = Math.round((handlingChargePaise + platformFeePaise) * gstRatePercent / 100);
-
-    // Resolve tier name
-    const tierConfig = platformConfig.commissionTiers.find(t => t.key === sellerTierKey);
-    if (tierConfig) {
-      sellerTierName = tierConfig.name;
-      if (!sellerCommissionPercent) sellerCommissionPercent = tierConfig.sellerCommissionPercent;
-    }
-
-    // If checkout session didn't have v2 commission fields (legacy order), calculate from config
-    if (sellerPayoutPaise === 0 && session.subtotal > 0) {
-      sellerCommissionPaise = Math.round(session.subtotal * sellerCommissionPercent / 100);
-      sellerCommissionGstPaise = Math.round(sellerCommissionPaise * gstRatePercent / 100);
-      sellerPayoutPaise = session.subtotal - sellerCommissionPaise - sellerCommissionGstPaise;
-    }
+    const checkoutPricing = calculateCheckoutPricingFn(
+      session.items.map((item: any) => ({
+        sellerBasePricePaise: Math.round(item.price * 100),
+        quantity: item.quantity,
+      })),
+      session.deliveryFee ?? 0,
+      session.discount ?? 0,
+      sellerTierKey,
+      platformConfig
+    );
 
     const pricingSnapshot = {
-      productSubtotalPaise: session.subtotal,
-      handlingChargePaise,
-      platformFeePaise,
-      platformChargesGstPaise,
-      deliveryFeePaise: session.deliveryFee,
-      discountPaise: session.discount,
-      totalPayablePaise: session.total,
-      sellerTierKey,
-      sellerTierName,
-      sellerCommissionPercent,
-      sellerCommissionPaise,
-      sellerCommissionGstPaise,
-      sellerPayoutPaise,
-      gstRatePercent,
-      handlingChargeConfigPaise: handlingChargePaise,
-      platformFeeConfigPaise: platformFeePaise,
-      gstRateConfigPercent: gstRatePercent,
-      sellerCommissionConfigPercent: sellerCommissionPercent,
+      productSubtotalPaise: checkoutPricing.productSubtotalPaise,
+      handlingChargePaise: checkoutPricing.handlingChargePaise,
+      platformFeePaise: checkoutPricing.platformFeePaise,
+      platformChargesGstPaise: checkoutPricing.platformChargesGstPaise,
+      deliveryFeePaise: checkoutPricing.deliveryFeePaise,
+      discountPaise: checkoutPricing.discountPaise,
+      totalPayablePaise: checkoutPricing.totalPayablePaise,
+      sellerTierKey: checkoutPricing.sellerTierKey,
+      sellerTierName: checkoutPricing.sellerTierName,
+      slabMinPrice: checkoutPricing.slabMinPrice,
+      slabMaxPrice: checkoutPricing.slabMaxPrice,
+      sellerCommissionPercent: checkoutPricing.sellerCommissionPercent,
+      sellerCommissionPaise: checkoutPricing.sellerCommissionPaise,
+      sellerCommissionGstPaise: checkoutPricing.sellerCommissionGstPaise,
+      sellerPayoutPaise: checkoutPricing.sellerPayoutPaise,
+      gstRatePercent: checkoutPricing.gstRatePercent,
+      handlingChargeConfigPaise: checkoutPricing.handlingChargeConfigPaise,
+      platformFeeConfigPaise: checkoutPricing.platformFeeConfigPaise,
+      gstRateConfigPercent: checkoutPricing.gstRateConfigPercent,
+      sellerCommissionConfigPercent: checkoutPricing.sellerCommissionConfigPercent,
     };
+
 
     // P0-4 FIX: Collision-resistant order number using timestamp (base36) + random suffix
     const orderNumber = `HIVE-${Math.floor(now / 1000).toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;

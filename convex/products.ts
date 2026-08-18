@@ -506,8 +506,8 @@ export const createProduct = mutation({
     const config = await getPlatformConfig(ctx);
 
     // Storefront price = seller base price (in paise) + platform charges & GST (in paise) (All-inclusive display)
-    const customerPrice = calculateAllInclusivePricePaise(args.price, config);
-    const customerDiscountPrice = args.discountPrice ? calculateAllInclusivePricePaise(args.discountPrice, config) : undefined;
+    const customerPrice = calculateAllInclusivePricePaise(args.price, (boutique as any)?.pricingTier || "bronze", config);
+    const customerDiscountPrice = args.discountPrice ? calculateAllInclusivePricePaise(args.discountPrice, (boutique as any)?.pricingTier || "bronze", config) : undefined;
 
 
 
@@ -757,8 +757,8 @@ export const updateProduct = mutation({
     const config = await getPlatformConfig(ctx);
 
     // Storefront price = seller base price (in paise) + platform charges & GST (in paise) (All-inclusive display)
-    const customerPrice = calculateAllInclusivePricePaise(args.price, config);
-    const customerDiscountPrice = args.discountPrice ? calculateAllInclusivePricePaise(args.discountPrice, config) : undefined;
+    const customerPrice = calculateAllInclusivePricePaise(args.price, (boutique as any)?.pricingTier || "bronze", config);
+    const customerDiscountPrice = args.discountPrice ? calculateAllInclusivePricePaise(args.discountPrice, (boutique as any)?.pricingTier || "bronze", config) : undefined;
 
 
 

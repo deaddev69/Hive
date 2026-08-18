@@ -4,10 +4,13 @@ import { requireRole } from "./lib/auth";
 
 import {
   PlatformConfig,
+  TierPricingConfig,
+  DEFAULT_TIERS_CONFIG,
   DEFAULT_COMMISSION_TIERS,
   DEFAULT_HANDLING_CHARGE_PAISE,
   DEFAULT_PLATFORM_FEE_PAISE,
   DEFAULT_GST_RATE_PERCENT,
+  validateTierSlabs,
   calculateAllInclusivePrice,
   calculateAllInclusivePricePaise,
   getPlatformConfig as fetchPlatformConfig,
@@ -18,16 +21,18 @@ import {
   getPlatformSettings as fetchPlatformSettings,
 } from "./pricingService";
 
-
-
-
-// ─── v2: Commission-Based Platform Config ────────────────────────────────────
+// ─── v3: Dynamic Tier Commission Slabs & Platform Config ─────────────────────
 
 export const getPlatformConfig = query({
   args: {},
   handler: async (ctx) => {
     const settings = (await ctx.db.query("platformSettings").first()) as any;
+    const tiers: TierPricingConfig[] = settings?.tiers && Array.isArray(settings.tiers) && settings.tiers.length > 0
+      ? settings.tiers
+      : DEFAULT_TIERS_CONFIG;
+
     return {
+      tiers,
       handlingChargePaise: settings?.handlingChargePaise ?? DEFAULT_HANDLING_CHARGE_PAISE,
       platformFeePaise: settings?.platformFeePaise ?? DEFAULT_PLATFORM_FEE_PAISE,
       gstRatePercent: settings?.gstRatePercent ?? DEFAULT_GST_RATE_PERCENT,
@@ -41,6 +46,22 @@ export const getPlatformConfig = query({
   },
 });
 
+const commissionSlabValidator = v.object({
+  minPrice: v.number(),
+  maxPrice: v.union(v.number(), v.null()),
+  commissionPercent: v.number(),
+});
+
+const tierPricingConfigValidator = v.object({
+  key: v.string(),
+  name: v.string(),
+  commissionSlabs: v.array(commissionSlabValidator),
+  commissionGstPercent: v.number(),
+  handlingChargePaise: v.number(),
+  platformFeePaise: v.number(),
+  platformGstPercent: v.number(),
+});
+
 const commissionTierValidator = v.object({
   key: v.string(),
   name: v.string(),
@@ -49,31 +70,52 @@ const commissionTierValidator = v.object({
 
 export const updatePlatformConfig = mutation({
   args: {
-    handlingChargePaise: v.number(),
-    platformFeePaise: v.number(),
-    gstRatePercent: v.number(),
-    commissionTiers: v.array(commissionTierValidator),
+    tiers: v.optional(v.array(tierPricingConfigValidator)),
+    handlingChargePaise: v.optional(v.number()),
+    platformFeePaise: v.optional(v.number()),
+    gstRatePercent: v.optional(v.number()),
+    commissionTiers: v.optional(v.array(commissionTierValidator)),
   },
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
 
-    // Validate inputs
-    if (args.handlingChargePaise < 0) throw new Error("Handling charge cannot be negative");
-    if (args.platformFeePaise < 0) throw new Error("Platform fee cannot be negative");
-    if (args.gstRatePercent < 0 || args.gstRatePercent > 100) throw new Error("GST rate must be between 0 and 100");
-    if (args.commissionTiers.length === 0) throw new Error("At least one commission tier is required");
-    for (const tier of args.commissionTiers) {
-      if (tier.sellerCommissionPercent < 0 || tier.sellerCommissionPercent > 100) {
-        throw new Error(`Commission for ${tier.name} must be between 0% and 100%`);
+    const tiersToSave = args.tiers || DEFAULT_TIERS_CONFIG;
+    if (tiersToSave.length === 0) {
+      throw new Error("At least one tier configuration is required.");
+    }
+
+    // Validate each tier's commission slabs and charges
+    for (const tier of tiersToSave) {
+      const slabValidation = validateTierSlabs(tier.commissionSlabs);
+      if (!slabValidation.valid) {
+        throw new Error(`Invalid slabs in ${tier.name} tier: ${slabValidation.error}`);
+      }
+
+      if (tier.commissionGstPercent < 0 || tier.commissionGstPercent > 100) {
+        throw new Error(`Commission GST for ${tier.name} must be between 0% and 100%`);
+      }
+      if (tier.handlingChargePaise < 0) {
+        throw new Error(`Handling charge for ${tier.name} cannot be negative`);
+      }
+      if (tier.platformFeePaise < 0) {
+        throw new Error(`Platform fee for ${tier.name} cannot be negative`);
+      }
+      if (tier.platformGstPercent < 0 || tier.platformGstPercent > 100) {
+        throw new Error(`Platform fee GST for ${tier.name} must be between 0% and 100%`);
       }
     }
 
     const settings = await ctx.db.query("platformSettings").first();
     const patchData: any = {
-      handlingChargePaise: args.handlingChargePaise,
-      platformFeePaise: args.platformFeePaise,
-      gstRatePercent: args.gstRatePercent,
-      commissionTiers: args.commissionTiers,
+      tiers: tiersToSave,
+      handlingChargePaise: args.handlingChargePaise ?? tiersToSave[0]?.handlingChargePaise ?? DEFAULT_HANDLING_CHARGE_PAISE,
+      platformFeePaise: args.platformFeePaise ?? tiersToSave[0]?.platformFeePaise ?? DEFAULT_PLATFORM_FEE_PAISE,
+      gstRatePercent: args.gstRatePercent ?? tiersToSave[0]?.platformGstPercent ?? DEFAULT_GST_RATE_PERCENT,
+      commissionTiers: args.commissionTiers ?? tiersToSave.map(t => ({
+        key: t.key,
+        name: t.name,
+        sellerCommissionPercent: t.commissionSlabs[0]?.commissionPercent ?? 2,
+      })),
       updatedAt: Date.now(),
     };
 
@@ -86,6 +128,7 @@ export const updatePlatformConfig = mutation({
     return { success: true };
   },
 });
+
 
 // ─── Legacy v1 API (kept for backward compat) ───────────────────────────────
 
@@ -235,6 +278,13 @@ export const recalculateAllProductPrices = mutation({
     const now = Date.now();
 
 
+    // Preload all boutiques to resolve pricing tiers in O(1)
+    const boutiques = await ctx.db.query("boutiques").collect();
+    const boutiqueTierMap = new Map<string, string>();
+    for (const b of boutiques) {
+      boutiqueTierMap.set(b._id, (b as any).pricingTier || "bronze");
+    }
+
     for (const product of products) {
       let basePrice = product.basePrice ?? product.price;
       let baseDiscountPrice = product.baseDiscountPrice ?? product.discountPrice;
@@ -260,8 +310,9 @@ export const recalculateAllProductPrices = mutation({
         }
       }
 
-      const targetPrice = calculateAllInclusivePricePaise(basePrice, config);
-      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePricePaise(baseDiscountPrice, config) : undefined;
+      const tierKey = boutiqueTierMap.get(product.boutiqueId) || "bronze";
+      const targetPrice = calculateAllInclusivePricePaise(basePrice, tierKey, config);
+      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePricePaise(baseDiscountPrice, tierKey, config) : undefined;
 
       const needsUpdate =
         product.price !== targetPrice ||
@@ -298,6 +349,13 @@ export const recalculateAllProductPricesInternal = internalMutation({
     let updatedCount = 0;
     const now = Date.now();
 
+    // Preload all boutiques to resolve pricing tiers in O(1)
+    const boutiques = await ctx.db.query("boutiques").collect();
+    const boutiqueTierMap = new Map<string, string>();
+    for (const b of boutiques) {
+      boutiqueTierMap.set(b._id, (b as any).pricingTier || "bronze");
+    }
+
     for (const product of products) {
       let basePrice = product.basePrice ?? product.price;
       let baseDiscountPrice = product.baseDiscountPrice ?? product.discountPrice;
@@ -323,8 +381,9 @@ export const recalculateAllProductPricesInternal = internalMutation({
         }
       }
 
-      const targetPrice = calculateAllInclusivePricePaise(basePrice, config);
-      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePricePaise(baseDiscountPrice, config) : undefined;
+      const tierKey = boutiqueTierMap.get(product.boutiqueId) || "bronze";
+      const targetPrice = calculateAllInclusivePricePaise(basePrice, tierKey, config);
+      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePricePaise(baseDiscountPrice, tierKey, config) : undefined;
 
       const needsUpdate =
         product.price !== targetPrice ||
@@ -342,6 +401,7 @@ export const recalculateAllProductPricesInternal = internalMutation({
         updatedCount++;
       }
     }
+
 
     return {
       success: true,

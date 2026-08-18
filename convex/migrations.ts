@@ -292,6 +292,13 @@ export const recalculateAllProductPrices = mutation({
     let updatedCount = 0;
     const now = Date.now();
 
+    // Preload all boutiques to resolve pricing tiers in O(1)
+    const boutiques = await ctx.db.query("boutiques").collect();
+    const boutiqueTierMap = new Map<string, string>();
+    for (const b of boutiques) {
+      boutiqueTierMap.set(b._id, (b as any).pricingTier || "bronze");
+    }
+
     for (const product of products) {
       let basePrice = product.basePrice ?? product.price;
       let baseDiscountPrice = product.baseDiscountPrice ?? product.discountPrice;
@@ -317,8 +324,9 @@ export const recalculateAllProductPrices = mutation({
         }
       }
 
-      const targetPrice = calculateAllInclusivePricePaise(basePrice, config);
-      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePricePaise(baseDiscountPrice, config) : undefined;
+      const tierKey = boutiqueTierMap.get(product.boutiqueId) || "bronze";
+      const targetPrice = calculateAllInclusivePricePaise(basePrice, tierKey, config);
+      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePricePaise(baseDiscountPrice, tierKey, config) : undefined;
 
       await ctx.db.patch(product._id, {
         basePrice,
@@ -329,6 +337,7 @@ export const recalculateAllProductPrices = mutation({
       });
       updatedCount++;
     }
+
 
     return `Successfully recalculated and updated prices for ${updatedCount} products to all-inclusive upfront pricing.`;
   },

@@ -868,14 +868,47 @@ export async function verifyPaymentAndPlaceOrderInternal(
   const boutique = await ctx.db.get(boutiqueId) as any;
   const boutiqueName = boutique ? (boutique.boutiqueName || boutique.name || "Unknown Boutique") : "Unknown Boutique";
 
-  // Setup snapshot metrics using Hive 2% partner service fee model
-  const commissionRate = boutique ? (boutique.commissionRate ?? 2) : 2;
-  // Commission is calculated on product base revenue (subtotal minus discount), NOT on delivery fees
-  const commissionBase = Math.max(0, session.subtotal - (session.discount ?? 0));
-  const platformCommissionAmount = Math.round((commissionBase * commissionRate) / 100);
-  const gstOnCommission = Math.round((platformCommissionAmount * 18) / 100);
-  // Net partner payout: Base Price minus 2% Service Fee (e.g. ₹1329 - ₹26.58 = ₹1302.42)
-  const merchantPayable = Math.round(commissionBase - platformCommissionAmount);
+  // Setup snapshot metrics using Hive v3 dynamic tier pricing model
+  const platformConfig = await getPlatformConfig(ctx);
+  const sellerTierKey = boutique?.pricingTier || "bronze";
+  const pricing = calculateCheckoutPricing(
+    session.items.map(item => ({
+      sellerBasePricePaise: Math.round(item.price * 100),
+      quantity: item.quantity,
+    })),
+    session.deliveryFee ?? 0,
+    session.discount ?? 0,
+    sellerTierKey,
+    platformConfig
+  );
+
+  const platformCommissionAmount = pricing.sellerCommissionPaise;
+  const gstOnCommission = pricing.sellerCommissionGstPaise;
+  const merchantPayable = pricing.sellerPayoutPaise;
+  const commissionRate = pricing.sellerCommissionPercent;
+
+  const pricingSnapshot = {
+    productSubtotalPaise: pricing.productSubtotalPaise,
+    handlingChargePaise: pricing.handlingChargePaise,
+    platformFeePaise: pricing.platformFeePaise,
+    platformChargesGstPaise: pricing.platformChargesGstPaise,
+    deliveryFeePaise: pricing.deliveryFeePaise,
+    discountPaise: pricing.discountPaise,
+    totalPayablePaise: pricing.totalPayablePaise,
+    sellerTierKey: pricing.sellerTierKey,
+    sellerTierName: pricing.sellerTierName,
+    slabMinPrice: pricing.slabMinPrice,
+    slabMaxPrice: pricing.slabMaxPrice,
+    sellerCommissionPercent: pricing.sellerCommissionPercent,
+    sellerCommissionPaise: pricing.sellerCommissionPaise,
+    sellerCommissionGstPaise: pricing.sellerCommissionGstPaise,
+    sellerPayoutPaise: pricing.sellerPayoutPaise,
+    gstRatePercent: pricing.gstRatePercent,
+    handlingChargeConfigPaise: pricing.handlingChargeConfigPaise,
+    platformFeeConfigPaise: pricing.platformFeeConfigPaise,
+    gstRateConfigPercent: pricing.gstRateConfigPercent,
+    sellerCommissionConfigPercent: pricing.sellerCommissionConfigPercent,
+  };
 
   // We skip calculateDeliveryQuoteAction here because it requires an Action ctx (for fetch and runQuery), and this is a mutation.
   // The frontend already verified the delivery fee, so we just use basic defaults for snapshot metadata.
@@ -952,10 +985,12 @@ export async function verifyPaymentAndPlaceOrderInternal(
     paymentId: payment?._id,
     checkoutSessionId: args.checkoutSessionId, // Required identifier
     notes: `CheckoutSession: ${args.checkoutSessionId}`,
+    pricingSnapshot,
     orderSnapshot,
     createdAt: now,
     updatedAt: now,
   });
+
 
   // Write default records to deliverySubsidyLedger and deliveryPerformanceLedger for online checkout
   try {
