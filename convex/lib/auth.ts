@@ -80,10 +80,11 @@ export function assertRoleIssuerGating(user: { role: string }, identity: { issue
     "boutique_owner",
     "boutique",
     "seller_pending",
-    "seller_rejected"
+    "seller_rejected",
   ].includes(user.role);
 
   if (isSellerOrAdminRole) {
+
     if (!isClerkToken) {
       if (throwOnViolation) {
         throw new ConvexError({
@@ -93,20 +94,11 @@ export function assertRoleIssuerGating(user: { role: string }, identity: { issue
       }
       return false;
     }
-  } else if (user.role === "customer") {
-    if (!isFirebaseToken) {
-      if (throwOnViolation) {
-        throw new ConvexError({
-          code: "FORBIDDEN",
-          message: "Security violation: Retail customer accounts must authenticate via authorized customer identity providers."
-        });
-      }
-      return false;
-    }
   }
 
   return true;
 }
+
 
 /**
  * Asserts the user has a specific role. Returns the user if check passes.
@@ -157,15 +149,9 @@ export async function requireBoutiqueOwnership(
   allowSuspended: boolean = false
 ) {
   const user = await getAuthenticatedUser(ctx, token);
-  if (user.role !== "boutique" && user.role !== "boutique_owner" && user.role !== "admin") {
-    throw new ConvexError({
-      code: HiveError.FORBIDDEN,
-      required: "boutique",
-      actual: user.role,
-    });
-  }
 
   let boutique: any = null;
+
   if (user.role === "admin") {
     boutique = await ctx.db.get(boutiqueId as Id<"boutiques">);
   } else {
@@ -211,17 +197,12 @@ export async function requireBoutiqueOwnership(
  */
 export async function getMyBoutique(ctx: AuthCtx, token?: string, allowSuspended: boolean = false) {
   const user = await getAuthenticatedUser(ctx, token);
-  if (user.role !== "boutique" && user.role !== "boutique_owner" && user.role !== "admin") {
-    throw new ConvexError({
-      code: HiveError.FORBIDDEN,
-      message: "Unauthorized: Not a boutique designer.",
-    });
-  }
 
   let boutique = await ctx.db
     .query("boutiques")
     .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
     .unique();
+
 
   const userEmail = user.email;
   if (!boutique && userEmail) {
