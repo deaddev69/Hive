@@ -162,21 +162,29 @@ export const syncUser = mutation({
 
     // Auto link approved boutique owner by normalized email (ONLY for Clerk authentication!)
     if (!isFirebase && emailNormalized && targetUserRole !== "admin") {
-      const boutique = await ctx.db
+      let boutique = await ctx.db
         .query("boutiques")
         .withIndex("by_email", (q) => q.eq("email", emailNormalized))
         .unique();
 
+      if (!boutique) {
+        const allBoutiques = await ctx.db.query("boutiques").collect();
+        boutique = allBoutiques.find((b: any) =>
+          b.status !== "DELETED" && b.status !== "REJECTED" && (
+            (b.email && normalizeEmail(b.email) === emailNormalized) ||
+            (b.ownerEmail && normalizeEmail(b.ownerEmail) === emailNormalized)
+          )
+        ) as any;
+      }
+
       // Auto-link boutique owner by email: if admin created a boutique with this email,
       // the person signing in with it IS the intended owner — auto-approve and link.
-      if (boutique && boutique.status !== "DELETED" && boutique.status !== "REJECTED" && targetUserId && (!boutique.ownerUserId || boutique.ownerUserId === targetUserId)) {
+      if (boutique && boutique.status !== "DELETED" && boutique.status !== "REJECTED" && targetUserId) {
         const boutiqueUpdate: any = { 
           userId: targetUserId,
           ownerUserId: targetUserId,
           inviteStatus: "claimed",
           claimedAt: now,
-          inviteTokenHash: undefined,
-          inviteRequestedAt: undefined,
         };
         // Auto-approve PENDING boutiques when owner signs in
         if (boutique.status === "PENDING") {
@@ -186,13 +194,6 @@ export const syncUser = mutation({
         await ctx.db.patch(boutique._id, boutiqueUpdate);
         await ctx.db.patch(targetUserId, { role: "boutique_owner", updatedAt: now });
         targetUserRole = "boutique_owner";
-
-        // Send welcome WhatsApp sequence #1 (Temporarily disabled - template missing)
-        // await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-        //   recipient: boutique.phone,
-        //   templateName: "merchant_welcome",
-        //   parameters: [boutique.boutiqueName],
-        // });
 
         await ctx.db.insert("auditLogs", {
           actorRole: "system",
