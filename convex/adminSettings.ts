@@ -212,11 +212,54 @@ export const updatePlatformSettingsFromApi = mutation({
   }
 });
 
-/** @deprecated No longer needed — product price = seller base price */
+/**
+ * Recalculates and synchronizes all existing products to the new commission-based pricing system.
+ * Sets storefront price equal to seller's base price (0% customer markup).
+ */
 export const recalculateAllProductPrices = mutation({
   args: {},
   handler: async (ctx) => {
     await requireRole(ctx, "admin");
-    return { success: true, updatedProductsCount: 0 };
+
+    const products = await ctx.db.query("products").collect();
+    let updatedCount = 0;
+    const now = Date.now();
+
+    for (const product of products) {
+      let basePrice = product.basePrice;
+      let baseDiscountPrice = product.baseDiscountPrice;
+
+      if (basePrice === undefined || basePrice <= 0) {
+        basePrice = product.price;
+        baseDiscountPrice = product.discountPrice;
+      }
+
+      const targetPrice = basePrice;
+      const targetDiscountPrice = baseDiscountPrice;
+
+      const needsUpdate =
+        product.price !== targetPrice ||
+        product.discountPrice !== targetDiscountPrice ||
+        product.basePrice !== basePrice;
+
+      if (needsUpdate) {
+        await ctx.db.patch(product._id, {
+          basePrice,
+          baseDiscountPrice: targetDiscountPrice,
+          price: targetPrice,
+          discountPrice: targetDiscountPrice,
+          updatedAt: now,
+        });
+        updatedCount++;
+      }
+    }
+
+    return {
+      success: true,
+      updatedCount,
+      totalProducts: products.length,
+      message: `Successfully synchronized ${updatedCount} of ${products.length} products to the commission pricing model.`,
+    };
   },
 });
+

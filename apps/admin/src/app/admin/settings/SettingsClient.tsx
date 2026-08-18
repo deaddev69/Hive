@@ -22,13 +22,17 @@ const DEFAULT_TIERS: CommissionTier[] = [
 export default function SettingsClient() {
   const config = useQuery(api.adminSettings.getPlatformConfig);
   const updateConfig = useMutation(api.adminSettings.updatePlatformConfig);
+  const recalculatePrices = useMutation(api.adminSettings.recalculateAllProductPrices);
 
   const [handlingCharge, setHandlingCharge] = useState<string>("");
   const [platformFee, setPlatformFee] = useState<string>("");
   const [gstRate, setGstRate] = useState<string>("");
   const [tiers, setTiers] = useState<CommissionTier[]>([...DEFAULT_TIERS]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [recalcResult, setRecalcResult] = useState<{ message: string; updatedCount: number } | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+
 
   useEffect(() => {
     if (config && !isInitialized) {
@@ -90,7 +94,22 @@ export default function SettingsClient() {
     }
   };
 
+  const handleRecalculatePrices = async () => {
+    setIsRecalculating(true);
+    setRecalcResult(null);
+    try {
+      const res = await recalculatePrices({});
+      setRecalcResult({ message: res.message, updatedCount: res.updatedCount });
+      toast.success(res.message);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to recalculate product prices.");
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
   const updateTierCommission = (key: string, value: string) => {
+
     setTiers((prev) =>
       prev.map((t) =>
         t.key === key
@@ -328,6 +347,53 @@ export default function SettingsClient() {
         </div>
       </div>
 
+      {/* 3. Product Catalog Price Synchronization */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-7 shadow-xs space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-extrabold uppercase tracking-wider text-slate-800">
+                3. Product Catalog Price Synchronization
+              </h2>
+              <span className="text-[10px] font-bold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-full">
+                0% Customer Markup
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-1 max-w-2xl leading-relaxed">
+              Synchronizes all existing catalog products with the commission pricing system. Resets storefront display prices directly to the seller&apos;s base price (<code className="font-mono text-[11px] bg-slate-100 px-1 py-0.5 rounded text-slate-700">price = basePrice</code>), stripping legacy markups.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            disabled={isRecalculating || isSaving}
+            onClick={handleRecalculatePrices}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shrink-0"
+          >
+            {isRecalculating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
+                <span>Recalculating...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 text-[#F5C22B]" />
+                <span>Recalculate All Product Prices</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {recalcResult && (
+          <div className="bg-emerald-50 border border-emerald-200/80 rounded-xl p-4 flex items-center gap-3 animate-in fade-in">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+            <div className="text-xs text-emerald-900 font-medium">
+              <span className="font-bold">Sync Completed:</span> {recalcResult.message}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Notice */}
       <div className="flex items-start gap-3 bg-amber-50/70 border border-amber-200/80 rounded-xl p-4">
         <AlertCircle className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
@@ -338,3 +404,4 @@ export default function SettingsClient() {
     </div>
   );
 }
+

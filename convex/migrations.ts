@@ -274,8 +274,7 @@ export const migratePlatformSettingsToTiered = mutation({
 });
 
 /**
- * Migration to recalculate all product prices from base prices using active platform settings.
- * basePrice is stored in PAISE. calculateProductPricing expects RUPEES.
+ * Migration to recalculate all product prices from base prices according to the commission model (price = basePrice).
  */
 export const recalculateAllProductPrices = mutation({
   args: {},
@@ -285,40 +284,30 @@ export const recalculateAllProductPrices = mutation({
       await requireRole(ctx, "admin");
     }
 
-    const settings = await ctx.db.query("platformSettings").first() || {
-      markupRate: 0.15,
-      platformFeeRate: 0.02,
-      markupType: "tiered",
-      markupTiers: DEFAULT_TIER_SLABS,
-    };
-
     const products = await ctx.db.query("products").collect();
     let updatedCount = 0;
+    const now = Date.now();
 
     for (const product of products) {
-      const basePricePaise = product.basePrice !== undefined ? product.basePrice : product.price;
-      // Convert PAISE → RUPEES for pricing calculation
-      const basePriceRupees = basePricePaise / 100;
-      const baseDiscountPriceRupees = product.baseDiscountPrice ? product.baseDiscountPrice / 100 : undefined;
+      let basePrice = product.basePrice;
+      let baseDiscountPrice = product.baseDiscountPrice;
 
-      // calculateProductPricing expects RUPEES, returns RUPEES
-      const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings as any);
-
-      // Convert customer prices back to PAISE for DB storage
-      const customerPrice = Math.round(pricing.customerPrice * 100);
-      const customerDiscountPrice = pricing.customerDiscountPrice
-        ? Math.round(pricing.customerDiscountPrice * 100)
-        : undefined;
+      if (basePrice === undefined || basePrice <= 0) {
+        basePrice = product.price;
+        baseDiscountPrice = product.discountPrice;
+      }
 
       await ctx.db.patch(product._id, {
-        basePrice: basePricePaise,
-        price: customerPrice,
-        discountPrice: customerDiscountPrice,
-        updatedAt: Date.now()
+        basePrice,
+        baseDiscountPrice,
+        price: basePrice,
+        discountPrice: baseDiscountPrice,
+        updatedAt: now,
       });
       updatedCount++;
     }
 
-    return `Successfully recalculated and updated prices for ${updatedCount} products.`;
-  }
+    return `Successfully recalculated and updated prices for ${updatedCount} products to the commission pricing model.`;
+  },
 });
+

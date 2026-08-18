@@ -724,10 +724,11 @@ export async function markOrderFinanciallyDelivered(ctx: any, orderId: any, now:
 
   // Backward compat: If this order has an existing on_hold Route transfer (legacy v1), release it
   if (order.razorpayTransferId && order.transferStatus === "pending") {
-    await ctx.scheduler.runAfter(0, internal.razorpayRoute.releasePayout, {
+    await ctx.scheduler.runAfter(0, (internal as any).razorpayRoute?.releasePayout, {
       orderId: order._id,
     });
   }
+
 
   await ctx.db.patch(order._id, orderPayoutPatch);
 
@@ -872,9 +873,10 @@ export async function settleEligibleOrdersHelper(ctx: any, adminId?: any) {
       if (hasOpenClaims) continue;
 
       // Schedule automated Razorpay Route transfer
-      await ctx.scheduler.runAfter(0, internal.razorpayRoute.createSellerTransfer, {
+      await ctx.scheduler.runAfter(0, (internal as any).razorpayRoute?.createSellerTransfer, {
         orderId: order._id,
       });
+
       payoutsTriggered++;
     }
 

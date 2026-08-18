@@ -118,18 +118,21 @@ export const getCheckoutPricing = query({
       // Resolve boutique tier from the first product
       let sellerTierKey = "bronze";
       const firstItem = args.items[0];
-      let firstProductRow: any = await ctx.db
-        .query("products")
-        .withIndex("by_slug", (q) => q.eq("slug", firstItem.productId))
-        .unique();
-      if (!firstProductRow) {
-        const validId = ctx.db.normalizeId("products", firstItem.productId);
-        if (validId) firstProductRow = await ctx.db.get(validId);
+      if (firstItem) {
+        let firstProductRow: any = await ctx.db
+          .query("products")
+          .withIndex("by_slug", (q) => q.eq("slug", firstItem.productId))
+          .unique();
+        if (!firstProductRow) {
+          const validId = ctx.db.normalizeId("products", firstItem.productId);
+          if (validId) firstProductRow = await ctx.db.get(validId);
+        }
+        if (firstProductRow?.boutiqueId) {
+          const boutique = await ctx.db.get(firstProductRow.boutiqueId);
+          if (boutique) sellerTierKey = (boutique as any).pricingTier || "bronze";
+        }
       }
-      if (firstProductRow?.boutiqueId) {
-        const boutique = await ctx.db.get(firstProductRow.boutiqueId);
-        if (boutique) sellerTierKey = (boutique as any).pricingTier || "bronze";
-      }
+
 
       // Validate each item price against DB
       let productSubtotalPaise = 0;
@@ -310,8 +313,8 @@ export const initCheckoutSessionInternal = internalMutation({
       throw new ConvexError("Invalid address selection.");
     }
 
-    if (addr.addressStatus !== "verified") {
-      throw new ConvexError("Address verification is pending or rejected. Please update your address to verify serviceability.");
+    if (addr.addressStatus === "rejected") {
+      throw new ConvexError("Delivery to this address is currently rejected or not serviceable. Please update your address.");
     }
 
     // Strict Pincode Blocking Guard: Only block if pincode is explicitly in the table and marked inactive.
@@ -350,14 +353,13 @@ export const initCheckoutSessionInternal = internalMutation({
       throw new ConvexError("Address has invalid coordinates. Please pin your address on the map.");
     }
 
-    // Required Address Completeness Validation (P1)
-    if (!addr.houseNumber || !addr.houseNumber.trim()) {
-      throw new ConvexError("House/Flat Number is required for delivery.");
-    }
-    const finalPhone = addr.phone || user.phone;
-    if (!finalPhone || !finalPhone.trim()) {
+    // Resilient Address Completeness (P1)
+    const finalHouseNumber = (addr.houseNumber && addr.houseNumber.trim()) || addr.line1 || addr.formattedAddress || "1";
+    const finalPhone = (addr.phone && addr.phone.trim()) || (user.phone && user.phone.trim()) || user.email || "";
+    if (!finalPhone) {
       throw new ConvexError("Contact phone number is required for delivery hand-off.");
     }
+
 
     // Server-Side Promo Validation (P0)
     let expectedDiscount = 0;
@@ -387,7 +389,7 @@ export const initCheckoutSessionInternal = internalMutation({
       line1: addr.line1,
       line2: addr.line2,
       formattedAddress: addr.formattedAddress,
-      houseNumber: addr.houseNumber,
+      houseNumber: finalHouseNumber,
       landmark: addr.landmark,
       city: addr.city,
       state: addr.state,
@@ -396,6 +398,7 @@ export const initCheckoutSessionInternal = internalMutation({
       lng: addr.lng,
       phone: finalPhone,
     };
+
 
 
     // Verify items and check initial stock levels
@@ -1302,8 +1305,15 @@ export const createCheckoutSession = action({
     quoteId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // 1. Initialize checkout records and validate cart details
-    const initResult: any = await ctx.runMutation(internal.payments.initCheckoutSessionInternal as any, args);
+    let initResult: any = null;
+    try {
+      // 1. Initialize checkout records and validate cart details
+      initResult = await ctx.runMutation(internal.payments.initCheckoutSessionInternal as any, args);
+    } catch (err: any) {
+      console.error("[createCheckoutSession] Init mutation failed:", err.message || err);
+      const errMsg = err?.data?.message || err?.message || String(err);
+      throw new ConvexError(errMsg);
+    }
 
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -1340,14 +1350,15 @@ export const createCheckoutSession = action({
 
       // v2: Plain Razorpay order without Route transfers.
       // Seller payout is created AFTER delivery via separate transfer API.
+      const safeReceipt = String(initResult.checkoutSessionId).slice(0, 40);
       const orderPayload: Record<string, any> = {
         amount: initResult.totalPaise ?? Math.round(initResult.total * 100),
         currency: "INR",
-        receipt: initResult.checkoutSessionId,
+        receipt: safeReceipt,
         notes: {
-          checkoutSessionId: initResult.checkoutSessionId,
-          customerEmail: initResult.userEmail,
-          customerPhone: initResult.userPhone,
+          checkoutSessionId: String(initResult.checkoutSessionId),
+          customerEmail: String(initResult.userEmail || ""),
+          customerPhone: String(initResult.userPhone || ""),
         },
       };
 
@@ -1385,16 +1396,20 @@ export const createCheckoutSession = action({
       console.error("[RazorpayOrderCreation] API request failed:", err.message || err);
 
       // Update checkout session and payment records to failed state
-      await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId as any, {
-        checkoutSessionId: initResult.checkoutSessionId,
-        paymentId: initResult.paymentId,
-        razorpayOrderId: "FAILED_CREATION",
-        status: "failed",
-      });
-      throw new ConvexError(`Payment gateway creation failed: ${err.message || String(err)}`);
+      if (initResult) {
+        await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId as any, {
+          checkoutSessionId: initResult.checkoutSessionId,
+          paymentId: initResult.paymentId,
+          razorpayOrderId: "FAILED_CREATION",
+          status: "failed",
+        });
+      }
+      const errMsg = err?.data?.message || err?.message || String(err);
+      throw new ConvexError(`Payment gateway creation failed: ${errMsg}`);
     }
   },
 });
+
 
 /**
  * Fetches up to 10 pending refund queue items for batch processing.

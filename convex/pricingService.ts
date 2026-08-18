@@ -161,11 +161,11 @@ export function resolveCommissionTier(
   tierKey: string,
   config: PlatformConfig
 ): { key: string; name: string; sellerCommissionPercent: number } {
-  const tier = config.commissionTiers.find(t => t.key === tierKey);
+  const tier = config.commissionTiers?.find(t => t.key === tierKey);
   if (tier) return tier;
-  // Fallback to first tier
-  return config.commissionTiers[0] ?? DEFAULT_COMMISSION_TIERS[0];
+  return config.commissionTiers?.[0] ?? DEFAULT_COMMISSION_TIERS[0]!;
 }
+
 
 // ─── Item-Level Seller Pricing ───────────────────────────────────────────────
 
