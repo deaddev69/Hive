@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
-import { useUser, SignInButton, useAuth } from "@clerk/nextjs";
+import { useUser, SignInButton, SignUpButton, useAuth } from "@clerk/nextjs";
 import { api } from "../../../../../../convex/_generated/api";
-import { Store, CheckCircle2, Loader2, AlertTriangle, LogIn, ArrowRight } from "lucide-react";
+import { Store, CheckCircle2, Loader2, AlertTriangle, LogIn, ArrowRight, Sparkles } from "lucide-react";
+
 
 export default function InviteClaimPage() {
   const params = useParams();
@@ -161,15 +162,22 @@ export default function InviteClaimPage() {
         {/* Action */}
         {!isSignedIn ? (
           <div className="w-full flex flex-col gap-3">
-            <p className="text-xs text-slate-400 text-center">Sign in to claim your merchant account</p>
-            <SignInButton mode="modal" forceRedirectUrl={`/invite/${token}`}>
+            <p className="text-xs text-slate-500 text-center">Activate your store by creating your partner account</p>
+            <SignUpButton mode="modal" forceRedirectUrl={`/invite/${token}`}>
               <button className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold shadow-md active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2">
-                <LogIn className="w-4 h-4" />
-                Sign In to Claim
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                Sign Up & Activate Store
+              </button>
+            </SignUpButton>
+            <SignInButton mode="modal" forceRedirectUrl={`/invite/${token}`}>
+              <button className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2">
+                <LogIn className="w-3.5 h-3.5" />
+                Already have an account? Sign In
               </button>
             </SignInButton>
           </div>
         ) : claiming ? (
+
           <div className="w-full flex flex-col items-center gap-3">
             <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
             <p className="text-sm text-slate-500">Claiming your merchant account...</p>

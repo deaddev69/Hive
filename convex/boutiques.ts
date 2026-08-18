@@ -1983,32 +1983,37 @@ export const sendMerchantInviteAction = internalAction({
       return;
     }
 
-    const claimLink = args.rawToken === "claimed"
-      ? "https://seller.hivenow.in"
-      : `https://seller.hivenow.in/invite/${args.rawToken}`;
+    const claimLink = "https://seller.hivenow.in/sign-up";
     
     // Log the claim link so developers can easily test locally without emails
-    console.log(`[sendMerchantInviteAction] Claim Link: ${claimLink}`);
+    console.log(`[sendMerchantInviteAction] Direct Sign-Up Link: ${claimLink}`);
 
     // 1. Owner Email Notification
     const ownerTargetEmail = boutique.ownerEmail || boutique.email;
     console.log(`[sendMerchantInviteAction] Sending Owner Email to ${ownerTargetEmail}`);
     try {
       const termsDocUrl = "https://seller.hivenow.in/docs/Hive_Seller_Terms_and_Conditions.html";
-      const emailSubject = `Welcome to Hive 🎉 Your merchant account for ${boutique.boutiqueName} is ready`;
+      const emailSubject = `Welcome to Hive 🎉 Your merchant portal for ${boutique.boutiqueName} is ready!`;
       const emailHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
           <div style="text-align: center; margin-bottom: 24px;">
             <h1 style="color: #020617; font-size: 24px; font-weight: 800; margin: 0;">Hive Partners</h1>
-            <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Merchant Onboarding & Agreement</p>
+            <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Merchant Onboarding & Partner Portal</p>
           </div>
 
           <h2 style="color: #020617; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Welcome to Hive 👋</h2>
           <p style="color: #334155; font-size: 15px; line-height: 1.6;">Hi ${boutique.ownerName || "there"},</p>
-          <p style="color: #334155; font-size: 15px; line-height: 1.6;">Your merchant account for <strong>${boutique.boutiqueName}</strong> has been created and is ready to claim!</p>
+          <p style="color: #334155; font-size: 15px; line-height: 1.6;">Your merchant account for <strong>${boutique.boutiqueName}</strong> has been configured on Hive! Activate your store in 3 quick steps:</p>
           
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; margin: 20px 0; font-size: 14px; color: #334155; line-height: 1.6;">
+            <strong>How to Activate:</strong><br/>
+            1. Click the button below to open the seller portal.<br/>
+            2. Sign up with your registered boutique email: <strong style="color: #020617;">${ownerTargetEmail}</strong><br/>
+            3. Your store will automatically link, giving you instant access to add products and manage live orders.
+          </div>
+
           <div style="text-align: center; margin: 28px 0;">
-            <a href="${claimLink}" style="background-color: #fbbf24; color: #020617; padding: 14px 32px; text-decoration: none; font-weight: 800; border-radius: 12px; display: inline-block; font-size: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">Claim Storefront Portal</a>
+            <a href="${claimLink}" style="background-color: #fbbf24; color: #020617; padding: 16px 36px; text-decoration: none; font-weight: 800; border-radius: 12px; display: inline-block; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">Activate Storefront Portal</a>
           </div>
 
           <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 24px; margin: 28px 0;">
@@ -2023,7 +2028,7 @@ export const sendMerchantInviteAction = internalAction({
               <li><strong>Payment Release:</strong> Returns enabled = post return-window; Returns disabled = standard settlement schedule.</li>
               <li><strong>Keep Stock Updated:</strong> Sync inventory before daily store closing & after offline sales.</li>
               <li><strong>Sell Only Available Stock:</strong> Only list items in stock and ready to dispatch.</li>
-              <li><strong>Binding Agreement:</strong> Claiming your portal confirms agreement to Hive Merchant Terms.</li>
+              <li><strong>Binding Agreement:</strong> Activating your portal confirms agreement to Hive Merchant Terms.</li>
             </ol>
             
             <div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed #cbd5e1; text-align: center;">
@@ -2032,9 +2037,8 @@ export const sendMerchantInviteAction = internalAction({
           </div>
 
           <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
-            <strong>Note:</strong> This invite link is unique to you and valid for 14 days.<br/>
-            If the claim button doesn't work, copy and paste this URL into your browser:<br/>
-            <a href="${claimLink}" style="color: #d97706; word-break: break-all;">${claimLink}</a>
+            <strong>Direct Portal URL:</strong> <a href="${claimLink}" style="color: #d97706; word-break: break-all;">${claimLink}</a><br/>
+            📱 <em>Tip: Install the Hive Partner PWA on your mobile phone for real-time sound alerts when new orders arrive!</em>
           </p>
         </div>
       `;
@@ -2065,12 +2069,12 @@ export const sendMerchantInviteAction = internalAction({
             <h2 style="color: #020617; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Welcome to the Team! 🛍️</h2>
             <p style="color: #334155; font-size: 15px; line-height: 1.6;">Hello,</p>
             <p style="color: #334155; font-size: 15px; line-height: 1.6;">You have been added as a staff member for <strong>${boutique.boutiqueName}</strong> on the Hive Partners Portal.</p>
-            <p style="color: #334155; font-size: 15px; line-height: 1.6;">You can access inventory, orders, stock, and product management by logging into the seller portal with your email address (<strong>${staffEmail}</strong>):</p>
+            <p style="color: #334155; font-size: 15px; line-height: 1.6;">You can access inventory, orders, stock, and product management by signing up with your email address (<strong>${staffEmail}</strong>):</p>
             <div style="text-align: center; margin: 32px 0;">
-              <a href="https://seller.hivenow.in" style="background-color: #020617; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: 700; border-radius: 12px; display: inline-block; font-size: 15px;">Log In to Seller Portal</a>
+              <a href="https://seller.hivenow.in/sign-up" style="background-color: #020617; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: 700; border-radius: 12px; display: inline-block; font-size: 15px;">Activate Staff Access</a>
             </div>
             <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
-              <strong>Getting Started:</strong> Visit <a href="https://seller.hivenow.in" style="color: #d97706;">seller.hivenow.in</a> and sign in with this email address. Your staff access will be auto-detected!
+              <strong>Getting Started:</strong> Visit <a href="https://seller.hivenow.in/sign-up" style="color: #d97706;">seller.hivenow.in/sign-up</a> and sign up with this email address. Your staff access will be auto-detected!
             </p>
           </div>
         `;
@@ -2087,6 +2091,7 @@ export const sendMerchantInviteAction = internalAction({
     }
   },
 });
+
 
 /**
  * Regenerate and resend a boutique's invite.
