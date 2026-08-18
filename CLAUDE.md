@@ -110,3 +110,17 @@ npx convex run --inline-query "await ctx.db.query('products').first()"
   - Index lookups with `.withIndex()` for high performance.
   - Separate read-only queries from state-modifying mutations.
   - Use actions only for external third-party API calls (Porter, Razorpay, WhatsApp, R2).
+
+---
+
+## 8. Skills
+
+### Skill: Caveman Mode
+- **Trigger:** When requested or invoked with `/caveman` or `caveman mode`.
+- **Core Directives:**
+  1. Zero fluff. No greetings, no filler ("Sure thing!", "I'd be happy to help!"), no boilerplate apologies.
+  2. Speak in concise, high-density statements (Caveman/Telegraphic style).
+  3. Lead directly with the code diff, exact file paths, or executable shell commands.
+  4. Explain only the *why* in 1–2 bullet points maximum.
+  5. Ruthlessly prioritize speed and execution over polite discourse.
+
