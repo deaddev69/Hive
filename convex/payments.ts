@@ -266,6 +266,7 @@ export const initCheckoutSessionInternal = internalMutation({
     token: v.optional(v.string()),
     quoteId: v.optional(v.string()),
     quotedAt: v.optional(v.number()),
+    userSubject: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     let storedQuote: any = null;
@@ -302,7 +303,28 @@ export const initCheckoutSessionInternal = internalMutation({
       throw new ConvexError("Online payments are temporarily disabled.");
     }
 
-    const user = await getAuthenticatedUser(ctx, args.token);
+    let user: any = null;
+    if (args.userSubject) {
+      user = await ctx.db
+        .query("users")
+        .withIndex("by_clerkId", (q) => q.eq("clerkId", args.userSubject!))
+        .unique();
+    }
+    if (!user) {
+      try {
+        user = await getAuthenticatedUser(ctx, args.token);
+      } catch (err: any) {
+        console.warn("[initCheckoutSessionInternal] getAuthenticatedUser failed:", err.message || err);
+      }
+    }
+
+    if (!user) {
+      throw new ConvexError("User authentication failed. Please sign in again.");
+    }
+    if (!user.isActive) {
+      throw new ConvexError("Your account is currently disabled. Please contact support.");
+    }
+
 
     // Rate limit checkout session creations: max 10 per user per 15 minutes
     await checkRateLimit(ctx, `checkout_session:${user._id}`, 10, 15 * 60 * 1000);
@@ -1305,15 +1327,25 @@ export const createCheckoutSession = action({
     quoteId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    let userSubject: string | undefined = undefined;
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity) {
+      userSubject = identity.subject;
+    }
+
     let initResult: any = null;
     try {
       // 1. Initialize checkout records and validate cart details
-      initResult = await ctx.runMutation(internal.payments.initCheckoutSessionInternal as any, args);
+      initResult = await ctx.runMutation(internal.payments.initCheckoutSessionInternal as any, {
+        ...args,
+        userSubject,
+      });
     } catch (err: any) {
       console.error("[createCheckoutSession] Init mutation failed:", err.message || err);
       const errMsg = err?.data?.message || err?.message || String(err);
       throw new ConvexError(errMsg);
     }
+
 
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
