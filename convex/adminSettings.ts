@@ -1,18 +1,23 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
+
 import {
   PlatformConfig,
   DEFAULT_COMMISSION_TIERS,
   DEFAULT_HANDLING_CHARGE_PAISE,
   DEFAULT_PLATFORM_FEE_PAISE,
   DEFAULT_GST_RATE_PERCENT,
+  calculateAllInclusivePrice,
+  getPlatformConfig as fetchPlatformConfig,
   // Legacy exports for backward compat
   calculateProductPricing,
   PlatformSettings,
   DEFAULT_TIER_SLABS,
   getPlatformSettings as fetchPlatformSettings,
 } from "./pricingService";
+
+
 
 // ─── v2: Commission-Based Platform Config ────────────────────────────────────
 
@@ -213,13 +218,63 @@ export const updatePlatformSettingsFromApi = mutation({
 });
 
 /**
- * Recalculates and synchronizes all existing products to the new commission-based pricing system.
- * Sets storefront price equal to seller's base price (0% customer markup).
+ * Recalculates and synchronizes all existing products to the all-inclusive upfront pricing system.
+ * Sets storefront price = Base Price + Handling Fee + Platform Fee + GST.
  */
 export const recalculateAllProductPrices = mutation({
   args: {},
   handler: async (ctx) => {
     await requireRole(ctx, "admin");
+
+    const config = await fetchPlatformConfig(ctx);
+
+    const products = await ctx.db.query("products").collect();
+    let updatedCount = 0;
+    const now = Date.now();
+
+
+    for (const product of products) {
+      let basePrice = product.basePrice;
+      let baseDiscountPrice = product.baseDiscountPrice;
+
+      if (basePrice === undefined || basePrice <= 0) {
+        basePrice = product.price;
+        baseDiscountPrice = product.discountPrice;
+      }
+
+      const targetPrice = calculateAllInclusivePrice(basePrice, config);
+      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePrice(baseDiscountPrice, config) : undefined;
+
+      const needsUpdate =
+        product.price !== targetPrice ||
+        product.discountPrice !== targetDiscountPrice ||
+        product.basePrice !== basePrice;
+
+      if (needsUpdate) {
+        await ctx.db.patch(product._id, {
+          basePrice,
+          baseDiscountPrice,
+          price: targetPrice,
+          discountPrice: targetDiscountPrice,
+          updatedAt: now,
+        });
+        updatedCount++;
+      }
+    }
+
+    return {
+      success: true,
+      updatedCount,
+      totalProducts: products.length,
+      message: `Successfully synchronized ${updatedCount} of ${products.length} products to all-inclusive upfront pricing.`,
+    };
+  },
+});
+
+export const recalculateAllProductPricesInternal = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const config = await fetchPlatformConfig(ctx);
 
     const products = await ctx.db.query("products").collect();
     let updatedCount = 0;
@@ -234,8 +289,8 @@ export const recalculateAllProductPrices = mutation({
         baseDiscountPrice = product.discountPrice;
       }
 
-      const targetPrice = basePrice;
-      const targetDiscountPrice = baseDiscountPrice;
+      const targetPrice = calculateAllInclusivePrice(basePrice, config);
+      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePrice(baseDiscountPrice, config) : undefined;
 
       const needsUpdate =
         product.price !== targetPrice ||
@@ -245,7 +300,7 @@ export const recalculateAllProductPrices = mutation({
       if (needsUpdate) {
         await ctx.db.patch(product._id, {
           basePrice,
-          baseDiscountPrice: targetDiscountPrice,
+          baseDiscountPrice,
           price: targetPrice,
           discountPrice: targetDiscountPrice,
           updatedAt: now,
@@ -258,8 +313,10 @@ export const recalculateAllProductPrices = mutation({
       success: true,
       updatedCount,
       totalProducts: products.length,
-      message: `Successfully synchronized ${updatedCount} of ${products.length} products to the commission pricing model.`,
+      message: `Successfully synchronized ${updatedCount} of ${products.length} products to all-inclusive upfront pricing.`,
     };
   },
 });
+
+
 

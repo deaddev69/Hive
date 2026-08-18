@@ -13,7 +13,20 @@ import { updateBoutiqueProductCount } from "./boutiques";
 import { normalizeEmail } from "./users";
 import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
 import { internal } from "./_generated/api";
-import { getPlatformMarkupRate, getPlatformSettings, calculateProductPricing } from "./pricingService";
+import {
+  getPlatformMarkupRate,
+  getPlatformSettings,
+  getPlatformConfig,
+  calculateProductPricing,
+  calculateAllInclusivePrice,
+  DEFAULT_COMMISSION_TIERS,
+  DEFAULT_HANDLING_CHARGE_PAISE,
+  DEFAULT_PLATFORM_FEE_PAISE,
+  DEFAULT_GST_RATE_PERCENT,
+  PlatformConfig,
+} from "./pricingService";
+
+
 import { checkRateLimit } from "./lib/rateLimit";
 import { getPublicUrl } from "./media/api";
 import { haversineKm } from "./lib/serviceability";
@@ -488,9 +501,13 @@ export const createProduct = mutation({
       }
     }
 
-    // v2: Product price = seller base price (no markup). Args.price is in PAISE.
-    const customerPrice = args.price;
-    const customerDiscountPrice = args.discountPrice || undefined;
+    const config = await getPlatformConfig(ctx);
+
+    // Storefront price = seller base price + platform charges & GST (All-inclusive display)
+    const customerPrice = calculateAllInclusivePrice(args.price, config);
+    const customerDiscountPrice = args.discountPrice ? calculateAllInclusivePrice(args.discountPrice, config) : undefined;
+
+
 
     const productId = await ctx.db.insert("products", {
       boutiqueId: boutique._id,
@@ -734,9 +751,13 @@ export const updateProduct = mutation({
       ? (merchantTier === "Bronze" ? "pending" : "approved")
       : undefined;
 
-    // v2: Product price = seller base price (no markup). Args.price is in PAISE.
-    const customerPrice = args.price;
-    const customerDiscountPrice = args.discountPrice || undefined;
+    const config = await getPlatformConfig(ctx);
+
+    // Storefront price = seller base price + platform charges & GST (All-inclusive display)
+    const customerPrice = calculateAllInclusivePrice(args.price, config);
+    const customerDiscountPrice = args.discountPrice ? calculateAllInclusivePrice(args.discountPrice, config) : undefined;
+
+
 
     // Resolve categoryId if passed as slug or name string
     let resolvedCategoryId: any = args.categoryId;

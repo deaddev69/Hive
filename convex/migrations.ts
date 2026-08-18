@@ -1,7 +1,8 @@
 import { mutation } from "./_generated/server";
 import { requireRole } from "./lib/auth";
 import { getPlatformMarkupRate } from "./pricingHelpers";
-import { calculateProductPricing, DEFAULT_TIER_SLABS } from "./pricingService";
+import { calculateProductPricing, DEFAULT_TIER_SLABS, getPlatformConfig, calculateAllInclusivePrice } from "./pricingService";
+
 
 /**
  * Migration to backfill the productPerformance table for all historical orders and claims.
@@ -274,7 +275,8 @@ export const migratePlatformSettingsToTiered = mutation({
 });
 
 /**
- * Migration to recalculate all product prices from base prices according to the commission model (price = basePrice).
+ * Migration to recalculate all product prices according to all-inclusive upfront pricing.
+ * Sets storefront price = Base Price + Handling Fee + Platform Fee + GST.
  */
 export const recalculateAllProductPrices = mutation({
   args: {},
@@ -284,6 +286,7 @@ export const recalculateAllProductPrices = mutation({
       await requireRole(ctx, "admin");
     }
 
+    const config = await getPlatformConfig(ctx);
     const products = await ctx.db.query("products").collect();
     let updatedCount = 0;
     const now = Date.now();
@@ -297,17 +300,21 @@ export const recalculateAllProductPrices = mutation({
         baseDiscountPrice = product.discountPrice;
       }
 
+      const targetPrice = calculateAllInclusivePrice(basePrice, config);
+      const targetDiscountPrice = baseDiscountPrice ? calculateAllInclusivePrice(baseDiscountPrice, config) : undefined;
+
       await ctx.db.patch(product._id, {
         basePrice,
         baseDiscountPrice,
-        price: basePrice,
-        discountPrice: baseDiscountPrice,
+        price: targetPrice,
+        discountPrice: targetDiscountPrice,
         updatedAt: now,
       });
       updatedCount++;
     }
 
-    return `Successfully recalculated and updated prices for ${updatedCount} products to the commission pricing model.`;
+    return `Successfully recalculated and updated prices for ${updatedCount} products to all-inclusive upfront pricing.`;
   },
 });
+
 

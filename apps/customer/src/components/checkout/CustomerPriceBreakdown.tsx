@@ -80,9 +80,13 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
         <div className="space-y-2.5 text-xs font-semibold text-hive-text-muted">
           {/* 1. Product Total */}
           <div className="flex justify-between items-center">
-            <span>Product Total</span>
-            <span className="font-mono text-hive-dark">{formatCurrency(subtotal)}</span>
+            <div className="flex flex-col">
+              <span>Product Total</span>
+              <span className="text-[10px] text-neutral-400 font-normal">Incl. all taxes & platform fees</span>
+            </div>
+            <span className="font-mono text-hive-dark text-sm font-bold">{formatCurrency(subtotal)}</span>
           </div>
+
 
           {/* 2. Platform Charges (Handling + Platform Fee) */}
           {showPlatformCharges && (

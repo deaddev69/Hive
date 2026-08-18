@@ -206,6 +206,20 @@ export function calculateSellerItemPricing(
 // ─── Checkout-Level Pricing ──────────────────────────────────────────────────
 
 /**
+ * Calculates the all-inclusive customer price in rupees from the seller's base price.
+ * Adds handling charge, platform fee, and GST on fees directly to the display price.
+ */
+export function calculateAllInclusivePrice(basePriceRupees: number, config: PlatformConfig): number {
+  if (!basePriceRupees || basePriceRupees <= 0) return 0;
+  const handlingCharge = (config.handlingChargePaise || 0) / 100;
+  const platformFee = (config.platformFeePaise || 0) / 100;
+  const gstRate = (config.gstRatePercent || 18) / 100;
+  const gstOnCharges = (handlingCharge + platformFee) * gstRate;
+  const totalFees = handlingCharge + platformFee + gstOnCharges;
+  return Math.round((basePriceRupees + totalFees) * 100) / 100;
+}
+
+/**
  * Calculate the complete checkout pricing for a single-seller order.
  * This is the ONE authoritative pricing calculation.
  * 
@@ -225,38 +239,37 @@ export function calculateCheckoutPricing(
   const tier = resolveCommissionTier(sellerTierKey, config);
   const gstRate = config.gstRatePercent;
 
-  // Product subtotal (sum of seller base prices × quantities)
-  const productSubtotalPaise = items.reduce(
+  // Seller Base Subtotal (sum of seller base prices × quantities)
+  const sellerBaseSubtotalPaise = items.reduce(
     (sum, item) => sum + item.sellerBasePricePaise * item.quantity, 0
   );
 
-  // Platform charges (charged to customer)
+  // Platform charges per order (handling + platform fee + GST)
   const handlingChargePaise = config.handlingChargePaise;
   const platformFeePaise = config.platformFeePaise;
   const platformSubtotalPaise = handlingChargePaise + platformFeePaise;
   const platformChargesGstPaise = Math.round(platformSubtotalPaise * gstRate / 100);
+  const totalPlatformFeesPaise = platformSubtotalPaise + platformChargesGstPaise;
 
-  // Seller commission (on product subtotal)
-  const sellerCommissionPaise = Math.round(productSubtotalPaise * tier.sellerCommissionPercent / 100);
+  // All-inclusive product subtotal displayed to customer (Item price + platform fees already included)
+  const productSubtotalPaise = sellerBaseSubtotalPaise + totalPlatformFeesPaise;
+
+  // Seller commission (on seller base subtotal)
+  const sellerCommissionPaise = Math.round(sellerBaseSubtotalPaise * tier.sellerCommissionPercent / 100);
   const sellerCommissionGstPaise = Math.round(sellerCommissionPaise * gstRate / 100);
-  const sellerPayoutPaise = productSubtotalPaise - sellerCommissionPaise - sellerCommissionGstPaise;
+  const sellerPayoutPaise = sellerBaseSubtotalPaise - sellerCommissionPaise - sellerCommissionGstPaise;
 
-  // Customer payable
+  // Customer payable: Product Subtotal (all-inclusive) + Delivery Fee - Discount
   const totalPayablePaise = Math.max(
     0,
-    productSubtotalPaise
-    + handlingChargePaise
-    + platformFeePaise
-    + platformChargesGstPaise
-    + deliveryFeePaise
-    - discountPaise
+    productSubtotalPaise + deliveryFeePaise - discountPaise
   );
 
   return {
     productSubtotalPaise,
-    handlingChargePaise,
-    platformFeePaise,
-    platformChargesGstPaise,
+    handlingChargePaise: 0, // Included in product price
+    platformFeePaise: 0,    // Included in product price
+    platformChargesGstPaise: 0, // Included in product price
     deliveryFeePaise,
     discountPaise,
     totalPayablePaise,
@@ -273,6 +286,7 @@ export function calculateCheckoutPricing(
     sellerCommissionConfigPercent: tier.sellerCommissionPercent,
   };
 }
+
 
 // ─── Legacy Functions (backward compat) ──────────────────────────────────────
 
