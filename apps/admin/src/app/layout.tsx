@@ -15,7 +15,8 @@ const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-satoshi",
   display: "swap",
-}); // Trigger Vercel deploy (Aug 15, 2026 - R2 image fix & 10m SLA)
+}); // Trigger Vercel deploy for @hive/admin (Aug 18, 2026 - Platform Config Price Sync)
+
 
 export const metadata: Metadata = {
   title: "Hive Marketplace Admin Dashboard",
