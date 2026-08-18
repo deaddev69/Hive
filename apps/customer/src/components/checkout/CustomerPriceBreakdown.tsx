@@ -42,7 +42,6 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const deliveryLabel = isEstimatedDelivery ? "Estimated Delivery Fee" : "Delivery Partner Fee";
-  const showPlatformCharges = handlingCharge > 0 || platformFee > 0;
 
   if (isError) {
     return (
@@ -61,7 +60,6 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
         <div className="space-y-3 pt-2">
           <div className="flex justify-between items-center"><div className="h-3 w-20 bg-neutral-100 rounded" /><div className="h-3 w-16 bg-neutral-100 rounded" /></div>
           <div className="flex justify-between items-center"><div className="h-3 w-28 bg-neutral-100 rounded" /><div className="h-3 w-12 bg-neutral-100 rounded" /></div>
-          <div className="flex justify-between items-center"><div className="h-3 w-16 bg-neutral-100 rounded" /><div className="h-3 w-14 bg-neutral-100 rounded" /></div>
           <div className="flex justify-between items-center"><div className="h-3 w-24 bg-neutral-100 rounded" /><div className="h-3 w-12 bg-neutral-100 rounded" /></div>
           <div className="flex justify-between items-center pt-3 border-t border-neutral-100"><div className="h-4 w-24 bg-neutral-200 rounded" /><div className="h-4 w-20 bg-neutral-200 rounded" /></div>
         </div>
@@ -78,41 +76,16 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
         </h3>
 
         <div className="space-y-2.5 text-xs font-semibold text-hive-text-muted">
-          {/* 1. Product Total */}
+          {/* 1. Product Total (All-Inclusive) */}
           <div className="flex justify-between items-center">
             <div className="flex flex-col">
               <span>Product Total</span>
-              <span className="text-[10px] text-neutral-400 font-normal">Incl. all taxes & platform fees</span>
+              <span className="text-[10px] text-neutral-400 font-normal">Incl. all taxes & charges</span>
             </div>
             <span className="font-mono text-hive-dark text-sm font-bold">{formatCurrency(subtotal)}</span>
           </div>
 
-
-          {/* 2. Platform Charges (Handling + Platform Fee) */}
-          {showPlatformCharges && (
-            <>
-              {handlingCharge > 0 && (
-                <div className="flex justify-between items-center">
-                  <span>Handling Charge</span>
-                  <span className="font-mono text-hive-dark">{formatCurrency(handlingCharge)}</span>
-                </div>
-              )}
-              {platformFee > 0 && (
-                <div className="flex justify-between items-center">
-                  <span>Platform Fee</span>
-                  <span className="font-mono text-hive-dark">{formatCurrency(platformFee)}</span>
-                </div>
-              )}
-              {gstOnCharges > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-400">GST on Fees</span>
-                  <span className="font-mono text-hive-dark">{formatCurrency(gstOnCharges)}</span>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* 3. Delivery Fee */}
+          {/* 2. Delivery Fee */}
           <div className="flex justify-between items-center">
             <span>{deliveryLabel}</span>
             <span className="font-mono text-hive-dark">
@@ -126,7 +99,7 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
             </span>
           </div>
 
-          {/* 4. Discount */}
+          {/* 3. Discount */}
           {discount > 0 && (
             <div className="flex justify-between items-center text-emerald-700 font-bold">
               <span>Discount</span>
@@ -134,7 +107,7 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
             </div>
           )}
 
-          {/* 5. Grand Total */}
+          {/* 4. Grand Total */}
           <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-2">
             <span className="text-sm font-extrabold text-hive-dark">Grand Total</span>
             <span className="text-base font-extrabold text-hive-dark font-mono">
@@ -174,7 +147,7 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
                   <span className="font-mono font-bold text-hive-dark">{formatCurrency(subtotal)}</span>
                 </div>
                 <p className="text-[10px] text-neutral-400 pl-1 leading-normal font-sans">
-                  ↳ Includes Designer Base Price + ₹20 Platform Fee + ₹29 Packaging/Handling + 18% GST (₹8.82). No surprise checkout fees!
+                  ↳ All taxes, platform charges, and packaging are already included directly in the product price from the start. No surprise checkout fees!
                 </p>
                 <div className="flex justify-between items-center border-t border-neutral-100 pt-1.5">
                   <span className="font-semibold text-slate-700">Delivery Partner Fee</span>
@@ -195,7 +168,7 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
                 </div>
               </div>
               <p className="text-[10px] text-neutral-500 leading-relaxed font-sans">
-                Zero hidden charges upon arrival. What you see is exactly what you pay.
+                Zero hidden charges. What you see is exactly what you pay.
               </p>
             </div>
           )}
