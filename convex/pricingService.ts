@@ -275,12 +275,20 @@ export async function getPlatformSettings(ctx: QueryCtx | MutationCtx): Promise<
 
 /**
  * Find the full tier configuration for a given tier key.
+ * Supports both new keys (bronze/silver/gold) and legacy keys (tier1/tier2/tier3).
  */
 export function resolveTierConfig(
   tierKey: string | undefined,
   config: PlatformConfig
 ): TierPricingConfig {
-  const normalizedKey = (tierKey || "bronze").toLowerCase();
+  // Map legacy tier keys to new tier keys
+  const LEGACY_TIER_MAP: Record<string, string> = {
+    tier1: "bronze",
+    tier2: "silver",
+    tier3: "gold",
+  };
+  const rawKey = (tierKey || "bronze").toLowerCase();
+  const normalizedKey = LEGACY_TIER_MAP[rawKey] || rawKey;
   const tiers = config.tiers && config.tiers.length > 0 ? config.tiers : DEFAULT_TIERS_CONFIG;
   const match = tiers.find(t => t.key.toLowerCase() === normalizedKey);
   if (match) return match;

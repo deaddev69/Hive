@@ -434,7 +434,10 @@ export default defineSchema({
                     v.union(
                       v.literal("tier1"),
                       v.literal("tier2"),
-                      v.literal("tier3")
+                      v.literal("tier3"),
+                      v.literal("bronze"),
+                      v.literal("silver"),
+                      v.literal("gold")
                     )
                   ),
   })

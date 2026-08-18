@@ -51,7 +51,7 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
   const [razorpayAccountId, setRazorpayAccountId] = useState("");
   const [returnsAcceptedDefault, setReturnsAcceptedDefault] = useState(true);
   const [returnsAcceptedDefaultLocked, setReturnsAcceptedDefaultLocked] = useState(false);
-  const [pricingTier, setPricingTier] = useState<"tier1" | "tier2" | "tier3">("tier1");
+  const [pricingTier, setPricingTier] = useState<"bronze" | "silver" | "gold">("bronze");
   const [submitting, setSubmitting] = useState(false);
 
   // Prepopulate form when boutique query completes
@@ -78,7 +78,10 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
       setRazorpayAccountId((boutique as any).razorpayAccountId || "");
       setReturnsAcceptedDefault(boutique.returnsAcceptedDefault ?? true);
       setReturnsAcceptedDefaultLocked(boutique.returnsAcceptedDefaultLocked ?? false);
-      setPricingTier((boutique as any).pricingTier || "tier1");
+      // Map legacy tier keys to new keys
+      const legacyMap: Record<string, string> = { tier1: "bronze", tier2: "silver", tier3: "gold" };
+      const rawTier = (boutique as any).pricingTier || "bronze";
+      setPricingTier((legacyMap[rawTier] || rawTier) as "bronze" | "silver" | "gold");
     }
   }, [boutique]);
 
@@ -417,18 +420,12 @@ export function EditBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
               <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Assigned Pricing Tier</label>
               <select
                 value={pricingTier}
-                onChange={(e) => setPricingTier(e.target.value as "tier1" | "tier2" | "tier3")}
+                onChange={(e) => setPricingTier(e.target.value as "bronze" | "silver" | "gold")}
                 className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold text-sm bg-white font-bold text-slate-800"
               >
-                <option value="tier1">
-                  {(platformSettings as any)?.tier1?.name || "Tier 1"}
-                </option>
-                <option value="tier2">
-                  {(platformSettings as any)?.tier2?.name || "Tier 2"}
-                </option>
-                <option value="tier3">
-                  {(platformSettings as any)?.tier3?.name || "Tier 3"}
-                </option>
+                <option value="bronze">Bronze</option>
+                <option value="silver">Silver</option>
+                <option value="gold">Gold</option>
               </select>
               <p className="text-[11px] text-hive-text-muted leading-snug">
                 This determines the platform markup price slabs applied to this seller's products. Changes take effect on next product save or price sync.
