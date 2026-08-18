@@ -1,29 +1,85 @@
-import { MutationCtx, QueryCtx, ActionCtx } from "./_generated/server";
-import { ConvexError } from "convex/values";
+// convex/pricingService.ts
+// Hive Pricing Engine v2 — Commission-based model
+// Single authoritative pricing calculation. All other code consumes this output.
 
+import { MutationCtx, QueryCtx } from "./_generated/server";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export interface PlatformConfig {
+  handlingChargePaise: number;       // e.g. 2900 = ₹29
+  platformFeePaise: number;          // e.g. 2000 = ₹20
+  gstRatePercent: number;            // e.g. 18
+  commissionTiers: Array<{
+    key: string;                     // "bronze", "silver", "gold"
+    name: string;                    // "Bronze", "Silver", "Gold"
+    sellerCommissionPercent: number;  // e.g. 2, 3, 5
+  }>;
+}
+
+export interface SellerItemPricing {
+  sellerBasePricePaise: number;
+  sellerCommissionPercent: number;
+  sellerCommissionPaise: number;
+  sellerCommissionGstPaise: number;
+  sellerPayoutPaise: number;
+}
+
+export interface CheckoutPricing {
+  // Product-level
+  productSubtotalPaise: number;       // sum of seller base prices × quantities
+  // Platform charges (charged to customer)
+  handlingChargePaise: number;
+  platformFeePaise: number;
+  platformChargesGstPaise: number;    // GST on (handling + platform fee)
+  // Delivery
+  deliveryFeePaise: number;
+  // Discount
+  discountPaise: number;
+  // Total
+  totalPayablePaise: number;
+  // Seller settlement
+  sellerTierKey: string;
+  sellerTierName: string;
+  sellerCommissionPercent: number;
+  sellerCommissionPaise: number;      // commission on product subtotal
+  sellerCommissionGstPaise: number;   // GST on commission (deducted from seller)
+  sellerPayoutPaise: number;          // product subtotal - commission - commission GST
+  // Config snapshot
+  gstRatePercent: number;
+  handlingChargeConfigPaise: number;
+  platformFeeConfigPaise: number;
+  gstRateConfigPercent: number;
+  sellerCommissionConfigPercent: number;
+}
+
+// ─── Legacy types (backward compat for old orders) ───────────────────────────
+
+/** @deprecated Use PlatformConfig instead */
 export interface PlatformSettings {
   markupRate: number;
   platformFeeRate: number;
   markupType?: "flat" | "tiered";
   markupTiers?: Array<{ min_price: number; max_price: number | null; rate: number }>;
-  // Per-seller pricing tiers
   tier1?: { name: string; slabs: Array<{ min_price: number; max_price: number | null; rate: number }> };
   tier2?: { name: string; slabs: Array<{ min_price: number; max_price: number | null; rate: number }> };
   tier3?: { name: string; slabs: Array<{ min_price: number; max_price: number | null; rate: number }> };
 }
 
+/** @deprecated Use SellerItemPricing instead */
 export interface ItemFinancialSnapshot {
-  priceAtPurchase: number; // All-in customer price in Paise (includes markup + ₹7 + GST)
-  basePriceAtPurchase: number; // Boutique base price in Paise
-  platformMarkupRateAtPurchase: number; // e.g. 0.15
-  platformFeeRateAtPurchase: number; // e.g. 0.02
-  fixedPlatformFeeAtPurchase: number; // 700 Paise (₹7.00)
-  platformMarkupAmount: number; // Platform markup in Paise
-  platformFeeAmount: number; // Store platform fee in Paise (2%)
-  gstAmountAtPurchase: number; // GST in Paise (18% of platform revenue)
-  subtotal: number; // priceAtPurchase * quantity in Paise
+  priceAtPurchase: number;
+  basePriceAtPurchase: number;
+  platformMarkupRateAtPurchase: number;
+  platformFeeRateAtPurchase: number;
+  fixedPlatformFeeAtPurchase: number;
+  platformMarkupAmount: number;
+  platformFeeAmount: number;
+  gstAmountAtPurchase: number;
+  subtotal: number;
 }
 
+/** @deprecated */
 export interface StoreSettlement {
   merchantPayablePaise: number;
   merchantPayableRupees: number;
@@ -31,9 +87,21 @@ export interface StoreSettlement {
   totalPlatformFeePaise: number;
 }
 
-export const FIXED_PLATFORM_FEE_PAISE = 700; // ₹7.00 Fixed Platform Fee
-export const FIXED_PLATFORM_FEE_RUPEES = 7;
+// ─── Defaults ────────────────────────────────────────────────────────────────
 
+export const DEFAULT_COMMISSION_TIERS = [
+  { key: "bronze", name: "Bronze", sellerCommissionPercent: 2 },
+  { key: "silver", name: "Silver", sellerCommissionPercent: 3 },
+  { key: "gold",   name: "Gold",   sellerCommissionPercent: 5 },
+];
+
+export const DEFAULT_HANDLING_CHARGE_PAISE = 2900;  // ₹29
+export const DEFAULT_PLATFORM_FEE_PAISE = 2000;     // ₹20
+export const DEFAULT_GST_RATE_PERCENT = 18;
+
+/** @deprecated Legacy defaults — kept for backward compat */
+export const FIXED_PLATFORM_FEE_PAISE = 700;
+export const FIXED_PLATFORM_FEE_RUPEES = 7;
 export const DEFAULT_TIER_SLABS = [
   { min_price: 0, max_price: 499, rate: 8 },
   { min_price: 500, max_price: 999, rate: 8 },
@@ -43,8 +111,24 @@ export const DEFAULT_TIER_SLABS = [
   { min_price: 5000, max_price: null, rate: 5 },
 ];
 
+// ─── Config Fetching ─────────────────────────────────────────────────────────
+
 /**
- * Fetch active platform settings from Convex database or fallback to defaults.
+ * Fetch the current platform config from the database.
+ * Returns v2 commission-based config if available, otherwise constructs defaults.
+ */
+export async function getPlatformConfig(ctx: QueryCtx | MutationCtx): Promise<PlatformConfig> {
+  const settings = (await ctx.db.query("platformSettings").first()) as any;
+  return {
+    handlingChargePaise: settings?.handlingChargePaise ?? DEFAULT_HANDLING_CHARGE_PAISE,
+    platformFeePaise: settings?.platformFeePaise ?? DEFAULT_PLATFORM_FEE_PAISE,
+    gstRatePercent: settings?.gstRatePercent ?? DEFAULT_GST_RATE_PERCENT,
+    commissionTiers: settings?.commissionTiers ?? DEFAULT_COMMISSION_TIERS,
+  };
+}
+
+/**
+ * @deprecated Use getPlatformConfig instead. Kept for backward compat during migration.
  */
 export async function getPlatformSettings(ctx: QueryCtx | MutationCtx): Promise<PlatformSettings> {
   const settings = (await ctx.db.query("platformSettings").first()) as any;
@@ -67,90 +151,168 @@ export async function getPlatformSettings(ctx: QueryCtx | MutationCtx): Promise<
   };
 }
 
+// ─── Tier Resolution ─────────────────────────────────────────────────────────
+
 /**
- * Select active platform markup rate based on Platform Settings and Base Listing Price in Rupees.
- * Strictly checks tier slabs when markupType === "tiered".
+ * Find the commission tier config for a given tier key.
+ * Falls back to the first tier if not found.
  */
+export function resolveCommissionTier(
+  tierKey: string,
+  config: PlatformConfig
+): { key: string; name: string; sellerCommissionPercent: number } {
+  const tier = config.commissionTiers.find(t => t.key === tierKey);
+  if (tier) return tier;
+  // Fallback to first tier
+  return config.commissionTiers[0] ?? DEFAULT_COMMISSION_TIERS[0];
+}
+
+// ─── Item-Level Seller Pricing ───────────────────────────────────────────────
+
+/**
+ * Calculate seller economics for a single product item.
+ * This is used for seller dashboard preview and order item snapshots.
+ * 
+ * @param sellerBasePricePaise - The seller's listed base price in paise
+ * @param tierKey - The seller's pricing tier key (e.g. "bronze")
+ * @param config - Platform config
+ * @returns Seller commission breakdown
+ */
+export function calculateSellerItemPricing(
+  sellerBasePricePaise: number,
+  tierKey: string,
+  config: PlatformConfig
+): SellerItemPricing {
+  const tier = resolveCommissionTier(tierKey, config);
+  const commissionPercent = tier.sellerCommissionPercent;
+  const gstRate = config.gstRatePercent;
+
+  // Commission = basePrice × commissionRate
+  const commissionPaise = Math.round(sellerBasePricePaise * commissionPercent / 100);
+  // GST on commission (deducted from seller)
+  const commissionGstPaise = Math.round(commissionPaise * gstRate / 100);
+  // Seller payout = base - commission - commission GST
+  const payoutPaise = sellerBasePricePaise - commissionPaise - commissionGstPaise;
+
+  return {
+    sellerBasePricePaise,
+    sellerCommissionPercent: commissionPercent,
+    sellerCommissionPaise: commissionPaise,
+    sellerCommissionGstPaise: commissionGstPaise,
+    sellerPayoutPaise: payoutPaise,
+  };
+}
+
+// ─── Checkout-Level Pricing ──────────────────────────────────────────────────
+
+/**
+ * Calculate the complete checkout pricing for a single-seller order.
+ * This is the ONE authoritative pricing calculation.
+ * 
+ * @param items - Array of { sellerBasePricePaise, quantity }
+ * @param deliveryFeePaise - Dynamic Porter delivery fee
+ * @param discountPaise - Coupon/promo discount amount
+ * @param sellerTierKey - The seller's pricing tier key
+ * @param config - Platform config
+ */
+export function calculateCheckoutPricing(
+  items: Array<{ sellerBasePricePaise: number; quantity: number }>,
+  deliveryFeePaise: number,
+  discountPaise: number,
+  sellerTierKey: string,
+  config: PlatformConfig
+): CheckoutPricing {
+  const tier = resolveCommissionTier(sellerTierKey, config);
+  const gstRate = config.gstRatePercent;
+
+  // Product subtotal (sum of seller base prices × quantities)
+  const productSubtotalPaise = items.reduce(
+    (sum, item) => sum + item.sellerBasePricePaise * item.quantity, 0
+  );
+
+  // Platform charges (charged to customer)
+  const handlingChargePaise = config.handlingChargePaise;
+  const platformFeePaise = config.platformFeePaise;
+  const platformSubtotalPaise = handlingChargePaise + platformFeePaise;
+  const platformChargesGstPaise = Math.round(platformSubtotalPaise * gstRate / 100);
+
+  // Seller commission (on product subtotal)
+  const sellerCommissionPaise = Math.round(productSubtotalPaise * tier.sellerCommissionPercent / 100);
+  const sellerCommissionGstPaise = Math.round(sellerCommissionPaise * gstRate / 100);
+  const sellerPayoutPaise = productSubtotalPaise - sellerCommissionPaise - sellerCommissionGstPaise;
+
+  // Customer payable
+  const totalPayablePaise = Math.max(
+    0,
+    productSubtotalPaise
+    + handlingChargePaise
+    + platformFeePaise
+    + platformChargesGstPaise
+    + deliveryFeePaise
+    - discountPaise
+  );
+
+  return {
+    productSubtotalPaise,
+    handlingChargePaise,
+    platformFeePaise,
+    platformChargesGstPaise,
+    deliveryFeePaise,
+    discountPaise,
+    totalPayablePaise,
+    sellerTierKey: tier.key,
+    sellerTierName: tier.name,
+    sellerCommissionPercent: tier.sellerCommissionPercent,
+    sellerCommissionPaise,
+    sellerCommissionGstPaise,
+    sellerPayoutPaise,
+    gstRatePercent: gstRate,
+    handlingChargeConfigPaise: config.handlingChargePaise,
+    platformFeeConfigPaise: config.platformFeePaise,
+    gstRateConfigPercent: config.gstRatePercent,
+    sellerCommissionConfigPercent: tier.sellerCommissionPercent,
+  };
+}
+
+// ─── Legacy Functions (backward compat) ──────────────────────────────────────
+
+/** @deprecated Use resolveCommissionTier instead */
 export function selectMarkupRate(basePriceRupees: number, settings: PlatformSettings, pricingTier?: string): number {
   const markupType = settings.markupType ?? "tiered";
-
-  // Resolve the correct slab list based on pricingTier
   const tierKey = pricingTier || "tier1";
   const tierConfig = (settings as any)[tierKey] as { name: string; slabs: Array<{ min_price: number; max_price: number | null; rate: number }> } | undefined;
   const hasTierSpecificSlabs = tierConfig && Array.isArray(tierConfig.slabs) && tierConfig.slabs.length > 0;
-
-  // Determine which slabs to use:
-  // 1. If tier-specific slabs exist → always use them (tier system is authoritative)
-  // 2. Otherwise fall back to legacy global markupTiers (only when markupType === "tiered")
   let tiers: Array<{ min_price: number; max_price: number | null; rate: number }> | undefined;
   if (hasTierSpecificSlabs) {
     tiers = tierConfig!.slabs;
   } else if (markupType === "tiered") {
     tiers = settings.markupTiers ?? DEFAULT_TIER_SLABS;
   }
-
   if (tiers && Array.isArray(tiers) && tiers.length > 0) {
     const tier = tiers.find((t) => {
       const minMatch = basePriceRupees >= t.min_price;
       const maxMatch = t.max_price === null || t.max_price === undefined || basePriceRupees <= t.max_price;
       return minMatch && maxMatch;
     });
-    if (tier) {
-      return tier.rate / 100;
-    }
+    if (tier) return tier.rate / 100;
   }
-
   return settings.markupRate ?? 0.15;
 }
 
-// Alias for backward compatibility
 export const getPlatformMarkupRate = selectMarkupRate;
 
-/**
- * Calculate the ALL-IN customer price including markup, ₹7 Fixed Fee, and GST.
- * GST (18%) is calculated on platform revenue: (markup + seller 2% fee + ₹7 fixed fee).
- * The resulting customerPrice is the final canonical price stored in the DB.
- * Checkout MUST NOT add ₹7 or GST again.
- */
+/** @deprecated Product price = seller base price in v2. No markup calculation needed. */
 export function calculateProductPricing(
   basePriceRupees: number,
   baseDiscountPriceRupees: number | undefined | null,
   settings: PlatformSettings,
   pricingTier?: string
 ) {
-  const markupRate = selectMarkupRate(basePriceRupees, settings, pricingTier);
-  const platformFeeRate = settings.platformFeeRate ?? 0.02;
-
-  // Step 1: Pre-GST customer price (base + markup + ₹7)
-  const markupAmount = basePriceRupees * markupRate;
-  const preGstPrice = basePriceRupees + markupAmount + FIXED_PLATFORM_FEE_RUPEES;
-
-  // Step 2: Platform revenue = markup + seller 2% fee + ₹7
-  const sellerProcessingFee = basePriceRupees * platformFeeRate;
-  const platformRevenue = markupAmount + sellerProcessingFee + FIXED_PLATFORM_FEE_RUPEES;
-
-  // Step 3: GST = 18% of platform revenue
-  const gstAmount = platformRevenue * 0.18;
-
-  // Step 4: All-in price = pre-GST price + GST, then charm-round
-  const allInRaw = preGstPrice + gstAmount;
-  const customerPrice = Math.ceil(allInRaw / 10) * 10 - 1;
-
-  // Repeat for discount price
-  let customerDiscountPrice: number | undefined = undefined;
-  let discountMarkupRate = markupRate;
-  let discountGstAmount: number | undefined = undefined;
-
-  if (baseDiscountPriceRupees && baseDiscountPriceRupees > 0) {
-    discountMarkupRate = selectMarkupRate(baseDiscountPriceRupees, settings, pricingTier);
-    const dMarkupAmount = baseDiscountPriceRupees * discountMarkupRate;
-    const dPreGstPrice = baseDiscountPriceRupees + dMarkupAmount + FIXED_PLATFORM_FEE_RUPEES;
-    const dSellerFee = baseDiscountPriceRupees * platformFeeRate;
-    const dPlatformRevenue = dMarkupAmount + dSellerFee + FIXED_PLATFORM_FEE_RUPEES;
-    discountGstAmount = dPlatformRevenue * 0.18;
-    const dAllInRaw = dPreGstPrice + discountGstAmount;
-    customerDiscountPrice = Math.ceil(dAllInRaw / 10) * 10 - 1;
-  }
+  // v2: Product price = base price (no markup). Return identity.
+  const customerPrice = basePriceRupees;
+  const customerDiscountPrice = baseDiscountPriceRupees && baseDiscountPriceRupees > 0
+    ? baseDiscountPriceRupees
+    : undefined;
 
   const discountPercent = customerDiscountPrice
     ? Math.max(0, Math.round(((customerPrice - customerDiscountPrice) / customerPrice) * 100))
@@ -161,125 +323,84 @@ export function calculateProductPricing(
     customerPrice,
     baseDiscountPrice: baseDiscountPriceRupees ?? undefined,
     customerDiscountPrice,
-    markupRate,
-    discountMarkupRate,
+    markupRate: 0,
+    discountMarkupRate: 0,
     discountPercent,
-    // Transparency fields for seller preview UI
-    markupAmount,
-    platformFeeAmount: FIXED_PLATFORM_FEE_RUPEES,
-    sellerProcessingFee,
-    gstAmount,
-    discountGstAmount,
+    markupAmount: 0,
+    platformFeeAmount: 0,
+    sellerProcessingFee: 0,
+    gstAmount: 0,
+    discountGstAmount: 0,
   };
 }
 
-/**
- * Calculate the exact financial snapshot for an item at checkout based on current platform settings.
- * Includes ₹7 Fixed Platform Fee snapshot (700 Paise).
- * Validates the client's provided price against the dynamically calculated price.
- */
+/** @deprecated Use calculateCheckoutPricing instead */
 export async function calculateItemFinancials(
   ctx: MutationCtx | QueryCtx,
   productRow: any,
   clientPricePaise: number,
   quantity: number
 ): Promise<ItemFinancialSnapshot> {
-  const settings = await getPlatformSettings(ctx);
+  // In v2, product price = base price. Validate that client price matches DB.
+  const canonicalPricePaise = productRow.discountPrice ?? productRow.price;
 
-  // ─── IMPORTANT: DB stores ALL prices (price, discountPrice, basePrice, baseDiscountPrice) in PAISE ───
-  // The frontend mapDbProduct divides by 100 for display, and the cart stores in rupees.
-  // clientPricePaise = Math.round(cartRupees * 100), so it's in paise and should match DB directly.
-
-  // The canonical customer price stored on the product record (or discount price if set)
-  const canonicalProductPricePaise = productRow.discountPrice ?? productRow.price;
-
-  // Resolve boutique pricingTier for markup selection
-  let pricingTier: string | undefined;
-  if (productRow.boutiqueId) {
-    const boutique = await ctx.db.get(productRow.boutiqueId);
-    if (boutique) {
-      pricingTier = (boutique as any).pricingTier || "tier1";
-    }
-  }
-
-  let basePricePaise: number;
-  let platformMarkupRateAtPurchase: number;
-
-  if (productRow.basePrice !== undefined && productRow.basePrice > 0) {
-    basePricePaise = productRow.basePrice;
-    const basePriceRupees = basePricePaise / 100;
-    platformMarkupRateAtPurchase = selectMarkupRate(basePriceRupees, settings, pricingTier);
-  } else {
-    // Reverse-engineer base price from canonical customer price (both in paise)
-    basePricePaise = Math.floor(canonicalProductPricePaise / (1 + (settings.markupRate || 0.15)));
-    const basePriceForTier = basePricePaise / 100;
-    platformMarkupRateAtPurchase = selectMarkupRate(basePriceForTier, settings, pricingTier);
-  }
-
-  // Validate client price against canonical DB price to prevent price tampering while safely supporting existing catalog products
-  if (Math.abs(canonicalProductPricePaise - clientPricePaise) > 100) {
+  if (Math.abs(canonicalPricePaise - clientPricePaise) > 100) {
+    const { ConvexError } = await import("convex/values");
     throw new ConvexError({
       code: "STALE_CART_PRICE",
       message: "The prices of some items in your cart have been updated. Please review your new total before checking out.",
     });
   }
 
-  const expectedCustomerPricePaise = canonicalProductPricePaise;
-
-  const platformFeeRateAtPurchase = settings.platformFeeRate;
-  const platformFeeAmountPaise = Math.round(basePricePaise * platformFeeRateAtPurchase);
-  const fixedPlatformFeeAtPurchase = FIXED_PLATFORM_FEE_PAISE; // 700 Paise (₹7.00)
-  
-  // Platform markup = base * markupRate (in paise)
-  const platformMarkupAmountPaise = Math.round(basePricePaise * platformMarkupRateAtPurchase);
-
-  // GST = 18% of platform revenue (markup + seller 2% fee + ₹7)
-  const platformRevenuePaise = platformMarkupAmountPaise + platformFeeAmountPaise + fixedPlatformFeeAtPurchase;
-  const gstAmountAtPurchase = Math.round(platformRevenuePaise * 0.18);
+  // For v2, base price = price (no markup)
+  const basePricePaise = productRow.basePrice ?? canonicalPricePaise;
 
   return {
-    priceAtPurchase: expectedCustomerPricePaise,
+    priceAtPurchase: canonicalPricePaise,
     basePriceAtPurchase: basePricePaise,
-    platformMarkupRateAtPurchase,
-    platformFeeRateAtPurchase,
-    fixedPlatformFeeAtPurchase,
-    platformMarkupAmount: platformMarkupAmountPaise,
-    platformFeeAmount: platformFeeAmountPaise,
-    gstAmountAtPurchase,
-    subtotal: expectedCustomerPricePaise * quantity,
+    platformMarkupRateAtPurchase: 0,
+    platformFeeRateAtPurchase: 0,
+    fixedPlatformFeeAtPurchase: 0,
+    platformMarkupAmount: 0,
+    platformFeeAmount: 0,
+    gstAmountAtPurchase: 0,
+    subtotal: canonicalPricePaise * quantity,
   };
 }
 
-/**
- * Calculate boutique payout amount for a single item based on its financial snapshot.
- * ONLY includes net Store Settlement (Base Price - 2% Seller Platform Processing Fee).
- * NEVER includes Customer Markup, 18% GST, ₹7 Platform Fee, or Delivery Fee.
- */
+/** @deprecated Use calculateCheckoutPricing().sellerPayoutPaise instead */
 export function calculateBoutiquePayout(orderItem: {
-  basePriceAtPurchase?: number; // in Paise
-  platformFeeAmount?: number; // in Paise
-  priceAtPurchase?: number; // in Paise
-  price?: number; // in Paise fallback
+  // v2 fields
+  sellerBasePricePaise?: number;
+  sellerCommissionPaise?: number;
+  sellerCommissionGstPaise?: number;
+  sellerPayoutPaise?: number;
+  // v1 fields
+  basePriceAtPurchase?: number;
+  platformFeeAmount?: number;
+  priceAtPurchase?: number;
+  price?: number;
 }): number {
+  // v2: use explicit seller payout
+  if (orderItem.sellerPayoutPaise !== undefined) {
+    return orderItem.sellerPayoutPaise;
+  }
+  // v1: legacy calculation
   if (orderItem.basePriceAtPurchase !== undefined && orderItem.platformFeeAmount !== undefined) {
     return orderItem.basePriceAtPurchase - orderItem.platformFeeAmount;
   }
-  // Legacy fallback: 98% of priceAtPurchase
   const price = orderItem.priceAtPurchase ?? orderItem.price ?? 0;
   return Math.floor(price * 0.82);
 }
 
-/**
- * Calculate computed StoreSettlement for a boutique based on order items.
- * Single source of truth for Razorpay Route Transfer amounts and merchant accruals.
- * Route transfer amount equals ONLY the net Store Settlement.
- */
+/** @deprecated Use calculateCheckoutPricing() instead */
 export function calculateStoreSettlement(
   items: Array<{
-    basePriceAtPurchase?: number; // in Paise
-    platformFeeAmount?: number; // in Paise
-    priceAtPurchase?: number; // in Paise
-    price?: number; // in Paise fallback
+    sellerPayoutPaise?: number;
+    basePriceAtPurchase?: number;
+    platformFeeAmount?: number;
+    priceAtPurchase?: number;
+    price?: number;
     quantity: number;
   }>
 ): StoreSettlement {
@@ -300,7 +421,6 @@ export function calculateStoreSettlement(
     }
   }
 
-  // Ensure output is integer Paise
   const roundedMerchantPayablePaise = Math.round(merchantPayablePaise);
 
   return {
@@ -311,10 +431,7 @@ export function calculateStoreSettlement(
   };
 }
 
-/**
- * Calculate expected order totals (Subtotal, Delivery Fee, Discount, Final Total).
- * Performs integer rounding once.
- */
+/** @deprecated */
 export function calculateOrderTotals(
   itemsFinancials: Array<{ priceAtPurchase: number; quantity: number }>,
   deliveryFeePaise: number,
@@ -337,9 +454,7 @@ export function calculateOrderTotals(
   };
 }
 
-/**
- * Calculate invoice financials and line item totals.
- */
+/** @deprecated */
 export function calculateInvoiceFinancials(
   items: Array<{
     productId: string;
@@ -382,12 +497,10 @@ export function calculateInvoiceFinancials(
   };
 }
 
-/**
- * Calculate boutique earnings, platform revenue, and 18% GST metrics.
- * GST (18%) is calculated on: Seller Platform Processing Fee (2%) + Customer Markup + ₹7 Fixed Platform Fee.
- */
+/** @deprecated Use pricingSnapshot on order instead */
 export function calculateBoutiqueEarnings(
   items: Array<{
+    sellerPayoutPaise?: number;
     basePriceAtPurchase?: number;
     platformMarkupAmount?: number;
     platformFeeAmount?: number;
@@ -411,10 +524,7 @@ export function calculateBoutiqueEarnings(
     totalBoutiquePayoutPaise += calculateBoutiquePayout(item) * qty;
   }
 
-  // Total Platform Revenue = Seller 2% Fee + Customer Markup + ₹7 Fixed Fee
   const totalCommissionPaise = totalPlatformMarkupPaise + totalPlatformFeePaise + totalFixedPlatformFeePaise;
-  
-  // 18% GST on Total Platform Revenue
   const gstPaise = Math.floor(totalCommissionPaise * 0.18);
   const netCommissionPaise = totalCommissionPaise - gstPaise;
 

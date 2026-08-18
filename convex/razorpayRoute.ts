@@ -222,3 +222,175 @@ export const getKYCOnboardingLink: any = action({
     return { onboardingUrl: data.url };
   },
 });
+
+// ─── v2: Post-Delivery Seller Transfer ───────────────────────────────────────
+
+/**
+ * Creates a new Razorpay Route transfer for seller payout AFTER delivery.
+ * This is called when:
+ *   1. Order has payoutStatus === "eligible"
+ *   2. 48h claim window has elapsed
+ *   3. No active disputes/claims
+ *
+ * Flow: DELIVERED → payoutStatus:"eligible" → this action → payoutStatus:"paid"
+ *
+ * Idempotent: Will not create duplicate transfers.
+ */
+export const createSellerTransfer: any = action({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keyId || !keySecret) {
+      throw new ConvexError("Razorpay credentials not configured");
+    }
+    const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
+
+    const order = await ctx.runQuery((internal.orders as any).getById, { id: args.orderId });
+    if (!order) {
+      console.error(`[createSellerTransfer] Order ${args.orderId} not found.`);
+      return { success: false, reason: "order_not_found" };
+    }
+
+    // Idempotency: skip if already paid or processing
+    if (order.payoutStatus === "paid" || order.payoutStatus === "processing") {
+      console.log(`[createSellerTransfer] Order ${args.orderId} already ${order.payoutStatus}. Skipping.`);
+      return { success: true, reason: "already_processed" };
+    }
+
+    // Must be eligible
+    if (order.payoutStatus !== "eligible") {
+      console.log(`[createSellerTransfer] Order ${args.orderId} payoutStatus is '${order.payoutStatus}', expected 'eligible'.`);
+      return { success: false, reason: "not_eligible" };
+    }
+
+    // Must be delivered
+    if (order.status !== "delivered") {
+      console.log(`[createSellerTransfer] Order ${args.orderId} is not delivered.`);
+      return { success: false, reason: "not_delivered" };
+    }
+
+    // 48h claim window check
+    const now = Date.now();
+    const claimWindowMs = 48 * 3600 * 1000;
+    const deliveredAt = order.deliveredAt || order.payoutEligibleAt || order.createdAt;
+    if (now < deliveredAt + claimWindowMs) {
+      console.log(`[createSellerTransfer] Order ${args.orderId}: 48h claim window not elapsed.`);
+      return { success: false, reason: "claim_window_active" };
+    }
+
+    // Check for active disputes
+    const hasActiveClaims = await ctx.runQuery((internal.claims as any).getOpenClaimByOrderId, { orderId: args.orderId });
+    if (hasActiveClaims) {
+      console.log(`[createSellerTransfer] Order ${args.orderId}: has active claim/dispute.`);
+      return { success: false, reason: "active_claim" };
+    }
+
+    // Get boutique razorpayAccountId
+    const boutique = await ctx.runQuery((internal.boutiques as any).getById, { id: order.boutiqueId });
+    if (!boutique?.razorpayAccountId) {
+      console.error(`[createSellerTransfer] Boutique ${order.boutiqueId} has no razorpayAccountId.`);
+      await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+        orderId: args.orderId,
+        payoutStatus: "failed",
+        payoutFailureReason: "Boutique has no Razorpay linked account",
+      });
+      return { success: false, reason: "no_razorpay_account" };
+    }
+
+    // Get payment razorpayPaymentId
+    if (!order.paymentId) {
+      console.error(`[createSellerTransfer] Order ${args.orderId} has no payment record.`);
+      return { success: false, reason: "no_payment" };
+    }
+
+    const payment = await ctx.runQuery((internal.payments as any).getPaymentById, { paymentId: order.paymentId });
+    if (!payment?.razorpayPaymentId) {
+      console.error(`[createSellerTransfer] No razorpayPaymentId found for payment ${order.paymentId}.`);
+      return { success: false, reason: "no_razorpay_payment_id" };
+    }
+
+    // Calculate payout amount from pricing snapshot
+    const payoutPaise = order.pricingSnapshot?.sellerPayoutPaise ?? order.commissionAmount
+      ? (order.subtotal - order.discount - (order.commissionAmount || 0))
+      : Math.floor((order.subtotal - order.discount) * 0.82);
+
+    if (payoutPaise <= 0) {
+      console.log(`[createSellerTransfer] Order ${args.orderId}: payout is ${payoutPaise} paise. Skipping.`);
+      await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+        orderId: args.orderId,
+        payoutStatus: "paid",
+        payoutProcessedAt: now,
+      });
+      return { success: true, reason: "zero_payout" };
+    }
+
+    // Mark as processing before API call
+    await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+      orderId: args.orderId,
+      payoutStatus: "processing",
+    });
+
+    try {
+      // Create transfer via Razorpay Route API
+      // POST /v1/payments/:paymentId/transfers
+      const transferResponse = await fetch(
+        `https://api.razorpay.com/v1/payments/${payment.razorpayPaymentId}/transfers`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: authHeader,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            transfers: [{
+              account: boutique.razorpayAccountId,
+              amount: payoutPaise,
+              currency: "INR",
+              on_hold: false, // Immediate settlement — not on_hold since delivery is confirmed
+              notes: {
+                orderId: order._id,
+                orderNumber: order.orderNumber,
+                settledPostDelivery: "true",
+              },
+            }],
+          }),
+        }
+      );
+
+      if (!transferResponse.ok) {
+        const errText = await transferResponse.text();
+        console.error(`[createSellerTransfer] Razorpay transfer failed for order ${args.orderId}:`, errText);
+        await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+          orderId: args.orderId,
+          payoutStatus: "failed",
+          payoutFailureReason: `Razorpay API error: ${errText.substring(0, 500)}`,
+        });
+        return { success: false, reason: "razorpay_error", error: errText };
+      }
+
+      const transferData = await transferResponse.json();
+      const transferId = transferData.items?.[0]?.id || transferData.id;
+
+      // Mark as paid
+      await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+        orderId: args.orderId,
+        payoutStatus: "paid",
+        payoutProcessedAt: now,
+        razorpayTransferId: transferId,
+      });
+
+      console.log(`[createSellerTransfer] Transfer ${transferId} created for order ${order.orderNumber}. Amount: ₹${payoutPaise / 100}`);
+      return { success: true, transferId, amount: payoutPaise };
+
+    } catch (err: any) {
+      console.error(`[createSellerTransfer] Exception for order ${args.orderId}:`, err);
+      await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+        orderId: args.orderId,
+        payoutStatus: "failed",
+        payoutFailureReason: `Exception: ${err.message || String(err)}`,
+      });
+      return { success: false, reason: "exception", error: err.message };
+    }
+  },
+});

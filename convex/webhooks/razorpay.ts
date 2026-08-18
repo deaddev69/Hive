@@ -319,13 +319,68 @@ export const processPaymentCaptured = internalMutation({
     }
     const boutiqueName = boutique.boutiqueName || boutique.name || "Unknown Boutique";
 
-    // Setup snapshot metrics
-    const commissionRate = boutique.commissionRate || 18;
-    // Commission is calculated on product revenue only (subtotal minus discount), NOT on delivery fees
-    const commissionBase = Math.max(0, session.subtotal - (session.discount ?? 0));
-    const platformCommissionAmount = Math.floor((commissionBase * commissionRate) / 100);
-    const gstOnCommission = Math.floor((platformCommissionAmount * 18) / 100);
-    const totalPlatformDeduction = platformCommissionAmount + gstOnCommission;
+    // v2: Build pricing snapshot from checkout session items (authoritative, not recalculated)
+    // Commission fields come from the checkout session items which were calculated by the pricing engine
+    let sellerCommissionPaise = 0;
+    let sellerCommissionGstPaise = 0;
+    let sellerPayoutPaise = 0;
+    let sellerCommissionPercent = 0;
+    let sellerTierKey = (boutique as any).pricingTier || "bronze";
+    let sellerTierName = "Bronze";
+
+    for (const item of session.items) {
+      const itemAny = item as any;
+      sellerCommissionPaise += (itemAny.sellerCommissionPaise || 0) * item.quantity;
+      sellerCommissionGstPaise += (itemAny.sellerCommissionGstPaise || 0) * item.quantity;
+      sellerPayoutPaise += (itemAny.sellerPayoutPaise || 0) * item.quantity;
+      if (itemAny.sellerCommissionPercent) {
+        sellerCommissionPercent = itemAny.sellerCommissionPercent;
+      }
+    }
+
+    // Compute platform charges from config
+    const { getPlatformConfig: getPlatformConfigFn } = await import("../pricingService");
+    const platformConfig = await getPlatformConfigFn(ctx);
+    const handlingChargePaise = platformConfig.handlingChargePaise;
+    const platformFeePaise = platformConfig.platformFeePaise;
+    const gstRatePercent = platformConfig.gstRatePercent;
+    const platformChargesGstPaise = Math.round((handlingChargePaise + platformFeePaise) * gstRatePercent / 100);
+
+    // Resolve tier name
+    const tierConfig = platformConfig.commissionTiers.find(t => t.key === sellerTierKey);
+    if (tierConfig) {
+      sellerTierName = tierConfig.name;
+      if (!sellerCommissionPercent) sellerCommissionPercent = tierConfig.sellerCommissionPercent;
+    }
+
+    // If checkout session didn't have v2 commission fields (legacy order), calculate from config
+    if (sellerPayoutPaise === 0 && session.subtotal > 0) {
+      sellerCommissionPaise = Math.round(session.subtotal * sellerCommissionPercent / 100);
+      sellerCommissionGstPaise = Math.round(sellerCommissionPaise * gstRatePercent / 100);
+      sellerPayoutPaise = session.subtotal - sellerCommissionPaise - sellerCommissionGstPaise;
+    }
+
+    const pricingSnapshot = {
+      productSubtotalPaise: session.subtotal,
+      handlingChargePaise,
+      platformFeePaise,
+      platformChargesGstPaise,
+      deliveryFeePaise: session.deliveryFee,
+      discountPaise: session.discount,
+      totalPayablePaise: session.total,
+      sellerTierKey,
+      sellerTierName,
+      sellerCommissionPercent,
+      sellerCommissionPaise,
+      sellerCommissionGstPaise,
+      sellerPayoutPaise,
+      gstRatePercent,
+      handlingChargeConfigPaise: handlingChargePaise,
+      platformFeeConfigPaise: platformFeePaise,
+      gstRateConfigPercent: gstRatePercent,
+      sellerCommissionConfigPercent: sellerCommissionPercent,
+    };
+
     // P0-4 FIX: Collision-resistant order number using timestamp (base36) + random suffix
     const orderNumber = `HIVE-${Math.floor(now / 1000).toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -364,11 +419,11 @@ export const processPaymentCaptured = internalMutation({
         quantity: item.quantity,
       })),
       deliveryFee: session.deliveryFee,
-      commissionRate,
+      commissionRate: sellerCommissionPercent,
       addressSnapshot: session.addressSnapshot,
       orderValue: session.total,
-      platformCommissionAmount,
-      platformCommissionRate: commissionRate,
+      platformCommissionAmount: sellerCommissionPaise,
+      platformCommissionRate: sellerCommissionPercent,
       courierQuote: {
         estimatedPorterCost: quote.estimatedCourierCost ?? quote.estimatedPorterCost ?? 9000,
         estimatedCourierCost: quote.estimatedCourierCost ?? 9000,
@@ -378,13 +433,13 @@ export const processPaymentCaptured = internalMutation({
       merchantOperatingModel: boutique.sellerModel || "boutique",
       payoutHoldDays: 2,
       taxBreakdown: {
-        gstOnCommission,
+        gstOnCommission: sellerCommissionGstPaise,
       },
       courierCost: quote.estimatedCourierCost ?? quote.estimatedPorterCost ?? 9000,
       actualCourierCost: 0,
-      commissionAmount: platformCommissionAmount,
-      gstAmount: gstOnCommission,
-      merchantPayable: commissionBase - totalPlatformDeduction,
+      commissionAmount: sellerCommissionPaise,
+      gstAmount: sellerCommissionGstPaise,
+      merchantPayable: sellerPayoutPaise,
     };
 
     const pickupAddress = boutique ? {
@@ -401,7 +456,7 @@ export const processPaymentCaptured = internalMutation({
       area: boutique.area,
     } : undefined;
 
-    // Create Order
+    // Create Order with v2 pricingSnapshot and payoutStatus
     const orderId = await ctx.db.insert("orders", {
       orderNumber,
       customerId:      session.userId,
@@ -415,14 +470,16 @@ export const processPaymentCaptured = internalMutation({
       deliveryFee:     session.deliveryFee,
       discount:        session.discount,
       total:           session.total,
-      commissionAmount: platformCommissionAmount,
+      commissionAmount: sellerCommissionPaise,
       paymentStatus:   "paid",
       placedDuringClosedHours: session.placedDuringClosedHours,
       scheduledProcessingDate: session.scheduledProcessingDate,
       paymentId:       payment._id,
-      checkoutSessionId: session._id, // Required identifier
+      checkoutSessionId: session._id,
       notes:           `CheckoutSession: ${session._id}`,
       orderSnapshot,
+      pricingSnapshot,
+      payoutStatus:    "not_eligible",
       createdAt:       now,
       updatedAt:       now,
     });
@@ -471,8 +528,9 @@ export const processPaymentCaptured = internalMutation({
       await ctx.db.patch(capturedEvent._id, { orderId });
     }
 
-    // Create order items
+    // Create order items with v2 commission fields
     for (const item of session.items) {
+      const itemAny = item as any;
       await ctx.db.insert("orderItems", {
         orderId,
         productId: item.productId as Id<"products">,
@@ -483,11 +541,14 @@ export const processPaymentCaptured = internalMutation({
         imageUrl: item.imageUrl,
         sku: `SKU-${orderNumber}-${item.productId}-${item.size}`,
         priceAtPurchase: item.price,
-        basePriceAtPurchase: (item as any).basePriceAtPurchase,
-        platformMarkupRateAtPurchase: (item as any).platformMarkupRateAtPurchase,
-        platformFeeRateAtPurchase: (item as any).platformFeeRateAtPurchase,
-        platformMarkupAmount: (item as any).platformMarkupAmount,
-        platformFeeAmount: (item as any).platformFeeAmount,
+        // v2 commission fields
+        sellerBasePricePaise: itemAny.sellerBasePricePaise ?? item.price,
+        sellerCommissionPercent: itemAny.sellerCommissionPercent ?? sellerCommissionPercent,
+        sellerCommissionPaise: itemAny.sellerCommissionPaise ?? 0,
+        sellerCommissionGstPaise: itemAny.sellerCommissionGstPaise ?? 0,
+        sellerPayoutPaise: itemAny.sellerPayoutPaise ?? item.price,
+        // Legacy fields (for backward compat)
+        basePriceAtPurchase: itemAny.basePriceAtPurchase ?? item.price,
         quantity: item.quantity,
         subtotal: item.price * item.quantity,
       });
@@ -511,13 +572,13 @@ export const processPaymentCaptured = internalMutation({
       const customer = await ctx.db.get(session.userId);
       const boutiqueDoc = await ctx.db.get(boutiqueId);
       const customerName = customer ? ((customer as any).name || customer.email || customer.phone || "Customer") : "Customer";
-      const boutiqueName = boutiqueDoc?.name || "Boutique";
+      const boutiqueName2 = boutiqueDoc?.name || "Boutique";
 
       await triggerNotification(ctx, superadmin._id, "slack", "order_confirmed", "order", orderId, JSON.stringify({
         orderId: orderNumber || orderId,
         amount: payment.amount,
         customerName,
-        boutiqueName,
+        boutiqueName: boutiqueName2,
       }));
 
       if (payment.amount >= 10000) {
@@ -525,7 +586,7 @@ export const processPaymentCaptured = internalMutation({
           orderId: orderNumber || orderId,
           amount: payment.amount,
           customerName,
-          boutiqueName,
+          boutiqueName: boutiqueName2,
         }));
       }
     }
@@ -539,23 +600,13 @@ export const processPaymentCaptured = internalMutation({
       await ctx.db.delete(ci._id);
     }
 
-    // Fetch and store Razorpay Route transfer ID in the background
-    if (!args.razorpayPaymentId.startsWith("pay_mock_")) {
-      await ctx.scheduler.runAfter(0, internal.payments.fetchAndStoreTransferId, {
-        orderId,
-        razorpayPaymentId: args.razorpayPaymentId,
-      });
-    } else {
-      // Save simulated transfer ID for mock checks
-      await ctx.db.patch(orderId, {
-        razorpayTransferId: `trf_mock_${Math.random().toString(36).substring(2, 12).toUpperCase()}`,
-        transferStatus: "pending",
-      });
-    }
+    // v2: NO transfer at payment time. Seller payout happens after Porter DELIVERED.
+    // payoutStatus is "not_eligible" until delivery is confirmed.
 
     return { success: true, orderId, orderNumber };
   },
 });
+
 
 // Mutation: processPaymentFailed (Invoked by Webhook)
 export const processPaymentFailed = internalMutation({

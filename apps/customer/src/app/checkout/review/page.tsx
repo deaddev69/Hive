@@ -221,7 +221,10 @@ export default function OrderReviewPage() {
   const subtotal = backendPricing?.subtotalRupees ?? rawSubtotal;
   const deliveryFee = backendPricing?.deliveryFeeRupees ?? (rawSubtotal >= 10000 ? 0 : 99);
   const discountAmount = backendPricing?.discountRupees ?? (appliedPromo === "WELCOME10" ? Math.round(rawSubtotal * 0.10) : appliedPromo === "HIVE50" ? Math.min(rawSubtotal, 50) : 0);
-  const gstAmount = backendPricing?.gstRupees ?? 0;
+  // v2: separate platform charges
+  const handlingCharge = backendPricing?.handlingChargeRupees ?? 0;
+  const platformFee = backendPricing?.platformFeeRupees ?? 0;
+  const gstOnCharges = backendPricing?.gstOnChargesRupees ?? (backendPricing?.gstRupees ?? 0);
   const total = backendPricing?.totalRupees ?? Math.max(0, subtotal - discountAmount + deliveryFee);
 
   useEffect(() => {
@@ -774,7 +777,9 @@ export default function OrderReviewPage() {
           <div className="lg:col-span-4 space-y-4 hidden lg:block">
             <CustomerPriceBreakdown
               subtotal={subtotal}
-              gstAmount={gstAmount}
+              handlingCharge={handlingCharge}
+              platformFee={platformFee}
+              gstOnCharges={gstOnCharges}
               deliveryFee={deliveryFee}
               discount={discountAmount}
               total={total}

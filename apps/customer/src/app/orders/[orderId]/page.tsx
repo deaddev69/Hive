@@ -388,6 +388,9 @@ export default function OrderDetailPage() {
               </div>
               <CustomerPriceBreakdown
                 subtotal={order.subtotal / 100}
+                handlingCharge={(order as any).pricingSnapshot?.handlingChargePaise != null ? (order as any).pricingSnapshot.handlingChargePaise / 100 : undefined}
+                platformFee={(order as any).pricingSnapshot?.platformFeePaise != null ? (order as any).pricingSnapshot.platformFeePaise / 100 : undefined}
+                gstOnCharges={(order as any).pricingSnapshot?.platformChargesGstPaise != null ? (order as any).pricingSnapshot.platformChargesGstPaise / 100 : undefined}
                 deliveryFee={order.deliveryFee / 100}
                 discount={(order.discount || 0) / 100}
                 total={order.total / 100}

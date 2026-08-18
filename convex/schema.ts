@@ -48,15 +48,24 @@ export default defineSchema({
 
   // ─── PLATFORM SETTINGS ────────────────────────────────────────────────────
   platformSettings: defineTable({
-    markupRate: v.number(),
-    platformFeeRate: v.number(),
+    // ─── NEW: Commission-Based Pricing (v2) ────────────────────────────────────
+    handlingChargePaise: v.optional(v.number()),       // e.g. 2900 = ₹29
+    platformFeePaise: v.optional(v.number()),           // e.g. 2000 = ₹20
+    gstRatePercent: v.optional(v.number()),             // e.g. 18
+    commissionTiers: v.optional(v.array(v.object({
+      key: v.string(),                                  // "bronze", "silver", "gold"
+      name: v.string(),                                 // "Bronze", "Silver", "Gold"
+      sellerCommissionPercent: v.number(),               // e.g. 2, 3, 5
+    }))),
+    // ─── LEGACY: Markup-Based Pricing (v1) — kept for migration safety ─────────
+    markupRate: v.optional(v.number()),
+    platformFeeRate: v.optional(v.number()),
     markupType: v.optional(v.union(v.literal("flat"), v.literal("tiered"))),
     markupTiers: v.optional(v.array(v.object({
       min_price: v.number(),
       max_price: v.union(v.number(), v.null()),
       rate: v.number()
     }))),
-    // ─── PER-SELLER PRICING TIERS ─────────────────────────────────────────────
     tier1: v.optional(v.object({
       name: v.string(),
       slabs: v.array(v.object({
@@ -738,10 +747,32 @@ export default defineSchema({
     addressId:            v.id("addresses"),        // reference preserved for profile
     deliverySlotId:       v.optional(v.id("deliverySlots")),
     boutiqueName:         v.optional(v.string()),   // Snapshot frozen at order time
-    subtotal:             v.number(),               // paise
+    subtotal:             v.number(),               // paise — product subtotal
     deliveryFee:          v.number(),               // paise
     discount:             v.number(),               // paise
-    total:                v.number(),               // paise
+    total:                v.number(),               // paise — final customer payable
+    // ─── NEW: Immutable Pricing Snapshot (v2) ─────────────────────────────────
+    pricingSnapshot: v.optional(v.object({
+      productSubtotalPaise: v.number(),
+      handlingChargePaise: v.number(),
+      platformFeePaise: v.number(),
+      platformChargesGstPaise: v.number(),  // GST on (handling + platform fee)
+      deliveryFeePaise: v.number(),
+      discountPaise: v.number(),
+      totalPayablePaise: v.number(),
+      sellerTierKey: v.string(),
+      sellerTierName: v.string(),
+      sellerCommissionPercent: v.number(),
+      sellerCommissionPaise: v.number(),
+      sellerCommissionGstPaise: v.number(), // GST on commission (deducted from seller)
+      sellerPayoutPaise: v.number(),
+      gstRatePercent: v.number(),
+      // Config values frozen at purchase time
+      handlingChargeConfigPaise: v.number(),
+      platformFeeConfigPaise: v.number(),
+      gstRateConfigPercent: v.number(),
+      sellerCommissionConfigPercent: v.number(),
+    })),
     commissionAmount:     v.number(),               // paise
     paymentId:            v.optional(v.id("payments")),
     paymentStatus:        v.union(
@@ -790,7 +821,19 @@ export default defineSchema({
                           })),
     shipmentId:           v.optional(v.id("shipments")),
     notes:                v.optional(v.string()),
-    payoutStatus:         v.optional(v.union(v.literal("pending"), v.literal("settled"), v.literal("withheld"))),
+    payoutStatus:         v.optional(v.union(
+                            v.literal("pending"),
+                            v.literal("not_eligible"),
+                            v.literal("eligible"),
+                            v.literal("processing"),
+                            v.literal("paid"),
+                            v.literal("failed"),
+                            v.literal("settled"),
+                            v.literal("withheld")
+                          )),
+    payoutEligibleAt:     v.optional(v.number()),
+    payoutProcessedAt:    v.optional(v.number()),
+    payoutFailureReason:  v.optional(v.string()),
     payoutDetails:        v.optional(
                             v.object({
                               settledAt: v.number(),      // Timestamp of bank transfer
@@ -843,6 +886,7 @@ export default defineSchema({
     .index("by_customerId_status", ["customerId", "status"])
     .index("by_boutiqueId_status", ["boutiqueId", "status"])
     .index("by_paymentStatus",     ["paymentStatus"])
+    .index("by_payoutStatus",      ["payoutStatus"])
     .index("by_createdAt",         ["createdAt"])
     .index("by_checkoutSessionId", ["checkoutSessionId"])
     .index("by_reservationId",     ["reservationId"]),
@@ -903,7 +947,14 @@ export default defineSchema({
     variantColor:    v.optional(v.string()),
     imageUrl:        v.string(),
     sku:             v.string(),
-    priceAtPurchase: v.number(),                    // paise — locked forever
+    priceAtPurchase: v.number(),                    // paise — locked forever (customer-facing product price)
+    // ─── NEW: Commission-based fields (v2) ────────────────────────────────────
+    sellerBasePricePaise:         v.optional(v.number()),   // seller's listed base price
+    sellerCommissionPercent:      v.optional(v.number()),   // frozen tier commission %
+    sellerCommissionPaise:        v.optional(v.number()),   // commission amount in paise
+    sellerCommissionGstPaise:     v.optional(v.number()),   // GST on commission in paise
+    sellerPayoutPaise:            v.optional(v.number()),   // seller receives this amount
+    // ─── LEGACY: Markup-based fields (v1) — kept for historical orders ────────
     basePriceAtPurchase:          v.optional(v.number()),
     platformMarkupRateAtPurchase: v.optional(v.number()),
     platformFeeRateAtPurchase:    v.optional(v.number()),

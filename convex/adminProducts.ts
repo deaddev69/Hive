@@ -761,20 +761,11 @@ export const updateProductDetailsAdmin = mutation({
     let customerDiscountPrice = product.discountPrice;
 
     if (args.price !== undefined || args.discountPrice !== undefined) {
-      const settings = await getPlatformSettings(ctx);
-      // Resolve boutique pricingTier for markup selection
-      const boutique = await ctx.db.get(product.boutiqueId);
-      const pricingTier = (boutique as any)?.pricingTier || "tier1";
-      // calculateProductPricing expects RUPEES, convert paise→rupees
-      const basePriceRupees = basePricePaise / 100;
-      const baseDiscountPriceRupees = baseDiscountPricePaise ? baseDiscountPricePaise / 100 : undefined;
-      const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings, pricingTier);
-      // Convert customer prices back to PAISE for DB storage
-      customerPrice = Math.round(pricing.customerPrice * 100);
-      customerDiscountPrice = pricing.customerDiscountPrice
-        ? Math.round(pricing.customerDiscountPrice * 100)
-        : undefined;
+      // v2: Product price = seller base price (no markup)
+      customerPrice = basePricePaise;
+      customerDiscountPrice = baseDiscountPricePaise || undefined;
     }
+
 
     // Prepare updates
     const updates: any = {

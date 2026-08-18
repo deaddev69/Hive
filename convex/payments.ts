@@ -13,7 +13,7 @@ import { calculateDeliveryFeeRupees } from "./lib/deliveryPricing";
 import { anyApi } from "convex/server";
 import { parseMoney } from "./lib/money";
 import { calculateDeliveryQuoteAction } from "./routing";
-import { calculateItemFinancials, calculateBoutiquePayout, calculateStoreSettlement } from "./pricingService";
+import { calculateItemFinancials, calculateBoutiquePayout, calculateStoreSettlement, getPlatformConfig, calculateCheckoutPricing, calculateSellerItemPricing } from "./pricingService";
 
 import { checkRateLimit } from "./lib/rateLimit";
 import { triggerNotification } from "./lib/notifications";
@@ -101,7 +101,9 @@ export const getCheckoutPricing = query({
       if (!args.items || args.items.length === 0) {
         return {
           subtotalRupees: 0, subtotalPaise: 0,
-          fixedPlatformFeeRupees: 7, fixedPlatformFeePaise: 700,
+          handlingChargeRupees: 0, handlingChargePaise: 0,
+          platformFeeRupees: 0, platformFeePaise: 0,
+          gstOnChargesRupees: 0, gstOnChargesPaise: 0,
           gstRupees: 0, gstPaise: 0,
           deliveryFeeRupees: 0, deliveryFeePaise: 0,
           discountRupees: 0, discountPaise: 0,
@@ -110,9 +112,27 @@ export const getCheckoutPricing = query({
         };
       }
 
-      let subtotalPaise = 0;
-      let totalPlatformMarkupPaise = 0;
-      let totalSellerProcessingFeePaise = 0;
+      // Fetch platform config
+      const platformConfig = await getPlatformConfig(ctx);
+
+      // Resolve boutique tier from the first product
+      let sellerTierKey = "bronze";
+      const firstItem = args.items[0];
+      let firstProductRow: any = await ctx.db
+        .query("products")
+        .withIndex("by_slug", (q) => q.eq("slug", firstItem.productId))
+        .unique();
+      if (!firstProductRow) {
+        const validId = ctx.db.normalizeId("products", firstItem.productId);
+        if (validId) firstProductRow = await ctx.db.get(validId);
+      }
+      if (firstProductRow?.boutiqueId) {
+        const boutique = await ctx.db.get(firstProductRow.boutiqueId);
+        if (boutique) sellerTierKey = (boutique as any).pricingTier || "bronze";
+      }
+
+      // Validate each item price against DB
+      let productSubtotalPaise = 0;
       const itemsBreakdown: any[] = [];
 
       for (const item of args.items) {
@@ -123,133 +143,100 @@ export const getCheckoutPricing = query({
 
         if (!productRow) {
           const validId = ctx.db.normalizeId("products", item.productId);
-          if (validId) {
-            productRow = await ctx.db.get(validId);
-          }
+          if (validId) productRow = await ctx.db.get(validId);
         }
 
+        let canonicalPricePaise: number;
         if (productRow) {
-          const clientPricePaise = Math.round(item.price * 100);
-          let snap: any;
-          try {
-            snap = await calculateItemFinancials(ctx, productRow, clientPricePaise, item.quantity);
-          } catch {
-            snap = await calculateItemFinancials(ctx, productRow, Math.round((productRow.discountPrice ?? productRow.price) * 100), item.quantity);
-          }
-
-          const qty = item.quantity;
-          const markupAmt = (typeof snap.platformMarkupAmount === "number" && !isNaN(snap.platformMarkupAmount)) ? snap.platformMarkupAmount : 0;
-          const feeAmt = (typeof snap.platformFeeAmount === "number" && !isNaN(snap.platformFeeAmount)) ? snap.platformFeeAmount : 0;
-
-          subtotalPaise += snap.priceAtPurchase * qty;
-          totalPlatformMarkupPaise += markupAmt * qty;
-          totalSellerProcessingFeePaise += feeAmt * qty;
-
-          itemsBreakdown.push({
-            productId: item.productId,
-            productName: productRow.name,
-            quantity: qty,
-            size: item.size,
-            priceAtPurchaseRupees: snap.priceAtPurchase / 100,
-            snapshot: snap,
-          });
-
-          console.log("[getCheckoutPricing] Item snapshot:", JSON.stringify({
-            product: productRow.name,
-            qty,
-            priceAtPurchase: snap.priceAtPurchase,
-            basePriceAtPurchase: snap.basePriceAtPurchase,
-            platformMarkupAmount: snap.platformMarkupAmount,
-            platformFeeAmount: snap.platformFeeAmount,
-            fixedPlatformFeeAtPurchase: snap.fixedPlatformFeeAtPurchase,
-          }));
+          canonicalPricePaise = productRow.discountPrice ?? productRow.price;
         } else {
-          // Fallback for unknown products
-          const pricePaise = Math.round(item.price * 100);
-          subtotalPaise += pricePaise * item.quantity;
-          totalPlatformMarkupPaise += Math.round(pricePaise * 0.12) * item.quantity;
-          totalSellerProcessingFeePaise += Math.round(pricePaise * 0.02) * item.quantity;
-          itemsBreakdown.push({
-            productId: item.productId, productName: "Item",
-            quantity: item.quantity, size: item.size,
-            priceAtPurchaseRupees: item.price, snapshot: null,
-          });
+          // Unknown product — use client price (validation happens at checkout)
+          canonicalPricePaise = Math.round(item.price * 100);
         }
+
+        productSubtotalPaise += canonicalPricePaise * item.quantity;
+        itemsBreakdown.push({
+          productId: item.productId,
+          productName: productRow?.name ?? "Item",
+          quantity: item.quantity,
+          size: item.size,
+          priceAtPurchaseRupees: canonicalPricePaise / 100,
+        });
       }
 
-      // ── Discount ──
+      // Discount
       let discountPaise = 0;
       if (args.promoCode === "WELCOME10") {
-        discountPaise = Math.round(subtotalPaise * 0.10);
+        discountPaise = Math.round(productSubtotalPaise * 0.10);
       } else if (args.promoCode === "HIVE50") {
-        discountPaise = Math.min(subtotalPaise, 5000);
+        discountPaise = Math.min(productSubtotalPaise, 5000);
       }
 
-      // ── Delivery Fee ──
-      const subtotalRupees = subtotalPaise / 100;
+      // Delivery fee (from dynamic Porter quote passed from frontend)
       let deliveryFeePaise = (args.deliveryFee !== undefined)
         ? Math.round(args.deliveryFee * 100)
-        : (subtotalRupees >= 10000 ? 0 : 9900);
-      if (subtotalRupees >= 10000 || args.promoCode === "FREESHIP") {
+        : (productSubtotalPaise >= 1000000 ? 0 : 9900); // ₹99 default
+      if (args.promoCode === "FREESHIP") {
         deliveryFeePaise = 0;
       }
 
-      // ── Platform Revenue (for internal tracking only — NOT added to checkout total) ──
-      const fixedPlatformFeePaise = 700;
-      const totalPlatformRevenuePaise = totalPlatformMarkupPaise + totalSellerProcessingFeePaise + fixedPlatformFeePaise;
-      const gstPaise = Math.round(totalPlatformRevenuePaise * 0.18);
-
-      // ── Grand Total = Items Total + Delivery − Discount ──
-      // ₹7 and GST are ALREADY EMBEDDED inside each item's priceAtPurchase.
-      // They must NOT be added again here.
-      const totalPaise = Math.max(0, subtotalPaise + deliveryFeePaise - discountPaise);
-
-      // ── Debug log ──
-      console.log("[getCheckoutPricing] PRICING TRACE:", JSON.stringify({
-        subtotal: subtotalPaise / 100,
-        platformMarkup: totalPlatformMarkupPaise / 100,
-        sellerProcessingFee: totalSellerProcessingFeePaise / 100,
-        fixedPlatformFee_INCLUDED: fixedPlatformFeePaise / 100,
-        totalPlatformRevenue_INCLUDED: totalPlatformRevenuePaise / 100,
-        gst_INCLUDED: gstPaise / 100,
-        deliveryFee: deliveryFeePaise / 100,
-        discount: discountPaise / 100,
-        total: totalPaise / 100,
-      }));
+      // v2: Use pricing engine for authoritative calculation
+      const pricing = calculateCheckoutPricing(
+        args.items.map(item => ({
+          sellerBasePricePaise: itemsBreakdown.find(b => b.productId === item.productId)
+            ? Math.round(itemsBreakdown.find(b => b.productId === item.productId)!.priceAtPurchaseRupees * 100)
+            : Math.round(item.price * 100),
+          quantity: item.quantity,
+        })),
+        deliveryFeePaise,
+        discountPaise,
+        sellerTierKey,
+        platformConfig
+      );
 
       return {
-        subtotalRupees: subtotalPaise / 100,
-        subtotalPaise,
-        // These are returned for internal transparency only — already included in subtotal
-        fixedPlatformFeeRupees: fixedPlatformFeePaise / 100,
-        fixedPlatformFeePaise,
-        gstRupees: gstPaise / 100,
-        gstPaise,
-        deliveryFeeRupees: deliveryFeePaise / 100,
-        deliveryFeePaise,
-        discountRupees: discountPaise / 100,
-        discountPaise,
-        totalRupees: totalPaise / 100,
-        totalPaise,
+        // v2 fields (authoritative)
+        productSubtotalRupees: pricing.productSubtotalPaise / 100,
+        productSubtotalPaise: pricing.productSubtotalPaise,
+        handlingChargeRupees: pricing.handlingChargePaise / 100,
+        handlingChargePaise: pricing.handlingChargePaise,
+        platformFeeRupees: pricing.platformFeePaise / 100,
+        platformFeePaise: pricing.platformFeePaise,
+        gstOnChargesRupees: pricing.platformChargesGstPaise / 100,
+        gstOnChargesPaise: pricing.platformChargesGstPaise,
+        deliveryFeeRupees: pricing.deliveryFeePaise / 100,
+        deliveryFeePaise: pricing.deliveryFeePaise,
+        discountRupees: pricing.discountPaise / 100,
+        discountPaise: pricing.discountPaise,
+        totalRupees: pricing.totalPayablePaise / 100,
+        totalPaise: pricing.totalPayablePaise,
+        // Backward-compat fields
+        subtotalRupees: pricing.productSubtotalPaise / 100,
+        subtotalPaise: pricing.productSubtotalPaise,
+        gstRupees: pricing.platformChargesGstPaise / 100,
+        gstPaise: pricing.platformChargesGstPaise,
         items: itemsBreakdown,
+        // Seller info (not shown to customer — for internal use)
+        sellerTierKey: pricing.sellerTierKey,
+        sellerCommissionPercent: pricing.sellerCommissionPercent,
       };
     } catch (err) {
       console.error("[getCheckoutPricing] FALLBACK triggered:", err);
       const fallbackSubtotalPaise = args.items.reduce((sum, i) => sum + Math.round(i.price * 100) * i.quantity, 0);
       const fallbackDeliveryPaise = (args.deliveryFee !== undefined) ? Math.round(args.deliveryFee * 100) : (fallbackSubtotalPaise >= 1000000 ? 0 : 9900);
-      // All-in pricing: total = subtotal + delivery (no separate ₹7 or GST)
       const fallbackTotalPaise = Math.max(0, fallbackSubtotalPaise + fallbackDeliveryPaise);
       return {
+        productSubtotalRupees: fallbackSubtotalPaise / 100,
+        productSubtotalPaise: fallbackSubtotalPaise,
         subtotalRupees: fallbackSubtotalPaise / 100,
         subtotalPaise: fallbackSubtotalPaise,
-        fixedPlatformFeeRupees: 0,
-        fixedPlatformFeePaise: 0,
-        gstRupees: 0,
-        gstPaise: 0,
+        handlingChargeRupees: 0, handlingChargePaise: 0,
+        platformFeeRupees: 0, platformFeePaise: 0,
+        gstOnChargesRupees: 0, gstOnChargesPaise: 0,
+        gstRupees: 0, gstPaise: 0,
         deliveryFeeRupees: fallbackDeliveryPaise / 100,
         deliveryFeePaise: fallbackDeliveryPaise,
-        discountRupees: 0,
-        discountPaise: 0,
+        discountRupees: 0, discountPaise: 0,
         totalRupees: fallbackTotalPaise / 100,
         totalPaise: fallbackTotalPaise,
         items: [],
@@ -492,14 +479,18 @@ export const initCheckoutSessionInternal = internalMutation({
         throw new ConvexError(serviceability.reason || "One or more items cannot be delivered to your address.");
       }
 
-      // Recalculate price in integer Paise to prevent price manipulation
+      // v2: Validate item price matches DB (no markup — product price = base price)
       let activePricePaise = 0;
-      let financialSnapshot: any = {};
       
       if (productRow && !isMock) {
-        // dynamically fetch global settings and recalculate
-        financialSnapshot = await calculateItemFinancials(ctx, productRow, Math.round(item.price * 100), item.quantity);
-        activePricePaise = financialSnapshot.priceAtPurchase;
+        const canonicalPricePaise = productRow.discountPrice ?? productRow.price;
+        if (Math.abs(canonicalPricePaise - Math.round(item.price * 100)) > 100) {
+          throw new ConvexError({
+            code: "STALE_CART_PRICE",
+            message: "The prices of some items in your cart have been updated. Please review your new total before checking out.",
+          });
+        }
+        activePricePaise = canonicalPricePaise;
       } else {
         activePricePaise = Math.round(item.price * 100);
       }
@@ -511,15 +502,14 @@ export const initCheckoutSessionInternal = internalMutation({
         productRow,
         isMock,
         boutiqueId: boutique._id,
-        financialSnapshot,
+        activePricePaise,
       });
     }
 
-    // Verify subtotal in integer Paise
+    // Verify product subtotal in integer Paise
     const clientSubtotalPaise = Math.round(args.subtotal * 100);
     if (Math.abs(clientSubtotalPaise - expectedSubtotalPaise) > 100) {
       console.error(`[TAMPERING_CHECK] Mismatch detected. clientSubtotalPaise: ${clientSubtotalPaise}, expectedSubtotalPaise: ${expectedSubtotalPaise}, client args.subtotal: ${args.subtotal}`);
-      // calculateItemFinancials will throw ConvexError for stale prices. If we reach here, it's tampering or rounding.
       throw new ConvexError(`Security Exception: Cart subtotal mismatch. Price tampering detected.`);
     }
 
@@ -554,30 +544,31 @@ export const initCheckoutSessionInternal = internalMutation({
       throw new ConvexError(`Delivery fee validation failed. Expected: ₹${expectedDeliveryFee}, Got: ₹${args.deliveryFee}`);
     }
 
-    // Calculate totalPlatformRevenue to derive GST
-    let totalPlatformMarkupPaise = 0;
-    let totalPlatformFeePaise = 0;
-    let totalFixedPlatformFeePaise = 0;
+    // ─── v2: Authoritative server-side pricing via pricing engine ─────────
+    const platformConfig = await getPlatformConfig(ctx);
+    const sellerTierKey = primaryBoutique?.pricingTier || "bronze";
 
-    for (const resolved of resolvedItems) {
-      const snap = resolved.financialSnapshot || {};
-      const qty = resolved.item.quantity || 1;
-      totalPlatformMarkupPaise += (snap.platformMarkupAmount || 0) * qty;
-      totalPlatformFeePaise += (snap.platformFeeAmount || 0) * qty;
-      totalFixedPlatformFeePaise += (snap.fixedPlatformFeeAtPurchase || 700) * qty;
-    }
+    const pricingItems = resolvedItems.map(r => ({
+      sellerBasePricePaise: r.activePricePaise,
+      quantity: r.item.quantity,
+    }));
 
-    const totalPlatformRevenuePaise = totalPlatformMarkupPaise + totalPlatformFeePaise + totalFixedPlatformFeePaise;
-    const expectedGstPaise = Math.round(totalPlatformRevenuePaise * 0.18);
-    const expectedGstRupees = expectedGstPaise / 100;
+    const deliveryFeePaise = parseMoney(args.deliveryFee);
+    const discountPaise = parseMoney(args.discount);
 
-    // Verify total calculation: Subtotal + Delivery Fee - Discount (₹7 and GST are already baked into item prices)
-    const expectedTotal = Math.max(0, args.subtotal - expectedDiscount + expectedDeliveryFee);
-    const expectedTotalPaise = Math.round(expectedTotal * 100);
+    const pricing = calculateCheckoutPricing(
+      pricingItems,
+      deliveryFeePaise,
+      discountPaise,
+      sellerTierKey,
+      platformConfig
+    );
+
+    // Server-calculated total is authoritative. Verify client total is within tolerance.
     const clientTotalPaise = Math.round(args.total * 100);
-    
-    if (Math.abs(expectedTotalPaise - clientTotalPaise) > 100) {
-      throw new ConvexError(`Order total mismatch. Expected: ₹${expectedTotal.toFixed(2)}, Got: ₹${args.total.toFixed(2)}`);
+    if (Math.abs(pricing.totalPayablePaise - clientTotalPaise) > 200) {
+      console.error(`[PRICING_DRIFT] Server total: ${pricing.totalPayablePaise}, Client total: ${clientTotalPaise}`);
+      throw new ConvexError(`Order total mismatch. Server calculated ₹${(pricing.totalPayablePaise / 100).toFixed(2)}, got ₹${args.total.toFixed(2)}. Please refresh.`);
     }
 
     const now = Date.now();
@@ -616,53 +607,28 @@ export const initCheckoutSessionInternal = internalMutation({
 
     const expiresAt = now + 15 * 60 * 1000; // 15-minute checkout lock window
 
-    const subtotalPaise = parseMoney(args.subtotal);
-    const deliveryFeePaise = parseMoney(args.deliveryFee);
-    const discountPaise = parseMoney(args.discount);
-    const totalPaise = parseMoney(args.total);
-
-    const itemsParsed = args.items.map((item, index) => {
-      const snap = resolvedItems[index].financialSnapshot || {};
+    // Build items with v2 seller pricing snapshot per-item
+    const itemsParsed = resolvedItems.map((resolved) => {
+      const sellerItemPricing = calculateSellerItemPricing(
+        resolved.activePricePaise,
+        sellerTierKey,
+        platformConfig
+      );
       return {
-        ...item,
-        productId: resolvedItems[index].productRow?._id ?? item.productId,
-        price: snap.priceAtPurchase ?? parseMoney(item.price),
-        basePriceAtPurchase: snap.basePriceAtPurchase,
-        platformMarkupRateAtPurchase: snap.platformMarkupRateAtPurchase,
-        platformFeeRateAtPurchase: snap.platformFeeRateAtPurchase,
-        platformMarkupAmount: snap.platformMarkupAmount,
-        platformFeeAmount: snap.platformFeeAmount,
-        gstAmountAtPurchase: snap.gstAmountAtPurchase,
+        ...resolved.item,
+        productId: resolved.productRow?._id ?? resolved.item.productId,
+        price: resolved.activePricePaise,
+        // v2 commission fields
+        basePriceAtPurchase: resolved.activePricePaise,
+        sellerBasePricePaise: sellerItemPricing.sellerBasePricePaise,
+        sellerCommissionPercent: sellerItemPricing.sellerCommissionPercent,
+        sellerCommissionPaise: sellerItemPricing.sellerCommissionPaise,
+        sellerCommissionGstPaise: sellerItemPricing.sellerCommissionGstPaise,
+        sellerPayoutPaise: sellerItemPricing.sellerPayoutPaise,
       };
     });
 
-    const storeSettlement = calculateStoreSettlement(itemsParsed);
-    const merchantPayablePaise = storeSettlement.merchantPayablePaise;
-
-    // Group items by boutique razorpayAccountId for multi-boutique Route transfers
-    const boutiqueSettlementMap = new Map<string, any[]>();
-    for (let i = 0; i < resolvedItems.length; i++) {
-      const bId = resolvedItems[i].boutiqueId;
-      const b = (await ctx.db.get(bId)) as any;
-      if (b && b.razorpayAccountId) {
-        const list = boutiqueSettlementMap.get(b.razorpayAccountId) || [];
-        list.push(itemsParsed[i]);
-        boutiqueSettlementMap.set(b.razorpayAccountId, list);
-      }
-    }
-
-    const transfersList: Array<{ account: string; amount: number }> = [];
-    for (const [accountId, itemsList] of boutiqueSettlementMap.entries()) {
-      const settlement = calculateStoreSettlement(itemsList);
-      if (settlement.merchantPayablePaise > 0) {
-        transfersList.push({
-          account: accountId,
-          amount: Math.round(settlement.merchantPayablePaise),
-        });
-      }
-    }
-
-    // Save temporary Checkout Session
+    // Save temporary Checkout Session with v2 pricing
     const checkoutSessionId = await ctx.db.insert("checkoutSessions", {
       userId: user._id,
       addressId: args.addressId,
@@ -671,10 +637,10 @@ export const initCheckoutSessionInternal = internalMutation({
       deliverySlot: args.deliverySlot,
       paymentMethod: args.paymentMethod,
       items: itemsParsed,
-      subtotal: subtotalPaise,
-      deliveryFee: deliveryFeePaise,
-      discount: discountPaise,
-      total: totalPaise,
+      subtotal: pricing.productSubtotalPaise,
+      deliveryFee: pricing.deliveryFeePaise,
+      discount: pricing.discountPaise,
+      total: pricing.totalPayablePaise,
       promoCode: args.promoCode,
       razorpayOrderId: "",
       status: "pending",
@@ -689,7 +655,7 @@ export const initCheckoutSessionInternal = internalMutation({
       customerId: user._id,
       paymentProvider: "razorpay",
       razorpayOrderId: undefined,
-      amount: Math.round(args.total * 100),
+      amount: pricing.totalPayablePaise,
       currency: "INR",
       status: "initiated",
       createdAt: now,
@@ -702,20 +668,23 @@ export const initCheckoutSessionInternal = internalMutation({
       source: "razorpay",
       paymentId,
       eventType: "initiated",
-      payload: JSON.stringify({ checkoutSessionId, expiresAt }),
+      payload: JSON.stringify({ checkoutSessionId, expiresAt, pricingSnapshot: pricing }),
       createdAt: now,
     });
 
     return {
       checkoutSessionId,
       paymentId,
-      total: args.total,
+      total: pricing.totalPayablePaise / 100,
+      totalPaise: pricing.totalPayablePaise,
       userEmail: user.email || "",
       userPhone: finalPhone,
       customerName: user.email?.split("@")[0] || "Hive Customer",
-      razorpayAccountId: primaryBoutique?.razorpayAccountId || undefined,
-      merchantPayablePaise: Math.round(merchantPayablePaise),
-      transfersList,
+      pricingSnapshot: pricing,
+      // v2: No Route transfers at checkout time. Payment goes to Hive's Razorpay account.
+      razorpayAccountId: undefined,
+      merchantPayablePaise: 0,
+      transfersList: [],
     };
   },
 });
@@ -1369,8 +1338,10 @@ export const createCheckoutSession = action({
     try {
       const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
 
+      // v2: Plain Razorpay order without Route transfers.
+      // Seller payout is created AFTER delivery via separate transfer API.
       const orderPayload: Record<string, any> = {
-        amount: Math.round(initResult.total * 100),
+        amount: initResult.totalPaise ?? Math.round(initResult.total * 100),
         currency: "INR",
         receipt: initResult.checkoutSessionId,
         notes: {
@@ -1379,30 +1350,6 @@ export const createCheckoutSession = action({
           customerPhone: initResult.userPhone,
         },
       };
-
-      if (Array.isArray(initResult.transfersList) && initResult.transfersList.length > 0) {
-        orderPayload.transfers = initResult.transfersList.map((t: any) => ({
-          account: t.account,
-          amount: Math.round(t.amount),
-          currency: "INR",
-          on_hold: true,
-          notes: {
-            checkoutSessionId: initResult.checkoutSessionId,
-          },
-        }));
-      } else if (initResult.razorpayAccountId) {
-        orderPayload.transfers = [
-          {
-            account: initResult.razorpayAccountId,
-            amount: Math.round(initResult.merchantPayablePaise),
-            currency: "INR",
-            on_hold: true,
-            notes: {
-              checkoutSessionId: initResult.checkoutSessionId,
-            },
-          },
-        ];
-      }
 
       const response = await fetch("https://api.razorpay.com/v1/orders", {
         method: "POST",
@@ -1421,20 +1368,17 @@ export const createCheckoutSession = action({
 
       const orderData = await response.json();
       const razorpayOrderId = orderData.id;
-      const initialTransferId = orderData.transfers?.[0]?.id || undefined;
 
       await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId as any, {
         checkoutSessionId: initResult.checkoutSessionId,
         paymentId: initResult.paymentId,
         razorpayOrderId,
-        razorpayTransferId: initialTransferId,
         status: "created",
       });
 
       return {
         checkoutSessionId: initResult.checkoutSessionId,
         razorpayOrderId,
-        razorpayTransferId: initialTransferId,
         paymentId: initResult.paymentId,
       };
     } catch (err: any) {

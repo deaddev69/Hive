@@ -4,20 +4,19 @@ import React, { useState } from "react";
 import { HelpCircle, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 
 export interface CustomerPriceBreakdownProps {
-  subtotal: number; // in Rupees
-  platformFee?: number; // in Rupees (default 7)
-  gstAmount?: number; // in Rupees (calculated by backend / snapshot)
-  deliveryFee: number; // in Rupees
-  discount?: number; // in Rupees
-  total: number; // in Rupees (backend total - never recomputed)
-  isEstimatedDelivery?: boolean; // true on Address step
-  showHelpSection?: boolean; // default true
+  subtotal: number;          // Product total in Rupees
+  handlingCharge?: number;   // in Rupees (from server pricing snapshot)
+  platformFee?: number;      // in Rupees (from server pricing snapshot)
+  gstOnCharges?: number;     // GST on handling + platform fee, in Rupees
+  deliveryFee: number;       // in Rupees
+  discount?: number;         // in Rupees
+  total: number;             // in Rupees (authoritative server total)
+  isEstimatedDelivery?: boolean;
+  showHelpSection?: boolean;
   isLoading?: boolean;
   isError?: boolean;
   className?: string;
 }
-
-export const FIXED_PLATFORM_FEE_RUPEES = 7;
 
 function formatCurrency(amount: number): string {
   return `₹${amount.toLocaleString("en-IN", {
@@ -28,8 +27,9 @@ function formatCurrency(amount: number): string {
 
 export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
   subtotal,
-  platformFee = FIXED_PLATFORM_FEE_RUPEES,
-  gstAmount = 0,
+  handlingCharge = 0,
+  platformFee = 0,
+  gstOnCharges = 0,
   deliveryFee,
   discount = 0,
   total,
@@ -42,6 +42,7 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const deliveryLabel = isEstimatedDelivery ? "Estimated Delivery Fee" : "Delivery Partner Fee";
+  const showPlatformCharges = handlingCharge > 0 || platformFee > 0;
 
   if (isError) {
     return (
@@ -77,18 +78,37 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
         </h3>
 
         <div className="space-y-2.5 text-xs font-semibold text-hive-text-muted">
-          {/* 1. Items Total */}
-          <div className="flex flex-col gap-0.5 w-full">
-            <div className="flex justify-between items-center">
-              <span>Items Total</span>
-              <span className="font-mono text-hive-dark">{formatCurrency(subtotal)}</span>
-            </div>
-            <span className="text-[10px] text-neutral-400 font-medium">
-              (Includes platform fees & applicable GST)
-            </span>
+          {/* 1. Product Total */}
+          <div className="flex justify-between items-center">
+            <span>Product Total</span>
+            <span className="font-mono text-hive-dark">{formatCurrency(subtotal)}</span>
           </div>
 
-          {/* 4. Delivery Partner Fee */}
+          {/* 2. Platform Charges (Handling + Platform Fee) */}
+          {showPlatformCharges && (
+            <>
+              {handlingCharge > 0 && (
+                <div className="flex justify-between items-center">
+                  <span>Handling Charge</span>
+                  <span className="font-mono text-hive-dark">{formatCurrency(handlingCharge)}</span>
+                </div>
+              )}
+              {platformFee > 0 && (
+                <div className="flex justify-between items-center">
+                  <span>Platform Fee</span>
+                  <span className="font-mono text-hive-dark">{formatCurrency(platformFee)}</span>
+                </div>
+              )}
+              {gstOnCharges > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-400">GST on Fees</span>
+                  <span className="font-mono text-hive-dark">{formatCurrency(gstOnCharges)}</span>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* 3. Delivery Fee */}
           <div className="flex justify-between items-center">
             <span>{deliveryLabel}</span>
             <span className="font-mono text-hive-dark">
@@ -102,7 +122,7 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
             </span>
           </div>
 
-          {/* 5. Discount (if discount > 0) */}
+          {/* 4. Discount */}
           {discount > 0 && (
             <div className="flex justify-between items-center text-emerald-700 font-bold">
               <span>Discount</span>
@@ -110,7 +130,7 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
             </div>
           )}
 
-          {/* 6. Grand Total */}
+          {/* 5. Grand Total */}
           <div className="flex justify-between items-center border-t border-hive-border/40 pt-3 mt-2">
             <span className="text-sm font-extrabold text-hive-dark">Grand Total</span>
             <span className="text-base font-extrabold text-hive-dark font-mono">
@@ -141,7 +161,7 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
 
           {isHelpOpen && (
             <p className="text-[11px] text-neutral-600 font-medium pt-1.5 border-t border-neutral-200/50 leading-relaxed animate-[fadeIn_0.2s_ease-out]">
-              Your order total consists of the product price (which already includes a fixed ₹7 Platform Service Fee and applicable GST) and the delivery partner fee. These charges help us securely process your order, support local boutiques, and provide reliable delivery.
+              Your order total includes the product price, a small handling charge and platform fee (plus GST on these fees), and the delivery partner fee. These charges help us securely process your order, support local boutiques, and provide reliable delivery.
             </p>
           )}
         </div>

@@ -2131,6 +2131,41 @@ export const updateTransferStatus = internalMutation({
   },
 });
 
+// v2: Payout status lifecycle mutation
+export const patchOrderPayoutStatus = internalMutation({
+  args: {
+    orderId: v.id("orders"),
+    payoutStatus: v.union(
+      v.literal("pending"),
+      v.literal("not_eligible"),
+      v.literal("eligible"),
+      v.literal("processing"),
+      v.literal("paid"),
+      v.literal("failed"),
+      v.literal("settled"),
+      v.literal("withheld")
+    ),
+    payoutEligibleAt: v.optional(v.number()),
+    payoutProcessedAt: v.optional(v.number()),
+    payoutFailureReason: v.optional(v.string()),
+    razorpayTransferId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const patch: any = {
+      payoutStatus: args.payoutStatus,
+      updatedAt: Date.now(),
+    };
+    if (args.payoutEligibleAt !== undefined) patch.payoutEligibleAt = args.payoutEligibleAt;
+    if (args.payoutProcessedAt !== undefined) patch.payoutProcessedAt = args.payoutProcessedAt;
+    if (args.payoutFailureReason !== undefined) patch.payoutFailureReason = args.payoutFailureReason;
+    if (args.razorpayTransferId !== undefined) {
+      patch.razorpayTransferId = args.razorpayTransferId;
+      patch.transferStatus = "processed";
+    }
+    await ctx.db.patch(args.orderId, patch);
+  },
+});
+
 // ─── SLA: Order Acceptance Timeout ───────────────────────────────────────────
 // Scheduled by placeOrder: fires at 15 min (warning) and 45 min (auto-cancel)
 export const checkOrderAcceptanceSLA = internalAction({
@@ -2322,3 +2357,4 @@ export const triggerSlaOrderSweepAdmin = mutation({
     return { cancelledCount: count };
   },
 });
+

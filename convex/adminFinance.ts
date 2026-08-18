@@ -599,13 +599,29 @@ export async function markOrderFinanciallyDelivered(ctx: any, orderId: any, now:
     if (existingCommission) continue;
 
     let commissionAmount = 0;
-    if ((item as any).platformMarkupAmount !== undefined && (item as any).platformFeeAmount !== undefined) {
-      commissionAmount = ((item as any).platformMarkupAmount + (item as any).platformFeeAmount) * item.quantity;
-    } else {
-      commissionAmount = Math.floor(item.subtotal * (commissionRate / 100));
+    let gstAmount = 0;
+    let netCommission = 0;
+    let commissionVersion = "v1";
+
+    // v2: Use frozen commission fields from order items
+    if ((item as any).sellerCommissionPaise !== undefined && (item as any).sellerCommissionGstPaise !== undefined) {
+      commissionAmount = (item as any).sellerCommissionPaise * item.quantity;
+      gstAmount = (item as any).sellerCommissionGstPaise * item.quantity;
+      netCommission = commissionAmount - gstAmount;
+      commissionVersion = "v2";
     }
-    const gstAmount = Math.floor(commissionAmount * 0.18); // GST is calculated on platform revenue
-    const netCommission = commissionAmount - gstAmount;
+    // v1 legacy: Use platformMarkupAmount + platformFeeAmount
+    else if ((item as any).platformMarkupAmount !== undefined && (item as any).platformFeeAmount !== undefined) {
+      commissionAmount = ((item as any).platformMarkupAmount + (item as any).platformFeeAmount) * item.quantity;
+      gstAmount = Math.floor(commissionAmount * 0.18);
+      netCommission = commissionAmount - gstAmount;
+    }
+    // v0 fallback: Use commissionRate from boutique
+    else {
+      commissionAmount = Math.floor(item.subtotal * (commissionRate / 100));
+      gstAmount = Math.floor(commissionAmount * 0.18);
+      netCommission = commissionAmount - gstAmount;
+    }
 
     await ctx.db.insert("commissionLedger", {
       orderId: order._id,
@@ -614,11 +630,11 @@ export async function markOrderFinanciallyDelivered(ctx: any, orderId: any, now:
       boutiqueId: order.boutiqueId,
       priceAtPurchase: item.priceAtPurchase,
       quantity: item.quantity,
-      commissionRate,
+      commissionRate: (item as any).sellerCommissionPercent ?? commissionRate,
       commissionAmount,
       gstAmount,
       netCommission,
-      commissionVersion: "v1",
+      commissionVersion,
       createdAt: now,
     });
 
@@ -626,8 +642,14 @@ export async function markOrderFinanciallyDelivered(ctx: any, orderId: any, now:
     totalGstAmount += gstAmount;
   }
 
-  // Calculate Net Boutique Accrual (Exclude customer-paid delivery fee)
-  const accrualAmount = (order.subtotal - order.discount) - totalCommissionAmount;
+  // Calculate Net Boutique Accrual
+  // v2: Use pricingSnapshot sellerPayoutPaise if available
+  let accrualAmount: number;
+  if (order.pricingSnapshot?.sellerPayoutPaise !== undefined) {
+    accrualAmount = order.pricingSnapshot.sellerPayoutPaise;
+  } else {
+    accrualAmount = (order.subtotal - order.discount) - totalCommissionAmount;
+  }
   const claimWindowDays = 2; // 48h
 
   // Fetch courier cost from deliverySubsidyLedger
@@ -645,6 +667,7 @@ export async function markOrderFinanciallyDelivered(ctx: any, orderId: any, now:
     merchantPayable: accrualAmount,
     settledAt: now,
     courierQuote: order.orderSnapshot?.courierQuote ?? undefined, // Freeze the original quote
+    pricingSnapshot: order.pricingSnapshot ?? undefined, // v2: Include the full pricing snapshot
   };
 
   const settlementId = await ctx.db.insert("settlementLedger", {
@@ -692,12 +715,22 @@ export async function markOrderFinanciallyDelivered(ctx: any, orderId: any, now:
     });
   }
 
-  // Trigger Razorpay Route transfer release hold if payment is online split-routed
+  // v2: Set payoutStatus to eligible (transfer will be created by settlement cron)
+  const orderPayoutPatch: any = {
+    payoutStatus: "eligible",
+    payoutEligibleAt: now,
+    updatedAt: now,
+  };
+
+  // Backward compat: If this order has an existing on_hold Route transfer (legacy v1), release it
   if (order.razorpayTransferId && order.transferStatus === "pending") {
     await ctx.scheduler.runAfter(0, internal.razorpayRoute.releasePayout, {
       orderId: order._id,
     });
   }
+
+  await ctx.db.patch(order._id, orderPayoutPatch);
+
 
   return { success: true, settlementId };
 }
@@ -812,7 +845,40 @@ export async function settleEligibleOrdersHelper(ctx: any, adminId?: any) {
       }
     }
 
-    if (settledCount > 0) {
+    // ─── v2: Post-Delivery Seller Payout Trigger ─────────────────────────────
+    // Query orders that have been marked eligible for payout after delivery
+    const eligibleOrders = await ctx.db
+      .query("orders")
+      .withIndex("by_payoutStatus", (q: any) => q.eq("payoutStatus", "eligible"))
+      .collect();
+
+    let payoutsTriggered = 0;
+    const claimWindowMs = 48 * 3600 * 1000;
+
+    for (const order of eligibleOrders) {
+      if (order.status !== "delivered") continue;
+
+      const deliveredAt = order.deliveredAt || order.payoutEligibleAt || order.createdAt;
+      if (now < deliveredAt + claimWindowMs) continue;
+
+      // Dispute Gating: Verify no open claims
+      const openClaims = await ctx.db
+        .query("claims")
+        .withIndex("by_orderId", (q: any) => q.eq("orderId", order._id))
+        .collect();
+      const hasOpenClaims = openClaims.some(
+        (c: any) => !["closed", "rejected", "refunded"].includes(c.status)
+      );
+      if (hasOpenClaims) continue;
+
+      // Schedule automated Razorpay Route transfer
+      await ctx.scheduler.runAfter(0, internal.razorpayRoute.createSellerTransfer, {
+        orderId: order._id,
+      });
+      payoutsTriggered++;
+    }
+
+    if (settledCount > 0 || payoutsTriggered > 0) {
       await ctx.db.insert("auditLogs", {
         actorId: adminId,
         actorRole: adminId ? "admin" : "system",
@@ -822,6 +888,7 @@ export async function settleEligibleOrdersHelper(ctx: any, adminId?: any) {
         metadata: JSON.stringify({
           settledCount,
           settledAmountSum,
+          payoutsTriggered,
         }),
         createdAt: now,
       });
@@ -832,7 +899,7 @@ export async function settleEligibleOrdersHelper(ctx: any, adminId?: any) {
       finishedAt,
       durationMs: finishedAt - startedAt,
       status: "success",
-      metrics: { ordersReleased: settledCount, failures },
+      metrics: { ordersReleased: settledCount, payoutsTriggered, failures },
     });
 
     return { success: true, settledCount, settledAmountSum };

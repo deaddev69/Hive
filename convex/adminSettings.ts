@@ -1,61 +1,93 @@
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
-import { calculateProductPricing, PlatformSettings, DEFAULT_TIER_SLABS, getPlatformSettings as fetchPlatformSettings } from "./pricingService";
+import {
+  PlatformConfig,
+  DEFAULT_COMMISSION_TIERS,
+  DEFAULT_HANDLING_CHARGE_PAISE,
+  DEFAULT_PLATFORM_FEE_PAISE,
+  DEFAULT_GST_RATE_PERCENT,
+  // Legacy exports for backward compat
+  calculateProductPricing,
+  PlatformSettings,
+  DEFAULT_TIER_SLABS,
+  getPlatformSettings as fetchPlatformSettings,
+} from "./pricingService";
 
-/**
- * Recalculate customer prices for all products in the database from their basePrice.
- * Each product is recalculated using its owning boutique's pricingTier.
- */
-async function syncAllProductsPricing(ctx: any, settings: PlatformSettings): Promise<number> {
-  const products = await ctx.db.query("products").collect();
-  let updatedCount = 0;
+// ─── v2: Commission-Based Platform Config ────────────────────────────────────
 
-  // Build a cache of boutiqueId → pricingTier to avoid N+1 queries
-  const boutiqueTierCache: Record<string, string> = {};
+export const getPlatformConfig = query({
+  args: {},
+  handler: async (ctx) => {
+    const settings = (await ctx.db.query("platformSettings").first()) as any;
+    return {
+      handlingChargePaise: settings?.handlingChargePaise ?? DEFAULT_HANDLING_CHARGE_PAISE,
+      platformFeePaise: settings?.platformFeePaise ?? DEFAULT_PLATFORM_FEE_PAISE,
+      gstRatePercent: settings?.gstRatePercent ?? DEFAULT_GST_RATE_PERCENT,
+      commissionTiers: settings?.commissionTiers ?? DEFAULT_COMMISSION_TIERS,
+      // Legacy fields (for admin UI to show current state)
+      markupRate: settings?.markupRate,
+      platformFeeRate: settings?.platformFeeRate,
+      markupType: settings?.markupType,
+      markupTiers: settings?.markupTiers,
+    };
+  },
+});
 
-  for (const product of products) {
-    const basePricePaise = product.basePrice !== undefined ? product.basePrice : product.price;
-    const basePriceRupees = basePricePaise / 100;
-    const baseDiscountPriceRupees = product.baseDiscountPrice ? product.baseDiscountPrice / 100 : undefined;
+const commissionTierValidator = v.object({
+  key: v.string(),
+  name: v.string(),
+  sellerCommissionPercent: v.number(),
+});
 
-    // Resolve boutique pricingTier (cached)
-    let pricingTier = "tier1";
-    if (product.boutiqueId) {
-      if (boutiqueTierCache[product.boutiqueId] !== undefined) {
-        pricingTier = boutiqueTierCache[product.boutiqueId];
-      } else {
-        const boutique = await ctx.db.get(product.boutiqueId);
-        pricingTier = boutique?.pricingTier || "tier1";
-        boutiqueTierCache[product.boutiqueId] = pricingTier;
+export const updatePlatformConfig = mutation({
+  args: {
+    handlingChargePaise: v.number(),
+    platformFeePaise: v.number(),
+    gstRatePercent: v.number(),
+    commissionTiers: v.array(commissionTierValidator),
+  },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+
+    // Validate inputs
+    if (args.handlingChargePaise < 0) throw new Error("Handling charge cannot be negative");
+    if (args.platformFeePaise < 0) throw new Error("Platform fee cannot be negative");
+    if (args.gstRatePercent < 0 || args.gstRatePercent > 100) throw new Error("GST rate must be between 0 and 100");
+    if (args.commissionTiers.length === 0) throw new Error("At least one commission tier is required");
+    for (const tier of args.commissionTiers) {
+      if (tier.sellerCommissionPercent < 0 || tier.sellerCommissionPercent > 100) {
+        throw new Error(`Commission for ${tier.name} must be between 0% and 100%`);
       }
     }
 
-    const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings, pricingTier);
-
-    const customerPrice = Math.round(pricing.customerPrice * 100);
-    const customerDiscountPrice = pricing.customerDiscountPrice
-      ? Math.round(pricing.customerDiscountPrice * 100)
-      : undefined;
-
-    await ctx.db.patch(product._id, {
-      basePrice: basePricePaise,
-      price: customerPrice,
-      discountPrice: customerDiscountPrice,
+    const settings = await ctx.db.query("platformSettings").first();
+    const patchData: any = {
+      handlingChargePaise: args.handlingChargePaise,
+      platformFeePaise: args.platformFeePaise,
+      gstRatePercent: args.gstRatePercent,
+      commissionTiers: args.commissionTiers,
       updatedAt: Date.now(),
-    });
-    updatedCount++;
-  }
+    };
 
-  return updatedCount;
-}
+    if (settings) {
+      await ctx.db.patch(settings._id, patchData);
+    } else {
+      await ctx.db.insert("platformSettings", patchData);
+    }
 
+    return { success: true };
+  },
+});
+
+// ─── Legacy v1 API (kept for backward compat) ───────────────────────────────
+
+/** @deprecated Use getPlatformConfig instead */
 export const getPlatformSettings = query({
   args: {},
   handler: async (ctx) => {
     const settings = await ctx.db.query("platformSettings").first();
     if (!settings) {
-      // Return defaults if not initialized in DB yet
       return { 
         markupRate: 0.15, 
         platformFeeRate: 0.02,
@@ -65,34 +97,30 @@ export const getPlatformSettings = query({
     }
     return {
       ...settings,
-      markupType: settings.markupType ?? "tiered",
-      markupTiers: settings.markupTiers ?? DEFAULT_TIER_SLABS,
+      markupType: (settings as any).markupType ?? "tiered",
+      markupTiers: (settings as any).markupTiers ?? DEFAULT_TIER_SLABS,
     };
   },
 });
 
+/** @deprecated Use updatePlatformConfig instead */
 export const syncOfficialHiveSlabs = mutation({
   args: {},
   handler: async (ctx) => {
     const settings = await ctx.db.query("platformSettings").first();
+    const data: any = {
+      handlingChargePaise: DEFAULT_HANDLING_CHARGE_PAISE,
+      platformFeePaise: DEFAULT_PLATFORM_FEE_PAISE,
+      gstRatePercent: DEFAULT_GST_RATE_PERCENT,
+      commissionTiers: DEFAULT_COMMISSION_TIERS,
+      updatedAt: Date.now(),
+    };
     if (settings) {
-      await ctx.db.patch(settings._id, {
-        markupRate: 0.15,
-        platformFeeRate: 0.02,
-        markupType: "tiered",
-        markupTiers: DEFAULT_TIER_SLABS,
-        updatedAt: Date.now(),
-      });
-      return "Updated platformSettings with official Hive slabs (8%/5%).";
+      await ctx.db.patch(settings._id, data);
+      return "Updated platformSettings with v2 commission-based defaults.";
     } else {
-      await ctx.db.insert("platformSettings", {
-        markupRate: 0.15,
-        platformFeeRate: 0.02,
-        markupType: "tiered",
-        markupTiers: DEFAULT_TIER_SLABS,
-        updatedAt: Date.now(),
-      });
-      return "Created platformSettings with official Hive slabs (8%/5%).";
+      await ctx.db.insert("platformSettings", data);
+      return "Created platformSettings with v2 commission-based defaults.";
     }
   },
 });
@@ -108,6 +136,7 @@ const tierConfigValidator = v.optional(v.object({
   slabs: v.array(tierSlabValidator),
 }));
 
+/** @deprecated Use updatePlatformConfig instead */
 export const updatePlatformSettings = mutation({
   args: {
     markupRate: v.number(),
@@ -139,25 +168,11 @@ export const updatePlatformSettings = mutation({
       await ctx.db.insert("platformSettings", patchData);
     }
 
-    const newSettings: PlatformSettings = {
-      markupRate: args.markupRate,
-      platformFeeRate: args.platformFeeRate,
-      markupType: args.markupType,
-      markupTiers: args.markupTiers,
-      tier1: args.tier1,
-      tier2: args.tier2,
-      tier3: args.tier3,
-    };
-
-    const updatedProductsCount = await syncAllProductsPricing(ctx, newSettings);
-
-    return {
-      success: true,
-      updatedProductsCount,
-    };
+    return { success: true, updatedProductsCount: 0 };
   },
 });
 
+/** @deprecated Use updatePlatformConfig instead */
 export const updatePlatformSettingsFromApi = mutation({
   args: {
     secret: v.optional(v.string()),
@@ -193,34 +208,15 @@ export const updatePlatformSettingsFromApi = mutation({
       await ctx.db.insert("platformSettings", patchData);
     }
 
-    const newSettings: PlatformSettings = {
-      markupRate: args.markupRate,
-      platformFeeRate: args.platformFeeRate,
-      markupType: args.markupType,
-      markupTiers: args.markupTiers,
-      tier1: args.tier1,
-      tier2: args.tier2,
-      tier3: args.tier3,
-    };
-
-    const updatedProductsCount = await syncAllProductsPricing(ctx, newSettings);
-
-    return {
-      success: true,
-      updatedProductsCount,
-    };
+    return { success: true, updatedProductsCount: 0 };
   }
 });
 
+/** @deprecated No longer needed — product price = seller base price */
 export const recalculateAllProductPrices = mutation({
   args: {},
   handler: async (ctx) => {
     await requireRole(ctx, "admin");
-    const settings = await fetchPlatformSettings(ctx);
-    const updatedProductsCount = await syncAllProductsPricing(ctx, settings);
-    return {
-      success: true,
-      updatedProductsCount,
-    };
+    return { success: true, updatedProductsCount: 0 };
   },
 });

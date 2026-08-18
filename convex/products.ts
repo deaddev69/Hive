@@ -488,16 +488,9 @@ export const createProduct = mutation({
       }
     }
 
-    const settings = await getPlatformSettings(ctx);
-    // args.price is in PAISE (frontend does × 100). calculateProductPricing expects RUPEES.
-    const basePriceRupees = args.price / 100;
-    const baseDiscountPriceRupees = args.discountPrice ? args.discountPrice / 100 : undefined;
-    const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings, boutique.pricingTier || "tier1");
-    // Convert customer prices back to PAISE for DB storage
-    const customerPrice = Math.round(pricing.customerPrice * 100);
-    const customerDiscountPrice = pricing.customerDiscountPrice
-      ? Math.round(pricing.customerDiscountPrice * 100)
-      : undefined;
+    // v2: Product price = seller base price (no markup). Args.price is in PAISE.
+    const customerPrice = args.price;
+    const customerDiscountPrice = args.discountPrice || undefined;
 
     const productId = await ctx.db.insert("products", {
       boutiqueId: boutique._id,
@@ -741,16 +734,9 @@ export const updateProduct = mutation({
       ? (merchantTier === "Bronze" ? "pending" : "approved")
       : undefined;
 
-    const settings = await getPlatformSettings(ctx);
-    // args.price is in PAISE (frontend does × 100). calculateProductPricing expects RUPEES.
-    const basePriceRupees = args.price / 100;
-    const baseDiscountPriceRupees = args.discountPrice ? args.discountPrice / 100 : undefined;
-    const pricing = calculateProductPricing(basePriceRupees, baseDiscountPriceRupees, settings, boutique.pricingTier || "tier1");
-    // Convert customer prices back to PAISE for DB storage
-    const customerPrice = Math.round(pricing.customerPrice * 100);
-    const customerDiscountPrice = pricing.customerDiscountPrice
-      ? Math.round(pricing.customerDiscountPrice * 100)
-      : undefined;
+    // v2: Product price = seller base price (no markup). Args.price is in PAISE.
+    const customerPrice = args.price;
+    const customerDiscountPrice = args.discountPrice || undefined;
 
     // Resolve categoryId if passed as slug or name string
     let resolvedCategoryId: any = args.categoryId;
