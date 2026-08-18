@@ -369,16 +369,6 @@ export default function BoutiqueProfile() {
               Customize Presentation
             </h3>
 
-            {/* Global Locked Fields Information Box */}
-            <div className="bg-amber-50/80 border border-amber-200/80 p-4 rounded-2xl text-xs text-amber-950 font-medium leading-relaxed flex gap-3.5 items-start shadow-xs mt-1">
-              <div className="p-1.5 bg-amber-100/80 rounded-lg text-amber-800 shrink-0 mt-0.5">
-                <Lock className="w-4 h-4" />
-              </div>
-              <p className="flex-1">
-                Certain profile settings (Coordinates, Delivery Radius, Return Policy) are <strong>locked once configured</strong> to ensure accurate fulfillment zones and buyer trust. To request changes to locked fields, please contact <a href="mailto:support@hivenow.in" className="font-bold underline text-amber-950 hover:text-amber-900">support@hivenow.in</a>.
-              </p>
-            </div>
-
             {/* Logo Upload */}
             <div className="flex flex-col gap-2">
               <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Logo Representation</label>
@@ -438,25 +428,14 @@ export default function BoutiqueProfile() {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Delivery Radius (Km)</label>
-                  {!!boutique?.deliveryRadiusKm && (
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100/90 border border-amber-300/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-amber-800" />
-                      <span>Locked</span>
-                    </span>
-                  )}
-                </div>
+                <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Delivery Radius (Km)</label>
                 <input
                   type="number"
                   required
                   min={1}
                   value={deliveryRadiusKm}
                   onChange={(e) => setDeliveryRadiusKm(parseInt(e.target.value) || 1)}
-                  disabled={!!boutique?.deliveryRadiusKm}
-                  className={`w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] text-sm ${
-                    !!boutique?.deliveryRadiusKm ? "bg-slate-100 text-slate-500 cursor-not-allowed opacity-80" : "bg-hive-cream/10"
-                  }`}
+                  className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-[#F5C22B] text-sm bg-hive-cream/10"
                 />
               </div>
             </div>
@@ -490,16 +469,10 @@ export default function BoutiqueProfile() {
               />
             </div>
 
-            {/* Map Coordinates display & pin drag */}
+            {/* Map Coordinates display */}
             <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
               <div className="font-bold text-hive-text-muted flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <span>Coordinates</span>
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100/90 border border-amber-300/80 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                    <Lock className="w-3 h-3 text-amber-800" />
-                    <span>Locked</span>
-                  </span>
-                </div>
+                <span>Coordinates</span>
                 <span className="font-mono text-[10px] text-hive-amber">
                   Lat: {latitude.toFixed(6)}, Lng: {longitude.toFixed(6)}
                 </span>
@@ -517,27 +490,13 @@ export default function BoutiqueProfile() {
                     Auto-applies when listing new products.
                   </p>
                 </div>
-                {boutique?.returnsAcceptedDefaultLocked && (
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100/90 border border-amber-300/80 px-2.5 py-1 rounded-full flex items-center gap-1">
-                    <Lock className="w-3 h-3 text-amber-800" />
-                    <span>Locked</span>
-                  </span>
-                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Option A: Accept 24h Returns */}
                 <div
-                  onClick={() => {
-                    if (boutique?.returnsAcceptedDefaultLocked) {
-                      toast.error("Policy Locked", "Store Return Policy is locked. Contact support@hivenow.in to request a change.");
-                      return;
-                    }
-                    setReturnsAcceptedDefault(true);
-                  }}
-                  className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left ${
-                    boutique?.returnsAcceptedDefaultLocked ? "opacity-75 cursor-not-allowed" : "cursor-pointer"
-                  } ${
+                  onClick={() => setReturnsAcceptedDefault(true)}
+                  className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left cursor-pointer ${
                     returnsAcceptedDefault
                       ? "bg-emerald-50/60 border-emerald-500/80 shadow-2xs"
                       : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
@@ -564,16 +523,8 @@ export default function BoutiqueProfile() {
 
                 {/* Option B: Final Sale Default */}
                 <div
-                  onClick={() => {
-                    if (boutique?.returnsAcceptedDefaultLocked) {
-                      toast.error("Policy Locked", "Store Return Policy is locked. Contact support@hivenow.in to request a change.");
-                      return;
-                    }
-                    setReturnsAcceptedDefault(false);
-                  }}
-                  className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left ${
-                    boutique?.returnsAcceptedDefaultLocked ? "opacity-75 cursor-not-allowed" : "cursor-pointer"
-                  } ${
+                  onClick={() => setReturnsAcceptedDefault(false)}
+                  className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left cursor-pointer ${
                     !returnsAcceptedDefault
                       ? "bg-slate-900 text-white border-slate-900 shadow-2xs"
                       : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
@@ -591,13 +542,14 @@ export default function BoutiqueProfile() {
                   </div>
 
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors mt-0.5 ${
-                    !returnsAcceptedDefault ? "bg-[#F5C22B] text-slate-900" : "border border-slate-300 bg-white"
+                    !returnsAcceptedDefault ? "bg-white text-slate-900" : "border border-slate-300 bg-white"
                   }`}>
                     {!returnsAcceptedDefault && <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />}
                   </div>
                 </div>
               </div>
             </div>
+
 
             <Button
               type="submit"

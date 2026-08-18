@@ -1119,12 +1119,9 @@ export const updateBoutiqueProfile = mutation({
     };
 
     if (args.returnsAcceptedDefault !== undefined) {
-      if (boutique.returnsAcceptedDefaultLocked && args.returnsAcceptedDefault !== boutique.returnsAcceptedDefault) {
-        throw new ConvexError("Store Return Policy is permanently locked. Contact support@hivenow.in to modify your return policy.");
-      }
       patchData.returnsAcceptedDefault = args.returnsAcceptedDefault;
-      patchData.returnsAcceptedDefaultLocked = true;
     }
+
 
     if (args.bankAccount) {
       const secret = process.env.BANK_ENCRYPTION_KEY;

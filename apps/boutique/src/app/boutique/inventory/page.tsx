@@ -563,17 +563,13 @@ export default function BoutiqueInventory() {
           // First size inline
           const firstSize = localProdSizes[0];
           const firstStock = firstSize ? (localStock[prod._id]?.[firstSize] ?? prod.stockBySize[firstSize] ?? 0) : 0;
-          const firstLocked = firstSize ? (prod.lockedStockBySize?.[firstSize] ?? 0) : 0;
-          const firstAvailable = Math.max(0, firstStock - firstLocked);
-          const isFirstOut = firstAvailable === 0;
-          const isFirstLow = firstAvailable > 0 && firstAvailable <= 2;
+          const isFirstOut = firstStock === 0;
+          const isFirstLow = firstStock > 0 && firstStock <= 2;
 
-          // Check if product has any size with available stock <= 2
+          // Check if product has any size with stock <= 2
           const hasAnyRiskSize = localProdSizes.some((sz: string) => {
             const stock = localStock[prod._id]?.[sz] ?? prod.stockBySize[sz] ?? 0;
-            const locked = prod.lockedStockBySize?.[sz] ?? 0;
-            const available = Math.max(0, stock - locked);
-            return available <= 2;
+            return stock <= 2;
           });
 
           return (
@@ -626,14 +622,9 @@ export default function BoutiqueInventory() {
                     >
                       -
                     </button>
-                    <span className={`${getStockBadgeStyle(firstAvailable)} select-all mx-1.5`}>
-                      {firstAvailable}
+                    <span className={`${getStockBadgeStyle(firstStock)} select-all mx-1.5`}>
+                      {firstStock}
                     </span>
-                    {firstLocked > 0 && (
-                      <span className="text-[9px] text-red-500 font-bold ml-0.5 mr-1.5 whitespace-nowrap">
-                        ({firstLocked} Rsvd)
-                      </span>
-                    )}
                     <button
                       type="button"
                       onClick={() => handleStockChange(prod._id, firstSize, firstStock + 1)}
@@ -662,10 +653,8 @@ export default function BoutiqueInventory() {
                 <div className="mt-1 ml-11 pl-3 border-l-2 border-[#F5C22B]/30 space-y-2.5 animate-in fade-in duration-100">
                   {localProdSizes.slice(1).map((sz: string) => {
                     const stock = localStock[prod._id]?.[sz] ?? prod.stockBySize[sz] ?? 0;
-                    const locked = prod.lockedStockBySize?.[sz] ?? 0;
-                    const available = Math.max(0, stock - locked);
-                    const isOut = available === 0;
-                    const isLow = available > 0 && available <= 2;
+                    const isOut = stock === 0;
+                    const isLow = stock > 0 && stock <= 2;
 
                     return (
                       <div key={sz} className="flex items-center justify-between py-1 pr-1.5">
@@ -685,14 +674,9 @@ export default function BoutiqueInventory() {
                           >
                             -
                           </button>
-                          <span className={`${getStockBadgeStyle(available)} select-all mx-1.5`}>
-                            {available}
+                          <span className={`${getStockBadgeStyle(stock)} select-all mx-1.5`}>
+                            {stock}
                           </span>
-                          {locked > 0 && (
-                            <span className="text-[9px] text-red-500 font-bold ml-0.5 mr-1.5 whitespace-nowrap">
-                              ({locked} Rsvd)
-                            </span>
-                          )}
                           <button
                             type="button"
                             onClick={() => handleStockChange(prod._id, sz, stock + 1)}
@@ -704,6 +688,7 @@ export default function BoutiqueInventory() {
                       </div>
                     );
                   })}
+
 
                   {/* Inline Form to Add a Size */}
                   <div className="pt-2 border-t border-[#f1f5f9]/20 mt-1 flex flex-col gap-2">

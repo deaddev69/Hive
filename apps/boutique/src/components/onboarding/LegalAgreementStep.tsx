@@ -62,23 +62,18 @@ export default function LegalAgreementStep() {
           <span className="text-[12px] text-slate-500 font-medium">Auto-applies when listing new products.</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
             {/* Option A: Accept 24h Returns */}
-            <div className="p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left opacity-75 cursor-not-allowed bg-emerald-50/60 border-emerald-500/80 shadow-2xs relative">
-              <div className="flex flex-col min-w-0 pr-16">
+            <div className="p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left bg-emerald-50/60 border-emerald-500/80 shadow-2xs relative">
+              <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-900">Accept 24h Returns</span>
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full whitespace-nowrap">Recommended</span>
                 </div>
-                <p className="text-[11.5px] text-slate-500 font-medium leading-snug mt-1 w-[90%]">Allows 24-hour voluntary size exchanges & returns.</p>
-              </div>
-              <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100/90 border border-amber-300/80 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                    <Lock className="w-2.5 h-2.5 text-amber-800" /> Locked
-                  </span>
+                <p className="text-[11.5px] text-slate-500 font-medium leading-snug mt-1">Allows 24-hour voluntary size exchanges & returns.</p>
               </div>
             </div>
 
             {/* Option B: Final Sale Default */}
-            <div className="p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left opacity-75 cursor-not-allowed bg-white border-slate-200">
+            <div className="p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left bg-white border-slate-200">
               <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-900">Final Sale Only</span>
@@ -88,6 +83,7 @@ export default function LegalAgreementStep() {
             </div>
           </div>
         </div>
+
       )
     },
     {
