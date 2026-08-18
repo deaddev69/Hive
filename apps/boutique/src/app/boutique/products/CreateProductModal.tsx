@@ -442,7 +442,7 @@ export default function CreateProductModal({
 }) {
   const createProduct = useMutation(api.products.createProduct);
   const updateProduct = useMutation(api.products.updateProduct);
-  const platformSettings = useQuery(api.adminSettings.getPlatformSettings);
+  const platformConfig = useQuery(api.adminSettings.getPlatformConfig);
   const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
   const commitUpload = useAction(api.media.api.commitUpload);
   const myBoutiqueSafe = useQuery(api.boutiques.getMyBoutiqueSafe);
@@ -1037,21 +1037,38 @@ export default function CreateProductModal({
                 required
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#F5C22B] shadow-sm"
               />
-              {price && platformSettings && (() => {
+              {price && platformConfig && (() => {
                 const baseVal = parseFloat(price);
-                if (isNaN(baseVal) || baseVal < 0) return null;
+                if (isNaN(baseVal) || baseVal <= 0) return null;
 
-                const feeRate = platformSettings.platformFeeRate ?? 0.02;
-                const feeAmount = baseVal * feeRate;
-                const netPayout = baseVal - feeAmount;
+                let rawTier = (myBoutiqueSafe as any)?.boutique?.pricingTier || "bronze";
+                if (rawTier === "tier1") rawTier = "bronze";
+                if (rawTier === "tier2") rawTier = "silver";
+                if (rawTier === "tier3") rawTier = "gold";
+
+                const tiers = platformConfig?.commissionTiers || [
+                  { key: "bronze", name: "Bronze", sellerCommissionPercent: 2 },
+                  { key: "silver", name: "Silver", sellerCommissionPercent: 3 },
+                  { key: "gold", name: "Gold", sellerCommissionPercent: 5 },
+                ];
+                const tier = tiers.find((t: any) => t.key === rawTier) || tiers[0];
+                const commissionPercent = tier?.sellerCommissionPercent ?? 2;
+                const gstRatePercent = platformConfig?.gstRatePercent ?? 18;
+
+                const commissionAmount = (baseVal * commissionPercent) / 100;
+                const gstOnCommission = (commissionAmount * gstRatePercent) / 100;
+                const netPayout = Math.max(0, baseVal - commissionAmount - gstOnCommission);
 
                 return (
-                  <div className="text-[11px] font-medium text-slate-500 mt-1 flex flex-wrap items-center gap-x-3">
+                  <div className="text-[11px] font-medium text-slate-500 mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                     <div>
-                      Platform Fee ({(feeRate * 100).toFixed(0)}%): <span className="font-bold text-slate-700 font-mono">-₹{feeAmount.toFixed(2)}</span>
+                      Commission ({commissionPercent}%): <span className="font-bold text-slate-700 font-mono">-₹{commissionAmount.toFixed(2)}</span>
                     </div>
                     <div>
-                      Your Net Payout: <span className="font-bold text-emerald-600 font-mono">₹{netPayout.toLocaleString("en-IN", { minimumFractionDigits: 2 })} per order</span>
+                      GST ({gstRatePercent}%): <span className="font-bold text-slate-700 font-mono">-₹{gstOnCommission.toFixed(2)}</span>
+                    </div>
+                    <div className="text-emerald-700 font-bold">
+                      Your Net Payout: <span className="font-bold font-mono">₹{netPayout.toLocaleString("en-IN", { minimumFractionDigits: 2 })} per order</span>
                     </div>
                   </div>
                 );

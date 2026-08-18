@@ -87,48 +87,41 @@ function autoCorrectCapitalization(str: string): string {
   });
 }
 
-function calculatePricingBreakdown(basePriceRupees: number, settings?: any, pricingTier?: string) {
+function calculatePricingBreakdown(basePriceRupees: number, config?: any, rawTierKey?: string) {
   if (!basePriceRupees || isNaN(basePriceRupees) || basePriceRupees <= 0) {
     return null;
   }
 
-  const markupType = settings?.markupType ?? "tiered";
-  // Resolve tier-specific slabs if available
-  const tierKey = pricingTier || "tier1";
-  const tierConfig = settings?.[tierKey];
-  const tiers = (tierConfig?.slabs && Array.isArray(tierConfig.slabs) && tierConfig.slabs.length > 0)
-    ? tierConfig.slabs
-    : (settings?.markupTiers ?? DEFAULT_TIER_SLABS);
-  let markupRate = settings?.markupRate ?? 0.15;
+  // Map legacy tier names to keys
+  let tierKey = rawTierKey || "bronze";
+  if (tierKey === "tier1") tierKey = "bronze";
+  if (tierKey === "tier2") tierKey = "silver";
+  if (tierKey === "tier3") tierKey = "gold";
 
-  if (markupType === "tiered" && Array.isArray(tiers) && tiers.length > 0) {
-    const tier = tiers.find((t: any) => {
-      const minMatch = basePriceRupees >= t.min_price;
-      const maxMatch = t.max_price === null || t.max_price === undefined || basePriceRupees <= t.max_price;
-      return minMatch && maxMatch;
-    });
-    if (tier) {
-      markupRate = tier.rate / 100;
-    }
-  }
+  const tiers = config?.commissionTiers || [
+    { key: "bronze", name: "Bronze", sellerCommissionPercent: 2 },
+    { key: "silver", name: "Silver", sellerCommissionPercent: 3 },
+    { key: "gold", name: "Gold", sellerCommissionPercent: 5 },
+  ];
 
-  const platformFeeRate = settings?.platformFeeRate ?? 0.02;
-  const markupAmount = basePriceRupees * markupRate;
-  const preGstPrice = basePriceRupees + markupAmount + 7; // ₹7 platform fee
-  const sellerProcessingFee = basePriceRupees * platformFeeRate;
-  const platformRevenue = markupAmount + sellerProcessingFee + 7;
-  const gstAmount = platformRevenue * 0.18;
-  const allInRaw = preGstPrice + gstAmount;
-  const storefrontPrice = Math.ceil(allInRaw / 10) * 10 - 1; // Charm-rounded price (e.g. ₹1,199)
+  const tier = tiers.find((t: any) => t.key === tierKey) || tiers[0];
+  const commissionPercent = tier?.sellerCommissionPercent ?? 2;
+  const gstRatePercent = config?.gstRatePercent ?? 18;
 
-  const netPayout = basePriceRupees - sellerProcessingFee;
+  // Commission is taken directly from seller base price
+  const commissionAmount = (basePriceRupees * commissionPercent) / 100;
+  // GST on the commission is deducted from the seller
+  const gstOnCommission = (commissionAmount * gstRatePercent) / 100;
+  // Net payout to boutique
+  const netPayout = Math.max(0, basePriceRupees - commissionAmount - gstOnCommission);
 
   return {
-    markupRate,
-    markupAmount,
-    platformFeeRate,
-    sellerProcessingFee,
-    storefrontPrice,
+    tierName: tier?.name ?? "Bronze",
+    commissionPercent,
+    commissionAmount,
+    gstRatePercent,
+    gstOnCommission,
+    storefrontPrice: basePriceRupees,
     netPayout,
   };
 }
@@ -333,7 +326,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const router = useRouter();
   const createProduct = useMutation(api.products.createProduct);
   const updateProduct = useMutation(api.products.updateProduct);
-  const platformSettings = useQuery(api.adminSettings.getPlatformSettings);
+  const platformConfig = useQuery(api.adminSettings.getPlatformConfig);
   const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
   const commitUpload = useAction(api.media.api.commitUpload);
   const myBoutiqueSafe = useQuery(api.boutiques.getMyBoutiqueSafe);
@@ -968,12 +961,12 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     });
   };
 
-  // Real-time Pricing Breakdown
+  // Real-time Commission & Payout Breakdown
   const basePriceNum = parseFloat(priceWatch || "0");
-  const boutiquePricingTier = (myBoutiqueSafe as any)?.boutique?.pricingTier || "tier1";
+  const boutiquePricingTier = (myBoutiqueSafe as any)?.boutique?.pricingTier || "bronze";
   const pricingBreakdown = useMemo(() => {
-    return calculatePricingBreakdown(basePriceNum, platformSettings, boutiquePricingTier);
-  }, [basePriceNum, platformSettings, boutiquePricingTier]);
+    return calculatePricingBreakdown(basePriceNum, platformConfig, boutiquePricingTier);
+  }, [basePriceNum, platformConfig, boutiquePricingTier]);
 
   // ───────────────────────────────────────────────────────────────────────────
   // STEP 1: 📸 ADD PHOTOS (Instagram Screen)
@@ -1469,17 +1462,17 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 </div>
               </div>
 
-              {/* BESPOKE FINANCIAL PANEL */}
+              {/* BESPOKE FINANCIAL PANEL (Commission Model - No Markup) */}
               {pricingBreakdown && (
                 <div className="border border-slate-200/90 rounded-2xl bg-white overflow-hidden shadow-xs">
                   {/* Top 2-Column Metrics */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
                     
-                    {/* Column 1: Storefront Price */}
+                    {/* Column 1: Storefront Base Price */}
                     <div className="p-5 flex flex-col justify-between">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                          Storefront Display Price
+                          Storefront Base Price
                         </span>
                         <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
                           Customer Pays
@@ -1488,12 +1481,12 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
                       <div className="flex items-baseline gap-1 my-1">
                         <span className="text-3xl font-bold tracking-tight text-slate-900 font-sans">
-                          ₹{pricingBreakdown.storefrontPrice.toLocaleString("en-IN")}
+                          ₹{basePriceNum.toLocaleString("en-IN")}
                         </span>
                       </div>
 
                       <span className="text-[11px] text-slate-400 font-normal mt-1">
-                        Includes platform markup ({(pricingBreakdown.markupRate * 100).toFixed(0)}%) & GST
+                        Product base price on Hive (no markup added)
                       </span>
                     </div>
 
@@ -1515,7 +1508,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                       </div>
 
                       <span className="text-[11px] text-slate-500 font-normal mt-1">
-                        Base ₹{basePriceNum.toFixed(0)} − 2% service fee (₹{pricingBreakdown.sellerProcessingFee.toFixed(2)})
+                        Base ₹{basePriceNum.toFixed(0)} − {pricingBreakdown.commissionPercent}% commission (−₹{pricingBreakdown.commissionAmount.toFixed(2)}) − GST (−₹{pricingBreakdown.gstOnCommission.toFixed(2)})
                       </span>
                     </div>
 
@@ -1524,9 +1517,9 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   {/* Bottom Single-Line Calculation Formula */}
                   <div className="px-5 py-2.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
                     <span className="truncate">
-                      Listing ₹{basePriceNum.toFixed(0)} &bull; Platform Markup +₹{pricingBreakdown.markupAmount.toFixed(0)} &bull; Fee -₹{pricingBreakdown.sellerProcessingFee.toFixed(2)}
+                      Base ₹{basePriceNum.toFixed(0)} &bull; Commission ({pricingBreakdown.commissionPercent}%): -₹{pricingBreakdown.commissionAmount.toFixed(2)} &bull; GST ({pricingBreakdown.gstRatePercent}%): -₹{pricingBreakdown.gstOnCommission.toFixed(2)}
                     </span>
-                    <span className="text-slate-400 font-mono shrink-0 ml-2">Net: ₹{pricingBreakdown.netPayout.toFixed(2)}</span>
+                    <span className="text-emerald-700 font-bold font-mono shrink-0 ml-2">Net: ₹{pricingBreakdown.netPayout.toFixed(2)}</span>
                   </div>
                 </div>
               )}
