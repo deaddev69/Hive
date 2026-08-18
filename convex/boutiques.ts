@@ -2806,12 +2806,5 @@ export const updateBoutiqueStaff = mutation({
   },
 });
 
-// v2: Internal query for boutique lookup by ID (used by razorpayRoute actions)
-export const getById = internalQuery({
-  args: { id: v.id("boutiques") },
-  handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
-  },
-});
 
 
