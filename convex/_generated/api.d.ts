@@ -113,9 +113,6 @@ import type * as services_merchandising_MerchandisingService from "../services/m
 import type * as services_operations_OperationsService from "../services/operations/OperationsService.js";
 import type * as shared_boutiqueStatus from "../shared/boutiqueStatus.js";
 import type * as slack from "../slack.js";
-import type * as testBug from "../testBug.js";
-import type * as testBugFull from "../testBugFull.js";
-import type * as testCreate from "../testCreate.js";
 import type * as tests_authGatingTest from "../tests/authGatingTest.js";
 import type * as tests_boutiqueAudit from "../tests/boutiqueAudit.js";
 import type * as tests_cartCurrency from "../tests/cartCurrency.js";
@@ -262,9 +259,6 @@ declare const fullApi: ApiFromModules<{
   "services/operations/OperationsService": typeof services_operations_OperationsService;
   "shared/boutiqueStatus": typeof shared_boutiqueStatus;
   slack: typeof slack;
-  testBug: typeof testBug;
-  testBugFull: typeof testBugFull;
-  testCreate: typeof testCreate;
   "tests/authGatingTest": typeof tests_authGatingTest;
   "tests/boutiqueAudit": typeof tests_boutiqueAudit;
   "tests/cartCurrency": typeof tests_cartCurrency;

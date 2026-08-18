@@ -435,6 +435,11 @@ export const updateBoutique = mutation({
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
 
+    const existing = await ctx.db.get(args.id);
+    if (!existing) {
+      throw new ConvexError(`Boutique not found (ID: ${args.id}). The boutique may have been re-created or deleted. Please return to the Partners list and select the boutique.`);
+    }
+
     const normalizedPhone = normalizePhoneNumber(args.phone);
     validateBoutiqueDetails({ ...args, phone: normalizedPhone });
 

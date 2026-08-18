@@ -121,7 +121,7 @@ export const DEFAULT_TIERS_CONFIG: TierPricingConfig[] = [
     ],
     commissionGstPercent: 18,
     handlingChargePaise: 2900,
-    platformFeePaise: 2000,
+    platformFeePaise: 2200,
     platformGstPercent: 18,
   },
   {
@@ -129,12 +129,12 @@ export const DEFAULT_TIERS_CONFIG: TierPricingConfig[] = [
     name: "Silver",
     commissionSlabs: [
       { minPrice: 0, maxPrice: 499, commissionPercent: 2.5 },
-      { minPrice: 500, maxPrice: 999, commissionPercent: 3.5 },
+      { minPrice: 500, maxPrice: 999, commissionPercent: 3 },
       { minPrice: 1000, maxPrice: null, commissionPercent: 4.5 },
     ],
     commissionGstPercent: 18,
     handlingChargePaise: 2500,
-    platformFeePaise: 1500,
+    platformFeePaise: 1300,
     platformGstPercent: 18,
   },
   {
@@ -142,12 +142,12 @@ export const DEFAULT_TIERS_CONFIG: TierPricingConfig[] = [
     name: "Gold",
     commissionSlabs: [
       { minPrice: 0, maxPrice: 499, commissionPercent: 3 },
-      { minPrice: 500, maxPrice: 999, commissionPercent: 4 },
-      { minPrice: 1000, maxPrice: null, commissionPercent: 5 },
+      { minPrice: 500, maxPrice: 999, commissionPercent: 6 },
+      { minPrice: 1000, maxPrice: null, commissionPercent: 6 },
     ],
     commissionGstPercent: 18,
-    handlingChargePaise: 2000,
-    platformFeePaise: 1000,
+    handlingChargePaise: 1000,
+    platformFeePaise: 600,
     platformGstPercent: 18,
   },
 ];
