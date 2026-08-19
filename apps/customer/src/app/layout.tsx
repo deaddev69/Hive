@@ -33,6 +33,7 @@ export const metadata: Metadata = {
     default: "Instant Clothes Delivery in Kochi (1-2 Hours) | Hive",
   },
   description: "Need instant clothes delivery in Kochi? Shop local stores online and get clothes, dresses, and outfits delivered to your door in 1-2 hours across Ernakulam.",
+  publisher: "Beelyn LLP",
   icons: {
     icon: "/icon-512x512.png?v=3",
     apple: "/apple-touch-icon.png?v=3",

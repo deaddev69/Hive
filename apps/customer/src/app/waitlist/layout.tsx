@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Join the Waitlist | Hive by TailorBee",
+  title: "Join the Waitlist | Hive",
   description: "Experience premium hyper-local tailoring with doorstep delivery. Join our waitlist today.",
 };
 

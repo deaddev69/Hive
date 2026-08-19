@@ -81,8 +81,7 @@ export const Footer: React.FC = () => {
 
           {/* Bottom copyright row */}
           <div className="flex flex-row justify-between items-center w-full text-[10px] text-hive-cream/35 font-medium tracking-wide">
-            <span>© {new Date().getFullYear()} Hive</span>
-            <span className="text-[9px] text-hive-cream/20 font-light lowercase tracking-normal">built by tailorbee</span>
+            <span>© {new Date().getFullYear()} Hive, a product of Beelyn LLP</span>
           </div>
         </div>
       </footer>

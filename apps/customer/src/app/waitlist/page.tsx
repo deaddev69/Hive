@@ -115,7 +115,7 @@ export default function WaitlistPage() {
       </main>
       
       <footer className="w-full py-8 px-6 text-center text-hive-text-muted text-sm border-t border-hive-border/50 bg-white/50 backdrop-blur-sm mt-auto">
-        <p>© {new Date().getFullYear()} Hive by TailorBee. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} Hive. All rights reserved.</p>
       </footer>
     </div>
   );

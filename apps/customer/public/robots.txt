@@ -1,4 +1,4 @@
-# Hive by TailorBee — robots.txt
+# Hive — robots.txt
 
 User-agent: *
 Allow: /

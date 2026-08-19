@@ -4,7 +4,7 @@ import { CatalogLayout } from "@/components/catalog/CatalogLayout";
 import { CollectionsIndexClient } from "./CollectionsIndexClient";
 
 export const metadata: Metadata = {
-  title: "Curated Edits — Hive by TailorBee",
+  title: "Curated Edits — Hive",
   description: "Browse curated boutique fashion edits for every occasion. Delivered same-day in Kochi.",
 };
 

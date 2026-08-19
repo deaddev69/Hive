@@ -39,11 +39,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (!product) return {};
 
     return {
-      title: `${cleanProductTitle(product.name)} — Hive by TailorBee`,
-      description: product.description || `Discover and shop ${product.name} on Hive by TailorBee.`,
+      title: `${cleanProductTitle(product.name)} — Hive`,
+      description: product.description || `Discover and shop ${product.name} on Hive.`,
       openGraph: {
-        title: `${cleanProductTitle(product.name)} — Hive by TailorBee`,
-        description: product.description || `Discover and shop ${product.name} on Hive by TailorBee.`,
+        title: `${cleanProductTitle(product.name)} — Hive`,
+        description: product.description || `Discover and shop ${product.name} on Hive.`,
       },
     };
   } catch {

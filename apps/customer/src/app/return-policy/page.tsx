@@ -7,7 +7,7 @@ export default function ReturnPolicyPage() {
       <div className="max-w-3xl mx-auto px-4 py-12 md:py-16 text-left select-text">
         <div className="space-y-2 mb-10 pb-8 border-b border-stone-200">
           <span className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-amber-700">
-            Hive by TailorBee
+            Hive
           </span>
           <h1 className="text-3xl font-serif font-semibold text-stone-900 tracking-tight">
             Return and Refund Policy
@@ -35,10 +35,10 @@ export default function ReturnPolicyPage() {
           <section className="space-y-2">
             <h2 className="text-base font-serif font-bold text-stone-900">1. Introduction</h2>
             <p>
-              1.1 This Return and Refund Policy (the “Policy”) explains how returns, refunds, and order cancellations work on Hive by TailorBee, available at <a href="https://hivenow.in" className="underline text-stone-850">https://hivenow.in</a> (the “Platform”), operated by BEELYN LLP.
+              1.1 This Return and Refund Policy (the “Policy”) explains how returns, refunds, and order cancellations work on Hive, available at <a href="https://hivenow.in" className="underline text-stone-850">https://hivenow.in</a> (the “Platform”), operated by BEELYN LLP.
             </p>
             <p>
-              1.2 This Policy forms an integral part of, and should be read together with, the Hive by TailorBee Customer Terms and Conditions, Version 2.0 (“Customer Terms”) and the Privacy Policy. In the event of any inconsistency between this Policy and the Customer Terms, the Customer Terms shall prevail.
+              1.2 This Policy forms an integral part of, and should be read together with, the Hive Customer Terms and Conditions, Version 2.0 (“Customer Terms”) and the Privacy Policy. In the event of any inconsistency between this Policy and the Customer Terms, the Customer Terms shall prevail.
             </p>
             <p>
               1.3 This Policy applies to purchases made on the Platform from independent boutiques, designer studios, and fashion sellers (“Sellers”). Hive operates as a marketplace facilitator and coordinates the return and refund process on behalf of Customers and Sellers, as described in this Policy.
@@ -202,7 +202,7 @@ export default function ReturnPolicyPage() {
               14.1 For questions about a specific return, refund, or cancellation, or for any other support relating to this Policy, please contact:
             </p>
             <p className="text-xs text-stone-600 pl-4 border-l border-stone-200">
-              <strong>Hive by TailorBee — Customer Support</strong><br />
+              <strong>Hive — Customer Support</strong><br />
               BEELYN LLP<br />
               55/4379, Door No. 3623, Valanjambalam Junction,<br />
               Kochi M.G. Road, Ernakulam, Kerala – 682016, India<br />

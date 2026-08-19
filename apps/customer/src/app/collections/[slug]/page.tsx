@@ -11,7 +11,7 @@ export async function generateMetadata({
   const slug = params.slug;
   const title = slug.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
   return {
-    title: `${title} | Hive by TailorBee`,
+    title: `${title} | Hive`,
     description: `Shop the ${title} collection. Hand-picked pieces from verified local boutiques, delivered same-day.`,
   };
 }

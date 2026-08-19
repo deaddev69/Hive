@@ -30,10 +30,10 @@ const SECTIONS: Section[] = [
     num: "1",
     title: "Acceptance of Terms",
     content: [
-      `By accessing, browsing, registering on, or placing an order through the Hive by TailorBee platform, available at https://hivenow.in (the "Platform"), you ("User," "Customer," or "you") confirm that you have read, understood, and unconditionally agree to be bound by these Terms and Conditions ("Terms") and all policies incorporated herein by reference, including the Privacy Policy.`,
+      `These Terms of Service govern your use of Hive, a marketplace platform operated by Beelyn LLP. By accessing, browsing, registering on, or placing an order through the Hive platform, available at https://hivenow.in (the "Platform"), you ("User," "Customer," or "you") confirm that you have read, understood, and unconditionally agree to be bound by these Terms and Conditions ("Terms") and all policies incorporated herein by reference, including the Privacy Policy.`,
       `If you do not agree with any part of these Terms, you must immediately discontinue your use of the Platform.`,
       `These Terms constitute a legally binding agreement between you and BEELYN LLP, a limited liability partnership incorporated under the laws of India, having its registered office at 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam Town South Police Station, Ernakulam, Kerala – 682016, India ("BEELYN LLP," "we," "us," or "our").`,
-      `Hive by TailorBee is owned and operated by BEELYN LLP. These Terms apply exclusively to the Hive by TailorBee Platform and do not govern any other products, brands, or services operated by BEELYN LLP.`
+      `Hive is owned and operated by BEELYN LLP. These Terms apply exclusively to the Hive Platform and do not govern any other products, brands, or services operated by BEELYN LLP.`
     ]
   },
   {
@@ -42,7 +42,7 @@ const SECTIONS: Section[] = [
     title: "Definitions",
     content: [
       `In these Terms, the following expressions carry the meanings set out below unless the context requires otherwise:`,
-      `"Hive" or "Platform" means the Hive by TailorBee online marketplace accessible at https://hivenow.in, including its website, mobile applications, and related digital interfaces operated by BEELYN LLP.`,
+      `"Hive" or "Platform" means the Hive online marketplace accessible at https://hivenow.in, including its website, mobile applications, and related digital interfaces operated by BEELYN LLP.`,
       `"BEELYN LLP" means the limited liability partnership registered under LLPIN ACS-4901, being the legal entity that owns and operates the Platform.`,
       `"Customer" means any individual who accesses the Platform to browse, discover, or purchase products listed by Sellers.`,
       `"Seller" means an independent boutique, designer studio, artisan seller, fashion retailer, or other business entity that has been approved by Hive to list and sell products on the Platform.`,
@@ -71,7 +71,7 @@ const SECTIONS: Section[] = [
     num: "4",
     title: "Marketplace Nature of Hive",
     content: [
-      `4.1 Facilitated Marketplace. Hive by TailorBee is a technology-enabled marketplace platform that connects Customers with independent Sellers offering fashion products. BEELYN LLP facilitates product discovery, order placement, payment processing, transaction administration, and post-purchase support processes.`,
+      `4.1 Facilitated Marketplace. Hive is a technology-enabled marketplace platform that connects Customers with independent Sellers offering fashion products. BEELYN LLP facilitates product discovery, order placement, payment processing, transaction administration, and post-purchase support processes.`,
       `4.2 Not the Seller. BEELYN LLP is generally not the manufacturer, owner, merchant, or seller of any Product listed on the Platform. Unless expressly stated otherwise in a specific listing, all Products are offered for sale by independent Sellers.`,
       `4.3 No Endorsement. The listing of a Product on the Platform does not constitute an endorsement, representation, or warranty by BEELYN LLP regarding the quality, safety, legality, authenticity, or accuracy of that Product or its associated information.`,
       `4.4 Seller Independence. Sellers are independent businesses. BEELYN LLP does not control, supervise, or independently verify every representation made by Sellers regarding their Products. Sellers retain sole responsibility for product quality, product compliance, the accuracy of their listings, inventory management, and fulfilment obligations.`,
@@ -322,7 +322,7 @@ const SECTIONS: Section[] = [
     content: [
       `19.1 Grievance Mechanism. BEELYN LLP has established a grievance redressal mechanism for the Platform in accordance with applicable Indian law, including the Consumer Protection Act, 2019 and the Consumer Protection (E-Commerce) Rules, 2020.`,
       `19.2 Submitting a Grievance. Customers and Users may submit grievances relating to the Platform, Orders, or Seller conduct by writing to:`,
-      `Grievance Officer — Hive by TailorBee`,
+      `Grievance Officer — Hive`,
       `BEELYN LLP 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam Town South Police Station, Ernakulam, Kerala – 682016, India. Email: support@hivenow.in | Phone: +91 73560 19103`,
       `19.3 Acknowledgement. BEELYN LLP endeavours to acknowledge grievances within forty-eight (48) hours of receipt.`,
       `19.4 Resolution Timeline. BEELYN LLP endeavours to resolve valid grievances within one (1) month of receipt, subject to the nature and complexity of the grievance.`,
@@ -465,8 +465,8 @@ const SECTIONS: Section[] = [
     num: "31",
     title: "Contact Information",
     content: [
-      `For all queries, complaints, grievances, and support requests relating to Hive by TailorBee, please contact:`,
-      `Hive by TailorBee — Customer Support`,
+      `For all queries, complaints, grievances, and support requests relating to Hive, please contact:`,
+      `Hive — Customer Support`,
       `BEELYN LLP 55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road, Ernakulam Town South Police Station, Ernakulam, Kerala – 682016, India`,
       `Website: https://hivenow.in`,
       `Email: support@hivenow.in`
@@ -478,7 +478,7 @@ const SECTIONS: Section[] = [
     title: "Privacy Policy Linkage",
     content: [
       `Your use of the Platform is also governed by Hive's Privacy Policy, which is available at https://hivenow.in/terms#privacy-policy. The Privacy Policy forms an integral part of the legal framework governing the Platform and should be read in conjunction with these Terms. By using the Platform, you also accept the terms of the Privacy Policy.`,
-      `These Terms and Conditions are published by BEELYN LLP (LLPIN: ACS-4901) for and on behalf of Hive by TailorBee.`
+      `These Terms and Conditions are published by BEELYN LLP (LLPIN: ACS-4901) for and on behalf of Hive.`
     ]
   }
 ];
@@ -627,7 +627,7 @@ export default function TermsPage() {
             </button>
             <a 
               href="/terms.pdf" 
-              download="Hive_by_TailorBee_Terms_and_Conditions.pdf"
+              download="Hive_by_Hive_Terms_and_Conditions.pdf"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-hive-gold text-hive-dark hover:bg-hive-amber shadow-sm shadow-hive-gold/10 transition-all cursor-pointer active:scale-[0.98]"
             >
               <Download className="w-3.5 h-3.5" />
@@ -647,7 +647,7 @@ export default function TermsPage() {
                 Terms and Conditions
               </h1>
               <p className="mt-2 text-sm sm:text-base text-slate-500 dark:text-slate-400">
-                Hive by TailorBee — Owned and operated by <span className="font-semibold text-slate-700 dark:text-slate-300">BEELYN LLP</span> (LLPIN: ACS-4901)
+                Hive — Owned and operated by <span className="font-semibold text-slate-700 dark:text-slate-300">BEELYN LLP</span> (LLPIN: ACS-4901)
               </p>
             </div>
             

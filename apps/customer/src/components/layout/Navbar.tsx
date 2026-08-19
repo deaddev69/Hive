@@ -940,7 +940,7 @@ export const Navbar: React.FC = () => {
               </Link>
             </div>
             <p className="text-[9px] text-stone-400 font-medium mt-1">
-              Hive by TailorBee • Kochi
+              Hive • Kochi
             </p>
           </div>
         </div>

@@ -31,7 +31,7 @@ export default function BoutiqueStorefrontPage() {
 
   useEffect(() => {
     if (boutique) {
-      document.title = `${boutique.boutiqueName} — Hive by TailorBee`;
+      document.title = `${boutique.boutiqueName} — Hive`;
     }
   }, [boutique]);
 
