@@ -140,7 +140,7 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
       <section className="w-full bg-white pt-1 pb-0.5">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div
-            className="banner-card group relative w-full aspect-[2/1] sm:aspect-auto sm:h-[220px] md:h-[250px] lg:h-[270px] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+            className="banner-card group relative w-full aspect-[2/1] sm:aspect-[2.5/1] lg:aspect-[3/1] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
             onClick={() => {
               if (banners[0].targetUrl) router.push(banners[0].targetUrl);
             }}
@@ -728,9 +728,11 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               ))}
             </div>
           ) : isTwoGrid ? (
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 w-full max-w-3xl mx-auto">
+            <div className="grid grid-cols-2 md:flex md:flex-wrap gap-4 sm:gap-6 w-full">
               {blockProducts.slice(0, block.config?.maxProducts || 2).map((product: any) => (
-                <ProductCard key={product.id} product={product} />
+                <div key={product.id} className="w-full md:w-[280px] lg:w-[320px] flex-shrink-0">
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
           ) : (
