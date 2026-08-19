@@ -10,8 +10,8 @@ interface HiveLogoProps {
 }
 
 const sizeClasses = {
-  sm: "h-6 sm:h-7",
-  md: "h-8 sm:h-9",
+  sm: "h-8 sm:h-10",
+  md: "h-12 sm:h-14",
 };
 
 export function HiveLogo({ roleLabel, href = "/", className = "", size = "md" }: HiveLogoProps) {
@@ -21,7 +21,7 @@ export function HiveLogo({ roleLabel, href = "/", className = "", size = "md" }:
     <Link href={href} className={`flex items-center gap-2 group ${className}`}>
       <div className={`relative shrink-0 overflow-hidden ${sizeClasses[size]}`}>
         <img 
-          src="/logo-transparent.png?v=4"
+          src="/logo-ui.png"
           alt="Hive Logo" 
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
         />
