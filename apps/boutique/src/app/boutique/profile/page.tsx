@@ -953,6 +953,8 @@ export default function BoutiqueProfile() {
                 crop={logoCrop}
                 zoom={logoZoom}
                 aspect={1}
+                cropShape="round"
+                showGrid={false}
                 onCropChange={setLogoCrop}
                 onZoomChange={setLogoZoom}
                 onCropComplete={(_, croppedAreaPixels) => setLogoCroppedAreaPixels(croppedAreaPixels)}
