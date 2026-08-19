@@ -140,7 +140,7 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
       <section className="w-full bg-white pt-1 pb-0.5">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div
-            className="banner-card group relative w-full aspect-[2/1] sm:aspect-[2.5/1] lg:aspect-[3/1] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+            className="banner-card group relative w-full aspect-[2/1] sm:aspect-[2.8/1] md:aspect-[3.2/1] lg:aspect-[3.6/1] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
             onClick={() => {
               if (banners[0].targetUrl) router.push(banners[0].targetUrl);
             }}
@@ -152,7 +152,7 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
                 alt={banners[0].title || "Editorial Banner"}
                 fill
                 sizes="100vw"
-                className="object-cover pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-700 ease-out"
+                className="object-cover object-top pointer-events-none transform group-hover:scale-[1.01] transition-transform duration-700 ease-out"
               />
             </div>
             {/* Mobile Image */}
@@ -730,7 +730,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           ) : isTwoGrid ? (
             <div className="grid grid-cols-2 md:flex md:flex-wrap gap-4 sm:gap-6 w-full">
               {blockProducts.slice(0, block.config?.maxProducts || 2).map((product: any) => (
-                <div key={product.id} className="w-full md:w-[280px] lg:w-[320px] flex-shrink-0">
+                <div key={product.id} className="w-full md:w-[190px] lg:w-[210px] flex-shrink-0">
                   <ProductCard product={product} />
                 </div>
               ))}
@@ -815,9 +815,11 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               </div>
             </div>
           ) : isTwoGrid ? (
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 w-full max-w-3xl mx-auto">
+            <div className="grid grid-cols-2 md:flex md:flex-wrap gap-4 sm:gap-6 w-full">
               {displayProducts.map((product: any) => (
-                <ProductCard key={product.id} product={product} />
+                <div key={product.id} className="w-full md:w-[190px] lg:w-[210px] flex-shrink-0">
+                  <ProductCard product={product} />
+                </div>
               ))}
             </div>
           ) : (
