@@ -343,7 +343,7 @@ export const processPaymentCaptured = internalMutation({
     const platformConfig = await getPlatformConfigFn(ctx);
     const checkoutPricing = calculateCheckoutPricingFn(
       session.items.map((item: any) => ({
-        sellerBasePricePaise: Math.round(item.price * 100),
+        sellerBasePricePaise: item.sellerBasePricePaise ?? (item.price > 10000 ? item.price : Math.round(item.price * 100)),
         quantity: item.quantity,
       })),
       session.deliveryFee ?? 0,

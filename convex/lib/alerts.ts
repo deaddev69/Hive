@@ -5,7 +5,7 @@ import { MutationCtx } from "../_generated/server";
 
 export async function logSystemAlert(
   ctx: MutationCtx,
-  code: "claim.transition_failed" | "shipment.transition_failed" | "payout.blocked" | "settlement.frozen" | "inventory.restore_blocked" | "cron.failed" | "finance.reconciliation_failed" | "finance.settlement_missing",
+  code: "claim.transition_failed" | "shipment.transition_failed" | "payout.blocked" | "settlement.frozen" | "inventory.restore_blocked" | "cron.failed" | "finance.reconciliation_failed" | "finance.settlement_missing" | "payout.retry_exhausted",
   message: string,
   severity: "info" | "warning" | "critical",
   details?: Record<string, unknown>

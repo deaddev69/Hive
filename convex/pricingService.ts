@@ -448,7 +448,7 @@ export function calculateCheckoutPricing(
 
   // All-inclusive product subtotal (sum of all-inclusive item prices × quantities)
   const productSubtotalPaise = items.reduce(
-    (sum, item) => sum + item.sellerBasePricePaise * item.quantity, 0
+    (sum, item) => sum + calculateAllInclusivePricePaise(item.sellerBasePricePaise, sellerTierKey, config) * item.quantity, 0
   );
 
   // Compute seller commission and payouts using item economics

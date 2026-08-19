@@ -532,6 +532,56 @@ export const postManualAdjustmentAdmin = mutation({
 });
 
 /**
+ * Shared helper that flips a delivered order to payout-eligible and schedules the
+ * Razorpay Route transfer.
+ *
+ * This is the single entry point for "delivery confirmed -> release seller payment".
+ * It is idempotent and safe to call from every delivery path (Porter webhook, admin
+ * status update, manual reconciliation):
+ *   - an order that already has a transfer id, or is processing/paid/settled, is left alone
+ *   - only one transfer is ever scheduled, because the status leaves "eligible" the
+ *     moment the settlement action claims it
+ *
+ * There is no post-delivery hold window: DELIVERED -> RELEASE SELLER PAYMENT.
+ */
+export async function markOrderPayoutEligible(ctx: any, orderId: any, deliveredAt: number) {
+  const order = await ctx.db.get(orderId);
+  if (!order) return { success: false, reason: "order_not_found" };
+
+  if (order.status !== "delivered") {
+    return { success: false, reason: "order_not_delivered" };
+  }
+  if (order.paymentStatus !== "paid") {
+    return { success: false, reason: "not_paid" };
+  }
+
+  // Idempotency: never re-open a payout that is already in flight or complete.
+  if (order.razorpayTransferId) {
+    return { success: true, reason: "already_transferred" };
+  }
+  if (["processing", "paid", "settled", "withheld"].includes(order.payoutStatus)) {
+    return { success: true, reason: `already_${order.payoutStatus}` };
+  }
+  if (order.payoutStatus === "eligible" && order.payoutEligibleAt) {
+    // Already queued by an earlier delivery event (e.g. a duplicate Porter webhook).
+    return { success: true, reason: "already_eligible" };
+  }
+
+  await ctx.db.patch(order._id, {
+    payoutStatus: "eligible",
+    payoutEligibleAt: deliveredAt,
+    payoutFailureReason: undefined,
+    updatedAt: Date.now(),
+  });
+
+  await ctx.scheduler.runAfter(0, internal.razorpayRoute.createSellerTransfer, {
+    orderId: order._id,
+  });
+
+  return { success: true, reason: "eligible" };
+}
+
+/**
  * Shared helper to mark an order as financially delivered.
  * Idempotently generates commission and pending settlement accrual records.
  * Runs in the same database transaction as webhook / admin updates.
@@ -715,23 +765,9 @@ export async function markOrderFinanciallyDelivered(ctx: any, orderId: any, now:
     });
   }
 
-  // v2: Set payoutStatus to eligible (transfer will be created by settlement cron)
-  const orderPayoutPatch: any = {
-    payoutStatus: "eligible",
-    payoutEligibleAt: now,
-    updatedAt: now,
-  };
-
-  // Backward compat: If this order has an existing on_hold Route transfer (legacy v1), release it
-  if (order.razorpayTransferId && order.transferStatus === "pending") {
-    await ctx.scheduler.runAfter(0, (internal as any).razorpayRoute?.releasePayout, {
-      orderId: order._id,
-    });
-  }
-
-
-  await ctx.db.patch(order._id, orderPayoutPatch);
-
+  // v3: Delivery confirmed -> release seller payment. Marks the order payout-eligible
+  // and schedules the post-delivery Razorpay Route transfer.
+  await markOrderPayoutEligible(ctx, order._id, order.deliveredAt ?? now);
 
   return { success: true, settlementId };
 }
@@ -846,21 +882,23 @@ export async function settleEligibleOrdersHelper(ctx: any, adminId?: any) {
       }
     }
 
-    // ─── v2: Post-Delivery Seller Payout Trigger ─────────────────────────────
-    // Query orders that have been marked eligible for payout after delivery
+    // ─── v3: Post-Delivery Seller Payout Sweep ───────────────────────────────
+    // Safety net only. The primary trigger is markOrderPayoutEligible(), fired the
+    // moment Porter confirms delivery. This sweep picks up orders whose scheduled
+    // transfer never ran (deploy restart, transient scheduler loss). There is NO
+    // post-delivery hold window — delivered orders are released immediately.
     const eligibleOrders = await ctx.db
       .query("orders")
       .withIndex("by_payoutStatus", (q: any) => q.eq("payoutStatus", "eligible"))
       .collect();
 
     let payoutsTriggered = 0;
-    const claimWindowMs = 48 * 3600 * 1000;
 
     for (const order of eligibleOrders) {
       if (order.status !== "delivered") continue;
 
-      const deliveredAt = order.deliveredAt || order.payoutEligibleAt || order.createdAt;
-      if (now < deliveredAt + claimWindowMs) continue;
+      // Idempotency: skip anything already transferred.
+      if (order.razorpayTransferId) continue;
 
       // Dispute Gating: Verify no open claims
       const openClaims = await ctx.db
@@ -873,10 +911,44 @@ export async function settleEligibleOrdersHelper(ctx: any, adminId?: any) {
       if (hasOpenClaims) continue;
 
       // Schedule automated Razorpay Route transfer
-      await ctx.scheduler.runAfter(0, (internal as any).razorpayRoute?.createSellerTransfer, {
+      await ctx.scheduler.runAfter(0, internal.razorpayRoute.createSellerTransfer, {
         orderId: order._id,
       });
 
+      payoutsTriggered++;
+    }
+
+    // Retry sweep: failed payouts are safe to re-attempt because the settlement
+    // action re-verifies with Razorpay before creating anything.
+    const failedPayoutOrders = await ctx.db
+      .query("orders")
+      .withIndex("by_payoutStatus", (q: any) => q.eq("payoutStatus", "failed"))
+      .collect();
+
+    const RETRY_WINDOW_MS = 7 * 24 * 3600 * 1000;
+
+    for (const order of failedPayoutOrders) {
+      if (order.status !== "delivered") continue;
+      if (order.razorpayTransferId) continue;
+
+      // Bounded auto-retry. After the window, the payout needs an admin decision
+      // (usually a missing/incomplete Razorpay Route account on the boutique).
+      const since = order.payoutEligibleAt ?? order.deliveredAt ?? order.createdAt;
+      if (now - since > RETRY_WINDOW_MS) {
+        await logSystemAlert(
+          ctx,
+          "payout.retry_exhausted",
+          `Payout for order ${order.orderNumber} still failing after 7 days: ${order.payoutFailureReason || "unknown"}`,
+          "warning",
+          { orderId: order._id }
+        );
+        continue;
+      }
+
+      await ctx.scheduler.runAfter(0, internal.razorpayRoute.createSellerTransfer, {
+        orderId: order._id,
+        allowRetry: true,
+      });
       payoutsTriggered++;
     }
 

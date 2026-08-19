@@ -1180,6 +1180,11 @@ export default defineSchema({
                        platformFeeAmount: v.optional(v.number()),
                        gstAmountAtPurchase: v.optional(v.number()),
                        reservationId: v.optional(v.string()),
+                       sellerBasePricePaise: v.optional(v.number()),
+                       sellerCommissionPercent: v.optional(v.number()),
+                       sellerCommissionPaise: v.optional(v.number()),
+                       sellerCommissionGstPaise: v.optional(v.number()),
+                       sellerPayoutPaise: v.optional(v.number()),
                      })),
     subtotal:        v.number(),
     deliveryFee:     v.number(),
@@ -1857,7 +1862,8 @@ export default defineSchema({
       v.literal("inventory.restore_blocked"),
       v.literal("cron.failed"),
       v.literal("finance.reconciliation_failed"),
-      v.literal("finance.settlement_missing")
+      v.literal("finance.settlement_missing"),
+      v.literal("payout.retry_exhausted")
     ),
     severity: v.union(v.literal("info"), v.literal("warning"), v.literal("critical")),
     message: v.string(),

@@ -5,7 +5,7 @@ import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { logSystemAlert } from "./lib/alerts";
 import { assertHyperlocalTransitionPrerequisites } from "./orders";
-import { markOrderFinanciallyDelivered } from "./adminFinance";
+import { markOrderFinanciallyDelivered, markOrderPayoutEligible } from "./adminFinance";
 import { triggerNotification } from "./lib/notifications";
 
 // Provider configuration registry
@@ -510,10 +510,18 @@ export const simulateLogisticsWebhookAdmin = mutation({
         orderPatch.cancelledAt = now;
       }
 
+      if (args.status === "delivered") {
+        // The finance helpers re-read the shipment from the DB, so the shipment
+        // must already be `delivered` before accrual / payout eligibility runs.
+        await ctx.db.patch(shipment._id, { status: "delivered", deliveredAt: now, updatedAt: now });
+      }
+
       await ctx.db.patch(order._id, orderPatch);
 
       if (args.status === "delivered") {
         await markOrderFinanciallyDelivered(ctx, order._id, now);
+        // Delivery confirmed -> release seller payment (idempotent).
+        await markOrderPayoutEligible(ctx, order._id, now);
       }
     }
 
@@ -605,9 +613,24 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
     ),
     porterRawOrder: v.optional(v.any()),
     scans: v.optional(v.array(v.any())),
+    // Trusted courier event timestamp (epoch ms). Porter sends `order_details.event_ts`.
+    eventTs: v.optional(v.number()),
+    actualTripFare: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+
+    // Prefer the courier's own event timestamp for milestone stamps, but only when
+    // it is plausible — a malformed/clock-skewed value must never corrupt SLA or
+    // payout timing.
+    const MAX_EVENT_TS_SKEW_MS = 24 * 3600 * 1000;
+    const eventTs =
+      args.eventTs !== undefined &&
+      Number.isFinite(args.eventTs) &&
+      args.eventTs > 0 &&
+      Math.abs(now - args.eventTs) <= MAX_EVENT_TS_SKEW_MS
+        ? args.eventTs
+        : now;
 
     const shipment = await ctx.db
       .query("shipments")
@@ -619,8 +642,14 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
     // State machine check
     const fromStatus = shipment.status;
     
-    // Idempotency: skip if already in this status
+    // Idempotency: skip if already in this status.
+    // A repeated `order_end_job` must leave the order delivered and must never
+    // create a second payout — markOrderPayoutEligible is idempotent and only
+    // self-heals an order that was delivered but never queued for settlement.
     if (fromStatus === args.status) {
+      if (args.status === "delivered") {
+        await markOrderPayoutEligible(ctx, shipment.orderId, shipment.deliveredAt ?? eventTs);
+      }
       return { success: true, message: "Idempotent request ignored" };
     }
 
@@ -654,10 +683,24 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
     }
 
     if (args.status === "delivered") {
-      patchData.deliveredAt = now;
+      patchData.deliveredAt = eventTs;
     }
     if (args.status === "picked_up") {
-      patchData.pickedUpAt = now;
+      patchData.pickedUpAt = eventTs;
+    }
+    // Porter reports the real trip fare on completion — record it before the
+    // settlement snapshot is frozen so Hive unit economics use the actual cost.
+    if (args.actualTripFare !== undefined && args.actualTripFare > 0) {
+      const subsidyRow = await ctx.db
+        .query("deliverySubsidyLedger")
+        .withIndex("by_orderId", (q) => q.eq("orderId", shipment.orderId))
+        .first();
+      if (subsidyRow) {
+        await ctx.db.patch(subsidyRow._id, {
+          actualCourierCost: args.actualTripFare,
+          actualPorterCost: args.actualTripFare,
+        });
+      }
     }
 
     if (args.driverDetails) {
@@ -713,17 +756,26 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
         orderPatch.outForDeliveryAt = now;
       } else if (args.status === "delivered") {
         orderPatch.status = "delivered";
-        orderPatch.deliveredAt = now;
-        orderPatch.claimWindowExpiresAt = now + 24 * 3600 * 1000;
+        orderPatch.deliveredAt = eventTs;
+        orderPatch.claimWindowExpiresAt = eventTs + 24 * 3600 * 1000;
       } else if (args.status === "returned" || args.status === "cancelled") {
         orderPatch.status = "cancelled";
         orderPatch.cancelledAt = now;
       }
 
+      if (args.status === "delivered") {
+        // The finance helpers re-read the shipment from the DB, so the shipment
+        // must already be `delivered` before accrual / payout eligibility runs.
+        // The remaining shipment fields are patched further down.
+        await ctx.db.patch(shipment._id, { status: "delivered", deliveredAt: eventTs, updatedAt: now });
+      }
+
       await ctx.db.patch(order._id, orderPatch);
 
       if (args.status === "delivered") {
-        await markOrderFinanciallyDelivered(ctx, order._id, now);
+        await markOrderFinanciallyDelivered(ctx, order._id, eventTs);
+        // Delivery confirmed -> release seller payment (idempotent).
+        await markOrderPayoutEligible(ctx, order._id, eventTs);
       }
     }
 

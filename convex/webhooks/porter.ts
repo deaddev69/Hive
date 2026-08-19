@@ -53,6 +53,9 @@ export const handlePorterWebhook = httpAction(async (ctx, request) => {
     return new Response("Invalid JSON payload", { status: 400 });
   }
 
+  // Porter's `order_id` is the CRN returned when the Porter order was created.
+  // Hive stores that CRN as shipments.awbNumber, which is how the event maps back
+  // to a Hive shipment and order.
   const orderId = payload.order_id;
   const rawStatus = payload.status;
 
@@ -111,18 +114,32 @@ export const handlePorterWebhook = httpAction(async (ctx, request) => {
     }
   }
 
-  // Dispatch background mutation immediately to guarantee 15s fast response
+  // Porter sends `event_ts` in seconds; normalise to epoch ms.
+  const rawEventTs = payload.order_details?.event_ts ?? payload.event_ts;
+  let eventTs: number | undefined = undefined;
+  if (typeof rawEventTs === "number" && rawEventTs > 0) {
+    eventTs = rawEventTs < 1e12 ? Math.round(rawEventTs * 1000) : Math.round(rawEventTs);
+  }
+
+  const rawTripFare = payload.order_details?.actual_trip_fare ?? payload.actual_trip_fare;
+  const actualTripFare = typeof rawTripFare === "number" && rawTripFare > 0 ? rawTripFare : undefined;
+
+  // Dispatch background mutation immediately to guarantee 15s fast response.
+  // The mutation is idempotent: a repeated `order_end_job` leaves the order
+  // delivered and never creates a second seller payout.
   await ctx.runMutation(internal.adminLogistics.processLogisticsStatusUpdateInternal, {
     awbNumber: orderId, // Our DB uses awbNumber to store the CRN
     status: mappedStatus as any,
     scans: [],
     exceptionType: rawStatus === "order_cancel" ? "other" : undefined,
     remarks: `Porter Webhook Status: ${rawStatus}`,
-    location: payload.order_details?.partner_location?.lat 
+    location: payload.order_details?.partner_location?.lat
       ? `${payload.order_details.partner_location.lat},${payload.order_details.partner_location.long}`
       : undefined,
     driverDetails,
     porterRawOrder,
+    eventTs,
+    actualTripFare,
   }).catch((err) => {
     console.error("[PorterWebhook] Background mutation error:", err);
   });

@@ -7,7 +7,7 @@ import { v, ConvexError } from "convex/values";
 import { requireRole, getCurrentUserOrNull } from "./lib/auth";
 import { internal } from "./_generated/api";
 import { triggerNotification } from "./lib/notifications";
-import { markOrderFinanciallyDelivered } from "./adminFinance";
+import { markOrderFinanciallyDelivered, markOrderPayoutEligible } from "./adminFinance";
 import { recordOrderActivity } from "./lib/orderActivity";
 
 interface StatusTransitionArgs {
@@ -893,6 +893,8 @@ export const updateOrderStatus = mutation({
 
     if (args.status === "delivered") {
       await markOrderFinanciallyDelivered(ctx, args.orderId, now);
+      // Delivery confirmed -> release seller payment (idempotent).
+      await markOrderPayoutEligible(ctx, args.orderId, order.deliveredAt ?? now);
     }
 
     if (args.status === "confirmed" && !order.shipmentId) {

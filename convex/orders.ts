@@ -2131,6 +2131,43 @@ export const updateTransferStatus = internalMutation({
   },
 });
 
+/**
+ * Admin gate for the manual payout retry path.
+ *
+ * Runs inside the retry action so the Clerk identity is still available. Only
+ * "failed" or stuck "processing" payouts can be retried; an already-paid order
+ * is rejected here so the caller never reaches the Razorpay transfer call.
+ */
+export const requirePayoutRetryPermission = internalMutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+
+    const order = await ctx.db.get(args.orderId);
+    if (!order) throw new ConvexError("Order not found");
+
+    if (order.razorpayTransferId || order.payoutStatus === "paid" || order.payoutStatus === "settled") {
+      throw new ConvexError("Payout already transferred for this order.");
+    }
+    if (order.status !== "delivered") {
+      throw new ConvexError("Order is not delivered yet.");
+    }
+
+    const STUCK_PROCESSING_MS = 10 * 60 * 1000;
+    const isStuckProcessing =
+      order.payoutStatus === "processing" &&
+      Date.now() - (order.updatedAt ?? 0) > STUCK_PROCESSING_MS;
+
+    if (order.payoutStatus !== "failed" && order.payoutStatus !== "eligible" && !isStuckProcessing) {
+      throw new ConvexError(
+        `Payout status '${order.payoutStatus}' cannot be retried yet.`
+      );
+    }
+
+    return { success: true };
+  },
+});
+
 // v2: Payout status lifecycle mutation
 export const patchOrderPayoutStatus = internalMutation({
   args: {

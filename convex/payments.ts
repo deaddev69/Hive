@@ -508,19 +508,23 @@ export const initCheckoutSessionInternal = internalMutation({
 
       // v2: Validate item price matches DB (no markup — product price = base price)
       let activePricePaise = 0;
+      let basePricePaiseForPricing = 0;
       
       if (productRow && !isMock) {
-        // Use basePrice (seller's original price) — the `price` field has platform fees baked in.
-        const basePricePaise = productRow.baseDiscountPrice ?? productRow.basePrice ?? productRow.discountPrice ?? productRow.price;
-        if (Math.abs(basePricePaise - Math.round(item.price * 100)) > 100) {
+        // v2: Validate item price matches DB all-inclusive price
+        const allInclusivePricePaise = productRow.price ?? productRow.basePrice;
+        basePricePaiseForPricing = productRow.baseDiscountPrice ?? productRow.basePrice ?? productRow.discountPrice ?? productRow.price;
+
+        if (Math.abs(allInclusivePricePaise - Math.round(item.price * 100)) > 100) {
           throw new ConvexError({
             code: "STALE_CART_PRICE",
             message: "The prices of some items in your cart have been updated. Please review your new total before checking out.",
           });
         }
-        activePricePaise = basePricePaise;
+        activePricePaise = allInclusivePricePaise;
       } else {
         activePricePaise = Math.round(item.price * 100);
+        basePricePaiseForPricing = activePricePaise;
       }
         
       expectedSubtotalPaise += activePricePaise * item.quantity;
@@ -531,6 +535,7 @@ export const initCheckoutSessionInternal = internalMutation({
         isMock,
         boutiqueId: boutique._id,
         activePricePaise,
+        basePricePaiseForPricing,
       });
     }
 
@@ -577,7 +582,7 @@ export const initCheckoutSessionInternal = internalMutation({
     const sellerTierKey = primaryBoutique?.pricingTier || "bronze";
 
     const pricingItems = resolvedItems.map(r => ({
-      sellerBasePricePaise: r.activePricePaise,
+      sellerBasePricePaise: r.basePricePaiseForPricing,
       quantity: r.item.quantity,
     }));
 
@@ -638,7 +643,7 @@ export const initCheckoutSessionInternal = internalMutation({
     // Build items with v2 seller pricing snapshot per-item
     const itemsParsed = resolvedItems.map((resolved) => {
       const sellerItemPricing = calculateSellerItemPricing(
-        resolved.activePricePaise,
+        resolved.basePricePaiseForPricing,
         sellerTierKey,
         platformConfig
       );
@@ -647,7 +652,7 @@ export const initCheckoutSessionInternal = internalMutation({
         productId: resolved.productRow?._id ?? resolved.item.productId,
         price: resolved.activePricePaise,
         // v2 commission fields
-        basePriceAtPurchase: resolved.activePricePaise,
+        basePriceAtPurchase: resolved.basePricePaiseForPricing,
         sellerBasePricePaise: sellerItemPricing.sellerBasePricePaise,
         sellerCommissionPercent: sellerItemPricing.sellerCommissionPercent,
         sellerCommissionPaise: sellerItemPricing.sellerCommissionPaise,
@@ -876,7 +881,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
   const sellerTierKey = boutique?.pricingTier || "bronze";
   const pricing = calculateCheckoutPricing(
     session.items.map(item => ({
-      sellerBasePricePaise: Math.round(item.price * 100),
+      sellerBasePricePaise: item.sellerBasePricePaise ?? (item.price > 10000 ? item.price : Math.round(item.price * 100)),
       quantity: item.quantity,
     })),
     session.deliveryFee ?? 0,
@@ -990,6 +995,9 @@ export async function verifyPaymentAndPlaceOrderInternal(
     notes: `CheckoutSession: ${args.checkoutSessionId}`,
     pricingSnapshot,
     orderSnapshot,
+    // v3: no Route transfer at payment time. Seller payout unlocks only after
+    // Porter confirms delivery.
+    payoutStatus: "not_eligible",
     createdAt: now,
     updatedAt: now,
   });
@@ -1228,19 +1236,11 @@ export async function verifyPaymentAndPlaceOrderInternal(
     url: "/boutique/orders",
   });
 
-  // Fetch and store Razorpay Route transfer ID in the background
-  if (!args.razorpayPaymentId.startsWith("pay_mock_")) {
-    await ctx.scheduler.runAfter(0, internal.payments.fetchAndStoreTransferId, {
-      orderId,
-      razorpayPaymentId: args.razorpayPaymentId,
-    });
-  } else {
-    // Save simulated transfer ID for mock checks
-    await ctx.db.patch(orderId, {
-      razorpayTransferId: `trf_mock_${Math.random().toString(36).substring(2, 12).toUpperCase()}`,
-      transferStatus: "pending",
-    });
-  }
+  // v3: NO Route transfer at payment time. The customer payment lands in the Hive
+  // Razorpay account and stays there until Porter confirms delivery, at which point
+  // razorpayRoute.createSellerTransfer creates the single seller transfer.
+  // razorpayTransferId is therefore left unset here — stamping it early would make
+  // the post-delivery settlement treat the order as already paid out.
 
   return { success: true, orderId, orderNumber };
 }
@@ -1946,55 +1946,4 @@ export function isSignatureBypassAllowed(enableDebugTools: string | undefined, r
   return enableDebugTools === "true" && razorpaySecret === "mock_secret";
 }
 
-export const updateOrderTransferId = internalMutation({
-  args: {
-    orderId: v.id("orders"),
-    razorpayTransferId: v.string(),
-    transferStatus: v.union(v.literal("pending"), v.literal("processed"), v.literal("failed"), v.literal("reversed")),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.orderId, {
-      razorpayTransferId: args.razorpayTransferId,
-      transferStatus: args.transferStatus,
-    });
-  },
-});
-
-export const fetchAndStoreTransferId = internalAction({
-  args: {
-    orderId: v.id("orders"),
-    razorpayPaymentId: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (!keyId || !keySecret || keySecret === "mock_secret") {
-      return;
-    }
-    const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
-
-    try {
-      const res = await fetch(`https://api.razorpay.com/v1/payments/${args.razorpayPaymentId}/transfers`, {
-        headers: {
-          Authorization: authHeader,
-        },
-      });
-      if (!res.ok) {
-        console.error(`Failed to fetch transfers for payment ${args.razorpayPaymentId}: ${await res.text()}`);
-        return;
-      }
-      const data = await res.json();
-      const transfer = data.items?.[0];
-      if (transfer) {
-        await ctx.runMutation(internal.payments.updateOrderTransferId, {
-          orderId: args.orderId,
-          razorpayTransferId: transfer.id,
-          transferStatus: "pending",
-        });
-      }
-    } catch (err) {
-      console.error(`Error fetching transfer for payment ${args.razorpayPaymentId}:`, err);
-    }
-  },
-});
 

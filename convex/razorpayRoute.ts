@@ -1,7 +1,32 @@
 // convex/razorpayRoute.ts
-import { action } from "./_generated/server";
+// Razorpay Route integration.
+//
+// Settlement model (v3):
+//   Customer pays  ->  payment captured into the Hive Razorpay account (no transfers[])
+//   Porter sends `order_end_job`  ->  Hive order becomes `delivered`
+//   payoutStatus becomes `eligible`
+//   Settlement processor creates ONE Route transfer via
+//     POST /v1/payments/{paymentId}/transfers
+//   payoutStatus becomes `paid` and razorpayTransferId is persisted.
+//
+// Hive retains commission + GST on commission + platform fee + handling charge.
+// Only the frozen `pricingSnapshot.sellerPayoutPaise` is transferred to the seller.
+//
+// The legacy "create an on_hold transfer at payment time, then release it after 48h"
+// flow has been removed. There is no post-delivery payout delay any more.
+
+import { action, internalAction } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
+
+const RAZORPAY_API = "https://api.razorpay.com/v1";
+
+function resolveRazorpayAuthHeader(): string | null {
+  const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret || keySecret === "mock_secret") return null;
+  return "Basic " + btoa(`${keyId}:${keySecret}`);
+}
 
 export const createLinkedAccount: any = action({
   args: {
@@ -20,12 +45,10 @@ export const createLinkedAccount: any = action({
     holderName: v.string(),
   },
   handler: async (ctx, args) => {
-    const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (!keyId || !keySecret) {
+    const authHeader = resolveRazorpayAuthHeader();
+    if (!authHeader) {
       throw new ConvexError("Razorpay credentials not configured");
     }
-    const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
 
     const boutique = await ctx.runQuery((internal.boutiques as any).getById, {
       id: args.boutiqueId,
@@ -34,7 +57,7 @@ export const createLinkedAccount: any = action({
     if (!boutique) throw new ConvexError("Boutique not found");
 
     // 1. Create Linked Account on Razorpay Route
-    const accountResponse = await fetch("https://api.razorpay.com/v1/accounts", {
+    const accountResponse = await fetch(`${RAZORPAY_API}/accounts`, {
       method: "POST",
       headers: {
         Authorization: authHeader,
@@ -79,7 +102,7 @@ export const createLinkedAccount: any = action({
 
     // 2. Generate Hosted KYC Onboarding Link
     const linkResponse = await fetch(
-      `https://api.razorpay.com/v1/accounts/${accountData.id}/onboarding_links`,
+      `${RAZORPAY_API}/accounts/${accountData.id}/onboarding_links`,
       {
         method: "POST",
         headers: {
@@ -117,93 +140,16 @@ export const createLinkedAccount: any = action({
   },
 });
 
-export const releasePayout: any = action({
-  args: { orderId: v.id("orders") },
-  handler: async (ctx, args) => {
-    const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (!keyId || !keySecret) {
-      throw new ConvexError("Razorpay credentials not configured");
-    }
-    const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
-
-    const order = await ctx.runQuery((internal.orders as any).getById, { id: args.orderId });
-
-    if (!order) {
-      console.error(`Order ${args.orderId} not found.`);
-      return;
-    }
-
-    if (order.status !== "delivered") {
-      console.log(`Order ${args.orderId} cannot be released: order status is '${order.status}', expected 'delivered'.`);
-      return;
-    }
-
-    const now = Date.now();
-    const claimWindowMs = 48 * 3600 * 1000;
-    const deliveredAt = order.deliveredAt || order.createdAt;
-    if (now < deliveredAt + claimWindowMs) {
-      console.log(`Order ${args.orderId} cannot be released: 48h claim window has not elapsed yet.`);
-      return;
-    }
-
-    if (!order.razorpayTransferId) {
-      console.log(`Order ${args.orderId} has no active transfer ID.`);
-      return;
-    }
-
-    if (order.transferStatus === "processed") {
-      console.log(`Order ${args.orderId} transfer is already processed.`);
-      return;
-    }
-
-    // Precondition check: verify no active unresolved claims/disputes for this order
-    const hasActiveClaims = await ctx.runQuery((internal.claims as any).getOpenClaimByOrderId, { orderId: args.orderId });
-    if (hasActiveClaims) {
-      console.log(`Order ${args.orderId} release blocked: order has an active unresolved claim/dispute.`);
-      return;
-    }
-
-    // Call Razorpay REST API to release hold
-    const res = await fetch(
-      `https://api.razorpay.com/v1/transfers/${order.razorpayTransferId}`,
-      {
-        method: "POST", // Razorpay Route uses POST to update transfers
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          on_hold: false,
-        }),
-      }
-    );
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error(`Failed to release hold for transfer ${order.razorpayTransferId}: ${errText}`);
-      throw new ConvexError(`Razorpay transfer release failed: ${errText}`);
-    }
-
-    await ctx.runMutation((internal.orders as any).updateTransferStatus, {
-      orderId: args.orderId,
-      transferStatus: "processed",
-    });
-  },
-});
-
 export const getKYCOnboardingLink: any = action({
   args: { razorpayAccountId: v.string() },
   handler: async (ctx, args) => {
-    const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (!keyId || !keySecret) {
+    const authHeader = resolveRazorpayAuthHeader();
+    if (!authHeader) {
       throw new ConvexError("Razorpay credentials not configured");
     }
-    const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
 
     const response = await fetch(
-      `https://api.razorpay.com/v1/accounts/${args.razorpayAccountId}/onboarding_links`,
+      `${RAZORPAY_API}/accounts/${args.razorpayAccountId}/onboarding_links`,
       {
         method: "POST",
         headers: {
@@ -223,119 +169,233 @@ export const getKYCOnboardingLink: any = action({
   },
 });
 
-// ─── v2: Post-Delivery Seller Transfer ───────────────────────────────────────
+// ─── Payout amount resolution ────────────────────────────────────────────────
 
 /**
- * Creates a new Razorpay Route transfer for seller payout AFTER delivery.
- * This is called when:
- *   1. Order has payoutStatus === "eligible"
- *   2. 48h claim window has elapsed
- *   3. No active disputes/claims
+ * Legacy fallback payout for pre-v3 orders that have no immutable `pricingSnapshot`.
  *
- * Flow: DELIVERED → payoutStatus:"eligible" → this action → payoutStatus:"paid"
+ * Mirrors the legacy accrual math in `adminFinance.markOrderFinanciallyDelivered`:
+ * legacy `commissionAmount` is already GST-inclusive, so GST is NOT deducted twice.
  *
- * Idempotent: Will not create duplicate transfers.
+ * This is intentionally isolated — it must never be blended with the v3 pricing engine.
  */
-export const createSellerTransfer: any = action({
-  args: { orderId: v.id("orders") },
-  handler: async (ctx, args) => {
-    const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    if (!keyId || !keySecret) {
-      throw new ConvexError("Razorpay credentials not configured");
+export function calculateLegacyFallbackPayout(order: {
+  subtotal?: number;
+  discount?: number;
+  commissionAmount?: number;
+}): number {
+  const subtotal = order.subtotal ?? 0;
+  const discount = order.discount ?? 0;
+  const commission = order.commissionAmount ?? 0;
+  return Math.max(0, Math.round(subtotal - discount - commission));
+}
+
+/**
+ * Resolve the seller payout in paise.
+ * Priority: immutable pricing snapshot, then the isolated legacy fallback.
+ */
+function resolveSellerPayoutPaise(order: any): { payoutPaise: number; source: "snapshot" | "legacy" } {
+  const snapshotPayout = order?.pricingSnapshot?.sellerPayoutPaise;
+  if (typeof snapshotPayout === "number") {
+    return { payoutPaise: Math.round(snapshotPayout), source: "snapshot" };
+  }
+  return { payoutPaise: calculateLegacyFallbackPayout(order), source: "legacy" };
+}
+
+// ─── Transfer lookup (idempotency verification) ───────────────────────────────
+
+/**
+ * Ask Razorpay whether a transfer already exists for this payment.
+ * Used before creating a transfer and after any ambiguous failure, so a retry
+ * can never double-pay a seller.
+ */
+async function findExistingTransfer(
+  authHeader: string,
+  razorpayPaymentId: string,
+  orderId: string
+): Promise<{ ok: boolean; transfer?: any; error?: string }> {
+  try {
+    const res = await fetch(`${RAZORPAY_API}/payments/${razorpayPaymentId}/transfers`, {
+      headers: { Authorization: authHeader },
+    });
+    if (!res.ok) {
+      return { ok: false, error: await res.text() };
     }
-    const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
+    const data = await res.json();
+    const items: any[] = Array.isArray(data.items) ? data.items : [];
+    // Prefer an exact match on our own note, otherwise any transfer on this payment
+    // (Hive is single-seller-per-order, so one payment maps to one seller transfer).
+    const match = items.find((t) => t?.notes?.orderId === orderId) ?? items[0];
+    return { ok: true, transfer: match };
+  } catch (err: any) {
+    return { ok: false, error: err?.message || String(err) };
+  }
+}
+
+// ─── Post-Delivery Seller Transfer ───────────────────────────────────────────
+
+/**
+ * Creates the Razorpay Route transfer for a seller payout AFTER verified delivery.
+ *
+ * Preconditions (all must hold, otherwise a structured reason is logged and no
+ * transfer is attempted):
+ *   - order exists
+ *   - order.status === "delivered"
+ *   - payoutStatus === "eligible"  (or "failed" when allowRetry is set)
+ *   - Razorpay payment exists and is captured
+ *   - boutique has a Razorpay Route linked account
+ *   - seller payout > 0
+ *   - no successful transfer already recorded, locally or at Razorpay
+ *
+ * State machine: not_eligible -> eligible -> processing -> paid
+ *                                            processing -> failed -> (safe retry)
+ */
+export const createSellerTransfer = internalAction({
+  args: {
+    orderId: v.id("orders"),
+    // Set by the admin retry path: permits re-entry from payoutStatus "failed".
+    allowRetry: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<any> => {
+    const log = (reason: string, detail?: Record<string, unknown>) =>
+      console.log(
+        `[createSellerTransfer] order=${args.orderId} reason=${reason}` +
+          (detail ? ` detail=${JSON.stringify(detail)}` : "")
+      );
+
+    const authHeader = resolveRazorpayAuthHeader();
+    if (!authHeader) {
+      log("razorpay_not_configured");
+      return { success: false, reason: "razorpay_not_configured" };
+    }
 
     const order = await ctx.runQuery((internal.orders as any).getById, { id: args.orderId });
     if (!order) {
-      console.error(`[createSellerTransfer] Order ${args.orderId} not found.`);
+      log("order_not_found");
       return { success: false, reason: "order_not_found" };
     }
 
-    // Idempotency: skip if already paid or processing
-    if (order.payoutStatus === "paid" || order.payoutStatus === "processing") {
-      console.log(`[createSellerTransfer] Order ${args.orderId} already ${order.payoutStatus}. Skipping.`);
-      return { success: true, reason: "already_processed" };
+    // ── Idempotency: never create a second transfer ──────────────────────────
+    if (order.razorpayTransferId) {
+      log("already_transferred", { transferId: order.razorpayTransferId });
+      return { success: true, reason: "already_transferred", transferId: order.razorpayTransferId };
+    }
+    if (order.payoutStatus === "paid" || order.payoutStatus === "settled") {
+      log("already_paid", { payoutStatus: order.payoutStatus });
+      return { success: true, reason: "already_paid" };
+    }
+    if (order.payoutStatus === "processing" && !args.allowRetry) {
+      log("already_processing");
+      return { success: true, reason: "already_processing" };
     }
 
-    // Must be eligible
-    if (order.payoutStatus !== "eligible") {
-      console.log(`[createSellerTransfer] Order ${args.orderId} payoutStatus is '${order.payoutStatus}', expected 'eligible'.`);
+    const allowedEntryStates = args.allowRetry
+      ? ["eligible", "failed", "processing"]
+      : ["eligible"];
+    if (!allowedEntryStates.includes(order.payoutStatus)) {
+      log("not_eligible", { payoutStatus: order.payoutStatus });
       return { success: false, reason: "not_eligible" };
     }
 
-    // Must be delivered
+    // ── Delivery must be verified ────────────────────────────────────────────
     if (order.status !== "delivered") {
-      console.log(`[createSellerTransfer] Order ${args.orderId} is not delivered.`);
+      log("not_delivered", { status: order.status });
       return { success: false, reason: "not_delivered" };
     }
 
-    // 48h claim window check
-    const now = Date.now();
-    const claimWindowMs = 48 * 3600 * 1000;
-    const deliveredAt = order.deliveredAt || order.payoutEligibleAt || order.createdAt;
-    if (now < deliveredAt + claimWindowMs) {
-      console.log(`[createSellerTransfer] Order ${args.orderId}: 48h claim window not elapsed.`);
-      return { success: false, reason: "claim_window_active" };
-    }
-
-    // Check for active disputes
-    const hasActiveClaims = await ctx.runQuery((internal.claims as any).getOpenClaimByOrderId, { orderId: args.orderId });
+    // ── Pre-existing dispute protection (unchanged business rule) ────────────
+    const hasActiveClaims = await ctx.runQuery((internal.claims as any).getOpenClaimByOrderId, {
+      orderId: args.orderId,
+    });
     if (hasActiveClaims) {
-      console.log(`[createSellerTransfer] Order ${args.orderId}: has active claim/dispute.`);
+      log("active_claim");
       return { success: false, reason: "active_claim" };
     }
 
-    // Get boutique razorpayAccountId
-    const boutique = await ctx.runQuery((internal.boutiques as any).getById, { id: order.boutiqueId });
+    // ── Seller Route account ────────────────────────────────────────────────
+    const boutique = await ctx.runQuery((internal.boutiques as any).getById, {
+      id: order.boutiqueId,
+    });
     if (!boutique?.razorpayAccountId) {
-      console.error(`[createSellerTransfer] Boutique ${order.boutiqueId} has no razorpayAccountId.`);
+      log("no_razorpay_account", { boutiqueId: order.boutiqueId });
       await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
         orderId: args.orderId,
         payoutStatus: "failed",
-        payoutFailureReason: "Boutique has no Razorpay linked account",
+        payoutFailureReason: "Boutique has no Razorpay Route linked account",
       });
       return { success: false, reason: "no_razorpay_account" };
     }
 
-    // Get payment razorpayPaymentId
+    // ── Payment must be captured ─────────────────────────────────────────────
     if (!order.paymentId) {
-      console.error(`[createSellerTransfer] Order ${args.orderId} has no payment record.`);
+      log("no_payment");
       return { success: false, reason: "no_payment" };
     }
-
-    const payment = await ctx.runQuery((internal.payments as any).getPaymentById, { paymentId: order.paymentId });
+    const payment = await ctx.runQuery((internal.payments as any).getPaymentById, {
+      paymentId: order.paymentId,
+    });
     if (!payment?.razorpayPaymentId) {
-      console.error(`[createSellerTransfer] No razorpayPaymentId found for payment ${order.paymentId}.`);
+      log("no_razorpay_payment_id");
       return { success: false, reason: "no_razorpay_payment_id" };
     }
+    if (payment.status !== "captured") {
+      log("payment_not_captured", { paymentStatus: payment.status });
+      return { success: false, reason: "payment_not_captured" };
+    }
 
-    // Calculate payout amount from pricing snapshot
-    const payoutPaise = order.pricingSnapshot?.sellerPayoutPaise ?? order.commissionAmount
-      ? (order.subtotal - order.discount - (order.commissionAmount || 0))
-      : Math.floor((order.subtotal - order.discount) * 0.82);
+    // ── Payout amount: immutable snapshot is authoritative ───────────────────
+    const { payoutPaise, source } = resolveSellerPayoutPaise(order);
 
     if (payoutPaise <= 0) {
-      console.log(`[createSellerTransfer] Order ${args.orderId}: payout is ${payoutPaise} paise. Skipping.`);
+      log("zero_payout", { payoutPaise, source });
       await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
         orderId: args.orderId,
         payoutStatus: "paid",
-        payoutProcessedAt: now,
+        payoutProcessedAt: Date.now(),
       });
       return { success: true, reason: "zero_payout" };
     }
+    if (payoutPaise > payment.amount) {
+      log("payout_exceeds_payment", { payoutPaise, paymentAmount: payment.amount, source });
+      await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+        orderId: args.orderId,
+        payoutStatus: "failed",
+        payoutFailureReason: `Payout ${payoutPaise} paise exceeds captured payment ${payment.amount} paise`,
+      });
+      return { success: false, reason: "payout_exceeds_payment" };
+    }
 
-    // Mark as processing before API call
+    // ── Remote idempotency check: never blindly (re)create a transfer ────────
+    const preCheck = await findExistingTransfer(authHeader, payment.razorpayPaymentId, order._id);
+    if (!preCheck.ok) {
+      log("transfer_lookup_failed", { error: preCheck.error?.substring(0, 300) });
+      await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+        orderId: args.orderId,
+        payoutStatus: "failed",
+        payoutFailureReason: `Transfer pre-check failed: ${String(preCheck.error).substring(0, 400)}`,
+      });
+      return { success: false, reason: "transfer_lookup_failed" };
+    }
+    if (preCheck.transfer?.id) {
+      log("transfer_already_exists_at_razorpay", { transferId: preCheck.transfer.id });
+      await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+        orderId: args.orderId,
+        payoutStatus: "paid",
+        payoutProcessedAt: Date.now(),
+        razorpayTransferId: preCheck.transfer.id,
+      });
+      return { success: true, reason: "adopted_existing_transfer", transferId: preCheck.transfer.id };
+    }
+
+    // ── Claim the payout: eligible/failed -> processing ──────────────────────
     await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
       orderId: args.orderId,
       payoutStatus: "processing",
     });
 
     try {
-      // Create transfer via Razorpay Route API
-      // POST /v1/payments/:paymentId/transfers
       const transferResponse = await fetch(
-        `https://api.razorpay.com/v1/payments/${payment.razorpayPaymentId}/transfers`,
+        `${RAZORPAY_API}/payments/${payment.razorpayPaymentId}/transfers`,
         {
           method: "POST",
           headers: {
@@ -343,28 +403,45 @@ export const createSellerTransfer: any = action({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            transfers: [{
-              account: boutique.razorpayAccountId,
-              amount: payoutPaise,
-              currency: "INR",
-              on_hold: false, // Immediate settlement — not on_hold since delivery is confirmed
-              notes: {
-                orderId: order._id,
-                orderNumber: order.orderNumber,
-                settledPostDelivery: "true",
+            transfers: [
+              {
+                account: boutique.razorpayAccountId,
+                amount: payoutPaise,
+                currency: "INR",
+                notes: {
+                  orderId: order._id,
+                  orderNumber: order.orderNumber,
+                  boutiqueId: order.boutiqueId,
+                  sellerTier: order.pricingSnapshot?.sellerTierKey ?? "legacy",
+                  payoutSource: source,
+                  settledPostDelivery: "true",
+                },
               },
-            }],
+            ],
           }),
         }
       );
 
       if (!transferResponse.ok) {
         const errText = await transferResponse.text();
-        console.error(`[createSellerTransfer] Razorpay transfer failed for order ${args.orderId}:`, errText);
+        log("razorpay_error", { status: transferResponse.status, error: errText.substring(0, 300) });
+
+        // The request may have partially succeeded — verify before declaring failure.
+        const postCheck = await findExistingTransfer(authHeader, payment.razorpayPaymentId, order._id);
+        if (postCheck.ok && postCheck.transfer?.id) {
+          await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+            orderId: args.orderId,
+            payoutStatus: "paid",
+            payoutProcessedAt: Date.now(),
+            razorpayTransferId: postCheck.transfer.id,
+          });
+          return { success: true, reason: "recovered_after_error", transferId: postCheck.transfer.id };
+        }
+
         await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
           orderId: args.orderId,
           payoutStatus: "failed",
-          payoutFailureReason: `Razorpay API error: ${errText.substring(0, 500)}`,
+          payoutFailureReason: `Razorpay API error: ${errText.substring(0, 400)}`,
         });
         return { success: false, reason: "razorpay_error", error: errText };
       }
@@ -372,25 +449,64 @@ export const createSellerTransfer: any = action({
       const transferData = await transferResponse.json();
       const transferId = transferData.items?.[0]?.id || transferData.id;
 
-      // Mark as paid
+      if (!transferId) {
+        log("missing_transfer_id");
+        await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+          orderId: args.orderId,
+          payoutStatus: "failed",
+          payoutFailureReason: "Razorpay returned no transfer id",
+        });
+        return { success: false, reason: "missing_transfer_id" };
+      }
+
       await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
         orderId: args.orderId,
         payoutStatus: "paid",
-        payoutProcessedAt: now,
+        payoutProcessedAt: Date.now(),
         razorpayTransferId: transferId,
       });
 
-      console.log(`[createSellerTransfer] Transfer ${transferId} created for order ${order.orderNumber}. Amount: ₹${payoutPaise / 100}`);
-      return { success: true, transferId, amount: payoutPaise };
-
+      log("paid", { transferId, payoutPaise, source });
+      return { success: true, transferId, amount: payoutPaise, payoutSource: source };
     } catch (err: any) {
-      console.error(`[createSellerTransfer] Exception for order ${args.orderId}:`, err);
+      // Network/timeout: the transfer may still have been created at Razorpay.
+      const postCheck = await findExistingTransfer(authHeader, payment.razorpayPaymentId, order._id);
+      if (postCheck.ok && postCheck.transfer?.id) {
+        log("recovered_after_exception", { transferId: postCheck.transfer.id });
+        await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
+          orderId: args.orderId,
+          payoutStatus: "paid",
+          payoutProcessedAt: Date.now(),
+          razorpayTransferId: postCheck.transfer.id,
+        });
+        return { success: true, reason: "recovered_after_exception", transferId: postCheck.transfer.id };
+      }
+
+      log("exception", { error: err?.message || String(err) });
       await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
         orderId: args.orderId,
         payoutStatus: "failed",
-        payoutFailureReason: `Exception: ${err.message || String(err)}`,
+        payoutFailureReason: `Exception: ${(err?.message || String(err)).substring(0, 400)}`,
       });
-      return { success: false, reason: "exception", error: err.message };
+      return { success: false, reason: "exception", error: err?.message };
     }
+  },
+});
+
+/**
+ * Admin-triggered safe retry for a failed or stuck payout.
+ * The underlying action re-verifies with Razorpay before creating anything,
+ * so this can never double-pay.
+ */
+export const retrySellerTransfer: any = action({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args): Promise<any> => {
+    await ctx.runMutation((internal.orders as any).requirePayoutRetryPermission, {
+      orderId: args.orderId,
+    });
+    return await ctx.runAction(internal.razorpayRoute.createSellerTransfer, {
+      orderId: args.orderId,
+      allowRetry: true,
+    });
   },
 });
