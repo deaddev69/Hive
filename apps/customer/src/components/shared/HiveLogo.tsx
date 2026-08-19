@@ -35,7 +35,7 @@ export function HiveLogo({
   const content = (
     <div className="flex items-center gap-2 select-none">
       <Image
-        src="/icon-512x512.png"
+        src="/customer-logo.png?v=2"
         alt="Hive Logo"
         width={56}
         height={56}
