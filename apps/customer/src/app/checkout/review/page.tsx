@@ -694,7 +694,7 @@ export default function OrderReviewPage() {
               <div className="divide-y divide-hive-border/30 flex flex-col">
                 {orderItems.map((item) => {
                   const backendItem = backendPricing?.items?.find((b: any) => b.productId === item.productId);
-                  const effectivePrice = backendItem?.priceAtPurchaseRupees ?? (item.price > 10000 ? Math.round(item.price / 100) : item.price);
+                  const effectivePrice = backendItem?.allInclusivePriceRupees ?? backendItem?.priceAtPurchaseRupees ?? (item.price > 10000 ? Math.round(item.price / 100) : item.price);
                   return (
                   <div key={`${item.productId}-${item.size}`} className="flex gap-4 py-4 first:pt-0 last:pb-0">
                     <div className="relative w-14 h-18 rounded-lg overflow-hidden bg-hive-cream/30 border border-hive-border/20 flex-shrink-0">

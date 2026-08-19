@@ -140,7 +140,7 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
       <section className="w-full bg-white pt-1 pb-0.5">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div
-            className="banner-card group relative w-full aspect-[2/1] sm:aspect-none sm:h-[220px] md:h-[250px] lg:h-[270px] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+            className="banner-card group relative w-full aspect-[2/1] sm:aspect-auto sm:h-[220px] md:h-[250px] lg:h-[270px] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
             onClick={() => {
               if (banners[0].targetUrl) router.push(banners[0].targetUrl);
             }}
@@ -281,7 +281,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           <div className="relative group/rail w-full">
             <div
               ref={categoryScrollRef}
-              className="flex gap-6 pb-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start -mx-6 px-6 sm:mx-0 sm:px-0 pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8"
+              className="flex gap-6 pb-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start -mx-6 px-6 lg:-mx-8 lg:px-8 scroll-pl-6 lg:scroll-pl-8"
             >
               {categories.map((subcat: any) => (
                 <button
@@ -720,7 +720,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           </div>
 
           {isCarousel ? (
-            <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:-mx-8 lg:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth scroll-pl-6 lg:scroll-pl-8">
               {blockProducts.map((product: any) => (
                 <div key={product.id} className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start">
                   <ProductCard product={product} />
@@ -787,7 +787,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           </div>
 
           {isCarousel ? (
-            <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth pl-6 lg:pl-8 scroll-pl-6 lg:scroll-pl-8">
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 lg:-mx-8 lg:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth scroll-pl-6 lg:scroll-pl-8">
               {displayProducts.map((product: any) => (
                 <div key={product.id} className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start">
                   <ProductCard product={product} />

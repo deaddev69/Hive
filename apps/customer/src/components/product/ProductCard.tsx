@@ -182,6 +182,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
           className={cn(
             "absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300",
+            isFavorite && "md:opacity-100",
             premiumMode 
               ? "bg-white/90 border border-stone-200/50 text-stone-700 hover:text-amber-800 hover:bg-white"
               : "bg-white/80 backdrop-blur-md border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white",

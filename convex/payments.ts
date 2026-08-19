@@ -13,7 +13,7 @@ import { calculateDeliveryFeeRupees } from "./lib/deliveryPricing";
 import { anyApi } from "convex/server";
 import { parseMoney } from "./lib/money";
 import { calculateDeliveryQuoteAction } from "./routing";
-import { calculateItemFinancials, calculateBoutiquePayout, calculateStoreSettlement, getPlatformConfig, calculateCheckoutPricing, calculateSellerItemPricing } from "./pricingService";
+import { calculateItemFinancials, calculateBoutiquePayout, calculateStoreSettlement, getPlatformConfig, calculateCheckoutPricing, calculateSellerItemPricing, calculateAllInclusivePricePaise } from "./pricingService";
 
 import { checkRateLimit } from "./lib/rateLimit";
 import { triggerNotification } from "./lib/notifications";
@@ -166,6 +166,7 @@ export const getCheckoutPricing = query({
           quantity: item.quantity,
           size: item.size,
           priceAtPurchaseRupees: canonicalPricePaise / 100,
+          allInclusivePriceRupees: calculateAllInclusivePricePaise(canonicalPricePaise, sellerTierKey, platformConfig) / 100,
         });
       }
 
