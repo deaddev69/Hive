@@ -980,7 +980,7 @@ export default function BoutiqueProfile() {
           </div>
         </div>
       </Modal>
-    </main>
+    </div>
   );
 }
 

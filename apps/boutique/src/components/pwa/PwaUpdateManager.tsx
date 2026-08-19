@@ -98,62 +98,47 @@ export function PwaUpdateManager() {
     };
   }, []);
 
-  useEffect(() => {
-    if (showUpdate) {
-      toast(
-        (t) => (
-          <div className="flex flex-col gap-3 p-1">
-            <div className="flex items-start gap-3">
-              <div className="bg-[#F5C22B]/20 p-2 rounded-full shrink-0 flex items-center justify-center h-9 w-9">
-                <Sparkles className="w-5 h-5 text-[#F5C22B]" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-slate-900 text-[15px]">Update Available</h3>
-                <p className="text-slate-500 text-sm mt-0.5 leading-snug">
-                  A new version of Hive is ready. Reload to get the latest features.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end mt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowUpdate(false);
-                  toast.dismiss(t.id);
-                }}
-                className="px-4 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
-              >
-                Later
-              </button>
-              <button
-                type="button"
-                disabled={isUpdating}
-                onClick={() => {
-                  handleApplyUpdate();
-                  toast.dismiss(t.id);
-                }}
-                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isUpdating ? "animate-spin" : ""}`} />
-                {isUpdating ? "Updating..." : "Reload App"}
-              </button>
-            </div>
-          </div>
-        ),
-        {
-          duration: Infinity,
-          position: "top-center",
-          style: {
-            maxWidth: "400px",
-            padding: "16px",
-            borderRadius: "16px",
-            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-            border: "1px solid rgba(0,0,0,0.05)"
-          }
-        }
-      );
-    }
-  }, [showUpdate, isUpdating, handleApplyUpdate]);
+  if (!showUpdate) return null;
 
-  return null;
+  return (
+    <div className="fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 z-[9999] w-[92%] max-w-sm animate-in slide-in-from-top-5 duration-300">
+      <div className="bg-white px-4 py-3.5 rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)] border border-slate-100 flex flex-col gap-3 backdrop-blur-md">
+        
+        <div className="flex items-start gap-3">
+          <div className="w-9 h-9 rounded-full bg-[#F5C22B]/20 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 text-[#F5C22B]" />
+          </div>
+          <div className="flex flex-col flex-1">
+            <span className="text-[15px] font-bold text-slate-900 leading-tight">
+              Update Available
+            </span>
+            <span className="text-sm text-slate-500 mt-0.5 leading-snug">
+              A new version of Hive is ready. Reload to get the latest features.
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 mt-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowUpdate(false)}
+            className="px-4 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            Later
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleApplyUpdate}
+            disabled={isUpdating}
+            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isUpdating ? "animate-spin" : ""}`} />
+            <span>{isUpdating ? "Updating..." : "Reload App"}</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
 }
