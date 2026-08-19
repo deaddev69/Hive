@@ -140,7 +140,7 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
       <section className="w-full bg-white pt-1 pb-0.5">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div
-            className="banner-card group relative w-full aspect-[2/1] sm:aspect-[2.8/1] md:aspect-[3.2/1] lg:aspect-[3.6/1] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+            className="banner-card group relative w-full aspect-[2/1] sm:aspect-[2.4/1] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
             onClick={() => {
               if (banners[0].targetUrl) router.push(banners[0].targetUrl);
             }}
@@ -152,7 +152,7 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
                 alt={banners[0].title || "Editorial Banner"}
                 fill
                 sizes="100vw"
-                className="object-cover object-top pointer-events-none transform group-hover:scale-[1.01] transition-transform duration-700 ease-out"
+                className="object-cover object-center pointer-events-none transform group-hover:scale-[1.01] transition-transform duration-700 ease-out"
               />
             </div>
             {/* Mobile Image */}
