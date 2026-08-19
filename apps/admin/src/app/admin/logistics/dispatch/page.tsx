@@ -73,7 +73,7 @@ export default function DispatchBoardPage() {
     if (item.status === "pending_confirmation") {
       startTime = item.createdAt;
       label = "Created";
-    } else if (item.status === "confirmed" || item.status === "packed") {
+    } else if (item.status === "confirmed") {
       startTime = item.orderAcceptedAt || item.createdAt;
       label = "Accepted";
     } else if (item.status === "pickup_scheduled") {
@@ -228,7 +228,7 @@ export default function DispatchBoardPage() {
       title: "Ready For Pickup",
       color: "border-yellow-250 bg-yellow-50/20",
       text: "text-yellow-850",
-      statuses: ["confirmed", "packed"],
+      statuses: ["confirmed"],
     },
     {
       id: "pickup_scheduled",

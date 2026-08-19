@@ -21,10 +21,10 @@ import Cropper from "react-easy-crop";
 // Constant arrays
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "Free"];
 const MATERIAL_OPTIONS = [
-  "Cotton", "Silk", "Linen", "Georgette", "Chiffon",
+  "Cotton", "Silk", "Linen", "Cotton Linen", "Georgette", "Chiffon",
   "Velvet", "Rayon", "Satin", "Blend", "Other"
 ];
-const CARE_OPTIONS = ["Dry Clean Only", "Machine Wash Cold", "Hand Wash", "Do Not Bleach", "Other"];
+const CARE_OPTIONS = ["Dry Clean Only", "Dry Wash", "Machine Wash Cold", "Hand Wash", "Do Not Bleach", "Other"];
 
 const FABRIC_CONTENT_OPTIONS = [
   "100% Cotton", "100% Organic Silk", "100% Linen", "50% Silk 50% Cotton",
@@ -1230,16 +1230,16 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                       </div>
                     )}
 
-                    {idx > 0 && isSelectedForPreview && (
+                    {idx > 0 && (
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setCoverImage(idx);
                         }}
-                        className="absolute bottom-1 left-1 bg-white/95 text-slate-900 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider hover:bg-slate-100 shadow-xs cursor-pointer"
+                        className="absolute bottom-1 left-1 bg-white/95 text-slate-900 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider hover:bg-slate-200 shadow-xs cursor-pointer z-10"
                       >
-                        Cover
+                        Set Cover
                       </button>
                     )}
                   </div>

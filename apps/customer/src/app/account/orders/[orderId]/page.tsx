@@ -206,7 +206,7 @@ function OrderDetailsHeader({ order }: { order: Order }) {
 function OrderTrackingTimeline({ status }: { status: string }) {
   const pipelineSteps = [
     { key: "placed", label: "Order Placed", desc: "Successfully scheduled", statuses: ["placed", "pending_payment"] },
-    { key: "confirmed", label: "Boutique Confirmed", desc: "Designer approved", statuses: ["pending_confirmation", "confirmed", "packed", "pickup_scheduled"] },
+    { key: "confirmed", label: "Boutique Confirmed", desc: "Designer approved", statuses: ["pending_confirmation", "confirmed", "pickup_scheduled"] },
     { key: "picked_up", label: "Picked Up", desc: "Fits coordinator dispatch", statuses: ["picked_up"] },
     { key: "out_for_delivery", label: "Out For Delivery", desc: "Doorstep fitting trials", statuses: ["in_transit", "out_for_delivery"] },
     { key: "delivered", label: "Delivered", desc: "Garment fits finalized", statuses: ["delivered", "claim_submitted", "refund_requested", "refunded"] }

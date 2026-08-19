@@ -75,7 +75,6 @@ export default function MyOrdersPage() {
       pending_payment:        "placed",
       pending_confirmation:   "placed",
       confirmed:              "confirmed",
-      packed:                 "confirmed",
       pickup_scheduled:       "picked_up",
       picked_up:              "picked_up",
       in_transit:             "picked_up",

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { RefreshCw, Sparkles, X } from "lucide-react";
+import { toast } from "@hive/utils";
 
 export function PwaUpdateManager() {
   const [showUpdate, setShowUpdate] = useState(false);
@@ -97,48 +98,62 @@ export function PwaUpdateManager() {
     };
   }, []);
 
-  if (!showUpdate) return null;
-
-  return (
-    <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-[9999] w-[92%] max-w-sm animate-in slide-in-from-bottom-5 duration-300">
-      <div className="bg-slate-950 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-800 flex items-center justify-between gap-3 backdrop-blur-md">
-        
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-[#F5C22B]/20 text-[#F5C22B] flex items-center justify-center shrink-0">
-            <Sparkles className="w-4 h-4" />
+  useEffect(() => {
+    if (showUpdate) {
+      toast(
+        (t) => (
+          <div className="flex flex-col gap-3 p-1">
+            <div className="flex items-start gap-3">
+              <div className="bg-[#F5C22B]/20 p-2 rounded-full shrink-0 flex items-center justify-center h-9 w-9">
+                <Sparkles className="w-5 h-5 text-[#F5C22B]" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-slate-900 text-[15px]">Update Available</h3>
+                <p className="text-slate-500 text-sm mt-0.5 leading-snug">
+                  A new version of Hive is ready. Reload to get the latest features.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end mt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUpdate(false);
+                  toast.dismiss(t.id);
+                }}
+                className="px-4 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+              >
+                Later
+              </button>
+              <button
+                type="button"
+                disabled={isUpdating}
+                onClick={() => {
+                  handleApplyUpdate();
+                  toast.dismiss(t.id);
+                }}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isUpdating ? "animate-spin" : ""}`} />
+                {isUpdating ? "Updating..." : "Reload App"}
+              </button>
+            </div>
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold tracking-tight text-white truncate">
-              Update Available
-            </span>
-            <span className="text-[10px] text-slate-400 font-medium truncate">
-              A newer version of Hive is ready
-            </span>
-          </div>
-        </div>
+        ),
+        {
+          duration: Infinity,
+          position: "top-center",
+          style: {
+            maxWidth: "400px",
+            padding: "16px",
+            borderRadius: "16px",
+            boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+            border: "1px solid rgba(0,0,0,0.05)"
+          }
+        }
+      );
+    }
+  }, [showUpdate, isUpdating, handleApplyUpdate]);
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={handleApplyUpdate}
-            disabled={isUpdating}
-            className="px-3.5 py-1.5 bg-[#F5C22B] hover:bg-[#E9B929] text-slate-950 text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer active:scale-95 flex items-center gap-1.5"
-          >
-            <RefreshCw className={`w-3 h-3 ${isUpdating ? "animate-spin" : ""}`} />
-            <span>{isUpdating ? "Updating..." : "Reload"}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowUpdate(false)}
-            className="w-7 h-7 rounded-lg text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-            aria-label="Dismiss update banner"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-      </div>
-    </div>
-  );
+  return null;
 }

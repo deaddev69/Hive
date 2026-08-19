@@ -574,40 +574,7 @@ export default function BoutiqueOrders() {
                           </div>
                         )}
                         
-                        {order.status === "confirmed" && (
-                          <button
-                            onClick={async () => {
-                              setPendingActionId(order._id);
-                              try {
-                                await updateStatus({
-                                  orderId: order._id as Id<"orders">,
-                                  status: "packed",
-                                });
-                                toast.success("Order Marked as Packed", "Ready to dispatch courier pickup.");
-                              } catch (err: any) {
-                                toast.error("Status Update Failed", err.message || "Failed to update status to packed.");
-                              } finally {
-                                setPendingActionId(null);
-                              }
-                            }}
-                            disabled={pendingActionId === order._id}
-                            className="mt-2.5 flex items-center justify-center gap-2 w-full px-3.5 py-2.5 bg-stone-900 hover:bg-stone-800 active:bg-stone-950 text-white text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all duration-200 shadow-sm active:scale-[0.98] select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {pendingActionId === order._id ? (
-                              <>
-                                <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-300" />
-                                <span>Packing...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Package className="w-3.5 h-3.5 text-stone-300" />
-                                <span>Mark as Packed</span>
-                              </>
-                            )}
-                          </button>
-                        )}
-
-                        {(order.status === "packed" || order.status === "booking_failed") && (
+                        {(order.status === "confirmed" || order.status === "packed" || order.status === "booking_failed") && (
                           <button
                             onClick={async () => {
                               setDispatchingOrderId(order._id);
@@ -647,7 +614,7 @@ export default function BoutiqueOrders() {
                             ) : (
                               <>
                                 <Truck className="w-3.5 h-3.5 text-stone-900" />
-                                <span>Request Pickup</span>
+                                <span>Ready for Pickup</span>
                               </>
                             )}
                           </button>

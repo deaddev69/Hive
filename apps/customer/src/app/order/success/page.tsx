@@ -523,7 +523,7 @@ function DeliveryStatusCard({
 
   // Stepper state
   let currentStepIndex = 1; // Default: Order Confirmed
-  if (["packed", "pickup_scheduled", "ready_for_pickup"].includes(status)) currentStepIndex = 2;
+  if (["pickup_scheduled", "ready_for_pickup"].includes(status)) currentStepIndex = 2;
   else if (["picked_up", "in_transit", "out_for_delivery"].includes(status)) currentStepIndex = 3;
   else if (["delivered"].includes(status)) currentStepIndex = 4;
 

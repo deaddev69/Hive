@@ -8,6 +8,8 @@ import { Button, Card, CardContent, cn, LoadingState } from "@hive/ui";
 import Link from "next/link";
 import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut, Star, Wallet, ChevronRight, ShieldCheck, Lock } from "lucide-react";
 import { toast } from "@hive/utils";
+import Cropper from "react-easy-crop";
+import { Modal } from "@hive/ui";
 
 export default function BoutiqueProfile() {
   const boutique = useQuery(api.boutiques.getMyBoutiqueDetails);
@@ -54,6 +56,14 @@ export default function BoutiqueProfile() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoStorageId, setLogoStorageId] = useState<string | null>(null);
+  
+  // Crop states
+  const [isLogoCropOpen, setIsLogoCropOpen] = useState(false);
+  const [logoCrop, setLogoCrop] = useState({ x: 0, y: 0 });
+  const [logoZoom, setLogoZoom] = useState(1);
+  const [logoCroppedAreaPixels, setLogoCroppedAreaPixels] = useState<any>(null);
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const [pendingLogoUrl, setPendingLogoUrl] = useState<string | null>(null);
 
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -123,8 +133,27 @@ export default function BoutiqueProfile() {
       toast.error("Image Too Large", "Logo image must be under 5MB.");
       return;
     }
-    setLogoFile(file);
-    setLogoPreview(URL.createObjectURL(file));
+    setPendingLogoFile(file);
+    setPendingLogoUrl(URL.createObjectURL(file));
+    setIsLogoCropOpen(true);
+  };
+
+  const handleApplyLogoCrop = async () => {
+    if (!pendingLogoFile || !pendingLogoUrl || !logoCroppedAreaPixels) return;
+    setUploadMsg("Cropping image...");
+    setSaving(true);
+    
+    try {
+      const croppedFile = await cropImage(pendingLogoUrl, logoCroppedAreaPixels, pendingLogoFile);
+      setLogoFile(croppedFile);
+      setLogoPreview(URL.createObjectURL(croppedFile));
+      setIsLogoCropOpen(false);
+    } catch (err) {
+      toast.error("Crop Failed", "Could not crop the logo.");
+    } finally {
+      setSaving(false);
+      setUploadMsg("");
+    }
   };
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -914,6 +943,83 @@ export default function BoutiqueProfile() {
         </div>
 
       </div>
-    </div>
+
+      <Modal isOpen={isLogoCropOpen} onClose={() => setIsLogoCropOpen(false)} title="Crop Logo">
+        <div className="p-4 flex flex-col gap-4">
+          <div className="relative w-full h-64 bg-slate-900 rounded-xl overflow-hidden">
+            {pendingLogoUrl && (
+              <Cropper
+                image={pendingLogoUrl}
+                crop={logoCrop}
+                zoom={logoZoom}
+                aspect={1}
+                onCropChange={setLogoCrop}
+                onZoomChange={setLogoZoom}
+                onCropComplete={(_, croppedAreaPixels) => setLogoCroppedAreaPixels(croppedAreaPixels)}
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold text-slate-400">ZOOM</span>
+            <input
+              type="range"
+              value={logoZoom}
+              min={1}
+              max={3}
+              step={0.1}
+              onChange={(e) => setLogoZoom(Number(e.target.value))}
+              className="flex-1 accent-slate-900"
+            />
+          </div>
+          <div className="flex justify-end gap-2 mt-2">
+            <Button variant="outline" onClick={() => setIsLogoCropOpen(false)} disabled={saving}>Cancel</Button>
+            <Button className="bg-slate-900 text-white hover:bg-slate-800" onClick={handleApplyLogoCrop} disabled={saving}>
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Apply Crop
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </main>
   );
 }
+
+// Helper function for cropping
+const cropImage = (
+  srcUrl: string,
+  croppedAreaPixels: { x: number; y: number; width: number; height: number },
+  originalFile: File
+): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(originalFile);
+
+      canvas.width = croppedAreaPixels.width;
+      canvas.height = croppedAreaPixels.height;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(
+        img,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0,
+        0,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height
+      );
+
+      canvas.toBlob((blob) => {
+        if (!blob) return resolve(originalFile);
+        resolve(new File([blob], originalFile.name, { type: originalFile.type || "image/jpeg", lastModified: Date.now() }));
+      }, originalFile.type || "image/jpeg", 0.95);
+    };
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = srcUrl;
+  });
+};

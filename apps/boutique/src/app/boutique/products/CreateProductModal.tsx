@@ -9,10 +9,10 @@ import { toast } from "@hive/utils";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "FREE"];
 const MATERIAL_OPTIONS = [
-  "Cotton", "Silk", "Linen", "Georgette", "Chiffon",
+  "Cotton", "Silk", "Linen", "Cotton Linen", "Georgette", "Chiffon",
   "Velvet", "Rayon", "Satin", "Blend", "Other"
 ];
-const CARE_OPTIONS = ["Dry Clean Only", "Machine Wash Cold", "Hand Wash", "Do Not Bleach", "Other"];
+const CARE_OPTIONS = ["Dry Clean Only", "Dry Wash", "Machine Wash Cold", "Hand Wash", "Do Not Bleach", "Other"];
 
 const DEFAULT_CATEGORY_TAGS = [
   { id: "womens-ethnic", name: "Women's Ethnic" },
@@ -1141,7 +1141,7 @@ export default function CreateProductModal({
                       <button
                         type="button"
                         onClick={() => setCoverImage(idx)}
-                        className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white/90 text-slate-800 text-[9px] font-black uppercase px-2.5 py-1 rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap"
+                        className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white/90 text-slate-800 text-[9px] font-black uppercase px-2.5 py-1 rounded-full shadow transition-opacity whitespace-nowrap hover:bg-slate-100"
                       >
                         Set Cover
                       </button>

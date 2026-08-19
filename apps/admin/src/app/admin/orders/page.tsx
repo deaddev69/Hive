@@ -38,7 +38,6 @@ function StatusBadge({ status }: { status: string }) {
     pending_payment: "bg-yellow-50 text-yellow-700 border-yellow-200",
     pending_confirmation: "bg-amber-50 text-amber-700 border-amber-200",
     confirmed: "bg-blue-50 text-blue-700 border-blue-200",
-    packed: "bg-indigo-50 text-indigo-700 border-indigo-200",
     pickup_scheduled: "bg-purple-50 text-purple-700 border-purple-200",
     picked_up: "bg-violet-50 text-violet-700 border-violet-200",
     in_transit: "bg-cyan-50 text-cyan-700 border-cyan-200",
@@ -245,7 +244,7 @@ function OrderDetailDrawer({
               >
                 {[
                   "pending_payment", "pending_confirmation", "confirmed",
-                  "packed", "pickup_scheduled", "picked_up",
+                  "pickup_scheduled", "picked_up",
                   "in_transit", "out_for_delivery", "delivered", "cancelled",
                 ].map((s) => (
                   <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
@@ -354,7 +353,7 @@ function OrderDetailDrawer({
                   </div>
                 );
               }
-              if (["confirmed", "packed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery", "delivered"].includes(order.status)) {
+              if (["confirmed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery", "delivered"].includes(order.status)) {
                 return (
                   <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-3.5 text-left text-xs text-slate-500 flex items-center justify-between">
                     <span className="font-semibold text-slate-700">Accepted By:</span>
@@ -695,7 +694,7 @@ export default function AdminOrdersPage() {
     { value: "sla_overdue", label: "⚠️ SLA Overdue (>10 min)" },
     { value: "pending_confirmation", label: "Pending Confirmation" },
     { value: "confirmed", label: "Confirmed" },
-    { value: "packed", label: "Packed" },
+    { value: "pickup_scheduled", label: "Pickup Scheduled" },
     { value: "in_transit", label: "In Transit" },
     { value: "out_for_delivery", label: "Out for Delivery" },
     { value: "delivered", label: "Delivered" },
@@ -922,7 +921,7 @@ export default function AdminOrdersPage() {
                             Accepted by {order.acceptanceActivity.actorName} ({order.acceptanceActivity.actorRole === "owner" ? "Owner" : order.acceptanceActivity.actorRole === "admin" ? "Admin" : "Staff"})
                           </span>
                         ) : (
-                          ["confirmed", "packed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery", "delivered"].includes(order.status) && (
+                          ["confirmed", "pickup_scheduled", "picked_up", "in_transit", "out_for_delivery", "delivered"].includes(order.status) && (
                             <span className="text-[9px] text-slate-400 font-medium italic block leading-tight mt-0.5">
                               Pre-tracking order
                             </span>
