@@ -728,9 +728,9 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               ))}
             </div>
           ) : isTwoGrid ? (
-            <div className="grid grid-cols-2 md:flex md:flex-wrap gap-4 sm:gap-6 w-full">
+            <div className="flex flex-wrap gap-3 sm:gap-6 w-full">
               {blockProducts.slice(0, block.config?.maxProducts || 2).map((product: any) => (
-                <div key={product.id} className="w-full md:w-[190px] lg:w-[210px] flex-shrink-0">
+                <div key={product.id} className="w-[145px] sm:w-[190px] lg:w-[210px] flex-shrink-0">
                   <ProductCard product={product} />
                 </div>
               ))}
@@ -815,9 +815,9 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               </div>
             </div>
           ) : isTwoGrid ? (
-            <div className="grid grid-cols-2 md:flex md:flex-wrap gap-4 sm:gap-6 w-full">
+            <div className="flex flex-wrap gap-3 sm:gap-6 w-full">
               {displayProducts.map((product: any) => (
-                <div key={product.id} className="w-full md:w-[190px] lg:w-[210px] flex-shrink-0">
+                <div key={product.id} className="w-[145px] sm:w-[190px] lg:w-[210px] flex-shrink-0">
                   <ProductCard product={product} />
                 </div>
               ))}
