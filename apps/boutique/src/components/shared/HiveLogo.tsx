@@ -21,7 +21,7 @@ export function HiveLogo({ roleLabel, href = "/", className = "", size = "md" }:
     <Link href={href} className={`flex items-center gap-2 group ${className}`}>
       <div className={`relative shrink-0 overflow-hidden ${sizeClasses[size]}`}>
         <img 
-          src="/logo-transparent.png?v=3"
+          src="/logo-transparent.png?v=4"
           alt="Hive Logo" 
           className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
         />
