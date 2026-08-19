@@ -135,12 +135,12 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
         <div className="flex items-center">
           <Link href="/boutique" className="flex items-center hover:opacity-85 active:scale-[0.98] transition-all">
             <Image
-              src="/logo-ui.png"
+              src="/logo-square.png?v=1"
               alt="Hive Partners"
-              width={160}
-              height={50}
+              width={64}
+              height={64}
               priority
-              className="h-9 w-auto object-contain shrink-0"
+              className="h-10 w-10 sm:h-12 sm:w-12 object-contain shrink-0 rounded-lg shadow-sm"
             />
           </Link>
         </div>
@@ -155,12 +155,12 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
           <div className="hidden md:flex items-center pb-6 border-b border-[#f1f5f9] w-full justify-start shrink-0">
             <Link href="/boutique" className="flex items-center hover:opacity-85 active:scale-[0.98] transition-all">
               <Image
-                src="/logo-ui.png"
+                src="/logo-square.png?v=1"
                 alt="Hive Partners"
-                width={180}
-                height={55}
+                width={80}
+                height={80}
                 priority
-                className="h-14 w-auto object-contain shrink-0"
+                className="h-14 w-14 sm:h-16 sm:w-16 object-contain shrink-0 rounded-xl shadow-sm"
               />
             </Link>
           </div>
