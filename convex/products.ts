@@ -1039,6 +1039,7 @@ export const getActiveProducts = query({
     boutiqueId: v.optional(v.id("boutiques")),
   },
   handler: async (ctx, args) => {
+    const __t0 = Date.now();
     let products;
     if (args.boutiqueId) {
       products = await ctx.db
@@ -1086,6 +1087,9 @@ export const getActiveProducts = query({
         .take(200);
     }
 
+    const __t1 = Date.now();
+    console.log(`[PERF][CONVEX] getActiveProducts: Product retrieval took ${__t1 - __t0}ms. Fetched ${products.length} products.`);
+
     // Optimize lookups by filtering approved boutiques early
     const approvedBoutiqueIds = await getApprovedBoutiqueIds(ctx);
     let filtered = products.filter((p) => approvedBoutiqueIds.has(p.boutiqueId) && p.adminHidden !== true && (!p.approvalStatus || p.approvalStatus === "approved"));
@@ -1122,6 +1126,9 @@ export const getActiveProducts = query({
     if (args.maxPrice !== undefined) {
       filtered = filtered.filter(p => p.price <= args.maxPrice!);
     }
+
+    const __t2 = Date.now();
+    console.log(`[PERF][CONVEX] getActiveProducts: Boutique retrieval & early filtering took ${__t2 - __t1}ms.`);
 
     // Location-based delivery radius filter & scoring
     let boutiqueStatsMap = new Map<string, { distanceKm: number; durationMin: number; hiveScore: number }>();
@@ -1212,7 +1219,13 @@ export const getActiveProducts = query({
       filtered = filtered.filter((p) => deliverableBoutiqueIds.has(p.boutiqueId));
     }
 
+    const __t3 = Date.now();
+    console.log(`[PERF][CONVEX] getActiveProducts: Location & Haversine distance calc took ${__t3 - __t2}ms.`);
+
     const enriched = await enrichProducts(ctx, filtered);
+    const __t4 = Date.now();
+    console.log(`[PERF][CONVEX] getActiveProducts: enrichProducts took ${__t4 - __t3}ms. Enriched ${filtered.length} products.`);
+
     let purchasable = enriched.filter((p) => p.active && p.boutique && p.boutique.verified && getTotalStock(p.stockBySize) > 0);
 
     if (args.userLat !== undefined && args.userLng !== undefined) {
@@ -1267,9 +1280,13 @@ export const getActiveProducts = query({
       });
 
       scoredProducts.sort((a, b) => b.score - a.score);
+      const __t5 = Date.now();
+      console.log(`[PERF][CONVEX] getActiveProducts: Score calc & sort took ${__t5 - __t4}ms. Total execution took ${__t5 - __t0}ms.`);
       return scoredProducts.map((sp) => sp.product);
     }
 
+    const __t6 = Date.now();
+    console.log(`[PERF][CONVEX] getActiveProducts: Total execution without scoring took ${__t6 - __t0}ms.`);
     return purchasable;
   },
 });

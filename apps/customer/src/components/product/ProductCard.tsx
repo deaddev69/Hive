@@ -50,6 +50,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
 
   useEffect(() => {
     setHydrated(true);
+    if (typeof window !== "undefined" && !(window as any).__perfLoggedFirstCard) {
+      (window as any).__perfLoggedFirstCard = true;
+      console.log(`[PERF][CUSTOMER] 4. First ProductCard rendered: ${performance.now().toFixed(2)}ms`);
+    }
   }, []);
 
   const { latitude: userLat, longitude: userLng, city } = useLocation();
@@ -157,18 +161,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         {/* Product image link */}
         <Link href={`/products/${product.slug}`} className="absolute inset-0 block w-full h-full z-10">
           {product.imageUrl ? (
-            <Image
-              src={product.imageUrl}
-              alt={product.name}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
-              priority={priority}
-              loading={priority ? undefined : "lazy"}
-              className={cn(
-                "object-cover w-full h-full pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-200 ease-out"
-              )}
-              style={{ objectFit: "cover" }}
-            />
+              <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+                priority={priority}
+                loading={priority ? undefined : "lazy"}
+                onLoad={() => {
+                  if (typeof window !== "undefined" && !(window as any).__perfLoggedFirstImage) {
+                    (window as any).__perfLoggedFirstImage = true;
+                    console.log(`[PERF][CUSTOMER] 5. First Product Image visible: ${performance.now().toFixed(2)}ms`);
+                  }
+                }}
+                className={cn(
+                  "object-cover w-full h-full pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-200 ease-out"
+                )}
+                style={{ objectFit: "cover" }}
+              />
           ) : (
             <div className="absolute inset-0 bg-stone-100 flex flex-col items-center justify-center text-stone-600 p-4">
               <span className="text-[10px] font-extrabold uppercase tracking-widest text-stone-400">No Image</span>

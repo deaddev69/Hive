@@ -179,6 +179,27 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
 
   const dbProducts = useQuery(api.products.getActiveProducts, queryArgs);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && !(window as any).__perfLoggedMount) {
+      (window as any).__perfLoggedMount = true;
+      console.log(`[PERF][CUSTOMER] 1. Route Navigation / React Shell Mount: ${performance.now().toFixed(2)}ms`);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (dbProducts === undefined) {
+      if (typeof window !== "undefined" && !(window as any).__perfLoggedQueryStart) {
+        (window as any).__perfLoggedQueryStart = true;
+        console.log(`[PERF][CUSTOMER] 2. Convex Request Pending (dbProducts undefined): ${performance.now().toFixed(2)}ms`);
+      }
+    } else {
+      if (typeof window !== "undefined" && !(window as any).__perfLoggedQueryEnd) {
+        (window as any).__perfLoggedQueryEnd = true;
+        console.log(`[PERF][CUSTOMER] 3. Convex Response Received & Payload Ready: ${performance.now().toFixed(2)}ms (Payload length: ${dbProducts.length})`);
+      }
+    }
+  }, [dbProducts]);
+
   const activeFilterCount = countActiveFilters(filters);
 
   // Map + sort — no client-side category/price filtering (done by backend)
