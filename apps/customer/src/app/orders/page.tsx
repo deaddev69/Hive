@@ -13,6 +13,7 @@ import {
   Loader2,
   Star,
   CheckCircle,
+  Undo2,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
@@ -194,6 +195,15 @@ function OrderCard({
   const isActive = ["placed", "confirmed", "picked_up", "out_for_delivery"].includes(uiStatus);
   const isDelivered = uiStatus === "delivered" || order.status === "delivered";
 
+  const isReturnEligible = order.claimWindowExpiresAt ? Date.now() < order.claimWindowExpiresAt : false;
+  const supportNumber = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_NUMBER;
+  if (!supportNumber && isReturnEligible) {
+    throw new Error("NEXT_PUBLIC_SUPPORT_WHATSAPP_NUMBER is not defined in environment variables");
+  }
+  const whatsappUrl = `https://wa.me/${supportNumber}?text=${encodeURIComponent(
+    `Hi Hive Support, I want to request a return for my order ${order.orderNumber}.`
+  )}`;
+
   const formatDate = (epochMs: number) => {
     try {
       return new Date(epochMs).toLocaleDateString("en-IN", {
@@ -284,6 +294,17 @@ function OrderCard({
         <div className="flex items-center gap-2 flex-wrap">
           {isDelivered ? (
             <>
+              {isReturnEligible && (
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="h-9 px-3 border border-[#1c1917]/[0.08] hover:border-[#1c1917]/35 text-[#78716C] hover:text-[#1C1917] bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <Undo2 className="w-3.5 h-3.5 text-[#78716C] group-hover:text-[#1C1917]" />
+                  <span>Return</span>
+                </a>
+              )}
               {firstItem?.hasReview ? (
                 <div className="h-9 px-4 border border-green-200 text-green-700 bg-green-50/50 rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm">
                   <CheckCircle className="w-3.5 h-3.5" />
