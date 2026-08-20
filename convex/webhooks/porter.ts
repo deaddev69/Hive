@@ -66,7 +66,7 @@ export const handlePorterWebhook = httpAction(async (ctx, request) => {
   // Map Porter string statuses to our internal enum
   let mappedStatus = "";
   if (rawStatus === "order_accepted") {
-    mappedStatus = "pickup_scheduled";
+    mappedStatus = "driver_assigned";
   } else if (rawStatus === "order_start_trip") {
     mappedStatus = "in_transit";
   } else if (rawStatus === "order_end_job") {
