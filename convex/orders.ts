@@ -2009,9 +2009,14 @@ export const readyForPickupAction = action({
       throw new Error("Unauthorized: Order does not belong to your boutique.");
     }
 
-    // 3. Assert valid status
-    if (order.status !== "packed" && order.status !== "booking_failed") {
-      throw new Error(`Cannot dispatch: order is in '${order.status}' status. Must be 'packed' or 'booking_failed'.`);
+    // 3. Assert valid status — auto-pack confirmed orders (Mark as Packed step removed for UX)
+    if (order.status === "confirmed") {
+      await ctx.runMutation(api.orders.updateBoutiqueOrderStatus, {
+        orderId: args.orderId,
+        status: "packed",
+      });
+    } else if (order.status !== "packed" && order.status !== "booking_failed") {
+      throw new Error(`Cannot dispatch: order is in '${order.status}' status. Must be 'confirmed', 'packed' or 'booking_failed'.`);
     }
 
     // 4. Create shipment if one doesn't exist
