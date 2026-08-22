@@ -647,7 +647,7 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
     // create a second payout — markOrderPayoutEligible is idempotent and only
     // self-heals an order that was delivered but never queued for settlement.
     if (fromStatus === args.status) {
-      if (args.status === "delivered") {
+      if (args.status === "delivered" && !shipment.isReturn) {
         await markOrderPayoutEligible(ctx, shipment.orderId, shipment.deliveredAt ?? eventTs);
       }
       return { success: true, message: "Idempotent request ignored" };
@@ -660,6 +660,93 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
         `State machine violation: Cannot transition shipment status from '${fromStatus}' to '${args.status}'.`
       );
     }
+
+    // ── RETURN SHIPMENT BRANCH ────────────────────────────────────────────
+    // If this shipment is a return (isReturn === true), process it independently.
+    // Updates return shipment status + order.returnStatus.
+    // Does NOT touch order.status, markOrderFinanciallyDelivered, or markOrderPayoutEligible.
+    if (shipment.isReturn) {
+      const returnPatchData: any = {
+        status: args.status,
+        updatedAt: now,
+      };
+
+      if (args.status === "delivered") {
+        returnPatchData.deliveredAt = eventTs;
+      }
+      if (args.status === "picked_up") {
+        returnPatchData.pickedUpAt = eventTs;
+      }
+
+      // Driver details
+      if (args.driverDetails) {
+        if (args.driverDetails.name) returnPatchData.driverName = args.driverDetails.name;
+        if (args.driverDetails.phone) returnPatchData.driverPhone = args.driverDetails.phone;
+        if (args.driverDetails.vehiclePlate) returnPatchData.vehiclePlate = args.driverDetails.vehiclePlate;
+        if (args.driverDetails.liveTrackingUrl) returnPatchData.liveTrackingUrl = args.driverDetails.liveTrackingUrl;
+        if (args.driverDetails.trackingUrl) returnPatchData.trackingUrl = args.driverDetails.trackingUrl;
+        if (args.driverDetails.etaMinutes !== undefined) returnPatchData.etaMinutes = args.driverDetails.etaMinutes;
+        returnPatchData.bookingStatus = "booked";
+      }
+
+      if (args.porterRawOrder !== undefined) {
+        returnPatchData.porterRawOrder = args.porterRawOrder;
+        returnPatchData.porterLastSyncAt = now;
+      }
+
+      // Webhook event log
+      const returnRawEvents = shipment.rawWebhookEvents ? [...shipment.rawWebhookEvents] : [];
+      returnRawEvents.push({
+        timestamp: now,
+        status: args.status,
+        location: args.location || "Hub Terminal",
+        remarks: args.remarks || `Return courier webhook: status set to ${args.status}`,
+        rawPayload: JSON.stringify(args),
+      });
+      returnPatchData.rawWebhookEvents = returnRawEvents;
+      returnPatchData.lastWebhookAt = now;
+
+      await ctx.db.patch(shipment._id, returnPatchData);
+
+      // Sync return status to the parent order (returnStatus only — NEVER order.status)
+      const returnOrder = await ctx.db.get(shipment.orderId);
+      if (returnOrder) {
+        let returnStatus = returnOrder.returnStatus;
+        if (args.status === "picked_up") {
+          returnStatus = "picked_up";
+        } else if (args.status === "in_transit") {
+          returnStatus = "in_transit";
+        } else if (args.status === "delivered") {
+          returnStatus = "delivered";
+        } else if (args.status === "failed" || args.status === "cancelled") {
+          returnStatus = "failed";
+        }
+        if (returnStatus !== returnOrder.returnStatus) {
+          await ctx.db.patch(returnOrder._id, { returnStatus, updatedAt: now });
+        }
+      }
+
+      // Audit log for return webhook
+      await ctx.db.insert("auditLogs", {
+        actorRole: "system",
+        action: "shipments.return_webhook_update",
+        entityType: "shipments",
+        entityId: shipment._id,
+        metadata: JSON.stringify({
+          awbNumber: args.awbNumber,
+          fromStatus,
+          toStatus: args.status,
+          isReturn: true,
+        }),
+        createdAt: now,
+      });
+
+      // CRITICAL: Return early. Do NOT fall through to forward-delivery logic.
+      // This prevents markOrderFinanciallyDelivered, markOrderPayoutEligible,
+      // and any order.status mutation from executing for return shipments.
+      return { success: true, fromStatus, toStatus: args.status, isReturn: true };
+    }
+    // ── END RETURN SHIPMENT BRANCH ─────────────────────────────────────────
 
     const patchData: any = {
       status: args.status,

@@ -644,6 +644,11 @@ export const getOrderDetails = query({
       .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
       .collect();
 
+    // Fetch return shipment if present
+    const returnShipmentDoc = order.returnShipmentId
+      ? await ctx.db.get(order.returnShipmentId)
+      : null;
+
     return {
       _id: order._id,
       orderNumber: order.orderNumber,
@@ -684,6 +689,19 @@ export const getOrderDetails = query({
       },
       items: enrichedItems,
       timeline,
+      // Return flow fields
+      returnStatus: order.returnStatus ?? null,
+      returnShipmentId: order.returnShipmentId ?? null,
+      returnShipment: returnShipmentDoc ? {
+        _id: returnShipmentDoc._id,
+        status: returnShipmentDoc.status,
+        awbNumber: returnShipmentDoc.awbNumber,
+        trackingUrl: returnShipmentDoc.trackingUrl,
+        driverName: returnShipmentDoc.driverName,
+        driverPhone: returnShipmentDoc.driverPhone,
+        deliveredAt: returnShipmentDoc.deliveredAt,
+        pickedUpAt: returnShipmentDoc.pickedUpAt,
+      } : null,
       activities: activities.map((a) => ({
         action: a.action,
         actorName: a.actorName,
@@ -1106,5 +1124,199 @@ export const notifyMerchant = mutation({
     });
 
     return { success: true };
+  },
+});
+
+// ─── RETURN FLOW ──────────────────────────────────────────────────────────────
+
+/**
+ * Admin: Approve a customer return request.
+ * Sets returnStatus = "approved". Does NOT create a Porter order yet.
+ */
+export const approveReturnAdmin = mutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+    const order = await ctx.db.get(args.orderId);
+    if (!order) throw new Error("Order not found.");
+
+    // Guard: only allow approval from null/requested state
+    if (order.returnStatus && order.returnStatus !== "requested") {
+      throw new Error(`Return is already in state "${order.returnStatus}". Cannot approve again.`);
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(args.orderId, {
+      returnStatus: "approved",
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("auditLogs", {
+      actorId: (await getCurrentUserOrNull(ctx))?._id,
+      actorRole: "admin",
+      action: "order.approve_return",
+      entityType: "orders",
+      entityId: order._id,
+      metadata: JSON.stringify({ orderNumber: order.orderNumber }),
+      createdAt: now,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Admin: Initiate a return shipment via Porter.
+ * Creates a return shipment (isReturn=true) and books a Porter trip:
+ *   CUSTOMER (pickup) → BOUTIQUE (drop)
+ *
+ * Idempotent: if returnShipmentId already exists, returns existing state.
+ */
+export const initiateReturnAdmin = mutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+    const order = await ctx.db.get(args.orderId);
+    if (!order) throw new Error("Order not found.");
+
+    // Idempotency: if return shipment already exists, return existing state
+    if (order.returnShipmentId) {
+      const existingShipment = await ctx.db.get(order.returnShipmentId);
+      return {
+        success: true,
+        alreadyInitiated: true,
+        returnShipmentId: order.returnShipmentId,
+        returnStatus: order.returnStatus,
+        awbNumber: existingShipment?.awbNumber ?? null,
+      };
+    }
+
+    if (order.returnStatus !== "approved") {
+      throw new Error(`Return must be approved before initiation. Current state: "${order.returnStatus ?? "none"}".`);
+    }
+
+    // Validate addresses exist
+    if (!order.deliveryAddress || !order.deliveryAddress.lat || !order.deliveryAddress.lng) {
+      throw new Error("Customer delivery address is missing or has no coordinates.");
+    }
+
+    const boutique = await ctx.db.get(order.boutiqueId);
+    if (!boutique) throw new Error("Boutique not found.");
+
+    const orderPickup = order.pickupAddress; // boutique snapshot from original order
+    if (!orderPickup && (!boutique.latitude || !boutique.longitude)) {
+      throw new Error("Boutique/seller address is missing or has no coordinates.");
+    }
+
+    const customer = await ctx.db.get(order.customerId);
+    const now = Date.now();
+
+    // ── Build shipment address snapshots ──────────────────────────────────
+    // For the RETURN shipment:
+    //   pickupAddress  = CUSTOMER (order.deliveryAddress)
+    //   deliveryAddress = BOUTIQUE (order.pickupAddress / boutique record)
+
+    const returnPickupAddress = {
+      name: order.deliveryAddress.label || customer?.email || "Customer",
+      line1: order.deliveryAddress.line1 || order.deliveryAddress.formattedAddress || "No Address",
+      city: order.deliveryAddress.city,
+      state: order.deliveryAddress.state,
+      pincode: order.deliveryAddress.pincode,
+      phone: order.deliveryAddress.phone || customer?.phone || "",
+    };
+
+    const returnDeliveryAddress = {
+      name: orderPickup?.boutiqueName || boutique?.boutiqueName || "Boutique",
+      line1: orderPickup?.address || boutique?.address || "Store",
+      city: orderPickup?.city || boutique?.addressDetails?.city || "",
+      state: orderPickup?.state || boutique?.addressDetails?.state || "",
+      pincode: orderPickup?.pincode || boutique?.addressDetails?.pincode || "",
+      phone: orderPickup?.phone || boutique?.phone || "",
+    };
+
+    // ── Create return shipment record ─────────────────────────────────────
+    const returnShipmentId = await ctx.db.insert("shipments", {
+      orderId: args.orderId,
+      provider: "porter",
+      awbNumber: "",                   // will be filled by Porter createOrder callback
+      status: "created",
+      isReturn: true,
+      idempotencyKey: `return_init_${args.orderId}`,
+      pickupAddress: returnPickupAddress,
+      deliveryAddress: returnDeliveryAddress,
+      rawWebhookEvents: [{
+        timestamp: now,
+        status: "created",
+        location: "System",
+        remarks: "Return shipment initiated by admin.",
+        rawPayload: JSON.stringify({ event: "created", isReturn: true }),
+      }],
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // ── Link to order ────────────────────────────────────────────────────
+    await ctx.db.patch(args.orderId, {
+      returnShipmentId,
+      returnStatus: "initiated",
+      updatedAt: now,
+    });
+
+    // ── Schedule Porter createOrder ──────────────────────────────────────
+    // CRITICAL: pickup = CUSTOMER, drop = BOUTIQUE
+    // Uses the exact same Porter address format as forward booking (lines 938-967)
+    const customerPhone = order.deliveryAddress.phone || customer?.phone || "";
+    const boutiquePhone = orderPickup?.phone || boutique?.phone || "";
+
+    await ctx.scheduler.runAfter(0, internal.lib.porter.createOrder, {
+      orderId: args.orderId,
+      shipmentId: returnShipmentId,
+      pickupAddress: {
+        street_address1: order.deliveryAddress.line1 || order.deliveryAddress.formattedAddress || "Home",
+        street_address2: order.deliveryAddress.line2 || order.deliveryAddress.houseNumber || "",
+        landmark: order.deliveryAddress.landmark || "",
+        city: order.deliveryAddress.city || "",
+        state: order.deliveryAddress.state || "",
+        pincode: order.deliveryAddress.pincode || "",
+        country: "India",
+        lat: order.deliveryAddress.lat,
+        lng: order.deliveryAddress.lng,
+        contact_details: {
+          name: returnPickupAddress.name,
+          phone_number: customerPhone ? `+91${customerPhone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
+        },
+      },
+      dropAddress: {
+        street_address1: orderPickup?.address || boutique?.address || "Store",
+        city: orderPickup?.city || boutique?.addressDetails?.city || boutique?.city || "",
+        state: orderPickup?.state || boutique?.addressDetails?.state || boutique?.state || "",
+        pincode: orderPickup?.pincode || boutique?.addressDetails?.pincode || boutique?.pincode || "",
+        country: "India",
+        lat: orderPickup?.latitude || boutique?.latitude || 0,
+        lng: orderPickup?.longitude || boutique?.longitude || 0,
+        contact_details: {
+          name: returnDeliveryAddress.name,
+          phone_number: boutiquePhone ? `+91${boutiquePhone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
+        },
+      },
+      orderNumber: order.orderNumber + "-RET",
+    });
+
+    // ── Audit log ─────────────────────────────────────────────────────────
+    await ctx.db.insert("auditLogs", {
+      actorId: (await getCurrentUserOrNull(ctx))?._id,
+      actorRole: "admin",
+      action: "order.initiate_return",
+      entityType: "orders",
+      entityId: order._id,
+      metadata: JSON.stringify({
+        orderNumber: order.orderNumber,
+        returnShipmentId,
+        route: "CUSTOMER → BOUTIQUE",
+      }),
+      createdAt: now,
+    });
+
+    return { success: true, returnShipmentId };
   },
 });

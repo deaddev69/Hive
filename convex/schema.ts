@@ -841,6 +841,18 @@ export default defineSchema({
                             merchantPayable: v.number(),
                           })),
     shipmentId:           v.optional(v.id("shipments")),
+    // ─── Return Flow ─────────────────────────────────────────────────────
+    returnShipmentId:     v.optional(v.id("shipments")),
+    returnStatus:         v.optional(v.union(
+                            v.literal("requested"),
+                            v.literal("approved"),
+                            v.literal("initiated"),
+                            v.literal("picked_up"),
+                            v.literal("in_transit"),
+                            v.literal("delivered"),
+                            v.literal("cancelled"),
+                            v.literal("failed")
+                          )),
     notes:                v.optional(v.string()),
     payoutStatus:         v.optional(v.union(
                             v.literal("pending"),
@@ -1033,6 +1045,7 @@ export default defineSchema({
                           v.literal("lost"),
                           v.literal("cancelled")
                         ),
+    isReturn:           v.optional(v.boolean()),
     trackingUrl:        v.optional(v.string()),
     labelUrl:           v.optional(v.string()),
     inventoryRestored:   v.optional(v.boolean()),

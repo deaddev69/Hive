@@ -29,6 +29,7 @@ import {
   Receipt,
   AlertTriangle,
   Phone,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -182,7 +183,10 @@ function OrderDetailDrawer({
     orderId ? { orderId } : "skip"
   );
   const updateStatus = useMutation(api.adminOrders.updateOrderStatus);
+  const approveReturn = useMutation(api.adminOrders.approveReturnAdmin);
+  const initiateReturn = useMutation(api.adminOrders.initiateReturnAdmin);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [returnActionLoading, setReturnActionLoading] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!orderId || !order) return;
@@ -193,6 +197,30 @@ function OrderDetailDrawer({
       alert("Failed to update status: " + err.message);
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const handleApproveReturn = async () => {
+    if (!orderId) return;
+    setReturnActionLoading(true);
+    try {
+      await approveReturn({ orderId });
+    } catch (err: any) {
+      alert("Failed to approve return: " + err.message);
+    } finally {
+      setReturnActionLoading(false);
+    }
+  };
+
+  const handleInitiateReturn = async () => {
+    if (!orderId) return;
+    setReturnActionLoading(true);
+    try {
+      await initiateReturn({ orderId });
+    } catch (err: any) {
+      alert("Failed to initiate return: " + err.message);
+    } finally {
+      setReturnActionLoading(false);
     }
   };
 
@@ -493,6 +521,105 @@ function OrderDetailDrawer({
                   <p className="text-xs text-slate-500 mt-1">
                     Refund status: <span className="font-semibold capitalize">{order.refundStatus}</span>
                   </p>
+                )}
+              </div>
+            )}
+
+            {/* ── Return Management ──────────────────────────────────── */}
+            {order.status === "delivered" && (
+              <div className="bg-indigo-50/80 rounded-2xl p-4 border border-indigo-200/60">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-3">
+                  <RotateCcw className="w-3 h-3" /> Return Management
+                </div>
+
+                {/* No return status yet — show Approve button */}
+                {!order.returnStatus && (
+                  <button
+                    onClick={handleApproveReturn}
+                    disabled={returnActionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {returnActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                    Approve Return
+                  </button>
+                )}
+
+                {/* Return requested — show Approve */}
+                {order.returnStatus === "requested" && (
+                  <button
+                    onClick={handleApproveReturn}
+                    disabled={returnActionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {returnActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                    Approve Return
+                  </button>
+                )}
+
+                {/* Return approved — show Initiate button */}
+                {order.returnStatus === "approved" && (
+                  <button
+                    onClick={handleInitiateReturn}
+                    disabled={returnActionLoading}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-amber-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {returnActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                    Initiate Return Pickup (Customer → Boutique)
+                  </button>
+                )}
+
+                {/* Return initiated / in-progress / delivered — show status */}
+                {order.returnStatus && ["initiated", "picked_up", "in_transit", "delivered", "failed"].includes(order.returnStatus) && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-600">Return Status</span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+                        order.returnStatus === "delivered"
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : order.returnStatus === "failed"
+                            ? "bg-red-50 text-red-700 border-red-200"
+                            : "bg-indigo-50 text-indigo-700 border-indigo-200"
+                      }`}>
+                        {order.returnStatus.replace(/_/g, " ")}
+                      </span>
+                    </div>
+
+                    {order.returnShipment?.awbNumber && order.returnShipment.awbNumber !== "" && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400">Porter CRN</span>
+                        <span className="text-[11px] font-mono font-bold text-hive-dark select-all">
+                          {order.returnShipment.awbNumber}
+                        </span>
+                      </div>
+                    )}
+
+                    {order.returnShipment?.driverName && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400">Driver</span>
+                        <span className="text-[11px] font-semibold text-hive-dark">
+                          {order.returnShipment.driverName}
+                          {order.returnShipment.driverPhone && ` · ${order.returnShipment.driverPhone}`}
+                        </span>
+                      </div>
+                    )}
+
+                    {order.returnShipment?.trackingUrl && (
+                      <a
+                        href={order.returnShipment.trackingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] text-indigo-600 hover:underline font-medium"
+                      >
+                        Track Return →
+                      </a>
+                    )}
+
+                    {order.returnStatus === "delivered" && (
+                      <p className="text-[10px] text-green-700 bg-green-50 border border-green-200 rounded-xl px-3 py-2 font-semibold mt-1">
+                        ✅ Return delivered to boutique. No seller payout triggered.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             )}
