@@ -1215,6 +1215,7 @@ export default defineSchema({
     expiresAt:       v.number(),
     placedDuringClosedHours: v.optional(v.boolean()),
     scheduledProcessingDate: v.optional(v.string()),
+    stockRestoredAt: v.optional(v.number()),
     createdAt:       v.number(),
   })
     .index("by_userId", ["userId"])

@@ -20,14 +20,6 @@ export type UserRole = "customer" | "seller_pending" | "seller_rejected" | "bout
 export async function getAuthenticatedUser(ctx: AuthCtx, token?: string, options?: { skipIssuerGating?: boolean }) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
-    // Dev-only fallback for chaos tests
-    if (token && token.startsWith("mock_user_")) {
-      const mockUserId = token.replace("mock_user_", "");
-      const user = await (ctx as any).db.get(mockUserId);
-      if (user && user.email && user.email.includes("chaos_") && user.email.includes("@hive.com")) {
-        return user;
-      }
-    }
     throw new ConvexError(HiveError.UNAUTHENTICATED);
   }
 

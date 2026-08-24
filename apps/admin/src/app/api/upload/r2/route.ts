@@ -29,9 +29,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "File exceeds 5MB limit." }, { status: 400 });
     }
 
-    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedMimeTypes.includes(file.type)) {
-      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, WEBP, and SVG are allowed." }, { status: 400 });
+      return NextResponse.json({ error: "Invalid file type. Only JPEG, PNG, and WEBP are allowed." }, { status: 400 });
     }
 
     const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || process.env.R2_ACCOUNT_ID;

@@ -26,7 +26,7 @@ export default clerkMiddleware(async (auth, req) => {
   if (!isAuthPath) {
     const session = await auth.protect();
     const userRole = session.sessionClaims?.metadata?.role || session.sessionClaims?.role;
-    if (userRole && userRole !== "admin") {
+    if (!userRole || userRole !== "admin") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
   }

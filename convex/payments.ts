@@ -174,8 +174,8 @@ export const getCheckoutPricing = query({
       let discountPaise = 0;
       if (args.promoCode === "WELCOME10") {
         discountPaise = Math.round(productSubtotalPaise * 0.10);
-      } else if (args.promoCode === "HIVE50") {
-        discountPaise = Math.min(productSubtotalPaise, 5000);
+      } else if (args.promoCode === "HIVEFIRST") {
+        discountPaise = Math.min(50000, productSubtotalPaise);
       }
 
       // Delivery fee (from dynamic Porter quote passed from frontend)
@@ -569,12 +569,18 @@ export const initCheckoutSessionInternal = internalMutation({
       }
     }
 
-    let expectedDeliveryFee = args.deliveryFee;
+    let expectedDeliveryFee: number;
     if (cleanPromoCode === "FREESHIP") {
       expectedDeliveryFee = 0;
+    } else if (storedQuote) {
+      // Use the server-stored checkout quote as the authoritative delivery fee
+      expectedDeliveryFee = storedQuote.deliveryFee;
+    } else {
+      // Legacy fallback: trust client value when no stored quote available
+      expectedDeliveryFee = args.deliveryFee;
     }
 
-    if (args.deliveryFee !== expectedDeliveryFee) {
+    if (Math.abs(args.deliveryFee - expectedDeliveryFee) > 1) {
       throw new ConvexError(`Delivery fee validation failed. Expected: ₹${expectedDeliveryFee}, Got: ₹${args.deliveryFee}`);
     }
 
@@ -608,25 +614,36 @@ export const initCheckoutSessionInternal = internalMutation({
     const now = Date.now();
 
     // Decrement stock for real products and log inventory movements (skip for reservations as they are already deducted)
-    for (const { item, productRow, isMock } of resolvedItems) {
-      if (productRow && !isMock && !item.reservationId) {
-        const currentStock = productRow.stockBySize[item.size] ?? 0;
+    // NOTE: We re-read the product document here to ensure Convex OCC detects concurrent
+    // modifications. If two mutations decrement the same product simultaneously, the second
+    // will conflict on this read-then-write and automatically retry, seeing the updated stock.
+    for (const { item, productRow: originalProduct, isMock } of resolvedItems) {
+      if (originalProduct && !isMock && !item.reservationId) {
+        // Re-read product to get latest stock for OCC conflict detection
+        const freshProduct = await ctx.db.get(originalProduct._id as Id<"products">);
+        if (!freshProduct) {
+          throw new ConvexError(`Product "${item.name}" is no longer available.`);
+        }
+        const currentStock = (freshProduct as any).stockBySize[item.size] ?? 0;
+        if (currentStock < item.quantity) {
+          throw new ConvexError(`"${item.name}" in size ${item.size} is now out of stock.`);
+        }
         const newStock = currentStock - item.quantity;
-        const stockBySize = { ...productRow.stockBySize };
+        const stockBySize = { ...(freshProduct as any).stockBySize };
         stockBySize[item.size] = newStock;
 
         const totalStock = Object.values(stockBySize).reduce((sum: number, val: any) => sum + (val || 0), 0);
         const autoDeactivatedBecauseOutOfStock = totalStock <= 0;
 
-        await ctx.db.patch(productRow._id, { 
+        await ctx.db.patch(originalProduct._id as Id<"products">, { 
           stockBySize, 
           autoDeactivatedBecauseOutOfStock, 
           updatedAt: now 
         });
 
         await ctx.db.insert("inventoryMovements", {
-          productId: productRow._id,
-          boutiqueId: productRow.boutiqueId,
+          productId: originalProduct._id as Id<"products">,
+          boutiqueId: (freshProduct as any).boutiqueId,
           size: item.size,
           beforeQty: currentStock,
           afterQty: newStock,

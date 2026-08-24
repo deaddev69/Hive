@@ -20,8 +20,17 @@ async function configureCors() {
         CORSRules: [
           {
             AllowedHeaders: ["*"],
-            AllowedMethods: ["PUT", "POST", "GET", "HEAD", "DELETE"],
-            AllowedOrigins: ["*"],
+            AllowedMethods: ["PUT", "POST", "GET", "HEAD"],
+            AllowedOrigins: [
+              "https://hivenow.in",
+              "https://www.hivenow.in",
+              "https://admin.hivenow.in",
+              "https://boutique.hivenow.in",
+              "https://seller.hivenow.in",
+              "http://localhost:3000",
+              "http://localhost:3001",
+              "http://localhost:3002",
+            ],
             ExposeHeaders: ["ETag"],
             MaxAgeSeconds: 3000,
           },

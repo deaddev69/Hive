@@ -46,7 +46,8 @@ export default clerkMiddleware(async (auth, req) => {
       return NextResponse.redirect(signInUrl);
     }
     const userRole = session.sessionClaims?.metadata?.role || session.sessionClaims?.role;
-    if (userRole && userRole !== "boutique" && userRole !== "boutique_owner" && userRole !== "admin") {
+    const allowedSellerRoles = ["boutique", "boutique_owner", "admin"];
+    if (!userRole || !allowedSellerRoles.includes(userRole as string)) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
   }

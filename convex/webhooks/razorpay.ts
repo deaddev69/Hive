@@ -164,7 +164,13 @@ export const recordWebhookEvent = internalMutation({
       if (existing.status === "processed") {
         return { isDuplicate: true, responseText: "Event already processed", status: 200 };
       }
-      return { isDuplicate: true, responseText: "Duplicate event ignored", status: 200 };
+      if (existing.status === "received") {
+        // Currently being processed by another handler — don't allow concurrent processing
+        return { isDuplicate: true, responseText: "Event is currently being processed", status: 200 };
+      }
+      // status === "failed" — allow Razorpay retry: reset to "received" and re-process
+      await ctx.db.patch(existing._id, { status: "received", error: undefined, processedAt: undefined });
+      return { isDuplicate: false, logId: existing._id };
     }
 
     const id = await ctx.db.insert("webhookEvents", {
@@ -248,15 +254,44 @@ export const processPaymentCaptured = internalMutation({
 
     if (session.status === "expired" || session.expiresAt < now) {
       await ctx.db.patch(session._id, { status: "expired" });
-      await ctx.db.patch(payment._id, { status: "failed", updatedAt: now });
+
+      // C4 FIX: Payment was captured but session expired — enqueue automatic refund
+      // instead of throwing (which would leave customer charged with no order/refund).
+      await ctx.db.patch(payment._id, {
+        status: "captured",
+        razorpayPaymentId: args.razorpayPaymentId,
+        updatedAt: now,
+      });
+
       await ctx.db.insert("paymentEvents", {
         source: "razorpay",
         paymentId: payment._id,
         eventType: "failed",
-        payload: JSON.stringify({ reason: "Payment webhook received after checkout session expired" }),
+        payload: JSON.stringify({ reason: "expired_capture_refund", detail: "Payment captured after checkout session expired. Auto-refund queued." }),
         createdAt: now,
       });
-      throw new Error("Checkout session expired before webhook capture.");
+
+      // Deterministic idempotency key ensures this refund is never duplicated
+      const idempotencyKey = `expired_capture_${session._id}_${args.razorpayPaymentId}`;
+      const existingRefund = await ctx.db
+        .query("refundQueue")
+        .withIndex("by_idempotencyKey", (q) => q.eq("idempotencyKey", idempotencyKey))
+        .first();
+
+      if (!existingRefund) {
+        await ctx.db.insert("refundQueue", {
+          paymentId: payment._id,
+          reason: "Payment captured after checkout session expired. Automatic refund.",
+          amountPaise: payment.amount,
+          status: "pending",
+          idempotencyKey,
+          createdAt: now,
+        });
+      }
+
+      console.warn(`[RazorpayWebhook] Session ${session._id} expired but payment ${args.razorpayPaymentId} captured. Auto-refund queued.`);
+      // Return success to Razorpay to prevent further retries
+      return { success: true, message: "Session expired. Payment captured — automatic refund queued." };
     }
 
     if (session.status === "failed") {

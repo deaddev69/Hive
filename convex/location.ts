@@ -11,8 +11,7 @@ export const reverseGeocode = action({
   handler: async (ctx, args) => {
     // 1. Authentication Check
     const identity = await ctx.auth.getUserIdentity();
-    const isTestToken = args.token?.startsWith("mock_user_");
-    if (!identity && !isTestToken) {
+    if (!identity) {
       throw new Error("Unauthorized: Must be logged in to geocode.");
     }
 
@@ -20,7 +19,7 @@ export const reverseGeocode = action({
     // This leverages the existing rate limit logic in convex/addresses.ts
     // 20 requests per hour per user.
     await ctx.runMutation(api.addresses.verifyAndIncrementGeocodeRateLimit, { 
-      token: args.token ?? identity!.subject 
+      token: args.token ?? identity.subject 
     });
 
     // 3. Server Key Configuration Check

@@ -5,11 +5,20 @@ import { Id } from "../_generated/dataModel";
 /**
  * Shared helper to restore reserved stock from a checkout session.
  * Used during payment failures, webhooks, and session expiration sweeps.
+ * 
+ * IDEMPOTENT: If session.stockRestoredAt is already set, this is a no-op.
+ * After restoring, patches the session with stockRestoredAt to prevent
+ * duplicate restoration from concurrent callers.
  */
 export async function restoreCheckoutSessionStock(
   ctx: GenericMutationCtx<any>,
   session: any
 ) {
+  // Idempotency guard: if stock was already restored for this session, skip
+  if (session.stockRestoredAt) {
+    return;
+  }
+
   const now = Date.now();
   for (const item of session.items) {
     const product = await ctx.db
@@ -52,4 +61,12 @@ export async function restoreCheckoutSessionStock(
       });
     }
   }
+
+  // Mark session as stock-restored (idempotency flag)
+  // Under Convex OCC, concurrent callers writing this same field will conflict,
+  // and the retrying caller will see stockRestoredAt is set and exit early.
+  if (session._id) {
+    await ctx.db.patch(session._id, { stockRestoredAt: now });
+  }
 }
+
