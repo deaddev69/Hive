@@ -572,6 +572,8 @@ export default defineSchema({
                          v.literal("oversized")
                        )),
     seedSource:       v.optional(v.union(v.literal("demo"), v.literal("production"))),
+    // Security: Version field for optimistic concurrency control (prevents overselling race conditions)
+    stockVersion:     v.optional(v.number()),
   })
     .index("by_boutiqueId", ["boutiqueId"])
     .index("by_categoryId", ["categoryId"])
@@ -1502,6 +1504,8 @@ export default defineSchema({
     payload:     v.optional(v.string()),            // raw JSON
     error:       v.optional(v.string()),
     idempotencyKey: v.optional(v.string()),
+    // Security: Webhook timestamp to prevent replay attacks
+    eventTimestamp: v.optional(v.number()),         // Unix timestamp from provider
     processedAt: v.optional(v.number()),
     createdAt:   v.number(),
   })
