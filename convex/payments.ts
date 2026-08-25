@@ -1961,6 +1961,11 @@ export const retryCheckoutSession = action({
 });
 
 export function isSignatureBypassAllowed(enableDebugTools: string | undefined, razorpaySecret: string | undefined): boolean {
+  // SECURITY: Never bypass signature verification in production
+  const isProdDeployment = process.env.CONVEX_SITE_URL?.includes('standing-mosquito-377');
+  if (isProdDeployment) {
+    return false; // Production - always verify signatures
+  }
   return enableDebugTools === "true" && razorpaySecret === "mock_secret";
 }
 

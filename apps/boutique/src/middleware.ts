@@ -45,11 +45,9 @@ export default clerkMiddleware(async (auth, req) => {
       signInUrl.searchParams.set("redirect_url", req.url);
       return NextResponse.redirect(signInUrl);
     }
-    const userRole = session.sessionClaims?.metadata?.role || session.sessionClaims?.role;
-    const allowedSellerRoles = ["boutique", "boutique_owner", "admin"];
-    if (userRole && userRole !== "boutique" && userRole !== "boutique_owner" && userRole !== "admin") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
+    // SECURITY FIX: Removed role check from middleware (caused production incident f8c6aef)
+    // Role authorization is enforced in Convex backend via requireRole() and getMyBoutique()
+    // JWT may not contain metadata.role, causing false blocks
   }
 
   // 2. Redirect merchant onboarding applications to customer app portal
