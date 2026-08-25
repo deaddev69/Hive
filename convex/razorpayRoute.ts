@@ -187,7 +187,9 @@ export function calculateLegacyFallbackPayout(order: {
   const subtotal = order.subtotal ?? 0;
   const discount = order.discount ?? 0;
   const commission = order.commissionAmount ?? 0;
-  return Math.max(0, Math.round(subtotal - discount - commission));
+  // SECURITY FIX: Deduct 18% GST on commission (was missing, causing overpayment to sellers)
+  const commissionGst = Math.round(commission * 0.18);
+  return Math.max(0, Math.round(subtotal - discount - commission - commissionGst));
 }
 
 /**

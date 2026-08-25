@@ -81,6 +81,19 @@ export const handleRazorpayWebhook = httpAction(async (ctx, request) => {
 
   console.log(`[RazorpayWebhook] Received event: ${eventType} (ID: ${eventId})`);
 
+  // SECURITY: Validate webhook timestamp to prevent replay attacks
+  const eventTimestamp = event.created_at; // Razorpay includes Unix timestamp
+  if (eventTimestamp) {
+    const now = Math.floor(Date.now() / 1000);
+    const age = Math.abs(now - eventTimestamp);
+    const MAX_WEBHOOK_AGE_SECONDS = 300; // 5 minutes
+
+    if (age > MAX_WEBHOOK_AGE_SECONDS) {
+      console.warn(`[RazorpayWebhook] Rejected stale webhook: ${age}s old, eventId=${eventId}`);
+      return new Response('Webhook timestamp outside valid window', { status: 400 });
+    }
+  }
+
   // Record webhook log atomically to prevent concurrent processing races
   const recordResult = await ctx.runMutation(internal.webhooks.razorpay.recordWebhookEvent, {
     eventId,
@@ -242,6 +255,16 @@ export const processPaymentCaptured = internalMutation({
     }
 
     const now = Date.now();
+
+    // SECURITY: Validate payment amount matches expected session total
+    const capturedAmountPaise = payment.amount;
+    const expectedAmountPaise = session.total;
+    const tolerancePaise = 100; // ₹1 tolerance for rounding
+
+    if (Math.abs(capturedAmountPaise - expectedAmountPaise) > tolerancePaise) {
+      console.error(`[PaymentCaptured] Amount mismatch: captured=${capturedAmountPaise}, expected=${expectedAmountPaise}`);
+      throw new Error(`Payment amount mismatch: captured ${capturedAmountPaise} paise, expected ${expectedAmountPaise} paise`);
+    }
 
     // Check if session is already completed or expired
     if (session.status === "completed") {
