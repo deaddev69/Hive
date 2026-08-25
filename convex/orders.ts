@@ -135,7 +135,7 @@ export const placeOrder = mutation({
       throw new Error("House/Flat Number is required for delivery.");
     }
     const finalPhone = addr.phone || user.phone;
-    if (!finalPhone || !finalPhone.trim()) {
+    if (!finalPhone?.trim()) {
       throw new Error("Contact phone number is required for delivery hand-off.");
     }
 
@@ -654,7 +654,7 @@ export const placeOrder = mutation({
       transactionId,
       customerName,
       customerEmail: user.email || "",
-      customerPhone: finalPhone,
+      customerPhone: finalPhone!,
       billingAddress: {
         line1: compiledAddressSnapshot.houseNumber
           ? `${compiledAddressSnapshot.houseNumber}, ${compiledAddressSnapshot.line1 || compiledAddressSnapshot.formattedAddress || ""}`

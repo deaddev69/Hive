@@ -218,7 +218,7 @@ export const createPost = mutation({
       excerpt: args.excerpt.trim(),
       status: args.status,
       authorId: admin.clerkId || (admin._id as string),
-      authorName: args.authorName || admin.name || "Hive Editorial Team",
+      authorName: args.authorName || "Hive Editorial Team",
       publishedAt,
       category: args.category || "Platform Guides",
       readTime: args.readTime || "5 min read",
