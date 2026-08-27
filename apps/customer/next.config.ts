@@ -29,6 +29,7 @@ const nextConfig: NextConfig = {
 
   // Image optimization — allow AVIF/WebP and configure remote domains
   images: {
+    unoptimized: true,
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
