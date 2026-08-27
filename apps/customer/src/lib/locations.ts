@@ -8,6 +8,10 @@ export interface LocationData {
   metaTitle: string;
   metaDescription: string;
   heroHeader: string;
+  geo?: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export const KOCHI_LOCATIONS: Record<string, LocationData> = {
@@ -21,6 +25,10 @@ export const KOCHI_LOCATIONS: Record<string, LocationData> = {
     metaTitle: "Fashion Delivered in Hours to Kakkanad | Hive Kochi",
     metaDescription: "Get the latest local boutique fashion delivered to Kakkanad, Kochi in hours. Skip the wait and shop premium dresses, sarees, and menswear on Hive.",
     heroHeader: "Fashion Delivered to Kakkanad in Hours",
+    geo: {
+      latitude: 10.0159,
+      longitude: 76.3419,
+    },
   },
   edappally: {
     slug: "edappally",
@@ -32,6 +40,10 @@ export const KOCHI_LOCATIONS: Record<string, LocationData> = {
     metaTitle: "Fashion Delivered in Hours to Edappally | Hive Kochi",
     metaDescription: "Shop boutique collections online and get delivery in hours to Edappally, Kochi. Find premium ethnic wear and modern outfits on Hive.",
     heroHeader: "Fashion Delivered to Edappally in Hours",
+    geo: {
+      latitude: 10.0236,
+      longitude: 76.3117,
+    },
   },
   "panampilly-nagar": {
     slug: "panampilly-nagar",
@@ -43,6 +55,10 @@ export const KOCHI_LOCATIONS: Record<string, LocationData> = {
     metaTitle: "Fashion Delivered in Hours to Panampilly Nagar | Hive Kochi",
     metaDescription: "Get premium designer clothing and boutique collections delivered to Panampilly Nagar, Kochi in hours. Experience instant styling with Hive.",
     heroHeader: "Fashion Delivered to Panampilly Nagar in Hours",
+    geo: {
+      latitude: 9.9625,
+      longitude: 76.2995,
+    },
   },
   vyttila: {
     slug: "vyttila",
@@ -54,6 +70,10 @@ export const KOCHI_LOCATIONS: Record<string, LocationData> = {
     metaTitle: "Fashion Delivered in Hours to Vyttila | Hive Kochi",
     metaDescription: "Shop high-quality boutique fashion and enjoy same-day delivery in Vyttila, Kochi. Experience ultra-fast fashion delivery with Hive.",
     heroHeader: "Fashion Delivered to Vyttila in Hours",
+    geo: {
+      latitude: 9.9678,
+      longitude: 76.3183,
+    },
   },
   aluva: {
     slug: "aluva",
@@ -65,5 +85,9 @@ export const KOCHI_LOCATIONS: Record<string, LocationData> = {
     metaTitle: "Fashion Delivered in Hours to Aluva | Hive Kochi",
     metaDescription: "Get verified boutique fashion delivered to your doorstep in Aluva, Kochi in hours. Discover ethnic wear, shirts, and accessories on Hive.",
     heroHeader: "Fashion Delivered to Aluva in Hours",
+    geo: {
+      latitude: 10.1076,
+      longitude: 76.3516,
+    },
   },
 };

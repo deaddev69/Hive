@@ -1,5 +1,24 @@
 import React from "react";
+import { Metadata } from "next";
 import { CatalogLayout } from "@/components/catalog/CatalogLayout";
+import { SITE_URL } from "@/lib/seo";
+
+export const metadata: Metadata = {
+  title: "Return and Refund Policy | Hive",
+  description:
+    "Learn about Hive's transparent return, exchange, and refund policy for boutique fashion purchases in Kochi and Ernakulam.",
+  alternates: {
+    canonical: `${SITE_URL}/return-policy`,
+  },
+  openGraph: {
+    title: "Return and Refund Policy | Hive",
+    description:
+      "Learn about Hive's transparent return, exchange, and refund policy for boutique fashion purchases in Kochi and Ernakulam.",
+    url: `${SITE_URL}/return-policy`,
+    siteName: "Hive",
+    type: "website",
+  },
+};
 
 export default function ReturnPolicyPage() {
   return (

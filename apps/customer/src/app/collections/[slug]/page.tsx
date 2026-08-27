@@ -2,24 +2,46 @@ import React from "react";
 import { Metadata } from "next";
 import { CollectionPageClient } from "./CollectionPageClient";
 import { CatalogLayout } from "@/components/catalog/CatalogLayout";
+import { SITE_URL } from "@/lib/seo";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
-}): Promise<Metadata> {
-  const slug = params.slug;
-  const title = slug.replace(/-/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const title = slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  const canonicalUrl = `${SITE_URL}/collections/${slug}`;
+  const description = `Shop the ${title} collection. Hand-picked pieces from verified local boutiques in Kochi, delivered same-day.`;
+
   return {
     title: `${title} | Hive`,
-    description: `Shop the ${title} collection. Hand-picked pieces from verified local boutiques, delivered same-day.`,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: `${title} | Hive`,
+      description,
+      url: canonicalUrl,
+      siteName: "Hive",
+      type: "website",
+      images: [`${SITE_URL}/icon-512x512.png`],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | Hive`,
+      description,
+      images: [`${SITE_URL}/icon-512x512.png`],
+    },
   };
 }
 
-export default function CollectionPage({ params }: { params: { slug: string } }) {
+export default async function CollectionPage({ params }: Props) {
+  const { slug } = await params;
   return (
     <CatalogLayout>
-      <CollectionPageClient slug={params.slug} />
+      <CollectionPageClient slug={slug} />
     </CatalogLayout>
   );
 }

@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { getCategoryContent } from "./content/categoryContent";
 
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://hivenow.in";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.hivenow.in";
 
 type MetadataProps = {
   title: string;
@@ -17,7 +17,7 @@ export function constructMetadata({
   absoluteTitle = false,
   description,
   path,
-  image = "/og-image.jpg",
+  image = "/icon-512x512.png",
   noindex = false,
 }: MetadataProps): Metadata {
   const url = `${SITE_URL}${path}`;
