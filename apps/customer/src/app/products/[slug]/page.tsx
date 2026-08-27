@@ -18,7 +18,8 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeURIComponent(rawSlug);
   
   if (getCategoryContent(slug)) {
     return getCategoryMetadata(slug);
@@ -42,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const description =
       product.description ||
       `Buy ${product.name} online from verified local boutiques in Kochi on Hive. Same-day 1-2 hour delivery available across Ernakulam.`;
-    const canonicalUrl = `${SITE_URL}/products/${product.slug}`;
+    const canonicalUrl = `${SITE_URL}/products/${encodeURIComponent(product.slug)}`;
     const ogImage =
       product.images && product.images.length > 0
         ? product.images[0]
@@ -80,7 +81,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductOrCategoryPage({ params }: Props) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeURIComponent(rawSlug);
 
   if (getCategoryContent(slug)) {
     const formattedCategory = slug.charAt(0).toUpperCase() + slug.slice(1);
@@ -90,7 +92,7 @@ export default async function ProductOrCategoryPage({ params }: Props) {
           items={[
             { name: "Home", url: "/" },
             { name: "Products", url: "/products" },
-            { name: formattedCategory, url: `/products/${slug}` },
+            { name: formattedCategory, url: `/products/${encodeURIComponent(slug)}` },
           ]} 
         />
         <ProductsClient initialCategorySlug={slug} />
@@ -121,7 +123,7 @@ export default async function ProductOrCategoryPage({ params }: Props) {
           items={[
             { name: "Home", url: "/" },
             { name: "Products", url: "/products" },
-            { name: formattedCategory, url: `/products/${slug}` },
+            { name: formattedCategory, url: `/products/${encodeURIComponent(slug)}` },
           ]} 
         />
         <ProductsClient initialCategorySlug={slug} />
