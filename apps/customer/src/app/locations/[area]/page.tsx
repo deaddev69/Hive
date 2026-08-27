@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MapPin, Truck, Clock, ArrowRight, ChevronRight, Sparkles, ShieldCheck, ShoppingBag, Store } from "lucide-react";
 import { KOCHI_LOCATIONS } from "@/lib/locations";
+import { SITE_URL } from "@/lib/seo";
 
 interface Props {
   params: Promise<{ area: string }>;
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const url = `https://hivenow.in/locations/${location.slug}`;
+  const url = `${SITE_URL}/locations/${location.slug}`;
 
   return {
     title: {
@@ -70,18 +71,25 @@ export default async function LocationPage({ params }: Props) {
   const localBusinessSchema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    "name": `Hive Boutique Delivery - ${location.name}`,
-    "image": "https://hivenow.in/logo.png",
-    "@id": `https://hivenow.in/locations/${location.slug}`,
-    "url": `https://hivenow.in/locations/${location.slug}`,
-    "telephone": "+91 73560 19103",
+    "name": `Hive — ${location.name}`,
+    "image": `${SITE_URL}/logo.png`,
+    "@id": `${SITE_URL}/locations/${location.slug}`,
+    "url": `${SITE_URL}/locations/${location.slug}`,
+    "telephone": "+917356019103",
     "priceRange": "$$",
     "address": {
       "@type": "PostalAddress",
+      "streetAddress": "55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road",
       "addressLocality": location.name,
       "addressRegion": "Kerala",
+      "postalCode": "682016",
       "addressCountry": "IN"
     },
+    "geo": location.geo ? {
+      "@type": "GeoCoordinates",
+      "latitude": location.geo.latitude,
+      "longitude": location.geo.longitude,
+    } : undefined,
     "description": location.metaDescription
   };
 
@@ -92,7 +100,7 @@ export default async function LocationPage({ params }: Props) {
     "provider": {
       "@type": "LocalBusiness",
       "name": "Hive",
-      "url": "https://hivenow.in"
+      "url": SITE_URL
     },
     "areaServed": {
       "@type": "AdministrativeArea",

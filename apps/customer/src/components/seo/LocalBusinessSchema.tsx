@@ -5,20 +5,24 @@ export function LocalBusinessSchema() {
   const schema = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
-    name: "Hive Fashion Delivery",
+    name: "Hive",
     image: `${SITE_URL}/logo.png`,
     "@id": SITE_URL,
     url: SITE_URL,
-    telephone: "+91 73560 19103",
+    telephone: "+917356019103",
+    email: "support@hivenow.in",
+    priceRange: "₹₹",
     address: {
       "@type": "PostalAddress",
+      streetAddress: "55/4379, Door No. 3623, Valanjambalam Junction, Kochi M.G. Road",
       addressLocality: "Ernakulam",
       addressRegion: "Kerala",
+      postalCode: "682016",
       addressCountry: "IN",
     },
     geo: {
       "@type": "GeoCoordinates",
-      latitude: 9.9816, // Ernakulam approx
+      latitude: 9.9678,
       longitude: 76.2999,
     },
     openingHoursSpecification: {
@@ -35,8 +39,7 @@ export function LocalBusinessSchema() {
       opens: "09:00",
       closes: "22:00",
     },
-    priceRange: "$$",
-    description: "Premium fashion delivery service across Ernakulam, partnering with top local boutiques.",
+    description: "Hyperlocal boutique fashion delivery service across Kochi and Ernakulam, partnering with top local designers.",
   };
 
   return (

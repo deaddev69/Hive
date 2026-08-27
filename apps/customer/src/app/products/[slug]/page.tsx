@@ -1,5 +1,4 @@
 import React from "react";
-// Trigger new Vercel deployment after production Convex functions deployment (July 31, 2026)
 import { notFound } from "next/navigation";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../convex/_generated/api";
@@ -7,8 +6,9 @@ import { ProductDetailPageClient } from "./ProductDetailPageClient";
 import { Metadata } from "next";
 import { cleanProductTitle } from "@/components/product/ProductCard";
 import { getCategoryContent } from "@/lib/content/categoryContent";
-import { getCategoryMetadata } from "@/lib/seo";
+import { getCategoryMetadata, SITE_URL } from "@/lib/seo";
 import { BreadcrumbSchema } from "@/components/seo/BreadcrumbSchema";
+import { ProductSchema } from "@/components/seo/ProductSchema";
 import { ProductsClient } from "../ProductsClient";
 
 export const revalidate = 0;
@@ -38,12 +38,40 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const product = await client.query(api.products.getProduct, { slug });
     if (!product) return {};
 
+    const cleanTitle = cleanProductTitle(product.name);
+    const description =
+      product.description ||
+      `Buy ${product.name} online from verified local boutiques in Kochi on Hive. Same-day 1-2 hour delivery available across Ernakulam.`;
+    const canonicalUrl = `${SITE_URL}/products/${product.slug}`;
+    const ogImage =
+      product.images && product.images.length > 0
+        ? product.images[0]
+        : product.coverImage || `${SITE_URL}/icon-512x512.png`;
+
     return {
-      title: `${cleanProductTitle(product.name)} — Hive`,
-      description: product.description || `Discover and shop ${product.name} on Hive.`,
+      title: `${cleanTitle} — Hive`,
+      description,
+      alternates: {
+        canonical: canonicalUrl,
+      },
       openGraph: {
-        title: `${cleanProductTitle(product.name)} — Hive`,
-        description: product.description || `Discover and shop ${product.name} on Hive.`,
+        title: `${cleanTitle} — Hive`,
+        description,
+        url: canonicalUrl,
+        siteName: "Hive",
+        type: "website",
+        images: [
+          {
+            url: ogImage,
+            alt: product.name,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${cleanTitle} — Hive`,
+        description,
+        images: [ogImage],
       },
     };
   } catch {
@@ -112,7 +140,19 @@ export default async function ProductOrCategoryPage({ params }: Props) {
     return notFound();
   }
 
+  const cleanTitle = cleanProductTitle(initialProduct.name);
+
   return (
-    <ProductDetailPageClient product={initialProduct} />
+    <>
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Products", url: "/products" },
+          { name: cleanTitle, url: `/products/${initialProduct.slug}` },
+        ]}
+      />
+      <ProductSchema product={initialProduct} />
+      <ProductDetailPageClient product={initialProduct} />
+    </>
   );
 }

@@ -27,7 +27,7 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://hivenow.in"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.hivenow.in"),
   title: {
     template: "%s | Hive",
     default: "Instant Clothes Delivery in Kochi (1-2 Hours) | Hive",
