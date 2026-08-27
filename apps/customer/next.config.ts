@@ -27,10 +27,9 @@ const nextConfig: NextConfig = {
   // Transpile shared workspace packages
   transpilePackages: ["@hive/types", "@hive/ui", "@hive/utils"],
 
-  // Image optimization — allow AVIF/WebP and configure remote domains
+  // Image optimization — allow Unsplash and Convex CDNs
   images: {
     unoptimized: true,
-    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       {
         protocol: "https",
@@ -40,26 +39,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.convex.cloud",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "*.r2.dev",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "*.r2.cloudflarestorage.com",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "*.hivenow.in",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "hivenow.in",
         pathname: "/**",
       },
     ],
