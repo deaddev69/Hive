@@ -9,6 +9,7 @@ import { getCategoryContent } from "@/lib/content/categoryContent";
 import { getCategoryMetadata, SITE_URL } from "@/lib/seo";
 import { BreadcrumbSchema } from "@/components/seo/BreadcrumbSchema";
 import { ProductSchema } from "@/components/seo/ProductSchema";
+import { toSeoProduct } from "@/lib/seo/productAdapter";
 import { ProductsClient } from "../ProductsClient";
 
 export const revalidate = 0;
@@ -143,6 +144,7 @@ export default async function ProductOrCategoryPage({ params }: Props) {
   }
 
   const cleanTitle = cleanProductTitle(initialProduct.name);
+  const seoProduct = toSeoProduct(initialProduct);
 
   return (
     <>
@@ -153,7 +155,7 @@ export default async function ProductOrCategoryPage({ params }: Props) {
           { name: cleanTitle, url: `/products/${initialProduct.slug}` },
         ]}
       />
-      <ProductSchema product={initialProduct} />
+      <ProductSchema product={seoProduct} />
       <ProductDetailPageClient product={initialProduct} />
     </>
   );
