@@ -10,12 +10,16 @@ import {
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyB1Qn8xKgOA_mYOLfCNZagS9QEMO0u0Ud8",
+  // authDomain MUST match the domain the app is served from for signInWithPopup to work.
+  // seller.hivenow.in is the production custom domain.
+  // hive-fashion.firebaseapp.com is the fallback for local/preview environments.
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "hive-fashion.firebaseapp.com",
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "hive-fashion",
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "hive-fashion.firebasestorage.app",
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "455960950280",
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:455960950280:web:f4be4436f24cd3828d83bd",
 };
+
 
 // Singleton app — safe to call multiple times
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();

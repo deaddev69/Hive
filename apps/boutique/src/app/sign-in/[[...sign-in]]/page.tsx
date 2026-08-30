@@ -2,19 +2,47 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 
+/** Detect if running as installed PWA (standalone/fullscreen) */
+function isPWA(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as any).standalone === true
+  );
+}
+
 function SignInContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkingRedirect, setCheckingRedirect] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading } = useFirebaseAuth();
+
+  // Handle redirect result on page load (for PWA redirect flow)
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          // Redirect sign-in completed — useFirebaseAuth will pick it up
+          console.log("[SignIn] Redirect result received:", result.user.email);
+        }
+      })
+      .catch((err) => {
+        if (err.code !== "auth/no-current-user") {
+          console.error("[SignIn] Redirect error:", err);
+          setError(err.message ?? "Sign-in failed after redirect.");
+        }
+      })
+      .finally(() => setCheckingRedirect(false));
+  }, []);
 
   // If already signed in, redirect away
   useEffect(() => {
@@ -28,14 +56,30 @@ function SignInContent() {
     try {
       setLoading(true);
       setError(null);
+
+      if (isPWA()) {
+        // PWA standalone mode — must use redirect (popup doesn't work)
+        await signInWithRedirect(auth, googleProvider);
+        // Page will redirect then come back — getRedirectResult above handles it
+        return;
+      }
+
+      // Browser tab — use popup (faster UX)
       await signInWithPopup(auth, googleProvider);
-      // onIdTokenChanged in useFirebaseAuth will pick up the new user;
-      // the useEffect above will fire the redirect once isAuthenticated = true
+
     } catch (err: any) {
+      console.error("[SignIn] Error:", err.code, err.message);
       if (err.code === "auth/popup-closed-by-user") {
         setError("Sign-in was cancelled. Please try again.");
+      } else if (err.code === "auth/popup-blocked") {
+        // Popup was blocked — fall back to redirect
+        setError(null);
+        await signInWithRedirect(auth, googleProvider);
+        return;
       } else if (err.code === "auth/network-request-failed") {
         setError("Network error. Check your connection and try again.");
+      } else if (err.code === "auth/unauthorized-domain") {
+        setError("This domain is not authorized for sign-in. Contact the Hive team.");
       } else {
         setError(err.message ?? "Failed to sign in with Google.");
       }
@@ -43,7 +87,7 @@ function SignInContent() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || checkingRedirect) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
