@@ -1,7 +1,7 @@
 // convex/adminFinance.ts
 // Backend API for Admin Finance, Settlements, Payouts, and Refund Ledgers.
 
-import { query, mutation } from "./_generated/server";
+import { query, mutation, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole, getAuthenticatedUser } from "./lib/auth";
 import { logSystemAlert } from "./lib/alerts";
@@ -10,6 +10,7 @@ import { decryptData } from "./lib/encryption";
 import { incrementProductStats } from "./lib/productStats";
 import { formatMoney } from "./lib/money";
 import { internal } from "./_generated/api";
+import { resolvePayoutHoldDecision, RETURN_WINDOW_MS } from "./lib/payoutHold";
 
 /**
  * Get aggregated dashboard metrics for the Admin Finance screen.
@@ -542,44 +543,104 @@ export const postManualAdjustmentAdmin = mutation({
  *   - only one transfer is ever scheduled, because the status leaves "eligible" the
  *     moment the settlement action claims it
  *
- * There is no post-delivery hold window: DELIVERED -> RELEASE SELLER PAYMENT.
+ * Payout timing depends on the return policy snapshotted onto the order:
+ *   returnsAccepted === false  (Final Sale)  -> release the hold now
+ *   otherwise (24h returns)                  -> hold until deliveredAt + 24h,
+ *                                               which Razorpay auto-releases
+ *
+ * The transfer itself is normally created held at payment capture. If that did
+ * not happen (seller KYC incomplete at the time, a Razorpay error, or a legacy
+ * order placed before held transfers existed), this falls back to creating the
+ * transfer now, which is the pre-hold behaviour.
  */
 export async function markOrderPayoutEligible(ctx: any, orderId: any, deliveredAt: number) {
   const order = await ctx.db.get(orderId);
   if (!order) return { success: false, reason: "order_not_found" };
 
-  if (order.status !== "delivered") {
-    return { success: false, reason: "order_not_delivered" };
-  }
-  if (order.paymentStatus !== "paid") {
-    return { success: false, reason: "not_paid" };
-  }
+  const decision = resolvePayoutHoldDecision(order, deliveredAt);
 
-  // Idempotency: never re-open a payout that is already in flight or complete.
-  if (order.razorpayTransferId) {
-    return { success: true, reason: "already_transferred" };
-  }
-  if (["processing", "paid", "settled", "withheld"].includes(order.payoutStatus)) {
-    return { success: true, reason: `already_${order.payoutStatus}` };
-  }
-  if (order.payoutStatus === "eligible" && order.payoutEligibleAt) {
-    // Already queued by an earlier delivery event (e.g. a duplicate Porter webhook).
-    return { success: true, reason: "already_eligible" };
-  }
+  switch (decision.action) {
+    case "skip":
+      // "not delivered" / "not paid" are genuine refusals; the rest are
+      // idempotent no-ops from duplicate delivery events.
+      return {
+        success:
+          decision.reason !== "order_not_delivered" && decision.reason !== "not_paid",
+        reason: decision.reason,
+      };
 
-  await ctx.db.patch(order._id, {
-    payoutStatus: "eligible",
-    payoutEligibleAt: deliveredAt,
-    payoutFailureReason: undefined,
-    updatedAt: Date.now(),
-  });
+    case "release":
+      await ctx.scheduler.runAfter(0, internal.razorpayRoute.updateTransferHold, {
+        orderId: order._id,
+        onHold: false,
+        reason: decision.reason,
+      });
+      return { success: true, reason: "releasing_final_sale" };
 
-  await ctx.scheduler.runAfter(0, internal.razorpayRoute.createSellerTransfer, {
-    orderId: order._id,
-  });
+    case "hold_until":
+      await ctx.scheduler.runAfter(0, internal.razorpayRoute.updateTransferHold, {
+        orderId: order._id,
+        onHold: true,
+        onHoldUntil: decision.onHoldUntil,
+        reason: decision.reason,
+      });
+      return { success: true, reason: "holding_for_return_window" };
 
-  return { success: true, reason: "eligible" };
+    case "create_transfer":
+      await ctx.db.patch(order._id, {
+        payoutStatus: "eligible",
+        payoutEligibleAt: deliveredAt,
+        payoutFailureReason: undefined,
+        updatedAt: Date.now(),
+      });
+      await ctx.scheduler.runAfter(0, internal.razorpayRoute.createSellerTransfer, {
+        orderId: order._id,
+      });
+      return { success: true, reason: "eligible" };
+  }
 }
+
+/**
+ * Reconcile holds that Razorpay has already auto-released.
+ *
+ * When a transfer carries an `on_hold_until`, Razorpay releases it on its own
+ * once that timestamp passes — no webhook tells us. Without this sweep the
+ * order would sit at payoutStatus "withheld" forever even though the seller has
+ * been paid, and the admin payout views would understate what has settled.
+ *
+ * A hold with no `payoutHoldUntil` is indefinite (a return or an unredeemed
+ * exchange coupon is holding it) and is deliberately left alone.
+ */
+export const reconcileReleasedHolds = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const withheld = await ctx.db
+      .query("orders")
+      .withIndex("by_payoutStatus", (q) => q.eq("payoutStatus", "withheld"))
+      .take(200);
+
+    let released = 0;
+    for (const order of withheld) {
+      const holdUntil = (order as any).payoutHoldUntil;
+      if (typeof holdUntil !== "number" || holdUntil > now) continue;
+
+      await ctx.db.patch(order._id, {
+        payoutStatus: "paid",
+        payoutProcessedAt: holdUntil,
+        payoutHoldUntil: undefined,
+        payoutHoldReason: undefined,
+        updatedAt: now,
+      });
+      released += 1;
+    }
+
+    if (released > 0) {
+      console.log(`[reconcileReleasedHolds] Marked ${released} auto-released payout(s) as paid.`);
+    }
+    return { scanned: withheld.length, released };
+  },
+});
 
 /**
  * Shared helper to mark an order as financially delivered.

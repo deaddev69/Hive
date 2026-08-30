@@ -724,6 +724,26 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
         if (returnStatus !== returnOrder.returnStatus) {
           await ctx.db.patch(returnOrder._id, { returnStatus, updatedAt: now });
         }
+
+        // The item is physically back with the seller. Settle whichever flow
+        // this leg belongs to: an exchange issues a coupon, a plain return
+        // refunds cash. Both first unwind the seller's held transfer.
+        if (args.status === "delivered") {
+          const exchange = await ctx.db
+            .query("exchangeRequests")
+            .withIndex("by_orderId", (q) => q.eq("orderId", returnOrder._id))
+            .first();
+
+          if (exchange && exchange.status === "accepted") {
+            await ctx.scheduler.runAfter(0, internal.exchanges.completeExchange, {
+              exchangeId: exchange._id,
+            });
+          } else if (!exchange || exchange.status !== "completed") {
+            await ctx.scheduler.runAfter(0, internal.returns.completeReturnRefund, {
+              orderId: returnOrder._id,
+            });
+          }
+        }
       }
 
       // Audit log for return webhook
