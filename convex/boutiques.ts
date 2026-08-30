@@ -2656,6 +2656,31 @@ export const getBoutiqueByClerkId = query({
   }
 });
 
+export const getBoutiqueByEmail = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const normalized = args.email.trim().toLowerCase();
+    // Try indexed owner email first (fast path)
+    let boutique = await ctx.db
+      .query("boutiques")
+      .withIndex("by_email", (q) => q.eq("email", normalized))
+      .unique();
+
+    if (!boutique) {
+      // Fallback: scan for ownerEmail or staffEmail matches
+      const all = await ctx.db.query("boutiques").collect();
+      boutique = all.find((b: any) =>
+        b.status !== "DELETED" && b.status !== "REJECTED" && (
+          (b.ownerEmail && b.ownerEmail.trim().toLowerCase() === normalized) ||
+          (b.staffEmail1 && b.staffEmail1.trim().toLowerCase() === normalized) ||
+          (b.staffEmail2 && b.staffEmail2.trim().toLowerCase() === normalized)
+        )
+      ) as any ?? null;
+    }
+    return boutique ?? null;
+  },
+});
+
 export const updateBoutiqueRazorpayOnboarding = mutation({
   args: {
     secret: v.string(),
@@ -2670,7 +2695,7 @@ export const updateBoutiqueRazorpayOnboarding = mutation({
     )
   },
   handler: async (ctx, args) => {
-    const expectedSecret = process.env.CLERK_SECRET_KEY;
+    const expectedSecret = process.env.CONVEX_SERVER_SECRET || process.env.CLERK_SECRET_KEY;
     if (!expectedSecret || args.secret !== expectedSecret) {
       throw new Error("Unauthorized: Invalid secret key.");
     }
@@ -2695,7 +2720,7 @@ export const updateBoutiqueKycStatus = mutation({
     )
   },
   handler: async (ctx, args) => {
-    const expectedSecret = process.env.CLERK_SECRET_KEY;
+    const expectedSecret = process.env.CONVEX_SERVER_SECRET || process.env.CLERK_SECRET_KEY;
     if (!expectedSecret || args.secret !== expectedSecret) {
       throw new Error("Unauthorized: Invalid secret key.");
     }

@@ -1,19 +1,17 @@
 "use client";
 
-// QA Trigger: forcing Vercel redeployment
 import React, { useState, useEffect } from "react";
-import { useAuth, SignOutButton, useUser, useClerk } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Tag, Package, ClipboardList, User, LogOut, Menu, X, Loader2, ShieldX, Wallet, Star, Plus, Lock } from "lucide-react";
+import { Home, Tag, Package, ClipboardList, User, LogOut, Loader2, ShieldX, Wallet, Star, Plus } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button, LoadingState } from "@hive/ui";
-import { HiveLogo } from "@/components/shared/HiveLogo";
 import LegalAgreementStep from "@/components/onboarding/LegalAgreementStep";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { AudioAlertHeaderStatus } from "@/components/layout/AudioAlertHeaderStatus";
+import { useSellerAuth } from "@/context/SellerAuthContext";
 
 const BOUTIQUE_NAV_ITEMS = [
   { label: "Home", href: "/boutique", icon: Home },
@@ -26,27 +24,25 @@ const BOUTIQUE_NAV_ITEMS = [
 ];
 
 export default function BoutiqueLayout({ children }: { children: React.ReactNode }) {
-  const { isLoaded, isSignedIn } = useAuth();
-  const { user: clerkUser } = useUser();
+  const { isLoading, isAuthenticated, user: firebaseUser, signOut } = useSellerAuth();
   const me = useQuery(api.users.getMe);
   const myBoutiqueSafe = useQuery(api.boutiques.getMyBoutiqueSafe);
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { signOut } = useClerk();
 
   const navItems = me?.role === "boutique"
     ? BOUTIQUE_NAV_ITEMS.filter(item => item.label !== "Money")
     : BOUTIQUE_NAV_ITEMS;
 
-  console.log("[BoutiqueLayout] isLoaded:", isLoaded, "isSignedIn:", isSignedIn, "me:", me, "boutique:", myBoutiqueSafe);
+  console.log("[BoutiqueLayout] isLoading:", isLoading, "isAuthenticated:", isAuthenticated, "me:", me, "boutique:", myBoutiqueSafe);
 
   // Unauthenticated redirect
   useEffect(() => {
-    if (isLoaded && !isSignedIn) {
+    if (!isLoading && !isAuthenticated) {
       router.push("/sign-in");
     }
-  }, [isLoaded, isSignedIn, router]);
+  }, [isLoading, isAuthenticated, router]);
 
   // Role-based redirect: customer goes to unauthorized portal
   useEffect(() => {
@@ -69,11 +65,8 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
 
   const boutique = (myBoutiqueSafe as any)?.boutique;
 
-
   // ── Loading guard ─────────────────────────────────────────────────────────
-  // me===undefined → query in-flight → show spinner
-  // me===null      → user not in Convex DB yet → show error (NOT loading)
-  if (!isLoaded || me === undefined || myBoutiqueSafe === undefined) {
+  if (isLoading || me === undefined || myBoutiqueSafe === undefined) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <LoadingState message="Loading secure session..." variant="full" />
@@ -81,16 +74,15 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
     );
   }
 
+  // Convex user not yet synced (first login edge case — syncUser fires async)
   if (me === null) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center px-4">
         <ShieldX className="w-10 h-10 text-red-400" />
-        <span className="text-base font-serif font-black text-hive-dark">Account Not Registered</span>
+        <span className="text-base font-serif font-black text-hive-dark">Setting Up Your Account</span>
         <p className="text-xs text-hive-text-muted max-w-sm">
-          Your Clerk account is not yet linked to a Convex user record.
-          Sign out and sign back in — UserSync will register you automatically.
-          If the problem persists, ensure your Convex user has{" "}
-          <code className="bg-slate-100 px-1 rounded">role: &quot;boutique_owner&quot;</code> and a linked boutique.
+          Your Google account is being linked to the Seller Portal. This takes just a moment —
+          please sign out and sign back in if this persists.
         </p>
         <button
           onClick={() => signOut({ redirectUrl: "/sign-in" })}
@@ -102,8 +94,8 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
     );
   }
 
-  // Not signed in
-  if (!isSignedIn) {
+  // Not signed in (fallback — redirect effect handles this)
+  if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
         <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
@@ -126,6 +118,10 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   if (myBoutiqueSafe && myBoutiqueSafe.exists && myBoutiqueSafe.boutique && !(myBoutiqueSafe.boutique as any).hasAcceptedLegalTerms) {
     return <LegalAgreementStep />;
   }
+
+  // Display name: Firebase user → fallback to "B"
+  const displayInitial = firebaseUser?.displayName?.charAt(0) ?? firebaseUser?.email?.charAt(0) ?? "B";
+  const displayName = firebaseUser?.displayName ?? "Shop Owner";
 
   return (
     <div className="min-h-[100dvh] flex flex-col md:flex-row bg-white text-slate-800">
@@ -195,11 +191,11 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
         <div className="flex flex-col gap-4 border-t border-[#f1f5f9] pt-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-[#f1f5f9] flex items-center justify-center text-slate-800 font-bold text-xs uppercase border border-[#f1f5f9]">
-              {clerkUser?.firstName?.charAt(0) || "B"}
+              {displayInitial}
             </div>
             <div className="flex flex-col min-w-0 text-left">
               <span className="text-xs font-bold text-slate-800 truncate">
-                {clerkUser?.fullName || "Shop Owner"}
+                {displayName}
               </span>
               <span className="text-[9px] text-[#020617] font-semibold tracking-wider uppercase">
                 Partners Portal
@@ -207,15 +203,13 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
             </div>
           </div>
 
-          <SignOutButton redirectUrl="/sign-in">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start gap-2.5 border-[#f1f5f9]/60 bg-white text-slate-600 hover:bg-white hover:text-[#020617] hover:border-[#020617]/40 rounded-xl text-xs py-2.5 font-bold shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-150"
-            >
-              <LogOut className="w-3.5 h-3.5 text-slate-400" />
-              <span>Log out</span>
-            </Button>
-          </SignOutButton>
+          <button
+            onClick={() => signOut({ redirectUrl: "/sign-in" })}
+            className="w-full flex items-center justify-start gap-2.5 px-4 py-2.5 border border-[#f1f5f9]/60 bg-white text-slate-600 hover:bg-white hover:text-[#020617] hover:border-[#020617]/40 rounded-xl text-xs font-bold shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-150"
+          >
+            <LogOut className="w-3.5 h-3.5 text-slate-400" />
+            <span>Log out</span>
+          </button>
         </div>
       </aside>
 

@@ -1,15 +1,20 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+// apps/boutique/src/middleware.ts
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 // Customer app URL — environment variable in production, localhost in development
 const CUSTOMER_APP_URL = process.env.NEXT_PUBLIC_CUSTOMER_APP_URL || "https://hivenow.in";
 
-export default clerkMiddleware(async (auth, req) => {
-  const url = req.nextUrl.clone();
-  const { pathname } = url;
+/**
+ * Lean middleware — no Clerk edge auth.
+ * Firebase auth tokens are validated client-side by Convex (not edge-readable).
+ * This middleware handles only path rewrites, redirects, and portal headers.
+ */
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
   // Skip Next.js internals, static assets, api/trpc routes, and Server Actions
-  const isServerAction = req.method === "POST" && req.headers.has("next-action");
+  const isServerAction = request.method === "POST" && request.headers.has("next-action");
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
@@ -20,67 +25,47 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next();
   }
 
-  const requestHeaders = new Headers(req.headers);
+  const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-hive-portal", "seller");
 
-  // 1. Seller edge auth protection
-  const isAuthPath =
-    pathname.includes("/sign-in") ||
-    pathname.includes("/sign-up") ||
-    pathname.includes("/sso-callback") ||
-    pathname.includes("/oauth") ||
-    pathname.includes("/callback");
-  const isInvitePath =
-    pathname.startsWith("/seller/invite") ||
-    pathname.startsWith("/invite") ||
-    pathname.startsWith("/apply") ||
-    pathname.startsWith("/download") ||
-    pathname.startsWith("/unauthorized") ||
-    pathname.startsWith("/boutique/unauthorized");
-
-  if (!isAuthPath && !isInvitePath) {
-    const session = await auth();
-    if (!session.userId) {
-      const signInUrl = new URL("/sign-in", req.url);
-      signInUrl.searchParams.set("redirect_url", req.url);
-      return NextResponse.redirect(signInUrl);
-    }
-    // SECURITY FIX: Removed role check from middleware (caused production incident f8c6aef)
-    // Role authorization is enforced in Convex backend via requireRole() and getMyBoutique()
-    // JWT may not contain metadata.role, causing false blocks
-  }
-
-  // 2. Redirect merchant onboarding applications to customer app portal
+  // Redirect merchant onboarding applications to customer app portal
   if (pathname === "/apply") {
     return NextResponse.redirect(`${CUSTOMER_APP_URL}/become-seller`, 302);
   }
 
-  // 3. Rewrite path internally to /boutique/ if it doesn't already have it
-  // Ignore auth paths and invite paths so they route directly
-  if (!isAuthPath && !isInvitePath) {
+  const isAuthPath =
+    pathname.startsWith("/sign-in") ||
+    pathname.startsWith("/sign-up") ||
+    pathname.startsWith("/oauth") ||
+    pathname.startsWith("/callback");
+
+  const isPublicPath =
+    pathname.startsWith("/invite") ||
+    pathname.startsWith("/download") ||
+    pathname.startsWith("/unauthorized") ||
+    pathname.startsWith("/boutique/unauthorized");
+
+  // Rewrite path internally to /boutique/ if it doesn't already have it
+  // Ignore auth paths and public paths so they route directly
+  if (!isAuthPath && !isPublicPath) {
+    const url = request.nextUrl.clone();
     if (pathname === "/") {
       url.pathname = "/boutique";
       return NextResponse.rewrite(url, {
-        request: {
-          headers: requestHeaders,
-        },
+        request: { headers: requestHeaders },
       });
     } else if (pathname !== "/boutique" && !pathname.startsWith("/boutique/")) {
       url.pathname = `/boutique${pathname}`;
       return NextResponse.rewrite(url, {
-        request: {
-          headers: requestHeaders,
-        },
+        request: { headers: requestHeaders },
       });
     }
   }
 
   return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
+    request: { headers: requestHeaders },
   });
-});
+}
 
 export const config = {
   matcher: [

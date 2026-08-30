@@ -64,24 +64,40 @@ export function assertRoleIssuerGating(user: { role: string }, identity: { issue
   const isFirebaseToken = VALID_FIREBASE_ISSUERS.includes(identity.issuer);
   const isClerkToken = VALID_CLERK_ISSUERS.includes(identity.issuer);
 
-  const isSellerOrAdminRole = [
+  // Admins MUST use Clerk — no Firebase allowed
+  const isAdminRole = [
     "admin",
     "super_admin",
     "support_agent",
     "logistics_partner",
+  ].includes(user.role);
+
+  if (isAdminRole) {
+    if (!isClerkToken) {
+      if (throwOnViolation) {
+        throw new ConvexError({
+          code: "FORBIDDEN",
+          message: "Security violation: Admin accounts must authenticate via Clerk."
+        });
+      }
+      return false;
+    }
+  }
+
+  // Seller/staff roles accept Firebase (Google Auth) OR Clerk tokens
+  const isSellerRole = [
     "boutique_owner",
     "boutique",
     "seller_pending",
     "seller_rejected",
   ].includes(user.role);
 
-  if (isSellerOrAdminRole) {
-
-    if (!isClerkToken) {
+  if (isSellerRole) {
+    if (!isClerkToken && !isFirebaseToken) {
       if (throwOnViolation) {
         throw new ConvexError({
           code: "FORBIDDEN",
-          message: "Security violation: Privileged seller/admin accounts must authenticate via authorized enterprise identity providers."
+          message: "Security violation: Seller accounts must authenticate via Google or Clerk."
         });
       }
       return false;

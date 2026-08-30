@@ -1,44 +1,38 @@
+// apps/boutique/src/components/auth/UserSync.tsx
 "use client";
 
 import { useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
+import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 
 /**
- * Syncs the Clerk-authenticated user into the Convex `users` table.
+ * Syncs the Firebase-authenticated seller/staff user into the Convex `users` table.
  *
- * CRITICAL: Do NOT gate on api.debug.whoAmI.authenticated.
- * whoAmI resolves BEFORE the Clerk JWT token has been delivered to Convex,
- * so it returns { authenticated: false } on the first render.
- * If we bail on that, syncUser never fires and getMe returns null forever.
+ * On first login after migration, `syncUser` performs the email soft-link:
+ * - If the Firebase Gmail matches boutiques.email / ownerEmail → role = boutique_owner
+ * - If it matches boutiques.staffEmail1/2 → role = boutique
+ * - Otherwise → role stays "customer" → BoutiqueLayout will redirect to /boutique/unauthorized
  *
- * syncUser has its own server-side identity check and is safe to call
- * unconditionally once Clerk says the user is signed in.
+ * syncUser is idempotent — safe to call on every mount.
  */
 export function UserSync() {
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoading, isAuthenticated } = useFirebaseAuth();
   const syncUser = useMutation(api.users.syncUser);
   const fallbackEnabled = process.env.NEXT_PUBLIC_ENABLE_USERSYNC_FALLBACK !== "false";
 
   useEffect(() => {
     if (!fallbackEnabled) return;
+    if (isLoading) return;
+    if (!isAuthenticated || !user) return;
 
-    if (!isLoaded) return;
-    if (!isSignedIn || !user) return;
-
-    // Fire immediately — do NOT wait for whoAmI.authenticated.
-    // syncUser is idempotent: safe to call on every mount/login.
     syncUser({
-      email: user.primaryEmailAddress?.emailAddress,
-      name:  user.fullName ?? user.firstName ?? undefined,
-    })
-      .catch((error) => {
-        console.error("[UserSync] SYNC FAILED:", error);
-      });
-
-  // Only re-run when the Clerk user identity changes or feature flag changes
-  }, [isLoaded, isSignedIn, user?.id, fallbackEnabled]);
+      email: user.email ?? undefined,
+      name: user.displayName ?? undefined,
+    }).catch((err) => {
+      console.error("[UserSync] SYNC FAILED:", err);
+    });
+  }, [isLoading, isAuthenticated, user?.uid, fallbackEnabled]);
 
   return null;
 }

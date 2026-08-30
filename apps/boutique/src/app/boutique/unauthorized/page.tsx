@@ -4,28 +4,23 @@ import React, { useEffect } from "react";
 import { ShieldAlert, LogOut, Loader2 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { Button, Card, CardContent } from "@hive/ui";
-import { SignOutButton, useAuth } from "@clerk/nextjs";
+import { Button, Card } from "@hive/ui";
 import { useRouter } from "next/navigation";
+import { useSellerAuth } from "@/context/SellerAuthContext";
 
 export default function BoutiqueUnauthorizedPage() {
   const me = useQuery(api.users.getMe);
   const router = useRouter();
-  const { getToken } = useAuth();
+  const { signOut } = useSellerAuth();
 
   // Auto-redirect to dashboard if role is valid (e.g. after syncUser upgraded it)
   useEffect(() => {
     if (me && (me.role === "boutique" || me.role === "boutique_owner" || me.role === "admin")) {
-      // Force Clerk to refresh the JWT token so the Edge Middleware sees the new role claim
-      getToken({ skipCache: true }).then(() => {
-        // Use window.location.href to force a full reload and ensure the new cookie is sent
-        window.location.href = "/boutique";
-      }).catch((err) => {
-        console.error("Failed to refresh token:", err);
-        router.replace("/boutique");
-      });
+      // With Firebase there's no JWT role claim to refresh — Convex reads role from DB directly.
+      // A simple full-page reload ensures all Convex queries re-run with the correct role.
+      window.location.href = "/boutique";
     }
-  }, [me, router, getToken]);
+  }, [me, router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 text-center bg-slate-50">
@@ -52,17 +47,19 @@ export default function BoutiqueUnauthorizedPage() {
         ) : (
           <div className="text-xs text-hive-text-muted bg-hive-cream/40 p-3 rounded-xl flex items-center justify-center gap-2">
             <Loader2 className="w-3.5 h-3.5 animate-spin text-hive-amber" />
-            Loading synced profile session...
+            Loading profile...
           </div>
         )}
 
         <div className="flex flex-col gap-3">
-          <SignOutButton redirectUrl="/sign-in">
-            <Button variant="outline" className="w-full flex items-center justify-center gap-2">
-              <LogOut className="w-4 h-4" />
-              Sign Out / Switch Account
-            </Button>
-          </SignOutButton>
+          <Button
+            variant="outline"
+            onClick={() => signOut({ redirectUrl: "/sign-in" })}
+            className="w-full flex items-center justify-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out / Switch Account
+          </Button>
         </div>
       </Card>
     </div>

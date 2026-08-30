@@ -6,18 +6,18 @@ import { api } from "../../../../convex/_generated/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getUserLandingPage } from "@hive/utils";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@clerk/nextjs";
+import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 
 function RootPageContent() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoading, isAuthenticated } = useFirebaseAuth();
   const me = useQuery(api.users.getMe);
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!isLoaded) return;
+    if (isLoading) return;
 
-    if (!isSignedIn) {
+    if (!isAuthenticated) {
       router.replace("/sign-in");
       return;
     }
@@ -31,25 +31,18 @@ function RootPageContent() {
     }
 
     if (me.role === "boutique" || me.role === "boutique_owner" || me.role === "admin") {
-      console.log("[AUTH DEBUG] Seller/Admin detected, routing directly to /boutique");
       window.location.href = "/boutique";
       return;
     }
 
     const landingPage = getUserLandingPage(me.role);
     
-    console.log("[AUTH DEBUG] User ID:", me._id);
-    console.log("[AUTH DEBUG] Role:", me.role);
-    console.log("[AUTH DEBUG] Computed landing page:", landingPage);
-    
     if (landingPage.startsWith("http")) {
-      console.log("[AUTH DEBUG] Redirecting to external URL:", landingPage);
       window.location.href = landingPage;
     } else {
-      console.log("[AUTH DEBUG] Redirecting to internal route:", landingPage);
       router.replace(landingPage);
     }
-  }, [isLoaded, isSignedIn, me, router, searchParams]);
+  }, [isLoading, isAuthenticated, me, router, searchParams]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">

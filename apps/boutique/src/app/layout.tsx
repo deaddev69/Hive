@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "@/providers/convex-client-provider";
+import { SellerAuthProvider } from "@/context/SellerAuthContext";
 import { UserSync } from "@/components/auth/UserSync";
 import { Inter, Outfit } from "next/font/google";
 import { Toaster } from "@hive/ui";
@@ -17,12 +17,11 @@ const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-satoshi",
   display: "swap",
-}); // Trigger Vercel deploy for @hive/boutique (Aug 18, 2026 - Unlocked Navigation & Staff Permissions)
-
+});
 
 export const metadata: Metadata = {
-  title: "Hive Marketplace Admin Dashboard",
-  description: "HIVE Central Marketplace Source of Truth Admin Panel",
+  title: "Hive Partner Portal",
+  description: "HIVE Boutique Partner Dashboard",
   icons: {
     icon: "/logo.png?v=2",
     apple: "/apple-touch-icon.png?v=2",
@@ -35,22 +34,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider afterSignOutUrl="/sign-in">
-      <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
-        <head>
-          <meta name="theme-color" content="#F5C22B" />
-          <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        </head>
-        <body className="antialiased min-h-screen bg-slate-50 text-slate-900 font-sans">
-          <ConvexClientProvider>
+    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
+      <head>
+        <meta name="theme-color" content="#F5C22B" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      </head>
+      <body className="antialiased min-h-screen bg-slate-50 text-slate-900 font-sans">
+        <ConvexClientProvider>
+          <SellerAuthProvider>
             <UserSync />
             {children}
             <Toaster />
             <InstallPrompt />
             <PwaUpdateManager />
-          </ConvexClientProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+          </SellerAuthProvider>
+        </ConvexClientProvider>
+      </body>
+    </html>
   );
 }

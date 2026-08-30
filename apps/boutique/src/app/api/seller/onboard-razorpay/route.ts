@@ -1,46 +1,80 @@
+// apps/boutique/src/app/api/seller/onboard-razorpay/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../../convex/_generated/api";
+
+// Firebase Admin SDK — initialized once at module scope
+import { getApps, initializeApp, cert } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+
+if (getApps().length === 0) {
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (serviceAccountJson) {
+    const serviceAccount = JSON.parse(serviceAccountJson);
+    initializeApp({
+      credential: cert(serviceAccount),
+      projectId: process.env.FIREBASE_PROJECT_ID || "hive-fashion",
+    });
+  } else {
+    // Fallback: initialize with just project ID (works in GCP environments)
+    initializeApp({
+      projectId: process.env.FIREBASE_PROJECT_ID || "hive-fashion",
+    });
+  }
+}
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // 1. Verify Firebase ID token from Authorization header
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Unauthorized: Missing token" }, { status: 401 });
     }
 
-    // 1. Get Boutique details from Convex by Clerk userId
-    const boutique = await convex.query(api.boutiques.getBoutiqueByClerkId, { clerkId: userId });
+    const idToken = authHeader.split("Bearer ")[1];
+    let decodedToken;
+    try {
+      decodedToken = await getAuth().verifyIdToken(idToken);
+    } catch {
+      return NextResponse.json({ error: "Unauthorized: Invalid token" }, { status: 401 });
+    }
+
+    const sellerEmail = decodedToken.email;
+    if (!sellerEmail) {
+      return NextResponse.json({ error: "Token missing email claim" }, { status: 400 });
+    }
+
+    // 2. Look up boutique by seller's email
+    const boutique = await convex.query(api.boutiques.getBoutiqueByEmail, { email: sellerEmail });
     if (!boutique) {
-      return NextResponse.json({ error: "Boutique profile not found" }, { status: 404 });
+      return NextResponse.json({ error: "Boutique profile not found for this email" }, { status: 404 });
     }
 
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
-    const clerkSecret = process.env.CLERK_SECRET_KEY;
+    const serverSecret = process.env.CONVEX_SERVER_SECRET || process.env.CLERK_SECRET_KEY;
 
-    if (!keyId || !keySecret || !clerkSecret) {
-      return NextResponse.json({ error: "Credentials not configured on server" }, { status: 500 });
+    if (!keyId || !keySecret || !serverSecret) {
+      return NextResponse.json({ error: "Server credentials not configured" }, { status: 500 });
     }
 
-    const authHeader = "Basic " + btoa(`${keyId}:${keySecret}`);
-    
+    const razorpayAuth = "Basic " + btoa(`${keyId}:${keySecret}`);
+
     // Construct redirect URL back to Money dashboard
-    const host = req.headers.get("host") || "localhost:3000";
+    const host = req.headers.get("host") || "localhost:3002";
     const protocol = req.headers.get("x-forwarded-proto") || "http";
     const redirectUrl = `${protocol}://${host}/boutique/money?status=kyc_pending`;
 
     let accountId = boutique.razorpayAccountId;
 
-    // 2. Create Razorpay Account if it does not exist
+    // 3. Create Razorpay Account if it does not exist
     if (!accountId) {
       const accountResponse = await fetch("https://api.razorpay.com/v2/accounts", {
         method: "POST",
         headers: {
-          Authorization: authHeader,
+          Authorization: razorpayAuth,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -70,7 +104,7 @@ export async function POST(req: NextRequest) {
 
       // Save returned accountId to Convex
       await convex.mutation(api.boutiques.updateBoutiqueRazorpayOnboarding, {
-        secret: clerkSecret,
+        secret: serverSecret,
         boutiqueId: boutique._id,
         razorpayAccountId: newAccountId,
         kycStatus: "created",
@@ -79,11 +113,11 @@ export async function POST(req: NextRequest) {
 
     const activeAccountId = accountId as string;
 
-    // 3. Request dynamic Onboarding Link
+    // 4. Request dynamic Onboarding Link
     const linkResponse = await fetch(`https://api.razorpay.com/v2/accounts/${activeAccountId}/onboarding_links`, {
       method: "POST",
       headers: {
-        Authorization: authHeader,
+        Authorization: razorpayAuth,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

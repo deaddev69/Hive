@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
-import { SignOutButton } from "@clerk/nextjs";
+import { useSellerAuth } from "@/context/SellerAuthContext";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent, cn, LoadingState } from "@hive/ui";
 import Link from "next/link";

@@ -160,8 +160,8 @@ export const syncUser = mutation({
       }
     }
 
-    // Auto link approved boutique owner by normalized email (ONLY for Clerk authentication!)
-    if (!isFirebase && emailNormalized && targetUserRole !== "admin") {
+    // Auto link approved boutique owner/staff by normalized email (Firebase + Clerk both allowed)
+    if (emailNormalized && targetUserRole !== "admin") {
       let boutique = await ctx.db
         .query("boutiques")
         .withIndex("by_email", (q) => q.eq("email", emailNormalized))
