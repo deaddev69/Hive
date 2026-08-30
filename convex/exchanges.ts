@@ -484,6 +484,84 @@ export const listExchangesAdmin = query({
 });
 
 /**
+ * Admin starts an exchange on a customer's behalf.
+ *
+ * Most exchange conversations happen on WhatsApp, so the request usually
+ * reaches Hive before it ever reaches the app. This records it from the admin
+ * side and freezes the seller's payout, exactly as the customer-facing path
+ * would.
+ *
+ * Deliberately skips the 24-hour window and the boutique's exchange policy: an
+ * admin taking a call is making a judgement the automated rules cannot. Every
+ * such override is written to the audit log with the acting admin.
+ */
+export const createExchangeAdmin = mutation({
+  args: {
+    orderId: v.id("orders"),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const admin = await requireRole(ctx, "admin");
+    const now = Date.now();
+
+    const order = await ctx.db.get(args.orderId);
+    if (!order) throw new ConvexError("Order not found");
+
+    const existing = await ctx.db
+      .query("exchangeRequests")
+      .withIndex("by_orderId", (q) => q.eq("orderId", args.orderId))
+      .first();
+    if (existing && ["pending", "accepted", "completed"].includes(existing.status)) {
+      return { success: true, reason: "already_exists", exchangeId: existing._id };
+    }
+    if (order.returnStatus && order.returnStatus !== "cancelled") {
+      throw new ConvexError(
+        `A return is already in progress for this order (${order.returnStatus}).`
+      );
+    }
+
+    const exchangeId = await ctx.db.insert("exchangeRequests", {
+      orderId: args.orderId,
+      customerId: order.customerId,
+      boutiqueId: order.boutiqueId,
+      status: "accepted",
+      reason: args.reason ?? "Started by Hive admin",
+      requestedAt: now,
+      respondedAt: now,
+      expiresAt: now + EXCHANGE_RESPONSE_WINDOW_MS,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Freeze the seller's payout for as long as the exchange is open.
+    await ctx.scheduler.runAfter(0, internal.razorpayRoute.updateTransferHold, {
+      orderId: args.orderId,
+      onHold: true,
+      reason: "exchange_requested",
+    });
+
+    await ctx.db.insert("auditLogs", {
+      actorId: admin._id,
+      actorRole: "admin",
+      action: "exchange.started_by_admin",
+      entityType: "exchangeRequests",
+      entityId: exchangeId,
+      metadata: JSON.stringify({
+        orderId: args.orderId,
+        orderNumber: order.orderNumber,
+        reason: args.reason ?? null,
+        // Recorded because this path bypasses the customer-facing guards.
+        bypassedWindow: true,
+        orderExchangesAccepted: (order as any).exchangesAccepted ?? null,
+      }),
+      createdAt: now,
+    });
+
+    return { success: true, exchangeId };
+  },
+});
+
+/**
  * Delivered orders that are actually eligible for a return or an exchange.
  *
  * The exchanges list only holds requests customers have already made, which is
@@ -540,6 +618,8 @@ export const listReturnEligibleOrdersAdmin = query({
           exchangeId: exchange?._id ?? null,
           exchangeStatus: exchange?.status ?? null,
           couponId: exchange?.couponId ?? null,
+          // Whether a Porter pickup has already been dispatched for this order.
+          returnShipmentId: order.returnShipmentId ?? null,
         };
       })
     );

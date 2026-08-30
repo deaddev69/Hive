@@ -77,6 +77,7 @@ export default function AdminReturnsAndCoupons() {
   const initiateReturn = useMutation(api.adminOrders.initiateReturnAdmin);
   const completeExchange = useMutation(api.exchanges.completeExchangeAdmin);
   const setReturnStatus = useMutation(api.returns.updateReturnStatusAdmin);
+  const startExchange = useMutation(api.exchanges.createExchangeAdmin);
 
   const [busy, setBusy] = React.useState<string | null>(null);
 
@@ -150,6 +151,25 @@ export default function AdminReturnsAndCoupons() {
       await setReturnStatus({ orderId, returnStatus: returnStatus as any });
     } catch (err: any) {
       alert(err.message || "Failed to update return status.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Most exchange requests arrive over WhatsApp, so admin starts them here.
+  const handleStartExchange = async (orderId: Id<"orders">, orderNumber: string) => {
+    const reason = window.prompt(
+      `Start an exchange for ${orderNumber}?
+
+What does the customer want instead?`
+    );
+    if (reason === null) return;
+    setBusy(orderId);
+    try {
+      await startExchange({ orderId, reason: reason.trim() || undefined });
+      alert("Exchange started. The seller's payout is now frozen.");
+    } catch (err: any) {
+      alert(err.message || "Failed to start the exchange.");
     } finally {
       setBusy(null);
     }
@@ -299,7 +319,35 @@ export default function AdminReturnsAndCoupons() {
                       )}
                     </Td>
                     <Td>
-                      <div className="flex flex-col gap-1.5 min-w-[150px]">
+                      <div className="flex flex-col gap-1.5 min-w-[168px]">
+                        {!o.exchangeId && o.exchangesAccepted && (
+                          <button
+                            type="button"
+                            disabled={busy === o._id}
+                            onClick={() => handleStartExchange(o._id, o.orderNumber)}
+                            className="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-bold transition-all disabled:opacity-60 cursor-pointer"
+                          >
+                            Start exchange
+                          </button>
+                        )}
+
+                        {o.exchangeId && o.exchangeStatus === "accepted" && !o.returnShipmentId && (
+                          <button
+                            type="button"
+                            disabled={busy === o._id}
+                            onClick={() => handleDispatch(o._id, o._id)}
+                            className="px-2.5 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold transition-all disabled:opacity-60 cursor-pointer"
+                          >
+                            Send Porter
+                          </button>
+                        )}
+
+                        {o.returnShipmentId && (
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                            Porter dispatched
+                          </span>
+                        )}
+
                         <select
                           value=""
                           disabled={busy === o._id}
@@ -308,7 +356,7 @@ export default function AdminReturnsAndCoupons() {
                           }
                           className="px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] font-semibold cursor-pointer disabled:opacity-60"
                         >
-                          <option value="">Set return status...</option>
+                          <option value="">Set pickup status...</option>
                           {[
                             "requested", "approved", "initiated",
                             "picked_up", "in_transit", "delivered",
@@ -317,6 +365,7 @@ export default function AdminReturnsAndCoupons() {
                             <option key={st} value={st}>{st.replace(/_/g, " ")}</option>
                           ))}
                         </select>
+
                         {o.exchangeId && o.exchangeStatus === "accepted" && (
                           <button
                             type="button"
@@ -324,8 +373,14 @@ export default function AdminReturnsAndCoupons() {
                             onClick={() => handleGenerateCoupon(o.exchangeId)}
                             className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold transition-all disabled:opacity-60 cursor-pointer"
                           >
-                            Generate coupon
+                            Complete &amp; issue coupon
                           </button>
+                        )}
+
+                        {o.exchangeStatus === "completed" && (
+                          <span className="text-[11px] font-semibold text-emerald-700">
+                            Coupon issued
+                          </span>
                         )}
                       </div>
                     </Td>
