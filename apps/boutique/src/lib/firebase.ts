@@ -16,9 +16,13 @@ import {
 } from "firebase/auth";
 import type { Auth } from "firebase/auth";
 
+const authDomain = (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.includes("firebaseapp.com"))
+  ? process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+  : "hive-fashion.firebaseapp.com";
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyB1Qn8xKgOA_mYOLfCNZagS9QEMO0u0Ud8",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "hive-fashion.firebaseapp.com",
+  authDomain: authDomain,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "hive-fashion",
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "hive-fashion.firebasestorage.app",
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "455960950280",
