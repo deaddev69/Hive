@@ -12,8 +12,18 @@ type Mode = "return" | "exchange";
 
 const SUPPORT_WHATSAPP = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP_NUMBER || "917356019103";
 
-function formatRupees(paise: number): string {
-  return `₹${(paise / 100).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+/**
+ * Hand the conversation to WhatsApp straight after the request lands.
+ * Opened only once the mutation has succeeded, so the customer is never sent to
+ * chat about a request the server rejected.
+ */
+function openWhatsApp(message: string) {
+  if (typeof window === "undefined") return;
+  window.open(
+    `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(message)}`,
+    "_blank",
+    "noopener,noreferrer"
+  );
 }
 
 /**
@@ -52,9 +62,15 @@ export function ReturnExchangeActions({
       if (mode === "return") {
         await requestReturn({ orderId, reason: reason.trim() });
         toast.success("Return requested. We'll confirm shortly and arrange pickup.");
+        openWhatsApp(
+          `Hi Hive, I'd like to return order ${orderNumber}. Reason: ${reason.trim()}`
+        );
       } else {
         await requestExchange({ orderId, reason: reason.trim() });
-        toast.success("Exchange confirmed. We'll arrange pickup of the original item.");
+        toast.success("Exchange confirmed. Let's sort out your replacement on WhatsApp.");
+        openWhatsApp(
+          `Hi Hive, I'd like to exchange order ${orderNumber}. What I'd prefer: ${reason.trim()}`
+        );
       }
       setMode(null);
       setReason("");

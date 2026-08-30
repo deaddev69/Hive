@@ -12,7 +12,7 @@
 import { mutation, internalMutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
-import { getAuthenticatedUser } from "./lib/auth";
+import { getAuthenticatedUser, requireRole } from "./lib/auth";
 import { RETURN_WINDOW_MS } from "./lib/payoutHold";
 
 /**
@@ -87,6 +87,99 @@ export const requestReturn = mutation({
     });
 
     return { success: true, returnStatus: "requested" };
+  },
+});
+
+/**
+ * Admin sets the return leg's status by hand.
+ *
+ * Mirrors the order-status dropdown in the admin order drawer. The Porter
+ * webhook drives this automatically when a rider is involved, but returns and
+ * exchanges are often handled off-platform — the customer drops the item back,
+ * or the boutique collects it — and this is also what makes the flow testable
+ * end to end without dispatching a real rider.
+ *
+ * Setting "delivered" settles whichever flow the order belongs to: an accepted
+ * exchange issues its coupon, anything else refunds cash.
+ */
+export const updateReturnStatusAdmin = mutation({
+  args: {
+    orderId: v.id("orders"),
+    returnStatus: v.union(
+      v.literal("requested"),
+      v.literal("approved"),
+      v.literal("initiated"),
+      v.literal("picked_up"),
+      v.literal("in_transit"),
+      v.literal("delivered"),
+      v.literal("completed"),
+      v.literal("cancelled"),
+      v.literal("failed")
+    ),
+  },
+  handler: async (ctx, args) => {
+    const admin = await requireRole(ctx, "admin");
+    const now = Date.now();
+
+    const order = await ctx.db.get(args.orderId);
+    if (!order) throw new ConvexError("Order not found");
+
+    const previous = order.returnStatus ?? "none";
+
+    await ctx.db.patch(args.orderId, {
+      returnStatus: args.returnStatus,
+      updatedAt: now,
+    });
+
+    // Keep the payout frozen for as long as the item is in motion, and let it
+    // settle again if the return is abandoned.
+    if (["requested", "approved", "initiated", "picked_up", "in_transit"].includes(args.returnStatus)) {
+      await ctx.scheduler.runAfter(0, internal.razorpayRoute.updateTransferHold, {
+        orderId: args.orderId,
+        onHold: true,
+        reason: "return_in_progress",
+      });
+    } else if (args.returnStatus === "cancelled" || args.returnStatus === "failed") {
+      await ctx.scheduler.runAfter(0, internal.razorpayRoute.updateTransferHold, {
+        orderId: args.orderId,
+        onHold: false,
+        reason: `return_${args.returnStatus}`,
+      });
+    }
+
+    // "delivered" means the seller has it back — settle the right flow.
+    if (args.returnStatus === "delivered") {
+      const exchange = await ctx.db
+        .query("exchangeRequests")
+        .withIndex("by_orderId", (q) => q.eq("orderId", args.orderId))
+        .first();
+
+      if (exchange && exchange.status === "accepted") {
+        await ctx.scheduler.runAfter(0, internal.exchanges.completeExchange, {
+          exchangeId: exchange._id,
+        });
+      } else if (!exchange || exchange.status !== "completed") {
+        await ctx.scheduler.runAfter(0, internal.returns.completeReturnRefund, {
+          orderId: args.orderId,
+        });
+      }
+    }
+
+    await ctx.db.insert("auditLogs", {
+      actorId: admin._id,
+      actorRole: "admin",
+      action: "return.status_set_manually",
+      entityType: "orders",
+      entityId: args.orderId,
+      metadata: JSON.stringify({
+        orderNumber: order.orderNumber,
+        from: previous,
+        to: args.returnStatus,
+      }),
+      createdAt: now,
+    });
+
+    return { success: true, from: previous, to: args.returnStatus };
   },
 });
 

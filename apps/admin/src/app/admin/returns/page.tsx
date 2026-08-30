@@ -73,6 +73,8 @@ export default function AdminReturnsAndCoupons() {
   const revokeCoupon = useMutation(api.coupons.revokeCouponAdmin);
   const resolveRecovery = useMutation(api.coupons.resolveRecoveryItemAdmin);
   const initiateReturn = useMutation(api.adminOrders.initiateReturnAdmin);
+  const completeExchange = useMutation(api.exchanges.completeExchangeAdmin);
+  const setReturnStatus = useMutation(api.returns.updateReturnStatusAdmin);
 
   const [busy, setBusy] = React.useState<string | null>(null);
 
@@ -110,6 +112,42 @@ export default function AdminReturnsAndCoupons() {
       alert("Porter dispatched. The rider will collect from the customer and deliver to the boutique.");
     } catch (err: any) {
       alert(err.message || "Failed to dispatch Porter.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Issues the coupon without waiting on a Porter webhook — items often come
+  // back by hand, in which case no webhook ever fires.
+  const handleGenerateCoupon = async (exchangeId: Id<"exchangeRequests">) => {
+    if (
+      !window.confirm(
+        "Confirm the boutique has the item back.\n\nThis reverses the seller's payout and issues the customer a 30-day coupon for this boutique."
+      )
+    )
+      return;
+    setBusy(exchangeId);
+    try {
+      await completeExchange({ exchangeId });
+      alert("Coupon issued. It will appear in the Coupons tab shortly.");
+    } catch (err: any) {
+      alert(err.message || "Failed to complete the exchange.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // Mirrors the order-status dropdown in the order drawer, for the return leg.
+  const handleReturnStatus = async (
+    rowId: string,
+    orderId: Id<"orders">,
+    returnStatus: string
+  ) => {
+    setBusy(rowId);
+    try {
+      await setReturnStatus({ orderId, returnStatus: returnStatus as any });
+    } catch (err: any) {
+      alert(err.message || "Failed to update return status.");
     } finally {
       setBusy(null);
     }
@@ -233,14 +271,45 @@ export default function AdminReturnsAndCoupons() {
                   </Td>
                   <Td>
                     {ex.status === "accepted" && (
-                      <button
-                        type="button"
-                        disabled={busy === ex._id}
-                        onClick={() => handleDispatch(ex._id, ex.orderId)}
-                        className="px-2.5 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold transition-all disabled:opacity-60 cursor-pointer whitespace-nowrap"
-                      >
-                        Send Porter
-                      </button>
+                      <div className="flex flex-col gap-1.5 min-w-[150px]">
+                        <button
+                          type="button"
+                          disabled={busy === ex._id}
+                          onClick={() => handleDispatch(ex._id, ex.orderId)}
+                          className="px-2.5 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold transition-all disabled:opacity-60 cursor-pointer whitespace-nowrap"
+                        >
+                          Send Porter
+                        </button>
+                        <select
+                          value=""
+                          disabled={busy === ex._id}
+                          onChange={(e) =>
+                            e.target.value &&
+                            handleReturnStatus(ex._id, ex.orderId, e.target.value)
+                          }
+                          className="px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] font-semibold cursor-pointer disabled:opacity-60"
+                        >
+                          <option value="">Set pickup status...</option>
+                          {["initiated", "picked_up", "in_transit", "delivered"].map((s) => (
+                            <option key={s} value={s}>
+                              {s.replace(/_/g, " ")}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          disabled={busy === ex._id}
+                          onClick={() => handleGenerateCoupon(ex._id)}
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold transition-all disabled:opacity-60 cursor-pointer whitespace-nowrap"
+                        >
+                          Generate coupon
+                        </button>
+                      </div>
+                    )}
+                    {ex.status === "completed" && (
+                      <span className="text-[11px] font-semibold text-emerald-700">
+                        Coupon issued
+                      </span>
                     )}
                   </Td>
                 </tr>

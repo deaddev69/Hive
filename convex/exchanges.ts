@@ -480,6 +480,64 @@ export const listExchangesAdmin = query({
 });
 
 /**
+ * Admin completes an exchange and issues the coupon.
+ *
+ * The Porter `delivered` webhook does this automatically, but the item often
+ * comes back by hand — the customer drops it off, or the boutique collects it —
+ * in which case no webhook ever fires. This is the manual equivalent, and it
+ * runs the same two steps in the same order: unwind the seller's held transfer
+ * first, then issue credit against the money that recovers.
+ */
+export const completeExchangeAdmin = mutation({
+  args: { exchangeId: v.id("exchangeRequests") },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+    const now = Date.now();
+
+    const request = await ctx.db.get(args.exchangeId);
+    if (!request) throw new ConvexError("Exchange request not found");
+
+    if (request.status === "completed" || request.couponId) {
+      return {
+        success: true,
+        reason: "already_completed",
+        couponId: request.couponId ?? null,
+      };
+    }
+    if (request.status !== "accepted") {
+      throw new ConvexError(
+        `Only an accepted exchange can be completed. This one is ${request.status}.`
+      );
+    }
+
+    // 1. Unwind the seller's payout — they have the goods back.
+    await ctx.scheduler.runAfter(0, internal.razorpayRoute.reverseSellerTransfer, {
+      orderId: request.orderId,
+      reason: "exchange_completed",
+    });
+
+    // 2. Issue the credit. Marks the exchange completed and links the coupon.
+    await ctx.scheduler.runAfter(0, internal.coupons.issueExchangeCoupon, {
+      orderId: request.orderId,
+      exchangeRequestId: args.exchangeId,
+    });
+
+    await ctx.db.patch(args.exchangeId, { updatedAt: now });
+
+    await ctx.db.insert("auditLogs", {
+      actorRole: "admin",
+      action: "exchange.completed_manually",
+      entityType: "exchangeRequests",
+      entityId: args.exchangeId,
+      metadata: JSON.stringify({ orderId: request.orderId }),
+      createdAt: now,
+    });
+
+    return { success: true, reason: "completing" };
+  },
+});
+
+/**
  * Which order an accepted exchange needs Porter dispatched for.
  *
  * Dispatch itself is `adminOrders.initiateReturnAdmin` — one Porter leg serves
