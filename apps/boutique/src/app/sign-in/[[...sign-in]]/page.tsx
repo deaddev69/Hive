@@ -3,7 +3,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { getClientAuth, googleProvider } from "@/lib/firebase";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { Loader2 } from "lucide-react";
@@ -28,15 +28,17 @@ function SignInContent() {
 
   // Handle redirect result on page load (for PWA redirect flow)
   useEffect(() => {
+    // getClientAuth() safely called inside useEffect — client-only
+    const auth = getClientAuth();
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
-          // Redirect sign-in completed — useFirebaseAuth will pick it up
           console.log("[SignIn] Redirect result received:", result.user.email);
         }
       })
       .catch((err) => {
-        if (err.code !== "auth/no-current-user") {
+        // auth/no-current-user is normal (no redirect pending) — ignore it
+        if (err?.code && err.code !== "auth/no-current-user") {
           console.error("[SignIn] Redirect error:", err);
           setError(err.message ?? "Sign-in failed after redirect.");
         }
@@ -57,11 +59,13 @@ function SignInContent() {
       setLoading(true);
       setError(null);
 
+      // getClientAuth() safely called inside event handler — client-only
+      const auth = getClientAuth();
+
       if (isPWA()) {
-        // PWA standalone mode — must use redirect (popup doesn't work)
+        // PWA standalone mode — popup doesn't work, must use redirect
         await signInWithRedirect(auth, googleProvider);
-        // Page will redirect then come back — getRedirectResult above handles it
-        return;
+        return; // Page will reload after redirect
       }
 
       // Browser tab — use popup (faster UX)
@@ -72,14 +76,15 @@ function SignInContent() {
       if (err.code === "auth/popup-closed-by-user") {
         setError("Sign-in was cancelled. Please try again.");
       } else if (err.code === "auth/popup-blocked") {
-        // Popup was blocked — fall back to redirect
+        // Popup blocked — fall back to redirect silently
         setError(null);
+        const auth = getClientAuth();
         await signInWithRedirect(auth, googleProvider);
         return;
       } else if (err.code === "auth/network-request-failed") {
         setError("Network error. Check your connection and try again.");
       } else if (err.code === "auth/unauthorized-domain") {
-        setError("This domain is not authorized for sign-in. Contact the Hive team.");
+        setError("This domain is not authorized. Contact the Hive team.");
       } else {
         setError(err.message ?? "Failed to sign in with Google.");
       }

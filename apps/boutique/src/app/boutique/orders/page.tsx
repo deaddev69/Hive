@@ -7,7 +7,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Card, CardContent, LoadingState } from "@hive/ui";
 import { formatCurrency, toast } from "@hive/utils";
-import { auth } from "@/lib/firebase";
+import { getClientAuth } from "@/lib/firebase";
 import {
   Loader2,
   ClipboardList,
@@ -36,7 +36,7 @@ import {
 // ── Invoice download cell ────────────────────────────────────────────────────
 function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
   const invoice = useQuery(api.invoices.getInvoiceByOrderId_boutique, { orderId });
-  const firebaseAuth = auth;
+  // auth accessed inside handleGenerate (client-only event handler)
   const [generating, setGenerating] = React.useState(false);
 
   if (invoice === undefined) {
@@ -54,7 +54,7 @@ function BoutiqueInvoiceCell({ orderId }: { orderId: Id<"orders"> }) {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const token = await firebaseAuth.currentUser?.getIdToken();
+      const token = await getClientAuth().currentUser?.getIdToken();
       if (!token) throw new Error("Authentication token is missing.");
 
       const res = await fetch("/api/invoices/generate", {

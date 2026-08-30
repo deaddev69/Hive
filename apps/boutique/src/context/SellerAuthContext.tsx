@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useCallback } from "react";
 import { signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { getClientAuth, googleProvider } from "@/lib/firebase";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { User } from "firebase/auth";
 
@@ -21,11 +21,11 @@ export function SellerAuthProvider({ children }: { children: React.ReactNode }) 
   const { user, isLoading, isAuthenticated } = useFirebaseAuth();
 
   const signInWithGoogle = useCallback(async () => {
-    await signInWithPopup(auth, googleProvider);
+    await signInWithPopup(getClientAuth(), googleProvider);
   }, []);
 
   const signOut = useCallback(async (options?: { redirectUrl?: string }) => {
-    await firebaseSignOut(auth);
+    await firebaseSignOut(getClientAuth());
     const redirect = options?.redirectUrl ?? "/sign-in";
     window.location.href = redirect;
   }, []);
