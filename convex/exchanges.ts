@@ -473,30 +473,27 @@ export const listExchangesAdmin = query({
 });
 
 /**
- * Admin dispatches Porter to collect the item from the customer and deliver it
- * to the seller. Reuses the same return-shipment path as a cash return, so both
- * flows share one Porter integration.
+ * Which order an accepted exchange needs Porter dispatched for.
+ *
+ * Dispatch itself is `adminOrders.initiateReturnAdmin` — one Porter leg serves
+ * both flows (customer -> boutique), and that mutation now accepts either an
+ * approved return or a seller-accepted exchange. Keeping a single dispatch path
+ * means the return webhook, address swap, and idempotency guard are shared
+ * rather than duplicated.
  */
-export const initiateExchangePickupAdmin = mutation({
+export const getExchangeDispatchTarget = query({
   args: { exchangeId: v.id("exchangeRequests") },
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
 
     const request = await ctx.db.get(args.exchangeId);
-    if (!request) throw new ConvexError("Exchange request not found");
-    if (request.status !== "accepted") {
-      throw new ConvexError(
-        `Porter can only be dispatched once the seller has accepted. This exchange is ${request.status}.`
-      );
-    }
-    if (request.returnShipmentId) {
-      return { success: true, reason: "already_dispatched" };
-    }
+    if (!request) return null;
 
     return {
-      success: true,
-      reason: "ready_for_dispatch",
       orderId: request.orderId,
+      status: request.status,
+      canDispatch: request.status === "accepted" && !request.returnShipmentId,
+      alreadyDispatched: !!request.returnShipmentId,
     };
   },
 });

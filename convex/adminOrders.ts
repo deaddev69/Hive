@@ -1191,8 +1191,20 @@ export const initiateReturnAdmin = mutation({
       };
     }
 
-    if (order.returnStatus !== "approved") {
-      throw new Error(`Return must be approved before initiation. Current state: "${order.returnStatus ?? "none"}".`);
+    // Two flows dispatch the same customer -> boutique Porter leg:
+    //   cash return   — admin has approved it (returnStatus "approved")
+    //   exchange      — the seller has accepted it
+    // Only the ending differs: a return refunds, an exchange issues a coupon.
+    const acceptedExchange = await ctx.db
+      .query("exchangeRequests")
+      .withIndex("by_orderId", (q) => q.eq("orderId", args.orderId))
+      .first();
+    const isAcceptedExchange = acceptedExchange?.status === "accepted";
+
+    if (order.returnStatus !== "approved" && !isAcceptedExchange) {
+      throw new Error(
+        `Pickup needs an approved return or a seller-accepted exchange. Return state: "${order.returnStatus ?? "none"}", exchange state: "${acceptedExchange?.status ?? "none"}".`
+      );
     }
 
     // Validate addresses exist
@@ -1256,11 +1268,20 @@ export const initiateReturnAdmin = mutation({
     });
 
     // ── Link to order ────────────────────────────────────────────────────
+    // returnStatus tracks the physical leg for both flows, so the Porter
+    // webhook can sync picked_up / delivered without knowing which one it is.
     await ctx.db.patch(args.orderId, {
       returnShipmentId,
       returnStatus: "initiated",
       updatedAt: now,
     });
+
+    if (isAcceptedExchange && acceptedExchange) {
+      await ctx.db.patch(acceptedExchange._id, {
+        returnShipmentId,
+        updatedAt: now,
+      });
+    }
 
     // ── Schedule Porter createOrder ──────────────────────────────────────
     // CRITICAL: pickup = CUSTOMER, drop = BOUTIQUE

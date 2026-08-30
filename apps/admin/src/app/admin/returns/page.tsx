@@ -72,6 +72,7 @@ export default function AdminReturnsAndCoupons() {
 
   const revokeCoupon = useMutation(api.coupons.revokeCouponAdmin);
   const resolveRecovery = useMutation(api.coupons.resolveRecoveryItemAdmin);
+  const initiateReturn = useMutation(api.adminOrders.initiateReturnAdmin);
 
   const [busy, setBusy] = React.useState<string | null>(null);
 
@@ -95,6 +96,20 @@ export default function AdminReturnsAndCoupons() {
       );
     } catch (err: any) {
       alert(err.message || "Failed to revoke coupon.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // One Porter leg serves both flows, so an accepted exchange dispatches
+  // through the same initiateReturnAdmin mutation a cash return uses.
+  const handleDispatch = async (exchangeId: string, orderId: Id<"orders">) => {
+    setBusy(exchangeId);
+    try {
+      await initiateReturn({ orderId });
+      alert("Porter dispatched. The rider will collect from the customer and deliver to the boutique.");
+    } catch (err: any) {
+      alert(err.message || "Failed to dispatch Porter.");
     } finally {
       setBusy(null);
     }
@@ -199,6 +214,7 @@ export default function AdminReturnsAndCoupons() {
                 <Th>Status</Th>
                 <Th>Requested</Th>
                 <Th>Reason</Th>
+                <Th> </Th>
               </tr>
             </thead>
             <tbody>
@@ -215,10 +231,22 @@ export default function AdminReturnsAndCoupons() {
                   <Td className="max-w-[220px] truncate text-slate-500" title={ex.reason || ""}>
                     {ex.rejectionReason || ex.reason || "—"}
                   </Td>
+                  <Td>
+                    {ex.status === "accepted" && (
+                      <button
+                        type="button"
+                        disabled={busy === ex._id}
+                        onClick={() => handleDispatch(ex._id, ex.orderId)}
+                        className="px-2.5 py-1.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-bold transition-all disabled:opacity-60 cursor-pointer whitespace-nowrap"
+                      >
+                        Send Porter
+                      </button>
+                    )}
+                  </Td>
                 </tr>
               ))}
               {exchanges && exchanges.length === 0 && (
-                <EmptyRow colSpan={7} message="No exchange requests yet." />
+                <EmptyRow colSpan={8} message="No exchange requests yet." />
               )}
             </tbody>
           </table>
