@@ -37,8 +37,11 @@ function SignInContent() {
         }
       })
       .catch((err) => {
-        // auth/no-current-user is normal (no redirect pending) — ignore it
-        if (err?.code && err.code !== "auth/no-current-user") {
+        // Ignore expected non-errors from getRedirectResult:
+        // - auth/no-current-user: no redirect was in progress (normal on fresh page load)
+        // - auth/argument-error: can occur if redirect resolver wasn't ready (safe to ignore)
+        const ignorable = ["auth/no-current-user", "auth/argument-error", "auth/null-user"];
+        if (err?.code && !ignorable.includes(err.code)) {
           console.error("[SignIn] Redirect error:", err);
           setError(err.message ?? "Sign-in failed after redirect.");
         }

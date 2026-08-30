@@ -10,6 +10,7 @@ import {
   initializeAuth,
   browserLocalPersistence,
   indexedDBLocalPersistence,
+  browserPopupRedirectResolver,
   getAuth,
   GoogleAuthProvider,
 } from "firebase/auth";
@@ -48,8 +49,12 @@ export function getClientAuth(): Auth {
 
   try {
     // initializeAuth must be called exactly once per app instance on the client.
+    // IMPORTANT: browserPopupRedirectResolver MUST be provided here — without it,
+    // signInWithPopup, signInWithRedirect, and getRedirectResult all throw
+    // auth/argument-error. getAuth() includes this automatically; initializeAuth() does not.
     _clientAuth = initializeAuth(app, {
       persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+      popupRedirectResolver: browserPopupRedirectResolver,
     });
   } catch {
     // Already initialized (e.g. HMR in dev mode) — retrieve the existing instance.
