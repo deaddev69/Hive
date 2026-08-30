@@ -9,6 +9,12 @@ import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 
+/** Only allow same-origin relative paths as post-login redirect targets (blocks open redirect). */
+function safeRedirect(target: string | null): string {
+  if (!target || !target.startsWith("/") || target.startsWith("//")) return "/boutique";
+  return target;
+}
+
 /** Detect if running as installed PWA (standalone/fullscreen) */
 function isPWA(): boolean {
   if (typeof window === "undefined") return false;
@@ -52,7 +58,7 @@ function SignInContent() {
   // If already signed in, redirect away
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      const redirect = searchParams.get("redirect_url") ?? "/boutique";
+      const redirect = safeRedirect(searchParams.get("redirect_url"));
       router.replace(redirect);
     }
   }, [isLoading, isAuthenticated, router, searchParams]);
