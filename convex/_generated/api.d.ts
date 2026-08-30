@@ -121,6 +121,7 @@ import type * as shared_boutiqueStatus from "../shared/boutiqueStatus.js";
 import type * as slack from "../slack.js";
 import type * as tests_authGatingTest from "../tests/authGatingTest.js";
 import type * as tests_boutiqueAudit from "../tests/boutiqueAudit.js";
+import type * as tests_boutiqueHoursTest from "../tests/boutiqueHoursTest.js";
 import type * as tests_cartCurrency from "../tests/cartCurrency.js";
 import type * as tests_checkTimestamps from "../tests/checkTimestamps.js";
 import type * as tests_couponTest from "../tests/couponTest.js";
@@ -276,6 +277,7 @@ declare const fullApi: ApiFromModules<{
   slack: typeof slack;
   "tests/authGatingTest": typeof tests_authGatingTest;
   "tests/boutiqueAudit": typeof tests_boutiqueAudit;
+  "tests/boutiqueHoursTest": typeof tests_boutiqueHoursTest;
   "tests/cartCurrency": typeof tests_cartCurrency;
   "tests/checkTimestamps": typeof tests_checkTimestamps;
   "tests/couponTest": typeof tests_couponTest;

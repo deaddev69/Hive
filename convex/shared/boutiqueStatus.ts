@@ -146,7 +146,23 @@ export function getBoutiqueStatus(
   const currentMin = istDate.getUTCMinutes();
   const currentTimeStr = `${String(currentHour).padStart(2, "0")}:${String(currentMin).padStart(2, "0")}`;
 
-  // If before opening hours, they open later today
+  const closingTime = boutique.closingTime || "23:59";
+
+  // A closing time at or before the opening time means the shift runs past
+  // midnight (e.g. 09:00 -> 03:50). Comparing the two as plain strings would
+  // then mark the store closed for almost the entire day, so the wrap has to be
+  // handled explicitly.
+  const isOvernight = closingTime <= boutique.openingTime;
+
+  const withinHours = isOvernight
+    ? currentTimeStr >= boutique.openingTime || currentTimeStr < closingTime
+    : currentTimeStr >= boutique.openingTime && currentTimeStr < closingTime;
+
+  if (withinHours) {
+    return { type: "OPEN" };
+  }
+
+  // Closed and still before today's opening — they open later today.
   if (currentTimeStr < boutique.openingTime) {
     return {
       type: "CLOSED_TODAY",
@@ -155,9 +171,8 @@ export function getBoutiqueStatus(
     };
   }
 
-  // If past closing hours, they are closed for the day
-  const closingTime = boutique.closingTime || "23:59";
-  if (currentTimeStr >= closingTime) {
+  // Past closing for the day.
+  {
     const nextDay = getNextOperatingDay(boutique, currentTimeMs + 24 * 60 * 60 * 1000);
     
     // If next day is tomorrow, it's CLOSED_TODAY (Book for Tomorrow)
