@@ -22,7 +22,7 @@ import BeeLoader from "@/components/shared/BeeLoader";
 import { useCartStore } from "@/store/cart-store";
 import { useCheckoutStore } from "@/store/checkout-store";
 import { useOrderStore } from "@/store/order-store";
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useQuery, useMutation, useAction, useConvex } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { useConvexMutation } from "@/hooks/useConvexMutation";
 import { getEffectiveCheckoutItems } from "@/lib/getEffectiveCheckoutItems";
@@ -97,6 +97,11 @@ export default function OrderReviewPage() {
   const cartData = useQuery(api.cart.getCart, { token: token || undefined });
   const currentUser = user;
   const createCheckoutSession = useAction(api.payments.createCheckoutSession);
+  const placeCouponFundedOrder = useConvexMutation(api.payments.placeCouponFundedOrder);
+  const convex = useConvex();
+  // Exchange credit is tracked separately from promo codes: a promo reduces the
+  // order's value, a coupon only reduces what the customer is charged.
+  const [appliedCoupon, setAppliedCoupon] = React.useState<{ code: string; amountPaise: number } | null>(null);
   const verifyPaymentAndPlaceOrder = useConvexMutation(api.payments.verifyPaymentAndPlaceOrder);
   const clearCartMutation = useMutation(api.cart.clearCart).withOptimisticUpdate((localStore, args) => {
     const tokenQueryArg = { token: token || undefined };
@@ -299,13 +304,44 @@ export default function OrderReviewPage() {
   }
 
   // Promo handling
-  const handleApplyPromo = (e: React.FormEvent) => {
+  const handleApplyPromo = async (e: React.FormEvent) => {
     e.preventDefault();
     setPromoError(null);
     setPromoSuccessMsg(null);
     const code = promoInput.trim().toUpperCase();
 
     if (!code) return;
+
+    // Exchange coupons are validated on the server: only it knows who the
+    // credit belongs to, which boutique it is scoped to, and whether it is
+    // still unspent.
+    if (code.startsWith("HIVE-")) {
+      try {
+        const boutiqueIds = Array.from(
+          new Set(items.map((i: any) => i.boutiqueId).filter(Boolean))
+        );
+        const result: any = await convex.query(api.coupons.validateCouponCode, {
+          code,
+          boutiqueIds,
+          cartTotalPaise: Math.round(total * 100),
+          token: token || undefined,
+        });
+
+        if (!result?.valid) {
+          setPromoError(result?.message || "That coupon code isn't valid.");
+          return;
+        }
+
+        setAppliedCoupon({ code, amountPaise: result.amountPaise });
+        setPromoSuccessMsg(
+          `${code} applied: ₹${(result.amountPaise / 100).toLocaleString("en-IN")} credit.`
+        );
+        setPromoInput("");
+      } catch (err: any) {
+        setPromoError(err?.message || "Couldn't check that coupon. Try again.");
+      }
+      return;
+    }
 
     if (code === "WELCOME10") {
       const discount = Math.round(subtotal * 0.1);
@@ -327,6 +363,7 @@ export default function OrderReviewPage() {
   };
 
   const handleRemovePromo = () => {
+    setAppliedCoupon(null);
     setAppliedPromo(null, 0);
     setPromoSuccessMsg(null);
     setPromoError(null);
@@ -412,11 +449,27 @@ export default function OrderReviewPage() {
         discount: discountAmount,
         total: total,
         promoCode: appliedPromo || undefined,
+        couponCode: appliedCoupon?.code,
         token: token || undefined,
         quoteId,
       });
 
       const { checkoutSessionId, razorpayOrderId } = sessionResult;
+      const payablePaise = (sessionResult as any).customerPayablePaise;
+
+      // The coupon covers the order outright, so there is nothing to charge and
+      // no Razorpay checkout to open.
+      if (payablePaise === 0) {
+        const verifyResult = await placeCouponFundedOrder({
+          checkoutSessionId,
+          token: token || undefined,
+        });
+        if (verifyResult) {
+          clearCart();
+          router.push(`/order/success?orderId=${verifyResult.orderId}`);
+        }
+        return;
+      }
 
       // 2. Handle Mock Order Simulation (offline mode)
       if (razorpayOrderId.startsWith("order_mock_")) {
@@ -792,6 +845,30 @@ export default function OrderReviewPage() {
               showHelpSection={true}
               isLoading={orderItems.length > 0 && backendPricing === undefined}
             />
+
+              {/* Exchange credit: reduces what is charged, not the order total. */}
+              {appliedCoupon && (
+                <div className="border-t border-hive-border/40 pt-4 mt-1 text-left space-y-1.5">
+                  <div className="flex justify-between items-center text-xs font-bold text-emerald-700">
+                    <span>Exchange credit ({appliedCoupon.code})</span>
+                    <span className="font-mono">
+                      −₹{(Math.min(appliedCoupon.amountPaise, Math.round(total * 100)) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm font-black text-hive-dark">
+                    <span>To pay now</span>
+                    <span className="font-mono">
+                      ₹{Math.max(0, total - appliedCoupon.amountPaise / 100).toFixed(2)}
+                    </span>
+                  </div>
+                  {appliedCoupon.amountPaise > Math.round(total * 100) && (
+                    <p className="text-[11px] text-emerald-700 font-semibold leading-snug">
+                      ₹{((appliedCoupon.amountPaise - Math.round(total * 100)) / 100).toFixed(2)} left
+                      over will be refunded to your original payment method.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Promo code widget */}
               <div className="border-t border-hive-border/40 pt-4 mt-1 text-left">

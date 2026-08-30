@@ -1505,6 +1505,8 @@ export const createCheckoutSession = action({
     discount: v.number(),
     total: v.number(),
     promoCode: v.optional(v.string()),
+    /** Exchange store credit. Reduces what is charged, not the order's value. */
+    couponCode: v.optional(v.string()),
     token: v.optional(v.string()),
     quotedAt: v.optional(v.number()),
     quoteId: v.optional(v.string()),
@@ -1557,6 +1559,8 @@ export const createCheckoutSession = action({
         checkoutSessionId: initResult.checkoutSessionId,
         razorpayOrderId,
         paymentId: initResult.paymentId,
+        customerPayablePaise: initResult.customerPayablePaise ?? initResult.totalPaise,
+        couponAppliedPaise: initResult.couponAppliedPaise ?? 0,
       };
     }
 
@@ -1567,7 +1571,12 @@ export const createCheckoutSession = action({
       // Seller payout is created AFTER delivery via separate transfer API.
       const safeReceipt = String(initResult.checkoutSessionId).slice(0, 40);
       const orderPayload: Record<string, any> = {
-        amount: initResult.totalPaise ?? Math.round(initResult.total * 100),
+        // Charge only what the customer still owes. The coupon-funded portion
+        // is already in Hive's balance and must not be collected again.
+        amount:
+          initResult.customerPayablePaise ??
+          initResult.totalPaise ??
+          Math.round(initResult.total * 100),
         currency: "INR",
         receipt: safeReceipt,
         notes: {
@@ -1606,6 +1615,8 @@ export const createCheckoutSession = action({
         checkoutSessionId: initResult.checkoutSessionId,
         razorpayOrderId,
         paymentId: initResult.paymentId,
+        customerPayablePaise: initResult.customerPayablePaise ?? initResult.totalPaise,
+        couponAppliedPaise: initResult.couponAppliedPaise ?? 0,
       };
     } catch (err: any) {
       console.error("[RazorpayOrderCreation] API request failed:", err.message || err);
