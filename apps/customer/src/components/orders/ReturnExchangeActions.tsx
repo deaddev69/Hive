@@ -62,16 +62,15 @@ export function ReturnExchangeActions({
       if (mode === "return") {
         await requestReturn({ orderId, reason: reason.trim() });
         toast.success("Return requested. We'll confirm shortly and arrange pickup.");
-        openWhatsApp(
-          `Hi Hive, I'd like to return order ${orderNumber}. Reason: ${reason.trim()}`
-        );
       } else {
         await requestExchange({ orderId, reason: reason.trim() });
         toast.success("Exchange confirmed. Let's sort out your replacement on WhatsApp.");
-        openWhatsApp(
-          `Hi Hive, I'd like to exchange order ${orderNumber}. What I'd prefer: ${reason.trim()}`
-        );
       }
+      // Both flows hand off to the same support conversation, so the customer
+      // always lands in one thread rather than two depending on what they picked.
+      openWhatsApp(
+        `Hi Hive Support, I want to request a ${mode} for my order ${orderNumber}. Reason: ${reason.trim()}`
+      );
       setMode(null);
       setReason("");
     } catch {
@@ -106,7 +105,7 @@ export function ReturnExchangeActions({
           {exchange.whatsappVisible && (
             <a
               href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
-                `Hi Hive, my exchange for order ${orderNumber} was accepted. I'd like to discuss the replacement.`
+                `Hi Hive Support, I want to request a exchange for my order ${orderNumber}.`
               )}`}
               target="_blank"
               rel="noopener noreferrer"

@@ -57,8 +57,8 @@ export const requestReturn = mutation({
       throw new ConvexError("An exchange is already in progress for this order.");
     }
 
-    const windowClosesAt =
-      (order.claimWindowExpiresAt ?? 0) || (order.deliveredAt ?? now) + RETURN_WINDOW_MS;
+    // Window runs from when the order was placed, not from delivery.
+    const windowClosesAt = order.createdAt + RETURN_WINDOW_MS;
     if (now > windowClosesAt) {
       throw new ConvexError("The 24-hour return window for this order has closed.");
     }
