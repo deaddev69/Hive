@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useQuery, useMutation } from "convex/react";
-import { Repeat, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Repeat, Clock } from "lucide-react";
 import { toast } from "@hive/utils";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -35,8 +35,6 @@ function formatCountdown(ms: number): string {
  */
 export function ExchangeRequestsPanel() {
   const exchanges = useQuery(api.exchanges.listMyBoutiqueExchanges, {});
-  const acceptExchange = useMutation(api.exchanges.acceptExchange);
-  const rejectExchange = useMutation(api.exchanges.rejectExchange);
   const disputeReceipt = useMutation(api.exchanges.disputeExchangeReceipt);
 
   const [busyId, setBusyId] = React.useState<string | null>(null);
@@ -47,32 +45,6 @@ export function ExchangeRequestsPanel() {
     ["pending", "accepted"].includes(e.status)
   );
   if (actionable.length === 0) return null;
-
-  const handleAccept = async (exchangeId: Id<"exchangeRequests">) => {
-    setBusyId(exchangeId);
-    try {
-      await acceptExchange({ exchangeId });
-      toast.success("Exchange accepted", "The customer can now message you about a replacement.");
-    } catch (err: any) {
-      toast.error("Couldn't accept exchange", err.message || "Please try again.");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const handleReject = async (exchangeId: Id<"exchangeRequests">) => {
-    const reason = window.prompt("Why can't you accept this exchange?");
-    if (!reason?.trim()) return;
-    setBusyId(exchangeId);
-    try {
-      await rejectExchange({ exchangeId, reason: reason.trim() });
-      toast.success("Exchange declined", "The customer has been notified.");
-    } catch (err: any) {
-      toast.error("Couldn't decline exchange", err.message || "Please try again.");
-    } finally {
-      setBusyId(null);
-    }
-  };
 
   const handleDispute = async (exchangeId: Id<"exchangeRequests">) => {
     const details = window.prompt(
@@ -94,9 +66,14 @@ export function ExchangeRequestsPanel() {
     <div className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4">
       <div className="flex items-center gap-2 mb-3">
         <Repeat className="w-4 h-4 text-amber-700" />
-        <h3 className="text-sm font-bold text-amber-950">
-          Exchange requests ({actionable.length})
-        </h3>
+        <div>
+          <h3 className="text-sm font-bold text-amber-950">
+            Exchanges coming back ({actionable.length})
+          </h3>
+          <p className="text-[11px] text-amber-800/80">
+            Accepted automatically under your 24h returns policy. Hive arranges the pickup.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -118,50 +95,19 @@ export function ExchangeRequestsPanel() {
                 <Clock className="w-3 h-3" />
                 {ex.status === "pending"
                   ? formatCountdown(ex.msRemaining)
-                  : "Accepted — awaiting pickup"}
+                  : "Awaiting pickup from the customer"}
               </p>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              {ex.status === "pending" && ex.canAccept && (
-                <>
-                  <button
-                    type="button"
-                    disabled={busyId === ex._id}
-                    onClick={() => handleAccept(ex._id)}
-                    className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-60 cursor-pointer"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Accept
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busyId === ex._id}
-                    onClick={() => handleReject(ex._id)}
-                    className="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all disabled:opacity-60 cursor-pointer"
-                  >
-                    <XCircle className="w-3.5 h-3.5" />
-                    Decline
-                  </button>
-                </>
-              )}
-
-              {ex.status === "pending" && !ex.canAccept && (
-                <span className="text-[11px] font-semibold text-slate-500">
-                  Window closed
-                </span>
-              )}
-
-              {ex.status === "accepted" && (
-                <button
-                  type="button"
-                  disabled={busyId === ex._id}
-                  onClick={() => handleDispute(ex._id)}
-                  className="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all disabled:opacity-60 cursor-pointer"
-                >
-                  Didn&apos;t receive it
-                </button>
-              )}
+              <button
+                type="button"
+                disabled={busyId === ex._id}
+                onClick={() => handleDispute(ex._id)}
+                className="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold transition-all disabled:opacity-60 cursor-pointer"
+              >
+                Didn&apos;t receive it
+              </button>
             </div>
           </div>
         ))}

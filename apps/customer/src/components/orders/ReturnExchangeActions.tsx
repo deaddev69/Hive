@@ -54,7 +54,7 @@ export function ReturnExchangeActions({
         toast.success("Return requested. We'll confirm shortly and arrange pickup.");
       } else {
         await requestExchange({ orderId, reason: reason.trim() });
-        toast.success("Exchange requested. The boutique has 24 hours to respond.");
+        toast.success("Exchange confirmed. We'll arrange pickup of the original item.");
       }
       setMode(null);
       setReason("");
@@ -197,7 +197,7 @@ export function ReturnExchangeActions({
         </h4>
         <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
           {mode === "exchange"
-            ? "You'll get credit worth what you paid, to spend at this boutique within 30 days."
+            ? "We'll collect this item and give you credit worth what you paid, to spend at this boutique within 30 days."
             : "We'll refund what you paid to your original payment method once the boutique has the item back."}
         </p>
       </div>

@@ -73,13 +73,19 @@ export const requestExchange = mutation({
       return { success: true, reason: "already_requested", exchangeId: existing._id };
     }
 
+    // Auto-accepted. The boutique already granted this at the store level via
+    // "Accept 24h Returns" (which its own copy describes as covering size
+    // exchanges), and that policy is frozen onto the order as `returnsAccepted`
+    // and checked above. There is no per-request seller decision, so the
+    // customer is not left waiting on someone who benefits from stalling.
     const exchangeId = await ctx.db.insert("exchangeRequests", {
       orderId: args.orderId,
       customerId: user._id,
       boutiqueId: order.boutiqueId,
-      status: "pending",
+      status: "accepted",
       reason: args.reason,
       requestedAt: now,
+      respondedAt: now,
       expiresAt: now + EXCHANGE_RESPONSE_WINDOW_MS,
       createdAt: now,
       updatedAt: now,
@@ -95,8 +101,8 @@ export const requestExchange = mutation({
 
     await ctx.scheduler.runAfter(0, internal.pushActions.sendOrderPushToBoutique, {
       boutiqueId: order.boutiqueId,
-      title: "Exchange requested",
-      body: `A customer wants to exchange order ${order.orderNumber}. You have 24 hours to respond.`,
+      title: "Exchange accepted",
+      body: `Order ${order.orderNumber} is coming back for an exchange. Hive will arrange pickup.`,
       url: "/boutique/orders",
     });
 
@@ -172,7 +178,8 @@ export const listMyBoutiqueExchanges = query({
             reason: r.reason,
             requestedAt: r.requestedAt,
             expiresAt: r.expiresAt,
-            // Server-authoritative: the client must not compute this itself.
+            // Retained for older records created before exchanges were
+            // auto-accepted at the store-policy level.
             canAccept: r.status === "pending" && r.expiresAt > now,
             msRemaining: Math.max(0, r.expiresAt - now),
           };
