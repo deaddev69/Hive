@@ -863,7 +863,8 @@ export async function verifyPaymentAndPlaceOrderInternal(
   // charged. The authorisation for these comes from the coupon itself, which
   // was validated server-side at checkout and is consumed below under a
   // single-use guard.
-  const isCouponFunded = (session.customerPayablePaise ?? session.total) === 0 && !!session.couponId;
+  const isCouponFunded =
+    (session.customerPayablePaise ?? session.total) < 100 && !!session.couponId;
 
   // Signature Validation
   const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -1387,7 +1388,9 @@ export const placeCouponFundedOrder = mutation({
     if (!session.couponId) {
       throw new ConvexError("This checkout has no coupon applied.");
     }
-    if ((session.customerPayablePaise ?? session.total) !== 0) {
+    // Mirrors the checkout action: anything under Razorpay's ₹1 floor is
+    // treated as fully covered, because no payment could have been collected.
+    if ((session.customerPayablePaise ?? session.total) >= 100) {
       throw new ConvexError(
         "This order still has an amount payable. Complete the payment instead."
       );
@@ -1531,6 +1534,33 @@ export const createCheckoutSession = action({
       throw new ConvexError(errMsg);
     }
 
+
+    // An exchange coupon covering the order outright leaves nothing to charge,
+    // and the funding money is already in Hive's balance from the reversed
+    // transfer. The client places these through placeCouponFundedOrder.
+    //
+    // Razorpay refuses any order below ₹1, so a coupon that leaves a few paise
+    // outstanding would fail the same way. Hive absorbs that remainder rather
+    // than failing the checkout or rounding the customer up.
+    const RAZORPAY_MIN_CHARGE_PAISE = 100;
+    const payablePaise = initResult.customerPayablePaise ?? initResult.totalPaise;
+    if (payablePaise < RAZORPAY_MIN_CHARGE_PAISE) {
+      const couponOrderRef = `coupon_${String(initResult.checkoutSessionId)}`;
+      await ctx.runMutation(internal.payments.updateCheckoutSessionWithRazorpayOrderId as any, {
+        checkoutSessionId: initResult.checkoutSessionId,
+        paymentId: initResult.paymentId,
+        razorpayOrderId: couponOrderRef,
+        status: "created",
+      });
+
+      return {
+        checkoutSessionId: initResult.checkoutSessionId,
+        razorpayOrderId: couponOrderRef,
+        paymentId: initResult.paymentId,
+        customerPayablePaise: 0,
+        couponAppliedPaise: initResult.couponAppliedPaise ?? 0,
+      };
+    }
 
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;

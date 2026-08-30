@@ -457,9 +457,10 @@ export default function OrderReviewPage() {
       const { checkoutSessionId, razorpayOrderId } = sessionResult;
       const payablePaise = (sessionResult as any).customerPayablePaise;
 
-      // The coupon covers the order outright, so there is nothing to charge and
-      // no Razorpay checkout to open.
-      if (payablePaise === 0) {
+      // The coupon covers the order, so there is nothing to charge and no
+      // Razorpay checkout to open. Anything under Razorpay's ₹1 floor counts as
+      // covered — the server absorbs the remainder rather than failing.
+      if (typeof payablePaise === "number" && payablePaise < 100) {
         const verifyResult = await placeCouponFundedOrder({
           checkoutSessionId,
           token: token || undefined,
