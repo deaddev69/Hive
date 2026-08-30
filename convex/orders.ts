@@ -17,6 +17,7 @@ import { calculateItemFinancials, calculateStoreSettlement, calculateOrderTotals
 import { parseMoney, formatMoney } from "./lib/money";
 import { checkKillSwitch } from "./lib/killSwitches";
 import { validateBoutiqueOperationalLimits } from "./lib/gating";
+import { resolveOrderReturnsAccepted } from "./lib/returnPolicy";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
 import { recordOrderActivity } from "./lib/orderActivity";
 import { checkServiceability } from "./lib/serviceability";
@@ -444,6 +445,17 @@ export const placeOrder = mutation({
       area: boutique.area,
     } : undefined;
 
+    // Snapshot return eligibility now — the payout hold reads this, and it must
+    // not change if the seller later switches their store to Final Sale.
+    const returnsAccepted = await resolveOrderReturnsAccepted(
+      ctx.db,
+      primaryBoutiqueId,
+      orderSnapshot.items.map((i: any) => ({
+        productId: i.productId,
+        boutiqueId: primaryBoutiqueId,
+      }))
+    );
+
     // Create the order
     const orderId = await ctx.db.insert("orders", {
       orderNumber,
@@ -451,6 +463,7 @@ export const placeOrder = mutation({
       boutiqueId:      primaryBoutiqueId,
       boutiqueName,
       status:          "pending_confirmation",
+      returnsAccepted,
       acceptanceTimeoutAt: undefined,
       deliveryAddress: compiledAddressSnapshot,
       pickupAddress,
@@ -788,9 +801,14 @@ async function formatOrderForCustomer(ctx: any, order: any, items: any[]) {
     })
   );
 
-  const returnsAccepted = itemsWithReviewStatus.length > 0
-    ? itemsWithReviewStatus.every((i) => i.returnsAccepted !== false) && boutiqueReturnsDefault
-    : boutiqueReturnsDefault;
+  // Prefer the snapshot taken at order creation. Only fall back to live
+  // resolution for legacy orders placed before the snapshot existed — for
+  // those, the seller's current policy is the best available answer.
+  const returnsAccepted = order.returnsAccepted !== undefined
+    ? order.returnsAccepted
+    : itemsWithReviewStatus.length > 0
+      ? itemsWithReviewStatus.every((i) => i.returnsAccepted !== false) && boutiqueReturnsDefault
+      : boutiqueReturnsDefault;
 
   return {
     ...order,
@@ -2191,6 +2209,9 @@ export const patchOrderPayoutStatus = internalMutation({
     payoutProcessedAt: v.optional(v.number()),
     payoutFailureReason: v.optional(v.string()),
     razorpayTransferId: v.optional(v.string()),
+    // Pass null to clear an indefinite hold marker; omit to leave unchanged.
+    payoutHoldUntil: v.optional(v.union(v.number(), v.null())),
+    payoutHoldReason: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const patch: any = {
@@ -2200,6 +2221,12 @@ export const patchOrderPayoutStatus = internalMutation({
     if (args.payoutEligibleAt !== undefined) patch.payoutEligibleAt = args.payoutEligibleAt;
     if (args.payoutProcessedAt !== undefined) patch.payoutProcessedAt = args.payoutProcessedAt;
     if (args.payoutFailureReason !== undefined) patch.payoutFailureReason = args.payoutFailureReason;
+    if (args.payoutHoldUntil !== undefined) {
+      patch.payoutHoldUntil = args.payoutHoldUntil ?? undefined;
+    }
+    if (args.payoutHoldReason !== undefined) {
+      patch.payoutHoldReason = args.payoutHoldReason ?? undefined;
+    }
     if (args.razorpayTransferId !== undefined) {
       patch.razorpayTransferId = args.razorpayTransferId;
       patch.transferStatus = "processed";

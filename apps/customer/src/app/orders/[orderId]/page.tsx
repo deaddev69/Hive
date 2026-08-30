@@ -30,6 +30,7 @@ import { api } from "../../../../../../convex/_generated/api";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { CustomerPriceBreakdown } from "@/components/checkout/CustomerPriceBreakdown";
+import { ReturnExchangeActions } from "@/components/orders/ReturnExchangeActions";
 import { useSessionStore } from "@/context/SessionContext";
 import { formatCurrency, toast } from "@hive/utils";
 import BeeLoader from "@/components/shared/BeeLoader";
@@ -505,15 +506,17 @@ export default function OrderDetailPage() {
                   );
                 }
 
-                if (isDelivered && isWindowActive) {
+                // Live return/exchange actions. The component also renders the
+                // in-progress state, so it stays mounted once a request exists
+                // even after the 24h window closes.
+                if (isDelivered) {
                   return (
-                    <a
-                      href={`mailto:support@hivenow.in?subject=Return/Exchange Request Order ${order.orderNumber}`}
-                      className="w-full py-3 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-900 dark:text-amber-300 font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 border border-amber-300 dark:border-amber-800 transition-all cursor-pointer"
-                    >
-                      <RotateCcw className="w-4 h-4 text-amber-600" />
-                      <span>Request Return / Exchange (24h Window Active)</span>
-                    </a>
+                    <ReturnExchangeActions
+                      orderId={order._id}
+                      orderNumber={order.orderNumber}
+                      returnStatus={(order as any).returnStatus}
+                      isWindowActive={isWindowActive}
+                    />
                   );
                 }
 

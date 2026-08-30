@@ -20,6 +20,9 @@ import { triggerNotification } from "./lib/notifications";
 import { checkKillSwitch } from "./lib/killSwitches";
 import { validateBoutiqueOperationalLimits, checkBoutiqueClosedStatus } from "./lib/gating";
 import { restoreCheckoutSessionStock } from "./lib/inventory";
+import { resolveOrderReturnsAccepted } from "./lib/returnPolicy";
+import { validateCouponForCart } from "./lib/coupons";
+import { applyCouponToOrder } from "./coupons";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
 import { checkServiceability } from "./lib/serviceability";
 // ─── Input Schemas ───────────────────────────────────────────────────────────
@@ -266,6 +269,8 @@ export const initCheckoutSessionInternal = internalMutation({
     discount: v.number(),
     total: v.number(),
     promoCode: v.optional(v.string()),
+    /** Exchange store credit. Separate from promoCode — see the coupon block below. */
+    couponCode: v.optional(v.string()),
     token: v.optional(v.string()),
     quoteId: v.optional(v.string()),
     quotedAt: v.optional(v.number()),
@@ -613,6 +618,53 @@ export const initCheckoutSessionInternal = internalMutation({
 
     const now = Date.now();
 
+    // ─── Exchange coupon ────────────────────────────────────────────────────
+    // Applied against the FULL payable total (items + delivery + fees), since
+    // the coupon is worth what the customer originally paid, delivery included.
+    // Validated entirely server-side — the client's claim about a coupon's
+    // value, owner, or scope is never trusted.
+    let appliedCoupon: {
+      couponId: Id<"coupons">;
+      couponAppliedPaise: number;
+      customerPayablePaise: number;
+    } | null = null;
+
+    const cleanCouponCode = args.couponCode ? args.couponCode.trim().toUpperCase() : "";
+    if (cleanCouponCode) {
+      const coupon = await ctx.db
+        .query("coupons")
+        .withIndex("by_code", (q) => q.eq("code", cleanCouponCode))
+        .first();
+      if (!coupon) throw new ConvexError("That coupon code isn't valid.");
+
+      const verdict = validateCouponForCart(
+        {
+          status: coupon.status,
+          boutiqueId: coupon.boutiqueId,
+          customerId: coupon.customerId,
+          expiresAt: coupon.expiresAt,
+        },
+        {
+          customerId: user._id,
+          boutiqueIds: resolvedItems.map((r) =>
+            String((r.productRow as any)?.boutiqueId ?? primaryBoutiqueId)
+          ),
+        },
+        now
+      );
+      if (!verdict.valid) throw new ConvexError(verdict.message);
+
+      const couponAppliedPaise = Math.min(coupon.amountPaise, pricing.totalPayablePaise);
+      appliedCoupon = {
+        couponId: coupon._id,
+        couponAppliedPaise,
+        customerPayablePaise: pricing.totalPayablePaise - couponAppliedPaise,
+      };
+    }
+
+    const customerPayablePaise =
+      appliedCoupon?.customerPayablePaise ?? pricing.totalPayablePaise;
+
     // Decrement stock for real products and log inventory movements (skip for reservations as they are already deducted)
     // NOTE: We re-read the product document here to ensure Convex OCC detects concurrent
     // modifications. If two mutations decrement the same product simultaneously, the second
@@ -693,6 +745,9 @@ export const initCheckoutSessionInternal = internalMutation({
       discount: pricing.discountPaise,
       total: pricing.totalPayablePaise,
       promoCode: args.promoCode,
+      couponId: appliedCoupon?.couponId,
+      couponAppliedPaise: appliedCoupon?.couponAppliedPaise,
+      customerPayablePaise,
       razorpayOrderId: "",
       status: "pending",
       placedDuringClosedHours,
@@ -701,12 +756,14 @@ export const initCheckoutSessionInternal = internalMutation({
       createdAt: now,
     });
 
-    // Save initial Payment record with "initiated" status
+    // Save initial Payment record with "initiated" status.
+    // Amount is what the CUSTOMER is charged — the coupon-funded portion never
+    // passes through Razorpay, it is already sitting in Hive's balance.
     const paymentId = await ctx.db.insert("payments", {
       customerId: user._id,
       paymentProvider: "razorpay",
       razorpayOrderId: undefined,
-      amount: pricing.totalPayablePaise,
+      amount: customerPayablePaise,
       currency: "INR",
       status: "initiated",
       createdAt: now,
@@ -728,6 +785,11 @@ export const initCheckoutSessionInternal = internalMutation({
       paymentId,
       total: pricing.totalPayablePaise / 100,
       totalPaise: pricing.totalPayablePaise,
+      // What the customer must actually pay after any exchange coupon. Zero
+      // means the coupon covers the order outright — the client should skip
+      // Razorpay entirely and call placeCouponFundedOrder.
+      customerPayablePaise,
+      couponAppliedPaise: appliedCoupon?.couponAppliedPaise ?? 0,
       userEmail: user.email || "",
       userPhone: finalPhone,
       customerName: user.email?.split("@")[0] || "Hive Customer",
@@ -796,13 +858,21 @@ export async function verifyPaymentAndPlaceOrderInternal(
   // Compare-and-Swap Session Lock (P0)
   await ctx.db.patch(args.checkoutSessionId, { status: "processing" });
 
+  // A coupon-funded order has no Razorpay payment to verify: the money is
+  // already in Hive's balance from the reversed transfer, so nothing was
+  // charged. The authorisation for these comes from the coupon itself, which
+  // was validated server-side at checkout and is consumed below under a
+  // single-use guard.
+  const isCouponFunded = (session.customerPayablePaise ?? session.total) === 0 && !!session.couponId;
+
   // Signature Validation
   const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!razorpaySecret) {
+  if (!razorpaySecret && !isCouponFunded) {
     throw new ConvexError("FATAL: RAZORPAY_KEY_SECRET environment variable is not configured. Payment processing is disabled.");
   }
 
-  const isSignatureMock = isSignatureBypassAllowed(process.env.ENABLE_DEBUG_TOOLS, razorpaySecret);
+  const isSignatureMock =
+    isCouponFunded || isSignatureBypassAllowed(process.env.ENABLE_DEBUG_TOOLS, razorpaySecret);
 
   if (!isSignatureMock) {
     const isVerified = await verifyRazorpaySignature(
@@ -992,12 +1062,21 @@ export async function verifyPaymentAndPlaceOrderInternal(
     area: boutique.area,
   } : undefined;
 
+  // Snapshot return eligibility now — the payout hold reads this, and it must
+  // not change if the seller later switches their store to Final Sale.
+  const returnsAccepted = await resolveOrderReturnsAccepted(
+    ctx.db,
+    boutiqueId,
+    orderSnapshot.items.map((i) => ({ productId: i.productId, boutiqueId }))
+  );
+
   const orderId = await ctx.db.insert("orders", {
     orderNumber,
     customerId: user._id,
     boutiqueId,
     boutiqueName,
     status: "pending_confirmation",
+    returnsAccepted,
     deliveryAddress: session.addressSnapshot,
     pickupAddress,
     addressId: session.addressId,
@@ -1254,11 +1333,19 @@ export async function verifyPaymentAndPlaceOrderInternal(
     url: "/boutique/orders",
   });
 
-  // v3: NO Route transfer at payment time. The customer payment lands in the Hive
-  // Razorpay account and stays there until Porter confirms delivery, at which point
-  // razorpayRoute.createSellerTransfer creates the single seller transfer.
-  // razorpayTransferId is therefore left unset here — stamping it early would make
-  // the post-delivery settlement treat the order as already paid out.
+  // Consume any exchange coupon that funded this order, and refund the
+  // remainder if the new order came in under the credit's value.
+  await applyCouponToOrder(ctx, session, orderId, payment?.amount ?? 0, now);
+
+  // v3: create the seller's Route transfer now, held indefinitely
+  // (on_hold=true, no on_hold_until). The money is frozen in the seller's linked
+  // account and cannot be withdrawn, which is what makes a later return reversal
+  // reliable. Delivery then releases it (Final Sale) or sets a 24h on_hold_until
+  // (returns-accepted sellers). razorpayTransferId is stamped by that action, not
+  // here — the hold state is what the settlement path reads.
+  await ctx.scheduler.runAfter(0, internal.razorpayRoute.createHeldSellerTransfer, {
+    orderId,
+  });
 
   return { success: true, orderId, orderNumber };
 }
@@ -1272,6 +1359,44 @@ export const verifyPaymentAndPlaceOrder = mutation({
   },
   handler: async (ctx, args) => {
     return await verifyPaymentAndPlaceOrderInternal(ctx, args);
+  },
+});
+
+/**
+ * Place an order that an exchange coupon covers in full.
+ *
+ * There is no Razorpay payment here — the customer owes nothing, and the money
+ * funding the order is already in Hive's balance from the transfer that was
+ * reversed when the exchange completed. The coupon is the authorisation, and
+ * it is re-validated and consumed under a single-use guard during placement.
+ */
+export const placeCouponFundedOrder = mutation({
+  args: {
+    checkoutSessionId: v.id("checkoutSessions"),
+    token: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx, args.token);
+    const session = await ctx.db.get(args.checkoutSessionId);
+
+    if (!session || session.userId !== user._id) {
+      throw new ConvexError("Checkout session not found.");
+    }
+    if (!session.couponId) {
+      throw new ConvexError("This checkout has no coupon applied.");
+    }
+    if ((session.customerPayablePaise ?? session.total) !== 0) {
+      throw new ConvexError(
+        "This order still has an amount payable. Complete the payment instead."
+      );
+    }
+
+    return await verifyPaymentAndPlaceOrderInternal(ctx, {
+      checkoutSessionId: args.checkoutSessionId,
+      razorpayPaymentId: `coupon_${session.couponId}`,
+      razorpaySignature: "",
+      token: args.token,
+    });
   },
 });
 

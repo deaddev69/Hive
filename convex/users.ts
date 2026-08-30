@@ -160,8 +160,12 @@ export const syncUser = mutation({
       }
     }
 
-    // Auto link approved boutique owner/staff by normalized email (Firebase + Clerk both allowed)
-    if (emailNormalized && targetUserRole !== "admin") {
+    // Auto link approved boutique owner/staff by normalized email (Firebase + Clerk both allowed).
+    // Uses the server-verified identity.email, never args.email, so a caller can't spoof
+    // ownership of a boutique by lying about the email in the mutation args.
+    const verifiedEmailNormalized = normalizeEmail(identity.email ?? undefined);
+    if (verifiedEmailNormalized && targetUserRole !== "admin") {
+      const emailNormalized = verifiedEmailNormalized;
       let boutique = await ctx.db
         .query("boutiques")
         .withIndex("by_email", (q) => q.eq("email", emailNormalized))

@@ -844,6 +844,14 @@ export default defineSchema({
                           })),
     shipmentId:           v.optional(v.id("shipments")),
     // ─── Return Flow ─────────────────────────────────────────────────────
+    // Snapshotted at order creation from product + boutique return policy.
+    // Drives the Route payout hold, so it must NOT be resolved live at read
+    // time — a seller switching to Final Sale must not change the terms of
+    // orders already placed. Absent on legacy orders (pre-snapshot).
+    returnsAccepted:      v.optional(v.boolean()),
+    // Set when an exchange coupon part- or fully-funded this order.
+    couponId:             v.optional(v.id("coupons")),
+    couponAppliedPaise:   v.optional(v.number()),
     returnShipmentId:     v.optional(v.id("shipments")),
     returnStatus:         v.optional(v.union(
                             v.literal("requested"),
@@ -852,9 +860,14 @@ export default defineSchema({
                             v.literal("picked_up"),
                             v.literal("in_transit"),
                             v.literal("delivered"),
+                            // Terminal: item is back with the seller AND the
+                            // customer has been refunded. "delivered" only means
+                            // Porter dropped it off; money moves on "completed".
+                            v.literal("completed"),
                             v.literal("cancelled"),
                             v.literal("failed")
                           )),
+    returnCompletedAt:    v.optional(v.number()),
     notes:                v.optional(v.string()),
     payoutStatus:         v.optional(v.union(
                             v.literal("pending"),
@@ -867,6 +880,14 @@ export default defineSchema({
                             v.literal("withheld")
                           )),
     payoutEligibleAt:     v.optional(v.number()),
+    // Razorpay Route hold mirror. The transfer is created on capture with
+    // on_hold=true; these track what we last told Razorpay so the state is
+    // auditable without re-fetching the transfer.
+    // payoutHoldUntil undefined while payoutStatus is "withheld" means the
+    // hold is indefinite (no on_hold_until sent) — a return or an unredeemed
+    // exchange coupon is holding it open.
+    payoutHoldUntil:      v.optional(v.number()),
+    payoutHoldReason:     v.optional(v.string()),
     payoutProcessedAt:    v.optional(v.number()),
     payoutFailureReason:  v.optional(v.string()),
     payoutDetails:        v.optional(
@@ -1206,6 +1227,14 @@ export default defineSchema({
     discount:        v.number(),
     total:           v.number(),
     promoCode:       v.optional(v.string()),
+    // Exchange store credit applied to this checkout. Kept separate from
+    // `discount`/`promoCode`: a promo reduces the order's value, whereas a
+    // coupon is prepaid money that reduces only what the customer is charged.
+    // `total` therefore stays the full order value and
+    // `customerPayablePaise` is what actually goes to Razorpay.
+    couponId:             v.optional(v.id("coupons")),
+    couponAppliedPaise:   v.optional(v.number()),
+    customerPayablePaise: v.optional(v.number()),
     razorpayOrderId: v.string(),
     status:          v.union(
                        v.literal("pending"),
@@ -2486,5 +2515,138 @@ export default defineSchema({
   })
     .index("by_orderId", ["orderId"])
     .index("by_boutiqueId_createdAt", ["boutiqueId", "createdAt"]),
+
+  // ─── EXCHANGE REQUESTS ────────────────────────────────────────────────────
+  // A customer asking to swap a delivered item for a different one from the
+  // same boutique. Distinct from a return: a completed return refunds cash,
+  // a completed exchange issues a seller-scoped coupon.
+  exchangeRequests: defineTable({
+    orderId:      v.id("orders"),
+    customerId:   v.id("users"),
+    boutiqueId:   v.id("boutiques"),
+    status:       v.union(
+                    v.literal("pending"),    // awaiting seller response
+                    v.literal("accepted"),   // seller agreed, pickup to be arranged
+                    v.literal("rejected"),   // seller declined
+                    v.literal("expired"),    // seller did not respond in 24h
+                    v.literal("completed"),  // item back with seller, coupon issued
+                    v.literal("cancelled")
+                  ),
+    reason:       v.optional(v.string()),
+    // Seller has 24h from requestedAt to accept. Enforced server-side against
+    // these timestamps — never against a client-supplied clock.
+    requestedAt:  v.number(),
+    respondedAt:  v.optional(v.number()),
+    expiresAt:    v.number(),                        // requestedAt + 24h
+    rejectionReason: v.optional(v.string()),
+    // Set once the exchange completes and the coupon exists.
+    couponId:     v.optional(v.id("coupons")),
+    returnShipmentId: v.optional(v.id("shipments")), // Porter leg, customer -> seller
+    createdAt:    v.number(),
+    updatedAt:    v.number(),
+  })
+    .index("by_orderId", ["orderId"])
+    .index("by_customerId", ["customerId"])
+    .index("by_boutiqueId_status", ["boutiqueId", "status"])
+    .index("by_status", ["status"]),
+
+  // ─── COUPONS (exchange store credit) ──────────────────────────────────────
+  // Issued when an exchange completes. Backed by the original order's Route
+  // transfer, which stays frozen (on_hold) in the seller's linked account until
+  // the coupon is redeemed, expires, or is revoked — so the money is always
+  // recoverable and never needs clawing back from a settled account.
+  coupons: defineTable({
+    code:            v.string(),
+    customerId:      v.id("users"),
+    boutiqueId:      v.id("boutiques"),              // redeemable at this seller ONLY
+    amountPaise:     v.number(),                     // what the customer actually paid
+    status:          v.union(
+                       v.literal("active"),
+                       v.literal("used"),
+                       v.literal("expired"),
+                       v.literal("revoked")
+                     ),
+    // Provenance: which exchange produced this credit.
+    sourceOrderId:   v.id("orders"),
+    sourceExchangeId: v.optional(v.id("exchangeRequests")),
+    // The held transfer backing this coupon, carried for release/reversal.
+    heldTransferId:  v.optional(v.string()),
+    usedOnOrderId:   v.optional(v.id("orders")),
+    usedAt:          v.optional(v.number()),
+    expiresAt:       v.number(),                     // issued + 30d
+    revokedAt:       v.optional(v.number()),
+    revokedBy:       v.optional(v.id("users")),
+    revokedReason:   v.optional(v.string()),
+    createdAt:       v.number(),
+    updatedAt:       v.number(),
+  })
+    .index("by_code", ["code"])
+    .index("by_customerId_status", ["customerId", "status"])
+    .index("by_boutiqueId", ["boutiqueId"])
+    .index("by_status_expiresAt", ["status", "expiresAt"])
+    .index("by_sourceOrderId", ["sourceOrderId"]),
+
+  // ─── COUPON REDEMPTIONS (money receipt) ───────────────────────────────────
+  // One row per redemption, recording what actually moved. Written at
+  // redemption time and never recomputed, so admin/finance can always answer
+  // "did the customer top up, or did we refund them the difference?".
+  // Razorpay ids here are always real API responses — never fabricated.
+  couponRedemptions: defineTable({
+    couponId:                v.id("coupons"),
+    orderId:                 v.id("orders"),         // the NEW order it paid for
+    customerId:              v.id("users"),
+    boutiqueId:              v.id("boutiques"),
+    // A: new order >= coupon, customer paid the difference
+    // B: new order <  coupon, remainder refunded to the customer
+    // exact: new order == coupon, nothing moved either way
+    redemptionCase:          v.union(
+                               v.literal("A"),
+                               v.literal("B"),
+                               v.literal("exact")
+                             ),
+    couponAmountPaise:       v.number(),
+    newOrderTotalPaise:      v.number(),
+    customerPaidPaise:       v.number(),
+    releasedToSellerPaise:   v.number(),
+    refundedToCustomerPaise: v.number(),
+    razorpayRefundId:        v.optional(v.string()),
+    razorpayTransferId:      v.optional(v.string()),
+    settlementStatus:        v.union(
+                               v.literal("pending"),
+                               v.literal("settled"),
+                               v.literal("recovery_required")
+                             ),
+    failureReason:           v.optional(v.string()),
+    createdAt:               v.number(),
+    updatedAt:               v.number(),
+  })
+    .index("by_couponId", ["couponId"])
+    .index("by_orderId", ["orderId"])
+    .index("by_settlementStatus", ["settlementStatus"]),
+
+  // ─── LEDGER RECOVERY QUEUE ────────────────────────────────────────────────
+  // The one case that cannot be automated: a reversal failed because the money
+  // had already left the seller's linked account. Surfaced in the admin panel
+  // for manual recovery rather than being swallowed.
+  ledgerRecoveryItems: defineTable({
+    orderId:         v.id("orders"),
+    boutiqueId:      v.id("boutiques"),
+    couponId:        v.optional(v.id("coupons")),
+    amountOwedPaise: v.number(),
+    reason:          v.string(),
+    status:          v.union(
+                       v.literal("open"),
+                       v.literal("recovered"),
+                       v.literal("written_off")
+                     ),
+    resolvedBy:      v.optional(v.id("users")),
+    resolvedAt:      v.optional(v.number()),
+    resolutionNotes: v.optional(v.string()),
+    createdAt:       v.number(),
+    updatedAt:       v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_boutiqueId", ["boutiqueId"])
+    .index("by_orderId", ["orderId"]),
 });
 

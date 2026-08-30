@@ -10,6 +10,8 @@ import { triggerNotification } from "../lib/notifications";
 import { calculateDeliveryQuoteAction } from "../routing";
 import { incrementBoutiqueOrderCount } from "../lib/boutiqueCounters";
 import { restoreCheckoutSessionStock } from "../lib/inventory";
+import { resolveOrderReturnsAccepted } from "../lib/returnPolicy";
+import { applyCouponToOrder } from "../coupons";
 
 // ─── HMAC-SHA256 Signature Verification ──────────────────────────────────────
 async function verifyRazorpayWebhookSignature(
@@ -509,6 +511,14 @@ export const processPaymentCaptured = internalMutation({
       area: boutique.area,
     } : undefined;
 
+    // Snapshot return eligibility now — the payout hold reads this, and it must
+    // not change if the seller later switches their store to Final Sale.
+    const returnsAccepted = await resolveOrderReturnsAccepted(
+      ctx.db,
+      boutiqueId,
+      orderSnapshot.items.map((i: any) => ({ productId: i.productId, boutiqueId }))
+    );
+
     // Create Order with v2 pricingSnapshot and payoutStatus
     const orderId = await ctx.db.insert("orders", {
       orderNumber,
@@ -516,6 +526,7 @@ export const processPaymentCaptured = internalMutation({
       boutiqueId,
       boutiqueName,
       status:          "pending_confirmation",
+      returnsAccepted,
       deliveryAddress: session.addressSnapshot,
       pickupAddress,
       addressId:       session.addressId,
@@ -653,8 +664,18 @@ export const processPaymentCaptured = internalMutation({
       await ctx.db.delete(ci._id);
     }
 
-    // v2: NO transfer at payment time. Seller payout happens after Porter DELIVERED.
-    // payoutStatus is "not_eligible" until delivery is confirmed.
+    // Consume any exchange coupon that funded this order, and refund the
+    // remainder if the new order came in under the credit's value.
+    await applyCouponToOrder(ctx, session, orderId, payment.amount ?? 0, now);
+
+    // v3: create the seller's Route transfer now, held indefinitely
+    // (on_hold=true, no on_hold_until). The money is frozen in the seller's
+    // linked account and cannot be withdrawn, which is what makes a later
+    // return reversal reliable. Delivery then releases it (Final Sale) or sets
+    // a 24h on_hold_until (returns-accepted sellers).
+    await ctx.scheduler.runAfter(0, internal.razorpayRoute.createHeldSellerTransfer, {
+      orderId,
+    });
 
     return { success: true, orderId, orderNumber };
   },

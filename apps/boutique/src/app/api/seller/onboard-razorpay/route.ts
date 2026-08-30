@@ -46,8 +46,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Token missing email claim" }, { status: 400 });
     }
 
-    // 2. Look up boutique by seller's email
-    const boutique = await convex.query(api.boutiques.getBoutiqueByEmail, { email: sellerEmail });
+    // 2. Look up boutique by seller's email (server-secret gated — not a public lookup)
+    const lookupSecret = process.env.CONVEX_SERVER_SECRET || process.env.CLERK_SECRET_KEY;
+    if (!lookupSecret) {
+      return NextResponse.json({ error: "Server credentials not configured" }, { status: 500 });
+    }
+    const boutique = await convex.query(api.boutiques.getBoutiqueByEmail, { email: sellerEmail, secret: lookupSecret });
     if (!boutique) {
       return NextResponse.json({ error: "Boutique profile not found for this email" }, { status: 404 });
     }

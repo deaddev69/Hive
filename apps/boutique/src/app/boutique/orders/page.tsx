@@ -8,6 +8,7 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Card, CardContent, LoadingState } from "@hive/ui";
 import { formatCurrency, toast } from "@hive/utils";
 import { getClientAuth } from "@/lib/firebase";
+import { ExchangeRequestsPanel } from "@/components/orders/ExchangeRequestsPanel";
 import {
   Loader2,
   ClipboardList,
@@ -212,6 +213,9 @@ export default function BoutiqueOrders() {
         <h1 className="text-3xl font-serif font-black text-[#0f172a] tracking-tight">Orders</h1>
         <p className="text-sm font-medium text-[#64748b]">Review incoming orders and reservations.</p>
       </div>
+
+      {/* Exchange requests sit above the order list — they are time-boxed to 24h. */}
+      <ExchangeRequestsPanel />
 
       <div className="flex items-center gap-2 border-b border-hive-border/30 pb-2">
         <button

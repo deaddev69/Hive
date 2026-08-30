@@ -2657,8 +2657,12 @@ export const getBoutiqueByClerkId = query({
 });
 
 export const getBoutiqueByEmail = query({
-  args: { email: v.string() },
+  args: { email: v.string(), secret: v.string() },
   handler: async (ctx, args) => {
+    const expectedSecret = process.env.CONVEX_SERVER_SECRET || process.env.CLERK_SECRET_KEY;
+    if (!expectedSecret || args.secret !== expectedSecret) {
+      throw new Error("Unauthorized: Invalid secret key.");
+    }
     const normalized = args.email.trim().toLowerCase();
     // Try indexed owner email first (fast path)
     let boutique = await ctx.db

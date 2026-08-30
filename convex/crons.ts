@@ -31,6 +31,31 @@ crons.interval(
 );
 
 
+// Razorpay auto-releases a transfer when its on_hold_until passes and sends no
+// webhook, so sweep hourly to mark those payouts paid.
+crons.interval(
+  "reconcile_released_holds_hourly",
+  { hours: 1 },
+  internal.adminFinance.reconcileReleasedHolds
+);
+
+// Expire exchange coupons past their 30-day window and refund the customer.
+// Expiry is not forfeiture — the customer returned goods, so the money goes
+// back to their original payment method.
+crons.interval(
+  "expire_coupons_hourly",
+  { hours: 1 },
+  internal.coupons.expireCoupons
+);
+
+// Lapse exchange requests the seller never answered inside 24h, releasing the
+// payout hold the request had placed.
+crons.interval(
+  "expire_pending_exchanges_every_30_minutes",
+  { minutes: 30 },
+  internal.exchanges.expirePendingExchanges
+);
+
 // Process refund queue every 15 minutes (was 5 — reduced to cut I/O)
 crons.interval(
   "process_refund_queue_every_5_minutes",
