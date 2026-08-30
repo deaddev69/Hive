@@ -145,7 +145,10 @@ export function runExchangeFlowTests() {
   return { passed, failed };
 }
 
-if (require.main === module) {
+// Run immediately if executed via tsx, matching convex/tests/signatureTest.ts.
+// `require`/`module` are not defined in the Convex runtime, so the guard has to
+// be argv-based or pushing the deployment fails to analyse this file.
+if (typeof process !== "undefined" && process.argv && process.argv[1]?.includes("exchangeFlowTest")) {
   const { failed } = runExchangeFlowTests();
   if (failed > 0) process.exit(1);
 }

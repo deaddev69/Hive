@@ -5,7 +5,7 @@ import { useAuth, SignOutButton, useUser } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, Loader2, ShieldX, Users, ShoppingBag, Activity, ShieldAlert, Package, DollarSign, Landmark, CreditCard, Truck, Send, Sparkles, BookOpen, MapPin } from "lucide-react";
+import { LayoutDashboard, FolderKanban, Image as ImageIcon, Store, LogOut, Menu, X, Loader2, ShieldX, Users, ShoppingBag, Activity, ShieldAlert, Package, DollarSign, Landmark, CreditCard, Truck, Send, Sparkles, BookOpen, MapPin, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@hive/ui";
 import { HiveLogo } from "@/components/shared/HiveLogo";
@@ -39,6 +39,7 @@ const NAV_GROUPS = [
       { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
       { label: "Reservations", href: "/admin/reservations", icon: ShoppingBag },
       { label: "Claims", href: "/admin/claims", icon: ShieldAlert },
+      { label: "Returns & Exchanges", href: "/admin/returns", icon: RotateCcw },
       { label: "Products", href: "/admin/products", icon: Package },
       { label: "Finance", href: "/admin/finance", icon: DollarSign },
       { label: "Settlements", href: "/admin/settlements", icon: Landmark },
