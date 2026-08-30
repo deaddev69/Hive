@@ -42,13 +42,13 @@ const nextConfig: NextConfig = {
   async headers() {
     const cspHeader = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.accounts.dev https://*.hivenow.in https://hivenow.in https://accounts.hivenow.in https://challenges.cloudflare.com https://*.convex.cloud https://maps.googleapis.com https://*.googleapis.com https://*.cloudflareinsights.com https://static.cloudflareinsights.com",
-      "script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.accounts.dev https://*.hivenow.in https://hivenow.in https://accounts.hivenow.in https://challenges.cloudflare.com https://*.convex.cloud https://maps.googleapis.com https://*.googleapis.com https://*.cloudflareinsights.com https://static.cloudflareinsights.com",
-      "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://*.hivenow.in https://hivenow.in wss://*.hivenow.in https://accounts.hivenow.in wss://accounts.hivenow.in https://challenges.cloudflare.com https://*.convex.cloud https://*.convex.site wss://*.convex.cloud https://maps.googleapis.com https://*.googleapis.com https://api.fontshare.com https://cdn.fontshare.com https://*.fontshare.com https://fonts.googleapis.com https://fonts.gstatic.com https://maps.gstatic.com https://*.gstatic.com https://*.cloudflareinsights.com https://*.r2.dev https://images.unsplash.com https://*.r2.cloudflarestorage.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.accounts.dev https://*.hivenow.in https://hivenow.in https://accounts.hivenow.in https://challenges.cloudflare.com https://*.convex.cloud https://maps.googleapis.com https://*.googleapis.com https://apis.google.com https://*.cloudflareinsights.com https://static.cloudflareinsights.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://*.razorpay.com https://www.gstatic.com",
+      "script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.com https://*.clerk.accounts.dev https://*.hivenow.in https://hivenow.in https://accounts.hivenow.in https://challenges.cloudflare.com https://*.convex.cloud https://maps.googleapis.com https://*.googleapis.com https://apis.google.com https://*.cloudflareinsights.com https://static.cloudflareinsights.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://*.razorpay.com https://www.gstatic.com",
+      "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://*.hivenow.in https://hivenow.in wss://*.hivenow.in https://accounts.hivenow.in wss://accounts.hivenow.in https://challenges.cloudflare.com https://*.convex.cloud https://*.convex.site wss://*.convex.cloud https://maps.googleapis.com https://*.googleapis.com https://apis.google.com https://images.unsplash.com https://*.r2.dev https://api.fontshare.com https://cdn.fontshare.com https://*.fontshare.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.cloudflareinsights.com https://www.google.com https://www.gstatic.com https://maps.gstatic.com https://*.gstatic.com https://*.razorpay.com https://*.r2.cloudflarestorage.com https://*.firebaseio.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com",
       "img-src 'self' data: blob: https:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com https://cdn.fontshare.com https://*.fontshare.com https://*.hivenow.in",
       "font-src 'self' https://fonts.gstatic.com https://api.fontshare.com https://cdn.fontshare.com https://*.fontshare.com data: https://*.hivenow.in",
-      "frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://*.hivenow.in https://hivenow.in https://accounts.hivenow.in https://challenges.cloudflare.com",
+      "frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://*.hivenow.in https://hivenow.in https://accounts.hivenow.in https://challenges.cloudflare.com https://*.firebaseapp.com https://accounts.google.com https://www.google.com/ https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/ https://*.razorpay.com",
       "worker-src 'self' blob: https://*.clerk.com https://*.clerk.accounts.dev https://accounts.hivenow.in",
     ].join("; ");
 
@@ -64,6 +64,10 @@ const nextConfig: NextConfig = {
           {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
           },
         ],
       },
