@@ -483,6 +483,69 @@ export const listExchangesAdmin = query({
 });
 
 /**
+ * Delivered orders that are actually eligible for a return or an exchange.
+ *
+ * The exchanges list only holds requests customers have already made, which is
+ * empty most of the time. This is the working view: what an admin can act on
+ * right now. Final Sale orders are excluded entirely — there is nothing to do
+ * with them here, so listing them would only be noise.
+ *
+ * Eligibility comes from the policy frozen onto each order at purchase, not the
+ * boutique's current setting, so the list reflects what each customer was
+ * actually sold.
+ */
+export const listReturnEligibleOrdersAdmin = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    await requireRole(ctx, "admin");
+
+    const delivered = await ctx.db
+      .query("orders")
+      .withIndex("by_status", (q) => q.eq("status", "delivered"))
+      .order("desc")
+      .take(args.limit ?? 300);
+
+    const eligible = delivered.filter((order) => {
+      const returnsOk = order.returnsAccepted !== false;
+      const exchangesOk = (order as any).exchangesAccepted ?? returnsOk;
+      return returnsOk || exchangesOk;
+    });
+
+    return await Promise.all(
+      eligible.map(async (order) => {
+        const [boutique, customer, exchange] = await Promise.all([
+          ctx.db.get(order.boutiqueId),
+          ctx.db.get(order.customerId),
+          ctx.db
+            .query("exchangeRequests")
+            .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+            .first(),
+        ]);
+
+        const returnsOk = order.returnsAccepted !== false;
+        const exchangesOk = (order as any).exchangesAccepted ?? returnsOk;
+
+        return {
+          _id: order._id,
+          orderNumber: order.orderNumber,
+          totalPaise: order.total,
+          deliveredAt: order.deliveredAt ?? order.updatedAt,
+          boutiqueName: boutique?.boutiqueName || boutique?.name || "Boutique",
+          customerName: (customer as any)?.name || customer?.email || "Customer",
+          returnsAccepted: returnsOk,
+          exchangesAccepted: exchangesOk,
+          returnStatus: order.returnStatus ?? null,
+          payoutStatus: order.payoutStatus ?? null,
+          exchangeId: exchange?._id ?? null,
+          exchangeStatus: exchange?.status ?? null,
+          couponId: exchange?.couponId ?? null,
+        };
+      })
+    );
+  },
+});
+
+/**
  * Admin completes an exchange and issues the coupon.
  *
  * The Porter `delivered` webhook does this automatically, but the item often

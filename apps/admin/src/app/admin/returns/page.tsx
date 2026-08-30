@@ -13,9 +13,10 @@ import {
   CheckCircle2,
   XCircle,
   Search,
+  ShoppingBag,
 } from "lucide-react";
 
-type Tab = "exchanges" | "coupons" | "recovery";
+type Tab = "orders" | "exchanges" | "coupons" | "recovery";
 
 function rupees(paise: number | null | undefined): string {
   if (paise === null || paise === undefined) return "—";
@@ -60,11 +61,12 @@ function StatusPill({ status }: { status: string }) {
 }
 
 export default function AdminReturnsAndCoupons() {
-  const [tab, setTab] = React.useState<Tab>("exchanges");
+  const [tab, setTab] = React.useState<Tab>("orders");
   const [search, setSearch] = React.useState("");
 
   const summary = useQuery(api.coupons.getCouponSummaryAdmin, {});
   const exchanges = useQuery(api.exchanges.listExchangesAdmin, {});
+  const eligible = useQuery(api.exchanges.listReturnEligibleOrdersAdmin, {});
   const coupons = useQuery(api.coupons.listCouponsAdmin, {
     searchCode: search.trim() || undefined,
   });
@@ -214,7 +216,8 @@ export default function AdminReturnsAndCoupons() {
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-slate-200">
         {([
-          ["exchanges", "Exchanges", Repeat],
+          ["orders", "Eligible orders", ShoppingBag],
+          ["exchanges", "Exchange requests", Repeat],
           ["coupons", "Coupons", Ticket],
           ["recovery", "Recovery queue", AlertTriangle],
         ] as Array<[Tab, string, any]>).map(([key, label, Icon]) => (
@@ -238,6 +241,107 @@ export default function AdminReturnsAndCoupons() {
           </button>
         ))}
       </div>
+
+      {/* ── Eligible orders ───────────────────────────────────────────────── */}
+      {tab === "orders" && (
+        <div className="space-y-2">
+          <p className="text-xs text-slate-500">
+            Delivered orders whose boutique allows a return or an exchange. Final Sale
+            orders are hidden — there is nothing to action on them.
+          </p>
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <Th>Order</Th>
+                  <Th>Boutique</Th>
+                  <Th>Customer</Th>
+                  <Th>Paid</Th>
+                  <Th>Allowed</Th>
+                  <Th>Return</Th>
+                  <Th>Exchange</Th>
+                  <Th>Set status</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {(eligible ?? []).map((o: any) => (
+                  <tr key={o._id} className="border-b border-slate-100 last:border-0">
+                    <Td className="font-bold text-slate-900">{o.orderNumber}</Td>
+                    <Td>{o.boutiqueName}</Td>
+                    <Td>{o.customerName}</Td>
+                    <Td className="tabular-nums">{rupees(o.totalPaise)}</Td>
+                    <Td>
+                      <div className="flex gap-1">
+                        {o.returnsAccepted && (
+                          <span className="px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-[10px] font-bold text-slate-600">
+                            RETURN
+                          </span>
+                        )}
+                        {o.exchangesAccepted && (
+                          <span className="px-1.5 py-0.5 rounded border border-amber-200 bg-amber-50 text-[10px] font-bold text-amber-700">
+                            EXCHANGE
+                          </span>
+                        )}
+                      </div>
+                    </Td>
+                    <Td>
+                      {o.returnStatus ? (
+                        <StatusPill status={o.returnStatus} />
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </Td>
+                    <Td>
+                      {o.exchangeStatus ? (
+                        <StatusPill status={o.exchangeStatus} />
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </Td>
+                    <Td>
+                      <div className="flex flex-col gap-1.5 min-w-[150px]">
+                        <select
+                          value=""
+                          disabled={busy === o._id}
+                          onChange={(e) =>
+                            e.target.value && handleReturnStatus(o._id, o._id, e.target.value)
+                          }
+                          className="px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] font-semibold cursor-pointer disabled:opacity-60"
+                        >
+                          <option value="">Set return status...</option>
+                          {[
+                            "requested", "approved", "initiated",
+                            "picked_up", "in_transit", "delivered",
+                            "cancelled",
+                          ].map((st) => (
+                            <option key={st} value={st}>{st.replace(/_/g, " ")}</option>
+                          ))}
+                        </select>
+                        {o.exchangeId && o.exchangeStatus === "accepted" && (
+                          <button
+                            type="button"
+                            disabled={busy === o.exchangeId}
+                            onClick={() => handleGenerateCoupon(o.exchangeId)}
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold transition-all disabled:opacity-60 cursor-pointer"
+                          >
+                            Generate coupon
+                          </button>
+                        )}
+                      </div>
+                    </Td>
+                  </tr>
+                ))}
+                {eligible && eligible.length === 0 && (
+                  <EmptyRow
+                    colSpan={8}
+                    message="No delivered orders from boutiques that allow returns or exchanges yet."
+                  />
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* ── Exchanges ─────────────────────────────────────────────────────── */}
       {tab === "exchanges" && (
