@@ -12,6 +12,7 @@ import Cropper from "react-easy-crop";
 import { Modal } from "@hive/ui";
 
 export default function BoutiqueProfile() {
+  const { signOut } = useSellerAuth();
   const boutique = useQuery(api.boutiques.getMyBoutiqueDetails);
   const updateBoutiqueProfile = useMutation(api.boutiques.updateBoutiqueProfile);
   const me = useQuery(api.users.getMe);
@@ -930,15 +931,14 @@ export default function BoutiqueProfile() {
 
           {/* Mobile-only Logout */}
           <div className="md:hidden mt-4">
-            <SignOutButton redirectUrl="/sign-in">
-              <Button 
-                variant="outline" 
-                className="w-full justify-center gap-2 border-[#f1f5f9] bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-800 rounded-2xl py-3 text-xs font-bold shadow-sm"
-              >
-                <LogOut className="w-4 h-4 text-slate-400" />
-                <span>Sign Out</span>
-              </Button>
-            </SignOutButton>
+            <Button 
+              variant="outline" 
+              onClick={() => signOut({ redirectUrl: "/sign-in" })}
+              className="w-full justify-center gap-2 border-[#f1f5f9] bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-800 rounded-2xl py-3 text-xs font-bold shadow-sm"
+            >
+              <LogOut className="w-4 h-4 text-slate-400" />
+              <span>Sign Out</span>
+            </Button>
           </div>
         </div>
 
