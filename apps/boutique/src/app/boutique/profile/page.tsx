@@ -6,7 +6,7 @@ import { useSellerAuth } from "@/context/SellerAuthContext";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent, cn, LoadingState } from "@hive/ui";
 import Link from "next/link";
-import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut, Star, Wallet, ChevronRight, ShieldCheck, Lock } from "lucide-react";
+import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut, Star, Wallet, ChevronRight, ShieldCheck, Lock, Repeat } from "lucide-react";
 import { toast } from "@hive/utils";
 import Cropper from "react-easy-crop";
 import { Modal } from "@hive/ui";
@@ -73,6 +73,7 @@ export default function BoutiqueProfile() {
   const [saving, setSaving] = useState(false);
   const [uploadMsg, setUploadMsg] = useState("");
   const [returnsAcceptedDefault, setReturnsAcceptedDefault] = useState(true);
+  const [exchangesAcceptedDefault, setExchangesAcceptedDefault] = useState(true);
 
   // Staff States
   const [staffEmail1, setStaffEmail1] = useState("");
@@ -119,6 +120,11 @@ export default function BoutiqueProfile() {
       setWeeklyClosedDays(boutique.weeklyClosedDays || []);
       setHolidayDates(boutique.holidayDates || []);
       setReturnsAcceptedDefault(boutique.returnsAcceptedDefault !== false);
+      // Unset falls back to the return policy, so existing sellers keep the
+      // behaviour their current setting already implied.
+      setExchangesAcceptedDefault(
+        (boutique as any).exchangesAcceptedDefault ?? boutique.returnsAcceptedDefault !== false
+      );
       setStaffEmail1(boutique.staffEmail1 || "");
       setStaffEmail2(boutique.staffEmail2 || "");
       setStaffPhone1((boutique as any).staffPhone1 || "");
@@ -229,6 +235,7 @@ export default function BoutiqueProfile() {
                        ? new Date(closedUntilStr).getTime() 
                        : undefined,
         returnsAcceptedDefault,
+        exchangesAcceptedDefault,
       };
 
       if (logoPayload !== undefined) {
@@ -549,6 +556,72 @@ export default function BoutiqueProfile() {
                     !returnsAcceptedDefault ? "bg-white text-slate-900" : "border border-slate-300 bg-white"
                   }`}>
                     {!returnsAcceptedDefault && <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Exchange policy: a separate opt-in from cash returns ────── */}
+            <div className="mt-5 pt-5 border-t border-slate-100">
+              <div className="flex items-start gap-2 mb-3">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Repeat className="w-4 h-4 text-amber-600" />
+                    Store Default Exchange Policy
+                  </h4>
+                  <p className="text-[12px] text-slate-500 font-medium mt-0.5">
+                    Separate from returns — you can swap sizes without offering refunds.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div
+                  onClick={() => setExchangesAcceptedDefault(true)}
+                  className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left cursor-pointer ${
+                    exchangesAcceptedDefault
+                      ? "bg-amber-50/70 border-amber-500/80 shadow-2xs"
+                      : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                  }`}
+                >
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-900">Accept Exchanges</span>
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100/80 px-2 py-0.5 rounded-full">
+                        Recommended
+                      </span>
+                    </div>
+                    <p className="text-[11.5px] text-slate-500 font-medium leading-snug mt-1">
+                      Customer gets 30-day credit for your store. Money stays with you.
+                    </p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors mt-0.5 ${
+                    exchangesAcceptedDefault ? "bg-amber-600 text-white" : "border border-slate-300 bg-white"
+                  }`}>
+                    {exchangesAcceptedDefault && <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />}
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setExchangesAcceptedDefault(false)}
+                  className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left cursor-pointer ${
+                    !exchangesAcceptedDefault
+                      ? "bg-slate-900 text-white border-slate-900 shadow-2xs"
+                      : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                  }`}
+                >
+                  <div className="flex flex-col min-w-0">
+                    <span className={`text-xs font-bold ${!exchangesAcceptedDefault ? "text-white" : "text-slate-900"}`}>
+                      No Exchanges
+                    </span>
+                    <p className={`text-[11.5px] font-medium leading-snug mt-1 ${!exchangesAcceptedDefault ? "text-slate-300" : "text-slate-500"}`}>
+                      Customers cannot request a size swap on your orders.
+                    </p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors mt-0.5 ${
+                    !exchangesAcceptedDefault ? "bg-white text-slate-900" : "border border-slate-300 bg-white"
+                  }`}>
+                    {!exchangesAcceptedDefault && <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />}
                   </div>
                 </div>
               </div>

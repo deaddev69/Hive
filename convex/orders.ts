@@ -17,7 +17,7 @@ import { calculateItemFinancials, calculateStoreSettlement, calculateOrderTotals
 import { parseMoney, formatMoney } from "./lib/money";
 import { checkKillSwitch } from "./lib/killSwitches";
 import { validateBoutiqueOperationalLimits } from "./lib/gating";
-import { resolveOrderReturnsAccepted } from "./lib/returnPolicy";
+import { resolveOrderReturnsAccepted, resolveOrderExchangesAccepted } from "./lib/returnPolicy";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
 import { recordOrderActivity } from "./lib/orderActivity";
 import { checkServiceability } from "./lib/serviceability";
@@ -455,6 +455,7 @@ export const placeOrder = mutation({
         boutiqueId: primaryBoutiqueId,
       }))
     );
+  const exchangesAccepted = await resolveOrderExchangesAccepted(ctx.db, primaryBoutiqueId);
 
     // Create the order
     const orderId = await ctx.db.insert("orders", {
@@ -464,6 +465,7 @@ export const placeOrder = mutation({
       boutiqueName,
       status:          "pending_confirmation",
       returnsAccepted,
+      exchangesAccepted,
       acceptanceTimeoutAt: undefined,
       deliveryAddress: compiledAddressSnapshot,
       pickupAddress,
@@ -819,6 +821,9 @@ async function formatOrderForCustomer(ctx: any, order: any, items: any[]) {
     driverDetails,
     items: itemsWithReviewStatus,
     returnsAccepted,
+    // Falls back to the return policy for orders placed before exchanges were
+    // a separate seller opt-in.
+    exchangesAccepted: order.exchangesAccepted ?? returnsAccepted,
   };
 }
 

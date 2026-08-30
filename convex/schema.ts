@@ -310,6 +310,9 @@ export default defineSchema({
     deliveryFee:           v.optional(v.number()),
     freeDeliveryThreshold: v.optional(v.number()),
     returnsAcceptedDefault: v.optional(v.boolean()),
+    // Separate seller opt-in from returns: a boutique may swap sizes while
+    // refusing cash refunds, or the reverse. Unset falls back to the return policy.
+    exchangesAcceptedDefault: v.optional(v.boolean()),
     returnsAcceptedDefaultLocked: v.optional(v.boolean()),
 
     ownerUserId:      v.optional(v.id("users")),
@@ -849,6 +852,10 @@ export default defineSchema({
     // time — a seller switching to Final Sale must not change the terms of
     // orders already placed. Absent on legacy orders (pre-snapshot).
     returnsAccepted:      v.optional(v.boolean()),
+    // Exchange eligibility, snapshotted alongside returnsAccepted for the same
+    // reason: a seller turning exchanges off must not retroactively change the
+    // terms of orders already placed.
+    exchangesAccepted:    v.optional(v.boolean()),
     // Set when an exchange coupon part- or fully-funded this order.
     couponId:             v.optional(v.id("coupons")),
     couponAppliedPaise:   v.optional(v.number()),

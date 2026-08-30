@@ -20,7 +20,7 @@ import { triggerNotification } from "./lib/notifications";
 import { checkKillSwitch } from "./lib/killSwitches";
 import { validateBoutiqueOperationalLimits, checkBoutiqueClosedStatus } from "./lib/gating";
 import { restoreCheckoutSessionStock } from "./lib/inventory";
-import { resolveOrderReturnsAccepted } from "./lib/returnPolicy";
+import { resolveOrderReturnsAccepted, resolveOrderExchangesAccepted } from "./lib/returnPolicy";
 import { validateCouponForCart } from "./lib/coupons";
 import { applyCouponToOrder } from "./coupons";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
@@ -1069,6 +1069,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
     boutiqueId,
     orderSnapshot.items.map((i) => ({ productId: i.productId, boutiqueId }))
   );
+  const exchangesAccepted = await resolveOrderExchangesAccepted(ctx.db, boutiqueId);
 
   const orderId = await ctx.db.insert("orders", {
     orderNumber,
@@ -1077,6 +1078,7 @@ export async function verifyPaymentAndPlaceOrderInternal(
     boutiqueName,
     status: "pending_confirmation",
     returnsAccepted,
+    exchangesAccepted,
     deliveryAddress: session.addressSnapshot,
     pickupAddress,
     addressId: session.addressId,

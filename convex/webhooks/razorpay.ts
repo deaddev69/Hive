@@ -10,7 +10,7 @@ import { triggerNotification } from "../lib/notifications";
 import { calculateDeliveryQuoteAction } from "../routing";
 import { incrementBoutiqueOrderCount } from "../lib/boutiqueCounters";
 import { restoreCheckoutSessionStock } from "../lib/inventory";
-import { resolveOrderReturnsAccepted } from "../lib/returnPolicy";
+import { resolveOrderReturnsAccepted, resolveOrderExchangesAccepted } from "../lib/returnPolicy";
 import { applyCouponToOrder } from "../coupons";
 
 // ─── HMAC-SHA256 Signature Verification ──────────────────────────────────────
@@ -518,6 +518,7 @@ export const processPaymentCaptured = internalMutation({
       boutiqueId,
       orderSnapshot.items.map((i: any) => ({ productId: i.productId, boutiqueId }))
     );
+  const exchangesAccepted = await resolveOrderExchangesAccepted(ctx.db, boutiqueId);
 
     // Create Order with v2 pricingSnapshot and payoutStatus
     const orderId = await ctx.db.insert("orders", {
@@ -527,6 +528,7 @@ export const processPaymentCaptured = internalMutation({
       boutiqueName,
       status:          "pending_confirmation",
       returnsAccepted,
+      exchangesAccepted,
       deliveryAddress: session.addressSnapshot,
       pickupAddress,
       addressId:       session.addressId,

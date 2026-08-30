@@ -51,9 +51,12 @@ export const requestExchange = mutation({
     if (order.status !== "delivered") {
       throw new ConvexError("An exchange can only be requested after the order is delivered.");
     }
-    if (order.returnsAccepted === false) {
+    // Exchanges are their own seller opt-in. Orders placed before that setting
+    // existed fall back to the return policy they were sold under.
+    const exchangesAllowed = order.exchangesAccepted ?? order.returnsAccepted !== false;
+    if (!exchangesAllowed) {
       throw new ConvexError(
-        "This was a Final Sale order, so it isn't eligible for an exchange. Contact Hive support if the item arrived damaged."
+        "This boutique doesn't accept exchanges on this order. Contact Hive support if the item arrived damaged or incorrect."
       );
     }
     if (order.returnStatus) {

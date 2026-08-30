@@ -70,3 +70,22 @@ export async function resolveOrderReturnsAccepted(
 
   return boutiqueReturnsDefault;
 }
+
+/**
+ * Resolve exchange eligibility for a whole order.
+ *
+ * Exchanges are a separate seller opt-in from returns: a boutique may be happy
+ * to swap a size while refusing cash refunds, or the reverse. Falls back to the
+ * return policy only when the boutique has never set an exchange preference, so
+ * existing sellers keep the behaviour their current setting implied.
+ */
+export async function resolveOrderExchangesAccepted(
+  db: DbReader,
+  boutiqueId: Id<"boutiques">
+): Promise<boolean> {
+  const boutique = await db.get(boutiqueId);
+  if (boutique?.exchangesAcceptedDefault !== undefined) {
+    return boutique.exchangesAcceptedDefault;
+  }
+  return boutique?.returnsAcceptedDefault !== false;
+}

@@ -420,6 +420,7 @@ export const updateBoutique = mutation({
     staffPhone2:      v.optional(v.string()),
     razorpayAccountId: v.optional(v.string()),
     returnsAcceptedDefault: v.optional(v.boolean()),
+    exchangesAcceptedDefault: v.optional(v.boolean()),
     returnsAcceptedDefaultLocked: v.optional(v.boolean()),
     pricingTier: v.optional(
                   v.union(
@@ -475,6 +476,7 @@ export const updateBoutique = mutation({
       razorpayAccountId: args.razorpayAccountId,
       
       returnsAcceptedDefault: args.returnsAcceptedDefault,
+      exchangesAcceptedDefault: args.exchangesAcceptedDefault,
       returnsAcceptedDefaultLocked: args.returnsAcceptedDefaultLocked,
       pricingTier: args.pricingTier,
       
@@ -1015,6 +1017,7 @@ export const updateBoutiqueProfile = mutation({
                       ),
     closedUntil:      v.optional(v.number()),
     returnsAcceptedDefault: v.optional(v.boolean()),
+    exchangesAcceptedDefault: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const boutique = await getMyBoutique(ctx);
@@ -1133,6 +1136,9 @@ export const updateBoutiqueProfile = mutation({
       gstNumber: args.gstNumber ?? boutique.gstNumber,
     };
 
+    if (args.exchangesAcceptedDefault !== undefined) {
+      patchData.exchangesAcceptedDefault = args.exchangesAcceptedDefault;
+    }
     if (args.returnsAcceptedDefault !== undefined) {
       patchData.returnsAcceptedDefault = args.returnsAcceptedDefault;
     }
