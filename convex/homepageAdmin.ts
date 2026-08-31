@@ -179,6 +179,7 @@ export const addProductsToCollectionBatch = mutation({
     productIds: v.array(v.id("products")),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const existing = await ctx.db
       .query("collectionProducts")
       .withIndex("by_collection_sort", (q) => q.eq("collectionId", args.collectionId))
@@ -221,6 +222,7 @@ export const autoPopulateCollection = mutation({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const targetLimit = args.limit ?? 12;
     let queryBuilder = ctx.db
       .query("products")
@@ -288,9 +290,10 @@ export const createCampaign = mutation({
     await enforceAdmin(ctx);
     const newId = await ctx.db.insert("editorialBanners", {
       ...args,
-      status: "draft",
+      status: args.status ?? "draft",
       createdAt: Date.now(),
     });
+    return newId;
   },
 });
 
@@ -348,6 +351,7 @@ export const createCollection = mutation({
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const now = Date.now();
     return await ctx.db.insert("collections", {
       ...args,
@@ -369,6 +373,7 @@ export const updateCollection = mutation({
     status: v.optional(v.union(v.literal("draft"), v.literal("published"), v.literal("archived"))),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const { id, ...updates } = args;
     await ctx.db.patch(id, {
       ...updates,
@@ -380,6 +385,7 @@ export const updateCollection = mutation({
 export const deleteCollection = mutation({
   args: { id: v.id("collections") },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     // Delete collection products mapping first
     const mappings = await ctx.db
       .query("collectionProducts")
@@ -401,6 +407,7 @@ export const deleteCollection = mutation({
 export const addProductToCollection = mutation({
   args: { collectionId: v.string(), productId: v.id("products") },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const existing = await ctx.db
       .query("collectionProducts")
       .withIndex("by_collection_sort", (q) => q.eq("collectionId", args.collectionId))
@@ -427,6 +434,7 @@ export const addProductToCollection = mutation({
 export const removeProductFromCollection = mutation({
   args: { collectionId: v.string(), productId: v.id("products") },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const mapping = await ctx.db
       .query("collectionProducts")
       .withIndex("by_collection_sort", (q) => q.eq("collectionId", args.collectionId))
@@ -445,6 +453,7 @@ export const reorderCollectionProducts = mutation({
     orderedProductIds: v.array(v.id("products")),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const mappings = await ctx.db
       .query("collectionProducts")
       .withIndex("by_collection_sort", (q) => q.eq("collectionId", args.collectionId))
@@ -467,6 +476,7 @@ export const reorderCollectionProducts = mutation({
 export const togglePinProduct = mutation({
   args: { collectionId: v.string(), productId: v.id("products") },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const mapping = await ctx.db
       .query("collectionProducts")
       .withIndex("by_collection_sort", (q) => q.eq("collectionId", args.collectionId))
@@ -497,6 +507,7 @@ export const upsertProductMetadata = mutation({
     fit: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const existing = await ctx.db
       .query("productMetadata")
       .withIndex("by_productId", (q) => q.eq("productId", args.productId))
@@ -538,6 +549,7 @@ export const createExperience = mutation({
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const now = Date.now();
     return await ctx.db.insert("experiences", {
       ...args,
@@ -557,6 +569,7 @@ export const updateExperience = mutation({
     status: v.optional(v.union(v.literal("draft"), v.literal("published"), v.literal("archived"))),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const { id, ...updates } = args;
     await ctx.db.patch(id, {
       ...updates,
@@ -568,6 +581,7 @@ export const updateExperience = mutation({
 export const archiveExperience = mutation({
   args: { id: v.id("experiences") },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     await ctx.db.patch(args.id, {
       status: "archived",
       updatedAt: Date.now(),
@@ -656,6 +670,7 @@ export const updateExperienceBlock = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const { id, ...updates } = args;
     await ctx.db.patch(id, updates);
   },
@@ -664,6 +679,7 @@ export const updateExperienceBlock = mutation({
 export const toggleBlockStatus = mutation({
   args: { id: v.id("experienceBlocks"), status: v.union(v.literal("draft"), v.literal("published")) },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     await ctx.db.patch(args.id, { status: args.status });
   },
 });
@@ -671,6 +687,7 @@ export const toggleBlockStatus = mutation({
 export const publishExperienceBlocks = mutation({
   args: { experienceId: v.id("experiences") },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const draftBlocks = await ctx.db
       .query("experienceBlocks")
       .withIndex("by_experience_status_sort", (q) => 
@@ -710,6 +727,7 @@ export const publishExperienceBlocks = mutation({
 export const seedDefaultHomepageData = mutation({
   args: {},
   handler: async (ctx) => {
+    await enforceAdmin(ctx);
     const now = Date.now();
     const oneYear = 365 * 24 * 60 * 60 * 1000;
 
@@ -837,6 +855,7 @@ export const seedDefaultHomepageData = mutation({
 export const deduplicateHomepageBlocks = mutation({
   args: {},
   handler: async (ctx) => {
+    await enforceAdmin(ctx);
     const allBlocks = await ctx.db.query("experienceBlocks").collect();
     
     // Group blocks by experienceId + status + normalized title to detect duplicates
@@ -877,6 +896,7 @@ export const deduplicateHomepageBlocks = mutation({
 export const duplicateCollection = mutation({
   args: { id: v.string() },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     let col: any = null;
     try {
       col = await ctx.db.get(args.id as any);
@@ -927,6 +947,7 @@ export const duplicateCollection = mutation({
 export const duplicateCampaign = mutation({
   args: { id: v.id("editorialBanners") },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const campaign = await ctx.db.get(args.id);
     if (!campaign) return null;
 
@@ -950,6 +971,7 @@ export const duplicateCampaign = mutation({
 export const duplicateExperience = mutation({
   args: { id: v.id("experiences"), newName: v.string(), newSlug: v.string() },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const experience = await ctx.db.get(args.id);
     if (!experience) throw new Error("Experience not found");
 
@@ -1022,6 +1044,17 @@ export const addBlockToExperience = mutation({
     sortOrder: v.number(),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
+    // Guard against creating a second row with the same blockKey + status
+    // (this is how orphaned duplicate blocks have crept in before).
+    const clash = await ctx.db
+      .query("experienceBlocks")
+      .withIndex("by_blockKey", (q) => q.eq("blockKey", args.blockKey))
+      .filter((q) => q.eq(q.field("status"), "draft"))
+      .first();
+    if (clash) {
+      throw new Error(`A block with key "${args.blockKey}" already exists in draft status.`);
+    }
     return await ctx.db.insert("experienceBlocks", {
       experienceId: args.experienceId,
       blockKey: args.blockKey,
@@ -1039,6 +1072,7 @@ export const addBlockToExperience = mutation({
 export const removeBlockFromExperience = mutation({
   args: { id: v.id("experienceBlocks") },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     await ctx.db.delete(args.id);
   },
 });
@@ -1051,6 +1085,7 @@ export const updateExperienceLayout = mutation({
     })),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     for (const b of args.blocks) {
       await ctx.db.patch(b.id, { sortOrder: b.sortOrder });
     }
@@ -1060,6 +1095,7 @@ export const updateExperienceLayout = mutation({
 export const publishExperience = mutation({
   args: { experienceId: v.id("experiences") },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     let draftBlocks = await ctx.db
       .query("experienceBlocks")
       .withIndex("by_experience_status_sort", (q) => 
@@ -1104,26 +1140,6 @@ export const publishExperience = mutation({
   },
 });
 
-export const migrateProductPrices = mutation({
-  args: {},
-  handler: async (ctx) => {
-    const products = await ctx.db.query("products").collect();
-    let updated = 0;
-    for (const p of products) {
-      if (p.price < 100000) {
-        await ctx.db.patch(p._id, {
-          price: p.price * 100,
-          basePrice: p.basePrice ? p.basePrice * 100 : undefined,
-          discountPrice: p.discountPrice ? p.discountPrice * 100 : undefined,
-          baseDiscountPrice: p.baseDiscountPrice ? p.baseDiscountPrice * 100 : undefined,
-        });
-        updated++;
-      }
-    }
-    return `Migrated ${updated} product prices.`;
-  }
-});
-
 export const updateBlockContent = mutation({
   args: {
     id: v.id("experienceBlocks"),
@@ -1132,6 +1148,7 @@ export const updateBlockContent = mutation({
     config: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const { id, ...updates } = args;
     const block = await ctx.db.get(id);
     if (block) {
@@ -1167,6 +1184,7 @@ export const updateBlockLayout = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const block = await ctx.db.get(args.id);
     if (block) {
       await ctx.db.patch(args.id, { renderer: args.renderer });
@@ -1189,6 +1207,7 @@ export const toggleBlockVisibility = mutation({
     isHidden: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const block = await ctx.db.get(args.id);
     if (block) {
       const newStatus = args.isHidden ? "archived" : "draft";
@@ -1211,6 +1230,7 @@ export const duplicateBlock = mutation({
     id: v.id("experienceBlocks"),
   },
   handler: async (ctx, args) => {
+    await enforceAdmin(ctx);
     const block = await ctx.db.get(args.id);
     if (!block) throw new Error("Block not found");
 

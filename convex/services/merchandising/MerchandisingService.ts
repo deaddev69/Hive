@@ -2,7 +2,10 @@ import { ResolvedProduct } from "../content/types";
 
 export class MerchandisingService {
   /**
-   * Applies merchandising logic: scoring, ranking, and badges.
+   * Computes each product's hiveScore and badges. Deliberately does NOT sort the returned array:
+   * callers immediately key these products by ID into a Map for lookup (order is meaningless
+   * there), and any ordering that matters to a shopper (e.g. ranking within a single block) is
+   * applied later, per-block, in BlockService.hydrateBlocks.
    */
   static enrichWithMerchandising(
     products: ResolvedProduct[]
@@ -44,6 +47,6 @@ export class MerchandisingService {
       product.badges = badges;
 
       return product;
-    }).sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
+    });
   }
 }

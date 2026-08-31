@@ -57,35 +57,57 @@ async function resolveCategoryImage(ctx: any, cat: any) {
   };
 }
 
+// Auto-sourced blocks (premiumCuration fallback, recommended, newArrivals) all draw from the
+// same "top active products" pool. We over-fetch relative to what's actually displayed so that
+// OperationsService's delivery-radius filter (which runs after this) still has enough candidates
+// left to fill the block, instead of every such block collapsing to whatever tiny handful of
+// products happen to survive a `take(20)`/`take(40)` head-slice.
+const FALLBACK_POOL_MULTIPLIER = 5;
+const FALLBACK_POOL_MIN = 60;
+const FALLBACK_POOL_MAX = 150;
+
+function poolSizeFor(maxProducts: number | undefined, defaultMax: number): number {
+  const target = maxProducts || defaultMax;
+  return Math.min(FALLBACK_POOL_MAX, Math.max(FALLBACK_POOL_MIN, target * FALLBACK_POOL_MULTIPLIER));
+}
+
 export class BlockService {
   /**
-   * Scans a list of raw blocks and returns all Product IDs required across all blocks.
-   * This handles extracting requirements from Collections, recently viewed, trending, etc.
+   * Scans a list of raw blocks and returns all Product IDs required across all blocks, plus a
+   * cache of the "top active products" pools fetched along the way (keyed by pool size) so
+   * hydrateBlocks doesn't have to re-run the same query a second time.
    */
   static async getBlockRequirements(
     ctx: any,
     blocksRaw: any[],
     userContext?: { userId?: string }
-  ): Promise<string[]> {
+  ): Promise<{ productIds: string[]; activePoolCache: Map<number, any[]> }> {
     const requiredProductIds: string[] = [];
+    const activePoolCache = new Map<number, any[]>();
+
+    const getActivePool = async (size: number) => {
+      const cached = activePoolCache.get(size);
+      if (cached) return cached;
+      const pool = (await ctx.db
+        .query("products")
+        .withIndex("by_active", (q: any) => q.eq("active", true))
+        .order("desc")
+        .take(size))
+        .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved");
+      activePoolCache.set(size, pool);
+      return pool;
+    };
 
     for (const block of blocksRaw) {
       if ((block.blockType === "collection" || block.blockType === "premiumCuration") && block.config?.collectionId) {
-        const pIds = await CollectionService.getCollectionRequirements(
-          ctx,
-          block.config.collectionId,
-          block.config.maxProducts || 12
-        );
+        // Pull every product mapped to the collection (not just the display cap) so that if some
+        // get filtered out later (out of delivery range, out of stock), others further down the
+        // merchandiser's ordering can still fill the block instead of leaving it empty.
+        const pIds = await CollectionService.getCollectionRequirements(ctx, block.config.collectionId);
         requiredProductIds.push(...pIds);
       } else if (block.blockType === "premiumCuration" || (block.blockType === "collection" && block.renderer === "premiumGrid")) {
-        const topProducts = (await ctx.db
-          .query("products")
-          .withIndex("by_active", (q: any) => q.eq("active", true))
-          .order("desc")
-          .take(20))
-          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
-          .slice(0, block.config?.maxProducts || 6);
-        requiredProductIds.push(...topProducts.map((p: any) => p._id.toString()));
+        const pool = await getActivePool(poolSizeFor(block.config?.maxProducts, 6));
+        requiredProductIds.push(...pool.map((p: any) => p._id.toString()));
       } else if (block.blockType === "recentlyViewed" && userContext?.userId) {
         const history = await ctx.db
           .query("recentlyViewed")
@@ -94,39 +116,44 @@ export class BlockService {
           .take(12);
         requiredProductIds.push(...history.map((h: any) => h.productId.toString()));
       } else if (block.blockType === "recommended") {
-        const recommended = (await ctx.db
-          .query("products")
-          .withIndex("by_active", (q: any) => q.eq("active", true))
-          .order("desc")
-          .take(40))
-          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
-          .slice(0, 12);
-        requiredProductIds.push(...recommended.map((p: any) => p._id.toString()));
+        const pool = await getActivePool(poolSizeFor(block.config?.maxProducts, 12));
+        requiredProductIds.push(...pool.map((p: any) => p._id.toString()));
       } else if (block.blockType === "newArrivals") {
-        const newArrivals = (await ctx.db
-          .query("products")
-          .withIndex("by_active", (q: any) => q.eq("active", true))
-          .order("desc")
-          .take(40))
-          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
-          .slice(0, block.config?.maxProducts || 12);
-        requiredProductIds.push(...newArrivals.map((p: any) => p._id.toString()));
+        const pool = await getActivePool(poolSizeFor(block.config?.maxProducts, 8));
+        requiredProductIds.push(...pool.map((p: any) => p._id.toString()));
       }
     }
 
-    return Array.from(new Set(requiredProductIds));
+    return { productIds: Array.from(new Set(requiredProductIds)), activePoolCache };
   }
 
   /**
-   * Hydrates raw blocks into ResolvedBlock DTOs.
+   * Hydrates raw blocks into ResolvedBlock DTOs. Applies a shared "already used" set across
+   * blocks so the same product can't be independently selected into multiple sections on the
+   * same page load.
    */
   static async hydrateBlocks(
     ctx: any,
     blocksRaw: any[],
     resolvedProductsMap: Map<string, ResolvedProduct>,
+    activePoolCache: Map<number, any[]>,
     userContext?: { userId?: string }
   ): Promise<ResolvedBlock[]> {
     const resolvedBlocks: ResolvedBlock[] = [];
+    const usedProductIds = new Set<string>();
+
+    // Curated collections are iterated first in page (sortOrder) order, so they naturally win
+    // contested products over generic auto-sourced pools further down the page.
+    const takeUnused = (products: ResolvedProduct[], max: number): ResolvedProduct[] => {
+      const picked: ResolvedProduct[] = [];
+      for (const p of products) {
+        if (picked.length >= max) break;
+        if (usedProductIds.has(p.id)) continue;
+        picked.push(p);
+      }
+      for (const p of picked) usedProductIds.add(p.id);
+      return picked;
+    };
 
     for (const block of blocksRaw) {
       const data: any = {};
@@ -134,10 +161,14 @@ export class BlockService {
       if ((block.blockType === "collection" || block.blockType === "premiumCuration") && block.config?.collectionId) {
         const hydratedCol = await CollectionService.hydrateCollection(ctx, block.config.collectionId, resolvedProductsMap);
         if (hydratedCol) {
-          const matchedProducts = hydratedCol.productIds
-            .slice(0, block.config.maxProducts || 12)
+          // Resolve the FULL merchandiser-ordered list to survivors first, then cap to the
+          // display limit — not the other way around. Slicing to maxProducts before checking
+          // which IDs actually survived catalog/serviceability filtering is what let a single
+          // out-of-range product collapse an otherwise well-stocked collection down to nothing.
+          const survivors = hydratedCol.productIds
             .map((id) => resolvedProductsMap.get(id))
             .filter(Boolean) as ResolvedProduct[];
+          const matchedProducts = takeUnused(survivors, block.config.maxProducts || 12);
 
           data.collection = {
             id: hydratedCol.id,
@@ -151,17 +182,12 @@ export class BlockService {
           data.bgImage = await resolveBannerImage(ctx, block.config.bgImage || block.config.desktopImage);
         }
       } else if (block.blockType === "premiumCuration" || (block.blockType === "collection" && block.renderer === "premiumGrid")) {
-        const topProducts = (await ctx.db
-          .query("products")
-          .withIndex("by_active", (q: any) => q.eq("active", true))
-          .order("desc")
-          .take(20))
-          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
-          .slice(0, block.config?.maxProducts || 6);
-
-        data.products = topProducts
+        const pool = activePoolCache.get(poolSizeFor(block.config?.maxProducts, 6)) || [];
+        const candidates = (pool
           .map((p: any) => resolvedProductsMap.get(p._id.toString()))
-          .filter(Boolean) as ResolvedProduct[];
+          .filter(Boolean) as ResolvedProduct[])
+          .sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
+        data.products = takeUnused(candidates, block.config?.maxProducts || 6);
 
         if (block.config?.bgImage || block.config?.desktopImage) {
           data.bgImage = await resolveBannerImage(ctx, block.config.bgImage || block.config.desktopImage);
@@ -172,47 +198,33 @@ export class BlockService {
           .withIndex("by_user_viewed", (q: any) => q.eq("userId", userContext.userId))
           .order("desc")
           .take(12);
-        
+
         const matchedProducts = history
           .map((h: any) => resolvedProductsMap.get(h.productId.toString()))
           .filter(Boolean) as ResolvedProduct[];
-          
-        data.products = matchedProducts;
+
+        data.products = takeUnused(matchedProducts, block.config?.maxProducts || 12);
       } else if (block.blockType === "recommended") {
-        const recents = (await ctx.db
-          .query("products")
-          .withIndex("by_active", (q: any) => q.eq("active", true))
-          .order("desc")
-          .take(40))
-          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
-          .slice(0, block.config?.maxProducts || 12);
-          
-        const recommendedProducts = recents
+        const pool = activePoolCache.get(poolSizeFor(block.config?.maxProducts, 12)) || [];
+        const candidates = (pool
           .map((p: any) => resolvedProductsMap.get(p._id.toString()))
-          .filter(Boolean) as ResolvedProduct[];
-          
-        data.products = recommendedProducts;
+          .filter(Boolean) as ResolvedProduct[])
+          .sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
+        data.products = takeUnused(candidates, block.config?.maxProducts || 12);
       } else if (block.blockType === "newArrivals") {
-        const newArrivals = (await ctx.db
-          .query("products")
-          .withIndex("by_active", (q: any) => q.eq("active", true))
-          .order("desc")
-          .take(40))
-          .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved")
-          .slice(0, block.config?.maxProducts || 8);
-          
-        const newArrivalProducts = newArrivals
+        const pool = activePoolCache.get(poolSizeFor(block.config?.maxProducts, 8)) || [];
+        const candidates = (pool
           .map((p: any) => resolvedProductsMap.get(p._id.toString()))
-          .filter(Boolean) as ResolvedProduct[];
-          
-        data.products = newArrivalProducts;
+          .filter(Boolean) as ResolvedProduct[])
+          .sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
+        data.products = takeUnused(candidates, block.config?.maxProducts || 8);
       } else if (block.blockType === "hero") {
         // Hero block always pulls the global carousel banners from the banners table
         const activeBanners = await ctx.db
           .query("banners")
           .withIndex("by_active_and_sortOrder", (q: any) => q.eq("active", true))
           .collect();
-        
+
         // Sort by sortOrder
         const validBanners = activeBanners.sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
@@ -253,8 +265,9 @@ export class BlockService {
       } else if (block.blockType === "category") {
         const rawCategories = await ctx.db
           .query("categories")
+          .withIndex("by_active_and_sortOrder", (q: any) => q.eq("active", true))
           .collect();
-        const activeCategories = rawCategories.filter((c: any) => c.active && c.showOnHomepage);
+        const activeCategories = rawCategories.filter((c: any) => c.showOnHomepage);
         data.categories = await Promise.all(activeCategories.map((c: any) => resolveCategoryImage(ctx, c)));
       }
 

@@ -212,11 +212,11 @@ export function ExperienceStudio() {
   const handleAddBlock = async (schema: BlockSchema) => {
     if (!selectedExpId) return;
     try {
+      // Deliberately left unbound: a new collection-type block starts with no collectionId so it
+      // shows the "No Collection Linked" warning until a merchandiser deliberately assigns one.
+      // Auto-binding to whichever collection happened to be created first used to cause several
+      // unrelated blocks to silently point at the same collection.
       const config = { ...(schema.defaultConfig.config || {}) };
-      // Smart Auto-Binding: If block needs a collectionId and none is provided, bind first available collection
-      if ((schema.id === "collection" || schema.id === "premiumCuration") && !config.collectionId && collections && collections.length > 0) {
-        config.collectionId = collections[0]._id;
-      }
       await addBlock({
         experienceId: selectedExpId as any,
         blockKey: `${schema.id}_${Date.now()}`,
@@ -277,6 +277,7 @@ export function ExperienceStudio() {
       return;
     }
 
+    const previousBlocks = blocks;
     const newBlocks = [...blocks];
     const [draggedBlock] = newBlocks.splice(draggedIdx, 1);
     newBlocks.splice(idx, 0, draggedBlock);
@@ -284,27 +285,44 @@ export function ExperienceStudio() {
     setBlocks(newBlocks);
     handleDragEnd();
 
-    const layoutUpdates = newBlocks.map((b, i) => ({ id: b._id, sortOrder: i + 1 }));
-    await updateLayout({ blocks: layoutUpdates });
+    try {
+      const layoutUpdates = newBlocks.map((b, i) => ({ id: b._id, sortOrder: i + 1 }));
+      await updateLayout({ blocks: layoutUpdates });
+    } catch (err: any) {
+      setBlocks(previousBlocks);
+      toast.error("Failed to save new order: " + err.message);
+    }
   };
 
   // Up/Down Reordering Handlers (Keeping them as fallbacks/accessibility)
   const handleMoveUp = async (idx: number) => {
     if (idx === 0) return;
+    const previousBlocks = blocks;
     const newBlocks = [...blocks];
     [newBlocks[idx - 1], newBlocks[idx]] = [newBlocks[idx], newBlocks[idx - 1]];
     setBlocks(newBlocks);
-    const layoutUpdates = newBlocks.map((b, i) => ({ id: b._id, sortOrder: i + 1 }));
-    await updateLayout({ blocks: layoutUpdates });
+    try {
+      const layoutUpdates = newBlocks.map((b, i) => ({ id: b._id, sortOrder: i + 1 }));
+      await updateLayout({ blocks: layoutUpdates });
+    } catch (err: any) {
+      setBlocks(previousBlocks);
+      toast.error("Failed to save new order: " + err.message);
+    }
   };
 
   const handleMoveDown = async (idx: number) => {
     if (idx === blocks.length - 1) return;
+    const previousBlocks = blocks;
     const newBlocks = [...blocks];
     [newBlocks[idx], newBlocks[idx + 1]] = [newBlocks[idx + 1], newBlocks[idx]];
     setBlocks(newBlocks);
-    const layoutUpdates = newBlocks.map((b, i) => ({ id: b._id, sortOrder: i + 1 }));
-    await updateLayout({ blocks: layoutUpdates });
+    try {
+      const layoutUpdates = newBlocks.map((b, i) => ({ id: b._id, sortOrder: i + 1 }));
+      await updateLayout({ blocks: layoutUpdates });
+    } catch (err: any) {
+      setBlocks(previousBlocks);
+      toast.error("Failed to save new order: " + err.message);
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -592,6 +610,30 @@ export function ExperienceStudio() {
 // ─────────────────────────────────────────────────────────────────────────────
 // SCHEMA EDITOR COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Which "Renderer (Layout)" options make sense for a given blockType. The renderer field is only
+// ever shown for "newArrivals" and "premiumCuration" blocks (see BLOCK_REGISTRY fields above), but
+// it used to offer all seven renderers unconditionally regardless of blockType — picking one that
+// ExperienceBlockRenderer doesn't actually handle for that blockType silently breaks the block
+// (e.g. "moodGrid" on a premiumCuration block with no bound collection renders nothing).
+const RENDERER_OPTIONS_BY_BLOCK_TYPE: Record<string, { value: string; label: string }[]> = {
+  premiumCuration: [
+    { value: "premiumGrid", label: "Premium Zara-Style Grid (Full Visual Width)" },
+  ],
+  newArrivals: [
+    { value: "productCarousel", label: "Product Carousel (Horizontal Scroll)" },
+    { value: "twoProductGrid", label: "2-Column Product Grid" },
+  ],
+};
+const ALL_RENDERER_OPTIONS = [
+  { value: "productCarousel", label: "Product Carousel (Horizontal Scroll)" },
+  { value: "twoProductGrid", label: "2-Column Product Grid" },
+  { value: "premiumGrid", label: "Premium Zara-Style Grid (Full Visual Width)" },
+  { value: "largeCards", label: "Large Cards" },
+  { value: "moodGrid", label: "Mood Grid" },
+  { value: "occasionGrid", label: "Category / Occasion Grid" },
+  { value: "editorialGrid", label: "Editorial Grid" },
+];
 
 function BlockConfigEditor({ block, schema, collections, campaigns, categories, onSave, onClose }: any) {
   const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
@@ -926,20 +968,24 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
               </select>
             </div>
           )}
-          {schema.fields.includes("renderer") && (
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 mb-1">Renderer (Layout)</label>
-              <select className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.renderer} onChange={e => setFormData({ ...formData, renderer: e.target.value })}>
-                <option value="productCarousel">Product Carousel (Horizontal Scroll)</option>
-                <option value="twoProductGrid">2-Column Product Grid</option>
-                <option value="premiumGrid">Premium Zara-Style Grid (Full Visual Width)</option>
-                <option value="largeCards">Large Cards</option>
-                <option value="moodGrid">Mood Grid</option>
-                <option value="occasionGrid">Category / Occasion Grid</option>
-                <option value="editorialGrid">Editorial Grid</option>
-              </select>
-            </div>
-          )}
+          {schema.fields.includes("renderer") && (() => {
+            const validOptions = RENDERER_OPTIONS_BY_BLOCK_TYPE[block.blockType] || ALL_RENDERER_OPTIONS;
+            // Keep whatever renderer is already saved selectable even if it falls outside the
+            // curated list, so an existing block never gets silently reset by opening this drawer.
+            const options = validOptions.some(o => o.value === formData.renderer)
+              ? validOptions
+              : [...validOptions, { value: formData.renderer, label: `${formData.renderer} (current — not recommended for this block type)` }];
+            return (
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 mb-1">Renderer (Layout)</label>
+                <select className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.renderer} onChange={e => setFormData({ ...formData, renderer: e.target.value })}>
+                  {options.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          })()}
           {schema.fields.includes("maxProducts") && (
             <div>
               <label className="block text-[11px] font-bold text-slate-500 mb-1">Max Items to Display</label>

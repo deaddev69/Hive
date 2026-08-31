@@ -9,12 +9,15 @@ export const resolveExperiencePayload = query({
     city: v.optional(v.string()),
     userLat: v.optional(v.number()),
     userLng: v.optional(v.number()),
+    userId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
     // Delegate to the new decoupled Content Service architecture
     return ContentService.getExperience(ctx, args.slug, {
       lat: args.userLat,
       lng: args.userLng,
+      city: args.city,
+      userId: args.userId,
     });
   },
 });

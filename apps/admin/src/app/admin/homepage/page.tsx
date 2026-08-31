@@ -456,8 +456,18 @@ export default function AdminHomepageMerchandisingPage() {
                             )}
                           </button>
                         </div>
-                        <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                          {col.productCount || 0} items curated
+                        <p className="text-[10px] text-slate-400 truncate mt-0.5 flex items-center gap-1.5">
+                          <span>{col.productCount || 0} items curated</span>
+                          {col.health && (
+                            <span className={`px-1.5 py-0.5 rounded font-bold uppercase tracking-wide ${
+                              col.health === "HEALTHY" ? "bg-emerald-50 text-emerald-600" :
+                              col.health === "LOW_STOCK" ? "bg-amber-50 text-amber-600" :
+                              col.health === "ATTENTION" ? "bg-orange-50 text-orange-600" :
+                              "bg-red-50 text-red-500"
+                            }`}>
+                              {col.health.replace("_", " ")}
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>

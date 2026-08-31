@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useMutation } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
 import { CatalogLayout } from "@/components/catalog/CatalogLayout";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductInfo } from "@/components/product/ProductInfo";
@@ -8,6 +10,7 @@ import Link from "next/link";
 import { ProductDetail } from "@/lib/mockProductDetails";
 import { RelatedProductsSection } from "@/components/product/RelatedProductsSection";
 import { cleanProductTitle } from "@/components/product/ProductCard";
+import { useSessionStore } from "@/context/SessionContext";
 
 import { mapDbProduct } from "@/lib/mapDbProduct";
 
@@ -27,6 +30,16 @@ export function ProductDetailPageClient({ product: rawProduct }: ProductDetailPa
 
   const [selectedSize, setSelectedSize] = useState<string>("");
   const [showStickyBar, setShowStickyBar] = useState(false);
+
+  // Record this view so the "Recently Viewed" homepage block has something to show.
+  const { isAuthenticated } = useSessionStore();
+  const trackProductView = useMutation(api.homepage.trackProductView);
+  useEffect(() => {
+    if (!isAuthenticated || !rawProduct?.id || (rawProduct as any).isUnavailable) return;
+    trackProductView({ productId: rawProduct.id as any }).catch(() => {
+      // Non-critical — a failed view-tracking call shouldn't disrupt the shopper.
+    });
+  }, [isAuthenticated, rawProduct?.id, trackProductView]);
 
   // Set up IntersectionObserver on the hero section block for the sticky bar
   useEffect(() => {

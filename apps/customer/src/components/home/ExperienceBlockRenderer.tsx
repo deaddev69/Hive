@@ -75,11 +75,24 @@ export function mapDbProduct(p: any) {
 }
 
 // ── HERO & EDITORIAL BANNER CAROUSEL ──────────────────────────────────────────
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
+  return reduced;
+}
+
 function HeroBannerCarousel({ banners }: { banners: any[] }) {
   const router = useRouter();
   const [activeIdx, setActiveIdx] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const scrollToIdx = useCallback((idx: number) => {
     if (!scrollRef.current) return;
@@ -97,7 +110,7 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
 
   // Smooth horizontal auto-slide timer (4s interval)
   useEffect(() => {
-    if (banners.length <= 1 || isPaused) return;
+    if (banners.length <= 1 || isPaused || prefersReducedMotion) return;
 
     const interval = setInterval(() => {
       setActiveIdx((prev) => {
@@ -149,8 +162,9 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
             <div className="hidden sm:block absolute inset-0 w-full h-full">
               <Image
                 src={banners[0].desktopImage || banners[0].mobileImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
-                alt={banners[0].title || "Editorial Banner"}
+                alt={banners[0].title || "Hive campaign banner"}
                 fill
+                priority
                 sizes="100vw"
                 className="object-cover object-center pointer-events-none transform group-hover:scale-[1.01] transition-transform duration-700 ease-out"
               />
@@ -159,8 +173,9 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
             <div className="sm:hidden absolute inset-0 w-full h-full">
               <Image
                 src={banners[0].mobileImage || banners[0].desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
-                alt={banners[0].title || "Editorial Banner"}
+                alt={banners[0].title || "Hive campaign banner"}
                 fill
+                priority
                 sizes="100vw"
                 className="object-cover pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-700 ease-out"
               />
@@ -188,8 +203,9 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
             >
               <Image
                 src={banner.desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
-                alt={banner.title || "Banner"}
+                alt={banner.title || `Hive campaign banner ${idx + 1}`}
                 fill
+                priority={idx === 0}
                 sizes="(max-width: 768px) 100vw, 33vw"
                 className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
               />
@@ -222,8 +238,9 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
               >
                 <Image
                   src={banner.mobileImage || banner.desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
-                  alt={banner.title || "Banner"}
+                  alt={banner.title || `Hive campaign banner ${idx + 1}`}
                   fill
+                  priority={idx === 0}
                   sizes="(max-width: 768px) 100vw, 33vw"
                   className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
@@ -234,17 +251,22 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
 
           {/* Dots Indicator */}
           {banners.length > 1 && (
-            <div className="flex items-center justify-center gap-1.5 pt-2.5">
+            <div className="flex items-center justify-center pt-1">
               {banners.map((_, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => scrollToIdx(i)}
                   aria-label={`Slide ${i + 1}`}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === activeIdx ? "w-5 bg-[#E8890C]" : "w-1.5 bg-stone-300 hover:bg-stone-400"
-                  }`}
-                />
+                  aria-current={i === activeIdx}
+                  className="flex items-center justify-center w-11 h-11 -mx-0.5"
+                >
+                  <span
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      i === activeIdx ? "w-5 bg-[#E8890C]" : "w-1.5 bg-stone-300 hover:bg-stone-400"
+                    }`}
+                  />
+                </button>
               ))}
             </div>
           )}
@@ -329,9 +351,17 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
 
     const isCarousel = block.renderer === "productCarousel";
     const isTwoGrid = block.renderer === "twoProductGrid";
-    const isPremiumGrid = block.renderer === "premiumGrid";
+    // Premium Curation's full-bleed themed layout (background art, watermarks, generous padding)
+    // is built to showcase a spread of products. Below a minimum count it reads as broken —
+    // mostly empty decorative chrome around one floating card — so we fall back to the plain
+    // grid renderer further below instead of forcing the full treatment on too little content.
+    const PREMIUM_GRID_MIN_PRODUCTS = 3;
+    const isPremiumGrid = block.renderer === "premiumGrid" && blockProducts.length >= PREMIUM_GRID_MIN_PRODUCTS;
 
     if (isPremiumGrid) {
+      const productCount = blockProducts.length;
+      const gridColsClass = productCount >= 5 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 lg:grid-cols-3";
+      const sectionPaddingClass = productCount >= 5 ? "pt-10 pb-8 sm:pt-14 sm:pb-12" : "pt-8 pb-6 sm:pt-10 sm:pb-8";
       const bgImg = block.data?.bgImage || block.config?.bgImage || block.config?.desktopImage;
       const bgImgUrl = bgImg
         ? typeof bgImg === "string"
@@ -422,7 +452,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
       })();
 
       return (
-        <section className={`relative w-full overflow-hidden pt-10 pb-8 sm:pt-14 sm:pb-12 ${themeConfig.bgClass}`}>
+        <section className={`relative w-full overflow-hidden ${sectionPaddingClass} ${themeConfig.bgClass}`}>
           {/* Top Soft Feather Gradient Blend Layer */}
           <div className={`absolute top-0 inset-x-0 h-10 md:h-16 z-[2] pointer-events-none ${
             isLightBg 
@@ -686,7 +716,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
             )}
 
             {/* Floating Borderless Standalone Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 w-full mt-2">
+            <div className={`grid ${gridColsClass} gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 w-full mt-2`}>
               {blockProducts.slice(0, block.config?.maxProducts || 6).map((product: any) => (
                 <div key={product.id} className="premium-card-wrapper scale-100 transition-transform duration-500 hover:-translate-y-1 bg-transparent p-0 border-none shadow-none">
                   <ProductCard 
@@ -906,5 +936,12 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     );
   }
 
+  if (process.env.NODE_ENV !== "production") {
+    // Surfaces CMS misconfiguration (a blockType/renderer combo this component doesn't handle)
+    // instead of silently dropping the block with no signal to whoever is editing the homepage.
+    console.warn(
+      `[ExperienceBlockRenderer] No renderer matched block "${block.blockKey || block.id}" (blockType="${block.blockType}", renderer="${block.renderer}"). It will not be shown.`
+    );
+  }
   return null;
 }

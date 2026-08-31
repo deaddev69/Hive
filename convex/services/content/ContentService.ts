@@ -23,7 +23,7 @@ export class ContentService {
     const { experienceRaw, blocksRaw } = rawData;
 
     // 2. Generate Shopping List (Product IDs)
-    const requiredProductIds = await BlockService.getBlockRequirements(ctx, blocksRaw, userContext);
+    const { productIds: requiredProductIds, activePoolCache } = await BlockService.getBlockRequirements(ctx, blocksRaw, userContext);
 
     // 3. ONE Batch Query (Catalog Service)
     let catalogProducts = await CatalogService.fetchProductsByIds(ctx, requiredProductIds);
@@ -40,7 +40,7 @@ export class ContentService {
     );
 
     // 6. Hydrate Blocks (which recursively hydrates Collections)
-    const hydratedBlocks = await BlockService.hydrateBlocks(ctx, blocksRaw, resolvedProductsMap, userContext);
+    const hydratedBlocks = await BlockService.hydrateBlocks(ctx, blocksRaw, resolvedProductsMap, activePoolCache, userContext);
 
     // 7. Return Final DTO
     return {
