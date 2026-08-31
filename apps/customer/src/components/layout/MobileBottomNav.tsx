@@ -57,6 +57,7 @@ export const MobileBottomNav: React.FC = () => {
           <Link
             key={item.href}
             href={item.href}
+            prefetch={false}
             className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-center select-none relative ${
               isActive
                 ? "text-slate-900 font-extrabold"

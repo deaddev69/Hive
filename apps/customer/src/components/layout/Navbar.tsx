@@ -83,6 +83,11 @@ export const Navbar: React.FC = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // The drawer's body (editorial image, account hub, collections directory) is heavy — an
+  // ~900KB image plus a dozen links — and was being fetched/prefetched on every page load even
+  // though the drawer sits off-canvas and closed. Only mount it once the drawer has actually
+  // been opened at least once.
+  const [drawerContentLoaded, setDrawerContentLoaded] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -235,6 +240,11 @@ export const Navbar: React.FC = () => {
   const boutique = boutiqueSafe?.boutique;
   const isApprovedMerchant = boutique && boutique.status === "APPROVED";
   const isPendingMerchant = boutique && boutique.status === "PENDING";
+
+  // Mount the drawer's heavy body content only once it's actually been opened
+  useEffect(() => {
+    if (mobileMenuOpen) setDrawerContentLoaded(true);
+  }, [mobileMenuOpen]);
 
   // Prevent body scroll when mobile drawer is open
   useEffect(() => {
@@ -452,6 +462,7 @@ export const Navbar: React.FC = () => {
               {/* Wishlist */}
               <Link
                 href="/wishlist"
+                prefetch={false}
                 className="relative p-2 text-hive-dark hover:text-hive-gold transition-colors duration-150 outline-none"
                 aria-label="Open wishlist"
               >
@@ -684,10 +695,12 @@ export const Navbar: React.FC = () => {
 
         {/* ── Scrollable Body ─────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3.5 space-y-4 text-left">
-
+          {drawerContentLoaded && (
+          <>
           {/* ── Editorial Locality Spotlight Card ───────────────────── */}
           <Link
             href={hydrated && locality ? `/search?q=${encodeURIComponent(locality + " collections")}` : "/products"}
+            prefetch={false}
             onClick={() => setMobileMenuOpen(false)}
             className="group relative block w-full h-[115px] rounded-2xl overflow-hidden shadow-xs border border-stone-200/60 active:scale-[0.99] transition-transform"
           >
@@ -943,6 +956,8 @@ export const Navbar: React.FC = () => {
               Hive • Kochi
             </p>
           </div>
+          </>
+          )}
         </div>
 
         {/* ── Drawer Base: Auth Actions ───────────────────────────── */}
@@ -963,6 +978,7 @@ export const Navbar: React.FC = () => {
             <div className="grid grid-cols-2 gap-2">
               <Link
                 href={getSignInUrl(redirectUrl)}
+                prefetch={false}
                 onClick={() => setMobileMenuOpen(false)}
                 className="py-2.5 px-3 rounded-xl border border-stone-300 text-xs font-bold text-stone-800 text-center hover:bg-stone-50 transition-colors"
               >
@@ -970,6 +986,7 @@ export const Navbar: React.FC = () => {
               </Link>
               <Link
                 href={getSignUpUrl(redirectUrl)}
+                prefetch={false}
                 onClick={() => setMobileMenuOpen(false)}
                 className="py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-extrabold text-center shadow-xs transition-colors"
               >

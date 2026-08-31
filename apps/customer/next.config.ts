@@ -27,9 +27,14 @@ const nextConfig: NextConfig = {
   // Transpile shared workspace packages
   transpilePackages: ["@hive/types", "@hive/ui", "@hive/utils"],
 
-  // Image optimization — allow Unsplash and Convex CDNs
+  // Image optimization — Vercel resizes/re-encodes (WebP/AVIF) on the fly instead of every
+  // product photo, banner, and drawer asset being served at its raw uploaded size. This was
+  // previously switched off site-wide (unoptimized: true) — almost certainly to avoid Vercel's
+  // usage-based image-optimization billing — but it meant literally no image on the customer
+  // site was ever resized or re-encoded, which is the single largest contributor to the slow
+  // "first product image visible" timing found in the 2026-08-31 performance investigation.
+  // Requires a Vercel plan with image optimization included (Pro or above).
   images: {
-    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
@@ -39,6 +44,16 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.convex.cloud",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "pub-09a817ec6f384c4997feafc5e8387286.r2.dev",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "cdn.hivenow.in",
         pathname: "/**",
       },
     ],

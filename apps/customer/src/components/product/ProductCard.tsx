@@ -159,7 +159,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
       )} style={{ aspectRatio: premiumMode ? "1/1" : "3/4" }}>
         
         {/* Product image link */}
-        <Link href={`/products/${product.slug}`} className="absolute inset-0 block w-full h-full z-10">
+        <Link href={`/products/${product.slug}`} prefetch={false} className="absolute inset-0 block w-full h-full z-10">
           {product.imageUrl ? (
               <Image
                 src={product.imageUrl}
@@ -224,8 +224,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
       {/* ── Card content (Compressed, sits tightly below the image) ── */}
       <div className="pt-1 pb-0 px-0.5 flex flex-col text-left justify-start gap-0.5">
         {/* Boutique Name */}
-        <Link 
+        <Link
           href={`/shop/${boutique?.slug || (product as any).boutiqueId || (product as any).boutique?.id || ""}`}
+          prefetch={false}
           className={cn(
             "text-[10px] uppercase transition-colors leading-tight block truncate",
             premiumMode 
@@ -237,7 +238,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         </Link>
 
         {/* Product Title */}
-        <Link href={`/products/${product.slug}`} className="hover:opacity-80 transition-opacity block leading-tight">
+        <Link href={`/products/${product.slug}`} prefetch={false} className="hover:opacity-80 transition-opacity block leading-tight">
           <h3 className={cn(
             "text-sm truncate",
             premiumMode 
@@ -251,8 +252,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         {/* Price or Custom CTA Link */}
         {hidePrice ? (
           customCtaText ? (
-            <Link 
-              href={`/products/${product.slug}`} 
+            <Link
+              href={`/products/${product.slug}`}
+              prefetch={false}
               className={cn(
                 "group/cta inline-flex items-center gap-1 mt-0.5 text-xs font-serif italic transition-all duration-300",
                 premiumMode 
