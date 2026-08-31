@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { useSellerAuth } from "@/context/SellerAuthContext";
 import { api } from "../../../../../../convex/_generated/api";
-import { Store, CheckCircle2, Loader2, AlertTriangle, LogIn, ArrowRight, Sparkles } from "lucide-react";
+import { Store, CheckCircle2, Loader2, AlertTriangle, LogIn, ArrowRight, Sparkles, Clock, RefreshCw } from "lucide-react";
 
 
 export default function InviteClaimPage() {
@@ -19,12 +19,15 @@ export default function InviteClaimPage() {
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requestingNewInvite, setRequestingNewInvite] = useState(false);
+  const [newInviteRequested, setNewInviteRequested] = useState(false);
 
   // Query boutique info by invite token (unauthenticated)
   const boutiqueInfo = useQuery(api.boutiques.getBoutiqueByInviteToken, { inviteToken: token });
   const claimInvite = useMutation(api.boutiques.claimBoutiqueInvite);
+  const requestNewInvite = useMutation(api.boutiques.requestNewInvite);
 
-  const handleClaim = async () => {
+  const handleClaim = useCallback(async () => {
     setClaiming(true);
     setError(null);
     try {
@@ -40,14 +43,29 @@ export default function InviteClaimPage() {
     } finally {
       setClaiming(false);
     }
+  }, [claimInvite, token, router]);
+
+  const handleRequestNewInvite = async () => {
+    setRequestingNewInvite(true);
+    try {
+      await requestNewInvite({ inviteToken: token });
+      setNewInviteRequested(true);
+    } catch (e: any) {
+      setError(e?.data || e?.message || "Failed to request new invite");
+    } finally {
+      setRequestingNewInvite(false);
+    }
   };
+
+  // Check if token is expired client-side
+  const isExpired = boutiqueInfo?.inviteExpiresAt ? boutiqueInfo.inviteExpiresAt < Date.now() : false;
 
   // Auto-claim when user is signed in and boutique info is loaded
   useEffect(() => {
-    if (isSignedIn && boutiqueInfo && !boutiqueInfo.ownerUserId && !claiming && !claimed && !error) {
+    if (isSignedIn && boutiqueInfo && !boutiqueInfo.ownerUserId && !isExpired && !claiming && !claimed && !error) {
       handleClaim();
     }
-  }, [isSignedIn, boutiqueInfo]);
+  }, [isSignedIn, boutiqueInfo, isExpired, claiming, claimed, error, handleClaim]);
 
   // --- Loading State ---
   if (isLoading || boutiqueInfo === undefined) {
@@ -61,7 +79,7 @@ export default function InviteClaimPage() {
     );
   }
 
-  // --- Invalid / Expired Token ---
+  // --- Invalid Token ---
   if (boutiqueInfo === null) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 px-4">
@@ -80,20 +98,97 @@ export default function InviteClaimPage() {
     );
   }
 
-  // --- Already Claimed ---
-  if (boutiqueInfo.ownerUserId && !claimed) {
+  // --- Expired Token ---
+  if (isExpired && !boutiqueInfo.ownerUserId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 px-4">
         <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 flex flex-col items-center gap-6">
           <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center border border-amber-100">
-            <AlertTriangle className="w-8 h-8" />
+            <Clock className="w-8 h-8" />
           </div>
           <div className="text-center flex flex-col gap-2">
-            <h1 className="text-2xl font-bold text-slate-900">Already Claimed</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Invite Expired</h1>
             <p className="text-sm text-slate-500">
-              This merchant account has already been claimed by another user.
+              This invite link for <strong className="text-slate-700">{boutiqueInfo.boutiqueName}</strong> has expired.
+            </p>
+            {boutiqueInfo.inviteExpiresAt && (
+              <p className="text-xs text-slate-400 mt-1">
+                Expired on {new Date(boutiqueInfo.inviteExpiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+              </p>
+            )}
+          </div>
+
+          {newInviteRequested ? (
+            <div className="w-full bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-center">
+              <p className="text-sm text-emerald-700 font-semibold">
+                ✅ New invite requested! The Hive team will send you a fresh link shortly.
+              </p>
+            </div>
+          ) : (
+            <button
+              onClick={handleRequestNewInvite}
+              disabled={requestingNewInvite}
+              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold shadow-md active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {requestingNewInvite ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              Request New Invite
+            </button>
+          )}
+
+          {error && (
+            <div className="w-full bg-red-50 border border-red-100 rounded-xl p-3 text-sm text-red-600 text-center">
+              {error}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // --- Already Claimed ---
+  if (boutiqueInfo.ownerUserId && !claimed) {
+    // Check if the current signed-in user IS the owner (welcome back flow)
+    const isCurrentUserOwner = isSignedIn && firebaseUser?.email && 
+      boutiqueInfo.ownerEmail?.toLowerCase() === firebaseUser.email.toLowerCase();
+
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 px-4">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-8 flex flex-col items-center gap-6">
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center border ${
+            isCurrentUserOwner 
+              ? "bg-emerald-50 text-emerald-500 border-emerald-100" 
+              : "bg-amber-50 text-amber-500 border-amber-100"
+          }`}>
+            {isCurrentUserOwner ? (
+              <CheckCircle2 className="w-8 h-8" />
+            ) : (
+              <AlertTriangle className="w-8 h-8" />
+            )}
+          </div>
+          <div className="text-center flex flex-col gap-2">
+            <h1 className="text-2xl font-bold text-slate-900">
+              {isCurrentUserOwner ? "Welcome Back! 👋" : "Already Claimed"}
+            </h1>
+            <p className="text-sm text-slate-500">
+              {isCurrentUserOwner 
+                ? <>Your store <strong className="text-slate-700">{boutiqueInfo.boutiqueName}</strong> is already set up and ready to go.</>
+                : "This merchant account has already been claimed by another user."
+              }
             </p>
           </div>
+          {isCurrentUserOwner && (
+            <button
+              onClick={() => router.push("/boutique")}
+              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold shadow-md active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              Go to Your Dashboard
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     );
@@ -203,3 +298,4 @@ export default function InviteClaimPage() {
     </div>
   );
 }
+

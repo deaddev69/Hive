@@ -463,3 +463,82 @@ export const getOrderDeclinedCustomerTemplate = (data: {
 
   return baseLayout(`Order Update - ${data.orderNumber}`, bodyContent);
 };
+
+// ─── Merchant Onboarding Templates ───────────────────────────────────────────
+
+interface MerchantInviteInput {
+  ownerName: string;
+  boutiqueName: string;
+  ownerEmail: string;
+  claimLink: string;
+}
+
+export const getMerchantInviteTemplate = (data: MerchantInviteInput) => {
+  const bodyContent = `
+    <!-- Preheader text (visible in inbox preview, hidden in email body) -->
+    <div style="display:none;font-size:1px;color:#f8fafc;line-height:1px;max-height:0;overflow:hidden;mso-hide:all;">
+      Your boutique ${data.boutiqueName} is ready to go live on Hive — activate in 60 seconds!
+    </div>
+
+    <h1 style="font-size: 22px; font-weight: 800; color: #020617; margin-bottom: 12px;">Welcome to Hive 👋</h1>
+    <p style="color: #334155; font-size: 15px; line-height: 1.6; margin-bottom: 0;">Hi ${data.ownerName || "there"},</p>
+    <p style="color: #334155; font-size: 15px; line-height: 1.6;">Your merchant account for <strong>${data.boutiqueName}</strong> has been configured on Hive! Activate your store in 3 quick steps:</p>
+
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; margin: 20px 0; font-size: 14px; color: #334155; line-height: 1.6;">
+      <strong>How to Activate:</strong><br/>
+      1. Click the button below to open the seller portal.<br/>
+      2. Sign in with your registered boutique email: <strong style="color: #020617;">${data.ownerEmail}</strong><br/>
+      3. Your store will automatically link, giving you instant access to add products and manage live orders.
+    </div>
+
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="${data.claimLink}" style="background-color: #fbbf24; color: #020617; padding: 16px 36px; text-decoration: none; font-weight: 800; border-radius: 12px; display: inline-block; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">Activate Storefront Portal</a>
+    </div>
+
+    <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
+      <strong>Direct Portal URL:</strong> <a href="${data.claimLink}" style="color: #d97706; word-break: break-all;">${data.claimLink}</a><br/>
+      📱 <em>Tip: Install the Hive Partner PWA on your mobile phone for real-time sound alerts when new orders arrive!</em>
+    </p>
+
+    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9; text-align: center;">
+      <p style="font-size: 11px; color: #94a3b8; margin: 0;">Need help? Contact us at <a href="mailto:support@hivenow.in" style="color: #d97706;">support@hivenow.in</a></p>
+    </div>
+  `;
+
+  return baseLayout(`Welcome to Hive — ${data.boutiqueName}`, bodyContent);
+};
+
+interface StaffWelcomeInput {
+  boutiqueName: string;
+  staffEmail: string;
+  signInLink: string;
+}
+
+export const getStaffWelcomeTemplate = (data: StaffWelcomeInput) => {
+  const bodyContent = `
+    <!-- Preheader text -->
+    <div style="display:none;font-size:1px;color:#f8fafc;line-height:1px;max-height:0;overflow:hidden;mso-hide:all;">
+      You've been added to ${data.boutiqueName} on Hive — sign in to start managing orders & products!
+    </div>
+
+    <h1 style="font-size: 22px; font-weight: 800; color: #020617; margin-bottom: 12px;">Welcome to the Team! 🛍️</h1>
+    <p style="color: #334155; font-size: 15px; line-height: 1.6;">Hello,</p>
+    <p style="color: #334155; font-size: 15px; line-height: 1.6;">You have been added as a staff member for <strong>${data.boutiqueName}</strong> on the Hive Partners Portal.</p>
+    <p style="color: #334155; font-size: 15px; line-height: 1.6;">You can access inventory, orders, stock, and product management by signing in with your email address (<strong>${data.staffEmail}</strong>):</p>
+
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${data.signInLink}" style="background-color: #020617; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: 700; border-radius: 12px; display: inline-block; font-size: 15px;">Activate Staff Access</a>
+    </div>
+
+    <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
+      <strong>Getting Started:</strong> Visit <a href="${data.signInLink}" style="color: #d97706;">seller.hivenow.in/sign-in</a> and sign in with this email address. Your staff access will be auto-detected!
+    </p>
+
+    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #f1f5f9; text-align: center;">
+      <p style="font-size: 11px; color: #94a3b8; margin: 0;">Need help? Contact us at <a href="mailto:support@hivenow.in" style="color: #d97706;">support@hivenow.in</a></p>
+    </div>
+  `;
+
+  return baseLayout(`Staff Access — ${data.boutiqueName}`, bodyContent);
+};
+

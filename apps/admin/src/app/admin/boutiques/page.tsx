@@ -551,6 +551,10 @@ export default function AdminBoutiquesPage() {
                 const isPending = boutique.status === "PENDING";
                 const isRejected = boutique.status === "REJECTED";
                 const isSuspended = boutique.status === "SUSPENDED";
+                const isClaimed = !!boutique.ownerUserId;
+                const onboardingLabel = isClaimed 
+                  ? (boutique.hasAcceptedLegalTerms ? "Legal ✓" : "Needs Legal")
+                  : (boutique.inviteStatus === "sent" ? "Invite Sent" : boutique.inviteStatus || "No Invite");
 
                 return (
                   <Card key={boutique._id} className="overflow-hidden border border-hive-border bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -582,6 +586,16 @@ export default function AdminBoutiquesPage() {
                               <span>Route Account Missing</span>
                             </span>
                           )}
+                          {/* Onboarding Status Badge */}
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                            isClaimed 
+                              ? (boutique.hasAcceptedLegalTerms 
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+                                  : "bg-blue-50 text-blue-700 border-blue-200")
+                              : "bg-slate-50 text-slate-500 border-slate-200"
+                          }`}>
+                            <span>{isClaimed ? "👤 Claimed" : "📩 " + onboardingLabel}</span>
+                          </span>
                         </div>
                       </div>
 
@@ -658,7 +672,7 @@ export default function AdminBoutiquesPage() {
                             ) : (
                               <Mail className="w-3.5 h-3.5" />
                             )}
-                            Resend Email
+                            {isClaimed ? "Send Reminder" : "Resend Email"}
                           </Button>
                         </div>
 

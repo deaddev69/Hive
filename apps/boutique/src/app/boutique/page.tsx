@@ -523,6 +523,61 @@ export default function BoutiqueDashboard() {
         </div>
       </div>
 
+      {/* Onboarding Checklist Card — shown until all setup steps are complete */}
+      {completionPercentage < 100 && (
+        <div className="bg-white border border-amber-200/60 rounded-[24px] p-6 flex flex-col gap-4 shadow-none">
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-0.5">
+              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" />
+                Get Your Store Live
+              </h2>
+              <p className="text-xs text-slate-500 font-medium">{completedCount} of {totalSteps} steps complete</p>
+            </div>
+            <span className="text-sm font-extrabold text-amber-600">{completionPercentage}%</span>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500"
+              style={{ width: `${completionPercentage}%` }}
+            />
+          </div>
+
+          {/* Checklist Items */}
+          <div className="flex flex-col gap-2.5">
+            {[
+              { done: !!boutique, label: "Account activated", href: null },
+              { done: boutique?.status === "APPROVED", label: "Store approved by Hive", href: null },
+              { done: !!boutique?.deliveryRadiusKm, label: "Set delivery radius", href: "/boutique/profile" },
+              { done: !!boutique?.latitude && !!boutique?.longitude, label: "Store location pinned", href: "/boutique/profile" },
+              { done: products && products.length > 0, label: "Add your first product", href: "/boutique/products" },
+              { done: products && products.some((p: any) => p.sizes && p.sizes.some((sz: string) => p.stockBySize?.[sz] > 0)), label: "Update stock levels", href: "/boutique/stock" },
+            ].map((step, idx) => (
+              <div key={idx} className="flex items-center gap-3">
+                {step.done ? (
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
+                  </div>
+                ) : (
+                  <div className="w-5 h-5 rounded-full border-2 border-amber-300 shrink-0" />
+                )}
+                {step.href && !step.done ? (
+                  <Link href={step.href} className="text-xs font-semibold text-amber-700 hover:underline">
+                    {step.label}
+                  </Link>
+                ) : (
+                  <span className={`text-xs font-semibold ${step.done ? "text-slate-400 line-through" : "text-slate-600"}`}>
+                    {step.label}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 2. Secondary Sections Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mt-2">
         

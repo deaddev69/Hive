@@ -2,10 +2,19 @@
 "use client";
 
 import React, { createContext, useContext, useCallback } from "react";
-import { signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
+import { signInWithPopup, signInWithRedirect, signOut as firebaseSignOut } from "firebase/auth";
 import { getClientAuth, googleProvider } from "@/lib/firebase";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { User } from "firebase/auth";
+
+/** Detect if running as installed PWA (standalone/fullscreen) */
+function isPWA(): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (window.navigator as any).standalone === true
+  );
+}
 
 interface SellerAuthContextType {
   user: User | null;
@@ -21,7 +30,24 @@ export function SellerAuthProvider({ children }: { children: React.ReactNode }) 
   const { user, isLoading, isAuthenticated } = useFirebaseAuth();
 
   const signInWithGoogle = useCallback(async () => {
-    await signInWithPopup(getClientAuth(), googleProvider);
+    const auth = getClientAuth();
+
+    if (isPWA()) {
+      // PWA standalone mode — popup doesn't work, must use redirect
+      await signInWithRedirect(auth, googleProvider);
+      return;
+    }
+
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err: any) {
+      if (err.code === "auth/popup-blocked") {
+        // Popup blocked — fall back to redirect silently
+        await signInWithRedirect(auth, googleProvider);
+        return;
+      }
+      throw err;
+    }
   }, []);
 
   const signOut = useCallback(async (options?: { redirectUrl?: string }) => {
@@ -44,3 +70,4 @@ export function useSellerAuth(): SellerAuthContextType {
   if (!ctx) throw new Error("useSellerAuth must be used inside SellerAuthProvider");
   return ctx;
 }
+

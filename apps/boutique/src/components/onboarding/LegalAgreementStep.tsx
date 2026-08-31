@@ -125,6 +125,30 @@ export default function LegalAgreementStep() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[90vh] py-12 px-4 bg-slate-50 font-sans">
       <div className="w-full max-w-2xl mx-auto bg-white p-8 rounded-[32px] border border-hive-border shadow-sm">
+        {/* Progress Indicator */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+              <Check className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-[11px] font-bold text-emerald-600">Account Activated</span>
+          </div>
+          <div className="w-6 h-px bg-slate-300" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center animate-pulse">
+              <span className="text-[10px] font-black">2</span>
+            </div>
+            <span className="text-[11px] font-bold text-amber-700">Review Terms</span>
+          </div>
+          <div className="w-6 h-px bg-slate-200" />
+          <div className="flex items-center gap-1.5">
+            <div className="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center">
+              <span className="text-[10px] font-black">3</span>
+            </div>
+            <span className="text-[11px] font-bold text-slate-400">Dashboard</span>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8 border-b border-slate-100 pb-8">
           <h2 className="font-serif font-extrabold text-3xl text-hive-dark mb-3">Welcome to Hive 👋</h2>

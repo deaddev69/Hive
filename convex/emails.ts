@@ -251,7 +251,8 @@ async function sendViaResend(
   to: string,
   subject: string,
   html: string,
-  templateName: string
+  templateName: string,
+  retryCount: number = 0
 ) {
   // Create pending log entry
   const logId = await ctx.runMutation(internal.whatsapp.createLog, {
@@ -280,10 +281,20 @@ async function sendViaResend(
     if (!res.ok) {
       const errText = await res.text();
       console.error(`[sendOrderEmail] Resend API error for ${to}: ${res.status} - ${errText}`);
+
+      // Retry on transient 5xx errors (up to 3 times with exponential backoff)
+      if (res.status >= 500 && retryCount < 3) {
+        const delayMs = Math.pow(2, retryCount) * 60_000; // 1min, 2min, 4min
+        console.log(`[sendOrderEmail] Scheduling retry #${retryCount + 1} for ${to} in ${delayMs / 1000}s`);
+        await ctx.scheduler.runAfter(delayMs, internal.emails.retrySendEmail, {
+          to, subject, html, templateName, retryCount: retryCount + 1,
+        });
+      }
+
       await ctx.runMutation(internal.whatsapp.updateLog, {
         id: logId,
-        status: "failed",
-        response: `Resend Status ${res.status}: ${errText}`,
+        status: retryCount < 3 && res.status >= 500 ? "retrying" : "failed",
+        response: `Resend Status ${res.status}: ${errText}`.substring(0, 500),
       });
     } else {
       const responseData = await res.json();
@@ -295,11 +306,36 @@ async function sendViaResend(
       });
     }
   } catch (err: any) {
-    console.error(`[sendOrderEmail] Network error when sending email to ${to}:`, err);
+    const sanitizedError = (err.message || String(err)).substring(0, 500);
+    console.error(`[sendOrderEmail] Network error when sending email to ${to}:`, sanitizedError);
     await ctx.runMutation(internal.whatsapp.updateLog, {
       id: logId,
       status: "failed",
-      response: err.message || String(err),
+      response: sanitizedError,
     });
   }
 }
+
+/**
+ * Retry action scheduled by sendViaResend on transient 5xx errors.
+ * Uses exponential backoff (1min, 2min, 4min) and caps at 3 retries.
+ */
+export const retrySendEmail = internalAction({
+  args: {
+    to: v.string(),
+    subject: v.string(),
+    html: v.string(),
+    templateName: v.string(),
+    retryCount: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.error("[retrySendEmail] RESEND_API_KEY missing, cannot retry.");
+      return;
+    }
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "Hive Partners <onboarding@hivenow.in>";
+    console.log(`[retrySendEmail] Retry #${args.retryCount} for ${args.to} (${args.templateName})`);
+    await sendViaResend(ctx, apiKey, fromEmail, args.to, args.subject, args.html, args.templateName, args.retryCount);
+  },
+});

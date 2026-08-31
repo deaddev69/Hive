@@ -4,11 +4,10 @@ import React, { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Tag, Package, ClipboardList, User, LogOut, Loader2, ShieldX, Wallet, Star, Plus } from "lucide-react";
+import { Home, Tag, Package, ClipboardList, User, LogOut, Loader2, Wallet, Star, Plus } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button, LoadingState } from "@hive/ui";
-import LegalAgreementStep from "@/components/onboarding/LegalAgreementStep";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { AudioAlertHeaderStatus } from "@/components/layout/AudioAlertHeaderStatus";
 import { useSellerAuth } from "@/context/SellerAuthContext";
@@ -35,7 +34,6 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
     ? BOUTIQUE_NAV_ITEMS.filter(item => item.label !== "Money")
     : BOUTIQUE_NAV_ITEMS;
 
-  console.log("[BoutiqueLayout] isLoading:", isLoading, "isAuthenticated:", isAuthenticated, "me:", me, "boutique:", myBoutiqueSafe);
 
   // Unauthenticated redirect
   useEffect(() => {
@@ -78,11 +76,10 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   if (me === null) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center px-4">
-        <ShieldX className="w-10 h-10 text-red-400" />
-        <span className="text-base font-serif font-black text-hive-dark">Setting Up Your Account</span>
+        <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
+        <span className="text-base font-serif font-black text-hive-dark">Connecting Your Account</span>
         <p className="text-xs text-hive-text-muted max-w-sm">
-          Your Google account is being linked to the Seller Portal. This takes just a moment —
-          please sign out and sign back in if this persists.
+          Your Google account is being linked to the Seller Portal. This takes just a moment.
         </p>
         <button
           onClick={() => signOut({ redirectUrl: "/sign-in" })}
@@ -114,10 +111,6 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
     );
   }
 
-  // Legal Gating Check
-  if (myBoutiqueSafe && myBoutiqueSafe.exists && myBoutiqueSafe.boutique && !(myBoutiqueSafe.boutique as any).hasAcceptedLegalTerms) {
-    return <LegalAgreementStep />;
-  }
 
   // Display name: Firebase user → fallback to "B"
   const displayInitial = firebaseUser?.displayName?.charAt(0) ?? firebaseUser?.email?.charAt(0) ?? "B";

@@ -11,6 +11,8 @@ import { encryptData, decryptData } from "./lib/encryption";
 import { ImageAsset } from "./schema";
 import { getPublicUrl } from "./media/api";
 import { normalizeEmail } from "./users";
+import { getMerchantInviteTemplate, getStaffWelcomeTemplate } from "./lib/emailTemplates";
+import { triggerNotification } from "./lib/notifications";
 
 /**
  * Fetch all boutiques.
@@ -450,10 +452,12 @@ export const updateBoutique = mutation({
       ? normalizePhoneNumber(args.notificationPhone)
       : undefined;
 
+    const emailNormalized = args.email.trim().toLowerCase();
+
     const patchData: any = {
       boutiqueName:     args.boutiqueName,
       ownerName:        args.ownerName,
-      email:            args.email,
+      email:            emailNormalized,
       phone:            normalizedPhone,
       address:          args.address,
       latitude:         args.latitude,
@@ -1304,7 +1308,7 @@ export const getMyBoutiqueSafe = query({
     }
 
     if (!boutique && userEmail) {
-      const normalizedUserEmail = userEmail.trim().toLowerCase();
+      const normalizedUserEmail = normalizeEmail(userEmail) || userEmail.trim().toLowerCase();
       boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail1", q => q.eq("staffEmail1", normalizedUserEmail)).first();
       
       if (!boutique) {
@@ -1397,7 +1401,7 @@ export const getMyBoutiqueSafeCustomer = query({
     }
 
     if (!boutique && userEmail) {
-      const normalizedUserEmail = userEmail.trim().toLowerCase();
+      const normalizedUserEmail = normalizeEmail(userEmail) || userEmail.trim().toLowerCase();
       boutique = await ctx.db.query("boutiques").withIndex("by_staffEmail1", q => q.eq("staffEmail1", normalizedUserEmail)).first();
       
       if (!boutique) {
@@ -1970,6 +1974,7 @@ export const getBoutiqueByInviteToken = query({
       _id: boutique._id,
       boutiqueName: boutique.boutiqueName,
       ownerName: boutique.ownerName,
+      ownerEmail: boutique.ownerEmail || boutique.email,
       phone: boutique.phone,
       address: boutique.address,
       inviteStatus: boutique.inviteStatus,
@@ -2004,65 +2009,22 @@ export const sendMerchantInviteAction = internalAction({
       return;
     }
 
-    const claimLink = "https://seller.hivenow.in/sign-up";
+    const claimLink = `https://seller.hivenow.in/invite/${args.rawToken}`;
     
     // Log the claim link so developers can easily test locally without emails
-    console.log(`[sendMerchantInviteAction] Direct Sign-Up Link: ${claimLink}`);
+    console.log(`[sendMerchantInviteAction] Direct Invite Claim Link: ${claimLink}`);
 
-    // 1. Owner Email Notification
+    // 1. Owner Email Notification (using extracted template with logo, preheader, and footer)
     const ownerTargetEmail = boutique.ownerEmail || boutique.email;
     console.log(`[sendMerchantInviteAction] Sending Owner Email to ${ownerTargetEmail}`);
     try {
-      const termsDocUrl = "https://seller.hivenow.in/docs/Hive_Seller_Terms_and_Conditions.html";
       const emailSubject = `Welcome to Hive 🎉 Your merchant portal for ${boutique.boutiqueName} is ready!`;
-      const emailHtml = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
-          <div style="text-align: center; margin-bottom: 24px;">
-            <h1 style="color: #020617; font-size: 24px; font-weight: 800; margin: 0;">Hive Partners</h1>
-            <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Merchant Onboarding & Partner Portal</p>
-          </div>
-
-          <h2 style="color: #020617; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Welcome to Hive 👋</h2>
-          <p style="color: #334155; font-size: 15px; line-height: 1.6;">Hi ${boutique.ownerName || "there"},</p>
-          <p style="color: #334155; font-size: 15px; line-height: 1.6;">Your merchant account for <strong>${boutique.boutiqueName}</strong> has been configured on Hive! Activate your store in 3 quick steps:</p>
-          
-          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 20px; margin: 20px 0; font-size: 14px; color: #334155; line-height: 1.6;">
-            <strong>How to Activate:</strong><br/>
-            1. Click the button below to open the seller portal.<br/>
-            2. Sign up with your registered boutique email: <strong style="color: #020617;">${ownerTargetEmail}</strong><br/>
-            3. Your store will automatically link, giving you instant access to add products and manage live orders.
-          </div>
-
-          <div style="text-align: center; margin: 28px 0;">
-            <a href="${claimLink}" style="background-color: #fbbf24; color: #020617; padding: 16px 36px; text-decoration: none; font-weight: 800; border-radius: 12px; display: inline-block; font-size: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">Activate Storefront Portal</a>
-          </div>
-
-          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 24px; margin: 28px 0;">
-            <h3 style="margin-top: 0; color: #020617; font-size: 16px; font-weight: 800; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px;">📋 Seller Terms & Conditions Summary</h3>
-            <ol style="margin: 12px 0 0 0; padding-left: 20px; color: #334155; font-size: 13px; line-height: 1.7;">
-              <li><strong>You Set Your Own Price:</strong> You receive the exact price you list (₹1,000 listed = ₹1,000 received).</li>
-              <li><strong>0% Commission First 30 Days:</strong> Applicable on all products listed with returns enabled.</li>
-              <li><strong>2% Platform Fee:</strong> Deducted from orders if you choose to disable returns store-wide.</li>
-              <li><strong>Mandatory Wrong-Item Returns:</strong> Incorrect or defective items must be accepted back for full customer refund.</li>
-              <li><strong>Repeated Wrong Orders:</strong> 3 wrong dispatches in a week flags account; 3 separate weeks leads to store removal.</li>
-              <li><strong>Store-Wide Return Policy:</strong> Enable for all products (0% promo) or Disable for all (2% fee).</li>
-              <li><strong>Payment Release:</strong> Returns enabled = post return-window; Returns disabled = standard settlement schedule.</li>
-              <li><strong>Keep Stock Updated:</strong> Sync inventory before daily store closing & after offline sales.</li>
-              <li><strong>Sell Only Available Stock:</strong> Only list items in stock and ready to dispatch.</li>
-              <li><strong>Binding Agreement:</strong> Activating your portal confirms agreement to Hive Merchant Terms.</li>
-            </ol>
-            
-            <div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed #cbd5e1; text-align: center;">
-              <a href="${termsDocUrl}" style="color: #d97706; font-size: 13px; font-weight: 700; text-decoration: underline;" target="_blank">📄 View / Download Official Hive_Seller_Terms_and_Conditions.pdf</a>
-            </div>
-          </div>
-
-          <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
-            <strong>Direct Portal URL:</strong> <a href="${claimLink}" style="color: #d97706; word-break: break-all;">${claimLink}</a><br/>
-            📱 <em>Tip: Install the Hive Partner PWA on your mobile phone for real-time sound alerts when new orders arrive!</em>
-          </p>
-        </div>
-      `;
+      const emailHtml = getMerchantInviteTemplate({
+        ownerName: boutique.ownerName || "there",
+        boutiqueName: boutique.boutiqueName,
+        ownerEmail: ownerTargetEmail,
+        claimLink,
+      });
 
       await ctx.runAction(internal.emails.sendNotificationEmail, {
         to: ownerTargetEmail,
@@ -2074,31 +2036,19 @@ export const sendMerchantInviteAction = internalAction({
       console.error("[sendMerchantInviteAction] Failed to dispatch Owner Email invite:", e);
     }
 
-    // 3. Staff Email Notifications (if staff emails exist)
+    // 2. Staff Email Notifications (if staff emails exist)
     const staffEmails = [boutique.staffEmail1, boutique.staffEmail2].filter((e): e is string => Boolean(e && e.trim()));
+    const staffSignInLink = "https://seller.hivenow.in/sign-in";
     
     for (const staffEmail of staffEmails) {
       console.log(`[sendMerchantInviteAction] Sending Staff Email to ${staffEmail}`);
       try {
         const staffSubject = `You've been added to ${boutique.boutiqueName} on Hive Partners! 🛍️`;
-        const staffHtml = `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
-            <div style="text-align: center; margin-bottom: 24px;">
-              <h1 style="color: #020617; font-size: 24px; font-weight: 800; margin: 0;">Hive Partners</h1>
-              <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Staff Welcome</p>
-            </div>
-            <h2 style="color: #020617; font-size: 20px; font-weight: 700; margin-bottom: 12px;">Welcome to the Team! 🛍️</h2>
-            <p style="color: #334155; font-size: 15px; line-height: 1.6;">Hello,</p>
-            <p style="color: #334155; font-size: 15px; line-height: 1.6;">You have been added as a staff member for <strong>${boutique.boutiqueName}</strong> on the Hive Partners Portal.</p>
-            <p style="color: #334155; font-size: 15px; line-height: 1.6;">You can access inventory, orders, stock, and product management by signing up with your email address (<strong>${staffEmail}</strong>):</p>
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="https://seller.hivenow.in/sign-up" style="background-color: #020617; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: 700; border-radius: 12px; display: inline-block; font-size: 15px;">Activate Staff Access</a>
-            </div>
-            <p style="color: #64748b; font-size: 13px; line-height: 1.5; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
-              <strong>Getting Started:</strong> Visit <a href="https://seller.hivenow.in/sign-up" style="color: #d97706;">seller.hivenow.in/sign-up</a> and sign up with this email address. Your staff access will be auto-detected!
-            </p>
-          </div>
-        `;
+        const staffHtml = getStaffWelcomeTemplate({
+          boutiqueName: boutique.boutiqueName,
+          staffEmail,
+          signInLink: staffSignInLink,
+        });
 
         await ctx.runAction(internal.emails.sendNotificationEmail, {
           to: staffEmail,
@@ -2262,8 +2212,14 @@ export const requestNewInvite = mutation({
     if (!boutique) throw new Error("Invite invalid");
     if (boutique.ownerUserId) throw new Error("Invite already claimed");
 
+    // Rate limit: max 1 request per 5 minutes
+    const now = Date.now();
+    if (boutique.inviteRequestedAt && (now - boutique.inviteRequestedAt) < 5 * 60 * 1000) {
+      throw new Error("Please wait a few minutes before requesting again.");
+    }
+
     await ctx.db.patch(boutique._id, {
-      inviteRequestedAt: Date.now(),
+      inviteRequestedAt: now,
     });
 
     return { success: true };
@@ -2324,12 +2280,16 @@ export const claimBoutiqueInvite = mutation({
       updatedAt: now,
     });
 
-    // Send welcome WhatsApp sequence #1 (Temporarily disabled - template missing)
-    // await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-    //   recipient: boutique.phone,
-    //   templateName: "merchant_welcome",
-    //   parameters: [boutique.boutiqueName],
-    // });
+    // Send welcome WhatsApp (with safety wrap in case template isn't approved yet)
+    try {
+      await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
+        recipient: boutique.phone,
+        templateName: "merchant_welcome",
+        parameters: [boutique.boutiqueName],
+      });
+    } catch (e) {
+      console.warn("[claimBoutiqueInvite] WhatsApp merchant_welcome failed (template may not be approved):", e);
+    }
 
     // 3. Log Claim Event
     await ctx.db.insert("auditLogs", {
@@ -2346,6 +2306,25 @@ export const claimBoutiqueInvite = mutation({
       }),
       createdAt: now,
     });
+
+    // 4. Admin Slack notification — founder gets instant alert when a partner activates
+    try {
+      const superadmin = await ctx.db.query("users")
+        .withIndex("by_role", (q: any) => q.eq("role", "admin")).first();
+      if (superadmin) {
+        await triggerNotification(
+          ctx, superadmin._id, "slack", "boutique_claimed", "boutique",
+          boutique._id as unknown as string,
+          JSON.stringify({
+            boutiqueName: boutique.boutiqueName,
+            claimedBy: user.email,
+            claimedAt: new Date(now).toISOString(),
+          })
+        );
+      }
+    } catch (e) {
+      console.warn("[claimBoutiqueInvite] Failed to send admin Slack notification:", e);
+    }
 
     return { success: true, boutiqueId: boutique._id };
   },
@@ -2519,10 +2498,28 @@ export const getBoutiqueTierAndStats = query({
 export const acceptLegalTerms = mutation({
   args: {},
   handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
     const boutique = await getMyBoutique(ctx);
+    const now = Date.now();
     await ctx.db.patch(boutique._id, {
       hasAcceptedLegalTerms: true,
+      legalTermsAcceptedAt: now,
     });
+
+    await ctx.db.insert("auditLogs", {
+      actorId: user._id,
+      actorRole: user.role || "boutique_owner",
+      action: "boutique.legal_terms_accepted",
+      entityType: "boutiques",
+      entityId: boutique._id as unknown as string,
+      metadata: JSON.stringify({
+        boutiqueId: boutique._id,
+        userId: user._id,
+        acceptedAt: now,
+      }),
+      createdAt: now,
+    });
+
     return { success: true };
   },
 });
@@ -2534,7 +2531,7 @@ async function checkForDuplicateBoutique(ctx: any, email: string, phone: string)
     .collect();
 
   for (const b of existingByEmail) {
-    if (b.status !== "REJECTED" && b.status !== "SUSPENDED") {
+    if (b.status !== "REJECTED" && b.status !== "SUSPENDED" && b.status !== "DELETED") {
       throw new ConvexError(`A boutique with email ${email} already exists (Status: ${b.status}).`);
     }
   }
@@ -2545,7 +2542,7 @@ async function checkForDuplicateBoutique(ctx: any, email: string, phone: string)
     .collect();
 
   for (const b of existingByPhone) {
-    if (b.status !== "REJECTED" && b.status !== "SUSPENDED") {
+    if (b.status !== "REJECTED" && b.status !== "SUSPENDED" && b.status !== "DELETED") {
       throw new ConvexError(`A boutique with phone ${phone} already exists (Status: ${b.status}).`);
     }
   }
