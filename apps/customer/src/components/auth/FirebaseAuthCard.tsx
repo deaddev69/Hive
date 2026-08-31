@@ -7,6 +7,11 @@ import { auth } from "@/lib/firebase";
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
 import { HiveLogo } from "@/components/shared/HiveLogo";
 import { ArrowRight, Phone, ShieldCheck, CheckCircle2, AlertCircle } from "lucide-react";
+import { authPerfLog, markAuthFlowStart } from "@/lib/authPerf";
+import { getAuthErrorMessage } from "@/lib/authErrors";
+import { toast } from "@hive/utils";
+
+const RESEND_COOLDOWN_SECONDS = 30;
 
 interface FirebaseAuthCardProps {
   title?: string;
@@ -33,6 +38,20 @@ export function FirebaseAuthCard({
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 0 = resend is allowed right now. Counts down from RESEND_COOLDOWN_SECONDS after every send
+  // (initial or resend) so a customer can't fire off a stack of billed SMS by mashing the button.
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (step !== "otp" || resendCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setResendCooldown((s) => Math.max(0, s - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+    // Depends on resendCooldown > 0 (not resendCooldown itself) so the interval is created once
+    // per cooldown period instead of being torn down and recreated every second.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, resendCooldown > 0]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -43,6 +62,12 @@ export function FirebaseAuthCard({
       }
     }
   }, [isAuthenticated, router, redirectUrl, onSuccess]);
+
+  useEffect(() => {
+    if (step === "otp") {
+      authPerfLog("OTP screen displayed");
+    }
+  }, [step]);
 
   useEffect(() => {
     return () => {
@@ -77,10 +102,13 @@ export function FirebaseAuthCard({
   };
 
   const handleGoogleSignIn = async () => {
+    markAuthFlowStart();
+    authPerfLog("Google sign-in pressed");
     setLoading(true);
     setError(null);
     try {
       await loginWithGoogle();
+      authPerfLog("Firebase Google sign-in popup completed");
       if (onSuccess) {
         onSuccess();
       } else {
@@ -88,30 +116,40 @@ export function FirebaseAuthCard({
       }
     } catch (err: any) {
       console.error("Google login error:", err);
-      setError(err.message || "Failed to sign in with Google. Please try again.");
+      setError(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phone || phone.length !== 10 || !/^\d+$/.test(phone)) {
-      setError("Please enter a valid 10-digit Indian mobile number.");
-      return;
-    }
-
+  // Shared by the initial "Send OTP" and "Resend OTP" — Firebase's call is identical either way;
+  // only what triggered it (and how the result is announced) differs.
+  const sendOtpRequest = async (isResend: boolean) => {
     setLoading(true);
     setError(null);
     try {
+      authPerfLog(isResend ? "reCAPTCHA verifier setup starting (resend)" : "reCAPTCHA verifier setup starting");
       const verifier = setupRecaptcha();
+      // Note: constructing an invisible RecaptchaVerifier does not itself solve the challenge —
+      // for size:"invisible" the SDK runs the actual challenge lazily, inside the
+      // signInWithPhoneNumber call below. So "verifier ready" here measures construction only;
+      // the real reCAPTCHA execution time is bundled into the next marker, not separable from it
+      // with the public API this component uses.
+      authPerfLog("reCAPTCHA verifier constructed (challenge itself runs inside the next call)");
       const formattedPhone = `+91${phone}`;
+      authPerfLog(isResend ? "Firebase signInWithPhoneNumber starting (resend)" : "Firebase signInWithPhoneNumber starting (includes reCAPTCHA challenge + SMS request)");
       const confirmation = await signInWithPhoneNumber(auth, formattedPhone, verifier);
+      authPerfLog("Firebase signInWithPhoneNumber returned");
       setConfirmationResult(confirmation);
-      setStep("otp");
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
+      if (isResend) {
+        toast.success("OTP resent");
+      } else {
+        setStep("otp");
+      }
     } catch (err: any) {
       console.error("Send OTP error:", err);
-      setError(err.message || "Failed to send SMS OTP. Check your number or network.");
+      setError(getAuthErrorMessage(err));
       if ((window as any).recaptchaVerifier) {
         try {
           (window as any).recaptchaVerifier.clear();
@@ -127,8 +165,28 @@ export function FirebaseAuthCard({
     }
   };
 
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    markAuthFlowStart();
+    authPerfLog("Send OTP pressed");
+    if (!phone || phone.length !== 10 || !/^\d+$/.test(phone)) {
+      setError("Please enter a valid 10-digit Indian mobile number.");
+      return;
+    }
+    authPerfLog("Phone validation passed");
+    await sendOtpRequest(false);
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || loading) return;
+    authPerfLog("Resend OTP pressed");
+    setOtp("");
+    await sendOtpRequest(true);
+  };
+
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    authPerfLog("OTP submitted");
     if (!otp || otp.length !== 6 || !/^\d+$/.test(otp)) {
       setError("Please enter the 6-digit OTP received via SMS.");
       return;
@@ -143,7 +201,9 @@ export function FirebaseAuthCard({
     setLoading(true);
     setError(null);
     try {
+      authPerfLog("confirmationResult.confirm() starting");
       await confirmationResult.confirm(otp);
+      authPerfLog("Firebase OTP verification completed (confirm() returned)");
       if (onSuccess) {
         onSuccess();
       } else {
@@ -151,7 +211,7 @@ export function FirebaseAuthCard({
       }
     } catch (err: any) {
       console.error("Verify OTP error:", err);
-      setError("Invalid or expired OTP. Please check and try again.");
+      setError(err.code ? getAuthErrorMessage(err) : "Invalid or expired OTP. Please check and try again.");
     } finally {
       setLoading(false);
     }
@@ -268,6 +328,22 @@ export function FirebaseAuthCard({
             <p className="text-xs text-center text-slate-500 dark:text-neutral-400 font-sans mt-1">
               We sent a verification code to <span className="font-semibold text-slate-800 dark:text-neutral-200">+91 {phone}</span>
             </p>
+            <div className="text-center">
+              {resendCooldown > 0 ? (
+                <span className="text-xs text-slate-400 dark:text-neutral-500 font-sans">
+                  Resend OTP in {resendCooldown}s
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={loading}
+                  className="text-xs font-bold text-amber-600 dark:text-hive-gold hover:underline transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
+                >
+                  Resend OTP
+                </button>
+              )}
+            </div>
           </div>
 
           <button

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup, signOut, browserPopupRedirectResolver } from "firebase/auth";
+import { authPerfLog, logAuthFlowTotalOnce } from "@/lib/authPerf";
 
 export interface SessionUser {
   _id: string;
@@ -40,6 +41,13 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { user: firebaseUser, isAuthenticated: isFirebaseAuthenticated, isLoading: firebaseLoading } = useFirebaseAuth();
   const [isGuest, setIsGuest] = useState<boolean>(false);
   const syncUser = useMutation(api.users.syncUser);
+  // Firebase confirms auth before the Convex user row is guaranteed to exist. Without this,
+  // a first-time signup's `getMe` can resolve to null (row doesn't exist yet) while
+  // `syncUser` is still creating it — and the code below would read that as "not
+  // authenticated" instead of "still finishing sign-in", flashing a signed-out UI right after
+  // OTP verification. This tracks whether the sync mutation has completed at least once since
+  // the current Firebase sign-in, so that window is reported as loading, not logged-out.
+  const [hasSyncedOnce, setHasSyncedOnce] = useState(false);
 
   // Fetch user profile from Convex using the authenticated context
   const user = useQuery(api.auth.getMe, isFirebaseAuthenticated ? {} : "skip");
@@ -52,9 +60,15 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Sync Firebase user with Convex users table immediately upon login
   useEffect(() => {
-    if (!isFirebaseAuthenticated || !firebaseUser) return;
+    if (!isFirebaseAuthenticated || !firebaseUser) {
+      // Reset for the next sign-in so this doesn't skip the loading window a second time.
+      setHasSyncedOnce(false);
+      return;
+    }
 
+    let cancelled = false;
     const performSync = async () => {
+      authPerfLog("Hive user sync (syncUser mutation) starting");
       try {
         console.log("[SessionContext] Syncing Firebase user to Convex database...");
         const email = firebaseUser.email || undefined;
@@ -62,17 +76,43 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const phone = firebaseUser.phoneNumber || undefined;
         await syncUser({ email, name, phone });
         console.log("[SessionContext] User sync completed successfully.");
+        authPerfLog("Hive user sync (syncUser mutation) completed");
       } catch (err) {
         console.error("[SessionContext] User sync failed:", err);
+      } finally {
+        // Convex guarantees read-your-own-writes on this client, so by the time this mutation
+        // resolves the getMe query above is already consistent with it — flipping this now
+        // (success or failure) is what lets isAuthenticated/isLoading below tell the truth.
+        if (!cancelled) setHasSyncedOnce(true);
       }
     };
 
     performSync();
+    return () => {
+      cancelled = true;
+    };
   }, [isFirebaseAuthenticated, firebaseUser, syncUser]);
 
-  // Update authentication status
+  // Update authentication status.
+  // While Firebase is authenticated but we haven't yet confirmed the Convex user sync has run at
+  // least once, treat it as loading rather than unauthenticated — see hasSyncedOnce above.
   const isAuthenticated = !!isFirebaseAuthenticated && !!user;
-  const isLoading = firebaseLoading || (isFirebaseAuthenticated && user === undefined);
+  const isLoading =
+    firebaseLoading ||
+    (isFirebaseAuthenticated && (user === undefined || (!user && !hasSyncedOnce)));
+
+  // Marks the moment the customer UI can actually treat the customer as authenticated — this is
+  // what "Firebase confirmed the OTP" gets turned into after the getMe query resolves. Comparing
+  // this timestamp against "Hive user sync completed" above is what tells us whether the
+  // Firebase->Convex sync is genuinely on the critical path or not.
+  const wasAuthenticated = useRef(false);
+  useEffect(() => {
+    if (isAuthenticated && !wasAuthenticated.current) {
+      authPerfLog("Customer UI authenticated (isAuthenticated became true)");
+      logAuthFlowTotalOnce("Total authentication flow (Send OTP press -> authenticated UI)");
+    }
+    wasAuthenticated.current = isAuthenticated;
+  }, [isAuthenticated]);
 
   const loginWithPassword = async (email: string, password: string) => {
     console.warn("loginWithPassword is not supported under passwordless Firebase Auth.");
