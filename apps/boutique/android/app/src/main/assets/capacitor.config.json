@@ -16,13 +16,14 @@
 			"*.google.com",
 			"*.google.co.in",
 			"*.googleapis.com",
-			"*.gstatic.com"
+			"*.gstatic.com",
+			"*.firebaseapp.com"
 		]
 	},
 	"android": {
 		"allowMixedContent": true,
 		"captureInput": true,
-		"webContentsDebuggingEnabled": false
+		"webContentsDebuggingEnabled": true
 	},
 	"plugins": {
 		"PushNotifications": {
