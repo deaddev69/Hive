@@ -239,7 +239,11 @@ function MapPickerInner({
 
   const center = { lat, lng };
 
-  // Fallback programmatic POI & transit hiding styles
+  // POI & transit hiding styles. Deliberately not using a Cloud-based `mapId` here — Google
+  // Maps ignores inline `styles` whenever a mapId is present (styling then has to be configured
+  // per-mapId in the Cloud Console instead), and nothing on this map needs a mapId otherwise
+  // (no AdvancedMarker in use), so this stays the one reliable way to actually hide POI/transit
+  // clutter on the delivery-address picker.
   const poiStyles: google.maps.MapTypeStyle[] = hidePOIs
     ? [
         {
@@ -348,8 +352,6 @@ function MapPickerInner({
     );
   }, [map, onChange, onReverseGeocode, geocodingLib]);
 
-  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID || process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID";
-
   return (
     <div className="absolute inset-0 w-full h-full">
       {/* Floating Controls Overlay - Rendered FIRST in DOM for correct Tab order (Search -> Chips -> FAB -> Map) */}
@@ -424,7 +426,6 @@ function MapPickerInner({
       {/* Map Container - Full Bleed */}
       <div className={`w-full h-full ${readOnly ? 'opacity-90' : ''}`} style={{ height }}>
         <Map
-          mapId={mapId}
           defaultCenter={center}
           center={center}
           defaultZoom={14}
@@ -432,7 +433,7 @@ function MapPickerInner({
           onClick={handleMapClick}
           disableDefaultUI={true}
           clickableIcons={!hidePOIs}
-          {...(mapId === "DEMO_MAP_ID" ? { styles: poiStyles } : {})}
+          styles={poiStyles}
           zoomControl={false}
           gestureHandling={readOnly ? "none" : "greedy"}
           onDragstart={() => setIsDragging(true)}
