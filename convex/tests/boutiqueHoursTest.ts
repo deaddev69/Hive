@@ -26,7 +26,7 @@ export function runBoutiqueHoursTests() {
 
   /** Build an epoch for a given IST wall-clock time on a Wednesday. */
   function istTime(hhmm: string): number {
-    const [h, m] = hhmm.split(":").map(Number);
+    const [h = 0, m = 0] = hhmm.split(":").map(Number);
     // 2026-09-02 is a Wednesday. IST is UTC+5:30.
     return Date.UTC(2026, 8, 2, h - 5, m - 30, 0);
   }

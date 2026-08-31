@@ -19,12 +19,13 @@ const config: CapacitorConfig = {
       "*.google.co.in",
       "*.googleapis.com",
       "*.gstatic.com",
+      "*.firebaseapp.com",
     ],
   },
   android: {
     allowMixedContent: true,
     captureInput: true,
-    webContentsDebuggingEnabled: false,
+    webContentsDebuggingEnabled: true,
   },
   plugins: {
     PushNotifications: {

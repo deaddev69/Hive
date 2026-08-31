@@ -34,6 +34,9 @@ export async function POST(req: NextRequest) {
     }
 
     const idToken = authHeader.split("Bearer ")[1];
+    if (!idToken) {
+      return NextResponse.json({ error: "Unauthorized: Missing token" }, { status: 401 });
+    }
     let decodedToken;
     try {
       decodedToken = await getAuth().verifyIdToken(idToken);

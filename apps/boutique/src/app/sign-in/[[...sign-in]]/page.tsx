@@ -63,16 +63,24 @@ function SignInContent() {
     }
   }, [isLoading, isAuthenticated, router, searchParams]);
 
+  /** Detect if running inside a Capacitor native app (Android/iOS WebView) */
+  function isCapacitor(): boolean {
+    if (typeof window === "undefined") return false;
+    return !!(window as any).Capacitor?.isNativePlatform?.() || 
+           /wv\)/.test(navigator.userAgent) && /Android/.test(navigator.userAgent);
+  }
+
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // getClientAuth() safely called inside event handler — client-only
       const auth = getClientAuth();
 
-      if (isPWA()) {
-        // PWA standalone mode — popup doesn't work, must use redirect
+      // Capacitor native WebView — popups are always blocked, redirect also breaks
+      // in the embedded WebView. The fix: open the OAuth URL in the system browser
+      // via signInWithRedirect, which Capacitor's allowNavigation handles.
+      if (isCapacitor() || isPWA()) {
         await signInWithRedirect(auth, googleProvider);
         return; // Page will reload after redirect
       }

@@ -16,6 +16,13 @@ function isPWA(): boolean {
   );
 }
 
+/** Detect if running inside a Capacitor native app (Android/iOS WebView) */
+function isCapacitor(): boolean {
+  if (typeof window === "undefined") return false;
+  return !!(window as any).Capacitor?.isNativePlatform?.() || 
+         /wv\)/.test(navigator.userAgent) && /Android/.test(navigator.userAgent);
+}
+
 interface SellerAuthContextType {
   user: User | null;
   isLoading: boolean;
@@ -32,8 +39,8 @@ export function SellerAuthProvider({ children }: { children: React.ReactNode }) 
   const signInWithGoogle = useCallback(async () => {
     const auth = getClientAuth();
 
-    if (isPWA()) {
-      // PWA standalone mode — popup doesn't work, must use redirect
+    if (isCapacitor() || isPWA()) {
+      // Capacitor WebView / PWA standalone — popup doesn't work, must use redirect
       await signInWithRedirect(auth, googleProvider);
       return;
     }
