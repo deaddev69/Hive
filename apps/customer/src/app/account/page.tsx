@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSessionStore } from "@/context/SessionContext";
 import { useRouter } from "next/navigation";
 import { navigateToSignIn } from "@/lib/auth-redirect";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { toast, formatCurrency } from "@hive/utils";
 import { Tabs } from "@hive/ui";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
@@ -845,8 +845,8 @@ function OverviewTab({
 // ── Addresses Tab Component ──────────────────────────────────────────────────
 function AddressesTab({ userName, addresses }: { userName: string; addresses: Address[] }) {
   const { token } = useSessionStore();
-  const addAddress = useMutation(api.addresses.create);
-  const updateAddress = useMutation(api.addresses.update);
+  const addAddress = useAction(api.addresses.add);
+  const updateAddress = useAction(api.addresses.update);
   const removeAddress = useMutation(api.addresses.remove);
   const setDefaultAddress = useMutation(api.addresses.setDefault);
 
