@@ -14,8 +14,8 @@ module.exports = {
         "hive-comb": "#FFF3CC",
       },
       fontFamily: {
-        serif: ["var(--font-cormorant)", "Georgia", "serif"],
-        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+        serif: ["Manrope", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
       },
       boxShadow: {
         "2xs": "0 1px 1px 0 rgb(0 0 0 / 0.04)",

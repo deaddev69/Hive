@@ -39,7 +39,7 @@ const config: Config = {
         }
       },
       fontFamily: {
-        serif: ["var(--font-cormorant)", "Georgia", "serif"],
+        serif: ["var(--font-satoshi)", "sans-serif"],
         sans: ["var(--font-inter)", "Inter", "sans-serif"],
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
