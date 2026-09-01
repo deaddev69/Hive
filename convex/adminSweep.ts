@@ -185,19 +185,9 @@ export const clearDemoData = mutation({
       products: 0,
       collections: 0,
       collectionProducts: 0,
-      editorialBanners: 0,
     };
 
-    // 1. Delete Demo Editorial Banners
-    const banners = await ctx.db.query("editorialBanners")
-      .withIndex("by_seedSource", q => q.eq("seedSource", "demo"))
-      .collect();
-    for (const b of banners) {
-      await ctx.db.delete(b._id);
-      deletedCount.editorialBanners++;
-    }
-
-    // 2. Delete Demo Collections and their mapping
+    // 1. Delete Demo Collections and their mapping
     const collections = await ctx.db.query("collections")
       .withIndex("by_seedSource", q => q.eq("seedSource", "demo"))
       .collect();

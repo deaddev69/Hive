@@ -13,7 +13,7 @@ export const insertMockData = mutation({
     // 1. Clean up existing data
     const tablesToClean = [
       "products", "boutiques", "categories", "deliveryZones", "serviceablePincodes",
-      "homepageConfig", "editorialBanners", "collections", "collectionProducts",
+      "homepageConfig", "banners", "collections", "collectionProducts",
       "experiences", "experienceBlocks"
     ] as const;
 
@@ -199,7 +199,7 @@ export const insertMockData = mutation({
       }
     }
 
-    // 7. Seed Editorial Banners
+    // 7. Seed Banners
     const banners = [
       { title: "Wedding Season", slug: "wedding", img: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=800&q=80" },
       { title: "Monsoon Edit", slug: "monsoon", img: "https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=800&q=80" },
@@ -207,16 +207,18 @@ export const insertMockData = mutation({
       { title: "Weekend Looks", slug: "weekend", img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80" }
     ];
 
-    const bannerIds: Record<string, Id<"editorialBanners">> = {};
-    for (const b of banners) {
-      const id = await ctx.db.insert("editorialBanners", {
+    const bannerIds: Record<string, Id<"banners">> = {};
+    for (const [idx, b] of banners.entries()) {
+      const id = await ctx.db.insert("banners", {
         title: b.title,
-        desktopImage: b.img,
-        mobileImage: b.img,
-        targetUrl: `/experiences/${b.slug}`,
-        status: "published",
+        subtitle: "",
+        desktopImageUrl: b.img,
+        mobileImageUrl: b.img,
+        ctaText: "Shop Now",
+        ctaLink: `/experiences/${b.slug}`,
+        active: true,
+        sortOrder: idx,
         createdAt: now,
-        seedSource: "demo",
       });
       bannerIds[b.title] = id;
     }

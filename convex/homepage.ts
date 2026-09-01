@@ -2,19 +2,6 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { enrichProducts } from "./products";
 
-// Get active hero campaigns, respecting start/end dates
-export const getActiveCampaigns = query({
-  args: {},
-  handler: async (ctx) => {
-    const banners = await ctx.db
-      .query("editorialBanners")
-      .withIndex("by_status_sort", (q) => q.eq("status", "published"))
-      .collect();
-
-    return banners.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-  },
-});
-
 // Generic query to fetch published collections by type
 export const getCollectionsByType = query({
   args: {

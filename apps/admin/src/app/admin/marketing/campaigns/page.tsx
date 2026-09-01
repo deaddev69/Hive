@@ -42,7 +42,7 @@ export default function MarketingCampaignsPage() {
   // Convex Queries
   const campaigns = useQuery(api.campaigns.listCampaigns);
   const segments = useQuery(api.audienceSegments.listSegments);
-  const collections = useQuery(api.homepageAdmin.getAllHomepageCollections);
+  const collections = useQuery(api.homepageCollectionsAdmin.getAllHomepageCollections);
 
   // Convex Mutations & Actions
   const createCampaignMutation = useMutation(api.campaigns.createCampaign);

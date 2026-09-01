@@ -2195,37 +2195,18 @@ export default defineSchema({
     .index("by_deviceId", ["deviceId"])
     .index("by_installedAt", ["installedAt"]),
 
-  // ─── HOMEPAGE V2: EDITORIAL BANNERS ─────────────────────────────────────────
-  editorialBanners: defineTable({
-    title: v.string(),
-    subtitle: v.optional(v.string()),
-    desktopImage: v.string(),
-    mobileImage: v.string(),
-    targetUrl: v.string(),
-    altText: v.optional(v.string()),
-    status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
-    sortOrder: v.optional(v.number()),
-    seedSource: v.optional(v.union(v.literal("demo"), v.literal("production"))),
-    createdAt: v.number(),
-    updatedAt: v.optional(v.number()),
-  })
-    .index("by_status_sort", ["status", "sortOrder"])
-    .index("by_seedSource", ["seedSource"]),
-
-
   // ─── PLATFORM MERCHANDISING: REUSABLE COLLECTIONS ENGINE ──────────────────
+  // sourceMode was declared MANUAL | RULE | HYBRID with an accompanying `rules` array, but no
+  // admin UI ever set it away from MANUAL and CollectionService never read either field — RULE and
+  // HYBRID were schema-only. Removed rather than left in, since carrying dead literal values
+  // forward invites the next reader to assume they're implemented.
   collections: defineTable({
     name: v.string(),
     slug: v.string(),
     description: v.optional(v.string()),
     coverImage: v.optional(v.string()),
     coverAlt: v.optional(v.string()),
-    sourceMode: v.union(v.literal("MANUAL"), v.literal("RULE"), v.literal("HYBRID")),
-    rules: v.optional(v.array(v.object({
-      field: v.string(),
-      operator: v.union(v.literal("="), v.literal("!="), v.literal(">"), v.literal("<"), v.literal(">="), v.literal("<="), v.literal("contains"), v.literal("in"), v.literal("between")),
-      value: v.any(),
-    }))),
+    sourceMode: v.literal("MANUAL"),
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
     seedSource: v.optional(v.union(v.literal("demo"), v.literal("production"))),
     createdAt: v.number(),
@@ -2247,19 +2228,6 @@ export default defineSchema({
   })
     .index("by_collection_sort", ["collectionId", "sortOrder"])
     .index("by_productId", ["productId"]),
-
-  // ─── MERCHANDISING: REUSABLE BANNER ASSETS ─────────────────────────────────
-  bannerAssets: defineTable({
-    name: v.string(),
-    desktopImageUrl: v.string(),
-    mobileImageUrl: v.string(),
-    ctaText: v.optional(v.string()),
-    ctaLink: v.string(),
-    placements: v.array(v.string()),
-    isPublished: v.boolean(),
-    isArchived: v.optional(v.boolean()),
-    createdAt: v.number(),
-  }).index("by_published", ["isPublished"]),
 
   // ─── MERCHANDISING: EXPERIENCES ENGINE ─────────────────────────────────────
   experiences: defineTable({
@@ -2318,7 +2286,6 @@ export default defineSchema({
       cardCtaText: v.optional(v.string()),
       bgOverlayTheme: v.optional(v.string()),
       targetUrl: v.optional(v.string()),
-      campaignId: v.optional(v.string()),
       items: v.optional(
         v.array(
           v.object({

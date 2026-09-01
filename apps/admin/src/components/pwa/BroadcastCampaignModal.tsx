@@ -21,7 +21,7 @@ export function BroadcastCampaignModal({ isOpen, onClose }: BroadcastCampaignMod
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
 
-  const collections = useQuery(api.homepageAdmin.getAllHomepageCollections);
+  const collections = useQuery(api.homepageCollectionsAdmin.getAllHomepageCollections);
   const broadcastNotification = useAction(api.customerPushActions.broadcastCustomerNotification);
 
   if (!isOpen) return null;

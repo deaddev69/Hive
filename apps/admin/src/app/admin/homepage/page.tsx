@@ -43,7 +43,6 @@ export default function AdminHomepageMerchandisingPage() {
 
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewStatus, setPreviewStatus] = useState<"draft" | "published">("draft");
-  const [isPublishing, setIsPublishing] = useState(false);
 
   const handleFileUploadToR2 = async (file: File): Promise<string | null> => {
     try {
@@ -75,37 +74,21 @@ export default function AdminHomepageMerchandisingPage() {
   const [viewMode, setViewMode] = useState<"experiences" | "collections">("experiences");
 
   // Queries
-  const experiences = useQuery(api.homepageAdmin.getExperiences);
+  const experiences = useQuery(api.homepageExperiencesAdmin.getExperiences);
   const homepageExp = experiences?.find((e: any) => e.slug === "homepage");
-  const collections = useQuery(api.homepageAdmin.getAllHomepageCollections);
+  const collections = useQuery(api.homepageCollectionsAdmin.getAllHomepageCollections);
   const categories = useQuery(api.categories.getCategories, { onlyActive: true });
   const boutiques = useQuery(api.boutiques.getApprovedBoutiques);
-  const blocks = useQuery(api.homepageAdmin.getExperienceBlocks, homepageExp ? { experienceId: homepageExp._id, status: previewStatus } : "skip");
+  const blocks = useQuery(api.homepageExperiencesAdmin.getExperienceBlocks, homepageExp ? { experienceId: homepageExp._id, status: previewStatus } : "skip");
 
   // Mutations
-  const seedStarter = useMutation(api.homepageAdmin.seedDefaultHomepageData);
-  const deleteCol = useMutation(api.homepageAdmin.deleteCollection);
-  const createCol = useMutation(api.homepageAdmin.createCollection);
-  const publishBlocks = useMutation(api.homepageAdmin.publishExperienceBlocks);
-  const updateBlock = useMutation(api.homepageAdmin.updateExperienceBlock);
-  const duplicateColMutation = useMutation(api.homepageAdmin.duplicateCollection);
-  const duplicateCampaignMutation = useMutation(api.homepageAdmin.duplicateCampaign);
-
-  const handlePublishLive = async () => {
-    try {
-      if (!homepageExp) throw new Error("Homepage experience not found");
-      setIsPublishing(true);
-      const count = await publishBlocks({ experienceId: homepageExp._id });
-      toast.success(`Published ${count} homepage blocks live to production! 🚀`);
-    } catch (err: any) {
-      toast.error("Failed to publish blocks: " + err.message);
-    } finally {
-      setIsPublishing(false);
-    }
-  };
+  const seedStarter = useMutation(api.homepageExperiencesAdmin.seedDefaultHomepageData);
+  const deleteCol = useMutation(api.homepageCollectionsAdmin.deleteCollection);
+  const createCol = useMutation(api.homepageCollectionsAdmin.createCollection);
+  const duplicateColMutation = useMutation(api.homepageCollectionsAdmin.duplicateCollection);
 
   // Operational Filters & Preview Controls
-  const [filterTab, setFilterTab] = useState<"all" | "published" | "hidden" | "manual" | "rule">("all");
+  const [filterTab, setFilterTab] = useState<"all" | "published" | "hidden">("all");
   const [devicePreview, setDevicePreview] = useState<"desktop" | "iphone" | "android">("iphone");
   const [personaPreview, setPersonaPreview] = useState<"guest" | "logged_in">("guest");
 
@@ -123,12 +106,12 @@ export default function AdminHomepageMerchandisingPage() {
   const [showAutoFillMenu, setShowAutoFillMenu] = useState(false);
 
   const catalogSearchResults = useQuery(
-    api.homepageAdmin.searchCatalogProducts,
+    api.homepageCollectionsAdmin.searchCatalogProducts,
     { query: productSearchQuery, limit: 12, collectionId: selectedCollectionId ?? undefined }
   );
 
   const pickerProducts = useQuery(
-    api.homepageAdmin.getCatalogProductsForMerchandising,
+    api.homepageCollectionsAdmin.getCatalogProductsForMerchandising,
     showCatalogPickerModal && selectedCollectionId
       ? {
         query: pickerSearchQuery || undefined,
@@ -146,12 +129,12 @@ export default function AdminHomepageMerchandisingPage() {
     selectedCollectionId ? { collectionId: selectedCollectionId as any } : "skip"
   );
 
-  const addProduct = useMutation(api.homepageAdmin.addProductToCollection);
-  const addProductsBatch = useMutation(api.homepageAdmin.addProductsToCollectionBatch);
-  const autoPopulate = useMutation(api.homepageAdmin.autoPopulateCollection);
-  const removeProduct = useMutation(api.homepageAdmin.removeProductFromCollection);
-  const togglePin = useMutation(api.homepageAdmin.togglePinProduct);
-  const reorderProducts = useMutation(api.homepageAdmin.reorderCollectionProducts);
+  const addProduct = useMutation(api.homepageCollectionsAdmin.addProductToCollection);
+  const addProductsBatch = useMutation(api.homepageCollectionsAdmin.addProductsToCollectionBatch);
+  const autoPopulate = useMutation(api.homepageCollectionsAdmin.autoPopulateCollection);
+  const removeProduct = useMutation(api.homepageCollectionsAdmin.removeProductFromCollection);
+  const togglePin = useMutation(api.homepageCollectionsAdmin.togglePinProduct);
+  const reorderProducts = useMutation(api.homepageCollectionsAdmin.reorderCollectionProducts);
 
   const toggleProductSelection = (productId: string) => {
     setSelectedProductIdsToAdd((prev) => {
@@ -233,7 +216,6 @@ export default function AdminHomepageMerchandisingPage() {
       description: colSubtitle || undefined,
       coverImage: colImageUrl || undefined,
       slug,
-      sourceMode: "MANUAL",
       status: "published",
     });
     toast.success("Collection created successfully!");
@@ -244,7 +226,7 @@ export default function AdminHomepageMerchandisingPage() {
   };
 
   const [showEditColModal, setShowEditColModal] = useState(false);
-  const updateCol = useMutation(api.homepageAdmin.updateCollection);
+  const updateCol = useMutation(api.homepageCollectionsAdmin.updateCollection);
 
   const handleUpdateCollection = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,8 +252,6 @@ export default function AdminHomepageMerchandisingPage() {
     if (filterTab === "all") return true;
     if (filterTab === "published") return c.status === "published";
     if (filterTab === "hidden") return c.status !== "published";
-    if (filterTab === "manual") return c.sourceMode === "MANUAL";
-    if (filterTab === "rule") return c.sourceMode === "RULE";
     return true;
   });
 
@@ -322,7 +302,7 @@ export default function AdminHomepageMerchandisingPage() {
           {/* ── Operational Status Filter Tabs & Persona Toolbar ──────────────────── */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-zinc-900 px-5 py-3 rounded-2xl border border-slate-200/80 dark:border-zinc-800">
             <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto">
-              {(["all", "published", "hidden", "manual", "rule"] as const).map((tab) => (
+              {(["all", "published", "hidden"] as const).map((tab) => (
                 <button
                   key={tab}
                   type="button"

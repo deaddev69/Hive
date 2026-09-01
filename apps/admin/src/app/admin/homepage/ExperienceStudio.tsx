@@ -5,7 +5,7 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { toast } from "@hive/utils";
 import {
-  Sparkles, Plus, Trash2, Settings, Smartphone, Layout, Copy, Edit, X, Eye, EyeOff, Search, Layers, ShoppingBag, Zap, ChevronDown, ChevronUp, Upload, Loader2, Link as LinkIcon, Star, Grid, GripVertical
+  Sparkles, Plus, Trash2, Settings, Smartphone, Layout, Copy, Edit, X, Eye, EyeOff, Search, Layers, ShoppingBag, Zap, ChevronDown, ChevronUp, Upload, Loader2, Link as LinkIcon, Star, GripVertical
 } from "lucide-react";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 
@@ -26,7 +26,7 @@ interface BlockSchema {
     renderer: string;
     config: any;
   };
-  fields: ("badgeTitle" | "title" | "subtitle" | "collectionId" | "campaignId" | "maxProducts" | "showSeeAll" | "renderer" | "bannerUpload" | "targetUrl" | "vibeItems" | "bgImageUpload" | "cardCtaText" | "bgOverlayTheme")[];
+  fields: ("badgeTitle" | "title" | "subtitle" | "collectionId" | "maxProducts" | "showSeeAll" | "renderer" | "bannerUpload" | "targetUrl" | "vibeItems" | "bgImageUpload" | "cardCtaText" | "bgOverlayTheme")[];
 }
 
 const BLOCK_REGISTRY: BlockSchema[] = [
@@ -50,30 +50,12 @@ const BLOCK_REGISTRY: BlockSchema[] = [
   },
   {
     id: "collection",
-    name: "Mood Board (Editorial)",
-    category: "Collections",
-    icon: Star,
-    description: "Graphic layout for curated outfits.",
-    defaultConfig: { title: "Editor's Picks", renderer: "moodGrid", config: { maxProducts: 8 } },
-    fields: ["title", "subtitle", "collectionId", "maxProducts"]
-  },
-  {
-    id: "collection",
-    name: "Two Product Grid",
-    category: "Collections",
-    icon: Grid,
-    description: "A simple 2-column grid layout for products.",
-    defaultConfig: { title: "Featured Duo", renderer: "twoProductGrid", config: { maxProducts: 2 } },
-    fields: ["title", "subtitle", "collectionId", "maxProducts"]
-  },
-  {
-    id: "collection",
-    name: "Product Carousel",
+    name: "Product Section",
     category: "Collections",
     icon: ShoppingBag,
-    description: "Horizontal scrollable list of products.",
+    description: "Show products from a collection — as a carousel, a 2-column grid, or an editorial mood board. Pick the layout after adding.",
     defaultConfig: { title: "Featured Products", renderer: "productCarousel", config: { maxProducts: 12, showSeeAll: true } },
-    fields: ["title", "subtitle", "collectionId", "maxProducts", "showSeeAll"]
+    fields: ["title", "subtitle", "collectionId", "renderer", "maxProducts", "showSeeAll"]
   },
   {
     id: "category",
@@ -147,11 +129,10 @@ const BLOCK_REGISTRY: BlockSchema[] = [
 const SINGLETON_BLOCK_TYPES = new Set(["hero", "category"]);
 
 export function ExperienceStudio() {
-  const experiences = useQuery(api.homepageAdmin.getExperiences);
+  const experiences = useQuery(api.homepageExperiencesAdmin.getExperiences);
 
   // Fetch dependencies for block configs
-  const collections = useQuery(api.homepageAdmin.getAllHomepageCollections);
-  const campaigns = useQuery(api.homepageAdmin.getAllEditorialBanners);
+  const collections = useQuery(api.homepageCollectionsAdmin.getAllHomepageCollections);
   const categories = useQuery(api.categories.getCategories, { onlyActive: true });
 
   const [selectedExpId, setSelectedExpId] = useState<string | null>(null);
@@ -168,7 +149,7 @@ export function ExperienceStudio() {
 
   const selectedExp = experiences?.find((e: any) => e._id === selectedExpId);
   // Fetch ALL blocks (draft and archived/hidden)
-  const rawBlocks = useQuery(api.homepageAdmin.getExperienceBlocks, selectedExp ? { experienceId: selectedExp._id, status: "all" } : "skip");
+  const rawBlocks = useQuery(api.homepageExperiencesAdmin.getExperienceBlocks, selectedExp ? { experienceId: selectedExp._id, status: "all" } : "skip");
 
   // Local state for optimistic updates
   const [blocks, setBlocks] = useState<any[]>([]);
@@ -178,18 +159,18 @@ export function ExperienceStudio() {
     }
   }, [rawBlocks]);
 
-  const duplicateExp = useMutation(api.homepageAdmin.duplicateExperience);
-  const publishExp = useMutation(api.homepageAdmin.publishExperience);
-  const addBlock = useMutation(api.homepageAdmin.addBlockToExperience);
-  const removeBlock = useMutation(api.homepageAdmin.removeBlockFromExperience);
-  const updateLayout = useMutation(api.homepageAdmin.updateExperienceLayout);
+  const duplicateExp = useMutation(api.homepageExperiencesAdmin.duplicateExperience);
+  const publishExp = useMutation(api.homepageExperiencesAdmin.publishExperience);
+  const addBlock = useMutation(api.homepageExperiencesAdmin.addBlockToExperience);
+  const removeBlock = useMutation(api.homepageExperiencesAdmin.removeBlockFromExperience);
+  const updateLayout = useMutation(api.homepageExperiencesAdmin.updateExperienceLayout);
 
   // Granular Mutations
-  const updateExp = useMutation(api.homepageAdmin.updateExperience);
-  const updateBlockContent = useMutation(api.homepageAdmin.updateBlockContent);
-  const updateBlockLayoutMut = useMutation(api.homepageAdmin.updateBlockLayout);
-  const toggleVisibility = useMutation(api.homepageAdmin.toggleBlockVisibility);
-  const duplicateBlock = useMutation(api.homepageAdmin.duplicateBlock);
+  const updateExp = useMutation(api.homepageExperiencesAdmin.updateExperience);
+  const updateBlockContent = useMutation(api.homepageExperiencesAdmin.updateBlockContent);
+  const updateBlockLayoutMut = useMutation(api.homepageExperiencesAdmin.updateBlockLayout);
+  const toggleVisibility = useMutation(api.homepageExperiencesAdmin.toggleBlockVisibility);
+  const duplicateBlock = useMutation(api.homepageExperiencesAdmin.duplicateBlock);
 
   const handlePublish = async () => {
     if (!selectedExpId) return;
@@ -500,7 +481,6 @@ export function ExperienceStudio() {
                               block={block}
                               schema={schema}
                               collections={collections}
-                              campaigns={campaigns}
                               categories={categories}
                               onSave={async (updates: any) => {
                                 await updateBlockContent({
@@ -648,6 +628,11 @@ const RENDERER_OPTIONS_BY_BLOCK_TYPE: Record<string, { value: string; label: str
     { value: "productCarousel", label: "Product Carousel (Horizontal Scroll)" },
     { value: "twoProductGrid", label: "2-Column Product Grid" },
   ],
+  collection: [
+    { value: "productCarousel", label: "Product Carousel (Horizontal Scroll)" },
+    { value: "twoProductGrid", label: "2-Column Product Grid" },
+    { value: "moodGrid", label: "Mood Board (Editorial)" },
+  ],
 };
 const ALL_RENDERER_OPTIONS = [
   { value: "productCarousel", label: "Product Carousel (Horizontal Scroll)" },
@@ -659,7 +644,7 @@ const ALL_RENDERER_OPTIONS = [
   { value: "editorialGrid", label: "Editorial Grid" },
 ];
 
-function BlockConfigEditor({ block, schema, collections, campaigns, categories, onSave, onClose }: any) {
+function BlockConfigEditor({ block, schema, collections, categories, onSave, onClose }: any) {
   const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
   const commitUpload = useAction(api.media.api.commitUpload);
   const [uploading, setUploading] = useState(false);
@@ -1052,26 +1037,6 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
                       <p className="text-[10px] text-slate-500">{col.productCount} products • {col.status}</p>
                     </div>
                     {formData.config.collectionId === col._id && <div className="w-3 h-3 rounded-full bg-amber-500" />}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {schema.fields.includes("campaignId") && (
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 mb-2">Assign Campaign/Banner</label>
-              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                {campaigns?.map((camp: any) => (
-                  <div
-                    key={camp._id}
-                    onClick={() => updateConfig("campaignId", camp._id)}
-                    className={`p-3 rounded-xl border-2 cursor-pointer transition flex items-center justify-between ${formData.config.campaignId === camp._id ? "border-amber-500 bg-amber-50" : "border-slate-200 hover:border-amber-300"}`}
-                  >
-                    <div>
-                      <h5 className="text-sm font-bold">{camp.title}</h5>
-                    </div>
-                    {formData.config.campaignId === camp._id && <div className="w-3 h-3 rounded-full bg-amber-500" />}
                   </div>
                 ))}
               </div>
