@@ -194,26 +194,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           )}
         </Link>
 
-        {/* Wishlist heart overlay (Top-right, circular button) */}
+        {/* Wishlist heart overlay (Floating direct on photo) */}
         <button
           onClick={toggleFavorite}
           aria-label={isFavorite ? "Remove from wishlist" : "Add to wishlist"}
           className={cn(
-            "absolute top-2.5 right-2.5 w-8 h-8 rounded-full flex items-center justify-center shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300",
-            isFavorite && "md:opacity-100",
-            premiumMode 
-              ? "bg-white/90 border border-stone-200/50 text-stone-700 hover:text-amber-800 hover:bg-white"
-              : "bg-white/80 backdrop-blur-md border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white",
-            pulse && "scale-110"
+            "absolute top-2.5 right-2.5 p-1 z-20 transition-all active:scale-75 cursor-pointer outline-none focus:outline-none",
+            pulse && "scale-125"
           )}
         >
           <Heart
             className={cn(
-              "w-4 h-4 transition-all duration-300",
+              "w-5 h-5 transition-all duration-300 drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)]",
               isFavorite
-                ? "fill-hive-gold stroke-hive-gold scale-110"
-                : "stroke-current fill-none"
+                ? "fill-[#F5C22B] stroke-[#F5C22B] scale-110 drop-shadow-[0_2px_8px_rgba(245,194,43,0.6)]"
+                : "stroke-white fill-black/15 hover:scale-110 hover:stroke-[#F5C22B]"
             )}
+            strokeWidth={isFavorite ? 2.5 : 2}
           />
         </button>
 

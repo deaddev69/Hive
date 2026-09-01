@@ -811,10 +811,10 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           ? "FRESH ARRIVALS"
           : isRecommended
             ? (isPersonalized ? "BASED ON WHAT YOU'VE VIEWED" : "TRENDING NOW")
-            : (isPersonalized ? "PICK UP WHERE YOU LEFT OFF" : "POPULAR NEARBY");
+            : (isPersonalized ? "PICK UP WHERE YOU LEFT OFF" : "ON THE MOODBOARD");
 
     const titleText = isRecentlyViewedFallback
-      ? "Trending in Kochi"
+      ? "What Everyone's Eyeing"
       : (block.title || (isPriceCeiling ? "Budget Finds" : (isNewArrivals ? "New on Hive" : (isRecommended ? "Recommended" : "Most Loved"))));
     
     const targetUrl = isPriceCeiling

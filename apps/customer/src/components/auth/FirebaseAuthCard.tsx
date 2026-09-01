@@ -292,10 +292,10 @@ export function FirebaseAuthCard({
             <button
               type="submit"
               disabled={loading || phone.length !== 10}
-              className="bg-hive-dark text-hive-gold hover:bg-hive-dark/95 border-none h-12 rounded-xl text-xs font-extrabold uppercase tracking-widest transition-all hover:shadow-lg active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-1"
+              className="bg-[#F5C22B] hover:bg-[#E0B120] text-stone-950 shadow-[0_4px_16px_rgba(245,194,43,0.25)] border-none h-12 rounded-xl text-xs font-extrabold uppercase tracking-widest transition-all hover:shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2 cursor-pointer mt-1"
             >
               {loading ? <span>Sending OTP...</span> : <span>Send OTP</span>}
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
             </button>
           </form>
         </>
@@ -349,10 +349,10 @@ export function FirebaseAuthCard({
           <button
             type="submit"
             disabled={loading || otp.length !== 6}
-            className="bg-hive-dark text-hive-gold hover:bg-hive-dark/95 border-none h-12 rounded-xl text-xs font-extrabold uppercase tracking-widest transition-all hover:shadow-lg active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer mt-2"
+            className="bg-[#F5C22B] hover:bg-[#E0B120] text-stone-950 shadow-[0_4px_16px_rgba(245,194,43,0.25)] border-none h-12 rounded-xl text-xs font-extrabold uppercase tracking-widest transition-all hover:shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2 cursor-pointer mt-2"
           >
             {loading ? <span>Verifying...</span> : <span>Verify & Continue</span>}
-            <CheckCircle2 className="w-4 h-4" />
+            <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
           </button>
         </form>
       )}
