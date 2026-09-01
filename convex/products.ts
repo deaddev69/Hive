@@ -11,7 +11,7 @@ import { resolveBoutiqueStatus } from "./lib/boutiqueStatus";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
 import { updateBoutiqueProductCount } from "./boutiques";
 import { normalizeEmail } from "./users";
-import { resolveDeliveryLabel } from "./lib/deliveryEta";
+import { resolveDeliveryLabel, resolveDeliveryCountdown } from "./lib/deliveryEta";
 import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
 import { internal } from "./_generated/api";
 import {
@@ -127,6 +127,21 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
         // (see convex/lib/deliveryEta.ts). No distance is available on this path, so it falls back
         // to prep time; the homepage path adds a measured ETA via OperationsService.
         deliveryLabel: resolveDeliveryLabel({
+          sameDayEligible: product.sameDayEligible,
+          boutique: boutique
+            ? {
+                openingTime: boutique.openingTime,
+                closingTime: boutique.closingTime,
+                weeklyClosedDays: boutique.weeklyClosedDays,
+                holidayDates: boutique.holidayDates,
+                prepTimeMinutes: boutique.prepTimeMinutes,
+                isAcceptingOrders: statusRes ? statusRes.isAcceptingOrders : undefined,
+              }
+            : null,
+        }),
+        // Structured timestamps for the PDP/QuickView live countdown pill. Same window logic as
+        // deliveryLabel above — kept separate since the pill needs real epoch ms, not a string.
+        deliveryCountdown: resolveDeliveryCountdown({
           sameDayEligible: product.sameDayEligible,
           boutique: boutique
             ? {

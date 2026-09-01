@@ -9,6 +9,8 @@ import { PurchaseActions } from "./PurchaseActions";
 import { useRouter } from "next/navigation";
 import { cleanProductTitle } from "./ProductCard";
 import Link from "next/link";
+import { DeliveryCountdownPill } from "./DeliveryCountdownPill";
+import { useLocation } from "@/context/LocationContext";
 
 export interface ProductInfoProps {
   product: ProductDetail;
@@ -28,6 +30,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
 }) => {
   const [openAccordion, setOpenAccordion] = useState<string | null>("returns");
   const router = useRouter();
+  const { locality } = useLocation();
 
   // ── Single source of truth for stock ──────────────────────────────────────
   const stockMap: Record<string, number> =
@@ -144,6 +147,11 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
         {/* Fulfillment line */}
         <div className="text-xs text-stone-500 font-medium pt-0.5 leading-none">
           Fulfilled by a Verified Hive Partner
+        </div>
+
+        {/* Live delivery countdown */}
+        <div className="pt-2">
+          <DeliveryCountdownPill countdown={(product as any).deliveryCountdown} locality={locality} />
         </div>
       </div>
 

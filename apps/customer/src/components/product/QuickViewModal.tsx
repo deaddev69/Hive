@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { cn } from "@hive/ui";
 import { cleanProductTitle } from "./ProductCard";
+import { DeliveryCountdownPill } from "./DeliveryCountdownPill";
 
 function formatNextDayLabel(dateStr: string): string {
   try {
@@ -66,7 +67,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
 }) => {
   const router = useRouter();
   const rawProduct = useQuery(api.products.getProduct, { slug: productSlug });
-  const { latitude, longitude, city } = useLocation();
+  const { latitude, longitude, city, locality } = useLocation();
   const addItem = useCartStore((state) => state.addItem);
   const { setSidebarOpen } = useCart();
 
@@ -527,6 +528,10 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 </div>
               );
             })()}
+
+            <div className="mb-5">
+              <DeliveryCountdownPill countdown={(rawProduct as any)?.deliveryCountdown} locality={locality} />
+            </div>
 
             <div className="hidden md:block mb-6">
               <div className="flex items-center justify-between mb-3">

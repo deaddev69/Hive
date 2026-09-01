@@ -101,3 +101,62 @@ export function resolveDeliveryLabel(input: DeliveryLabelInput, at: Date = new D
 
   return "90-Min Delivery";
 }
+
+/** Tomorrow's fallback delivery promise, matching the existing copy in Navbar/HomeClient. */
+const TOMORROW_FALLBACK_MINUTES = 10 * 60 + 30; // 10:30 AM
+
+export interface DeliveryCountdown {
+  /** "today": still inside this boutique's real order-to-delivery window. "tomorrow": window has
+   *  closed (or hasn't opened, or boutique is off today) — no live countdown, just a fixed promise. */
+  mode: "today" | "tomorrow";
+  /** Epoch ms of the last instant an order placed now could still be delivered today. Null in
+   *  "tomorrow" mode — there is nothing left to count down to. */
+  orderCutoffAtMs: number | null;
+  /** Epoch ms of the promised delivery time: now + trip time (today), or 10:30 AM tomorrow. */
+  targetDeliveryAtMs: number;
+}
+
+/** Converts an IST wall-clock instant (day offset from `at`, minutes since midnight) to epoch ms. */
+function istMinutesToEpochMs(at: Date, dayOffset: number, minutesOfDay: number): number {
+  const ist = new Date(at.getTime() + IST_OFFSET_MINUTES * 60_000);
+  const targetIst = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate() + dayOffset));
+  targetIst.setUTCMinutes(minutesOfDay);
+  return targetIst.getTime() - IST_OFFSET_MINUTES * 60_000;
+}
+
+/**
+ * Structured counterpart to resolveDeliveryLabel: real timestamps instead of a label string, for
+ * a live client-side countdown. Uses the exact same window/cutoff arithmetic so the two never
+ * disagree about whether "today" is still possible.
+ */
+export function resolveDeliveryCountdown(input: DeliveryLabelInput, at: Date = new Date()): DeliveryCountdown {
+  const { etaMinutes, boutique } = input;
+  const now = nowInIST(at);
+
+  const closedToday =
+    !!boutique?.weeklyClosedDays?.includes(now.day) ||
+    !!boutique?.holidayDates?.includes(now.dateKey) ||
+    boutique?.isAcceptingOrders === false;
+
+  const openMinutes = parseHHMM(boutique?.openingTime, DEFAULT_OPEN_HOUR);
+  const closeMinutes = parseHHMM(boutique?.closingTime, DEFAULT_CLOSE_HOUR);
+  const tripMinutes = etaMinutes ?? boutique?.prepTimeMinutes ?? 30;
+  const cutoffMinutesOfDay = closeMinutes - tripMinutes - SAME_DAY_CUTOFF_BUFFER_MINUTES;
+
+  const withinOrderWindow =
+    !closedToday && now.minutesOfDay >= openMinutes && now.minutesOfDay <= cutoffMinutesOfDay;
+
+  if (withinOrderWindow) {
+    return {
+      mode: "today",
+      orderCutoffAtMs: istMinutesToEpochMs(at, 0, cutoffMinutesOfDay),
+      targetDeliveryAtMs: at.getTime() + tripMinutes * 60_000,
+    };
+  }
+
+  return {
+    mode: "tomorrow",
+    orderCutoffAtMs: null,
+    targetDeliveryAtMs: istMinutesToEpochMs(at, 1, TOMORROW_FALLBACK_MINUTES),
+  };
+}

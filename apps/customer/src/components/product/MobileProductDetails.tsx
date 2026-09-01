@@ -11,6 +11,8 @@ import { cleanProductTitle } from "./ProductCard";
 import Link from "next/link";
 import { getBoutiqueStatus } from "../../../../../convex/shared/boutiqueStatus";
 import { ReservationInfoBlock } from "./ReservationInfoBlock";
+import { DeliveryCountdownPill } from "./DeliveryCountdownPill";
+import { useLocation } from "@/context/LocationContext";
 
 interface MobileProductDetailsProps {
   product: ProductDetail;
@@ -30,6 +32,7 @@ export function MobileProductDetails({
 }: MobileProductDetailsProps) {
   const [openAccordion, setOpenAccordion] = useState<string | null>("returns");
   const router = useRouter();
+  const { locality } = useLocation();
 
   // ── Single source of truth for stock ──────────────────────────────────────────
   const stockMap: Record<string, number> =
@@ -144,6 +147,11 @@ export function MobileProductDetails({
         {/* Brand attribution */}
         <div className="text-xs text-stone-600 font-medium leading-none pt-0.5">
           from <span className="font-bold">{product.boutique.name}</span>
+        </div>
+
+        {/* Live delivery countdown */}
+        <div className="pt-2 pb-0.5">
+          <DeliveryCountdownPill countdown={(product as any).deliveryCountdown} locality={locality} />
         </div>
 
         {/* Fulfillment line */}

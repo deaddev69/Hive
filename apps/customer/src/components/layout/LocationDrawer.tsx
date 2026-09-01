@@ -138,6 +138,51 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
     setMapLng(lng);
   };
 
+  // 1-tap select: a saved address was already validated as deliverable when the shopper added
+  // it, so this skips the fresh-pin serviceability check/waitlist branch entirely and confirms
+  // immediately — no second "Confirm Location" tap.
+  const handleSelectSavedAddress = async (addr: any) => {
+    setMapLat(addr.lat);
+    setMapLng(addr.lng);
+    const result = {
+      formattedAddress: addr.formattedAddress || `${addr.houseNumber ? addr.houseNumber + ', ' : ''}${addr.landmark ? addr.landmark + ', ' : ''}${addr.city}`,
+      locality: addr.locality || addr.city,
+      city: addr.city,
+      state: addr.state,
+      pincode: addr.pincode,
+      country: "India",
+      precisionLevel: "exact" as const,
+      source: "saved_address" as const,
+    };
+    setPendingResult(result);
+    setIsSaving(true);
+
+    primeRoadDistanceCache({ userLat: addr.lat, userLng: addr.lng }).catch((err) => {
+      console.error("Async context routing pre-cache execution failure:", err);
+    });
+
+    try {
+      await updateLocationDetails({
+        latitude: addr.lat,
+        longitude: addr.lng,
+        locality: result.locality,
+        city: result.city,
+        state: result.state,
+        country: result.country,
+        postcode: result.pincode,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+
+    setIsSaving(false);
+    setSaved(true);
+    setTimeout(() => {
+      setSaved(false);
+      onClose();
+    }, 350);
+  };
+
   const handleConfirmLocation = async () => {
     if (!pendingResult) return;
     setIsSaving(true);
@@ -278,37 +323,34 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
               isAuthenticated && savedAddresses.length > 0 ? (
                 <div className="px-4 pointer-events-auto">
                   <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-3 pt-1 -mx-4 px-4 snap-x">
-                    {savedAddresses.map((addr: any) => (
-                      <button
-                        key={addr._id}
-                        type="button"
-                        onClick={async () => {
-                          setMapLat(addr.lat);
-                          setMapLng(addr.lng);
-                          setPendingResult({
-                            formattedAddress: addr.formattedAddress || `${addr.houseNumber ? addr.houseNumber + ', ' : ''}${addr.landmark ? addr.landmark + ', ' : ''}${addr.city}`,
-                            locality: addr.locality || addr.city,
-                            city: addr.city,
-                            state: addr.state,
-                            pincode: addr.pincode,
-                            country: "India",
-                            precisionLevel: "exact",
-                            source: "saved_address",
-                          });
-                        }}
-                        aria-label={`Select saved address: ${addr.label}`}
-                        className={`snap-start flex items-center gap-2 px-4 py-2.5 rounded-full border shadow-sm transition-all duration-200 cursor-pointer whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold ${
-                          pendingResult?.pincode === addr.pincode && Math.abs(mapLat - addr.lat) < 0.001
-                            ? "border-hive-amber bg-white shadow-md scale-105"
-                            : "border-hive-border/50 bg-white/95 backdrop-blur-sm hover:bg-white"
-                        }`}
-                      >
-                        <MapPin className={`w-3.5 h-3.5 flex-shrink-0 ${pendingResult?.pincode === addr.pincode && Math.abs(mapLat - addr.lat) < 0.001 ? "text-hive-amber" : "text-hive-text-muted"}`} />
-                        <span className={`text-xs font-bold ${pendingResult?.pincode === addr.pincode && Math.abs(mapLat - addr.lat) < 0.001 ? "text-hive-dark" : "text-hive-text"}`}>
-                          {addr.label}
-                        </span>
-                      </button>
-                    ))}
+                    {savedAddresses.map((addr: any) => {
+                      const isActive = pendingResult?.pincode === addr.pincode && Math.abs(mapLat - addr.lat) < 0.001;
+                      const labelLower = (addr.label || "").toLowerCase();
+                      const emoji = labelLower === "home" ? "🏠" : labelLower === "work" || labelLower === "office" ? "💼" : null;
+                      return (
+                        <button
+                          key={addr._id}
+                          type="button"
+                          onClick={() => handleSelectSavedAddress(addr)}
+                          disabled={isSaving}
+                          aria-label={`Switch to saved address: ${addr.label}`}
+                          className={`snap-start flex items-center gap-2 px-4 py-2.5 rounded-full border shadow-sm transition-all duration-200 cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold ${
+                            isActive
+                              ? "border-hive-amber bg-white shadow-md scale-105"
+                              : "border-hive-border/50 bg-white/95 backdrop-blur-sm hover:bg-white"
+                          }`}
+                        >
+                          {emoji ? (
+                            <span className="text-sm leading-none flex-shrink-0" aria-hidden>{emoji}</span>
+                          ) : (
+                            <MapPin className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-hive-amber" : "text-hive-text-muted"}`} />
+                          )}
+                          <span className={`text-xs font-bold ${isActive ? "text-hive-dark" : "text-hive-text"}`}>
+                            {addr.label}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ) : undefined
