@@ -12,10 +12,10 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallbac
     super(props);
     this.state = { hasError: false };
   }
-  static override getDerivedStateFromError() {
+  static getDerivedStateFromError() {
     return { hasError: true };
   }
-  render() {
+  override render() {
     if (this.state.hasError) return this.props.fallback;
     return this.props.children;
   }
@@ -144,7 +144,7 @@ export function HomeClient() {
 
         {/* ── DYNAMIC HOMEPAGE ENGINE ── */}
         {experienceBlocks?.map((block) => (
-          <ExperienceBlockRenderer key={block._id || block.id} block={block} />
+          <ExperienceBlockRenderer key={block.id} block={block} />
         ))}
 
         <style>{`

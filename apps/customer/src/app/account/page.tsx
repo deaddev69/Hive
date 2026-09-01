@@ -5,8 +5,7 @@ import { useSessionStore } from "@/context/SessionContext";
 import { useRouter } from "next/navigation";
 import { navigateToSignIn } from "@/lib/auth-redirect";
 import { useQuery, useMutation } from "convex/react";
-import { toast } from "@hive/utils";
-import { LoadingState } from "@hive/ui";
+import { toast, formatCurrency } from "@hive/utils";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -38,10 +37,13 @@ import {
   MessageCircle,
   ArrowUpRight,
   ShieldCheck,
+  Package,
 } from "lucide-react";
 import Link from "next/link";
 import { ReservationStatusCard } from "@/components/reservation/ReservationStatusCard";
 import { LocationMapPicker, ReverseGeocodeResult } from "@/components/location/LocationMapPicker";
+import { useWishlistStore } from "@/store/wishlist-store";
+import { calculateDisplayPricing } from "@/lib/pricing";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toTitleCase(str?: string): string {
@@ -534,287 +536,287 @@ function AddressFormModal({
 }
 
 // ── Overview Tab (Shopping Hub & Personal Details) ───────────────────────────
+const ORDER_ACTIVE_STATUSES = [
+  "pending_payment",
+  "pending_confirmation",
+  "confirmed",
+  "pickup_scheduled",
+  "picked_up",
+  "in_transit",
+  "out_for_delivery",
+];
+
+function mapOrderStatus(s: string): string {
+  const map: Record<string, string> = {
+    pending_payment: "placed",
+    pending_confirmation: "placed",
+    confirmed: "confirmed",
+    pickup_scheduled: "picked_up",
+    picked_up: "picked_up",
+    in_transit: "picked_up",
+    out_for_delivery: "out_for_delivery",
+    delivered: "delivered",
+    cancelled: "cancelled",
+  };
+  return map[s] ?? "placed";
+}
+
+function OrderStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; dot: string; text: string }> = {
+    placed: { label: "Placed", dot: "bg-amber-500", text: "text-amber-700" },
+    confirmed: { label: "Confirmed", dot: "bg-green-500", text: "text-green-700" },
+    picked_up: { label: "Picked Up", dot: "bg-green-500", text: "text-green-700" },
+    out_for_delivery: { label: "Out For Delivery", dot: "bg-amber-500", text: "text-amber-700" },
+    delivered: { label: "Delivered", dot: "bg-green-500", text: "text-green-700" },
+    cancelled: { label: "Cancelled", dot: "bg-stone-400", text: "text-stone-500" },
+  };
+  const { label, dot, text } = map[status] ?? { label: "Processing", dot: "bg-stone-400", text: "text-stone-500" };
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-0.5 border border-stone-200 rounded-full bg-white/50 backdrop-blur-sm shadow-sm">
+      <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+      <span className={`text-[9px] font-bold uppercase tracking-widest ${text}`}>{label}</span>
+    </div>
+  );
+}
+
+// Task grid tile — one real-data shortcut per row. Count is a plain number (not a query
+// state), so callers pass 0 while loading rather than this component guessing a skeleton.
+function OverviewTile({
+  href,
+  onClick,
+  icon,
+  label,
+  meta,
+  hoverBg,
+  hoverText,
+}: {
+  href?: string;
+  onClick?: () => void;
+  icon: React.ReactNode;
+  label: string;
+  meta: string;
+  hoverBg: string;
+  hoverText: string;
+}) {
+  const inner = (
+    <>
+      <div className="flex items-center gap-3.5">
+        <div
+          className={`w-10 h-10 rounded-xl bg-stone-100 text-stone-800 flex items-center justify-center transition-colors ${hoverBg} group-hover:text-current`}
+        >
+          {icon}
+        </div>
+        <div className="space-y-0.5">
+          <h4 className={`text-sm font-semibold text-stone-900 transition-colors ${hoverText}`}>{label}</h4>
+          <p className="text-xs text-stone-500">{meta}</p>
+        </div>
+      </div>
+      <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors" />
+    </>
+  );
+  const className =
+    "p-4 bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl shadow-2xs transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between group cursor-pointer text-left";
+  if (href) {
+    return (
+      <Link href={href} className={className}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      {inner}
+    </button>
+  );
+}
+
 function OverviewTab({
   addresses,
+  reservations,
   user,
   setActiveTab,
 }: {
   addresses: Address[];
+  reservations: any[] | undefined;
   user: any;
   setActiveTab: (tab: NavId) => void;
 }) {
   const { token } = useSessionStore();
-  const updateDisplayName = useMutation(api.users.updateProfileDisplayName);
-  const updatePhone = useMutation(api.users.updateProfilePhone);
+  const orders = useQuery(api.orders.listMyOrders, { token: token || undefined });
+  const wishlistCount = useWishlistStore((state) => state.items.length);
+  const recentlyViewed = useQuery(
+    api.homepage.getRecentlyViewed,
+    user?._id ? { userId: user._id as Id<"users">, limit: 6 } : "skip"
+  );
 
-  const [prefPhone, setPrefPhone] = useState("");
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [nameVal, setNameVal] = useState("");
-  const [isEditingPhone, setIsEditingPhone] = useState(false);
-  const [phoneVal, setPhoneVal] = useState("");
+  const activeOrder = useMemo(() => {
+    if (!orders) return null;
+    return (orders as any[]).find((o) => ORDER_ACTIVE_STATUSES.includes(o.status)) ?? null;
+  }, [orders]);
 
-  useEffect(() => {
-    if (user?.name) {
-      setNameVal(user.name);
-    }
-  }, [user]);
+  const upcomingReservation = useMemo(() => {
+    if (!reservations) return null;
+    return reservations.find((r) => ["reservation_active", "awaiting_store_confirmation"].includes(r.status)) ?? null;
+  }, [reservations]);
 
-  useEffect(() => {
-    if (user?.phone) {
-      setPrefPhone(user.phone);
-      setPhoneVal(user.phone);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("hive_pref_phone", user.phone);
-      }
-    } else if (typeof window !== "undefined") {
-      const storedPhone = localStorage.getItem("hive_pref_phone");
-      if (storedPhone) {
-        setPrefPhone(storedPhone);
-        setPhoneVal(storedPhone);
-        updatePhone({ phone: storedPhone, token: token || undefined }).catch(err =>
-          console.error("Auto-sync phone failed:", err)
-        );
-      }
-    }
-  }, [user?.phone, token, updatePhone]);
-
-  const handlePhoneChange = async (val: string) => {
-    const trimmed = val.trim();
-    if (!trimmed) return;
-    setPrefPhone(trimmed);
-    localStorage.setItem("hive_pref_phone", trimmed);
+  const formatDate = (epochMs: number) => {
     try {
-      await updatePhone({ phone: trimmed, token: token || undefined });
-      toast.success("Phone number updated successfully");
-    } catch (err: any) {
-      console.error("Failed to update phone number:", err);
-      toast.error(err.message || "Failed to save phone number");
+      return new Date(epochMs).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    } catch {
+      return "Recently";
     }
   };
 
   return (
     <div className="flex flex-col gap-8 text-left animate-fadeIn">
-      {/* ── 1. QUICK SHOPPING ESSENTIALS TILES ── */}
-      <section className="space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">
-          Shopping Essentials
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          {/* Orders */}
+      {/* ── ACTIVE ORDER HERO ── */}
+      {activeOrder && (
+        <section className="space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Active Order</h3>
           <Link
             href="/orders"
-            className="p-4 bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl shadow-2xs transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between group cursor-pointer"
+            className="block bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5"
           >
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-stone-100 group-hover:bg-amber-50 text-stone-800 group-hover:text-amber-800 flex items-center justify-center transition-colors">
-                <ShoppingBag className="w-5 h-5" />
+            <div className="flex gap-4">
+              <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-[#FAF8F4] border border-stone-200/80 shrink-0">
+                {activeOrder.items?.[0]?.imageUrl ? (
+                  <img
+                    src={activeOrder.items[0].imageUrl}
+                    alt={activeOrder.items[0].productName || "Order item"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="w-5 h-5 text-amber-600" />
+                  </div>
+                )}
+                <span className="absolute top-1 left-1 w-2 h-2 rounded-full bg-green-500 border border-white animate-pulse" />
               </div>
-              <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-stone-900 group-hover:text-amber-900 transition-colors">
-                  My Orders
-                </h4>
-                <p className="text-xs text-stone-500">Past purchases & live receipts</p>
+              <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-mono font-bold text-stone-900 tracking-wider">
+                      {activeOrder.orderNumber}
+                    </span>
+                    <OrderStatusBadge status={mapOrderStatus(activeOrder.status)} />
+                  </div>
+                  <h4 className="text-sm font-serif font-light text-stone-900 truncate">
+                    {activeOrder.items?.[0]?.productName || "Boutique Order"}
+                    {activeOrder.items?.length > 1 && (
+                      <span className="text-xs text-stone-500 font-sans font-medium">
+                        {" "}
+                        +{activeOrder.items.length - 1} more
+                      </span>
+                    )}
+                  </h4>
+                </div>
+                <div className="flex items-center gap-4 text-[10px] text-stone-500 font-medium">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                    {formatDate(activeOrder.createdAt)}
+                  </span>
+                  <span className="flex items-center gap-1 font-bold text-stone-900">
+                    {formatCurrency(activeOrder.total)}
+                  </span>
+                </div>
               </div>
+              <ChevronRight className="w-5 h-5 text-stone-400 self-center shrink-0" />
             </div>
-            <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors" />
           </Link>
+        </section>
+      )}
 
-          {/* Delivery Addresses */}
-          <button
-            type="button"
-            onClick={() => setActiveTab("addresses")}
-            className="p-4 bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl shadow-2xs transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between group cursor-pointer text-left"
-          >
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-stone-100 group-hover:bg-amber-50 text-stone-800 group-hover:text-amber-800 flex items-center justify-center transition-colors">
-                <MapPin className="w-5 h-5" />
-              </div>
-              <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-stone-900 group-hover:text-amber-900 transition-colors">
-                  Delivery Addresses
-                </h4>
-                <p className="text-xs text-stone-500">
-                  {addresses.length} saved location{addresses.length === 1 ? "" : "s"}
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors" />
-          </button>
-
-          {/* Fitting Reservations */}
-          <button
-            type="button"
-            onClick={() => setActiveTab("reservations")}
-            className="p-4 bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl shadow-2xs transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between group cursor-pointer text-left"
-          >
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-stone-100 group-hover:bg-amber-50 text-stone-800 group-hover:text-amber-800 flex items-center justify-center transition-colors">
-                <Calendar className="w-5 h-5" />
-              </div>
-              <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-stone-900 group-hover:text-amber-900 transition-colors">
-                  Boutique Reservations
-                </h4>
-                <p className="text-xs text-stone-500">In-store try-on bookings</p>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors" />
-          </button>
-
-          {/* Wishlist */}
-          <Link
+      {/* ── SHOPPING ESSENTIALS TASK GRID ── */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Shopping Essentials</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <OverviewTile
+            href="/orders"
+            icon={<ShoppingBag className="w-5 h-5" />}
+            label="My Orders"
+            meta={orders === undefined ? "Loading…" : `${orders.length} order${orders.length === 1 ? "" : "s"}`}
+            hoverBg="group-hover:bg-amber-50"
+            hoverText="group-hover:text-amber-900"
+          />
+          <OverviewTile
             href="/wishlist"
-            className="p-4 bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl shadow-2xs transition-all duration-200 hover:-translate-y-0.5 flex items-center justify-between group cursor-pointer"
-          >
-            <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-stone-100 group-hover:bg-rose-50 text-stone-800 group-hover:text-rose-700 flex items-center justify-center transition-colors">
-                <Heart className="w-5 h-5" />
-              </div>
-              <div className="space-y-0.5">
-                <h4 className="text-sm font-semibold text-stone-900 group-hover:text-rose-900 transition-colors">
-                  Saved Wishlist
-                </h4>
-                <p className="text-xs text-stone-500">Curated pieces & favorites</p>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-stone-700 transition-colors" />
-          </Link>
+            icon={<Heart className="w-5 h-5" />}
+            label="Saved Wishlist"
+            meta={`${wishlistCount} saved item${wishlistCount === 1 ? "" : "s"}`}
+            hoverBg="group-hover:bg-rose-50"
+            hoverText="group-hover:text-rose-900"
+          />
+          <OverviewTile
+            onClick={() => setActiveTab("addresses")}
+            icon={<MapPin className="w-5 h-5" />}
+            label="Delivery Addresses"
+            meta={`${addresses.length} saved location${addresses.length === 1 ? "" : "s"}`}
+            hoverBg="group-hover:bg-amber-50"
+            hoverText="group-hover:text-amber-900"
+          />
+          <OverviewTile
+            onClick={() => setActiveTab("reservations")}
+            icon={<Calendar className="w-5 h-5" />}
+            label="Boutique Reservations"
+            meta={
+              reservations === undefined
+                ? "Loading…"
+                : `${reservations.length} booking${reservations.length === 1 ? "" : "s"}`
+            }
+            hoverBg="group-hover:bg-amber-50"
+            hoverText="group-hover:text-amber-900"
+          />
         </div>
       </section>
 
-      {/* ── 2. PERSONAL DETAILS CARD ── */}
+      {/* ── UPCOMING RESERVATION PREVIEW ── */}
+      {upcomingReservation && (
+        <section className="space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Boutique Reservation</h3>
+          <ReservationStatusCard reservation={upcomingReservation} />
+        </section>
+      )}
+
+      {/* ── CONTINUE SHOPPING ── */}
+      {recentlyViewed && recentlyViewed.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Continue Shopping</h3>
+          <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+            {recentlyViewed.map((product: any) => {
+              const pricing = calculateDisplayPricing(product);
+              const rawImage = product.images?.[0];
+              const imageUrl = typeof rawImage === "string" && rawImage.startsWith("http") ? rawImage : null;
+              return (
+                <Link
+                  key={product._id}
+                  href={`/products/${product.slug}`}
+                  className="shrink-0 w-32 group cursor-pointer"
+                >
+                  <div className="w-32 h-40 rounded-xl overflow-hidden bg-[#FAF8F4] border border-stone-200/80 group-hover:border-stone-300 transition-colors">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={product.name || "Product"}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ShoppingBag className="w-5 h-5 text-stone-300" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="mt-1.5 text-xs font-medium text-stone-800 truncate">{product.name}</p>
+                  <p className="text-xs font-bold text-stone-900">{pricing.formattedPrice}</p>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── CONCIERGE & SUPPORT CARD ── */}
       <section className="space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">
-          Personal Information
-        </h3>
-        <div className="bg-white border border-stone-200/80 rounded-2xl divide-y divide-stone-100 shadow-2xs overflow-hidden">
-          {/* Full Name */}
-          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors hover:bg-stone-50/50">
-            <div className="space-y-0.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Full Name</span>
-              {!isEditingName && (
-                <div className="text-sm font-semibold text-stone-900">
-                  {user?.name || <span className="text-stone-400 italic font-normal">Add your name</span>}
-                </div>
-              )}
-            </div>
-            {isEditingName ? (
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (!nameVal.trim()) return;
-                  try {
-                    await updateDisplayName({ displayName: nameVal, token: token || undefined });
-                    toast.success("Name updated");
-                  } catch (err) {
-                    console.error("Failed to update name:", err);
-                  }
-                  setIsEditingName(false);
-                }}
-                className="flex items-center gap-2 w-full sm:w-auto"
-              >
-                <input
-                  type="text"
-                  value={nameVal}
-                  onChange={(e) => setNameVal(e.target.value)}
-                  className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 flex-1 sm:w-56"
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 cursor-pointer"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setNameVal(user?.name || "");
-                    setIsEditingName(false);
-                  }}
-                  className="px-2.5 py-1.5 border border-stone-200 text-stone-600 rounded-xl text-xs font-bold hover:bg-stone-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </form>
-            ) : (
-              <button
-                onClick={() => setIsEditingName(true)}
-                className="text-xs font-bold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer self-start sm:self-center"
-              >
-                {user?.name ? "Edit" : "Add name →"}
-              </button>
-            )}
-          </div>
-
-          {/* Email */}
-          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors hover:bg-stone-50/50">
-            <div className="space-y-0.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Email Address</span>
-              <div className="text-sm font-semibold text-stone-900 break-all">{user?.email || "—"}</div>
-            </div>
-          </div>
-
-          {/* Phone */}
-          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors hover:bg-stone-50/50">
-            <div className="space-y-0.5">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Phone Number</span>
-              {!isEditingPhone && (
-                <div className="text-sm font-semibold text-stone-900">
-                  {prefPhone || <span className="text-stone-400 italic font-normal">Add phone number</span>}
-                </div>
-              )}
-            </div>
-            {isEditingPhone ? (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handlePhoneChange(phoneVal);
-                  setIsEditingPhone(false);
-                }}
-                className="flex items-center gap-2 w-full sm:w-auto"
-              >
-                <input
-                  type="tel"
-                  value={phoneVal}
-                  onChange={(e) => setPhoneVal(e.target.value)}
-                  className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 flex-1 sm:w-56"
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="px-3 py-1.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 cursor-pointer"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPhoneVal(prefPhone);
-                    setIsEditingPhone(false);
-                  }}
-                  className="px-2.5 py-1.5 border border-stone-200 text-stone-600 rounded-xl text-xs font-bold hover:bg-stone-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </form>
-            ) : (
-              <button
-                onClick={() => setIsEditingPhone(true)}
-                className="text-xs font-bold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer self-start sm:self-center"
-              >
-                {prefPhone ? "Edit" : "Add phone →"}
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── 3. CONCIERGE & SUPPORT CARD ── */}
-      <section className="space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">
-          Concierge & Support
-        </h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Concierge & Support</h3>
         <div className="bg-white border border-stone-200/80 rounded-2xl p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <h4 className="text-sm font-semibold text-stone-900 flex items-center gap-2">
@@ -840,9 +842,8 @@ function OverviewTab({
 }
 
 // ── Addresses Tab Component ──────────────────────────────────────────────────
-function AddressesTab({ userName }: { userName: string }) {
+function AddressesTab({ userName, addresses }: { userName: string; addresses: Address[] }) {
   const { token } = useSessionStore();
-  const addresses = useQuery(api.addresses.list, { token: token || undefined }) as Address[] | undefined;
   const addAddress = useMutation(api.addresses.create);
   const updateAddress = useMutation(api.addresses.update);
   const removeAddress = useMutation(api.addresses.remove);
@@ -926,14 +927,6 @@ function AddressesTab({ userName }: { userName: string }) {
       setSettingDefaultId(null);
     }
   };
-
-  if (addresses === undefined) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-stone-400" />
-      </div>
-    );
-  }
 
   const editForm: AddressFormData = editTarget
     ? {
@@ -1028,10 +1021,7 @@ function AddressesTab({ userName }: { userName: string }) {
 }
 
 // ── Reservations Tab Component ───────────────────────────────────────────────
-function ReservationsTab() {
-  const { token } = useSessionStore();
-  const reservations = useQuery((api as any).reservations.getMyReservations, { token: token || undefined });
-
+function ReservationsTab({ reservations }: { reservations: any[] | undefined }) {
   return (
     <div className="flex flex-col gap-6 text-left animate-fadeIn">
       <div className="border-b border-stone-200/80 pb-4">
@@ -1065,84 +1055,223 @@ function ReservationsTab() {
 }
 
 // ── Settings Tab Component ───────────────────────────────────────────────────
-function SettingsTab() {
-  const [notifEmail, setNotifEmail] = useState(true);
-  const [notifSMS, setNotifSMS] = useState(true);
+// Personal Information lives here now (moved off Overview — it's account admin, not a shopping
+// task). The two notification toggles that used to sit below Push Notifications never persisted
+// anything (local useState only, no mutation, no backend field) — removed rather than shipped as
+// a working-looking control that silently does nothing. Re-add once there's a real preference
+// field + mutation behind them.
+function SettingsTab({ user, token }: { user: any; token: string | null }) {
   const { isSupported, isSubscribed, isLoading, subscribeToPush } = usePushSubscription();
+  const updateDisplayName = useMutation(api.users.updateProfileDisplayName);
+  const updatePhone = useMutation(api.users.updateProfilePhone);
+
+  const [prefPhone, setPrefPhone] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameVal, setNameVal] = useState("");
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [phoneVal, setPhoneVal] = useState("");
+
+  useEffect(() => {
+    if (user?.name) setNameVal(user.name);
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.phone) {
+      setPrefPhone(user.phone);
+      setPhoneVal(user.phone);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("hive_pref_phone", user.phone);
+      }
+    } else if (typeof window !== "undefined") {
+      const storedPhone = localStorage.getItem("hive_pref_phone");
+      if (storedPhone) {
+        setPrefPhone(storedPhone);
+        setPhoneVal(storedPhone);
+        updatePhone({ phone: storedPhone, token: token || undefined }).catch((err) =>
+          console.error("Auto-sync phone failed:", err)
+        );
+      }
+    }
+  }, [user?.phone, token, updatePhone]);
+
+  const handlePhoneChange = async (val: string) => {
+    const trimmed = val.trim();
+    if (!trimmed) return;
+    setPrefPhone(trimmed);
+    localStorage.setItem("hive_pref_phone", trimmed);
+    try {
+      await updatePhone({ phone: trimmed, token: token || undefined });
+      toast.success("Phone number updated successfully");
+    } catch (err: any) {
+      console.error("Failed to update phone number:", err);
+      toast.error(err.message || "Failed to save phone number");
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-6 text-left animate-fadeIn">
+    <div className="flex flex-col gap-8 text-left animate-fadeIn">
       <div className="border-b border-stone-200/80 pb-4">
-        <h2 className="text-xl font-serif font-medium text-stone-900">Preferences & Alerts</h2>
-        <p className="text-xs text-stone-500 mt-0.5">Control how you receive delivery updates and order status.</p>
+        <h2 className="text-xl font-serif font-light text-stone-900">Account &amp; Preferences</h2>
+        <p className="text-xs text-stone-500 mt-0.5">Your details, and how you hear about deliveries.</p>
       </div>
 
-      <div className="bg-white border border-stone-200/80 rounded-2xl divide-y divide-stone-100 overflow-hidden shadow-2xs">
-        {/* Push Notifications Section */}
-        <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <h4 className="text-sm font-semibold text-stone-900 flex items-center gap-2">
-              <Bell className="w-4 h-4 text-stone-500" /> Push Notifications
-            </h4>
-            <p className="text-xs text-stone-500">Live order status and dispatch updates on this device</p>
+      {/* ── Personal Information (moved from Overview) ── */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Personal Information</h3>
+        <div className="bg-white border border-stone-200/80 rounded-2xl divide-y divide-stone-100 shadow-2xs overflow-hidden">
+          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors hover:bg-stone-50/50">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Full Name</span>
+              {!isEditingName && (
+                <div className="text-sm font-semibold text-stone-900">
+                  {user?.name || <span className="text-stone-400 italic font-normal">Add your name</span>}
+                </div>
+              )}
+            </div>
+            {isEditingName ? (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!nameVal.trim()) return;
+                  try {
+                    await updateDisplayName({ displayName: nameVal, token: token || undefined });
+                    toast.success("Name updated");
+                  } catch (err) {
+                    console.error("Failed to update name:", err);
+                  }
+                  setIsEditingName(false);
+                }}
+                className="flex items-center gap-2 w-full sm:w-auto"
+              >
+                <input
+                  type="text"
+                  value={nameVal}
+                  onChange={(e) => setNameVal(e.target.value)}
+                  className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 flex-1 sm:w-56"
+                  autoFocus
+                />
+                <button type="submit" className="px-3 py-1.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 cursor-pointer">
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNameVal(user?.name || "");
+                    setIsEditingName(false);
+                  }}
+                  className="px-2.5 py-1.5 border border-stone-200 text-stone-600 rounded-xl text-xs font-bold hover:bg-stone-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <button
+                onClick={() => setIsEditingName(true)}
+                className="text-xs font-bold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer self-start sm:self-center"
+              >
+                {user?.name ? "Edit" : "Add name →"}
+              </button>
+            )}
           </div>
-          {isSupported ? (
-            <button
-              onClick={() => {
-                if (!isSubscribed && !isLoading) {
-                  subscribeToPush().then((success) => {
-                    if (success) toast.success("Push Notifications Enabled");
-                  });
-                }
-              }}
-              disabled={isLoading || isSubscribed}
-              className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
-                isSubscribed ? "bg-stone-900 flex justify-end opacity-80" : "bg-stone-200 flex justify-start"
-              }`}
-            >
-              <span className="w-5 h-5 rounded-full bg-white shadow-xs transition-all duration-200 flex items-center justify-center">
-                {isLoading && <Loader2 className="w-3 h-3 text-stone-900 animate-spin" />}
+
+          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors hover:bg-stone-50/50">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Email Address</span>
+              <div className="text-sm font-semibold text-stone-900 break-all">{user?.email || "—"}</div>
+            </div>
+          </div>
+
+          <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-colors hover:bg-stone-50/50">
+            <div className="space-y-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Phone Number</span>
+              {!isEditingPhone && (
+                <div className="text-sm font-semibold text-stone-900">
+                  {prefPhone || <span className="text-stone-400 italic font-normal">Add phone number</span>}
+                </div>
+              )}
+            </div>
+            {isEditingPhone ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handlePhoneChange(phoneVal);
+                  setIsEditingPhone(false);
+                }}
+                className="flex items-center gap-2 w-full sm:w-auto"
+              >
+                <input
+                  type="tel"
+                  value={phoneVal}
+                  onChange={(e) => setPhoneVal(e.target.value)}
+                  className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-stone-900 focus:outline-none focus:ring-1 focus:ring-stone-900 flex-1 sm:w-56"
+                  autoFocus
+                />
+                <button type="submit" className="px-3 py-1.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 cursor-pointer">
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhoneVal(prefPhone);
+                    setIsEditingPhone(false);
+                  }}
+                  className="px-2.5 py-1.5 border border-stone-200 text-stone-600 rounded-xl text-xs font-bold hover:bg-stone-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <button
+                onClick={() => setIsEditingPhone(true)}
+                className="text-xs font-bold text-stone-600 hover:text-stone-900 transition-colors cursor-pointer self-start sm:self-center"
+              >
+                {prefPhone ? "Edit" : "Add phone →"}
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Notification Preferences ── */}
+      <section className="space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Notifications</h3>
+        <div className="bg-white border border-stone-200/80 rounded-2xl divide-y divide-stone-100 overflow-hidden shadow-2xs">
+          <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <h4 className="text-sm font-semibold text-stone-900 flex items-center gap-2">
+                <Bell className="w-4 h-4 text-stone-500" /> Push Notifications
+              </h4>
+              <p className="text-xs text-stone-500">Live order status and dispatch updates on this device</p>
+            </div>
+            {isSupported ? (
+              <button
+                role="switch"
+                aria-checked={isSubscribed}
+                aria-label="Push notifications"
+                onClick={() => {
+                  if (!isSubscribed && !isLoading) {
+                    subscribeToPush().then((success) => {
+                      if (success) toast.success("Push Notifications Enabled");
+                    });
+                  }
+                }}
+                disabled={isLoading || isSubscribed}
+                className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
+                  isSubscribed ? "bg-stone-900 flex justify-end opacity-80" : "bg-stone-200 flex justify-start"
+                }`}
+              >
+                <span className="w-5 h-5 rounded-full bg-white shadow-xs transition-all duration-200 flex items-center justify-center">
+                  {isLoading && <Loader2 className="w-3 h-3 text-stone-900 animate-spin" />}
+                </span>
+              </button>
+            ) : (
+              <span className="text-[10px] font-bold uppercase text-stone-400 bg-stone-100 px-2 py-1 rounded">
+                Not Supported
               </span>
-            </button>
-          ) : (
-            <span className="text-[10px] font-bold uppercase text-stone-400 bg-stone-100 px-2 py-1 rounded">
-              Not Supported
-            </span>
-          )}
-        </div>
-
-        {/* WhatsApp & SMS */}
-        <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <h4 className="text-sm font-semibold text-stone-900">WhatsApp Order Updates</h4>
-            <p className="text-xs text-stone-500">Receive dispatch ETA and driver contacts on WhatsApp</p>
+            )}
           </div>
-          <button
-            onClick={() => setNotifSMS(!notifSMS)}
-            className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
-              notifSMS ? "bg-stone-900 flex justify-end" : "bg-stone-200 flex justify-start"
-            }`}
-          >
-            <span className="w-5 h-5 rounded-full bg-white shadow-xs transition-all duration-200" />
-          </button>
         </div>
-
-        {/* Email Invoices */}
-        <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
-          <div className="space-y-0.5">
-            <h4 className="text-sm font-semibold text-stone-900">Email Invoices & Receipts</h4>
-            <p className="text-xs text-stone-500">Receive digital invoices for every completed order</p>
-          </div>
-          <button
-            onClick={() => setNotifEmail(!notifEmail)}
-            className={`w-11 h-6 rounded-full p-0.5 transition-colors cursor-pointer ${
-              notifEmail ? "bg-stone-900 flex justify-end" : "bg-stone-200 flex justify-start"
-            }`}
-          >
-            <span className="w-5 h-5 rounded-full bg-white shadow-xs transition-all duration-200" />
-          </button>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }
@@ -1168,9 +1297,19 @@ export default function AccountPage() {
   }, [isAuthenticated, isLoading, router]);
 
   if (isLoading || !isAuthenticated) {
+    // Shaped like the real layout below (hero + compact tile row) instead of a generic
+    // centered spinner, so there's no visible layout jump once real content arrives.
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAF8F5]">
-        <LoadingState message="Loading your account..." variant="full" />
+      <div className="min-h-screen bg-[#FAF8F4] py-6 sm:py-10 px-4 sm:px-6 lg:px-8 animate-pulse select-none">
+        <div className="max-w-5xl mx-auto flex flex-col gap-6">
+          <div className="h-24 bg-[#1c1917]/[0.05] rounded-3xl" />
+          <div className="h-32 bg-[#1c1917]/[0.05] rounded-3xl" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-20 bg-[#1c1917]/[0.05] rounded-2xl" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -1183,7 +1322,10 @@ function AccountPageContent() {
   const { user, token, logout } = useSessionStore();
   const router = useRouter();
 
+  // Fetched once here and passed down — previously AddressesTab and ReservationsTab each
+  // re-queried the same data independently.
   const addresses = useQuery(api.addresses.list, { token: token || undefined }) as Address[] || [];
+  const reservations = useQuery((api as any).reservations.getMyReservations, { token: token || undefined });
 
   // Monogram initials for profile avatar
   const initials = useMemo(() => {
@@ -1202,7 +1344,7 @@ function AccountPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-stone-900 font-sans pb-24 antialiased selection:bg-amber-100">
+    <div className="min-h-screen bg-[#FAF8F4] text-stone-900 font-sans pb-24 antialiased selection:bg-amber-100">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10">
         
         {/* ── TOP IDENTITY CARD (Clean & Luxury) ── */}
@@ -1266,19 +1408,19 @@ function AccountPageContent() {
         {/* ── ACTIVE TAB CONTENT ── */}
         <main className="min-h-[400px]">
           {activeTab === "overview" && (
-            <OverviewTab addresses={addresses} user={user} setActiveTab={setActiveTab} />
+            <OverviewTab addresses={addresses} reservations={reservations} user={user} setActiveTab={setActiveTab} />
           )}
 
           {activeTab === "addresses" && (
-            <AddressesTab userName={user?.name || "Athul"} />
+            <AddressesTab userName={user?.name || "Athul"} addresses={addresses} />
           )}
 
           {activeTab === "reservations" && (
-            <ReservationsTab />
+            <ReservationsTab reservations={reservations} />
           )}
 
           {activeTab === "settings" && (
-            <SettingsTab />
+            <SettingsTab user={user} token={token} />
           )}
         </main>
 

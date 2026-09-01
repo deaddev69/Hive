@@ -10,6 +10,7 @@ export interface ResolvedProduct {
   boutiqueId: string;
   boutiqueName: string;
   boutiqueSlug: string;
+  categoryId?: string;
   // Merchandising & Operations
   createdAt?: number;
   distanceKm?: number;
@@ -40,6 +41,9 @@ export interface ResolvedBlock {
     banner?: any;
     banners?: any[];
     categories?: any[];
+    /** True when this block's products were actually ranked from the shopper's own view
+     * history, rather than the generic recency-ranked fallback. */
+    isPersonalized?: boolean;
   };
 }
 

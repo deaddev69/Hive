@@ -351,6 +351,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
 
     const isCarousel = block.renderer === "productCarousel";
     const isTwoGrid = block.renderer === "twoProductGrid";
+    const twoGridProducts = blockProducts.slice(0, block.config?.maxProducts || 2);
     // Premium Curation's full-bleed themed layout (background art, watermarks, generous padding)
     // is built to showcase a spread of products. Below a minimum count it reads as broken —
     // mostly empty decorative chrome around one floating card — so we fall back to the plain
@@ -758,8 +759,8 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               ))}
             </div>
           ) : isTwoGrid ? (
-            <div className="flex flex-wrap gap-3 sm:gap-6 w-full">
-              {blockProducts.slice(0, block.config?.maxProducts || 2).map((product: any) => (
+            <div className={`flex flex-wrap gap-3 sm:gap-6 w-full ${twoGridProducts.length === 1 ? "justify-center" : ""}`}>
+              {twoGridProducts.map((product: any) => (
                 <div key={product.id} className="w-[145px] sm:w-[190px] lg:w-[210px] flex-shrink-0">
                   <ProductCard product={product} />
                 </div>
@@ -785,16 +786,23 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     const isGrid = block.renderer === "productGrid" || block.renderer === "grid";
     const isCarousel = !isTwoGrid && !isGrid;
     const maxItems = block.config?.maxProducts || 8;
+    // Set by BlockService when this section is actually ranked from the shopper's own view
+    // history — as opposed to the generic recency-ranked fallback everyone else sees.
+    const isPersonalized = block.data?.isPersonalized === true;
 
     const allProducts = (block.data.products || [])
       .filter((p: any) => p.active !== false)
       .map(mapDbProduct);
-      
+
     if (allProducts.length === 0) return null;
 
     const displayProducts = allProducts.slice(0, maxItems);
     const bgClass = isNewArrivals ? "bg-white" : (isRecommended ? "bg-white" : "bg-[#FAF6F0]");
-    const tagText = isNewArrivals ? "FRESH ARRIVALS" : (isRecommended ? "CURATED FOR YOU" : "CUSTOMER FAVORITES");
+    const tagText = isNewArrivals
+      ? "FRESH ARRIVALS"
+      : isRecommended
+        ? (isPersonalized ? "BASED ON WHAT YOU'VE VIEWED" : "TRENDING NOW")
+        : (isPersonalized ? "PICK UP WHERE YOU LEFT OFF" : "YOU MIGHT LIKE");
     const targetUrl = isNewArrivals ? "/products?sort=newest" : "/products";
     
     return (
@@ -845,7 +853,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               </div>
             </div>
           ) : isTwoGrid ? (
-            <div className="flex flex-wrap gap-3 sm:gap-6 w-full">
+            <div className={`flex flex-wrap gap-3 sm:gap-6 w-full ${displayProducts.length === 1 ? "justify-center" : ""}`}>
               {displayProducts.map((product: any) => (
                 <div key={product.id} className="w-[145px] sm:w-[190px] lg:w-[210px] flex-shrink-0">
                   <ProductCard product={product} />

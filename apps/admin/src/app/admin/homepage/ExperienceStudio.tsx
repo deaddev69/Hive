@@ -140,6 +140,12 @@ const BLOCK_REGISTRY: BlockSchema[] = [
   }
 ];
 
+// Hero and Category both always pull their content from a global table (all active banners /
+// all homepage-flagged categories) regardless of which block instance renders them — a second
+// one on the same experience would just show the identical content as the first. Rather than let
+// an admin add a confusing duplicate, the library disables these once one is already present.
+const SINGLETON_BLOCK_TYPES = new Set(["hero", "category"]);
+
 export function ExperienceStudio() {
   const experiences = useQuery(api.homepageAdmin.getExperiences);
 
@@ -209,8 +215,11 @@ export function ExperienceStudio() {
     }
   };
 
+  const existingBlockTypes = new Set(blocks.map((b: any) => b.blockType));
+
   const handleAddBlock = async (schema: BlockSchema) => {
     if (!selectedExpId) return;
+    if (SINGLETON_BLOCK_TYPES.has(schema.id) && existingBlockTypes.has(schema.id)) return;
     try {
       // Deliberately left unbound: a new collection-type block starts with no collectionId so it
       // shows the "No Collection Linked" warning until a merchandiser deliberately assigns one.
@@ -589,13 +598,28 @@ export function ExperienceStudio() {
                 <div key={category} className="mb-8">
                   <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider mb-4">{category}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {BLOCK_REGISTRY.filter(b => b.category === category).map(block => (
-                      <div key={block.id} onClick={() => handleAddBlock(block)} className="p-4 border rounded-2xl hover:border-amber-500 hover:shadow-md cursor-pointer transition group">
-                        <block.icon className="w-6 h-6 text-slate-400 group-hover:text-amber-500 mb-3" />
-                        <h4 className="font-bold text-sm">{block.name}</h4>
-                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">{block.description}</p>
-                      </div>
-                    ))}
+                    {BLOCK_REGISTRY.filter(b => b.category === category).map(block => {
+                      const isDisabledSingleton = SINGLETON_BLOCK_TYPES.has(block.id) && existingBlockTypes.has(block.id);
+                      return (
+                        <div
+                          key={block.id}
+                          onClick={() => !isDisabledSingleton && handleAddBlock(block)}
+                          title={isDisabledSingleton ? "Already on this experience — it would show identical content." : undefined}
+                          className={`p-4 border rounded-2xl transition group ${
+                            isDisabledSingleton
+                              ? "opacity-50 cursor-not-allowed bg-slate-50"
+                              : "hover:border-amber-500 hover:shadow-md cursor-pointer"
+                          }`}
+                        >
+                          <block.icon className={`w-6 h-6 mb-3 ${isDisabledSingleton ? "text-slate-300" : "text-slate-400 group-hover:text-amber-500"}`} />
+                          <h4 className="font-bold text-sm">{block.name}</h4>
+                          <p className="text-xs text-slate-500 mt-1 leading-relaxed">{block.description}</p>
+                          {isDisabledSingleton && (
+                            <p className="text-[10px] font-bold text-amber-600 mt-2 uppercase tracking-wide">Already added</p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -716,7 +740,18 @@ function BlockConfigEditor({ block, schema, collections, campaigns, categories, 
     }
   };
 
-  const handleSave = () => onSave(formData);
+  const handleSave = () => {
+    // Premium Curation exists to showcase a hand-picked spread of products. Its "no collection
+    // bound" fallback was removed from the content pipeline (it just auto-filled from whatever
+    // was newest, which defeated the point) — so an unbound one now renders nothing at all.
+    // Catch that here instead of letting a merchandiser publish a section that silently disappears.
+    const isPremiumCuration = block.blockType === "premiumCuration" || formData.renderer === "premiumGrid";
+    if (isPremiumCuration && !formData.config.collectionId) {
+      toast.error("Premium Curation needs a collection assigned — pick one below before saving.");
+      return;
+    }
+    onSave(formData);
+  };
 
   return (
     <div className="space-y-6">

@@ -57,11 +57,11 @@ async function resolveCategoryImage(ctx: any, cat: any) {
   };
 }
 
-// Auto-sourced blocks (premiumCuration fallback, recommended, newArrivals) all draw from the
-// same "top active products" pool. We over-fetch relative to what's actually displayed so that
-// OperationsService's delivery-radius filter (which runs after this) still has enough candidates
-// left to fill the block, instead of every such block collapsing to whatever tiny handful of
-// products happen to survive a `take(20)`/`take(40)` head-slice.
+// Auto-sourced blocks (recommended, newArrivals, and the Recently Viewed fallback) all draw from
+// the same "top active products" pool. We over-fetch relative to what's actually displayed so
+// that OperationsService's delivery-radius filter (which runs after this) still has enough
+// candidates left to fill the block, instead of every such block collapsing to whatever tiny
+// handful of products happen to survive a `take(20)`/`take(40)` head-slice.
 const FALLBACK_POOL_MULTIPLIER = 5;
 const FALLBACK_POOL_MIN = 60;
 const FALLBACK_POOL_MAX = 150;
@@ -70,6 +70,12 @@ function poolSizeFor(maxProducts: number | undefined, defaultMax: number): numbe
   const target = maxProducts || defaultMax;
   return Math.min(FALLBACK_POOL_MAX, Math.max(FALLBACK_POOL_MIN, target * FALLBACK_POOL_MULTIPLIER));
 }
+
+// How many of a single block's displayed products may come from the same boutique. Only applied
+// to auto-sourced pools (recommended / newArrivals / recently-viewed fallback) — a merchandiser
+// curating a manual collection may legitimately want it dominated by one boutique, so that path
+// is left uncapped.
+const MAX_PER_BOUTIQUE_IN_AUTO_BLOCK = 3;
 
 export class BlockService {
   /**
@@ -105,16 +111,19 @@ export class BlockService {
         // merchandiser's ordering can still fill the block instead of leaving it empty.
         const pIds = await CollectionService.getCollectionRequirements(ctx, block.config.collectionId);
         requiredProductIds.push(...pIds);
-      } else if (block.blockType === "premiumCuration" || (block.blockType === "collection" && block.renderer === "premiumGrid")) {
-        const pool = await getActivePool(poolSizeFor(block.config?.maxProducts, 6));
+      } else if (block.blockType === "recentlyViewed") {
+        if (userContext?.userId) {
+          const history = await ctx.db
+            .query("recentlyViewed")
+            .withIndex("by_user_viewed", (q: any) => q.eq("userId", userContext.userId))
+            .order("desc")
+            .take(12);
+          requiredProductIds.push(...history.map((h: any) => h.productId.toString()));
+        }
+        // Always also stage a fallback pool: guests, and signed-in users with no view history
+        // yet, still need something to show instead of an empty slot.
+        const pool = await getActivePool(poolSizeFor(block.config?.maxProducts, 12));
         requiredProductIds.push(...pool.map((p: any) => p._id.toString()));
-      } else if (block.blockType === "recentlyViewed" && userContext?.userId) {
-        const history = await ctx.db
-          .query("recentlyViewed")
-          .withIndex("by_user_viewed", (q: any) => q.eq("userId", userContext.userId))
-          .order("desc")
-          .take(12);
-        requiredProductIds.push(...history.map((h: any) => h.productId.toString()));
       } else if (block.blockType === "recommended") {
         const pool = await getActivePool(poolSizeFor(block.config?.maxProducts, 12));
         requiredProductIds.push(...pool.map((p: any) => p._id.toString()));
@@ -122,6 +131,11 @@ export class BlockService {
         const pool = await getActivePool(poolSizeFor(block.config?.maxProducts, 8));
         requiredProductIds.push(...pool.map((p: any) => p._id.toString()));
       }
+      // NOTE: premiumCuration (and collection+premiumGrid) with no collectionId deliberately has
+      // no fallback here. Premium Curation is meant to be hand-curated — auto-filling it from
+      // "whatever's newest" undermines the point of the section, so an unbound Premium Curation
+      // block now simply renders nothing (ExperienceBlockRenderer already collapses cleanly on an
+      // empty product list) until a merchandiser binds a real collection to it.
     }
 
     return { productIds: Array.from(new Set(requiredProductIds)), activePoolCache };
@@ -144,11 +158,19 @@ export class BlockService {
 
     // Curated collections are iterated first in page (sortOrder) order, so they naturally win
     // contested products over generic auto-sourced pools further down the page.
-    const takeUnused = (products: ResolvedProduct[], max: number): ResolvedProduct[] => {
+    // `diversify`, when true, additionally caps how many picks may share a boutique — only
+    // meaningful for auto-sourced pools, never for a merchandiser's manual collection.
+    const takeUnused = (products: ResolvedProduct[], max: number, diversify = false): ResolvedProduct[] => {
       const picked: ResolvedProduct[] = [];
+      const boutiqueCounts = new Map<string, number>();
       for (const p of products) {
         if (picked.length >= max) break;
         if (usedProductIds.has(p.id)) continue;
+        if (diversify) {
+          const count = boutiqueCounts.get(p.boutiqueId) || 0;
+          if (count >= MAX_PER_BOUTIQUE_IN_AUTO_BLOCK) continue;
+          boutiqueCounts.set(p.boutiqueId, count + 1);
+        }
         picked.push(p);
       }
       for (const p of picked) usedProductIds.add(p.id);
@@ -181,43 +203,79 @@ export class BlockService {
         if (block.config?.bgImage || block.config?.desktopImage) {
           data.bgImage = await resolveBannerImage(ctx, block.config.bgImage || block.config.desktopImage);
         }
-      } else if (block.blockType === "premiumCuration" || (block.blockType === "collection" && block.renderer === "premiumGrid")) {
-        const pool = activePoolCache.get(poolSizeFor(block.config?.maxProducts, 6)) || [];
-        const candidates = (pool
-          .map((p: any) => resolvedProductsMap.get(p._id.toString()))
-          .filter(Boolean) as ResolvedProduct[])
-          .sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
-        data.products = takeUnused(candidates, block.config?.maxProducts || 6);
+      } else if (block.blockType === "recentlyViewed") {
+        let matchedProducts: ResolvedProduct[] = [];
+        let isPersonalized = false;
 
-        if (block.config?.bgImage || block.config?.desktopImage) {
-          data.bgImage = await resolveBannerImage(ctx, block.config.bgImage || block.config.desktopImage);
+        if (userContext?.userId) {
+          const history = await ctx.db
+            .query("recentlyViewed")
+            .withIndex("by_user_viewed", (q: any) => q.eq("userId", userContext.userId))
+            .order("desc")
+            .take(12);
+
+          matchedProducts = history
+            .map((h: any) => resolvedProductsMap.get(h.productId.toString()))
+            .filter(Boolean) as ResolvedProduct[];
+          isPersonalized = matchedProducts.length > 0;
         }
-      } else if (block.blockType === "recentlyViewed" && userContext?.userId) {
-        const history = await ctx.db
-          .query("recentlyViewed")
-          .withIndex("by_user_viewed", (q: any) => q.eq("userId", userContext.userId))
-          .order("desc")
-          .take(12);
 
-        const matchedProducts = history
-          .map((h: any) => resolvedProductsMap.get(h.productId.toString()))
-          .filter(Boolean) as ResolvedProduct[];
+        if (!isPersonalized) {
+          // Guest, or a signed-in shopper who hasn't viewed anything yet — show something instead
+          // of leaving the slot empty.
+          const pool = activePoolCache.get(poolSizeFor(block.config?.maxProducts, 12)) || [];
+          matchedProducts = (pool
+            .map((p: any) => resolvedProductsMap.get(p._id.toString()))
+            .filter(Boolean) as ResolvedProduct[])
+            .sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
+        }
 
-        data.products = takeUnused(matchedProducts, block.config?.maxProducts || 12);
+        data.products = takeUnused(matchedProducts, block.config?.maxProducts || 12, !isPersonalized);
+        data.isPersonalized = isPersonalized;
       } else if (block.blockType === "recommended") {
         const pool = activePoolCache.get(poolSizeFor(block.config?.maxProducts, 12)) || [];
-        const candidates = (pool
+        let candidates = (pool
           .map((p: any) => resolvedProductsMap.get(p._id.toString()))
-          .filter(Boolean) as ResolvedProduct[])
-          .sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
-        data.products = takeUnused(candidates, block.config?.maxProducts || 12);
+          .filter(Boolean) as ResolvedProduct[]);
+
+        // Real (if lightweight) personalization: boost candidates that share a category with
+        // something the shopper has actually looked at, instead of just re-showing the same
+        // recency-ranked pool every other auto-sourced block uses.
+        let isPersonalized = false;
+        if (userContext?.userId) {
+          const history = await ctx.db
+            .query("recentlyViewed")
+            .withIndex("by_user_viewed", (q: any) => q.eq("userId", userContext.userId))
+            .order("desc")
+            .take(20);
+
+          if (history.length > 0) {
+            const viewedProducts = await Promise.all(history.map((h: any) => ctx.db.get(h.productId)));
+            const viewedCategoryIds = new Set(
+              viewedProducts.filter(Boolean).map((p: any) => p.categoryId?.toString()).filter(Boolean)
+            );
+            if (viewedCategoryIds.size > 0) {
+              isPersonalized = true;
+              candidates = candidates
+                .map((c) => ({ product: c, affinity: viewedCategoryIds.has(c.categoryId) ? 1 : 0 }))
+                .sort((a, b) => b.affinity - a.affinity || (b.product.hiveScore ?? 0) - (a.product.hiveScore ?? 0))
+                .map((x) => x.product);
+            }
+          }
+        }
+        if (!isPersonalized) {
+          candidates.sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
+        }
+
+        data.products = takeUnused(candidates, block.config?.maxProducts || 12, true);
+        data.isPersonalized = isPersonalized;
       } else if (block.blockType === "newArrivals") {
         const pool = activePoolCache.get(poolSizeFor(block.config?.maxProducts, 8)) || [];
         const candidates = (pool
           .map((p: any) => resolvedProductsMap.get(p._id.toString()))
           .filter(Boolean) as ResolvedProduct[])
           .sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
-        data.products = takeUnused(candidates, block.config?.maxProducts || 8);
+        data.products = takeUnused(candidates, block.config?.maxProducts || 8, true);
       } else if (block.blockType === "hero") {
         // Hero block always pulls the global carousel banners from the banners table
         const activeBanners = await ctx.db
