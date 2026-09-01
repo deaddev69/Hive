@@ -2,10 +2,11 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
-import { getClientAuth, googleProvider } from "@/lib/firebase";
+import { getRedirectResult } from "firebase/auth";
+import { getClientAuth } from "@/lib/firebase";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
+import { useSellerAuth } from "@/context/SellerAuthContext";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 
@@ -15,15 +16,6 @@ function safeRedirect(target: string | null): string {
   return target;
 }
 
-/** Detect if running as installed PWA (standalone/fullscreen) */
-function isPWA(): boolean {
-  if (typeof window === "undefined") return false;
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (window.navigator as any).standalone === true
-  );
-}
-
 function SignInContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +23,7 @@ function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading } = useFirebaseAuth();
+  const { signInWithGoogle } = useSellerAuth();
 
   // Handle redirect result on page load (for PWA redirect flow)
   useEffect(() => {
@@ -63,41 +56,15 @@ function SignInContent() {
     }
   }, [isLoading, isAuthenticated, router, searchParams]);
 
-  /** Detect if running inside a Capacitor native app (Android/iOS WebView) */
-  function isCapacitor(): boolean {
-    if (typeof window === "undefined") return false;
-    return !!(window as any).Capacitor?.isNativePlatform?.() || 
-           /wv\)/.test(navigator.userAgent) && /Android/.test(navigator.userAgent);
-  }
-
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      const auth = getClientAuth();
-
-      // Capacitor native WebView — popups are always blocked, redirect also breaks
-      // in the embedded WebView. The fix: open the OAuth URL in the system browser
-      // via signInWithRedirect, which Capacitor's allowNavigation handles.
-      if (isCapacitor() || isPWA()) {
-        await signInWithRedirect(auth, googleProvider);
-        return; // Page will reload after redirect
-      }
-
-      // Browser tab — use popup (faster UX)
-      await signInWithPopup(auth, googleProvider);
-
+      await signInWithGoogle();
     } catch (err: any) {
       console.error("[SignIn] Error:", err.code, err.message);
       if (err.code === "auth/popup-closed-by-user") {
         setError("Sign-in was cancelled. Please try again.");
-      } else if (err.code === "auth/popup-blocked") {
-        // Popup blocked — fall back to redirect silently
-        setError(null);
-        const auth = getClientAuth();
-        await signInWithRedirect(auth, googleProvider);
-        return;
       } else if (err.code === "auth/network-request-failed") {
         setError("Network error. Check your connection and try again.");
       } else if (err.code === "auth/unauthorized-domain") {
@@ -105,6 +72,7 @@ function SignInContent() {
       } else {
         setError(err.message ?? "Failed to sign in with Google.");
       }
+    } finally {
       setLoading(false);
     }
   };
