@@ -1,29 +1,54 @@
-"use client";
-
-import { useQuery } from "convex/react";
+import React from "react";
+import { Metadata } from "next";
+import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../convex/_generated/api";
 import ReactMarkdown from "react-markdown";
-import { useParams } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-export default function LegalDocumentPage() {
-  const params = useParams();
-  const slug = params.slug as string;
-  
-  const legalDoc = useQuery(api.legal.getLatestBySlug, { slug });
+interface Props {
+  params: Promise<{ slug: string }>;
+}
 
-  if (legalDoc === undefined) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-hive-amber" />
-        <span className="text-sm text-hive-text-muted">Loading document...</span>
-      </div>
-    );
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const titleMap: Record<string, string> = {
+    privacy: "Privacy Policy | Hive Now",
+    "privacy-policy": "Privacy Policy | Hive Now",
+    terms: "Terms and Conditions | Hive Now",
+    "terms-and-conditions": "Terms and Conditions | Hive Now",
+    returns: "Return and Refund Policy | Hive Now",
+    "return-policy": "Return and Refund Policy | Hive Now",
+  };
+
+  const title = titleMap[slug] || `${slug.replace(/-/g, " ").toUpperCase()} | Hive Now`;
+
+  return {
+    title,
+    description: `Official ${title} for Hive Now marketplace.`,
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
+
+export default async function LegalDocumentPage({ params }: Props) {
+  const { slug } = await params;
+
+  let legalDoc: { content: string; slug: string; updatedAt?: number } | null = null;
+
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
+  if (convexUrl) {
+    try {
+      const client = new ConvexHttpClient(convexUrl);
+      legalDoc = await client.query(api.legal.getLatestBySlug, { slug });
+    } catch (err) {
+      console.error("Failed to fetch legal document SSR:", err);
+    }
   }
 
-  if (legalDoc === null) {
+  if (!legalDoc) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">
         <h1 className="text-2xl font-serif font-black text-hive-dark">Document Not Found</h1>
@@ -41,7 +66,7 @@ export default function LegalDocumentPage() {
         <Link href="/" className="inline-flex items-center gap-2 text-xs font-semibold text-hive-text-muted hover:text-hive-dark transition-colors mb-8">
           <ArrowLeft className="w-4 h-4" /> Back to Store
         </Link>
-        <div className="prose prose-hive max-w-none">
+        <div className="prose prose-hive max-w-none text-slate-800 leading-relaxed font-sans">
           <ReactMarkdown>{legalDoc.content}</ReactMarkdown>
         </div>
       </div>
