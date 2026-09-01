@@ -496,6 +496,22 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       boutiqueId: (product.boutique?.id ?? (product as any).boutiqueId) as any,
     }).catch(err => console.error("Failed to log analytics:", err));
     
+    // Auto-save existing items to Wishlist so nothing is lost
+    const toggleItem = useWishlistStore.getState().toggleItem;
+    const hasItem = useWishlistStore.getState().hasItem;
+    for (const item of items) {
+      if (item.productId && !hasItem(item.productId)) {
+        toggleItem({
+          id: item.productId,
+          slug: item.productId,
+          name: item.name,
+          price: item.price,
+          imageUrl: item.imageUrl || "",
+          boutiqueName: item.boutiqueName || "",
+        });
+      }
+    }
+
     // 1. Clear Zustand cart
     const clearCartZustand = useCartStore.getState().clearCart;
     clearCartZustand();
@@ -527,7 +543,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       scheduledProcessingDate: isPreorderMode ? (boutiqueStatus as any).nextOperatingDay : undefined,
     });
     setSidebarOpen(true);
-    triggerToast(`Added ${cleanProductTitle(product.name)} (Size ${selectedSize}) to your bag!`);
+    triggerToast(`Switched bag to ${cleanProductTitle(product.name)}! Previous items saved to your Wishlist.`);
   };
 
   const handleSaveToWishlist = () => {
@@ -553,7 +569,8 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         });
       }
       setCrossBoutiqueModalOpen(false);
-      triggerToast(`Saved ${cleanProductTitle(product.name)} for later`);
+      setSidebarOpen(true);
+      triggerToast(`Saved ${cleanProductTitle(product.name)} to Wishlist! Opening your current bag.`);
     }
   };
 
@@ -1030,31 +1047,31 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         }}
         title={
           <div className="flex flex-col text-left">
-            <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-amber-700 block mb-0.5">
-              LOCAL PARTNER FULFILLMENT
+            <span className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-amber-600 block mb-0.5">
+              EXPRESS LOCAL DELIVERY
             </span>
-            <h2 className="text-base sm:text-lg font-bold text-hive-text">
-              Separate Order Required
+            <h2 className="text-base sm:text-lg font-serif font-bold text-stone-900">
+              These pieces come from 2 different shops
             </h2>
           </div>
         }
         className="max-w-md"
       >
         <div className="flex flex-col py-1 px-1 text-left select-none">
-          <p className="text-xs text-stone-500 leading-relaxed font-normal mb-1">
-            Items from different Hive partners are fulfilled separately for faster delivery and better service coordination.
+          <p className="text-xs text-stone-600 leading-relaxed font-normal mb-1">
+            Our express riders pick up directly from each local shop to deliver straight to your door in 90 minutes.
           </p>
-          <span className="text-[11px] text-stone-400 font-medium block mb-5">
-            Delivered directly by each Hive partner
-          </span>
+          <p className="text-[11px] text-stone-400 font-medium mb-4">
+            To get both outfits, simply place 2 quick separate orders.
+          </p>
 
-          <hr className="border-stone-100 mb-5" />
+          <hr className="border-stone-100 mb-4" />
 
-          {/* Visual Comparison: Current Order vs Selected Item */}
-          <div className="space-y-4 mb-5">
-            {/* Current Order */}
-            <div className="bg-stone-50/60 border border-stone-100 p-3.5 rounded-xl flex items-center gap-3">
-              <div className="relative w-10 h-13 rounded overflow-hidden bg-stone-100 border border-stone-200/50 flex-shrink-0">
+          {/* Visual Comparison: Current Bag vs New Selection */}
+          <div className="space-y-3 mb-4">
+            {/* Current Bag */}
+            <div className="bg-stone-50/80 border border-stone-200/60 p-3 rounded-xl flex items-center gap-3">
+              <div className="relative w-10 h-12 rounded-lg overflow-hidden bg-stone-100 border border-stone-200/50 flex-shrink-0">
                 {items[0]?.imageUrl ? (
                   <img
                      src={items[0].imageUrl}
@@ -1068,13 +1085,13 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400 block mb-0.5">
-                  Current Order
+                <span className="text-[9px] font-bold uppercase tracking-wider text-amber-700 block mb-0.5">
+                  Currently in Bag
                 </span>
-                <span className="text-xs font-semibold text-stone-850 block truncate">
+                <span className="text-xs font-semibold text-stone-900 block truncate">
                   {items[0]?.boutiqueName}
                 </span>
-                <div className="flex items-baseline justify-between mt-1">
+                <div className="flex items-baseline justify-between mt-0.5">
                   <span className="text-[10px] text-stone-500 font-normal">
                     {items.reduce((acc, curr) => acc + (curr.quantity || 1), 0)} {items.reduce((acc, curr) => acc + (curr.quantity || 1), 0) === 1 ? "item" : "items"}
                   </span>
@@ -1086,15 +1103,15 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             </div>
 
             {/* Arrow/Indicator */}
-            <div className="flex justify-center -my-2.5 relative z-10">
-              <div className="w-6 h-6 rounded-full bg-white border border-stone-200 flex items-center justify-center text-stone-400 text-xs font-light">
+            <div className="flex justify-center -my-2 relative z-10">
+              <div className="w-5 h-5 rounded-full bg-white border border-stone-200 flex items-center justify-center text-stone-400 text-[10px]">
                 ↓
               </div>
             </div>
 
             {/* Selected Item */}
-            <div className="bg-stone-50/60 border border-stone-100 p-3.5 rounded-xl flex items-center gap-3">
-              <div className="relative w-10 h-13 rounded overflow-hidden bg-stone-100 border border-stone-200/50 flex-shrink-0">
+            <div className="bg-amber-50/40 border border-amber-200/60 p-3 rounded-xl flex items-center gap-3">
+              <div className="relative w-10 h-12 rounded-lg overflow-hidden bg-stone-100 border border-stone-200/50 flex-shrink-0">
                 {product.images?.[0] ? (
                   <img
                     src={product.images[0]}
@@ -1108,13 +1125,13 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-400 block mb-0.5">
-                  New Selection
+                <span className="text-[9px] font-bold uppercase tracking-wider text-stone-500 block mb-0.5">
+                  New Piece You Clicked
                 </span>
-                <span className="text-xs font-semibold text-stone-850 block truncate">
+                <span className="text-xs font-semibold text-stone-900 block truncate">
                   {cleanProductTitle(product.name)}
                 </span>
-                <div className="flex items-baseline justify-between mt-1">
+                <div className="flex items-baseline justify-between mt-0.5">
                   <span className="text-[10px] text-stone-500 font-normal block truncate">
                     {product.boutique?.name}
                   </span>
@@ -1126,32 +1143,33 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             </div>
           </div>
 
-          <hr className="border-stone-100 mb-5" />
-
-          {/* Helper Text for Wishlist */}
-          <p className="text-[10px] text-stone-400 text-center font-normal mb-3 px-2">
-            Not ready to switch? Save this item to continue shopping from your current partner.
-          </p>
+          <hr className="border-stone-100 mb-4" />
 
           {/* Action buttons */}
-          <div className="flex flex-col w-full mt-1">
-            <button
-              onClick={handleClearAndContinue}
-              className="h-11 w-full bg-stone-900 text-white hover:bg-stone-950 active:scale-[0.98] transition-all rounded-full text-xs sm:text-sm font-semibold shadow-sm flex items-center justify-center gap-1.5"
-            >
-              <span>Shop From This Partner</span>
-              <span>→</span>
-            </button>
-            <span className="text-[10px] text-stone-400 font-normal mt-1.5 text-center block">
-              Your current bag will be replaced.
-            </span>
-            
+          <div className="flex flex-col w-full">
+            {/* Option 1: Primary Action */}
             <button
               onClick={handleSaveToWishlist}
-              className="h-11 w-full bg-stone-100/80 text-stone-850 hover:bg-stone-200 active:scale-[0.98] transition-all rounded-full text-xs sm:text-sm font-semibold mt-3.5 flex items-center justify-center"
+              className="h-12 w-full bg-[#F5C22B] hover:bg-[#E0B120] text-stone-950 font-bold active:scale-[0.98] transition-all rounded-2xl text-xs sm:text-sm shadow-[0_4px_16px_rgba(245,194,43,0.25)] flex items-center justify-center gap-2 cursor-pointer"
             >
-              Save For Later
+              <Heart className="w-4 h-4 fill-stone-950 stroke-stone-950" />
+              <span>Save to Wishlist & Finish Current Bag</span>
+              <span>→</span>
             </button>
+            <span className="text-[10.5px] text-stone-500 font-medium mt-1.5 text-center block">
+              We'll bookmark this piece so you can easily order it right after!
+            </span>
+            
+            {/* Option 2: Switch Bag */}
+            <button
+              onClick={handleClearAndContinue}
+              className="h-11 w-full bg-stone-100/90 text-stone-800 hover:bg-stone-200 active:scale-[0.98] transition-all rounded-2xl text-xs font-semibold mt-3.5 flex items-center justify-center cursor-pointer"
+            >
+              Switch Bag to This Item
+            </button>
+            <span className="text-[9.5px] text-stone-400 font-normal mt-1 text-center block">
+              Your previous item will be safely saved to your Wishlist.
+            </span>
             
             <button
               onClick={() => {
@@ -1162,7 +1180,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
                 }).catch(err => console.error("Failed to log analytics:", err));
                 setCrossBoutiqueModalOpen(false);
               }}
-              className="w-full text-center text-xs text-stone-600 hover:text-stone-900 font-semibold py-2 transition-colors focus:outline-none mt-2"
+              className="w-full text-center text-xs text-stone-500 hover:text-stone-900 font-medium py-2 transition-colors focus:outline-none mt-2 cursor-pointer"
             >
               Keep Browsing
             </button>

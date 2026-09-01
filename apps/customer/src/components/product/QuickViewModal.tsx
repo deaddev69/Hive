@@ -285,6 +285,23 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
       boutiqueId: displayProduct.boutiqueId as any,
     }).catch(err => console.error("Failed to log analytics:", err));
     
+    // Auto-save existing items to Wishlist so nothing is lost
+    const items = useCartStore.getState().items;
+    const toggleItem = useWishlistStore.getState().toggleItem;
+    const hasItem = useWishlistStore.getState().hasItem;
+    for (const item of items) {
+      if (item.productId && !hasItem(item.productId)) {
+        toggleItem({
+          id: item.productId,
+          slug: item.productId,
+          name: item.name,
+          price: item.price,
+          imageUrl: item.imageUrl || "",
+          boutiqueName: item.boutiqueName || "",
+        });
+      }
+    }
+
     const clearCartZustand = useCartStore.getState().clearCart;
     clearCartZustand();
     
@@ -309,6 +326,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
       scheduledProcessingDate: isPreorderMode ? (boutiqueStatus as any).nextOperatingDay : undefined,
     });
     setSidebarOpen(true);
+    toast.success(`Switched bag to ${displayProduct.name}! Previous item saved to your Wishlist.`);
     onClose();
   };
 
@@ -334,7 +352,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         });
       }
       setCrossBoutiqueModalOpen(false);
-      toast.success("Saved to Wishlist!");
+      setSidebarOpen(true);
+      toast.success(`Saved ${displayProduct.name} to Wishlist! Opening your current bag.`);
+      onClose();
     }
   };
 
@@ -663,36 +683,64 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
         }}
         title={
           <div className="flex flex-col text-left">
-            <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-amber-700 block mb-0.5">
-              LOCAL PARTNER FULFILLMENT
+            <span className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-amber-600 block mb-0.5">
+              EXPRESS LOCAL DELIVERY
             </span>
-            <h2 className="text-base sm:text-lg font-bold text-hive-text">
-              Separate Order Required
+            <h2 className="text-base sm:text-lg font-serif font-bold text-stone-900">
+              These pieces come from 2 different shops
             </h2>
           </div>
         }
         className="max-w-md"
       >
         <div className="flex flex-col py-1 px-1 text-left select-none">
-          <p className="text-xs text-stone-500 leading-relaxed font-normal mb-1">
-            Items from different Hive partners are fulfilled separately for faster delivery and better service coordination.
+          <p className="text-xs text-stone-600 leading-relaxed font-normal mb-1">
+            Our express riders pick up directly from each local shop to deliver straight to your door in 90 minutes.
           </p>
-          <span className="text-[11px] text-stone-400 font-medium block mb-5">
-            Delivered directly by each Hive partner
-          </span>
-          <hr className="border-stone-100 mb-5" />
-          <div className="flex flex-col gap-2 w-full">
-            <button
-              onClick={handleClearAndContinue}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-stone-900 hover:bg-stone-950 active:scale-95 transition-all text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-sm"
-            >
-              Clear Cart & Add This
-            </button>
+          <p className="text-[11px] text-stone-400 font-medium mb-4">
+            To get both outfits, simply place 2 quick separate orders.
+          </p>
+
+          <hr className="border-stone-100 mb-4" />
+
+          {/* Action buttons */}
+          <div className="flex flex-col w-full">
+            {/* Option 1: Primary Action */}
             <button
               onClick={handleSaveToWishlist}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-white hover:bg-stone-50 active:bg-stone-100 active:scale-95 transition-all border border-stone-200 text-stone-700 rounded-xl text-xs font-bold uppercase tracking-widest shadow-sm"
+              className="h-12 w-full bg-[#F5C22B] hover:bg-[#E0B120] text-stone-950 font-bold active:scale-[0.98] transition-all rounded-2xl text-xs sm:text-sm shadow-[0_4px_16px_rgba(245,194,43,0.25)] flex items-center justify-center gap-2 cursor-pointer"
             >
-              Save to Wishlist
+              <Heart className="w-4 h-4 fill-stone-950 stroke-stone-950" />
+              <span>Save to Wishlist & Finish Current Bag</span>
+              <span>→</span>
+            </button>
+            <span className="text-[10.5px] text-stone-500 font-medium mt-1.5 text-center block">
+              We'll bookmark this piece so you can easily order it right after!
+            </span>
+            
+            {/* Option 2: Switch Bag */}
+            <button
+              onClick={handleClearAndContinue}
+              className="h-11 w-full bg-stone-100/90 text-stone-800 hover:bg-stone-200 active:scale-[0.98] transition-all rounded-2xl text-xs font-semibold mt-3.5 flex items-center justify-center cursor-pointer"
+            >
+              Switch Bag to This Item
+            </button>
+            <span className="text-[9.5px] text-stone-400 font-normal mt-1 text-center block">
+              Your previous item will be safely saved to your Wishlist.
+            </span>
+            
+            <button
+              onClick={() => {
+                logFunnelEvent({
+                  eventType: "cross_boutique_dismissed",
+                  productId: displayProduct.slug as any,
+                  boutiqueId: displayProduct.boutiqueId as any,
+                }).catch(err => console.error("Failed to log analytics:", err));
+                setCrossBoutiqueModalOpen(false);
+              }}
+              className="w-full text-center text-xs text-stone-500 hover:text-stone-900 font-medium py-2 transition-colors focus:outline-none mt-2 cursor-pointer"
+            >
+              Keep Browsing
             </button>
           </div>
         </div>

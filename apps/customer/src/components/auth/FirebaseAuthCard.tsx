@@ -21,8 +21,8 @@ interface FirebaseAuthCardProps {
 }
 
 export function FirebaseAuthCard({ 
-  title = "Welcome back", 
-  subtitle = "Secure sign in with Google or mobile OTP",
+  title = "Welcome to Hive Now", 
+  subtitle = "Sign in or get started in seconds with Google or mobile OTP",
   onSuccess,
   showLogo = true
 }: FirebaseAuthCardProps) {

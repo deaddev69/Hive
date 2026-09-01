@@ -19,7 +19,7 @@ export default function SignInPage() {
         )}
         
         <Suspense fallback={<div className="p-10 text-center text-xs">Loading secure sign in...</div>}>
-          <FirebaseAuthCard title="Welcome back" subtitle="Secure sign in with Google or mobile OTP" />
+          <FirebaseAuthCard title="Welcome to Hive Now" subtitle="Sign in or get started in seconds with Google or mobile OTP" />
         </Suspense>
       </div>
     </div>
