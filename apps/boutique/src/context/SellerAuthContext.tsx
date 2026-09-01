@@ -78,18 +78,12 @@ export function SellerAuthProvider({ children }: { children: React.ReactNode }) 
       }
     }
 
-    // 2. PWA standalone or Capacitor fallback mode -> Redirect
-    if (isCapacitor() || isPWA()) {
-      await signInWithRedirect(auth, googleProvider);
-      return;
-    }
-
-    // 3. Desktop / Mobile Chrome Tab -> Popup
+    // 2. Web & PWA (Desktop / Mobile Chrome / Standalone PWA) -> Popup
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err: any) {
       if (err.code === "auth/popup-blocked") {
-        // Popup blocked — fall back to redirect silently
+        // Popup blocked by browser policy — fall back to redirect
         await signInWithRedirect(auth, googleProvider);
         return;
       }
