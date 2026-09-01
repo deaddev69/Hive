@@ -59,6 +59,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_boutiqueCounters from "../lib/boutiqueCounters.js";
 import type * as lib_boutiqueStatus from "../lib/boutiqueStatus.js";
 import type * as lib_coupons from "../lib/coupons.js";
+import type * as lib_deliveryEta from "../lib/deliveryEta.js";
 import type * as lib_deliveryPricing from "../lib/deliveryPricing.js";
 import type * as lib_emailTemplates from "../lib/emailTemplates.js";
 import type * as lib_encryption from "../lib/encryption.js";
@@ -217,6 +218,7 @@ declare const fullApi: ApiFromModules<{
   "lib/boutiqueCounters": typeof lib_boutiqueCounters;
   "lib/boutiqueStatus": typeof lib_boutiqueStatus;
   "lib/coupons": typeof lib_coupons;
+  "lib/deliveryEta": typeof lib_deliveryEta;
   "lib/deliveryPricing": typeof lib_deliveryPricing;
   "lib/emailTemplates": typeof lib_emailTemplates;
   "lib/encryption": typeof lib_encryption;

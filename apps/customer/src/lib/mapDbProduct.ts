@@ -25,5 +25,6 @@ export function mapDbProduct(p: any): ProductCardData & {
     reviewCount: p.reviewCount || undefined,
     sizes: p.sizes || [],
     stockBySize: p.stockBySize || {},
+    deliveryLabel: p.deliveryLabel,
   };
 }

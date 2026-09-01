@@ -69,6 +69,7 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     estimatedDurationMin: p.estimatedDurationMin,
     estimatedEtaMinutes: p.estimatedEtaMinutes,
     hiveScore: p.hiveScore,
+    deliveryLabel: p.deliveryLabel,
   };
 }
 

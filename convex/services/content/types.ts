@@ -15,8 +15,12 @@ export interface ResolvedProduct {
   reviewCount?: number;
   // Merchandising & Operations
   createdAt?: number;
+  sameDayEligible?: boolean;
   distanceKm?: number;
   etaMinutes?: number;
+  /** Resolved delivery promise ("90-Min Delivery" / "Delivers Tomorrow" / …), computed server-side
+   *  from boutique hours + prep time + real distance. See convex/lib/deliveryEta.ts. */
+  deliveryLabel?: string | null;
   hiveScore?: number;
   badges?: string[];
 }

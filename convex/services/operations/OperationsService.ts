@@ -1,5 +1,6 @@
 import { ResolvedProduct } from "../content/types";
-import { haversineKm } from "../../lib/serviceability";
+import { haversineKm, estimatedRoadKm } from "../../lib/serviceability";
+import { resolveDeliveryLabel } from "../../lib/deliveryEta";
 
 export class OperationsService {
   /**
@@ -53,7 +54,11 @@ export class OperationsService {
           distanceKm = cached.distanceKm;
           durationMin = cached.durationMin;
         } else {
-          distanceKm = haversineKm(startLat, startLng, bLat, bLng);
+          // No measured road distance for this pair yet. Scale the straight-line figure rather
+          // than using it raw — otherwise whether a boutique is in range depends on whether its
+          // route happens to be cached, and the same shop flips in and out of serviceability as
+          // the cache fills in the background.
+          distanceKm = estimatedRoadKm(haversineKm(startLat, startLng, bLat, bLng));
           durationMin = (distanceKm / 25) * 60; // rough heuristic
         }
 
@@ -63,6 +68,14 @@ export class OperationsService {
         // Mutate DTO
         dto.distanceKm = distanceKm;
         dto.etaMinutes = etaMinutes;
+        // Resolve the delivery promise here, where the boutique's hours, prep time and the real
+        // distance are all in hand. The card used to derive this from the shopper's device clock
+        // against a hardcoded window, ignoring all three.
+        dto.deliveryLabel = resolveDeliveryLabel({
+          sameDayEligible: (dto as any).sameDayEligible,
+          etaMinutes,
+          boutique,
+        });
 
         // Store boutique's delivery radius on DTO temporarily for filtering
         (dto as any)._deliveryRadiusKm = boutique.deliveryRadiusKm ?? 13;

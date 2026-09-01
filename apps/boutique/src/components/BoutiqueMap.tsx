@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Search, MapPin, Loader2 } from "lucide-react";
 import { Button } from "@hive/ui";
 import { GoogleMap, useJsApiLoader, Marker, Autocomplete } from "@react-google-maps/api";
@@ -51,6 +51,12 @@ export default function BoutiqueMap({ lat, lng, onChange, onSelectPlace, readOnl
 
   const initialLat = lat || 10.0159; // Default Kakkanad, Ernakulam
   const initialLng = lng || 76.3419;
+
+  // Memoised so its identity only changes when the coordinates genuinely do. Passing a fresh
+  // object literal here made GoogleMap re-apply `center` on every render, which re-centred the
+  // map mid-gesture and made panning feel like it was fighting back. Programmatic moves still go
+  // through mapRef.panTo; this now only re-centres on a real external coordinate change.
+  const mapCenter = useMemo(() => ({ lat: initialLat, lng: initialLng }), [initialLat, initialLng]);
 
   const handleMapInteraction = useCallback(
     async (clickLat: number, clickLng: number) => {
@@ -307,7 +313,7 @@ export default function BoutiqueMap({ lat, lng, onChange, onSelectPlace, readOnl
       <div className="w-full rounded-xl border border-slate-200 overflow-hidden shadow-inner">
         <GoogleMap
           mapContainerStyle={{ width: "100%", height: "300px" }}
-          center={{ lat: initialLat, lng: initialLng }}
+          center={mapCenter}
           zoom={15}
           onLoad={(map) => { mapRef.current = map as any; }}
           options={{

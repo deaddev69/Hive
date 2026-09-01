@@ -78,6 +78,8 @@ export class CatalogService {
           categoryId: product.categoryId ? product.categoryId.toString() : undefined,
           rating: product.averageRating,
           reviewCount: product.reviewCount,
+          // Carried so OperationsService can resolve an accurate delivery promise downstream.
+          sameDayEligible: product.sameDayEligible,
           createdAt: product._creationTime || product.createdAt || Date.now(),
         };
       })

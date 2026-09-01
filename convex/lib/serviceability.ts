@@ -6,6 +6,29 @@ const EARTH_RADIUS_KM = 6371;
 const DEFAULT_RADIUS_KM = 13;
 
 /**
+ * Straight-line distance systematically understates how far a rider actually travels. Measured
+ * against this deployment's own cachedRoadDistances rows, the road/straight-line ratio across
+ * Kochi ranges 1.23–1.96 (median ≈ 1.5) — the backwaters and limited bridge crossings push it
+ * well past the ~1.3 rule of thumb that holds in grid-planned cities.
+ *
+ * Applying this factor when no measured road distance is available keeps the radius check
+ * honest: a boutique 8km away in a straight line can easily be 15km by road, and admitting it
+ * into a 13km delivery radius means promising a 90-minute delivery that cannot be met.
+ * Erring toward under-promising is the correct direction for a delivery guarantee.
+ */
+export const ROAD_DISTANCE_MULTIPLIER = 1.5;
+
+/**
+ * Best available estimate of road distance. Prefers a measured value when one exists, otherwise
+ * scales the straight-line distance. Every radius/serviceability decision should go through this
+ * so the header's "we deliver here" answer and the product filter cannot disagree.
+ */
+export function estimatedRoadKm(straightLineKm: number, measuredRoadKm?: number | null): number {
+  if (measuredRoadKm !== undefined && measuredRoadKm !== null) return measuredRoadKm;
+  return straightLineKm * ROAD_DISTANCE_MULTIPLIER;
+}
+
+/**
  * Haversine formula — returns the great-circle (straight-line) distance
  * between two coordinate pairs in kilometres.
  *
@@ -51,7 +74,11 @@ export function isWithinDeliveryRadius(
   if (userLat == null || userLng == null || (userLat === 0 && userLng === 0)) return false;
   const coords = resolveBoutiqueCoords(boutique);
   if (!coords) return false;
-  const dist = haversineKm(userLat, userLng, coords.lat, coords.lng);
+  // Scaled to an estimated road distance so this matches what OperationsService decides when it
+  // filters products. Previously this compared raw straight-line distance while the product
+  // filter used measured road distance where cached, so the header could claim a location was
+  // serviceable while every product from that boutique was filtered out (or the reverse).
+  const dist = estimatedRoadKm(haversineKm(userLat, userLng, coords.lat, coords.lng));
   return dist <= (boutique.deliveryRadiusKm ?? DEFAULT_RADIUS_KM);
 }
 

@@ -71,6 +71,7 @@ export function mapDbProduct(p: any) {
     estimatedDurationMin: p.etaMinutes || p.estimatedDurationMin,
     estimatedEtaMinutes: p.etaMinutes || p.estimatedEtaMinutes,
     hiveScore: p.hiveScore,
+    deliveryLabel: p.deliveryLabel,
   };
 }
 

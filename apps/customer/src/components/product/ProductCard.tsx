@@ -90,15 +90,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
     };
   }, [userLat, userLng, boutique, city]);
 
-  // Clean logistics metadata single line (plain text, no badges, no icons, fashion-oriented)
+  // Clean logistics metadata single line (plain text, no badges, no icons, fashion-oriented).
+  // The promise is resolved server-side wherever possible (convex/lib/deliveryEta.ts), which is
+  // the only place that knows the boutique's real hours, prep time and distance to the shopper.
+  // The fallback below only runs when no server label reached us — a guest with no location on a
+  // path that skips OperationsService — and is pinned to IST rather than the device clock, since
+  // Hive delivers in one city and a traveller's local time says nothing about a Kochi rider.
   const logisticsText = React.useMemo(() => {
     if (isInvalid) return null;
+
+    const serverLabel = (product as any).deliveryLabel;
+    if (serverLabel) return serverLabel;
+
     const isSameDay = product.sameDayDelivery || product.sameDayDelivery === undefined;
-    if (isSameDay) {
-      const currentHour = new Date().getHours();
-      return (currentHour >= 9 && currentHour < 20) ? "90-Min Delivery" : "Delivers Tomorrow";
-    }
-    return "Express Delivery";
+    if (!isSameDay) return "Express Delivery";
+
+    const istHour = new Date(Date.now() + 330 * 60_000).getUTCHours();
+    return (istHour >= 9 && istHour < 20) ? "90-Min Delivery" : "Delivers Tomorrow";
   }, [product, isInvalid]);
 
   if (isInvalid) {

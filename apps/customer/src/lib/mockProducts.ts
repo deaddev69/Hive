@@ -24,5 +24,8 @@ export interface ProductCardData {
   estimatedDurationMin?: number;
   estimatedEtaMinutes?: number;
   hiveScore?: number;
+  /** Delivery promise resolved server-side from boutique hours, prep time and real distance.
+   *  ProductCard prefers this over its own clock-based fallback. */
+  deliveryLabel?: string | null;
 }
 

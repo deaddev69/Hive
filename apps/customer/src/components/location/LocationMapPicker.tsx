@@ -231,13 +231,38 @@ function MapPickerInner({
 }: LocationMapPickerProps) {
   const [activeMapTab, setActiveMapTab] = useState<"search" | "gps" | "manual">("search");
   const [isDragging, setIsDragging] = useState(false);
-  
+
   // GPS state
   const [geoLoading, setGeoLoading] = useState(false);
   const map = useMap();
   const geocodingLib = useMapsLibrary("geocoding");
 
-  const center = { lat, lng };
+  // Initial camera only. Deliberately NOT passed as the controlled `center`/`zoom` props — see
+  // the <Map> block below for why.
+  const initialCenter = useRef({ lat, lng }).current;
+
+  // The last centre this component itself reported upward via onChange. Incoming lat/lng that
+  // matches it is our own echo coming back through props, and must not trigger a re-pan.
+  const lastEmittedRef = useRef<{ lat: number; lng: number } | null>(null);
+
+  // Whether the camera moved because the user dragged, as opposed to a programmatic panTo from
+  // search / GPS / a saved-address chip. Only user drags should trigger reverse geocoding.
+  const userDraggedRef = useRef(false);
+
+  const geocodeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
+  }, []);
+
+  // Follow externally-driven coordinate changes (saved address selected, parent reset) by panning
+  // imperatively. This replaces the controlled `center` prop, which used to re-assert a stale
+  // position on every render.
+  useEffect(() => {
+    if (!map) return;
+    const last = lastEmittedRef.current;
+    if (last && Math.abs(last.lat - lat) < 1e-6 && Math.abs(last.lng - lng) < 1e-6) return;
+    map.panTo({ lat, lng });
+  }, [map, lat, lng]);
 
   // POI & transit hiding styles. Deliberately not using a Cloud-based `mapId` here — Google
   // Maps ignores inline `styles` whenever a mapId is present (styling then has to be configured
@@ -266,6 +291,9 @@ function MapPickerInner({
     const clickLat = typeof latLng.lat === "function" ? latLng.lat() : latLng.lat;
     const clickLng = typeof latLng.lng === "function" ? latLng.lng() : latLng.lng;
     if (typeof clickLat === "number" && typeof clickLng === "number") {
+      // Tapping the map is a deliberate re-pin, so the resulting idle should reverse-geocode
+      // exactly as a drag would.
+      userDraggedRef.current = true;
       if (onChange) onChange(clickLat, clickLng);
       map?.panTo({ lat: clickLat, lng: clickLng });
     }
@@ -425,41 +453,62 @@ function MapPickerInner({
 
       {/* Map Container - Full Bleed */}
       <div className={`w-full h-full ${readOnly ? 'opacity-90' : ''}`} style={{ height }}>
+        {/* Camera is UNCONTROLLED on purpose. Passing `center`/`zoom` as props makes this a
+            controlled component, and every re-render then re-asserts them — which broke both
+            gestures: `zoom` was a hardcoded literal so pinch-zoom (and the +/- buttons, which
+            call map.setZoom imperatively) always snapped back to 14, and `onDragstart` setting
+            React state mid-gesture re-applied the PRE-drag centre, yanking the map back under
+            the user's finger. External coordinate changes are now driven imperatively by the
+            panTo effect above instead. */}
         <Map
-          defaultCenter={center}
-          center={center}
+          defaultCenter={initialCenter}
           defaultZoom={14}
-          zoom={14}
           onClick={handleMapClick}
           disableDefaultUI={true}
           clickableIcons={!hidePOIs}
           styles={poiStyles}
           zoomControl={false}
           gestureHandling={readOnly ? "none" : "greedy"}
-          onDragstart={() => setIsDragging(true)}
+          onDragstart={() => {
+            setIsDragging(true);
+            userDraggedRef.current = true;
+          }}
           onIdle={(e: any) => {
             setIsDragging(false);
-            if (!readOnly && e.map) {
-              const centerLatLng = e.map.getCenter();
-              if (centerLatLng) {
-                const newLat = centerLatLng.lat();
-                const newLng = centerLatLng.lng();
-                if (onChange) onChange(newLat, newLng);
-                if (onReverseGeocode && geocodingLib) {
-                  const geocoder = new geocodingLib.Geocoder();
-                  geocoder.geocode({ location: { lat: newLat, lng: newLng } }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
-                    if (status === "OK" && results && results.length > 0) {
-                      try {
-                        onReverseGeocode(extractGeocodeData(results, "map_pin"));
-                      } catch (err) {
-                        toast.error("Unable to parse location details.");
-                      }
-                    } else if (status !== "ZERO_RESULTS") {
-                      toast.error("Unable to identify this location. Please try again.");
+            if (readOnly || !e.map) return;
+
+            // Only react to camera moves the user actually made. Programmatic pans (search
+            // result, GPS, saved address) already reported a richer result upstream — letting
+            // them fall through to here fired a second billed Geocoding call whose coarser
+            // "map_pin" answer overwrote the precise "search"/"gps" one.
+            if (!userDraggedRef.current) return;
+            userDraggedRef.current = false;
+
+            const centerLatLng = e.map.getCenter();
+            if (!centerLatLng) return;
+            const newLat = centerLatLng.lat();
+            const newLng = centerLatLng.lng();
+
+            lastEmittedRef.current = { lat: newLat, lng: newLng };
+            if (onChange) onChange(newLat, newLng);
+
+            if (onReverseGeocode && geocodingLib) {
+              // Debounced: idle can fire repeatedly while a flick decelerates.
+              if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
+              geocodeTimerRef.current = setTimeout(() => {
+                const geocoder = new geocodingLib.Geocoder();
+                geocoder.geocode({ location: { lat: newLat, lng: newLng } }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+                  if (status === "OK" && results && results.length > 0) {
+                    try {
+                      onReverseGeocode(extractGeocodeData(results, "map_pin"));
+                    } catch (err) {
+                      toast.error("Unable to parse location details.");
                     }
-                  });
-                }
-              }
+                  } else if (status !== "ZERO_RESULTS") {
+                    toast.error("Unable to identify this location. Please try again.");
+                  }
+                });
+              }, 250);
             }
           }}
         />

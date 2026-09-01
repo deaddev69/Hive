@@ -76,6 +76,7 @@ function mapDbProduct(p: any): any {
     estimatedDurationMin: p.estimatedDurationMin,
     estimatedEtaMinutes: p.estimatedEtaMinutes,
     hiveScore: p.hiveScore,
+    deliveryLabel: p.deliveryLabel,
   };
 }
 
