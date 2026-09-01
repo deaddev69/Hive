@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { HelpCircle, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
+import { HelpCircle, ChevronDown, ChevronUp, AlertCircle, Zap } from "lucide-react";
 
 export interface CustomerPriceBreakdownProps {
   subtotal: number;          // Product total in Rupees
@@ -114,6 +114,11 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
               {formatCurrency(total)}
             </span>
           </div>
+        </div>
+
+        <div className="flex items-center justify-center gap-1.5 pt-3 border-t border-hive-border/30 text-[10px] font-bold text-hive-text-muted">
+          <Zap className="w-3 h-3 text-hive-amber fill-hive-amber" />
+          <span>90-Minute Delivery across Kochi</span>
         </div>
       </div>
 

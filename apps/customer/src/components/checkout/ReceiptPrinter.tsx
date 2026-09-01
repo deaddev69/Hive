@@ -120,7 +120,7 @@ export function ReceiptPrinterMachine({
   return (
     <div
       className={cn(
-        "relative isolate w-full overflow-hidden rounded-3xl border border-stone-200/80 bg-[#FAF8F5] dark:bg-stone-900 p-4 pb-5 shadow-sm text-stone-900",
+        "relative isolate w-full overflow-hidden rounded-3xl border border-stone-200/80 bg-hive-cream dark:bg-stone-900 p-4 pb-5 shadow-sm text-stone-900",
         className
       )}
       {...props}

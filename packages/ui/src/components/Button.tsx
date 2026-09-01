@@ -12,6 +12,9 @@ export const buttonVariants = cva(
         secondary: "bg-hive-comb text-hive-text hover:bg-hive-gold/20",
         outline: "border border-hive-border text-hive-text bg-white hover:bg-hive-cream hover:border-hive-gold/40",
         ghost: "text-hive-text hover:bg-hive-cream hover:text-hive-amber",
+        // The app's most common hand-rolled CTA look (dark pill, gold/cream text) — added so
+        // that pattern can route through this component instead of being reimplemented per file.
+        dark: "bg-hive-dark text-hive-cream hover:bg-hive-dark/90 shadow-sm",
       },
       size: {
         sm: "h-9 px-3 rounded-lg text-xs",

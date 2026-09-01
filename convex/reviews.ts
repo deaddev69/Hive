@@ -151,6 +151,25 @@ export const submitOrderReview = mutation({
       } as any);
     }
 
+    // 5b. Update Boutique Average Rating incrementally (same running-average pattern as the
+    // product patch above — this previously had no real aggregate at all, so every boutique
+    // shipped a hardcoded 4.8/25 in enrichProducts regardless of actual reviews).
+    if (finalBoutiqueId) {
+      const boutiqueDoc = await ctx.db.get(finalBoutiqueId);
+      if (boutiqueDoc) {
+        const currentBoutiqueAvg = (boutiqueDoc as any).averageRating ?? 0;
+        const currentBoutiqueCount = (boutiqueDoc as any).reviewCount ?? 0;
+        const newBoutiqueCount = currentBoutiqueCount + 1;
+        const newBoutiqueAvg = Number(
+          ((currentBoutiqueAvg * currentBoutiqueCount + cleanRating) / newBoutiqueCount).toFixed(2)
+        );
+        await ctx.db.patch(finalBoutiqueId, {
+          averageRating: newBoutiqueAvg,
+          reviewCount: newBoutiqueCount,
+        } as any);
+      }
+    }
+
     // 6. Insert fit feedback record if provided
     if (args.fitResponse && product && (product as any).categoryId) {
       await ctx.db.insert("fitFeedback", {

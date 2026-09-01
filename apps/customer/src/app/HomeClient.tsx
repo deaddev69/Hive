@@ -112,7 +112,7 @@ export function HomeClient() {
         <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
 
         {/* Luxury Editorial Ticker Banner (Marquee) */}
-        <div className="w-full overflow-hidden bg-[#F5C22B] py-2 border-b border-[#E0B120]/80 select-none shadow-2xs relative leading-none min-h-[34px] sm:min-h-[38px] flex items-center">
+        <div className="w-full overflow-hidden bg-hive-gold py-2 border-b border-[#E0B120]/80 select-none shadow-2xs relative leading-none min-h-[34px] sm:min-h-[38px] flex items-center">
           <div className="animate-marquee-slow flex items-center text-[10.5px] sm:text-xs font-semibold text-stone-900 tracking-wide">
             {/* Track 1 */}
             <div className="flex shrink-0 items-center">

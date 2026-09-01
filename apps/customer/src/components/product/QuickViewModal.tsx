@@ -519,7 +519,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                       <span className="text-xs sm:text-sm text-stone-400 line-through font-normal">
                         MRP {pricing.formattedMrp}
                       </span>
-                      <span className="text-xs sm:text-sm font-extrabold text-[#E8890C] tracking-wide">
+                      <span className="text-xs sm:text-sm font-extrabold text-hive-amber tracking-wide">
                         ({pricing.discountPercent}% OFF)
                       </span>
                     </>

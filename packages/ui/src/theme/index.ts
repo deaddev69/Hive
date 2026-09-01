@@ -1,6 +1,6 @@
 export const HIVE_THEME = {
   colors: {
-    gold: "#F5A623",
+    gold: "#d4af37",
     amber: "#E8890C",
     dark: "#1A1200",
     cream: "#FFFDF5",
@@ -11,7 +11,7 @@ export const HIVE_THEME = {
     comb: "#FFF3CC",
   },
   fonts: {
-    display: "Instrument Serif, Georgia, serif",
+    display: "var(--font-cormorant), Georgia, serif",
     sans: "Inter, system-ui, sans-serif",
   },
 } as const;

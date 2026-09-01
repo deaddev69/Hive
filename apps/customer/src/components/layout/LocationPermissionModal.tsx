@@ -67,7 +67,7 @@ export const LocationPermissionModal: React.FC = () => {
             {/* Custom Header Row */}
             <div className="w-full flex items-center justify-between gap-4 pb-2 sm:pb-4 border-b border-stone-200/50 dark:border-neutral-800/60">
               <div className="flex items-center gap-3 text-left">
-                <div className="w-12 h-12 rounded-full bg-[#FDF4E3] dark:bg-amber-950/30 flex items-center justify-center text-[#D97706] flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-[#FDF4E3] dark:bg-amber-950/30 flex items-center justify-center text-hive-amber flex-shrink-0">
                   <MapPin className="w-6 h-6 stroke-[1.8]" />
                 </div>
                 <div className="flex flex-col">
@@ -139,7 +139,7 @@ export const LocationPermissionModal: React.FC = () => {
             {/* Headline and Subheadline */}
             <div className="flex flex-col gap-2 w-full px-2">
               <h3 className="text-xl sm:text-2xl font-serif font-black text-stone-900 dark:text-white tracking-tight uppercase">
-                Hive is launching in <span className="text-[#D97706]">Kochi!</span>
+                Hive is launching in <span className="text-hive-amber">Kochi!</span>
               </h3>
               <p className="text-xs text-slate-600 dark:text-neutral-350 max-w-[340px] mx-auto leading-relaxed font-semibold">
                 We deliver fashion from verified local boutiques in Kochi. Allow location access or pick your neighborhood to view available inventory.
@@ -149,21 +149,21 @@ export const LocationPermissionModal: React.FC = () => {
             {/* Grid Value Propositions */}
             <div className="w-full grid grid-cols-3 gap-1 sm:gap-2 bg-[#FCF6EC]/60 dark:bg-neutral-900/40 rounded-2xl border border-[#FCF6EC]/80 dark:border-neutral-800/60 p-2 sm:p-3 text-center">
               <div className="flex flex-col items-center gap-1.5">
-                <div className="text-[#D97706] p-1 bg-[#FDF4E3] dark:bg-amber-950/40 rounded-lg">
+                <div className="text-hive-amber p-1 bg-[#FDF4E3] dark:bg-amber-950/40 rounded-lg">
                   <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8]" />
                 </div>
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-stone-900 dark:text-white leading-tight">Verified boutiques</span>
                 <span className="text-[8px] sm:text-[9px] text-slate-500 dark:text-neutral-400 font-bold leading-none">Trusted local partners</span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
-                <div className="text-[#D97706] p-1 bg-[#FDF4E3] dark:bg-amber-950/40 rounded-lg">
+                <div className="text-hive-amber p-1 bg-[#FDF4E3] dark:bg-amber-950/40 rounded-lg">
                   <Truck className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8]" />
                 </div>
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-stone-900 dark:text-white leading-tight">Same-day delivery</span>
                 <span className="text-[8px] sm:text-[9px] text-slate-500 dark:text-neutral-400 font-bold leading-none">On eligible orders</span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
-                <div className="text-[#D97706] p-1 bg-[#FDF4E3] dark:bg-amber-950/40 rounded-lg">
+                <div className="text-hive-amber p-1 bg-[#FDF4E3] dark:bg-amber-950/40 rounded-lg">
                   <Lock className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8]" />
                 </div>
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-stone-900 dark:text-white leading-tight">Secure shopping</span>
@@ -188,7 +188,7 @@ export const LocationPermissionModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleDetectLocation}
-                className="w-full h-12 rounded-xl bg-[#D97706] hover:bg-[#B45309] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-[0.15em] flex items-center justify-between px-5 transition-all shadow-md cursor-pointer select-none"
+                className="w-full h-12 rounded-xl bg-hive-amber hover:bg-[#B45309] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-[0.15em] flex items-center justify-between px-5 transition-all shadow-md cursor-pointer select-none"
               >
                 <div className="flex items-center gap-2">
                   <Navigation className="w-4 h-4 fill-white stroke-none" />
@@ -204,7 +204,7 @@ export const LocationPermissionModal: React.FC = () => {
                 className="w-full h-11 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 active:scale-[0.98] text-stone-900 dark:text-white font-bold text-xs uppercase tracking-[0.15em] flex items-center justify-between px-5 transition-all cursor-pointer select-none border border-stone-200 dark:border-neutral-700"
               >
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-[#D97706]" />
+                  <MapPin className="w-4 h-4 text-hive-amber" />
                   <span>Select Area Manually</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-400" />

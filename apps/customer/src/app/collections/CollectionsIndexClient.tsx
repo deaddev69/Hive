@@ -147,7 +147,7 @@ export function CollectionsIndexClient() {
   }
 
   return (
-    <div className="w-full bg-[#FAF9F6] min-h-screen pb-12">
+    <div className="w-full bg-hive-cream min-h-screen pb-12">
       {/* ── Compact Hyperlocal Header ───────────────────────────────── */}
       <div className="w-full bg-white border-b border-stone-200/70 pt-5 pb-4 px-4 sm:px-8">
         <div className="max-w-[1440px] mx-auto flex flex-col gap-3 text-left">

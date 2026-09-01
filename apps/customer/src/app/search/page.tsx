@@ -57,8 +57,8 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     price,
     compareAtPrice,
     discountPercent,
-    rating: 4.8, // Fallback rating
-    reviewCount: 12, // Fallback review count
+    rating: p.rating || p.averageRating || undefined,
+    reviewCount: p.reviewCount || undefined,
     occasion: getProductOccasion(p),
     isVerifiedBoutique: p.boutique?.verified || false,
     isNewArrival: Date.now() - p.createdAt < 7 * 24 * 60 * 60 * 1000,
@@ -180,7 +180,7 @@ function SearchContent() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#FAF8F5] dark:bg-stone-950 pb-20">
+    <div className="flex flex-col min-h-screen bg-hive-cream dark:bg-stone-950 pb-20">
       
       {/* 1. Ultra-Compact 1-Line Header */}
       {q && (

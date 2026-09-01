@@ -670,7 +670,7 @@ export default function CheckoutAddressPage() {
                     className={`bg-white border rounded-2xl p-5 flex flex-col justify-between relative cursor-pointer transition-all duration-300 min-h-[135px] ${
                       isSelected
                         ? "border-hive-dark shadow-[0_4px_20px_rgba(0,0,0,0.08)]"
-                        : "border-[#1C1917]/12 hover:border-hive-border/60 shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
+                        : "border-hive-dark/12 hover:border-hive-border/60 shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
                     } ${openMenuId === addr._id ? "z-50" : "z-10"}`}
                   >
                     {/* Header: Label, Icon, Default Badge, and Menu */}
@@ -921,7 +921,7 @@ export default function CheckoutAddressPage() {
             </div>
 
             {/* Detected Address Details Card */}
-            <div className="p-3.5 bg-[#FAF8F5] border border-stone-200/70 rounded-xl text-left w-full space-y-1">
+            <div className="p-3.5 bg-hive-cream border border-stone-200/70 rounded-xl text-left w-full space-y-1">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                 <p className="text-xs font-bold text-stone-900 truncate">
@@ -1093,7 +1093,7 @@ export default function CheckoutAddressPage() {
               type="button"
               disabled={formSaving}
               onClick={handleSaveAddress}
-              className="flex-1 h-12 bg-[#1C1917] text-[#FAF8F5] hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              className="flex-1 h-12 bg-hive-dark text-hive-cream hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
               {formSaving ? (
                 <>

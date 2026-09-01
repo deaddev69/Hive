@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Scissors, Compass, Ruler, FileText, Shirt, CheckCircle2, RotateCcw, ShieldCheck } from "lucide-react";
+import { Scissors, Compass, Ruler, FileText, Shirt, CheckCircle2, RotateCcw, ShieldCheck, Star } from "lucide-react";
 import { cn } from "@hive/ui";
 import { PRODUCT_SPEC_KEYS } from "@hive/types";
 import { ProductDetail } from "@/lib/mockProductDetails";
@@ -104,6 +104,21 @@ export function MobileProductDetails({
           {cleanProductTitle(product.name)}
         </h1>
 
+        {/* Rating — only when the product actually has published reviews */}
+        {typeof product.rating === "number" && product.rating > 0 && (
+          <div className="flex items-center gap-1.5 text-xs pt-0.5">
+            <div className="flex items-center gap-0.5">
+              <Star className="w-3.5 h-3.5 fill-hive-amber text-hive-amber" />
+              <span className="font-bold text-stone-900">{product.rating.toFixed(1)}</span>
+            </div>
+            {typeof product.reviewCount === "number" && product.reviewCount > 0 && (
+              <span className="text-stone-400 font-medium">
+                ({product.reviewCount} review{product.reviewCount === 1 ? "" : "s"})
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Pricing */}
         <div className="flex flex-col gap-1 pt-1 select-none">
           <div className="flex items-baseline gap-2.5 leading-none">
@@ -115,7 +130,7 @@ export function MobileProductDetails({
                 <span className="text-xs sm:text-sm text-stone-400 line-through font-normal">
                   MRP ₹{product.compareAtPrice.toLocaleString("en-IN")}
                 </span>
-                <span className="text-xs sm:text-sm font-extrabold text-[#E8890C] tracking-wide">
+                <span className="text-xs sm:text-sm font-extrabold text-hive-amber tracking-wide">
                   ({discountPercent}% OFF)
                 </span>
               </>
@@ -147,7 +162,7 @@ export function MobileProductDetails({
               <div
                 key={item.key}
                 className={cn(
-                  "border border-stone-200/60 rounded-xl p-3 bg-[#FAF8F5]/60 flex items-start gap-2.5 transition-all",
+                  "border border-stone-200/60 rounded-xl p-3 bg-hive-cream/60 flex items-start gap-2.5 transition-all",
                   isLastOdd && "col-span-2"
                 )}
               >
@@ -181,7 +196,7 @@ export function MobileProductDetails({
       {(fitRecommendation || silhouette) && (
         <div className="flex flex-col gap-2 select-none">
           {fitRecommendation && (
-            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/70 bg-[#FAF8F5]/40 text-stone-700">
+            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/70 bg-hive-cream/40 text-stone-700">
               <Ruler className="w-4 h-4 text-stone-500 flex-shrink-0" />
               <div className="flex flex-col">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider leading-none mb-0.5 text-stone-800">{fitBadgeConfig[fitRecommendation].label}</span>
@@ -190,7 +205,7 @@ export function MobileProductDetails({
             </div>
           )}
           {silhouette && (
-            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/70 bg-[#FAF8F5]/40 text-stone-600">
+            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/70 bg-hive-cream/40 text-stone-600">
               <Shirt className="w-4 h-4 text-stone-400 flex-shrink-0" />
               <span className="text-[11px] font-medium leading-tight">{silhouetteConfig[silhouette]}</span>
             </div>
@@ -248,10 +263,10 @@ export function MobileProductDetails({
               <div className="grid grid-cols-2 gap-x-8 gap-y-3.5 pt-1.5 pb-1 text-left border-t border-stone-100/60">
                 {renderedSpecs.map((item, idx) => (
                   <div key={idx} className="space-y-0.5">
-                    <span className="text-[9px] font-extrabold text-[#78716C] uppercase tracking-wider block">
+                    <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
                       {item.label}
                     </span>
-                    <span className="text-xs font-semibold text-[#1C1917] block leading-tight">
+                    <span className="text-xs font-semibold text-hive-dark block leading-tight">
                       {item.value}
                     </span>
                   </div>
@@ -384,7 +399,7 @@ export function MobileProductDetails({
               <div className="absolute -right-3 -bottom-3 w-20 h-20 rounded-full bg-hive-gold/25 blur-2xl pointer-events-none group-hover:scale-125 transition-transform duration-500" />
 
               {/* Editorial Glass Card */}
-              <div className="relative z-10 bg-[#FAF6F0]/40 backdrop-blur-md border border-stone-200/60 border-l-4 border-l-hive-gold p-4 rounded-r-xl text-left flex gap-3.5 items-start hover:shadow-[0_8px_30px_rgba(240,194,67,0.18)] hover:-translate-y-0.5 transition-all duration-300">
+              <div className="relative z-10 bg-hive-cream/40 backdrop-blur-md border border-stone-200/60 border-l-4 border-l-hive-gold p-4 rounded-r-xl text-left flex gap-3.5 items-start hover:shadow-[0_8px_30px_rgba(240,194,67,0.18)] hover:-translate-y-0.5 transition-all duration-300">
                 {product.boutique.logoUrl && (
                   <div className="flex-shrink-0 w-11 h-11 rounded-full overflow-hidden border-2 border-white bg-stone-100 shadow-md mt-0.5">
                     <img

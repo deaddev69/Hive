@@ -299,7 +299,7 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
             type="button"
             onClick={onReserve}
             disabled={loading}
-            className="h-14 w-full rounded-2xl bg-hive-gold text-hive-dark font-black uppercase tracking-widest text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all shadow-sm hover:bg-[#F5C22B] disabled:opacity-50"
+            className="h-14 w-full rounded-2xl bg-hive-gold text-hive-dark font-black uppercase tracking-widest text-[11px] leading-tight px-1 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all shadow-sm hover:bg-hive-gold disabled:opacity-50"
           >
             {loading ? (
               <span className="w-4 h-4 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
@@ -881,7 +881,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
           Select Size
         </button>
       ) : isOutOfStock ? (
-        <div className="bg-[#FAF8F5] border border-hive-border/40 rounded-2xl p-4.5 space-y-3.5">
+        <div className="bg-hive-cream border border-hive-border/40 rounded-2xl p-4.5 space-y-3.5">
           <div className="text-xs">
             <span className="font-extrabold uppercase tracking-wider text-hive-dark block">
               Restock Notification
@@ -931,7 +931,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             type="button"
             onClick={handleReserve}
             disabled={loading}
-            className="h-12 w-full rounded-2xl bg-hive-gold text-hive-dark font-black uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:bg-[#F5C22B] cursor-pointer flex items-center justify-center disabled:opacity-50"
+            className="h-12 w-full rounded-2xl bg-hive-gold text-hive-dark font-black uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:bg-hive-gold cursor-pointer flex items-center justify-center disabled:opacity-50"
           >
             {loading ? (
               <span className="w-5 h-5 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
@@ -973,7 +973,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
 
       {/* 4. Self-Contained Success/Feedback Toast */}
       {toast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[99999] max-w-md w-[90%] sm:w-auto bg-[#1c1917]/95 border border-stone-850/50 text-white rounded-full px-5 py-3.5 flex items-center gap-3 shadow-2xl animate-[toastInCenter_0.35s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[99999] max-w-md w-[90%] sm:w-auto bg-hive-dark/95 border border-stone-850/50 text-white rounded-full px-5 py-3.5 flex items-center gap-3 shadow-2xl animate-[toastInCenter_0.35s_cubic-bezier(0.16,1,0.3,1)_forwards]">
           <div className={cn("w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0", toast.type === "success" ? "bg-green-500/25 text-green-400" : "bg-hive-gold/25 text-hive-gold")}>
             {toast.type === "success" ? (
               <CheckCircle className="w-3.5 h-3.5 stroke-[2.8]" />
@@ -1195,7 +1195,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
                 setItemOnHoldModalOpen(false);
                 handleWishlistToggle();
               }}
-              className="h-12 w-full rounded-2xl bg-[#1C1917] text-[#FAF8F5] font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] hover:bg-stone-900 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              className="h-12 w-full rounded-2xl bg-hive-dark text-hive-cream font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] hover:bg-stone-900 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
               <Heart className="w-4 h-4 text-amber-400" />
               <span>Save to Wishlist for Updates</span>
@@ -1238,7 +1238,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
                 setDuplicateReservationModalOpen(false);
                 router.push("/cart");
               }}
-              className="h-12 w-full rounded-2xl bg-gradient-to-r from-hive-dark via-[#2a2620] to-hive-dark text-hive-gold font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] border border-hive-gold/60 shadow-[0_4px_15px_rgba(245,194,43,0.1)] hover:shadow-[0_0_20px_rgba(245,194,43,0.25)] hover:border-[#F5C22B]"
+              className="h-12 w-full rounded-2xl bg-gradient-to-r from-hive-dark via-[#2a2620] to-hive-dark text-hive-gold font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] border border-hive-gold/60 shadow-[0_4px_15px_rgba(245,194,43,0.1)] hover:shadow-[0_0_20px_rgba(245,194,43,0.25)] hover:border-hive-gold"
             >
               Go to Cart to Checkout
             </button>

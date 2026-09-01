@@ -46,7 +46,7 @@ export function CollectionPageClient({ slug }: { slug: string }) {
   const mappedProducts = products.map(mapDbProduct);
 
   return (
-    <div className="flex flex-col w-full bg-[#FAF9F6]">
+    <div className="flex flex-col w-full bg-hive-cream">
       {/* ── Dynamic Header ── */}
       <CollectionHeader
         title={collection.name}

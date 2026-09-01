@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ExperiencePage({ params }: Props) {
   const { slug } = await params;
   return (
-    <div className="w-full bg-[#FAF9F6]">
+    <div className="w-full bg-hive-cream">
       <ExperiencePageClient slug={slug} />
     </div>
   );

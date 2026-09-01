@@ -105,8 +105,8 @@ export function PwaUpdateManager() {
       <div className="bg-white px-4 py-3.5 rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)] border border-slate-100 flex flex-col gap-3 backdrop-blur-md">
         
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-full bg-[#F5C22B]/20 flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-[#F5C22B]" />
+          <div className="w-9 h-9 rounded-full bg-hive-gold/20 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 text-hive-gold" />
           </div>
           <div className="flex flex-col flex-1">
             <span className="text-[15px] font-bold text-slate-900 leading-tight">

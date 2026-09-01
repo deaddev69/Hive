@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { navigateToSignIn } from "@/lib/auth-redirect";
 import { useQuery, useMutation } from "convex/react";
 import { toast, formatCurrency } from "@hive/utils";
+import { Tabs } from "@hive/ui";
 import { usePushSubscription } from "@/hooks/usePushSubscription";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
@@ -678,7 +679,7 @@ function OverviewTab({
             className="block bg-white border border-stone-200/80 hover:border-stone-300 rounded-2xl p-5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5"
           >
             <div className="flex gap-4">
-              <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-[#FAF8F4] border border-stone-200/80 shrink-0">
+              <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-hive-cream border border-stone-200/80 shrink-0">
                 {activeOrder.items?.[0]?.imageUrl ? (
                   <img
                     src={activeOrder.items[0].imageUrl}
@@ -792,7 +793,7 @@ function OverviewTab({
                   href={`/products/${product.slug}`}
                   className="shrink-0 w-32 group cursor-pointer"
                 >
-                  <div className="w-32 h-40 rounded-xl overflow-hidden bg-[#FAF8F4] border border-stone-200/80 group-hover:border-stone-300 transition-colors">
+                  <div className="w-32 h-40 rounded-xl overflow-hidden bg-hive-cream border border-stone-200/80 group-hover:border-stone-300 transition-colors">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
@@ -1300,13 +1301,13 @@ export default function AccountPage() {
     // Shaped like the real layout below (hero + compact tile row) instead of a generic
     // centered spinner, so there's no visible layout jump once real content arrives.
     return (
-      <div className="min-h-screen bg-[#FAF8F4] py-6 sm:py-10 px-4 sm:px-6 lg:px-8 animate-pulse select-none">
+      <div className="min-h-screen bg-hive-cream py-6 sm:py-10 px-4 sm:px-6 lg:px-8 animate-pulse select-none">
         <div className="max-w-5xl mx-auto flex flex-col gap-6">
-          <div className="h-24 bg-[#1c1917]/[0.05] rounded-3xl" />
-          <div className="h-32 bg-[#1c1917]/[0.05] rounded-3xl" />
+          <div className="h-24 bg-hive-dark/[0.05] rounded-3xl" />
+          <div className="h-32 bg-hive-dark/[0.05] rounded-3xl" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-20 bg-[#1c1917]/[0.05] rounded-2xl" />
+              <div key={i} className="h-20 bg-hive-dark/[0.05] rounded-2xl" />
             ))}
           </div>
         </div>
@@ -1344,7 +1345,7 @@ function AccountPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4] text-stone-900 font-sans pb-24 antialiased selection:bg-amber-100">
+    <div className="min-h-screen bg-hive-cream text-stone-900 font-sans pb-24 antialiased selection:bg-amber-100">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10">
         
         {/* ── TOP IDENTITY CARD (Clean & Luxury) ── */}
@@ -1383,27 +1384,18 @@ function AccountPageContent() {
           </div>
         </div>
 
-        {/* ── LUXURY TAB NAVIGATION STRIP ── */}
-        <div className="bg-white border border-stone-200/80 rounded-2xl p-1.5 shadow-2xs flex items-center gap-1 mb-8 overflow-x-auto no-scrollbar">
-          {NAVIGATION_ITEMS.map((tab) => {
-            const isTabActive = activeTab === tab.id;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 min-w-[100px] h-10 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  isTabActive
-                    ? "bg-stone-900 text-white shadow-xs"
-                    : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isTabActive ? "text-white" : "text-stone-400"}`} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* ── TAB NAVIGATION STRIP — shared @hive/ui Tabs primitive ── */}
+        <Tabs
+          items={NAVIGATION_ITEMS.map((tab) => ({
+            id: tab.id,
+            label: tab.label,
+            icon: <tab.icon className="w-3.5 h-3.5" />,
+          }))}
+          activeId={activeTab}
+          onChange={(id) => setActiveTab(id as NavId)}
+          variant="comb"
+          className="mb-8"
+        />
 
         {/* ── ACTIVE TAB CONTENT ── */}
         <main className="min-h-[400px]">

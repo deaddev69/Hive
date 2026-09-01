@@ -120,6 +120,8 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
 
       return {
         ...product,
+        rating: product.averageRating,
+        reviewCount: product.reviewCount,
         returnsAccepted: isReturnsAccepted,
         imageStorageIds: product.images,
         images: imageUrls.filter(Boolean),
@@ -132,8 +134,8 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
           name: boutique.boutiqueName,
           slug: boutique.slug,
           city: boutique.addressDetails?.city || "Kochi",
-          rating: 4.8,
-          reviewCount: 25,
+          rating: boutique.averageRating,
+          reviewCount: boutique.reviewCount,
           verified: boutique.status === "APPROVED",
           sameDayDelivery: product.sameDayEligible,
           latitude: boutique.latitude,

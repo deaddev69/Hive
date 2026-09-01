@@ -76,6 +76,8 @@ export class CatalogService {
           boutiqueName: boutique?.boutiqueName || "Unknown Boutique",
           boutiqueSlug: boutique?.slug || boutique?.boutiqueName?.toLowerCase().replace(/\s+/g, "-") || "unknown",
           categoryId: product.categoryId ? product.categoryId.toString() : undefined,
+          rating: product.averageRating,
+          reviewCount: product.reviewCount,
           createdAt: product._creationTime || product.createdAt || Date.now(),
         };
       })

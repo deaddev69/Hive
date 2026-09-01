@@ -260,6 +260,8 @@ export default defineSchema({
     isTestData:        v.optional(v.boolean()),
     isSandbox:         v.optional(v.boolean()),
     averagePrepTime:   v.optional(v.number()), // average prep time in minutes
+    averageRating:     v.optional(v.number()), // running average of published review ratings, maintained by reviews.submitOrderReview
+    reviewCount:       v.optional(v.number()),
     merchantType:      v.optional(
                          v.union(
                            v.literal("women_fashion"),

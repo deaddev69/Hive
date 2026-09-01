@@ -45,7 +45,7 @@ function ClaimsFormContent() {
         </div>
         <button
           type="button"
-          onClick={() => router.push("/account/orders")}
+          onClick={() => router.push("/orders")}
           className="w-full h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 shadow-sm"
         >
           <span>Back to Purchases</span>

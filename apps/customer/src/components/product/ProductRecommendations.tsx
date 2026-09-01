@@ -53,8 +53,8 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     price,
     compareAtPrice,
     discountPercent,
-    rating: 4.8, // Fallback rating
-    reviewCount: 12, // Fallback review count
+    rating: p.rating || p.averageRating || undefined,
+    reviewCount: p.reviewCount || undefined,
     occasion: getProductOccasion(p),
     isVerifiedBoutique: p.boutique?.verified || false,
     isNewArrival: Date.now() - p.createdAt < 7 * 24 * 60 * 60 * 1000,

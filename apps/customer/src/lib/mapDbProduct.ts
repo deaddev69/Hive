@@ -21,8 +21,8 @@ export function mapDbProduct(p: any): ProductCardData & {
     price,
     compareAtPrice,
     discountPercent: discountPercent > 0 ? discountPercent : undefined,
-    rating: 4.8,
-    reviewCount: 12,
+    rating: p.rating || p.averageRating || undefined,
+    reviewCount: p.reviewCount || undefined,
     sizes: p.sizes || [],
     stockBySize: p.stockBySize || {},
   };

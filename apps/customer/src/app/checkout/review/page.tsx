@@ -936,7 +936,7 @@ export default function OrderReviewPage() {
                       setScriptLoadError(false);
                       handlePay();
                     }}
-                    className="text-[10px] font-black uppercase text-[#1C1917] hover:text-[#1C1917]/80 underline focus:outline-none"
+                    className="text-[10px] font-black uppercase text-hive-dark hover:text-hive-dark/80 underline focus:outline-none"
                   >
                     Retry Payment
                   </button>
@@ -1033,7 +1033,7 @@ export default function OrderReviewPage() {
                 setScriptLoadError(false);
                 handlePay();
               }}
-              className="text-[10px] font-black uppercase text-[#1C1917] hover:text-[#1C1917]/80 underline focus:outline-none"
+              className="text-[10px] font-black uppercase text-hive-dark hover:text-hive-dark/80 underline focus:outline-none"
             >
               Retry Payment
             </button>

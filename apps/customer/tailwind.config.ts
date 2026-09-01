@@ -39,13 +39,18 @@ const config: Config = {
         }
       },
       fontFamily: {
-        serif: ["var(--font-satoshi)", "sans-serif"],
+        serif: ["var(--font-cormorant)", "Georgia", "serif"],
         sans: ["var(--font-inter)", "Inter", "sans-serif"],
-        mono: ["var(--font-geist-mono)", "monospace"],
+        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+      },
+      boxShadow: {
+        // Used across ~13 files under the assumption Tailwind v4's 2xs shadow step exists in
+        // this v3 build — it didn't, so those usages rendered no shadow at all. Same value v4 ships.
+        "2xs": "0 1px 1px 0 rgb(0 0 0 / 0.04)",
       },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 };
 
 export default config;

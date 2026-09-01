@@ -264,7 +264,7 @@ export function BecomeSellerClient() {
     };
 
     return (
-      <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center pb-24 animate-fadeIn">
+      <div className="min-h-screen bg-hive-cream flex flex-col items-center justify-center pb-24 animate-fadeIn">
         {/* Decorative background blur blobs */}
         <div className="absolute top-20 left-1/4 w-96 h-96 bg-hive-gold/5 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-hive-amber/3 rounded-full blur-[100px] pointer-events-none" />
@@ -356,7 +356,7 @@ export function BecomeSellerClient() {
             </div>
 
             {/* Profile Overview Card */}
-            <div className="bg-[#FAF8F5] border border-hive-border/60 rounded-2xl p-5 flex flex-col gap-4">
+            <div className="bg-hive-cream border border-hive-border/60 rounded-2xl p-5 flex flex-col gap-4">
               <span className="text-[9px] font-bold uppercase text-hive-text-muted tracking-[0.2em]">Partnership Request Summary</span>
               <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-xs">
                 <div>
@@ -455,7 +455,7 @@ export function BecomeSellerClient() {
 
   // 5. Registration Form
   return (
-    <div className="min-h-screen bg-[#FAF8F5] w-full pb-24 text-hive-dark">
+    <div className="min-h-screen bg-hive-cream w-full pb-24 text-hive-dark">
       {/* Decorative background blurs */}
       <div className="absolute top-20 left-1/4 w-96 h-96 bg-hive-gold/3 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-hive-amber/3 rounded-full blur-[100px] pointer-events-none" />
@@ -544,7 +544,7 @@ export function BecomeSellerClient() {
       {/* ──────────────────────────────────────────────────
           2. CATEGORY SELECTOR ("What do you sell?")
           ────────────────────────────────────────────────── */}
-      <section className="w-full bg-[#FAF6F0] border-y border-hive-border/40 py-16">
+      <section className="w-full bg-hive-cream border-y border-hive-border/40 py-16">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center space-y-8">
           <div className="space-y-2">
             <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-hive-gold">SELECT YOUR STYLE</span>

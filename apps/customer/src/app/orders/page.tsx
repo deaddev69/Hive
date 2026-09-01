@@ -22,6 +22,7 @@ import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { useSessionStore } from "@/context/SessionContext";
 import { ReviewModal } from "@/components/product/ReviewModal";
 import { formatCurrency } from "@hive/utils";
+import { Tabs } from "@hive/ui";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toTitleCase(str?: string): string {
@@ -97,52 +98,39 @@ export default function MyOrdersPage() {
   const firstReviewItem = reviewingOrder?.items?.[0];
 
   return (
-    <div className="min-h-screen bg-[#FAF8F4] py-12 px-4 sm:px-6 lg:px-8 select-none text-left antialiased">
+    <div className="min-h-screen bg-hive-cream py-12 px-4 sm:px-6 lg:px-8 select-none text-left antialiased">
       <div className="max-w-4xl mx-auto flex flex-col gap-8">
 
         {/* Page Header */}
-        <div className="space-y-2 pb-6 border-b border-[#1c1917]/[0.08]">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#D97706]">
+        <div className="space-y-2 pb-6 border-b border-hive-dark/[0.08]">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-hive-amber">
             Your Purchases
           </span>
           <div className="flex justify-between items-baseline">
-            <h1 className="text-3xl font-serif font-light text-[#1C1917] tracking-tight">
+            <h1 className="text-3xl font-serif font-light text-hive-dark tracking-tight">
               My Orders
             </h1>
             <Link
               href="/products"
-              className="text-xs font-bold text-[#1C1917] hover:text-[#D97706] transition-colors"
+              className="text-xs font-bold text-hive-dark hover:text-hive-amber transition-colors"
             >
               Browse Products →
             </Link>
           </div>
         </div>
 
-        {/* Premium Tab Bar */}
+        {/* Tab Bar — shared @hive/ui Tabs primitive */}
         {sortedOrders.length > 0 && (
-          <div className="flex gap-8 border-b border-stone-200 -mt-2 relative">
-            {[
+          <Tabs
+            items={[
               { id: "active", label: "Active", count: activeOrdersCount },
               { id: "completed", label: "Completed", count: deliveredOrdersCount },
               { id: "cancelled", label: "Cancelled", count: cancelledOrdersCount },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`relative pb-4 pt-2 text-sm font-bold uppercase tracking-wider transition-colors duration-300 ${
-                  activeTab === tab.id ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
-                }`}
-              >
-                {tab.label}
-                <span className="ml-2 text-[10px] font-black bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded-full">
-                  {tab.count}
-                </span>
-                {activeTab === tab.id && (
-                  <span className="absolute bottom-0 left-0 w-full h-[2px] bg-slate-900 rounded-t-full transition-all duration-300 shadow-[0_-2px_10px_rgba(0,0,0,0.2)]" />
-                )}
-              </button>
-            ))}
-          </div>
+            ]}
+            activeId={activeTab}
+            onChange={(id) => setActiveTab(id as any)}
+            className="-mt-2"
+          />
         )}
 
         {/* Order List / Empty State */}
@@ -221,11 +209,11 @@ function OrderCard({
 
   return (
     <div
-      className="bg-white border border-[#1c1917]/[0.08] rounded-xl p-6 shadow-sm hover:border-[#1c1917]/20 transition-all duration-300 text-left flex flex-col md:flex-row md:items-center justify-between gap-6"
+      className="bg-white border border-hive-dark/[0.08] rounded-xl p-6 shadow-sm hover:border-hive-dark/20 transition-all duration-300 text-left flex flex-col md:flex-row md:items-center justify-between gap-6"
     >
       <div className="flex gap-4 flex-1">
         {/* Product thumbnail */}
-        <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-[#FAF8F4] border border-[#1c1917]/[0.08] flex-shrink-0">
+        <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-hive-cream border border-hive-dark/[0.08] flex-shrink-0">
           {firstItem?.imageUrl ? (
             <img
               src={firstItem.imageUrl}
@@ -233,8 +221,8 @@ function OrderCard({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-[#FAF8F4] flex items-center justify-center">
-              <Package className="w-6 h-6 text-[#D97706]" />
+            <div className="w-full h-full bg-hive-cream flex items-center justify-center">
+              <Package className="w-6 h-6 text-hive-amber" />
             </div>
           )}
           {isActive && (
@@ -246,36 +234,36 @@ function OrderCard({
         <div className="flex flex-col justify-between py-1 flex-1 min-w-0">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-mono font-bold text-[#1C1917] tracking-wider select-all">
+              <span className="text-[10px] font-mono font-bold text-hive-dark tracking-wider select-all">
                 {order.orderNumber}
               </span>
               <OrderStatusBadge status={uiStatus} />
             </div>
 
-            <h4 className="text-sm font-serif font-light text-[#1C1917] truncate leading-snug">
+            <h4 className="text-sm font-serif font-light text-hive-dark truncate leading-snug">
               {firstItem?.productName || "Boutique Order"}
               {itemsCount > 1 && (
-                <span className="text-xs text-[#78716C] font-sans font-medium"> +{itemsCount - 1} more items</span>
+                <span className="text-xs text-hive-text-muted font-sans font-medium"> +{itemsCount - 1} more items</span>
               )}
             </h4>
 
             {firstItem && (
               <div className="pt-0.5">
-                <span className="text-[9px] font-bold text-[#78716C] bg-[#FAF8F4] border border-[#1c1917]/[0.06] px-2 py-0.5 rounded">
+                <span className="text-[9px] font-bold text-hive-text-muted bg-hive-cream border border-hive-dark/[0.06] px-2 py-0.5 rounded">
                   Size: {firstItem.variantSize || "Free"}
                 </span>
               </div>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-[#78716C] font-medium">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[10px] text-hive-text-muted font-medium">
             <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-[#D97706]" />
+              <Calendar className="w-3.5 h-3.5 text-hive-amber" />
               {formatDate(order.createdAt)}
             </span>
             {deliverySlot && (
               <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-[#D97706]" />
+                <Clock className="w-3.5 h-3.5 text-hive-amber" />
                 {deliverySlot}
               </span>
             )}
@@ -284,10 +272,10 @@ function OrderCard({
       </div>
 
       {/* Right: Paid & CTAs */}
-      <div className="flex flex-col md:items-end gap-4 border-t border-[#1c1917]/[0.06] md:border-t-0 pt-4 md:pt-0">
+      <div className="flex flex-col md:items-end gap-4 border-t border-hive-dark/[0.06] md:border-t-0 pt-4 md:pt-0">
         <div className="text-left md:text-right">
-          <span className="text-[9px] font-bold uppercase tracking-widest text-[#78716C] block">Total Paid</span>
-          <span className="text-base font-serif font-medium text-[#1C1917]">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-hive-text-muted block">Total Paid</span>
+          <span className="text-base font-serif font-medium text-hive-dark">
             {formatCurrency(order.total)}
           </span>
         </div>
@@ -310,7 +298,7 @@ function OrderCard({
               {isReturnEligible && (
                 <Link
                   href={`/orders/${order._id}`}
-                  className="h-9 px-3 border border-[#1c1917]/[0.08] hover:border-[#1c1917]/35 text-[#78716C] hover:text-[#1C1917] bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm"
+                  className="h-9 px-3 border border-hive-dark/[0.08] hover:border-hive-dark/35 text-hive-text-muted hover:text-hive-dark bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm"
                 >
                   <Undo2 className="w-3.5 h-3.5" />
                   <span>Return</span>
@@ -325,7 +313,7 @@ function OrderCard({
                 <button
                   type="button"
                   onClick={() => onOpenReview(order)}
-                  className="h-9 px-4 bg-[#F5C22B] text-slate-900 hover:bg-[#E0B024] active:scale-[0.98] transition-all rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                  className="h-9 px-4 bg-hive-gold text-slate-900 hover:bg-[#E0B024] active:scale-[0.98] transition-all rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Star className="w-3.5 h-3.5 fill-slate-900" />
                   <span>Rate & Review</span>
@@ -335,10 +323,10 @@ function OrderCard({
               <button
                 onClick={() => downloadInvoiceByOrderId(order._id)}
                 disabled={downloading}
-                className="h-9 px-3 border border-[#1c1917]/[0.08] hover:border-[#1c1917]/35 text-[#78716C] hover:text-[#1C1917] bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                className="h-9 px-3 border border-hive-dark/[0.08] hover:border-hive-dark/35 text-hive-text-muted hover:text-hive-dark bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
               >
                 {downloading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#78716C]" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-hive-text-muted" />
                 ) : (
                   "Invoice"
                 )}
@@ -346,10 +334,10 @@ function OrderCard({
 
               <Link
                 href={`/orders/${order._id}`}
-                className="h-9 px-3 border border-[#1c1917]/[0.08] hover:border-[#1c1917]/35 text-[#78716C] hover:text-[#1C1917] transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1"
+                className="h-9 px-3 border border-hive-dark/[0.08] hover:border-hive-dark/35 text-hive-text-muted hover:text-hive-dark transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1"
               >
                 <span>Details</span>
-                <ChevronRight className="w-3 h-3 text-[#78716C]" />
+                <ChevronRight className="w-3 h-3 text-hive-text-muted" />
               </Link>
             </>
           ) : (
@@ -357,10 +345,10 @@ function OrderCard({
               <button
                 onClick={() => downloadInvoiceByOrderId(order._id)}
                 disabled={downloading}
-                className="h-9 px-4 border border-[#1c1917]/[0.08] hover:border-[#1c1917]/35 text-[#78716C] hover:text-[#1C1917] bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                className="h-9 px-4 border border-hive-dark/[0.08] hover:border-hive-dark/35 text-hive-text-muted hover:text-hive-dark bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
               >
                 {downloading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#78716C]" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-hive-text-muted" />
                 ) : (
                   "Invoice"
                 )}
@@ -368,10 +356,10 @@ function OrderCard({
 
               <Link
                 href={`/orders/${order._id}`}
-                className="h-9 px-4 bg-[#1C1917] text-[#FAF8F4] hover:bg-[#1C1917]/90 active:scale-[0.98] transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm"
+                className="h-9 px-4 bg-hive-dark text-hive-cream hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm"
               >
                 <span>Track</span>
-                <ChevronRight className="w-3.5 h-3.5 text-[#F5A623]" />
+                <ChevronRight className="w-3.5 h-3.5 text-hive-gold" />
               </Link>
             </>
           )}
@@ -415,18 +403,18 @@ function EmptyOrdersState({ onRedirect }: { onRedirect: () => void }) {
   return (
     <div className="py-20 text-center space-y-6 max-w-sm mx-auto flex flex-col items-center animate-fadeIn">
       <div className="space-y-4">
-        <h2 className="font-serif text-2xl font-light text-[#1C1917]">You haven't placed any orders yet</h2>
-        <p className="text-xs text-[#78716C] leading-relaxed max-w-[280px] mx-auto font-medium">
+        <h2 className="font-serif text-2xl font-light text-hive-dark">You haven't placed any orders yet</h2>
+        <p className="text-xs text-hive-text-muted leading-relaxed max-w-[280px] mx-auto font-medium">
           Your curation journey is waiting. Explore unique, hand-crafted pieces from India's finest independent local designers.
         </p>
       </div>
       <button
         type="button"
         onClick={onRedirect}
-        className="h-12 px-8 bg-[#1C1917] text-[#FAF8F4] hover:bg-[#1c1917]/90 active:scale-[0.98] transition-all rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm cursor-pointer mt-4"
+        className="h-12 px-8 bg-hive-dark text-hive-cream hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm cursor-pointer mt-4"
       >
         <span>Shop Now</span>
-        <ArrowRight className="w-4 h-4 text-[#F5A623]" />
+        <ArrowRight className="w-4 h-4 text-hive-gold" />
       </button>
     </div>
   );
@@ -437,18 +425,18 @@ function EmptyOrdersState({ onRedirect }: { onRedirect: () => void }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function OrdersSkeleton() {
   return (
-    <div className="min-h-screen bg-[#FAF8F4] py-12 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
+    <div className="min-h-screen bg-hive-cream py-12 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
       <div className="max-w-4xl mx-auto flex flex-col gap-6">
-        <div className="h-8 w-40 bg-[#1c1917]/[0.05] rounded-lg" />
-        <div className="h-4 w-72 bg-[#1c1917]/[0.05] rounded -mt-3" />
-        <div className="flex gap-6 py-4 border-b border-[#1c1917]/[0.08]">
+        <div className="h-8 w-40 bg-hive-dark/[0.05] rounded-lg" />
+        <div className="h-4 w-72 bg-hive-dark/[0.05] rounded -mt-3" />
+        <div className="flex gap-6 py-4 border-b border-hive-dark/[0.08]">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-6 w-24 bg-[#1c1917]/[0.05] rounded" />
+            <div key={i} className="h-6 w-24 bg-hive-dark/[0.05] rounded" />
           ))}
         </div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white border border-[#1c1917]/[0.08] rounded-xl h-32" />
+            <div key={i} className="bg-white border border-hive-dark/[0.08] rounded-xl h-32" />
           ))}
         </div>
       </div>

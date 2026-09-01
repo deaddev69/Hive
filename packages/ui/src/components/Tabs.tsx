@@ -5,6 +5,7 @@ export interface TabItem {
   id: string;
   label: string;
   icon?: React.ReactNode;
+  count?: number;
 }
 
 export interface TabsProps {
@@ -54,6 +55,16 @@ export const Tabs: React.FC<TabsProps> = ({
             >
               {tab.icon && <span className="w-4 h-4">{tab.icon}</span>}
               {tab.label}
+              {typeof tab.count === "number" && (
+                <span
+                  className={cn(
+                    "ml-1 text-[10px] font-black px-1.5 py-0.5 rounded-full bg-hive-cream text-hive-text-muted",
+                    isActive && "bg-hive-gold/20 text-hive-text"
+                  )}
+                >
+                  {tab.count}
+                </span>
+              )}
             </button>
           );
         })}

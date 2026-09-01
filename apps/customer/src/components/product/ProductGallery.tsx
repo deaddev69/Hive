@@ -115,7 +115,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
           className={cn(
             "w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all active:scale-95 shadow-md cursor-pointer",
             isWishlisted
-              ? "bg-[#C9A84C] border border-[#C9A84C] text-stone-900"
+              ? "bg-hive-gold border border-hive-gold text-stone-900"
               : "bg-white/75 border border-white/45 text-stone-900 hover:bg-white"
           )}
         >
@@ -248,7 +248,7 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
     <div className="w-full flex flex-col md:flex-row gap-6">
       {/* Toast Notification element */}
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[99999] bg-[#1c1917]/95 border border-stone-850/50 text-white rounded-full px-5 py-3 shadow-2xl flex items-center">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[99999] bg-hive-dark/95 border border-stone-850/50 text-white rounded-full px-5 py-3 shadow-2xl flex items-center">
           <span className="text-xs font-semibold tracking-wide">{toast}</span>
         </div>
       )}

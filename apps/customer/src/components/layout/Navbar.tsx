@@ -437,7 +437,7 @@ export const Navbar: React.FC = () => {
                     <span className={cn(
                       "px-2 py-0.5 rounded-md font-extrabold text-[10px] tracking-tight select-none shadow-2xs",
                       deliveryPromise.isToday 
-                        ? "bg-[#F5C22B] text-stone-950" 
+                        ? "bg-hive-gold text-stone-950" 
                         : "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
                     )}>
                       {deliveryPromise.suffix}
@@ -629,7 +629,7 @@ export const Navbar: React.FC = () => {
                 <span className={cn(
                   "px-1.5 py-0.5 rounded-md font-extrabold text-[9.5px] tracking-tight select-none shadow-2xs",
                   deliveryPromise.isToday 
-                    ? "bg-[#F5C22B] text-stone-950" 
+                    ? "bg-hive-gold text-stone-950" 
                     : "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
                 )}>
                   {deliveryPromise.suffix}
@@ -651,7 +651,7 @@ export const Navbar: React.FC = () => {
 
       {/* ── Mobile drawer — Mini Fashion Magazine ───────────────────── */}
       <div
-        className={`md:hidden fixed inset-y-0 right-0 z-[49] w-[88vw] max-w-[360px] bg-[#FAF9F6] shadow-2xl flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] border-l border-stone-200/70 select-none ${
+        className={`md:hidden fixed inset-y-0 right-0 z-[49] w-[88vw] max-w-[360px] bg-hive-cream shadow-2xl flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] border-l border-stone-200/70 select-none ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

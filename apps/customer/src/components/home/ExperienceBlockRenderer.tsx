@@ -55,8 +55,8 @@ export function mapDbProduct(p: any) {
     price,
     compareAtPrice,
     discountPercent,
-    rating: p.rating || 4.8,
-    reviewCount: p.reviewCount || 12,
+    rating: p.rating || undefined,
+    reviewCount: p.reviewCount || undefined,
     occasion: getProductOccasion(p),
     isVerifiedBoutique: p.boutique?.verified || false,
     isNewArrival: (p.createdAt && (Date.now() - p.createdAt < 14 * 24 * 60 * 60 * 1000)) || false,
@@ -263,7 +263,7 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
                 >
                   <span
                     className={`h-1.5 rounded-full transition-all duration-300 ${
-                      i === activeIdx ? "w-5 bg-[#E8890C]" : "w-1.5 bg-stone-300 hover:bg-stone-400"
+                      i === activeIdx ? "w-5 bg-hive-amber" : "w-1.5 bg-stone-300 hover:bg-stone-400"
                     }`}
                   />
                 </button>
@@ -433,7 +433,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
             };
           case "soft_veil_light":
             return {
-              bgClass: "bg-[#FAF8F5]",
+              bgClass: "bg-hive-cream",
               watermarkColor: "text-amber-900/20",
               accentColor: "text-amber-800",
             };
@@ -475,7 +475,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                 bgOverlayTheme === "dark_vignette_blur" || bgOverlayTheme === "midnight_obsidian"
                   ? "bg-black/65 backdrop-blur-[1.5px]"
                   : isLightBg
-                    ? "bg-[#FAF8F5]/65 backdrop-blur-[0.5px]"
+                    ? "bg-hive-cream/65 backdrop-blur-[0.5px]"
                     : "bg-black/50 backdrop-blur-[1px]"
               }`} />
             </div>
@@ -797,7 +797,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     if (allProducts.length === 0) return null;
 
     const displayProducts = allProducts.slice(0, maxItems);
-    const bgClass = isNewArrivals ? "bg-white" : (isRecommended ? "bg-white" : "bg-[#FAF6F0]");
+    const bgClass = isNewArrivals ? "bg-white" : (isRecommended ? "bg-white" : "bg-hive-cream");
     const tagText = isNewArrivals
       ? "FRESH ARRIVALS"
       : isRecommended
@@ -838,7 +838,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               <div className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start flex flex-col justify-start group select-none">
                 <Link
                   href={targetUrl}
-                  className="w-full aspect-[3/4] rounded-2xl bg-[#FAF8F5] border border-stone-200/80 shadow-2xs relative overflow-hidden flex flex-col items-center justify-center p-4 text-center transition-all duration-300 group-hover:shadow-md group-hover:border-stone-400 group-hover:-translate-y-0.5 cursor-pointer"
+                  className="w-full aspect-[3/4] rounded-2xl bg-hive-cream border border-stone-200/80 shadow-2xs relative overflow-hidden flex flex-col items-center justify-center p-4 text-center transition-all duration-300 group-hover:shadow-md group-hover:border-stone-400 group-hover:-translate-y-0.5 cursor-pointer"
                 >
                   {/* Tactile Circular Button */}
                   <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white text-stone-900 shadow-2xs border border-stone-200 flex items-center justify-center group-hover:bg-stone-900 group-hover:text-white group-hover:scale-105 transition-all duration-300 mb-3">

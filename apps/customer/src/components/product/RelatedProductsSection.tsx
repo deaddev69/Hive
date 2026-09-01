@@ -56,8 +56,8 @@ function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize:
     price,
     compareAtPrice,
     discountPercent,
-    rating: 4.8, // Fallback rating
-    reviewCount: 12, // Fallback review count
+    rating: p.rating || p.averageRating || undefined,
+    reviewCount: p.reviewCount || undefined,
     occasion: getProductOccasion(p),
     isVerifiedBoutique: p.boutique?.verified || false,
     isNewArrival: Date.now() - p.createdAt < 7 * 24 * 60 * 60 * 1000,
@@ -139,7 +139,7 @@ export const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ 
         </>
       ) : (
         /* Empty State Layout */
-        <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-hive-border/60 bg-[#FAF8F5]/30 rounded-3xl max-w-xl mx-auto my-6 gap-5 shadow-sm">
+        <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-hive-border/60 bg-hive-cream/30 rounded-3xl max-w-xl mx-auto my-6 gap-5 shadow-sm">
           <div className="w-12 h-12 rounded-full bg-hive-gold/10 border border-hive-gold/25 flex items-center justify-center text-hive-amber">
             <ShoppingBag className="w-5.5 h-5.5" />
           </div>

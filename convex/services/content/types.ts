@@ -11,6 +11,8 @@ export interface ResolvedProduct {
   boutiqueName: string;
   boutiqueSlug: string;
   categoryId?: string;
+  rating?: number;
+  reviewCount?: number;
   // Merchandising & Operations
   createdAt?: number;
   distanceKm?: number;

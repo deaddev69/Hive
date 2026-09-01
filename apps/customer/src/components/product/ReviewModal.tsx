@@ -109,7 +109,7 @@ export function ReviewModal({
                   <Star
                     className={`w-7 h-7 ${
                       star <= current
-                        ? "fill-[#F5C22B] text-[#F5C22B]"
+                        ? "fill-[#F5C22B] text-hive-gold"
                         : "fill-slate-100 text-slate-300"
                     }`}
                   />
@@ -206,7 +206,7 @@ export function ReviewModal({
           <button
             type="submit"
             disabled={submitting}
-            className="px-7 py-2.5 bg-[#F5C22B] hover:bg-[#E0B024] text-slate-900 font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-7 py-2.5 bg-hive-gold hover:bg-[#E0B024] text-slate-900 font-extrabold rounded-xl text-xs uppercase tracking-wider shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             {submitting ? (
               <>

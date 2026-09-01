@@ -3,7 +3,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        "hive-gold": "#F5A623",
+        "hive-gold": "#d4af37",
         "hive-amber": "#E8890C",
         "hive-dark": "#1A1200",
         "hive-cream": "#FFFDF5",
@@ -14,8 +14,11 @@ module.exports = {
         "hive-comb": "#FFF3CC",
       },
       fontFamily: {
-        serif: ["Manrope", "system-ui", "sans-serif"],
-        sans: ["Inter", "system-ui", "sans-serif"],
+        serif: ["var(--font-cormorant)", "Georgia", "serif"],
+        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+      },
+      boxShadow: {
+        "2xs": "0 1px 1px 0 rgb(0 0 0 / 0.04)",
       },
     },
   },

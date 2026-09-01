@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ProductCardData } from "@/lib/mockProducts";
-import { Heart, Eye } from "lucide-react";
+import { Heart, Eye, Star } from "lucide-react";
 import { cn } from "@hive/ui";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { useLocation } from "@/context/LocationContext";
@@ -249,6 +249,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           </h3>
         </Link>
 
+        {/* Rating — only when the product actually has one, never a fabricated default */}
+        {typeof product.rating === "number" && product.rating > 0 && (
+          <div className={cn("flex items-center gap-1 text-[10px] leading-none", darkTheme ? "text-white/70" : "text-slate-500")}>
+            <Star className="w-3 h-3 fill-hive-amber text-hive-amber" />
+            <span className="font-semibold">{product.rating.toFixed(1)}</span>
+            {typeof product.reviewCount === "number" && product.reviewCount > 0 && (
+              <span className={darkTheme ? "text-white/40" : "text-slate-400"}>({product.reviewCount})</span>
+            )}
+          </div>
+        )}
+
         {/* Price or Custom CTA Link */}
         {hidePrice ? (
           customCtaText ? (
@@ -273,12 +284,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
                 <span className={cn("text-[11px] sm:text-xs line-through font-normal", darkTheme ? "text-white/50" : "text-slate-400")}>
                   ₹{compareAtPrice.toLocaleString("en-IN")}
                 </span>
-                <span className={cn("text-[10px] sm:text-[11px] font-bold tracking-tight", darkTheme ? "text-amber-400" : "text-[#E8890C]")}>
+                <span className={cn("text-[10px] sm:text-[11px] font-bold tracking-tight", darkTheme ? "text-amber-400" : "text-hive-amber")}>
                   ({discountPercent}% OFF)
                 </span>
               </>
             )}
           </div>
+        )}
+
+        {logisticsText && !hidePrice && (
+          <span className={cn("text-[9.5px] font-bold uppercase tracking-wide mt-0.5", darkTheme ? "text-amber-400/90" : "text-hive-amber")}>
+            {logisticsText}
+          </span>
         )}
       </div>
 

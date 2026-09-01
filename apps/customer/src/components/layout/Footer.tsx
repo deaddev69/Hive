@@ -10,7 +10,7 @@ export const Footer: React.FC = () => {
   return (
     <>
       {/* Hyperlocal warm ivory footer transition strip */}
-      <div className="w-full bg-[#FAF6F0] border-t border-b border-stone-200/50 dark:border-neutral-800/30 py-3.5 px-4">
+      <div className="w-full bg-hive-cream border-t border-b border-stone-200/50 dark:border-neutral-800/30 py-3.5 px-4">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-center gap-x-6 sm:gap-x-10 md:gap-x-14 gap-y-2 text-[10.5px] sm:text-[11px] font-semibold text-stone-600 dark:text-neutral-300 select-none tracking-[0.03em]">
           <span className="flex items-center gap-1.5">
             <Check className="w-3.5 h-3.5 text-[#B78324] shrink-0" strokeWidth={2} />

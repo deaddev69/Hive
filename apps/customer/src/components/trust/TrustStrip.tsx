@@ -28,7 +28,7 @@ const trustPillars = [
 
 export const TrustStrip: React.FC = () => {
   return (
-    <section className="w-full bg-[#FAF8F5] dark:bg-stone-950 border-y border-stone-200/80 dark:border-stone-800 py-6 sm:py-7 my-2 select-none">
+    <section className="w-full bg-hive-cream dark:bg-stone-950 border-y border-stone-200/80 dark:border-stone-800 py-6 sm:py-7 my-2 select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-4 sm:gap-6 md:divide-x md:divide-stone-200 dark:md:divide-stone-800">
           {trustPillars.map((item, idx) => {
