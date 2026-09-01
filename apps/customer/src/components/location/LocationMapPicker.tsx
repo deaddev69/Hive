@@ -231,6 +231,11 @@ function MapPickerInner({
 }: LocationMapPickerProps) {
   const [activeMapTab, setActiveMapTab] = useState<"search" | "gps" | "manual">("search");
   const [isDragging, setIsDragging] = useState(false);
+  // Google needs a beat to fetch its first tiles. Until then the container paints plain white,
+  // and the pin and controls sit on top of nothing — which reads as a broken map rather than a
+  // loading one. Tracked off the real `tilesloaded` event rather than a timer so the placeholder
+  // clears exactly when there's something to show.
+  const [tilesLoaded, setTilesLoaded] = useState(false);
 
   // GPS state
   const [geoLoading, setGeoLoading] = useState(false);
@@ -253,6 +258,17 @@ function MapPickerInner({
   useEffect(() => () => {
     if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
   }, []);
+
+  // Safety valve for the tile placeholder. `tilesloaded` never fires if Maps fails to initialise
+  // at all — an unauthorised referer, a blocked key, no network — and without this the shopper
+  // would sit behind "Loading map…" indefinitely with no way to reach the pin. Reveal the map
+  // regardless after a few seconds so the failure degrades to the previous behaviour instead of
+  // becoming a dead end; the search box and Locate Me stay usable either way.
+  useEffect(() => {
+    if (tilesLoaded) return;
+    const t = setTimeout(() => setTilesLoaded(true), 6000);
+    return () => clearTimeout(t);
+  }, [tilesLoaded]);
 
   // Follow externally-driven coordinate changes (saved address selected, parent reset) by panning
   // imperatively. This replaces the controlled `center` prop, which used to re-assert a stale
@@ -469,6 +485,7 @@ function MapPickerInner({
           styles={poiStyles}
           zoomControl={false}
           gestureHandling={readOnly ? "none" : "greedy"}
+          onTilesLoaded={() => setTilesLoaded(true)}
           onDragstart={() => {
             setIsDragging(true);
             userDraggedRef.current = true;
@@ -513,9 +530,36 @@ function MapPickerInner({
           }}
         />
         
-        {/* Swiggy-Style Fixed Center Pin */}
-        {!readOnly && (
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-10 flex flex-col items-center select-none">
+        {/* Tile-loading placeholder. Sits above the map and the pin but below the search bar
+            (z-20), so the shopper can start typing an address before tiles arrive. Fades rather
+            than cutting, and stays mounted-but-transparent so removing it can't itself flash. */}
+        <div
+          aria-hidden="true"
+          className={`absolute inset-0 z-[15] pointer-events-none transition-opacity duration-500 ${
+            tilesLoaded ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          <div className="absolute inset-0 bg-hive-cream" />
+          {/* Suggestion of streets, so the gap reads as a map arriving rather than a blank panel. */}
+          <div
+            className="absolute inset-0 opacity-[0.55]"
+            style={{
+              backgroundImage:
+                "linear-gradient(90deg, rgba(28,25,23,0.07) 2px, transparent 2px), linear-gradient(180deg, rgba(28,25,23,0.07) 2px, transparent 2px), linear-gradient(58deg, transparent 46%, rgba(28,25,23,0.05) 46%, rgba(28,25,23,0.05) 52%, transparent 52%)",
+              backgroundSize: "84px 84px, 84px 84px, 100% 100%",
+            }}
+          />
+          <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-transparent via-white/40 to-transparent" />
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/90 backdrop-blur-sm shadow-sm border border-hive-border/50">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-hive-gold" />
+            <span className="text-[11px] font-bold text-hive-dark">Loading map…</span>
+          </div>
+        </div>
+
+        {/* Swiggy-Style Fixed Center Pin. Held back until tiles exist — a pin floating on a blank
+            white panel is what made the load gap look like a failure rather than a wait. */}
+        {!readOnly && tilesLoaded && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-10 flex flex-col items-center select-none animate-in fade-in duration-300">
             {/* Floating Badge */}
             <div className={`bg-[#EAB308] text-black text-[10px] font-extrabold px-3 py-1 rounded-full shadow-md mb-1.5 border border-black/10 uppercase tracking-wider transition-transform duration-200 ${isDragging ? '-translate-y-2 scale-105 shadow-xl' : 'translate-y-0'}`}>
               Delivering Here
