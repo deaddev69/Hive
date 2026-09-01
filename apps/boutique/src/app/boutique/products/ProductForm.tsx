@@ -437,7 +437,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const [uploadStatusText, setUploadStatusText] = useState("");
 
   // AI Description states
-  const [selectedStyle, setSelectedStyle] = useState<string>("casual");
   const [generatingDesc, setGeneratingDesc] = useState(false);
 
   // Categories helper list
@@ -803,7 +802,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         body: JSON.stringify({
           roughText: roughInput,
           type: "description",
-          style: selectedStyle,
+          style: "standard",
         }),
       });
 
@@ -1824,32 +1823,22 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                     <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Product Description *</label>
                   </div>
                   
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <select
-                      value={selectedStyle}
-                      onChange={(e) => setSelectedStyle(e.target.value)}
-                      className="px-2.5 py-1 text-[11px] border border-slate-200 bg-white rounded-lg text-slate-700 font-medium focus:outline-none focus:border-slate-900"
-                    >
-                      <option value="casual">Casual Style</option>
-                      <option value="elegant">Premium / Regal</option>
-                      <option value="poetic">Traditional Story</option>
-                    </select>
-
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       disabled={generatingDesc}
                       onClick={handleGenerateAI}
-                      className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 select-none cursor-pointer shrink-0"
+                      className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold transition-all flex items-center gap-1.5 select-none cursor-pointer shrink-0"
                     >
                       {generatingDesc ? (
                         <>
-                          <Loader2 className="w-3 h-3 animate-spin text-slate-600" />
-                          <span>Writing...</span>
+                          <Loader2 className="w-3 h-3 animate-spin text-slate-500" />
+                          <span>Generating...</span>
                         </>
                       ) : (
                         <>
-                          <Sparkles className="w-3 h-3 text-slate-600" />
-                          <span>Write with AI</span>
+                          <Sparkles className="w-3 h-3 text-[#D9A71E]" />
+                          <span>Auto-generate</span>
                         </>
                       )}
                     </button>

@@ -316,58 +316,58 @@ export function PushNotificationManager({
     <>
       {/* Dev / Staff Test Trigger Removed */}
 
-      {/* Premium Swiggy/Zomato Partner Style Ringing Overlay (Full Viewport z-[100]) */}
-      {isRinging && alertMode === "store" && (
-        <div className="fixed inset-0 z-[100] bg-gradient-to-b from-slate-950 via-red-950 to-slate-950 text-white flex flex-col items-center justify-between p-6 select-none overflow-hidden h-screen w-screen">
-          {/* Top Status Tag */}
-          <div className="pt-6 flex items-center gap-2 bg-red-500/20 border border-red-500/30 text-red-300 font-bold text-xs uppercase tracking-widest px-4 py-1.5 rounded-full animate-pulse">
-            <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
-            Live Store Terminal Alarm
-          </div>
-
-          {/* Central Animated Radar & Icon */}
-          <div className="flex flex-col items-center justify-center my-auto relative">
-            <div className="absolute w-64 h-64 bg-red-500/20 rounded-full animate-ping pointer-events-none" />
-            <div className="absolute w-48 h-48 bg-amber-500/10 rounded-full animate-pulse pointer-events-none" />
-
-            <div className="relative w-28 h-28 bg-gradient-to-br from-red-500 to-amber-500 rounded-3xl p-0.5 shadow-2xl animate-bounce mb-6 flex items-center justify-center">
-              <div className="w-full h-full bg-slate-950 rounded-[22px] flex items-center justify-center">
-                <ShoppingBag className="w-12 h-12 text-amber-400" />
-              </div>
+      {/* Professional Incoming Order Alert Modal */}
+      {isRinging && (
+        <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-md text-slate-900 flex items-center justify-center p-4 select-none">
+          <div className="w-full max-w-md bg-white rounded-3xl p-6 md:p-8 shadow-2xl border border-slate-200/80 flex flex-col items-center text-center gap-5 animate-in fade-in zoom-in-95 duration-200">
+            {/* Status Tag */}
+            <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200/60 text-emerald-700 font-bold text-xs uppercase tracking-wider px-3.5 py-1.5 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              New Order Received
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-center text-white mb-2">
-              {activeAlert?.title || "NEW ORDER RECEIVED!"}
-            </h1>
+            {/* Central Icon */}
+            <div className="w-20 h-20 bg-amber-50 rounded-2xl border border-amber-100 flex items-center justify-center text-[#D9A71E]">
+              <ShoppingBag className="w-10 h-10" />
+            </div>
 
-            <p className="text-sm font-medium text-slate-300 text-center max-w-sm mb-4">
-              {activeAlert?.body || "A customer just placed a new order."}
-            </p>
+            {/* Order Info */}
+            <div className="flex flex-col gap-1">
+              <h2 className="text-2xl font-serif font-extrabold text-slate-900 tracking-tight">
+                {activeAlert?.title || "Incoming Order"}
+              </h2>
+              <p className="text-xs font-medium text-slate-500 max-w-xs">
+                {activeAlert?.body || "A customer has placed an order from your store."}
+              </p>
+            </div>
 
             {/* Net Payout Badge */}
-            <div className="bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-2xl sm:text-3xl px-6 py-2.5 rounded-2xl shadow-xl border border-amber-200/50 mb-2">
-              {activeAlert?.netPayout != null
-                ? `NET PAYOUT: ₹${activeAlert.netPayout.toFixed(2)}`
-                : "NEW ORDER 🛍️"}
+            {activeAlert?.netPayout != null && (
+              <div className="w-full bg-slate-50 border border-slate-200/60 rounded-2xl py-3 px-4 flex flex-col items-center justify-center">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Estimated Payout</span>
+                <span className="text-2xl font-black text-slate-900">
+                  ₹{activeAlert.netPayout.toFixed(2)}
+                </span>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="w-full flex flex-col gap-2.5 mt-2">
+              <button
+                onClick={handleAcceptViewOrder}
+                className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>View & Manage Order</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={stopOrderAlarm}
+                className="w-full py-2.5 text-slate-500 hover:text-slate-800 font-semibold text-xs transition-colors cursor-pointer"
+              >
+                Mute Alert Sound
+              </button>
             </div>
-          </div>
-
-          {/* Bottom Dual Action Buttons */}
-          <div className="w-full max-w-md pb-6 flex flex-col gap-3">
-            <button
-              onClick={handleAcceptViewOrder}
-              className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-base uppercase tracking-wider rounded-2xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:brightness-110 cursor-pointer"
-            >
-              <span>Accept & View Order</span>
-              <ArrowRight className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={stopOrderAlarm}
-              className="w-full py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-sm rounded-2xl backdrop-blur-md border border-white/20 active:scale-95 transition-all text-center cursor-pointer"
-            >
-              Silence Alarm 🔕
-            </button>
           </div>
         </div>
       )}

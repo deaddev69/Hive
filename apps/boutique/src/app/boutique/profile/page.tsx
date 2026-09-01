@@ -6,7 +6,7 @@ import { useSellerAuth } from "@/context/SellerAuthContext";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent, cn, LoadingState } from "@hive/ui";
 import Link from "next/link";
-import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut, Star, Wallet, ChevronRight, ShieldCheck, Lock, Repeat } from "lucide-react";
+import { Loader2, Store, Phone, Mail, MapPin, Shield, CheckCircle2, UploadCloud, LogOut, Star, Wallet, ChevronRight, ShieldCheck, Lock, Repeat, Volume2 } from "lucide-react";
 import { toast } from "@hive/utils";
 import Cropper from "react-easy-crop";
 import { Modal } from "@hive/ui";
@@ -622,6 +622,75 @@ export default function BoutiqueProfile() {
                     !exchangesAcceptedDefault ? "bg-white text-slate-900" : "border border-slate-300 bg-white"
                   }`}>
                     {!exchangesAcceptedDefault && <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Order Alert Sound Settings ────────────────────────────────────── */}
+            <div className="mt-5 pt-5 border-t border-slate-100 flex flex-col gap-3">
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Volume2 className="w-4 h-4 text-slate-600" />
+                  Order Notification Sound
+                </h4>
+                <p className="text-[12px] text-slate-500 font-medium mt-0.5">
+                  Choose how your device alerts you when a new order arrives.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div
+                  onClick={() => {
+                    setAlertMode("mobile");
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("hive_alert_mode", "mobile");
+                      window.dispatchEvent(new Event("hive_alert_mode_change"));
+                    }
+                  }}
+                  className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left cursor-pointer ${
+                    alertMode === "mobile"
+                      ? "bg-amber-50/70 border-amber-500/80 shadow-2xs"
+                      : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                  }`}
+                >
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-bold text-slate-900">Standard Chime</span>
+                    <p className="text-[11.5px] text-slate-500 font-medium leading-snug mt-1">
+                      Plays a single order chime when a new order is received.
+                    </p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors mt-0.5 ${
+                    alertMode === "mobile" ? "bg-amber-600 text-white" : "border border-slate-300 bg-white"
+                  }`}>
+                    {alertMode === "mobile" && <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />}
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => {
+                    setAlertMode("store");
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("hive_alert_mode", "store");
+                      window.dispatchEvent(new Event("hive_alert_mode_change"));
+                    }
+                  }}
+                  className={`p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 text-left cursor-pointer ${
+                    alertMode === "store"
+                      ? "bg-amber-50/70 border-amber-500/80 shadow-2xs"
+                      : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50"
+                  }`}
+                >
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-bold text-slate-900">Continuous Ring</span>
+                    <p className="text-[11.5px] text-slate-500 font-medium leading-snug mt-1">
+                      Loops the audio alarm until you accept or mute the order.
+                    </p>
+                  </div>
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-colors mt-0.5 ${
+                    alertMode === "store" ? "bg-amber-600 text-white" : "border border-slate-300 bg-white"
+                  }`}>
+                    {alertMode === "store" && <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />}
                   </div>
                 </div>
               </div>

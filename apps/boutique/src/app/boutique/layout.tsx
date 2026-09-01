@@ -9,7 +9,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button, LoadingState } from "@hive/ui";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
-import { AudioAlertHeaderStatus } from "@/components/layout/AudioAlertHeaderStatus";
 import { useSellerAuth } from "@/context/SellerAuthContext";
 
 const BOUTIQUE_NAV_ITEMS = [
@@ -83,30 +82,10 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
         </p>
         <button
           onClick={() => signOut({ redirectUrl: "/sign-in" })}
-          className="text-xs underline text-hive-amber mt-2"
+          className="text-xs underline text-hive-amber mt-2 cursor-pointer"
         >
           Sign out and sign in again
         </button>
-      </div>
-    );
-  }
-
-  // Not signed in (fallback — redirect effect handles this)
-  if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
-        <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
-        <span className="text-sm font-serif font-bold text-hive-dark">Redirecting to sign in...</span>
-      </div>
-    );
-  }
-
-  // Non-boutique / Non-admin signed in
-  if (me && me.role !== "boutique" && me.role !== "boutique_owner" && me.role !== "admin" && pathname !== "/boutique/unauthorized") {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 gap-4 text-center">
-        <Loader2 className="w-10 h-10 animate-spin text-hive-amber" />
-        <span className="text-sm font-serif font-bold text-hive-dark">Redirecting...</span>
       </div>
     );
   }
@@ -115,13 +94,14 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
   // Display name: Firebase user → fallback to "B"
   const displayInitial = firebaseUser?.displayName?.charAt(0) ?? firebaseUser?.email?.charAt(0) ?? "B";
   const displayName = firebaseUser?.displayName ?? "Shop Owner";
+  const boutiqueName = (myBoutiqueSafe as any)?.boutique?.boutiqueName;
 
   return (
     <div className="min-h-[100dvh] flex flex-col md:flex-row bg-white text-slate-800">
       
       {/* Mobile Header */}
-      <header className="md:hidden h-16 bg-white border-b border-[#f1f5f9] flex items-center justify-between px-6 sticky top-0 z-30 shadow-sm">
-        <div className="flex items-center">
+      <header className="md:hidden h-16 bg-white border-b border-[#f1f5f9] flex items-center justify-between px-5 sticky top-0 z-30 shadow-xs">
+        <div className="flex items-center gap-3">
           <Link href="/boutique" className="flex items-center hover:opacity-85 active:scale-[0.98] transition-all">
             <Image
               src="/logo-square.png?v=1"
@@ -129,11 +109,20 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
               width={64}
               height={64}
               priority
-              className="h-10 w-10 sm:h-12 sm:w-12 object-contain shrink-0 rounded-lg shadow-sm"
+              className="h-10 w-10 sm:h-11 sm:w-11 object-contain shrink-0 rounded-lg shadow-xs"
             />
           </Link>
+          {boutiqueName && (
+            <span className="text-xs font-bold text-slate-800 truncate max-w-[160px]">
+              {boutiqueName}
+            </span>
+          )}
         </div>
-        <AudioAlertHeaderStatus />
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-xs uppercase border border-slate-200/60">
+            {displayInitial}
+          </div>
+        </div>
       </header>
 
       {/* Desktop Sidebar Navigation */}
@@ -166,8 +155,8 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
                   href={item.href}
                   className={`flex items-center justify-between px-4.5 py-3 rounded-xl text-sm font-semibold transition-all duration-150 ${
                     isActive 
-                      ? "text-[#020617] font-bold" 
-                      : "text-[#94a3b8] hover:text-[#020617]"
+                      ? "text-[#020617] font-bold bg-slate-50" 
+                      : "text-[#94a3b8] hover:text-[#020617] hover:bg-slate-50/50"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -198,7 +187,7 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
 
           <button
             onClick={() => signOut({ redirectUrl: "/sign-in" })}
-            className="w-full flex items-center justify-start gap-2.5 px-4 py-2.5 border border-[#f1f5f9]/60 bg-white text-slate-600 hover:bg-white hover:text-[#020617] hover:border-[#020617]/40 rounded-xl text-xs font-bold shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-150"
+            className="w-full flex items-center justify-start gap-2.5 px-4 py-2.5 border border-[#f1f5f9]/60 bg-white text-slate-600 hover:bg-white hover:text-[#020617] hover:border-[#020617]/40 rounded-xl text-xs font-bold shadow-[0_2px_8px_rgba(0,0,0,0.01)] transition-all duration-150 cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5 text-slate-400" />
             <span>Log out</span>
@@ -227,9 +216,9 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
             }`}
           >
             <Home className="w-5 h-5" />
-            <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Home</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider mt-0.5">Home</span>
             {pathname === "/boutique" && (
-              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
+              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5" />
             )}
           </Link>
 
@@ -240,9 +229,9 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
             }`}
           >
             <Tag className="w-5 h-5" />
-            <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Products</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider mt-0.5">Products</span>
             {pathname === "/boutique/products" && !pathname.includes("/new") && (
-              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
+              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5" />
             )}
           </Link>
 
@@ -253,9 +242,9 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
             }`}
           >
             <Package className="w-5 h-5" />
-            <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Stock</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider mt-0.5">Stock</span>
             {pathname === "/boutique/inventory" && (
-              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
+              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5" />
             )}
           </Link>
 
@@ -263,9 +252,8 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
             <Link 
               href="/boutique/products/new"
               className="w-12 h-12 rounded-full flex items-center justify-center transition-all -translate-y-4 border-4 border-white cursor-pointer z-10 bg-gradient-to-tr from-[#E9B929] to-[#F5C22B] text-slate-900 shadow-[0_6px_20px_rgba(233,185,41,0.4)] active:scale-95 hover:shadow-[0_10px_24px_rgba(233,185,41,0.5)]"
-              title="Add Product"
             >
-              <Plus className="w-6 h-6 stroke-[3]" />
+              <Plus className="w-6 h-6 stroke-[2.5]" />
             </Link>
           </div>
 
@@ -276,23 +264,22 @@ export default function BoutiqueLayout({ children }: { children: React.ReactNode
             }`}
           >
             <ClipboardList className="w-5 h-5" />
-            <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">Orders</span>
+            <span className="text-[9px] font-bold uppercase tracking-wider mt-0.5">Orders</span>
             {pathname === "/boutique/orders" && (
-              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
+              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5" />
             )}
           </Link>
 
-
           <Link 
             href="/boutique/profile"
-            className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-all duration-150 ${
-              pathname === "/boutique/profile" ? "text-slate-900 font-bold" : "text-slate-400"
+            className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-all duration-150 relative ${
+              pathname === "/boutique/profile" || pathname.includes("/reviews") || pathname.includes("/finance") ? "text-slate-900 font-bold" : "text-slate-400"
             }`}
           >
             <User className="w-5 h-5" />
-            <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">More</span>
-            {pathname === "/boutique/profile" && (
-              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5 animate-pulse" />
+            <span className="text-[9px] font-bold uppercase tracking-wider mt-0.5">Account</span>
+            {(pathname === "/boutique/profile" || pathname.includes("/reviews") || pathname.includes("/finance")) && (
+              <span className="w-1 h-1 rounded-full bg-[#E9B929] mt-0.5" />
             )}
           </Link>
         </nav>
