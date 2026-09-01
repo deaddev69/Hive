@@ -273,6 +273,22 @@ export class BlockService {
         }
       }
 
+      // Last resort: the block matched real candidates but every one of them was already claimed
+      // by a rail higher up the page, so strict cross-block uniqueness would render this section
+      // as nothing at all. On a small catalog that's routine rather than exceptional — a handful
+      // of products can't fill several rails without overlap — and a missing section reads as a
+      // bug to the shopper, where a repeated product does not. Mirrors the same call made for
+      // curated collections, which show their full hand-picked list regardless of what's claimed.
+      // Only fires at zero, so uniqueness still wins wherever the catalog can actually support it.
+      if (picked.length === 0 && products.length > 0) {
+        for (const p of products) {
+          if (picked.length >= max) break;
+          if (pickedIds.has(p.id)) continue;
+          picked.push(p);
+          pickedIds.add(p.id);
+        }
+      }
+
       for (const p of picked) usedProductIds.add(p.id);
       return picked;
     };
