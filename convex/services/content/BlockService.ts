@@ -288,14 +288,13 @@ export class BlockService {
       if (CURATED_BLOCK_TYPES.has(block.blockType) && block.config?.collectionId) {
         const hydratedCol = await CollectionService.hydrateCollection(ctx, block.config.collectionId, resolvedProductsMap);
         if (hydratedCol) {
-          // Resolve the FULL merchandiser-ordered list to survivors first, then cap to the
-          // display limit — not the other way around. Slicing to maxProducts before checking
-          // which IDs actually survived catalog/serviceability filtering is what let a single
-          // out-of-range product collapse an otherwise well-stocked collection down to nothing.
           const survivors = hydratedCol.productIds
             .map((id) => resolvedProductsMap.get(id))
             .filter(Boolean) as ResolvedProduct[];
-          const matchedProducts = takeUnused(survivors, block.config.maxProducts || 12);
+          // Curated / editorial collections are hand-picked by the merchandiser.
+          // They always show their full list of in-stock survivors without being suppressed by usedProductIds.
+          const max = block.config.maxProducts || 12;
+          const matchedProducts = survivors.slice(0, max);
 
           data.collection = {
             id: hydratedCol.id,
