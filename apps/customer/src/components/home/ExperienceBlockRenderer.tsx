@@ -802,6 +802,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
 
     const displayProducts = allProducts.slice(0, maxItems);
     const bgClass = (isNewArrivals || isSmartRail || isRecommended) ? "bg-white" : "bg-hive-cream";
+    const isRecentlyViewedFallback = block.blockType === "recentlyViewed" && !isPersonalized;
     const tagText = isPriceCeiling
       ? "BUDGET FINDS"
       : isCategoryAuto
@@ -810,7 +811,12 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           ? "FRESH ARRIVALS"
           : isRecommended
             ? (isPersonalized ? "BASED ON WHAT YOU'VE VIEWED" : "TRENDING NOW")
-            : (isPersonalized ? "PICK UP WHERE YOU LEFT OFF" : "YOU MIGHT LIKE");
+            : (isPersonalized ? "PICK UP WHERE YOU LEFT OFF" : "POPULAR NEARBY");
+
+    const titleText = isRecentlyViewedFallback
+      ? "Trending in Kochi"
+      : (block.title || (isPriceCeiling ? "Budget Finds" : (isNewArrivals ? "New on Hive" : (isRecommended ? "Recommended" : "Most Loved"))));
+    
     const targetUrl = isPriceCeiling
       ? `/products?maxPrice=${block.config?.priceCeiling || 1500}`
       : isNewArrivals
@@ -826,7 +832,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                 {tagText}
               </span>
               <h2 className="text-xl sm:text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
-                {block.title || (isPriceCeiling ? "Budget Finds" : (isNewArrivals ? "New on Hive" : (isRecommended ? "Recommended" : "Most Loved")))}
+                {titleText}
               </h2>
             </div>
             <Link
