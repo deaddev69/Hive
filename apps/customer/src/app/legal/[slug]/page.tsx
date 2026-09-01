@@ -2,6 +2,7 @@ import React from "react";
 import { Metadata } from "next";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../convex/_generated/api";
+import { STATIC_LEGAL_DOCS } from "@/data/legal/staticDocs";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -48,7 +49,9 @@ export default async function LegalDocumentPage({ params }: Props) {
     }
   }
 
-  if (!legalDoc) {
+  const content = legalDoc?.content || STATIC_LEGAL_DOCS[slug] || STATIC_LEGAL_DOCS[slug.toLowerCase()];
+
+  if (!content) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">
         <h1 className="text-2xl font-serif font-black text-hive-dark">Document Not Found</h1>
@@ -67,7 +70,7 @@ export default async function LegalDocumentPage({ params }: Props) {
           <ArrowLeft className="w-4 h-4" /> Back to Store
         </Link>
         <div className="prose prose-hive max-w-none text-slate-800 leading-relaxed font-sans">
-          <ReactMarkdown>{legalDoc.content}</ReactMarkdown>
+          <ReactMarkdown>{content}</ReactMarkdown>
         </div>
       </div>
     </div>
