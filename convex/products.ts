@@ -399,7 +399,9 @@ export const createProduct = mutation({
     images: v.array(v.union(v.string(), ImageAsset)), // Storage IDs, URLs, or ImageAsset
     sizes: v.array(v.string()),
     stockBySize: v.record(v.string(), v.number()),
-    sameDayEligible: v.boolean(),
+    // Retained as optional for older clients; the value is ignored — Hive fulfils every product
+    // through Porter under the platform-wide 90-minute promise, so this is never a per-item choice.
+    sameDayEligible: v.optional(v.boolean()),
     featured: v.boolean(),
     active: v.boolean(),
     measurementMatrix: v.optional(v.array(v.object({
@@ -546,7 +548,7 @@ export const createProduct = mutation({
       images: args.images,
       sizes: args.sizes,
       stockBySize: args.stockBySize,
-      sameDayEligible: args.sameDayEligible,
+      sameDayEligible: true, // platform-wide Porter 90-min promise, not a per-product toggle
       featured: args.featured,
       active,
       autoDeactivatedBecauseOutOfStock,
@@ -633,7 +635,9 @@ export const updateProduct = mutation({
     images: v.array(v.union(v.string(), ImageAsset)),
     sizes: v.array(v.string()),
     stockBySize: v.record(v.string(), v.number()),
-    sameDayEligible: v.boolean(),
+    // Retained as optional for older clients; the value is ignored — Hive fulfils every product
+    // through Porter under the platform-wide 90-minute promise, so this is never a per-item choice.
+    sameDayEligible: v.optional(v.boolean()),
     featured: v.boolean(),
     active: v.boolean(),
     measurementMatrix: v.optional(v.array(v.object({
@@ -806,7 +810,7 @@ export const updateProduct = mutation({
       images: args.images,
       sizes: args.sizes,
       stockBySize: args.stockBySize,
-      sameDayEligible: args.sameDayEligible,
+      sameDayEligible: true, // platform-wide Porter 90-min promise, not a per-product toggle
       featured: args.featured,
       active,
       autoDeactivatedBecauseOutOfStock,

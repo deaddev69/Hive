@@ -66,13 +66,12 @@ function parseHHMM(value: string | undefined, fallbackHour: number): number {
 export function resolveDeliveryLabel(input: DeliveryLabelInput, at: Date = new Date()): string | null {
   const { etaMinutes, boutique } = input;
 
-  // NOTE: `sameDayEligible` is deliberately NOT consulted yet. The seller product form defaults it
-  // to false (useState(false) in CreateProductModal/ProductForm) and nothing prompts a seller to
-  // turn it on, so every product in the catalogue currently carries false by default rather than
-  // by choice. Branching on it would silently replace the 90-minute promise with "Express
-  // Delivery" across the entire storefront on the strength of a field nobody set. Once the form
-  // asks the question properly, restore the opt-out here:
-  //   if (sameDayEligible === false) return "Express Delivery";
+  // `sameDayEligible` is deliberately NOT consulted. It was never a real seller choice — both
+  // boutique product forms carried it as dead state initialised to false with no UI attached, so
+  // every product was written false by default and no seller could change it. Hive fulfils every
+  // order through Porter under one platform-wide 90-minute promise, so same-day is a property of
+  // the platform, not of an individual product. What genuinely varies is below: the boutique's
+  // own hours, its closures, and how far the rider has to go.
 
   const now = nowInIST(at);
 

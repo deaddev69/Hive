@@ -345,3 +345,27 @@ export const recalculateAllProductPrices = mutation({
 
 
 
+
+/**
+ * Backfills `sameDayEligible: true` across the catalogue.
+ *
+ * This was never a real seller choice: both boutique product forms held it as dead state
+ * initialised to `false` with no UI attached, so every product was written false by default and
+ * no seller could ever change it. Hive fulfils every order through Porter under one platform-wide
+ * 90-minute promise, so the flag is a platform constant rather than per-product metadata. The
+ * forms no longer send it and both write paths now set true; this aligns the existing rows.
+ */
+export const backfillSameDayEligible = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const products = await ctx.db.query("products").collect();
+    let updated = 0;
+    for (const p of products) {
+      if (p.sameDayEligible !== true) {
+        await ctx.db.patch(p._id, { sameDayEligible: true });
+        updated++;
+      }
+    }
+    return { total: products.length, updated };
+  },
+});

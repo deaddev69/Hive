@@ -593,7 +593,6 @@ export default function CreateProductModal({
   const [price, setPrice] = useState("");
   const [mrp, setMrp] = useState("");
   const [discountPrice, setDiscountPrice] = useState("");
-  const [sameDayEligible, setSameDayEligible] = useState(false);
   const [featured, setFeatured] = useState(false);
   const [active, setActive] = useState(true);
 
@@ -709,7 +708,6 @@ export default function CreateProductModal({
         images: finalImages,
         sizes: selectedSizes,
         stockBySize,
-        sameDayEligible,
         featured,
         active,
         story,
@@ -871,7 +869,6 @@ export default function CreateProductModal({
         setMrp(realMrp ? realMrp.toString() : "");
         setDiscountPrice(productToEdit.baseDiscountPrice?.toString() || productToEdit.discountPrice?.toString() || "");
 
-        setSameDayEligible(productToEdit.sameDayEligible || false);
         setFeatured(productToEdit.featured || false);
         setActive(productToEdit.active !== false);
 
@@ -911,7 +908,6 @@ export default function CreateProductModal({
         setSilhouette("regular_fit");
         setPrice("");
         setDiscountPrice("");
-        setSameDayEligible(false);
         setFeatured(false);
         setActive(true);
         setImages([]);
