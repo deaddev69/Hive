@@ -2291,14 +2291,19 @@ export default defineSchema({
       bgOverlayTheme: v.optional(v.string()),
       targetUrl: v.optional(v.string()),
       // smartRail: which sourcing strategy the rail uses. Absent = "newArrivals".
-      // trending/priceCeiling deliberately not offered yet — no popularity signal exists
-      // (0 reviews, 0 view history) and every live product falls under any sane price ceiling.
+      // "trending" still deliberately absent — no popularity signal exists yet (0 reviews,
+      // 0 view history), so it would ship as noise.
       ruleType: v.optional(v.union(
         v.literal("newArrivals"),
-        v.literal("categoryAuto")
+        v.literal("categoryAuto"),
+        v.literal("priceCeiling")
       )),
       // smartRail + ruleType "categoryAuto": which category to pull from.
       categoryId: v.optional(v.string()),
+      // smartRail + ruleType "priceCeiling": max price in RUPEES as the shopper sees it
+      // (e.g. 999 for "Under ₹999"), matched against the same normalisation
+      // calculateDisplayPricing applies on the storefront.
+      priceCeiling: v.optional(v.number()),
       items: v.optional(
         v.array(
           v.object({

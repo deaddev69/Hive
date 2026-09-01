@@ -1039,11 +1039,27 @@ function BlockConfigEditor({ block, schema, collections, categories, onSave, onC
                 >
                   <option value="newArrivals">Newest Arrivals — freshest stock across all boutiques</option>
                   <option value="categoryAuto">By Category — everything in one category</option>
+                  <option value="priceCeiling">Under a Price — budget finds</option>
                 </select>
                 <p className="text-[10px] text-slate-400 mt-1">
                   Refills itself as stock changes. No manual product picking needed.
                 </p>
               </div>
+              {formData.config.ruleType === "priceCeiling" && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1">Max Price (₹)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    className="w-full p-2.5 rounded-xl border border-slate-200 text-sm"
+                    value={formData.config.priceCeiling ?? 999}
+                    onChange={e => updateConfig("priceCeiling", parseInt(e.target.value) || 0)}
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Matches the price shoppers see on the product card, including any discount.
+                  </p>
+                </div>
+              )}
               {formData.config.ruleType === "categoryAuto" && (
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 mb-1">Category</label>

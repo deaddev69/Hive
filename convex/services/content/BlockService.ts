@@ -101,6 +101,13 @@ function blockDemand(block: any): number {
  */
 function pagePoolSize(blocksRaw: any[]): number {
   const totalDemand = blocksRaw.reduce((sum, b) => sum + blockDemand(b), 0);
+  // A priceCeiling rail filters the pool by price *after* it's fetched — there's no price index
+  // to narrow the query with — so a restrictive ceiling can discard most of the pool. Take the
+  // full ceiling when one is present rather than risk a rail that can't fill.
+  const hasPriceFiltered = blocksRaw.some(
+    (b) => b.blockType === "smartRail" && b.config?.ruleType === "priceCeiling"
+  );
+  if (hasPriceFiltered) return POOL_MAX;
   return Math.min(POOL_MAX, Math.max(POOL_MIN, totalDemand * POOL_SURVIVAL_MULTIPLIER));
 }
 
@@ -113,6 +120,31 @@ const MAX_PER_BOUTIQUE_IN_AUTO_BLOCK = 2;
 
 /** Blocks whose products are hand-picked by a merchandiser — these claim first. */
 const CURATED_BLOCK_TYPES = new Set(["collection", "premiumCuration"]);
+
+const DEFAULT_PRICE_CEILING_RUPEES = 999;
+
+// A "Under ₹X" rail has to match what the shopper actually sees on the card, not what's in the
+// column — those disagree today. Product price fields are written as paise by pricingService
+// (`calculateAllInclusivePricePaise`), but the storefront's calculateDisplayPricing only divides
+// by 100 when the value exceeds 10000, so a row stored as 2688 renders as "₹2,688" rather than
+// "₹26.88". The two helpers below mirror that storefront logic exactly, so a ceiling of 999 always
+// means "priced under ₹999 as displayed" regardless of which convention a given row follows.
+// Keep in sync with apps/customer/src/lib/pricing.ts.
+const DISPLAY_PAISE_THRESHOLD = 10000;
+
+function toDisplayRupees(value: number | undefined | null): number | undefined {
+  if (value === undefined || value === null) return undefined;
+  return value > DISPLAY_PAISE_THRESHOLD ? value / 100 : value;
+}
+
+/** The price the storefront will actually print on this product's card. */
+function displaySellingPrice(product: any): number {
+  const price = toDisplayRupees(product?.price) ?? 0;
+  const discount = toDisplayRupees(product?.discountPrice);
+  // Matches calculateDisplayPricing: a discount only counts when it undercuts the base price.
+  const hasSellerDiscount = discount !== undefined && discount > 0 && discount < price;
+  return Math.round(hasSellerDiscount ? discount : price);
+}
 
 export class BlockService {
   /**
@@ -344,11 +376,18 @@ export class BlockService {
 
         if (ruleType === "categoryAuto" && block.config?.categoryId) {
           candidates = poolToResolved(categoryPools.get(block.config.categoryId) || []);
+        } else if (ruleType === "priceCeiling") {
+          // Filtered on the RAW pool docs, not the resolved DTOs: ResolvedProduct carries `price`
+          // but not `discountPrice`, and the effective selling price depends on both.
+          const ceiling = block.config?.priceCeiling ?? DEFAULT_PRICE_CEILING_RUPEES;
+          candidates = poolToResolved(
+            activePool.filter((p: any) => displaySellingPrice(p) <= ceiling)
+          );
         } else {
           candidates = poolToResolved(activePool);
         }
 
-        // Both shipped rules are recency-ordered — the pools are already fetched `.order("desc")`,
+        // Every shipped rule is recency-ordered — the pools are already fetched `.order("desc")`,
         // so no re-sort here. Deliberately NOT sorting by hiveScore: that score is
         // 0.35*eta + 0.25*distance + 0.40*constant, i.e. a proximity measure, so using it here
         // would silently turn a "newest first" rail into a "nearest boutique first" rail.
