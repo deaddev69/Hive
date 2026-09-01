@@ -13,7 +13,7 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 // SCHEMA DRIVEN CONFIGURATION
 // ─────────────────────────────────────────────────────────────────────────────
 
-type BlockType = "hero" | "collection" | "category" | "recentlyViewed" | "trust" | "banner" | "recommended" | "vibeGrid" | "newArrivals" | "premiumCuration";
+type BlockType = "hero" | "collection" | "category" | "recentlyViewed" | "trust" | "banner" | "recommended" | "vibeGrid" | "newArrivals" | "premiumCuration" | "smartRail";
 
 interface BlockSchema {
   id: BlockType;
@@ -26,7 +26,7 @@ interface BlockSchema {
     renderer: string;
     config: any;
   };
-  fields: ("badgeTitle" | "title" | "subtitle" | "collectionId" | "maxProducts" | "showSeeAll" | "renderer" | "bannerUpload" | "targetUrl" | "vibeItems" | "bgImageUpload" | "cardCtaText" | "bgOverlayTheme")[];
+  fields: ("badgeTitle" | "title" | "subtitle" | "collectionId" | "maxProducts" | "showSeeAll" | "renderer" | "bannerUpload" | "targetUrl" | "vibeItems" | "bgImageUpload" | "cardCtaText" | "bgOverlayTheme" | "ruleType" | "personalizedMode")[];
 }
 
 const BLOCK_REGISTRY: BlockSchema[] = [
@@ -68,21 +68,12 @@ const BLOCK_REGISTRY: BlockSchema[] = [
   },
   {
     id: "recentlyViewed",
-    name: "Recently Viewed",
+    name: "Personalized Rail",
     category: "Commerce",
     icon: Eye,
-    description: "Personalized history of user's viewed items.",
+    description: "Adapts to the shopper — their recently viewed items, or picks based on what they've browsed. Falls back to popular items for new visitors.",
     defaultConfig: { title: "Recently Viewed", renderer: "productCarousel", config: { maxProducts: 10 } },
-    fields: ["title", "maxProducts"]
-  },
-  {
-    id: "recommended",
-    name: "Recommended for You",
-    category: "Commerce",
-    icon: Sparkles,
-    description: "Algorithmic personalized recommendations.",
-    defaultConfig: { title: "Recommended For You", renderer: "productCarousel", config: { maxProducts: 10 } },
-    fields: ["title", "maxProducts"]
+    fields: ["title", "personalizedMode", "maxProducts"]
   },
   {
     id: "trust",
@@ -103,13 +94,13 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     fields: ["title", "vibeItems"]
   },
   {
-    id: "newArrivals",
-    name: "New Arrivals (Auto)",
+    id: "smartRail",
+    name: "Smart Product Rail",
     category: "Commerce",
-    icon: Sparkles,
-    description: "Automatically pulls the newest active products from the catalog.",
-    defaultConfig: { title: "Fresh on Hive", renderer: "productCarousel", config: { maxProducts: 8 } },
-    fields: ["title", "renderer", "maxProducts"]
+    icon: Zap,
+    description: "Fills itself from the live catalog and refreshes as stock changes — newest arrivals, or everything in one category. No manual upkeep.",
+    defaultConfig: { title: "Fresh on Hive", renderer: "productCarousel", config: { maxProducts: 8, ruleType: "newArrivals" } },
+    fields: ["title", "ruleType", "renderer", "maxProducts"]
   },
   {
     id: "premiumCuration",
@@ -121,6 +112,25 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     fields: ["badgeTitle", "title", "subtitle", "collectionId", "maxProducts", "renderer", "bgImageUpload", "cardCtaText", "bgOverlayTheme"]
   }
 ];
+
+// Some blockTypes no longer have a library card of their own — they were folded into a card that
+// covers several strategies. Map them to the card that now owns them so existing blocks still
+// resolve the right config drawer instead of silently falling back to BLOCK_REGISTRY[0].
+//   recommended  -> Personalized Rail (card id "recentlyViewed"), switchable via its Mode dropdown
+//   newArrivals  -> Smart Product Rail (card id "smartRail"), the legacy pre-ruleType blockType
+const BLOCK_TYPE_TO_CARD_ID: Record<string, BlockType> = {
+  recommended: "recentlyViewed",
+  newArrivals: "smartRail",
+};
+
+function resolveSchema(block: any): BlockSchema {
+  const cardId = BLOCK_TYPE_TO_CARD_ID[block.blockType] ?? block.blockType;
+  return (
+    BLOCK_REGISTRY.find((s) => s.id === cardId && s.defaultConfig?.renderer === block.renderer) ||
+    BLOCK_REGISTRY.find((s) => s.id === cardId) ||
+    BLOCK_REGISTRY[0]!
+  );
+}
 
 // Hero and Category both always pull their content from a global table (all active banners /
 // all homepage-flagged categories) regardless of which block instance renders them — a second
@@ -403,7 +413,7 @@ export function ExperienceStudio() {
               {activeTab === "blocks" && (
                 <div className="max-w-3xl mx-auto space-y-4">
                   {blocks.map((block, idx) => {
-                    const schema = BLOCK_REGISTRY.find(s => s.id === block.blockType && s.defaultConfig?.renderer === block.renderer) || BLOCK_REGISTRY.find(s => s.id === block.blockType) || BLOCK_REGISTRY[0];
+                    const schema = resolveSchema(block);
                     const isHidden = block.status === "archived";
                     const isColType = block.blockType === "collection" || block.blockType === "premiumCuration";
                     const linkedCol = isColType && block.config?.collectionId
@@ -488,6 +498,11 @@ export function ExperienceStudio() {
                                   title: updates.title,
                                   subtitle: updates.subtitle,
                                   config: updates.config,
+                                  // Personalized Rail is the only card that can switch this.
+                                  ...(updates.blockType !== block.blockType &&
+                                    (updates.blockType === "recentlyViewed" || updates.blockType === "recommended")
+                                    ? { blockType: updates.blockType }
+                                    : {}),
                                 });
                                 if (updates.renderer) {
                                   await updateBlockLayoutMut({ id: block._id, renderer: updates.renderer });
@@ -628,6 +643,10 @@ const RENDERER_OPTIONS_BY_BLOCK_TYPE: Record<string, { value: string; label: str
     { value: "productCarousel", label: "Product Carousel (Horizontal Scroll)" },
     { value: "twoProductGrid", label: "2-Column Product Grid" },
   ],
+  smartRail: [
+    { value: "productCarousel", label: "Product Carousel (Horizontal Scroll)" },
+    { value: "twoProductGrid", label: "2-Column Product Grid" },
+  ],
   collection: [
     { value: "productCarousel", label: "Product Carousel (Horizontal Scroll)" },
     { value: "twoProductGrid", label: "2-Column Product Grid" },
@@ -657,6 +676,9 @@ function BlockConfigEditor({ block, schema, collections, categories, onSave, onC
     title: block.title || "",
     subtitle: block.subtitle || "",
     renderer: block.renderer || schema.defaultConfig?.renderer,
+    // Only the Personalized Rail card lets this change (recentlyViewed <-> recommended); every
+    // other card keeps whatever blockType it was created with.
+    blockType: block.blockType,
     config: { ...(schema.defaultConfig?.config || {}), ...block.config }
   });
 
@@ -1006,6 +1028,55 @@ function BlockConfigEditor({ block, schema, collections, categories, onSave, onC
               </div>
             );
           })()}
+          {schema.fields.includes("ruleType") && (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 mb-1">Rail Source</label>
+                <select
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-sm"
+                  value={formData.config.ruleType || "newArrivals"}
+                  onChange={e => updateConfig("ruleType", e.target.value)}
+                >
+                  <option value="newArrivals">Newest Arrivals — freshest stock across all boutiques</option>
+                  <option value="categoryAuto">By Category — everything in one category</option>
+                </select>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Refills itself as stock changes. No manual product picking needed.
+                </p>
+              </div>
+              {formData.config.ruleType === "categoryAuto" && (
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1">Category</label>
+                  <select
+                    className="w-full p-2.5 rounded-xl border border-slate-200 text-sm"
+                    value={formData.config.categoryId || ""}
+                    onChange={e => updateConfig("categoryId", e.target.value)}
+                  >
+                    <option value="">Select a category…</option>
+                    {categories?.map((cat: any) => (
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
+          {schema.fields.includes("personalizedMode") && (
+            <div>
+              <label className="block text-[11px] font-bold text-slate-500 mb-1">Mode</label>
+              <select
+                className="w-full p-2.5 rounded-xl border border-slate-200 text-sm"
+                value={formData.blockType}
+                onChange={e => setFormData({ ...formData, blockType: e.target.value })}
+              >
+                <option value="recentlyViewed">Recently Viewed — items this shopper looked at</option>
+                <option value="recommended">For You — picks based on their browsing</option>
+              </select>
+              <p className="text-[10px] text-slate-400 mt-1">
+                New visitors with no history see popular items instead of an empty rail.
+              </p>
+            </div>
+          )}
           {schema.fields.includes("maxProducts") && (
             <div>
               <label className="block text-[11px] font-bold text-slate-500 mb-1">Max Items to Display</label>

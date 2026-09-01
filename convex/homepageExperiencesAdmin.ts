@@ -346,7 +346,8 @@ export const addBlockToExperience = mutation({
       v.literal("trust"),
       v.literal("vibeGrid"),
       v.literal("newArrivals"),
-      v.literal("premiumCuration")
+      v.literal("premiumCuration"),
+      v.literal("smartRail")
     ),
     title: v.optional(v.string()),
     subtitle: v.optional(v.string()),
@@ -465,6 +466,13 @@ export const updateBlockContent = mutation({
     id: v.id("experienceBlocks"),
     title: v.optional(v.string()),
     subtitle: v.optional(v.string()),
+    // Only the Personalized Rail card sends this, to switch between the recentlyViewed and
+    // recommended sourcing strategies without forcing the operator to delete and re-add the
+    // block. Still publish-gated: it goes through ensureDraftBlock like every other edit.
+    blockType: v.optional(v.union(
+      v.literal("recentlyViewed"),
+      v.literal("recommended")
+    )),
     config: v.optional(v.any()),
   },
   handler: async (ctx, args) => {

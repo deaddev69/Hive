@@ -2257,7 +2257,11 @@ export default defineSchema({
       v.literal("trust"),
       v.literal("vibeGrid"),
       v.literal("newArrivals"),
-      v.literal("premiumCuration")
+      v.literal("premiumCuration"),
+      // Rule-driven auto rail. Strategy lives in config.ruleType rather than in a separate
+      // blockType per rule, so adding a rule doesn't grow this union or the admin block library.
+      // Legacy "newArrivals" rows keep their own BlockService branch — no migration needed.
+      v.literal("smartRail")
     ),
     renderer: v.optional(v.union(
       v.literal("productCarousel"),
@@ -2286,6 +2290,15 @@ export default defineSchema({
       cardCtaText: v.optional(v.string()),
       bgOverlayTheme: v.optional(v.string()),
       targetUrl: v.optional(v.string()),
+      // smartRail: which sourcing strategy the rail uses. Absent = "newArrivals".
+      // trending/priceCeiling deliberately not offered yet — no popularity signal exists
+      // (0 reviews, 0 view history) and every live product falls under any sane price ceiling.
+      ruleType: v.optional(v.union(
+        v.literal("newArrivals"),
+        v.literal("categoryAuto")
+      )),
+      // smartRail + ruleType "categoryAuto": which category to pull from.
+      categoryId: v.optional(v.string()),
       items: v.optional(
         v.array(
           v.object({

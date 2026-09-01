@@ -57,25 +57,62 @@ async function resolveCategoryImage(ctx: any, cat: any) {
   };
 }
 
-// Auto-sourced blocks (recommended, newArrivals, and the Recently Viewed fallback) all draw from
-// the same "top active products" pool. We over-fetch relative to what's actually displayed so
-// that OperationsService's delivery-radius filter (which runs after this) still has enough
-// candidates left to fill the block, instead of every such block collapsing to whatever tiny
-// handful of products happen to survive a `take(20)`/`take(40)` head-slice.
-const FALLBACK_POOL_MULTIPLIER = 5;
-const FALLBACK_POOL_MIN = 60;
-const FALLBACK_POOL_MAX = 150;
+// Auto-sourced blocks (recommended, smartRail/newArrivals, and the Recently Viewed fallback) all
+// draw from the same "top active products" pool. We over-fetch relative to what's actually
+// displayed so that OperationsService's delivery-radius filter (which runs after this) still has
+// enough candidates left to fill the block, instead of every such block collapsing to whatever
+// tiny handful of products happen to survive a `take(20)`/`take(40)` head-slice.
+//
+// The pool is now sized ONCE for the whole page rather than per block. Curated collections claim
+// their products first (see hydrateBlocks' two passes) and those claims come out of this same
+// pool, so the headroom has to budget for curated demand too — sizing each auto block in
+// isolation is what previously let a page full of curated blocks starve the rails below them.
+const POOL_SURVIVAL_MULTIPLIER = 5;
+const POOL_MIN = 60;
+const POOL_MAX = 300;
 
-function poolSizeFor(maxProducts: number | undefined, defaultMax: number): number {
-  const target = maxProducts || defaultMax;
-  return Math.min(FALLBACK_POOL_MAX, Math.max(FALLBACK_POOL_MIN, target * FALLBACK_POOL_MULTIPLIER));
+const DEFAULT_MAX_CURATED = 12;
+const DEFAULT_MAX_RECENTLY_VIEWED = 12;
+const DEFAULT_MAX_RECOMMENDED = 12;
+const DEFAULT_MAX_SMART_RAIL = 8;
+
+/** Products a single block intends to display. */
+function blockDemand(block: any): number {
+  const configured = block.config?.maxProducts;
+  if (configured) return configured;
+  switch (block.blockType) {
+    case "collection":
+    case "premiumCuration":
+      return DEFAULT_MAX_CURATED;
+    case "recentlyViewed":
+      return DEFAULT_MAX_RECENTLY_VIEWED;
+    case "recommended":
+      return DEFAULT_MAX_RECOMMENDED;
+    case "smartRail":
+    case "newArrivals":
+      return DEFAULT_MAX_SMART_RAIL;
+    default:
+      return 0;
+  }
+}
+
+/**
+ * One page-wide pool size covering every product-backed block, curated and auto alike.
+ */
+function pagePoolSize(blocksRaw: any[]): number {
+  const totalDemand = blocksRaw.reduce((sum, b) => sum + blockDemand(b), 0);
+  return Math.min(POOL_MAX, Math.max(POOL_MIN, totalDemand * POOL_SURVIVAL_MULTIPLIER));
 }
 
 // How many of a single block's displayed products may come from the same boutique. Only applied
-// to auto-sourced pools (recommended / newArrivals / recently-viewed fallback) — a merchandiser
+// to auto-sourced pools (recommended / smartRail / recently-viewed fallback) — a merchandiser
 // curating a manual collection may legitimately want it dominated by one boutique, so that path
-// is left uncapped.
-const MAX_PER_BOUTIQUE_IN_AUTO_BLOCK = 3;
+// is left uncapped. When the capped pass can't fill the block (thin category, few boutiques in a
+// newly-launched city), takeUnused runs an uncapped top-up rather than rendering a half-empty rail.
+const MAX_PER_BOUTIQUE_IN_AUTO_BLOCK = 2;
+
+/** Blocks whose products are hand-picked by a merchandiser — these claim first. */
+const CURATED_BLOCK_TYPES = new Set(["collection", "premiumCuration"]);
 
 export class BlockService {
   /**
@@ -87,49 +124,56 @@ export class BlockService {
     ctx: any,
     blocksRaw: any[],
     userContext?: { userId?: string }
-  ): Promise<{ productIds: string[]; activePoolCache: Map<number, any[]> }> {
+  ): Promise<{ productIds: string[]; activePool: any[]; categoryPools: Map<string, any[]> }> {
     const requiredProductIds: string[] = [];
-    const activePoolCache = new Map<number, any[]>();
+    const categoryPools = new Map<string, any[]>();
 
-    const getActivePool = async (size: number) => {
-      const cached = activePoolCache.get(size);
-      if (cached) return cached;
-      const pool = (await ctx.db
-        .query("products")
-        .withIndex("by_active", (q: any) => q.eq("active", true))
-        .order("desc")
-        .take(size))
-        .filter((p: any) => !p.approvalStatus || p.approvalStatus === "approved");
-      activePoolCache.set(size, pool);
-      return pool;
-    };
+    const isApproved = (p: any) => !p.approvalStatus || p.approvalStatus === "approved";
+
+    // One pool for the whole page, sized against curated + auto demand combined.
+    const poolSize = pagePoolSize(blocksRaw);
+    const needsActivePool = blocksRaw.some((b) =>
+      ["recentlyViewed", "recommended", "newArrivals", "smartRail"].includes(b.blockType)
+    );
+    const activePool = needsActivePool
+      ? (await ctx.db
+          .query("products")
+          .withIndex("by_active", (q: any) => q.eq("active", true))
+          .order("desc")
+          .take(poolSize)).filter(isApproved)
+      : [];
+    if (activePool.length > 0) {
+      requiredProductIds.push(...activePool.map((p: any) => p._id.toString()));
+    }
 
     for (const block of blocksRaw) {
-      if ((block.blockType === "collection" || block.blockType === "premiumCuration") && block.config?.collectionId) {
+      if (CURATED_BLOCK_TYPES.has(block.blockType) && block.config?.collectionId) {
         // Pull every product mapped to the collection (not just the display cap) so that if some
         // get filtered out later (out of delivery range, out of stock), others further down the
         // merchandiser's ordering can still fill the block instead of leaving it empty.
         const pIds = await CollectionService.getCollectionRequirements(ctx, block.config.collectionId);
         requiredProductIds.push(...pIds);
-      } else if (block.blockType === "recentlyViewed") {
-        if (userContext?.userId) {
-          const history = await ctx.db
-            .query("recentlyViewed")
-            .withIndex("by_user_viewed", (q: any) => q.eq("userId", userContext.userId))
+      } else if (block.blockType === "recentlyViewed" && userContext?.userId) {
+        const history = await ctx.db
+          .query("recentlyViewed")
+          .withIndex("by_user_viewed", (q: any) => q.eq("userId", userContext.userId))
+          .order("desc")
+          .take(12);
+        requiredProductIds.push(...history.map((h: any) => h.productId.toString()));
+      } else if (block.blockType === "smartRail" && block.config?.ruleType === "categoryAuto" && block.config?.categoryId) {
+        // Category rails source from their own indexed slice rather than the page pool — the top-N
+        // active products may contain few or none of a given category.
+        const categoryId = block.config.categoryId;
+        if (!categoryPools.has(categoryId)) {
+          const catPool = (await ctx.db
+            .query("products")
+            .withIndex("by_categoryId", (q: any) => q.eq("categoryId", categoryId))
             .order("desc")
-            .take(12);
-          requiredProductIds.push(...history.map((h: any) => h.productId.toString()));
+            .take(blockDemand(block) * POOL_SURVIVAL_MULTIPLIER))
+            .filter((p: any) => p.active !== false && isApproved(p));
+          categoryPools.set(categoryId, catPool);
+          requiredProductIds.push(...catPool.map((p: any) => p._id.toString()));
         }
-        // Always also stage a fallback pool: guests, and signed-in users with no view history
-        // yet, still need something to show instead of an empty slot.
-        const pool = await getActivePool(poolSizeFor(block.config?.maxProducts, 12));
-        requiredProductIds.push(...pool.map((p: any) => p._id.toString()));
-      } else if (block.blockType === "recommended") {
-        const pool = await getActivePool(poolSizeFor(block.config?.maxProducts, 12));
-        requiredProductIds.push(...pool.map((p: any) => p._id.toString()));
-      } else if (block.blockType === "newArrivals") {
-        const pool = await getActivePool(poolSizeFor(block.config?.maxProducts, 8));
-        requiredProductIds.push(...pool.map((p: any) => p._id.toString()));
       }
       // NOTE: premiumCuration (and collection+premiumGrid) with no collectionId deliberately has
       // no fallback here. Premium Curation is meant to be hand-curated — auto-filling it from
@@ -138,49 +182,78 @@ export class BlockService {
       // empty product list) until a merchandiser binds a real collection to it.
     }
 
-    return { productIds: Array.from(new Set(requiredProductIds)), activePoolCache };
+    return { productIds: Array.from(new Set(requiredProductIds)), activePool, categoryPools };
   }
 
   /**
    * Hydrates raw blocks into ResolvedBlock DTOs. Applies a shared "already used" set across
    * blocks so the same product can't be independently selected into multiple sections on the
    * same page load.
+   *
+   * Runs in TWO passes. Pass 1 hydrates merchandiser-curated blocks (collection,
+   * premiumCuration) so their hand-picked products are claimed before anything else; pass 2
+   * hydrates the auto-sourced rails, which fill from whatever the curated blocks didn't take.
+   * Previously both ran in a single sortOrder-ordered loop, which meant a curated block only won
+   * a contested product if it happened to sit higher on the page — priority was coupled to
+   * layout position. It no longer is.
+   *
+   * Hydration order is NOT render order: results are keyed by block id and re-emitted in the
+   * caller's original (sortOrder-sorted) sequence at the end.
    */
   static async hydrateBlocks(
     ctx: any,
     blocksRaw: any[],
     resolvedProductsMap: Map<string, ResolvedProduct>,
-    activePoolCache: Map<number, any[]>,
+    activePool: any[],
+    categoryPools: Map<string, any[]>,
     userContext?: { userId?: string }
   ): Promise<ResolvedBlock[]> {
-    const resolvedBlocks: ResolvedBlock[] = [];
+    const resolvedById = new Map<string, ResolvedBlock>();
     const usedProductIds = new Set<string>();
 
-    // Curated collections are iterated first in page (sortOrder) order, so they naturally win
-    // contested products over generic auto-sourced pools further down the page.
-    // `diversify`, when true, additionally caps how many picks may share a boutique — only
-    // meaningful for auto-sourced pools, never for a merchandiser's manual collection.
+    // `diversify`, when true, caps how many picks may share a boutique — only meaningful for
+    // auto-sourced pools, never for a merchandiser's manual collection. If the capped pass can't
+    // fill the block (thin category, or a city with few boutiques), a second uncapped pass tops
+    // it up rather than shipping a visibly short rail.
     const takeUnused = (products: ResolvedProduct[], max: number, diversify = false): ResolvedProduct[] => {
       const picked: ResolvedProduct[] = [];
+      const pickedIds = new Set<string>();
       const boutiqueCounts = new Map<string, number>();
+
       for (const p of products) {
         if (picked.length >= max) break;
-        if (usedProductIds.has(p.id)) continue;
+        if (usedProductIds.has(p.id) || pickedIds.has(p.id)) continue;
         if (diversify) {
           const count = boutiqueCounts.get(p.boutiqueId) || 0;
           if (count >= MAX_PER_BOUTIQUE_IN_AUTO_BLOCK) continue;
           boutiqueCounts.set(p.boutiqueId, count + 1);
         }
         picked.push(p);
+        pickedIds.add(p.id);
       }
+
+      if (diversify && picked.length < max) {
+        for (const p of products) {
+          if (picked.length >= max) break;
+          if (usedProductIds.has(p.id) || pickedIds.has(p.id)) continue;
+          picked.push(p);
+          pickedIds.add(p.id);
+        }
+      }
+
       for (const p of picked) usedProductIds.add(p.id);
       return picked;
     };
 
-    for (const block of blocksRaw) {
+    const poolToResolved = (pool: any[]): ResolvedProduct[] =>
+      pool
+        .map((p: any) => resolvedProductsMap.get(p._id.toString()))
+        .filter(Boolean) as ResolvedProduct[];
+
+    const hydrateBlock = async (block: any): Promise<ResolvedBlock> => {
       const data: any = {};
 
-      if ((block.blockType === "collection" || block.blockType === "premiumCuration") && block.config?.collectionId) {
+      if (CURATED_BLOCK_TYPES.has(block.blockType) && block.config?.collectionId) {
         const hydratedCol = await CollectionService.hydrateCollection(ctx, block.config.collectionId, resolvedProductsMap);
         if (hydratedCol) {
           // Resolve the FULL merchandiser-ordered list to survivors first, then cap to the
@@ -223,20 +296,14 @@ export class BlockService {
         if (!isPersonalized) {
           // Guest, or a signed-in shopper who hasn't viewed anything yet — show something instead
           // of leaving the slot empty.
-          const pool = activePoolCache.get(poolSizeFor(block.config?.maxProducts, 12)) || [];
-          matchedProducts = (pool
-            .map((p: any) => resolvedProductsMap.get(p._id.toString()))
-            .filter(Boolean) as ResolvedProduct[])
+          matchedProducts = poolToResolved(activePool)
             .sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
         }
 
-        data.products = takeUnused(matchedProducts, block.config?.maxProducts || 12, !isPersonalized);
+        data.products = takeUnused(matchedProducts, blockDemand(block), !isPersonalized);
         data.isPersonalized = isPersonalized;
       } else if (block.blockType === "recommended") {
-        const pool = activePoolCache.get(poolSizeFor(block.config?.maxProducts, 12)) || [];
-        let candidates = (pool
-          .map((p: any) => resolvedProductsMap.get(p._id.toString()))
-          .filter(Boolean) as ResolvedProduct[]);
+        let candidates = poolToResolved(activePool);
 
         // Real (if lightweight) personalization: boost candidates that share a category with
         // something the shopper has actually looked at, instead of just re-showing the same
@@ -267,15 +334,25 @@ export class BlockService {
           candidates.sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
         }
 
-        data.products = takeUnused(candidates, block.config?.maxProducts || 12, true);
+        data.products = takeUnused(candidates, blockDemand(block), true);
         data.isPersonalized = isPersonalized;
-      } else if (block.blockType === "newArrivals") {
-        const pool = activePoolCache.get(poolSizeFor(block.config?.maxProducts, 8)) || [];
-        const candidates = (pool
-          .map((p: any) => resolvedProductsMap.get(p._id.toString()))
-          .filter(Boolean) as ResolvedProduct[])
-          .sort((a, b) => (b.hiveScore ?? 0) - (a.hiveScore ?? 0));
-        data.products = takeUnused(candidates, block.config?.maxProducts || 8, true);
+      } else if (block.blockType === "smartRail" || block.blockType === "newArrivals") {
+        // "newArrivals" is the legacy blockType for what is now a smartRail with the default
+        // rule; both land here so existing rows keep working without a migration.
+        const ruleType = block.config?.ruleType || "newArrivals";
+        let candidates: ResolvedProduct[];
+
+        if (ruleType === "categoryAuto" && block.config?.categoryId) {
+          candidates = poolToResolved(categoryPools.get(block.config.categoryId) || []);
+        } else {
+          candidates = poolToResolved(activePool);
+        }
+
+        // Both shipped rules are recency-ordered — the pools are already fetched `.order("desc")`,
+        // so no re-sort here. Deliberately NOT sorting by hiveScore: that score is
+        // 0.35*eta + 0.25*distance + 0.40*constant, i.e. a proximity measure, so using it here
+        // would silently turn a "newest first" rail into a "nearest boutique first" rail.
+        data.products = takeUnused(candidates, blockDemand(block), true);
       } else if (block.blockType === "hero") {
         // Hero block always pulls the global carousel banners from the banners table
         const activeBanners = await ctx.db
@@ -329,7 +406,7 @@ export class BlockService {
         data.categories = await Promise.all(activeCategories.map((c: any) => resolveCategoryImage(ctx, c)));
       }
 
-      resolvedBlocks.push({
+      return {
         id: block._id.toString(),
         blockKey: block.blockKey,
         blockType: block.blockType,
@@ -338,9 +415,31 @@ export class BlockService {
         renderer: block.renderer,
         config: block.config,
         data,
-      });
+      };
+    };
+
+    // PASS 1 — merchandiser-curated blocks claim their hand-picked products first.
+    for (const block of blocksRaw) {
+      if (CURATED_BLOCK_TYPES.has(block.blockType)) {
+        resolvedById.set(block._id.toString(), await hydrateBlock(block));
+      }
     }
 
-    return resolvedBlocks;
+    // PASS 2 — everything else (auto rails, plus the non-product blocks, which never touch
+    // usedProductIds and so are order-independent).
+    for (const block of blocksRaw) {
+      const id = block._id.toString();
+      if (!resolvedById.has(id)) {
+        resolvedById.set(id, await hydrateBlock(block));
+      }
+    }
+
+    // Hydration order above is priority order, NOT render order. Re-emit in the caller's original
+    // sequence (ExperienceService already sorted blocksRaw by sortOrder) so the page lays out
+    // exactly as the merchandiser arranged it. Mapping over blocksRaw rather than re-sorting
+    // avoids reintroducing tie/duplicate hazards on equal sortOrder values.
+    return blocksRaw
+      .map((b) => resolvedById.get(b._id.toString()))
+      .filter(Boolean) as ResolvedBlock[];
   }
 }
