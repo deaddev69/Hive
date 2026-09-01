@@ -230,8 +230,11 @@ export default function CheckoutAddressPage() {
       const bLat = boutique.latitude ?? boutique.addressDetails?.lat;
       const bLng = boutique.longitude ?? boutique.addressDetails?.lng;
       if (bLat === undefined || bLng === undefined) return false;
-      const dist = calculateDistanceKm(addr.lat, addr.lng, bLat, bLng);
-      if (dist > (boutique.deliveryRadiusKm ?? 15)) {
+      // 13km and the 1.5x road factor both mirror convex/lib/serviceability.ts. They previously
+      // diverged (15km, straight-line), making this screen the looser of the two, so an address
+      // it accepted could still be rejected server-side at payment.
+      const dist = calculateDistanceKm(addr.lat, addr.lng, bLat, bLng) * 1.5;
+      if (dist > (boutique.deliveryRadiusKm ?? 13)) {
         return false;
       }
     }
@@ -256,8 +259,11 @@ export default function CheckoutAddressPage() {
         }
         continue;
       }
-      const dist = calculateDistanceKm(addr.lat, addr.lng, bLat, bLng);
-      if (dist > (boutique.deliveryRadiusKm ?? 15)) {
+      // 13km and the 1.5x road factor both mirror convex/lib/serviceability.ts. They previously
+      // diverged (15km, straight-line), making this screen the looser of the two, so an address
+      // it accepted could still be rejected server-side at payment.
+      const dist = calculateDistanceKm(addr.lat, addr.lng, bLat, bLng) * 1.5;
+      if (dist > (boutique.deliveryRadiusKm ?? 13)) {
         const name = boutique.boutiqueName || boutique.name || "";
         if (!unserviceable.includes(name)) {
           unserviceable.push(name);

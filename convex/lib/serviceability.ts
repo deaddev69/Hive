@@ -118,16 +118,20 @@ export function checkServiceability(
   }
 
   const radius = boutique.deliveryRadiusKm ?? DEFAULT_RADIUS_KM;
-  const rawDistance = haversineKm(deliveryLat, deliveryLng, coords.lat, coords.lng);
+  // Scaled to estimated road distance, matching isWithinDeliveryRadius and OperationsService.
+  // Comparing raw straight-line here while the browse/filter path compared road distance made
+  // this gate the LOOSER of the two: a boutique hidden from the catalogue as out-of-range could
+  // still be ordered from via a direct product link.
+  const distance = estimatedRoadKm(haversineKm(deliveryLat, deliveryLng, coords.lat, coords.lng));
 
-  if (rawDistance > radius) {
+  if (distance > radius) {
     return {
       serviceable: false,
-      distanceKm: rawDistance,
+      distanceKm: distance,
       radiusKm: radius,
       reason: "Address is outside the boutique's delivery radius.",
     };
   }
 
-  return { serviceable: true, distanceKm: rawDistance, radiusKm: radius };
+  return { serviceable: true, distanceKm: distance, radiusKm: radius };
 }

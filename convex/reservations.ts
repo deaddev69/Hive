@@ -10,6 +10,7 @@ import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { triggerNotification } from "./lib/notifications";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
+import { checkServiceability } from "./lib/serviceability";
 
 const RESERVATION_TIMER_MS = 30 * 60 * 1000; // 30 minutes
 const PAYMENT_TIMER_MS = 30 * 60 * 1000;     // 30 minutes
@@ -101,6 +102,37 @@ export const createReservation = mutation({
     }
     if (boutiqueStatus.type === "PAUSED") {
       throw new ConvexError("Store is temporarily unavailable. Cannot create reservation.");
+    }
+
+    // 2b. Serviceability gate.
+    //
+    // A reservation holds real stock against a real unit for hours, and it can only ever convert
+    // through checkout — which enforces the same radius (payments.ts, initCheckoutSessionInternal).
+    // Without this check a customer anywhere in the world could hold a Kochi boutique's inventory
+    // on an order they can never complete, denying it to buyers who actually can. Reservations are
+    // for delivery, not in-store collection: there is no pickup mode in the reservations schema,
+    // so every one of them ends in a delivery that must be inside the radius.
+    const userAddresses = await ctx.db
+      .query("addresses")
+      .withIndex("by_userId", (q) => q.eq("userId", user._id))
+      .collect();
+    const usableAddresses = userAddresses.filter(
+      (a) => !a.isDeleted && a.addressStatus !== "rejected"
+    );
+
+    if (usableAddresses.length === 0) {
+      throw new ConvexError(
+        "Add a delivery address before reserving, so we can confirm we deliver to you."
+      );
+    }
+
+    const anyServiceable = usableAddresses.some(
+      (a) => checkServiceability(a.lat, a.lng, boutique as any).serviceable
+    );
+    if (!anyServiceable) {
+      throw new ConvexError(
+        `${boutique.boutiqueName || "This boutique"} does not deliver to any of your saved addresses, so this item cannot be reserved.`
+      );
     }
 
     // 3. Check stock availability for this size
