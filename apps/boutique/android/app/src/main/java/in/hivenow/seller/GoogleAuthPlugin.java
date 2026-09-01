@@ -72,6 +72,8 @@ public class GoogleAuthPlugin extends Plugin {
             Log.e(TAG, "Google Sign-In ApiException: statusCode=" + e.getStatusCode(), e);
             if (e.getStatusCode() == 12501) { // SIGN_IN_CANCELLED
                 call.reject("Sign-in was cancelled by user", "auth/popup-closed-by-user");
+            } else if (e.getStatusCode() == 10) {
+                call.reject("Google Sign-In Developer Error (code 10): Ensure SHA-1 fingerprint is added in Firebase Console.", "DEVELOPER_ERROR");
             } else {
                 call.reject("Google Sign-In failed: " + e.getMessage() + " (code " + e.getStatusCode() + ")");
             }

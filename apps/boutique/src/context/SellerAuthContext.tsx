@@ -62,9 +62,9 @@ export function SellerAuthProvider({ children }: { children: React.ReactNode }) 
           await signInWithCredential(auth, credential);
           return;
         }
+        throw new Error("No ID token returned from Google Sign-In");
       } catch (err: any) {
-        console.warn("[SellerAuthContext] Native GoogleAuth failed or cancelled:", err);
-        // If user cancelled, rethrow so UI can handle without triggering redirect fallback
+        console.error("[SellerAuthContext] Native GoogleAuth error:", err);
         if (
           err?.code === "auth/popup-closed-by-user" ||
           err?.message?.includes("cancelled") ||
@@ -74,7 +74,7 @@ export function SellerAuthProvider({ children }: { children: React.ReactNode }) 
           cancelErr.code = "auth/popup-closed-by-user";
           throw cancelErr;
         }
-        // If native bridge failed with another error, fall through to web fallback
+        throw err;
       }
     }
 
