@@ -778,10 +778,13 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     );
   }
 
-  // 4. RECENTLY VIEWED / RECOMMENDED / NEW ARRIVALS
-  if (block.blockType === "recentlyViewed" || block.blockType === "recommended" || block.blockType === "newArrivals") {
+  // 4. SMART PRODUCT RAIL / RECENTLY VIEWED / RECOMMENDED / NEW ARRIVALS
+  if (block.blockType === "smartRail" || block.blockType === "recentlyViewed" || block.blockType === "recommended" || block.blockType === "newArrivals") {
+    const isSmartRail = block.blockType === "smartRail";
     const isRecommended = block.blockType === "recommended";
-    const isNewArrivals = block.blockType === "newArrivals";
+    const isNewArrivals = block.blockType === "newArrivals" || (isSmartRail && (block.config?.ruleType === "newArrivals" || !block.config?.ruleType));
+    const isPriceCeiling = isSmartRail && block.config?.ruleType === "priceCeiling";
+    const isCategoryAuto = isSmartRail && block.config?.ruleType === "categoryAuto";
     const isTwoGrid = block.renderer === "twoProductGrid";
     const isGrid = block.renderer === "productGrid" || block.renderer === "grid";
     const isCarousel = !isTwoGrid && !isGrid;
@@ -790,20 +793,28 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     // history — as opposed to the generic recency-ranked fallback everyone else sees.
     const isPersonalized = block.data?.isPersonalized === true;
 
-    const allProducts = (block.data.products || [])
+    const allProducts = (block.data?.products || [])
       .filter((p: any) => p.active !== false)
       .map(mapDbProduct);
 
     if (allProducts.length === 0) return null;
 
     const displayProducts = allProducts.slice(0, maxItems);
-    const bgClass = isNewArrivals ? "bg-white" : (isRecommended ? "bg-white" : "bg-hive-cream");
-    const tagText = isNewArrivals
-      ? "FRESH ARRIVALS"
-      : isRecommended
-        ? (isPersonalized ? "BASED ON WHAT YOU'VE VIEWED" : "TRENDING NOW")
-        : (isPersonalized ? "PICK UP WHERE YOU LEFT OFF" : "YOU MIGHT LIKE");
-    const targetUrl = isNewArrivals ? "/products?sort=newest" : "/products";
+    const bgClass = (isNewArrivals || isSmartRail || isRecommended) ? "bg-white" : "bg-hive-cream";
+    const tagText = isPriceCeiling
+      ? "BUDGET FINDS"
+      : isCategoryAuto
+        ? "EXPLORE COLLECTION"
+        : isNewArrivals
+          ? "FRESH ARRIVALS"
+          : isRecommended
+            ? (isPersonalized ? "BASED ON WHAT YOU'VE VIEWED" : "TRENDING NOW")
+            : (isPersonalized ? "PICK UP WHERE YOU LEFT OFF" : "YOU MIGHT LIKE");
+    const targetUrl = isPriceCeiling
+      ? `/products?maxPrice=${block.config?.priceCeiling || 1500}`
+      : isNewArrivals
+        ? "/products?sort=newest"
+        : "/products";
     
     return (
       <section className={`w-full ${bgClass} pt-2 pb-5 sm:pt-3 sm:pb-7 border-b border-hive-border/20`}>
@@ -814,7 +825,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
                 {tagText}
               </span>
               <h2 className="text-xl sm:text-2xl font-serif font-semibold text-hive-dark uppercase tracking-wide">
-                {block.title || (isNewArrivals ? "New on Hive" : (isRecommended ? "Recommended" : "Most Loved"))}
+                {block.title || (isPriceCeiling ? "Budget Finds" : (isNewArrivals ? "New on Hive" : (isRecommended ? "Recommended" : "Most Loved")))}
               </h2>
             </div>
             <Link
