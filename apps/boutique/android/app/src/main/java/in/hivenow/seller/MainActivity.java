@@ -17,6 +17,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(FcmTokenPlugin.class);
         registerPlugin(GoogleAuthPlugin.class);
         super.onCreate(savedInstanceState);
+        configureLockScreenWake();
         createUrgentOrderNotificationChannel();
         configureWebView();
     }
@@ -24,7 +25,22 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onResume() {
         super.onResume();
+        configureLockScreenWake();
         configureWebView();
+    }
+
+    private void configureLockScreenWake() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+        } else {
+            getWindow().addFlags(
+                android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                android.view.WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON |
+                android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+            );
+        }
     }
 
     private void configureWebView() {

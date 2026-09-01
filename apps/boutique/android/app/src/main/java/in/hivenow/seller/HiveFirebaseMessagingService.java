@@ -54,11 +54,47 @@ public class HiveFirebaseMessagingService extends FirebaseMessagingService {
 
         Log.d(TAG, "Order notification: " + title + " | " + body + " | payout=" + netPayout);
 
-        // Wake the screen
+        // 1. Wake the screen
         wakeScreen();
 
-        // Build and show the notification
+        // 2. Play native alarm sound with USAGE_ALARM (loud ringtone)
+        playNativeAlarm();
+
+        // 3. Build and show the high-priority Heads-Up Notification with FullScreenIntent
         showOrderNotification(title, body, orderNumber, netPayout, url);
+
+        // 4. If overlay permission is granted, immediately pop MainActivity over other apps
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && android.provider.Settings.canDrawOverlays(this)) {
+            try {
+                Intent popIntent = new Intent(this, MainActivity.class);
+                popIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                popIntent.putExtra("orderUrl", url);
+                popIntent.putExtra("orderNumber", orderNumber);
+                startActivity(popIntent);
+                Log.d(TAG, "Successfully launched MainActivity over other apps");
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to launch activity over other apps", e);
+            }
+        }
+    }
+
+    private void playNativeAlarm() {
+        try {
+            Uri soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + getPackageName() + "/raw/order_alarm");
+            android.media.MediaPlayer player = new android.media.MediaPlayer();
+            player.setAudioAttributes(
+                new AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .build()
+            );
+            player.setDataSource(this, soundUri);
+            player.prepare();
+            player.start();
+            player.setOnCompletionListener(android.media.MediaPlayer::release);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to play native audio alarm", e);
+        }
     }
 
     @Override

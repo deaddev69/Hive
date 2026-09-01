@@ -32,13 +32,40 @@ export default function BoutiqueProfile() {
   const [longitude, setLongitude] = useState(78.487);
 
   const [alertMode, setAlertMode] = useState<"store" | "mobile">("mobile");
+  const [hasOverlayPerm, setHasOverlayPerm] = useState(false);
+  const [isCapacitorApp, setIsCapacitorApp] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedMode = (localStorage.getItem("hive_alert_mode") as "store" | "mobile") || "mobile";
       setAlertMode(savedMode);
+
+      const cap = (window as any).Capacitor;
+      if (cap?.Plugins?.FcmToken) {
+        setIsCapacitorApp(true);
+        cap.Plugins.FcmToken.canDrawOverlays?.()
+          .then((res: { granted?: boolean }) => {
+            setHasOverlayPerm(!!res?.granted);
+          })
+          .catch(() => {});
+      }
     }
   }, []);
+
+  const handleRequestOverlay = () => {
+    const cap = typeof window !== "undefined" ? (window as any).Capacitor : null;
+    if (cap?.Plugins?.FcmToken?.requestOverlayPermission) {
+      cap.Plugins.FcmToken.requestOverlayPermission()
+        .then(() => {
+          setTimeout(() => {
+            cap.Plugins.FcmToken.canDrawOverlays?.().then((res: { granted?: boolean }) => {
+              setHasOverlayPerm(!!res?.granted);
+            });
+          }, 1000);
+        })
+        .catch(console.error);
+    }
+  };
   
   // Store status
   const [storeStatus, setStoreStatus] = useState<"open" | "busy" | "closed">("open");
@@ -695,6 +722,34 @@ export default function BoutiqueProfile() {
                 </div>
               </div>
             </div>
+
+            {/* ── Display Over Other Apps (Overlay) for Native Android App ───── */}
+            {isCapacitorApp && (
+              <div className="mt-4 p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-[#D9A71E]" />
+                      Display Over Other Apps
+                    </span>
+                    <p className="text-[11.5px] text-slate-600 font-medium mt-0.5 leading-snug">
+                      Allow Hive to pop up order alerts immediately even when you are using WhatsApp or other apps.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRequestOverlay}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 cursor-pointer transition-all ${
+                      hasOverlayPerm
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-slate-900 text-white hover:bg-slate-800 shadow-xs"
+                    }`}
+                  >
+                    {hasOverlayPerm ? "Enabled ✓" : "Enable Overlay"}
+                  </button>
+                </div>
+              </div>
+            )}
 
 
             <Button
