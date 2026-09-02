@@ -316,7 +316,7 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
 
           {/* Dots Indicator */}
           {banners.length > 1 && (
-            <div className="flex items-center justify-center pt-1">
+            <div className="flex items-center justify-center pt-1 pb-0.5">
               {banners.map((_, i) => (
                 <button
                   key={i}
@@ -324,7 +324,7 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
                   onClick={() => scrollToIdx(i)}
                   aria-label={`Slide ${i + 1}`}
                   aria-current={i === activeIdx}
-                  className="flex items-center justify-center w-11 h-11 -mx-0.5"
+                  className="flex items-center justify-center w-6 h-5 p-0"
                 >
                   <span
                     className={`h-1.5 rounded-full transition-all duration-300 ${

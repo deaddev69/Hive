@@ -216,17 +216,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         )}
       </div>
 
-      {/* ── Card content (Compressed, sits tightly below the image) ── */}
-      <div className="pt-1 pb-0 px-0.5 flex flex-col text-left justify-start gap-0.5">
+      {/* ── Card content (Clean, breathing layout below image) ── */}
+      <div className="pt-2 pb-0.5 px-0.5 flex flex-col text-left justify-start gap-1">
         {/* Boutique Name */}
         <Link
           href={`/shop/${boutique?.slug || (product as any).boutiqueId || (product as any).boutique?.id || ""}`}
           prefetch={false}
           className={cn(
-            "text-[10px] uppercase transition-colors leading-tight block truncate",
+            "text-[9.5px] sm:text-[10px] uppercase transition-colors leading-none block truncate tracking-wider",
             premiumMode 
-              ? "text-stone-500 font-medium tracking-widest"
-              : (darkTheme ? "text-amber-400 hover:text-amber-300 font-bold" : "text-slate-500 hover:text-slate-700 font-semibold")
+              ? "text-stone-400 font-medium"
+              : (darkTheme ? "text-amber-400/80 hover:text-amber-300 font-medium" : "text-stone-400 hover:text-stone-600 font-medium")
           )}
         >
           {product.boutiqueName || boutique?.name || boutique?.boutiqueName || "Hive Boutique"}
@@ -235,10 +235,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         {/* Product Title */}
         <Link href={`/products/${product.slug}`} prefetch={false} className="hover:opacity-80 transition-opacity block leading-tight">
           <h3 className={cn(
-            "text-sm truncate",
+            "text-xs sm:text-sm truncate leading-snug",
             premiumMode 
               ? "font-serif text-stone-800 dark:text-stone-100 font-normal" 
-              : (darkTheme ? "font-medium text-white" : "font-medium text-slate-900")
+              : (darkTheme ? "font-medium text-white" : "font-semibold text-stone-900")
           )}>
             {cleanProductTitle(product.name)}
           </h3>
@@ -262,7 +262,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
               href={`/products/${product.slug}`}
               prefetch={false}
               className={cn(
-                "group/cta inline-flex items-center gap-1 mt-0.5 text-xs font-serif italic transition-all duration-300",
+                "group/cta inline-flex items-center gap-1 text-xs font-serif italic transition-all duration-300 pt-0.5",
                 premiumMode 
                   ? "text-stone-700 font-normal hover:text-stone-950 dark:text-stone-300"
                   : (darkTheme ? "text-amber-300 hover:text-white font-medium" : "text-amber-900 hover:text-amber-700 dark:text-amber-300 font-medium")
@@ -272,14 +272,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
             </Link>
           ) : null
         ) : (
-          <div className={cn("text-sm sm:text-base font-extrabold leading-tight flex items-baseline flex-wrap gap-1.5 mt-0.5", darkTheme ? "text-amber-300" : "text-slate-900")}>
+          <div className={cn("text-xs sm:text-sm md:text-base font-bold leading-none flex items-baseline flex-wrap gap-1.5 pt-0.5", darkTheme ? "text-amber-300" : "text-stone-950")}>
             <span>₹{displayPrice.toLocaleString("en-IN")}</span>
             {compareAtPrice !== undefined && compareAtPrice > displayPrice && (
               <>
-                <span className={cn("text-[11px] sm:text-xs line-through font-normal", darkTheme ? "text-white/50" : "text-slate-400")}>
+                <span className={cn("text-[10.5px] sm:text-xs line-through font-normal", darkTheme ? "text-white/50" : "text-stone-400")}>
                   ₹{compareAtPrice.toLocaleString("en-IN")}
                 </span>
-                <span className={cn("text-[10px] sm:text-[11px] font-bold tracking-tight", darkTheme ? "text-amber-400" : "text-hive-amber")}>
+                <span className={cn("text-[10px] sm:text-[10.5px] font-bold tracking-tight text-emerald-700 dark:text-emerald-400")}>
                   ({discountPercent}% OFF)
                 </span>
               </>
@@ -288,7 +288,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         )}
 
         {logisticsText && !hidePrice && (
-          <span className={cn("text-[9.5px] font-bold uppercase tracking-wide mt-0.5", darkTheme ? "text-amber-400/90" : "text-hive-amber")}>
+          <span className={cn("text-[9px] sm:text-[9.5px] font-bold uppercase tracking-wider pt-0.5 leading-none", darkTheme ? "text-amber-400/90" : "text-amber-700")}>
             {logisticsText}
           </span>
         )}
