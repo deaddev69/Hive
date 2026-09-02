@@ -296,14 +296,15 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
-      // High accuracy forces a GPS-chip cold-start lock — 7-10s+ indoors — just to resolve which
-      // locality a shopper is in for a delivery-radius check. Network/WiFi positioning is more
-      // than precise enough for that and typically resolves in 1-3s; it also still works with the
-      // GPS radio off, so this is a straight win rather than a precision/speed tradeoff. A stale
-      // fix from the last minute is fine too, so a repeat tap can return instantly.
+      // enableHighAccuracy must stay true: on Android Chrome it's what makes the browser offer
+      // Google Play Services' native "Turn on Location Accuracy" system dialog when device
+      // location is off, instead of just failing straight to an error message — a much better
+      // recovery path than anything the page can build itself. maximumAge softens the resulting
+      // slower cold-start lock by letting a position from the last minute return instantly on a
+      // repeat tap instead of forcing a brand-new fix every time.
       const options = {
-        enableHighAccuracy: false,
-        timeout: 8000,
+        enableHighAccuracy: true,
+        timeout: 10000,
         maximumAge: 60000,
       };
 

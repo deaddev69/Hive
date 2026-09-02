@@ -410,12 +410,13 @@ function MapPickerInner({
           toast.error("Unable to fetch location. Please search manually.");
         }
       },
-      // High accuracy forces a GPS-chip cold-start lock — great for turn-by-turn, but 7-10s
-      // indoors just to find which locality a shopper is in for a delivery-radius check. Network/
-      // WiFi positioning resolves in 1-3s and is more than precise enough for that; maximumAge
-      // lets a position the OS already has from the last minute return instantly instead of
-      // forcing a brand-new fix every tap.
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+      // enableHighAccuracy must stay true: on Android Chrome it's what makes the browser offer
+      // Google Play Services' native "Turn on Location Accuracy" system dialog when device
+      // location is off, instead of just failing straight to an error toast — a much better
+      // recovery path than anything the page can build itself. The cost is a slower cold-start
+      // GPS lock; maximumAge softens that by letting a position from the last minute return
+      // instantly on repeat taps instead of forcing a brand-new fix every time.
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   }, [map, onChange, onReverseGeocode]);
 
