@@ -69,9 +69,19 @@ const nextConfig: NextConfig = {
   experimental: {
   },
 
-  // Redirects for legacy links and typos
+  // Redirects for legacy links, typos, and retired pages
   async redirects() {
     return [
+      {
+        source: "/collections",
+        destination: "/products",
+        permanent: true,
+      },
+      {
+        source: "/collections/:slug*",
+        destination: "/products",
+        permanent: true,
+      },
       {
         source: "/category/ethnic-wer",
         destination: "/products?category=womens-ethnic",

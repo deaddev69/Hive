@@ -98,21 +98,21 @@ export default function MyOrdersPage() {
   const firstReviewItem = reviewingOrder?.items?.[0];
 
   return (
-    <div className="min-h-screen bg-hive-cream py-12 px-4 sm:px-6 lg:px-8 select-none text-left antialiased">
+    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8 select-none text-left antialiased">
       <div className="max-w-4xl mx-auto flex flex-col gap-8">
 
         {/* Page Header */}
-        <div className="space-y-2 pb-6 border-b border-hive-dark/[0.08]">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-hive-amber">
+        <div className="space-y-2 pb-6 border-b border-stone-200/80">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
             Your Purchases
           </span>
           <div className="flex justify-between items-baseline">
-            <h1 className="text-3xl font-serif font-light text-hive-dark tracking-tight">
+            <h1 className="text-3xl font-serif font-bold text-stone-900 tracking-tight">
               My Orders
             </h1>
             <Link
               href="/products"
-              className="text-xs font-bold text-hive-dark hover:text-hive-amber transition-colors"
+              className="text-xs font-bold text-stone-900 hover:text-amber-600 transition-colors"
             >
               Browse Products →
             </Link>
@@ -213,7 +213,7 @@ function OrderCard({
     >
       <div className="flex gap-4 flex-1">
         {/* Product thumbnail */}
-        <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-hive-cream border border-hive-dark/[0.08] flex-shrink-0">
+        <div className="relative w-20 h-24 rounded-lg overflow-hidden bg-stone-100 border border-stone-200 flex-shrink-0">
           {firstItem?.imageUrl ? (
             <img
               src={firstItem.imageUrl}
@@ -221,8 +221,8 @@ function OrderCard({
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-hive-cream flex items-center justify-center">
-              <Package className="w-6 h-6 text-hive-amber" />
+            <div className="w-full h-full bg-stone-50 flex items-center justify-center">
+              <Package className="w-6 h-6 text-stone-400" />
             </div>
           )}
           {isActive && (
@@ -234,22 +234,22 @@ function OrderCard({
         <div className="flex flex-col justify-between py-1 flex-1 min-w-0">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-mono font-bold text-hive-dark tracking-wider select-all">
+              <span className="text-[10px] font-mono font-bold text-stone-900 tracking-wider select-all">
                 {order.orderNumber}
               </span>
               <OrderStatusBadge status={uiStatus} />
             </div>
 
-            <h4 className="text-sm font-serif font-light text-hive-dark truncate leading-snug">
+            <h4 className="text-sm font-serif font-bold text-stone-900 truncate leading-snug">
               {firstItem?.productName || "Boutique Order"}
               {itemsCount > 1 && (
-                <span className="text-xs text-hive-text-muted font-sans font-medium"> +{itemsCount - 1} more items</span>
+                <span className="text-xs text-stone-500 font-sans font-medium"> +{itemsCount - 1} more items</span>
               )}
             </h4>
 
             {firstItem && (
               <div className="pt-0.5">
-                <span className="text-[9px] font-bold text-hive-text-muted bg-hive-cream border border-hive-dark/[0.06] px-2 py-0.5 rounded">
+                <span className="text-[9px] font-bold text-stone-600 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded">
                   Size: {firstItem.variantSize || "Free"}
                 </span>
               </div>
@@ -425,7 +425,7 @@ function EmptyOrdersState({ onRedirect }: { onRedirect: () => void }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function OrdersSkeleton() {
   return (
-    <div className="min-h-screen bg-hive-cream py-12 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
+    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8 animate-pulse select-none text-left">
       <div className="max-w-4xl mx-auto flex flex-col gap-6">
         <div className="h-8 w-40 bg-hive-dark/[0.05] rounded-lg" />
         <div className="h-4 w-72 bg-hive-dark/[0.05] rounded -mt-3" />

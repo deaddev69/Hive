@@ -604,9 +604,9 @@ export default function CheckoutAddressPage() {
           </div>
           <button
             onClick={() => router.push(exploreUrl)}
-            className="w-full h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm focus:outline-none"
+            className="w-full h-11 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm focus:outline-none cursor-pointer"
           >
-            Continue Shopping
+            Explore Styles
           </button>
         </div>
       </div>
@@ -776,13 +776,13 @@ export default function CheckoutAddressPage() {
                 );
               })}
 
-              {/* Add new address card (dashed, h-14 / 56px) */}
+              {/* Add new address card */}
               <button
                 type="button"
                 onClick={openAddForm}
-                className="bg-white border border-dashed border-hive-border/60 hover:border-hive-dark rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 h-14 w-full group text-hive-text-muted hover:text-hive-dark focus:outline-none"
+                className="bg-white border border-stone-200 hover:border-stone-400 rounded-2xl flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 h-14 w-full group text-stone-600 hover:text-stone-950 shadow-2xs focus:outline-none"
               >
-                <Plus className="w-4 h-4 stroke-[2] group-hover:scale-110 transition-transform duration-300 text-hive-gold" />
+                <Plus className="w-4 h-4 stroke-[2] group-hover:scale-110 transition-transform duration-200 text-stone-700" />
                 <span className="text-xs font-bold uppercase tracking-wider">Add Another Address</span>
               </button>
             </div>

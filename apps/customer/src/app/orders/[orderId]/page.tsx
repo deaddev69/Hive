@@ -142,7 +142,7 @@ export default function OrderDetailPage() {
 
   if (!mounted || order === undefined) {
     return (
-      <div className="min-h-screen bg-hive-cream/30 dark:bg-neutral-950 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-neutral-950 flex flex-col items-center justify-center">
         <BeeLoader message="Loading order details..." />
       </div>
     );
@@ -151,7 +151,7 @@ export default function OrderDetailPage() {
   // ── Order Not Found State ──────────────────────────────────────────────────
   if (!order) {
     return (
-      <div className="min-h-screen bg-hive-cream/30 flex items-center justify-center py-20 px-6 text-center select-none">
+      <div className="min-h-screen bg-white dark:bg-neutral-950 flex items-center justify-center py-20 px-6 text-center select-none">
         <div className="max-w-md w-full bg-white border border-hive-border rounded-3xl p-8 shadow-sm space-y-6 flex flex-col items-center">
           <div className="w-16 h-16 rounded-full bg-red-50 border border-red-200/50 flex items-center justify-center">
             <AlertCircle className="w-8 h-8 text-red-500 stroke-[1.8]" />
@@ -165,10 +165,10 @@ export default function OrderDetailPage() {
           </div>
           <Link
             href="/orders"
-            className="w-full h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 shadow-sm"
+            className="w-full h-11 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-1.5 shadow-sm"
           >
             <span>Back to My Orders</span>
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 text-stone-400" />
           </Link>
         </div>
       </div>

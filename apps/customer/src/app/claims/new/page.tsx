@@ -46,10 +46,10 @@ function ClaimsFormContent() {
         <button
           type="button"
           onClick={() => router.push("/orders")}
-          className="w-full h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 shadow-sm"
+          className="w-full h-11 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
         >
           <span>Back to Purchases</span>
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-4 h-4 text-stone-400" />
         </button>
       </div>
     );
@@ -120,13 +120,12 @@ function ClaimsFormContent() {
           />
         </div>
 
-        {/* CTA */}
         <button
           type="submit"
-          className="w-full h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl font-extrabold uppercase tracking-widest text-xs flex items-center justify-center gap-1.5 shadow-sm"
+          className="w-full h-11 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
         >
           <span>Submit Request</span>
-          <ArrowLeft className="w-4 h-4 rotate-180" />
+          <ArrowLeft className="w-4 h-4 rotate-180 text-stone-400" />
         </button>
 
       </form>

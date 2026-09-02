@@ -192,12 +192,12 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       ) : (
         /* Elegant Empty State */
         !isServiceable ? (
-          <div className="flex flex-col items-center justify-center py-16 px-6 sm:px-12 border border-dashed border-amber-200 rounded-[32px] bg-amber-50/10 text-center max-w-2xl mx-auto w-full animate-card-entrance shadow-sm">
+          <div className="flex flex-col items-center justify-center py-16 px-6 sm:px-12 border border-stone-200 rounded-3xl bg-white text-center max-w-2xl mx-auto w-full animate-card-entrance shadow-2xs">
             <span className="text-2xl mb-3 select-none">📍</span>
-            <h3 className="text-xl md:text-2xl font-serif font-semibold text-hive-dark">
+            <h3 className="text-xl md:text-2xl font-serif font-bold text-stone-900">
               Launching Soon in {locality || city || "your area"}
             </h3>
-            <p className="text-sm text-hive-text-muted mt-2 max-w-md leading-relaxed">
+            <p className="text-xs sm:text-sm text-stone-500 mt-2 max-w-md leading-relaxed font-normal">
               We're currently onboarding boutiques, brands and fashion partners for your area.
             </p>
 
@@ -205,12 +205,12 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               <button
                 onClick={handleRequestHive}
                 disabled={requestState === "loading" || requestState === "success"}
-                className={`w-full py-3.5 px-6 rounded-xl font-extrabold uppercase tracking-widest text-xs transition-all duration-300 shadow-sm border ${
+                className={`w-full py-3.5 px-6 rounded-xl font-bold uppercase tracking-wider text-xs transition-all duration-300 shadow-sm border ${
                   requestState === "success"
                     ? "bg-green-50 text-green-800 border-green-200 cursor-default"
                     : requestState === "loading"
                     ? "bg-amber-100 text-amber-800 border-amber-200 cursor-wait"
-                    : "bg-hive-dark text-hive-gold border-hive-dark hover:bg-hive-dark/95 active:scale-[0.98] cursor-pointer"
+                    : "bg-stone-950 text-white border-stone-950 hover:bg-stone-900 active:scale-[0.98] cursor-pointer"
                 }`}
               >
                 {requestState === "success"
@@ -291,31 +291,30 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 px-6 border border-dashed border-hive-border/60 rounded-[32px] bg-hive-cream/5 text-center max-w-2xl mx-auto w-full animate-card-entrance shadow-sm">
-            <div className="p-4 rounded-full bg-hive-comb/20 border border-hive-border/40 text-hive-amber mb-4">
-              <AlertCircle className="w-8 h-8 animate-pulse" />
+          <div className="flex flex-col items-center justify-center py-16 px-6 border border-stone-200 rounded-3xl bg-white text-center max-w-2xl mx-auto w-full animate-card-entrance shadow-2xs select-none">
+            <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/60 text-amber-600 mb-3.5">
+              <AlertCircle className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-bold font-serif text-hive-dark">
-              Collections arriving soon
+            <h3 className="text-xl font-bold font-serif text-stone-900">
+              Pieces Arriving Soon
             </h3>
-            <p className="text-sm text-hive-text-muted mt-2 max-w-md leading-relaxed">
-              Our buyers are curating premium styles for this category. We are onboarding more fashion partners near {locality || city || "you"}.
+            <p className="text-xs text-stone-500 mt-1.5 max-w-md leading-relaxed font-normal">
+              We are currently curating new styles for this category in {locality || city || "Kochi"}.
             </p>
             {onResetFilter ? (
-              <Button
-                variant="primary"
+              <button
                 onClick={onResetFilter}
-                className="mt-6 flex items-center gap-1.5"
+                className="mt-6 h-11 px-6 rounded-xl bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer"
               >
-                Discover Other Collections
-                <ArrowRight className="w-4 h-4" />
-              </Button>
+                <span>Clear Filters & Explore</span>
+                <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+              </button>
             ) : (
-              <Link href="/products?browse=all" className="mt-6">
-                <Button variant="primary" className="flex items-center gap-1.5">
-                  Discover Nearby Collections
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+              <Link href="/products" className="mt-6">
+                <button className="h-11 px-6 rounded-xl bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer">
+                  <span>Explore All Styles</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
+                </button>
               </Link>
             )}
           </div>

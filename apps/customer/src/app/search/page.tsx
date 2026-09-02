@@ -83,9 +83,9 @@ export default function SearchPage() {
   return (
     <React.Suspense
       fallback={
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 bg-hive-cream/10">
-          <Search className="w-8 h-8 animate-pulse text-hive-amber" />
-          <p className="text-sm text-hive-text-muted font-bold">Initializing search...</p>
+        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 bg-white">
+          <Search className="w-8 h-8 animate-pulse text-amber-500" />
+          <p className="text-sm text-stone-500 font-bold">Initializing search...</p>
         </div>
       }
     >
@@ -183,7 +183,7 @@ function SearchContent() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-hive-cream dark:bg-stone-950 pb-20">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-stone-950 pb-20">
       
       {/* 1. Ultra-Compact 1-Line Header */}
       {q && (

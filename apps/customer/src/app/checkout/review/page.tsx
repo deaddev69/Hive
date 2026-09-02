@@ -672,9 +672,9 @@ export default function OrderReviewPage() {
           </div>
           <button
             onClick={() => router.push(exploreUrl)}
-            className="w-full h-11 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm focus:outline-none"
+            className="w-full h-11 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm focus:outline-none cursor-pointer"
           >
-            Continue Shopping
+            Explore Styles
           </button>
         </div>
       </div>

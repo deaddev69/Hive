@@ -125,9 +125,9 @@ export function ProductDetailPageClient({ product: rawProduct }: ProductDetailPa
               )}
               <Link
                 href="/products"
-                className="w-full sm:w-auto inline-flex px-6 h-12 bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all rounded-xl text-xs font-extrabold uppercase tracking-widest items-center justify-center shadow-sm"
+                className="w-full sm:w-auto inline-flex px-6 h-12 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl text-xs font-bold uppercase tracking-widest items-center justify-center shadow-sm"
               >
-                Continue Shopping
+                Explore Styles
               </Link>
             </div>
           </div>

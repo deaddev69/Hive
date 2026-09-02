@@ -190,17 +190,17 @@ export default function CartPage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
             <button
               type="button"
-              onClick={() => router.push("/shop/all")}
-              className="px-6 h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg text-xs font-semibold uppercase tracking-[0.2em] flex items-center justify-center gap-1.5 shadow-sm"
+              onClick={() => router.push("/products")}
+              className="px-6 h-14 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl text-xs font-semibold uppercase tracking-[0.15em] flex items-center justify-center gap-1.5 shadow-sm"
             >
-              <span>Browse Products</span>
+              <span>Explore Styles</span>
             </button>
             <button
               type="button"
-              onClick={() => router.push("/collections")}
-              className="px-6 h-14 bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all rounded-lg text-xs font-semibold uppercase tracking-[0.2em] flex items-center justify-center gap-1.5"
+              onClick={() => router.push("/wishlist")}
+              className="px-6 h-14 bg-white border border-stone-200 hover:border-stone-300 text-stone-800 active:scale-[0.98] transition-all rounded-xl text-xs font-semibold uppercase tracking-[0.15em] flex items-center justify-center gap-1.5 shadow-2xs"
             >
-              <span>Browse Collections</span>
+              <span>View Wishlist</span>
             </button>
           </div>
         </div>

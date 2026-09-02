@@ -214,7 +214,7 @@ function OrderSuccessContent() {
 
   if (isCancelled) {
     return (
-      <div className="min-h-screen bg-hive-cream py-10 px-4 sm:px-6 select-none text-left flex items-center justify-center">
+      <div className="min-h-screen bg-white py-10 px-4 sm:px-6 select-none text-left flex items-center justify-center">
         <div className="max-w-md w-full">
           <OrderCancelledCard 
             orderId={resolvedOrder.id} 
@@ -226,7 +226,7 @@ function OrderSuccessContent() {
   }
 
   return (
-    <div className="min-h-screen bg-hive-cream py-6 sm:py-10 px-4 sm:px-6 lg:px-8 select-none text-left">
+    <div className="min-h-screen bg-white py-6 sm:py-10 px-4 sm:px-6 lg:px-8 select-none text-left">
       <div className="max-w-[880px] mx-auto flex flex-col gap-6 animate-[fadeIn_0.3s_ease-out_forwards]">
 
         {/* Closed Hours Notification (If applicable) */}

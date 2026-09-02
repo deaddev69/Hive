@@ -945,9 +945,9 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             <button
               type="submit"
               disabled={notifySuccess}
-              className="h-11 px-5 rounded-xl bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-sm disabled:bg-hive-border/40 disabled:text-hive-text-muted/65"
+              className="h-11 px-5 rounded-xl bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm disabled:bg-stone-200 disabled:text-stone-400 cursor-pointer"
             >
-              <Bell className="w-3.5 h-3.5" />
+              <Bell className="w-3.5 h-3.5 text-amber-400" />
               <span>Notify Me</span>
             </button>
           </form>
@@ -1238,9 +1238,9 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
                 setItemOnHoldModalOpen(false);
                 handleWishlistToggle();
               }}
-              className="h-12 w-full rounded-2xl bg-hive-dark text-hive-cream font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] hover:bg-stone-900 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              className="h-12 w-full rounded-2xl bg-stone-950 text-white font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] hover:bg-stone-900 shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Heart className="w-4 h-4 text-amber-400" />
+              <Heart className="w-4 h-4 fill-[#F5C22B] stroke-[#F5C22B]" />
               <span>Save to Wishlist for Updates</span>
             </button>
             <button

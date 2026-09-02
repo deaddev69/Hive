@@ -100,70 +100,42 @@ export const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ 
       .slice(0, 4);
   }, [product, products]);
 
-  if (dbProducts === undefined) {
-    return null; // Silent loading for recommendations section
+  if (dbProducts === undefined || recommendations.length === 0) {
+    return null;
   }
 
   return (
     <section 
       aria-labelledby="related-products-title" 
-      className="w-full border-t border-hive-border/40 pt-12 mt-12 text-left"
+      className="w-full border-t border-stone-200/70 pt-12 mt-12 text-left"
     >
-      {recommendations.length > 0 ? (
-        <>
-          {/* Header */}
-          <div className="flex flex-col gap-1 mb-8">
-            <span className="text-[10px] font-extrabold text-hive-amber uppercase tracking-[0.25em] select-none">
-              PICKED FOR YOU
-            </span>
-            <h2 
-              id="related-products-title" 
-              className="text-xl md:text-2xl font-serif font-extrabold text-hive-dark"
-            >
-              You might also like
-            </h2>
-            <p className="text-xs text-hive-text-muted font-medium">
-              More styles you may love
-            </p>
-          </div>
+      {/* Header */}
+      <div className="flex flex-col gap-1 mb-8">
+        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-[0.2em] select-none">
+          PICKED FOR YOU
+        </span>
+        <h2 
+          id="related-products-title" 
+          className="text-xl md:text-2xl font-serif font-bold text-stone-900"
+        >
+          Similar Styles
+        </h2>
+        <p className="text-xs text-stone-500 font-normal">
+          Discover more curated pieces on Hive
+        </p>
+      </div>
 
-          {/* Grid: 4 columns desktop, 2 columns tablet, 1 column mobile */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-            {recommendations.map((item) => (
-              <div 
-                key={item.id} 
-                className="relative z-0 group outline-none focus-within:ring-2 focus-within:ring-hive-amber focus-within:ring-offset-2 rounded-[24px]"
-              >
-                <ProductCard product={item} />
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        /* Empty State Layout */
-        <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-hive-border/60 bg-hive-cream/30 rounded-3xl max-w-xl mx-auto my-6 gap-5 shadow-sm">
-          <div className="w-12 h-12 rounded-full bg-hive-gold/10 border border-hive-gold/25 flex items-center justify-center text-hive-amber">
-            <ShoppingBag className="w-5.5 h-5.5" />
-          </div>
-          
-          <div className="space-y-1.5">
-            <h3 className="text-base font-extrabold text-hive-dark font-serif">
-              No similar products found
-            </h3>
-            <p className="text-xs text-hive-text-muted leading-relaxed font-medium">
-              Explore our boutique collection instead.
-            </p>
-          </div>
-
-          <Link
-            href="/products"
-            className="h-11 px-6 rounded-xl bg-hive-dark text-hive-gold hover:bg-hive-dark/95 active:scale-[0.98] transition-all text-xs font-extrabold flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-hive-amber shadow-sm"
+      {/* Grid: 4 columns desktop, 2 columns tablet, 1 column mobile */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+        {recommendations.map((item) => (
+          <div 
+            key={item.id} 
+            className="relative z-0 group outline-none rounded-2xl"
           >
-            <span>Browse All Products</span>
-            <ArrowRight className="w-4 h-4 stroke-[2.2]" />
-          </Link>
-        </div>
-      )}
+            <ProductCard product={item} />
+          </div>
+        ))}
+      </div>
     </section>
   );
 };

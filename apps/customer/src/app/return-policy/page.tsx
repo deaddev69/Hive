@@ -37,7 +37,7 @@ export default function ReturnPolicyPage() {
         </div>
 
         <div className="prose prose-stone max-w-none text-stone-600 text-sm leading-relaxed space-y-6 font-medium">
-          <div className="bg-hive-cream/80 border border-[#EAE1D4] rounded-2xl p-5 mb-8">
+          <div className="bg-stone-50 border border-stone-200 rounded-2xl p-5 mb-8">
             <h3 className="text-xs font-bold text-stone-850 uppercase tracking-wider mb-2">
               Corporate & Support Information
             </h3>
