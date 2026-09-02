@@ -16,9 +16,7 @@ import { QuickViewModal } from "@/components/product/QuickViewModal";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
-import { ProductCardData } from "@/lib/mockProducts";
-import { calculateDisplayPricing } from "@/lib/pricing";
-import { Loader2 } from "lucide-react";
+import { toQueryCoords } from "@/lib/distance";
 import { LoadingState } from "@hive/ui";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLocation } from "@/context/LocationContext";
@@ -29,62 +27,14 @@ import {
   PRICE_MIN,
   PRICE_MAX,
 } from "@/lib/catalogFilters";
-import {
-  ProductSortOption,
-  DEFAULT_SORT,
-  applySort,
-} from "@/lib/catalogSort";
+import { ProductSortOption, DEFAULT_SORT } from "@/lib/catalogSort";
 
 const PAGE_SIZE = 12;
 
-// Helper to deduce occasion from product tags/description
-function getProductOccasion(product: any): string {
-  const catName = (product.categoryName || "").toLowerCase();
-  const name = (product.name || "").toLowerCase();
-  const desc = (product.description || "").toLowerCase();
-  if (name.includes("wedding") || desc.includes("wedding") || name.includes("lehenga") || catName.includes("lehengas")) return "wedding";
-  if (name.includes("festival") || desc.includes("festival") || name.includes("saree") || catName.includes("sarees")) return "festival";
-  if (name.includes("co-ord") || name.includes("coord") || catName.includes("coords") || catName.includes("co-ord")) return "coords";
-  if (name.includes("kurta") || name.includes("kurti") || catName.includes("kurtis")) return "ethnic";
-  if (name.includes("party") || desc.includes("party")) return "party";
-  if (name.includes("date") || desc.includes("date") || name.includes("dress") || catName.includes("dresses")) return "date";
-  if (name.includes("work") || name.includes("office")) return "workwear";
-  return "casual";
-}
-
-// Map DB product → ProductCardData
-function mapDbProduct(p: any): ProductCardData & { sizes: string[]; stockBySize: Record<string, number>; boutiqueId?: string; boutique?: any } {
-  const { price, compareAtPrice, discountPercent } = calculateDisplayPricing(p);
-  return {
-    id: p._id,
-    slug: p.slug,
-    name: p.name,
-    boutiqueName: p.boutiqueName || "Unknown Boutique",
-    boutiqueId: p.boutiqueId,
-    boutique: p.boutique,
-    imageUrl: p.imageUrl || (p.imageUrls?.[0]) || "",
-    price,
-    compareAtPrice,
-    discountPercent,
-    rating: p.rating || p.averageRating || undefined,
-    reviewCount: p.reviewCount || undefined,
-    occasion: getProductOccasion(p),
-    isVerifiedBoutique: p.boutique?.verified || false,
-    isNewArrival: Date.now() - p.createdAt < 7 * 24 * 60 * 60 * 1000,
-    isTrending: p.featured,
-    isBestSeller: p.featured,
-    sameDayDelivery: p.sameDayEligible,
-    videoAvailable: p.images?.length > 1,
-    favorite: false,
-    sizes: p.sizes || ["Free"],
-    stockBySize: p.stockBySize || { Free: 5 },
-    estimatedDistanceKm: p.estimatedDistanceKm,
-    estimatedDurationMin: p.estimatedDurationMin,
-    estimatedEtaMinutes: p.estimatedEtaMinutes,
-    hiveScore: p.hiveScore,
-    deliveryLabel: p.deliveryLabel,
-  };
-}
+// getProductOccasion, mapDbProduct and applySort used to live here, operating on
+// the whole catalogue after it was fetched. They now run server-side over the
+// full candidate set in convex/shared/catalog.ts, which is what lets the grid
+// receive one ordered page instead of everything.
 
 export function ProductsClient({ initialCategorySlug }: { initialCategorySlug?: string }) {
   return (
@@ -156,12 +106,17 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
       .filter(Boolean) as string[];
   }, [dbCategories, filters.categories]);
 
-  // Build query args — backend does the filtering
+  // Build query args — the backend does all filtering, ordering and paging.
   const queryArgs = useMemo(() => {
-    const args: Record<string, any> = {};
-    if (!browseAll && latitude !== null && longitude !== null) {
-      args.userLat = latitude;
-      args.userLng = longitude;
+    const args: Record<string, any> = {
+      page: currentPage,
+      pageSize: PAGE_SIZE,
+      sort: sortOption,
+    };
+    if (!browseAll) {
+      // Rounded to the ~111 m precision the server already uses, so this query
+      // is cacheable across shoppers in the same cell. See toQueryCoords.
+      Object.assign(args, toQueryCoords(latitude, longitude));
     }
     if (filters.categories.length > 0) {
       args.categoryIds = filters.categories as Id<"categories">[];
@@ -172,61 +127,43 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
     if (filters.maxPrice < PRICE_MAX) {
       args.maxPrice = filters.maxPrice;
     }
+    if (filters.occasions.length > 0) {
+      args.occasions = filters.occasions;
+    }
+    if (filters.newArrivals) {
+      args.newArrivals = true;
+    }
     if (boutiqueIdFromUrl) {
       args.boutiqueId = boutiqueIdFromUrl as Id<"boutiques">;
     }
     return args;
-  }, [browseAll, latitude, longitude, filters, boutiqueIdFromUrl]);
+  }, [browseAll, latitude, longitude, filters, boutiqueIdFromUrl, currentPage, sortOption]);
 
-  const dbProducts = useQuery(api.products.getActiveProducts, queryArgs);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && !(window as any).__perfLoggedMount) {
-      (window as any).__perfLoggedMount = true;
-      console.log(`[PERF][CUSTOMER] 1. Route Navigation / React Shell Mount: ${performance.now().toFixed(2)}ms`);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (dbProducts === undefined) {
-      if (typeof window !== "undefined" && !(window as any).__perfLoggedQueryStart) {
-        (window as any).__perfLoggedQueryStart = true;
-        console.log(`[PERF][CUSTOMER] 2. Convex Request Pending (dbProducts undefined): ${performance.now().toFixed(2)}ms`);
-      }
-    } else {
-      if (typeof window !== "undefined" && !(window as any).__perfLoggedQueryEnd) {
-        (window as any).__perfLoggedQueryEnd = true;
-        console.log(`[PERF][CUSTOMER] 3. Convex Response Received & Payload Ready: ${performance.now().toFixed(2)}ms (Payload length: ${dbProducts.length})`);
-      }
-    }
-  }, [dbProducts]);
+  const catalogPage = useQuery(api.products.getCatalogPage, queryArgs);
 
   const activeFilterCount = countActiveFilters(filters);
 
-  // Map + sort — no client-side category/price filtering (done by backend)
-  const products = useMemo(() => (dbProducts || []).map(mapDbProduct), [dbProducts]);
-
-  // Client-side new arrivals and occasion filters
-  const filteredProducts = useMemo(() => {
-    let result = products;
-    if (filters.newArrivals) {
-      result = result.filter((p) => p.isNewArrival);
-    }
-    if (filters.occasions.length > 0) {
-      result = result.filter((p) => p.occasion !== undefined && filters.occasions.includes(p.occasion));
-    }
-    return result;
-  }, [products, filters.newArrivals, filters.occasions]);
-
-  const sortedProducts = useMemo(
-    () => applySort(filteredProducts, sortOption),
-    [filteredProducts, sortOption]
-  );
+  // Filtering, ordering and paging all happen in getCatalogPage now, over the
+  // full candidate set — so the ordering stays global and page 2 continues
+  // page 1, while only one page of cards crosses the wire. The cards arrive
+  // grid-ready; mapDbProduct is no longer needed on this path.
+  const paginatedProducts = catalogPage?.products ?? [];
+  const resultCount = catalogPage?.totalCount ?? 0;
+  const totalPages = catalogPage?.totalPages ?? 1;
 
   // Reset to page 1 whenever filters or sort change
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, sortOption]);
+
+  // The server clamps an out-of-range page to the last real one. Mirror that
+  // back into local state so the page control highlights the page actually
+  // being shown.
+  useEffect(() => {
+    if (catalogPage && catalogPage.page !== currentPage) {
+      setCurrentPage(catalogPage.page);
+    }
+  }, [catalogPage, currentPage]);
 
   // Automatically select 'nearby' sort option when user location is available
   useEffect(() => {
@@ -237,19 +174,12 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
     }
   }, [latitude, longitude]);
 
-  // Pagination
-  const totalPages = Math.ceil(sortedProducts.length / PAGE_SIZE);
-  const paginatedProducts = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return sortedProducts.slice(start, start + PAGE_SIZE);
-  }, [sortedProducts, currentPage]);
-
   const clearFilters = () => {
     setFilters(DEFAULT_FILTER_STATE);
     setCurrentPage(1);
   };
 
-  if (dbProducts === undefined) {
+  if (catalogPage === undefined) {
     return (
       <CatalogLayout breadcrumbs={[{ label: "All Products" }]}>
         <LoadingState message="Discovering catalog items..." variant="full" />
@@ -305,7 +235,7 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
         {/* Toolbar */}
         <CatalogToolbar
           activeFilterCount={activeFilterCount}
-          resultCount={sortedProducts.length}
+          resultCount={resultCount}
           sortOption={sortOption}
           onChangeSort={setSortOption}
           onOpenMobileFilters={() => setDrawerOpen(true)}
@@ -343,7 +273,7 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
                   currentPage={currentPage}
                   totalPages={totalPages}
                   onPageChange={setCurrentPage}
-                  resultCount={sortedProducts.length}
+                  resultCount={resultCount}
                   pageSize={PAGE_SIZE}
                   accentColor="#C9A84C"
                 />
@@ -378,7 +308,9 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
           isOpen={quickViewModal.open}
           onClose={() => setQuickViewModal({ open: false, productId: null })}
           productSlug={quickViewModal.productId}
-          initialProduct={products.find(p => p.slug === quickViewModal.productId)}
+          // Seeded from the current page rather than the whole catalogue —
+          // quick view can only be opened from a card that is on screen.
+          initialProduct={paginatedProducts.find((p) => p.slug === quickViewModal.productId)}
         />
       )}
 

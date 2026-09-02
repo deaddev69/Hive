@@ -49,7 +49,11 @@ export class CatalogService {
         
         if (primaryImageId) {
           if (typeof primaryImageId === "object" && primaryImageId.objectKey) {
-            imageUrl = getPublicUrl(primaryImageId, "pdp") || "";
+            // "card", not "pdp": this path only ever feeds homepage product
+            // rails, which render through ProductCard. enrichProducts in
+            // products.ts still uses "pdp" because its output feeds both the
+            // grid and the PDP gallery from one field.
+            imageUrl = getPublicUrl(primaryImageId, "card") || "";
           } else if (typeof primaryImageId === "string" && primaryImageId.startsWith("http")) {
             imageUrl = primaryImageId;
           } else {

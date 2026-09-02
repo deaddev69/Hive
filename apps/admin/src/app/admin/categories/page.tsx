@@ -356,7 +356,7 @@ export default function AdminCategoriesPage() {
                       <div className="relative w-12 h-12 rounded-xl border border-hive-border/50 overflow-hidden bg-slate-50 flex-shrink-0">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         {category.imageUrl ? (
-                          <img src={category.imageUrl.replace("https://cdn.hivenow.in/cdn-cgi/image/format=auto/banner_images/", "https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/banner_images/")} alt={category.name} className="w-full h-full object-cover" />
+                          <img src={category.imageUrl} alt={category.name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-red-400 bg-red-50 text-[9px] font-bold text-center">No Image</div>
                         )}

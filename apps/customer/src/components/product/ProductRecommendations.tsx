@@ -4,6 +4,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { ProductCardData } from "@/lib/mockProducts";
 import { calculateDisplayPricing } from "@/lib/pricing";
+import { toQueryCoords } from "@/lib/distance";
 import { useLocation } from "@/context/LocationContext";
 import { QuickViewModal } from "./QuickViewModal";
 import { useState } from "react";
@@ -87,7 +88,7 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   const { isServiceable, latitude, longitude } = useLocation();
   const dbProducts = useQuery(
     api.products.getActiveProducts,
-    isServiceable && latitude !== null && longitude !== null ? { userLat: latitude, userLng: longitude } : {}
+    isServiceable ? toQueryCoords(latitude, longitude) : {}
   );
   const [quickViewModal, setQuickViewModal] = useState<{ open: boolean, productId: string | null }>({ open: false, productId: null });
 

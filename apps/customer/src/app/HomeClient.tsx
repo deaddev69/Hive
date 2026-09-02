@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useLocation } from "@/context/LocationContext";
 import { useSessionStore } from "@/context/SessionContext";
+import { toQueryCoords } from "@/lib/distance";
 import { ExperienceBlockRenderer } from "@/components/home/ExperienceBlockRenderer";
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallback: React.ReactNode }, { hasError: boolean }> {
@@ -91,8 +92,10 @@ export function HomeClient() {
     {
       slug: "homepage",
       city: city || undefined,
-      userLat: latitude !== null ? latitude : undefined,
-      userLng: longitude !== null ? longitude : undefined,
+      // Rounded to the same ~111 m precision the server already collapses these
+      // to, so shoppers in one cell share a cached execution instead of each
+      // spawning their own. See toQueryCoords.
+      ...toQueryCoords(latitude, longitude),
       userId: (user?._id as any) || undefined,
     }
   );

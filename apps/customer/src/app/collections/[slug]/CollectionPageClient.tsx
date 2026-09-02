@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/api";
 import { useLocation } from "@/context/LocationContext";
+import { toQueryCoords } from "@/lib/distance";
 import { ProductCard } from "@/components/product/ProductCard";
 import { CollectionHeader } from "@/components/catalog/CollectionHeader";
 import { LayoutGrid, Sparkles } from "lucide-react";
@@ -15,8 +16,7 @@ export function CollectionPageClient({ slug }: { slug: string }) {
   const data = useQuery(api.customerHome.getCollection, {
     slug,
     city: city || undefined,
-    userLat: latitude !== null ? latitude : undefined,
-    userLng: longitude !== null ? longitude : undefined,
+    ...toQueryCoords(latitude, longitude),
   });
 
   if (data === undefined) {

@@ -1386,13 +1386,28 @@ export const getMyBoutiqueSafeCustomer = query({
     const user = await getCurrentUserOrNull(ctx, args.token);
     if (!user) return { exists: false, error: "Unauthenticated" };
 
-    // 1. Check for approved boutique in main boutiques registry first
-    let boutique = await ctx.db
-      .query("boutiques")
-      .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
-      .unique();
+    // A plain customer cannot own or staff a boutique, so none of the registry
+    // lookups below can match for them — but they are the overwhelming majority
+    // of callers, because the customer Navbar subscribes to this query on every
+    // page. Running the lookups anyway meant every customer fell through to the
+    // full-table scan at the end of the email chain, and because this is a live
+    // subscription, ANY write to ANY boutique row re-ran that scan and re-pushed
+    // to every connected shopper.
+    //
+    // Roles that genuinely can resolve a boutique keep the full path below,
+    // unchanged. Customers skip straight to the applications lookup, which is
+    // how a customer with a pending seller application still gets their status.
+    const canOwnBoutique = user.role !== "customer";
 
-    const userEmail = user.email;
+    // 1. Check for approved boutique in main boutiques registry first
+    let boutique = canOwnBoutique
+      ? await ctx.db
+          .query("boutiques")
+          .withIndex("by_ownerUserId", (q) => q.eq("ownerUserId", user._id))
+          .unique()
+      : null;
+
+    const userEmail = canOwnBoutique ? user.email : undefined;
     if (!boutique && userEmail) {
       boutique = await ctx.db
         .query("boutiques")

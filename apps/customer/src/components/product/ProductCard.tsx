@@ -50,10 +50,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
 
   useEffect(() => {
     setHydrated(true);
-    if (typeof window !== "undefined" && !(window as any).__perfLoggedFirstCard) {
-      (window as any).__perfLoggedFirstCard = true;
-      console.log(`[PERF][CUSTOMER] 4. First ProductCard rendered: ${performance.now().toFixed(2)}ms`);
-    }
   }, []);
 
   const { latitude: userLat, longitude: userLng, city } = useLocation();
@@ -176,12 +172,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
                 priority={priority}
                 loading={priority ? undefined : "lazy"}
-                onLoad={() => {
-                  if (typeof window !== "undefined" && !(window as any).__perfLoggedFirstImage) {
-                    (window as any).__perfLoggedFirstImage = true;
-                    console.log(`[PERF][CUSTOMER] 5. First Product Image visible: ${performance.now().toFixed(2)}ms`);
-                  }
-                }}
                 className={cn(
                   "object-cover w-full h-full pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-200 ease-out"
                 )}

@@ -8,6 +8,11 @@ import {
   Sparkles, Plus, Trash2, Settings, Smartphone, Layout, Copy, Edit, X, Eye, EyeOff, Search, Layers, ShoppingBag, Zap, ChevronDown, ChevronUp, Upload, Loader2, Link as LinkIcon, Star, GripVertical
 } from "lucide-react";
 import { Id } from "../../../../../../convex/_generated/dataModel";
+// Same URL builder the storefront uses, so admin previews show exactly what a
+// shopper will see. Dependency-free module — safe to bundle into a client
+// component; with no R2_PUBLIC_DOMAIN in the browser it falls back to the
+// canonical production domain, which is the correct value here.
+import { getPublicUrl } from "../../../../../../convex/media/urls";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SCHEMA DRIVEN CONFIGURATION
@@ -822,10 +827,8 @@ function BlockConfigEditor({ block, schema, collections, categories, onSave, onC
                     <img
                       src={
                         typeof formData.config.desktopImage === "string"
-                          ? formData.config.desktopImage.replace("https://cdn.hivenow.in/cdn-cgi/image/format=auto/banner_images/", "https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/banner_images/")
-                          : (formData.config.desktopImage?.objectKey
-                            ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.desktopImage.objectKey}`
-                            : "")
+                          ? formData.config.desktopImage
+                          : getPublicUrl(formData.config.desktopImage, "original")
                       }
                       alt="Desktop Banner Preview"
                       className="w-full h-full object-cover"
@@ -861,10 +864,8 @@ function BlockConfigEditor({ block, schema, collections, categories, onSave, onC
                     <img
                       src={
                         typeof formData.config.mobileImage === "string"
-                          ? formData.config.mobileImage.replace("https://cdn.hivenow.in/cdn-cgi/image/format=auto/banner_images/", "https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/banner_images/")
-                          : (formData.config.mobileImage?.objectKey
-                            ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.mobileImage.objectKey}`
-                            : "")
+                          ? formData.config.mobileImage
+                          : getPublicUrl(formData.config.mobileImage, "original")
                       }
                       alt="Mobile Banner Preview"
                       className="w-full h-full object-cover"
@@ -916,7 +917,7 @@ function BlockConfigEditor({ block, schema, collections, categories, onSave, onC
                     src={
                       typeof formData.config.bgImage === "string"
                         ? formData.config.bgImage
-                        : (formData.config.bgImage?.url || (formData.config.bgImage?.objectKey ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${formData.config.bgImage.objectKey}` : ""))
+                        : (formData.config.bgImage?.url || getPublicUrl(formData.config.bgImage, "original"))
                     }
                     alt="Background Preview"
                     className="w-full h-full object-cover"
@@ -1149,7 +1150,7 @@ function BlockConfigEditor({ block, schema, collections, categories, onSave, onC
                             <div className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 flex items-center justify-center bg-slate-50 hover:bg-slate-100 transition overflow-hidden">
                               {item.imageUrl ? (
                                 <img src={
-                                  typeof item.imageUrl === "string" ? item.imageUrl : (item.imageUrl?.url || `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${item.imageUrl.objectKey}`)
+                                  typeof item.imageUrl === "string" ? item.imageUrl : (item.imageUrl?.url || getPublicUrl(item.imageUrl, "card"))
                                 } alt="Vibe" className="w-full h-full object-cover" />
                               ) : (
                                 <Upload className="w-4 h-4 text-slate-400" />

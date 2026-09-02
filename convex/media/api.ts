@@ -12,26 +12,11 @@ import { ImageAsset } from "../schema";
 
 
 
-/**
- * Helper to construct the delivery URL securely using Cloudflare Named Variants.
- * Ensures the edge transformer always decodes and re-encodes the image.
- */
-export function getPublicUrl(asset: any, variant: "thumbnail" | "pdp" | "zoom" | "original" = "original") {
-  if (typeof asset === "string") return asset;
-  if (!asset?.objectKey) return "";
-  
-  // Force R2 dev URL since cdn.hivenow.in is not resolving yet (ERR_NAME_NOT_RESOLVED)
-  const domain = "pub-09a817ec6f384c4997feafc5e8387286.r2.dev";
-  
-  // Cloudflare R2.dev URLs do not support /cdn-cgi/image/ optimizations
-  if (domain.includes(".r2.dev")) {
-    const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    return `https://${cleanDomain}/${asset.objectKey}`;
-  }
-
-  const variantParam = variant === "original" ? "format=auto" : `variant=${variant}`;
-  return `https://${domain}/cdn-cgi/image/${variantParam}/${asset.objectKey}`;
-}
+// Public image URL construction lives in ./urls, which has no dependencies, so
+// modules that only need to build a URL don't pull in the S3 client below.
+// Re-exported here because ~20 call sites already import it from this module.
+export { getPublicUrl } from "./urls";
+export type { ImageVariant } from "./urls";
 
 /**
  * Generate a secure presigned upload URL for Cloudflare R2.

@@ -4,6 +4,7 @@ import React from "react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/api";
 import { useLocation } from "@/context/LocationContext";
+import { toQueryCoords } from "@/lib/distance";
 import { ExperienceBlockRenderer } from "@/components/home/ExperienceBlockRenderer";
 import { Sparkles, LayoutGrid } from "lucide-react";
 
@@ -13,8 +14,7 @@ export function ExperiencePageClient({ slug }: { slug: string }) {
   const experienceBlocks = useQuery(api.customerHome.resolveExperiencePayload, {
     slug,
     city: city || undefined,
-    userLat: latitude !== null ? latitude : undefined,
-    userLng: longitude !== null ? longitude : undefined,
+    ...toQueryCoords(latitude, longitude),
   });
 
   if (experienceBlocks === undefined) {

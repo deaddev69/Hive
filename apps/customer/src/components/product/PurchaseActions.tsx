@@ -67,41 +67,41 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
       disabled={isDisabled || loading}
       onClick={onClick}
       className={cn(
-        "flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-xs transition-all duration-300 relative outline-none select-none group cursor-pointer",
+        "flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all duration-300 relative outline-none select-none group cursor-pointer",
         isUnified ? (
           cn(
-            "h-full w-[65%] rounded-l-2xl rounded-r-none border-0",
+            "h-full w-[42%] rounded-l-2xl rounded-r-none border-0",
             isDisabled
               ? "bg-stone-100 text-stone-400 cursor-not-allowed"
-              : "bg-hive-dark text-stone-100 group-hover:text-hive-gold active:scale-[0.98] group-hover:shadow-[0_12px_24px_rgba(245,166,35,0.22)]"
+              : "bg-[#181511] hover:bg-stone-900 text-stone-200 hover:text-white active:scale-[0.98]"
           )
         ) : (
           cn(
             "h-12 w-full rounded-xl",
             isDisabled
               ? "bg-stone-100 border border-stone-200 text-stone-400 cursor-not-allowed"
-              : "bg-hive-dark text-stone-100 active:scale-[0.98] hover:shadow-[0_8px_24px_rgba(245,166,35,0.18)]"
+              : "bg-[#181511] hover:bg-stone-900 text-stone-100 active:scale-[0.98]"
           )
         ),
         className
       )}
     >
       {loading ? (
-        <span className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+        <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
       ) : !isServiceable ? (
         <span>Unavailable</span>
       ) : (
         <>
           <ShoppingBag className={cn(
-            "w-4 h-4 transition-all duration-300",
-            !isDisabled && "group-hover:text-hive-gold group-hover:scale-110"
+            "w-3.5 h-3.5 text-stone-400 transition-all duration-300",
+            !isDisabled && "group-hover:text-amber-400 group-hover:scale-110"
           )} />
           <span className={cn(
-            "transition-colors duration-300",
-            !isDisabled && "group-hover:text-hive-gold"
+            "transition-colors duration-300 text-[11px]",
+            !isDisabled && "group-hover:text-white"
           )}>
             {isPreorder
-              ? (preorderType === "CLOSED_TODAY" ? "Book for Tomorrow" : `Book for ${nextDayLabel}`)
+              ? (preorderType === "CLOSED_TODAY" ? "Book" : "Pre-Order")
               : "Add to Bag"}
           </span>
         </>
@@ -143,26 +143,26 @@ export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
       disabled={isDisabled}
       onClick={onClick}
       className={cn(
-        "font-bold uppercase tracking-widest text-xs transition-all duration-300 flex items-center justify-center gap-2 outline-none select-none group cursor-pointer",
+        "font-black uppercase tracking-wider text-xs transition-all duration-300 flex items-center justify-center gap-1.5 outline-none select-none group cursor-pointer",
         isUnified ? (
           cn(
-            "h-full w-[35%] rounded-r-2xl rounded-l-none bg-hive-cream text-hive-dark hover:bg-hive-cream/80 active:scale-[0.98]",
+            "h-full w-[58%] rounded-r-2xl rounded-l-none",
             isDisabled
-              ? "bg-stone-50/50 text-stone-300 cursor-not-allowed border-l border-stone-200"
-              : "border-l border-hive-border/40"
+              ? "bg-stone-200 text-stone-400 cursor-not-allowed border-l border-stone-300"
+              : "bg-[#F5C22B] hover:bg-[#E5B524] text-stone-950 active:scale-[0.98] shadow-[0_4px_16px_rgba(245,194,43,0.3)]"
           )
         ) : (
           cn(
-            "h-12 w-full rounded-xl border border-hive-dark bg-hive-cream text-hive-dark hover:bg-hive-cream/80 active:scale-[0.98]",
+            "h-12 w-full rounded-xl",
             isDisabled
-              ? "border-stone-200 text-stone-300 cursor-not-allowed bg-stone-50/50"
-              : ""
+              ? "border-stone-200 text-stone-300 cursor-not-allowed bg-stone-100"
+              : "bg-[#F5C22B] hover:bg-[#E5B524] text-stone-950 shadow-[0_4px_16px_rgba(245,194,43,0.3)] active:scale-[0.98]"
           )
         ),
         className
       )}
     >
-      <span className="transition-colors duration-300">
+      <span className="text-[11.5px] font-black tracking-wider">
         {!isServiceable
           ? "Unavailable"
           : isPreorder
@@ -171,8 +171,8 @@ export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
       </span>
       {isServiceable && (
         <ArrowRight className={cn(
-          "w-4 h-4 transition-all duration-300",
-          !isDisabled && "group-hover:translate-x-1.5 group-hover:text-hive-gold"
+          "w-3.5 h-3.5 stroke-[2.8] text-stone-950 transition-all duration-300",
+          !isDisabled && "group-hover:translate-x-1"
         )} />
       )}
     </button>

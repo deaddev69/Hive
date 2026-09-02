@@ -11,21 +11,10 @@ import { Id } from "./_generated/dataModel";
 import { triggerNotification } from "./lib/notifications";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
 import { checkServiceability } from "./lib/serviceability";
+import { getPublicUrl } from "./media/urls";
 
 const RESERVATION_TIMER_MS = 30 * 60 * 1000; // 30 minutes
 const PAYMENT_TIMER_MS = 30 * 60 * 1000;     // 30 minutes
-
-function getPublicUrl(asset: any, variant: "thumbnail" | "pdp" | "zoom" | "original" = "original") {
-  if (typeof asset === "string") return asset;
-  if (!asset?.objectKey) return "";
-  const domain = "pub-09a817ec6f384c4997feafc5e8387286.r2.dev";
-  if (domain.includes(".r2.dev")) {
-    const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    return `https://${cleanDomain}/${asset.objectKey}`;
-  }
-  const variantParam = variant === "original" ? "format=auto" : `variant=${variant}`;
-  return `https://${domain}/cdn-cgi/image/${variantParam}/${asset.objectKey}`;
-}
 
 // ─── Query: Check if product size is currently held in reservation ───────────
 export const getProductReservationHold = query({

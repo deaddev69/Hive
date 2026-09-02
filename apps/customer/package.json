@@ -6,15 +6,18 @@
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "lint:ci": "eslint . --quiet"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
     "@hive/types": "*",
     "@hive/ui": "*",
     "@hive/utils": "*",
+    "@sentry/nextjs": "10.73.0",
     "@types/canvas-confetti": "^1.9.0",
+    "@vercel/speed-insights": "2.0.0",
     "@vis.gl/react-google-maps": "^1.9.0",
     "canvas-confetti": "^1.9.4",
     "convex": "^1.43.0",

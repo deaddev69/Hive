@@ -43,6 +43,7 @@ import { useWishlistStore } from "@/store/wishlist-store";
 import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { getSignInUrl, getSignUpUrl, navigateToSignIn, navigateToSignUp } from "@/lib/auth-redirect";
+import { getAnonSessionId } from "@/lib/anonSession";
 import { HeaderStatusPill } from "@/components/shared/HeaderStatusPill";
 
 export const Navbar: React.FC = () => {
@@ -168,7 +169,10 @@ export const Navbar: React.FC = () => {
     }
 
     const delayDebounce = setTimeout(() => {
-      searchProductsAction({ searchTerm: trimmed })
+      // sessionId buckets the anonymous rate limit per browser. Without it every
+      // signed-out shopper shares one counter, so unrelated traffic can lock
+      // search for all of them. See lib/anonSession.ts.
+      searchProductsAction({ searchTerm: trimmed, sessionId: getAnonSessionId() })
         .then((res) => {
           setSearchResults(res);
         })
@@ -427,17 +431,17 @@ export const Navbar: React.FC = () => {
                 </span>
               </button>
               {hydrated && (locality || city) && (
-                <HeaderStatusPill className="hover:bg-[#FFFDF9] dark:hover:bg-neutral-900/70 hover:shadow-[0_2px_8px_rgba(183,131,36,0.06)] cursor-default">
-                  <Timer className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300 shrink-0" strokeWidth={2.2} />
+                <HeaderStatusPill className="hover:bg-[#FFFDF9] dark:hover:bg-neutral-900/70 hover:shadow-[0_2px_8px_rgba(245,194,43,0.15)] cursor-default border-stone-200/80">
+                  <Timer className="w-3.5 h-3.5 text-[#B78324] dark:text-amber-400 shrink-0" strokeWidth={2.2} />
                   <span className="text-[11px] tracking-wide font-sans flex items-center gap-1.5">
                     <span className="text-stone-500 dark:text-neutral-400 font-medium">
                       {deliveryPromise.prefix}
                     </span>
                     <span className="text-stone-300 dark:text-neutral-700 select-none">•</span>
                     <span className={cn(
-                      "px-2 py-0.5 rounded-md font-extrabold text-[10px] tracking-tight select-none shadow-2xs",
+                      "px-2 py-0.5 rounded-md font-bold text-[10px] tracking-tight select-none",
                       deliveryPromise.isToday 
-                        ? "bg-hive-gold text-stone-950" 
+                        ? "bg-[#F5C22B] text-stone-950 shadow-[0_2px_8px_rgba(245,194,43,0.25)]" 
                         : "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
                     )}>
                       {deliveryPromise.suffix}
@@ -619,17 +623,17 @@ export const Navbar: React.FC = () => {
             </span>
           </button>
           {hydrated && (locality || city) && (
-            <HeaderStatusPill className="px-3 cursor-default">
-              <Timer className="w-3.5 h-3.5 text-stone-700 dark:text-stone-300 shrink-0" strokeWidth={2.2} />
+            <HeaderStatusPill className="px-3 cursor-default border-stone-200/80">
+              <Timer className="w-3.5 h-3.5 text-[#B78324] dark:text-amber-400 shrink-0" strokeWidth={2.2} />
               <span className="text-[10px] tracking-wide font-sans flex items-center gap-1.5">
                 <span className="text-stone-500 dark:text-neutral-400 font-medium">
                   {deliveryPromise.prefix}
                 </span>
                 <span className="text-stone-300 dark:text-neutral-700 select-none">•</span>
                 <span className={cn(
-                  "px-1.5 py-0.5 rounded-md font-extrabold text-[9.5px] tracking-tight select-none shadow-2xs",
+                  "px-1.5 py-0.5 rounded-md font-bold text-[9.5px] tracking-tight select-none",
                   deliveryPromise.isToday 
-                    ? "bg-hive-gold text-stone-950" 
+                    ? "bg-[#F5C22B] text-stone-950 shadow-[0_2px_8px_rgba(245,194,43,0.25)]" 
                     : "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
                 )}>
                   {deliveryPromise.suffix}

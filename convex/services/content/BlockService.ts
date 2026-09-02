@@ -8,10 +8,17 @@ import { getPublicUrl } from "../../media/api";
 async function resolveBannerImage(ctx: any, imageField: any): Promise<string> {
   if (!imageField) return "";
   if (typeof imageField === "object" && imageField.objectKey) {
-    return getPublicUrl(imageField, "pdp") || "";
+    // Banners render full-bleed at sizes="100vw", so they get format negotiation
+    // but no width cap. This previously asked for the "pdp" variant, which would
+    // have capped the hero at PDP width on large displays.
+    return getPublicUrl(imageField, "original") || "";
   }
   if (typeof imageField === "string" && imageField.startsWith("http")) {
-    return imageField.replace("https://cdn.hivenow.in/cdn-cgi/image/format=auto/banner_images/", "https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/banner_images/");
+    // Some banner rows store a fully-formed cdn.hivenow.in URL from before
+    // ImageAsset existed. Those are already canonical and are returned as-is —
+    // the rewrite that used to redirect them to the r2.dev development endpoint
+    // existed only while cdn.hivenow.in did not resolve.
+    return imageField;
   }
   if (typeof imageField === "string") {
     try {

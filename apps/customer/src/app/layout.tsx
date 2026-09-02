@@ -43,6 +43,7 @@ export const metadata: Metadata = {
 import { Toaster } from "@hive/ui";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { PwaUpdateManager } from "@/components/pwa/PwaUpdateManager";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export default function RootLayout({
   children,
@@ -65,6 +66,9 @@ export default function RootLayout({
           <InstallPrompt />
           <PwaUpdateManager />
         </ConvexClientProvider>
+        {/* Real-user Core Web Vitals. Mounted once, at the root, so every route
+            reports. Inert outside Vercel, so local dev is unaffected. */}
+        <SpeedInsights />
       </body>
     </html>
   );

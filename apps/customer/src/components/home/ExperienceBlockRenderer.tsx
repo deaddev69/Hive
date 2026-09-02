@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ProductCard } from "@/components/product/ProductCard";
@@ -9,6 +9,55 @@ import { TrustStrip } from "@/components/trust/TrustStrip";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { MoodBoardGrid } from "@/components/home/MoodBoardGrid";
 import { calculateDisplayPricing } from "@/lib/pricing";
+// Canonical public image URL builder, shared with the Convex backend so client
+// and server agree on domain and transformation parameters.
+import { getPublicUrl } from "../../../../../convex/media/urls";
+
+/** Shown only when a merchandiser has left a banner slot without an image. */
+const FALLBACK_BANNER = "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER";
+
+/** Tailwind's `sm` breakpoint — keep in sync with the aspect-ratio switch below. */
+const HERO_DESKTOP_MEDIA = "(min-width: 640px)";
+
+/**
+ * Art-directed banner image.
+ *
+ * Renders one <picture> with a desktop <source> and a mobile fallback <img>, so
+ * the browser downloads exactly one of the two variants. Both candidates keep
+ * Next's optimizer output (srcSet/sizes) via getImageProps.
+ *
+ * Pass `priority` for the LCP banner only — it preloads the single chosen
+ * candidate. Everything below the fold should leave it off and lazy-load.
+ */
+function HeroPicture({
+  desktopSrc,
+  mobileSrc,
+  alt,
+  priority = false,
+  className = "object-cover object-center",
+}: {
+  desktopSrc: string;
+  mobileSrc: string;
+  alt: string;
+  priority?: boolean;
+  className?: string;
+}) {
+  const common = { alt, fill: true, sizes: "100vw", priority, quality: 80 } as const;
+
+  const { props: desktop } = getImageProps({ ...common, src: desktopSrc });
+  const { props: mobile } = getImageProps({ ...common, src: mobileSrc });
+
+  return (
+    <picture>
+      <source media={HERO_DESKTOP_MEDIA} srcSet={desktop.srcSet} sizes={desktop.sizes} />
+      {/* eslint-disable-next-line jsx-a11y/alt-text -- alt comes through ...mobile */}
+      <img
+        {...mobile}
+        className={`absolute inset-0 w-full h-full pointer-events-none transform transition-transform duration-700 ease-out group-hover:scale-[1.02] ${className}`}
+      />
+    </picture>
+  );
+}
 
 // Helper to deduce occasion from product tags/description
 function getProductOccasion(product: any): string {
@@ -159,28 +208,29 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
               if (banners[0].targetUrl) router.push(banners[0].targetUrl);
             }}
           >
-            {/* Desktop Image */}
-            <div className="hidden sm:block absolute inset-0 w-full h-full">
-              <Image
-                src={banners[0].desktopImage || banners[0].mobileImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
-                alt={banners[0].title || "Hive campaign banner"}
-                fill
-                priority
-                sizes="100vw"
-                className="object-cover object-center pointer-events-none transform group-hover:scale-[1.01] transition-transform duration-700 ease-out"
-              />
-            </div>
-            {/* Mobile Image */}
-            <div className="sm:hidden absolute inset-0 w-full h-full">
-              <Image
-                src={banners[0].mobileImage || banners[0].desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
-                alt={banners[0].title || "Hive campaign banner"}
-                fill
-                priority
-                sizes="100vw"
-                className="object-cover pointer-events-none transform group-hover:scale-[1.02] transition-transform duration-700 ease-out"
-              />
-            </div>
+            {/*
+              Art-directed hero, rendered as a real <picture> rather than two
+              CSS-hidden <Image> elements.
+
+              The previous markup showed one variant per breakpoint with
+              `hidden sm:block` / `sm:hidden`, and marked BOTH `priority`. A
+              CSS-hidden <img> is still downloaded by the browser, so every
+              visitor fetched both variants — and `priority` added a preload for
+              each on top, so the two competed against each other for bandwidth
+              at the exact moment the LCP element needed it.
+
+              <source media> is the only mechanism that actually prevents the
+              unused fetch: the browser picks one candidate and never requests
+              the other. getImageProps keeps Next's optimizer, srcSet and sizes
+              on both candidates; `priority` is declared once, on the shared
+              <img>, so there is exactly one preload for the one image shown.
+            */}
+            <HeroPicture
+              desktopSrc={banners[0].desktopImage || banners[0].mobileImage || FALLBACK_BANNER}
+              mobileSrc={banners[0].mobileImage || banners[0].desktopImage || FALLBACK_BANNER}
+              alt={banners[0].title || "Hive campaign banner"}
+              priority
+            />
             <div className="sheen-glow" />
           </div>
         </div>
@@ -203,11 +253,20 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
               }}
             >
               <Image
-                src={banner.desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
+                src={banner.desktopImage || FALLBACK_BANNER}
                 alt={banner.title || `Hive campaign banner ${idx + 1}`}
                 fill
-                priority={idx === 0}
-                sizes="(max-width: 768px) 100vw, 33vw"
+                // Eager, not `priority`. This grid is `hidden md:grid` and the
+                // mobile carousel below is `md:hidden`, so marking the first
+                // item of each `priority` emitted two preloads at every
+                // viewport — one of them always for an image that breakpoint
+                // never shows. Eager keeps the first banner out of the lazy
+                // queue without competing against the real LCP element.
+                loading={idx === 0 ? "eager" : "lazy"}
+                // Only ever rendered at >=768px, where each cell is a third of
+                // the container. The old `(max-width: 768px) 100vw` clause was
+                // unreachable and only widened the candidate set.
+                sizes="33vw"
                 className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
               />
               <div className="sheen-glow" />
@@ -238,11 +297,16 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
                 }}
               >
                 <Image
-                  src={banner.mobileImage || banner.desktopImage || "https://placehold.co/800x400/FF0000/FFFFFF?text=MISSING+BANNER"}
+                  src={banner.mobileImage || banner.desktopImage || FALLBACK_BANNER}
                   alt={banner.title || `Hive campaign banner ${idx + 1}`}
                   fill
-                  priority={idx === 0}
-                  sizes="(max-width: 768px) 100vw, 33vw"
+                  // See the desktop grid above — eager rather than `priority`,
+                  // so the two breakpoint variants stop preloading against each
+                  // other. Only the first slide is eager; the rest of the
+                  // carousel is off-screen and stays lazy.
+                  loading={idx === 0 ? "eager" : "lazy"}
+                  // Only ever rendered below 768px, always full width.
+                  sizes="100vw"
                   className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
                 />
                 <div className="sheen-glow" />
@@ -368,7 +432,8 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
       const bgImgUrl = bgImg
         ? typeof bgImg === "string"
           ? bgImg
-          : bgImg.url || (bgImg.objectKey ? `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${bgImg.objectKey}` : null)
+          // Full-bleed section background — "original" so it is not width-capped.
+          : bgImg.url || (bgImg.objectKey ? getPublicUrl(bgImg, "original") : null)
         : null;
 
       const bgOverlayTheme = block.config?.bgOverlayTheme || "temple_heritage";
@@ -918,7 +983,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               const imgUrl = item.imageUrl
                 ? typeof item.imageUrl === "string"
                   ? item.imageUrl
-                  : item.imageUrl?.url || `https://pub-09a817ec6f384c4997feafc5e8387286.r2.dev/${item.imageUrl.objectKey}`
+                  : item.imageUrl?.url || getPublicUrl(item.imageUrl, "card")
                 : null;
 
               return (

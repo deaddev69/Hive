@@ -11,6 +11,8 @@ import { Button } from "@hive/ui";
 import { Search, AlertCircle, ShoppingBag, MapPin, ArrowRight, X } from "lucide-react";
 import { ProductCardData } from "@/lib/mockProducts";
 import { calculateDisplayPricing } from "@/lib/pricing";
+import { toQueryCoords } from "@/lib/distance";
+import { getAnonSessionId } from "@/lib/anonSession";
 
 // Helper to deduce occasion from product tags/description
 function getProductOccasion(product: any): string {
@@ -129,8 +131,7 @@ function SearchContent() {
   const [isSearching, setIsSearching] = useState(false);
 
   const popularProductsData = useQuery(api.products.getMostLovedProducts, {
-    userLat: browseAnyway ? undefined : (latitude ?? undefined),
-    userLng: browseAnyway ? undefined : (longitude ?? undefined),
+    ...(browseAnyway ? {} : toQueryCoords(latitude, longitude)),
     limit: 12,
   });
 
@@ -143,8 +144,9 @@ function SearchContent() {
     setIsSearching(true);
     searchProductsAction({
       searchTerm: q,
-      userLat: browseAnyway ? undefined : (latitude ?? undefined),
-      userLng: browseAnyway ? undefined : (longitude ?? undefined),
+      // Buckets the anonymous rate limit per browser — see lib/anonSession.ts.
+      sessionId: getAnonSessionId(),
+      ...(browseAnyway ? {} : toQueryCoords(latitude, longitude)),
     })
       .then((res) => {
         setSearchResult(res);

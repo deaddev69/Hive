@@ -33,6 +33,14 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
       {
+        // Canonical public image domain (R2 custom domain + Cloudflare transforms).
+        protocol: "https",
+        hostname: "cdn.hivenow.in",
+        pathname: "/**",
+      },
+      {
+        // Legacy development endpoint. Retained so image URLs already stored in
+        // the database keep rendering; new URLs are never generated for it.
         protocol: "https",
         hostname: "*.r2.dev",
         pathname: "/**",

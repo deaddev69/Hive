@@ -2,6 +2,7 @@
 // Product CRUD and queries for the Boutique Portal and Customer App.
 
 import { mutation, query, action, internalMutation, internalQuery } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { getMyBoutique, requireRole, getAuthenticatedUser, getCurrentUserOrNull } from "./lib/auth";
@@ -9,6 +10,12 @@ import { Id } from "./_generated/dataModel";
 import { validateUploadedFile } from "./lib/uploads";
 import { resolveBoutiqueStatus } from "./lib/boutiqueStatus";
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
+import {
+  toCatalogCard,
+  applyCatalogFilters,
+  applyCatalogSort,
+  DEFAULT_SORT,
+} from "./shared/catalog";
 import { updateBoutiqueProductCount } from "./boutiques";
 import { normalizeEmail } from "./users";
 import { resolveDeliveryLabel, resolveDeliveryCountdown } from "./lib/deliveryEta";
@@ -346,6 +353,11 @@ async function validateProductQuality(
     if (preApproved.has(img)) return false;
     if (
       img.includes("unsplash.com") ||
+      // Canonical public image domain. Without this, product images served from
+      // the CDN would be treated as untrusted third-party URLs.
+      img.includes("cdn.hivenow.in") ||
+      // Legacy development endpoint — still trusted so rows written before the
+      // custom domain went live keep validating.
       img.includes(".r2.dev") ||
       img.includes(".cloudflarestorage.com") ||
       img.includes(".convex.cloud") ||
@@ -1066,18 +1078,35 @@ export const getProduct = query({
  * Public query to fetch products matching filters (for Customer App).
  * Supports multi-category, price range, and location-based delivery radius filtering.
  */
-export const getActiveProducts = query({
-  args: {
-    categoryIds: v.optional(v.array(v.id("categories"))),
-    featuredOnly: v.optional(v.boolean()),
-    minPrice: v.optional(v.number()),
-    maxPrice: v.optional(v.number()),
-    userLat: v.optional(v.number()),
-    userLng: v.optional(v.number()),
-    boutiqueId: v.optional(v.id("boutiques")),
-  },
-  handler: async (ctx, args) => {
-    const __t0 = Date.now();
+/**
+ * Candidate cap per descendant category in the catalog selection below.
+ * Generous relative to a 12-item page, because serviceability and stock filters
+ * run after the fetch and can discard a large share of the candidates.
+ */
+const CATEGORY_CANDIDATE_LIMIT = 200;
+
+/** Argument shape shared by getActiveProducts and getCatalogPage. */
+type CatalogSelectionArgs = {
+  categoryIds?: Id<"categories">[];
+  featuredOnly?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
+  userLat?: number;
+  userLng?: number;
+  boutiqueId?: Id<"boutiques">;
+};
+
+/**
+ * Selects, filters, scores and enriches the catalog for a shopper.
+ *
+ * Extracted verbatim from getActiveProducts so getCatalogPage can reuse the
+ * exact same selection, serviceability and scoring rules rather than a second
+ * implementation that could drift. getActiveProducts is now a thin wrapper, so
+ * its five other callers (shop page, recommendations, related products,
+ * sitemap, mobile app) are unaffected.
+ */
+async function selectCatalogProducts(ctx: QueryCtx, args: CatalogSelectionArgs) {
+  {
     let products;
     if (args.boutiqueId) {
       products = await ctx.db
@@ -1108,13 +1137,16 @@ export const getActiveProducts = query({
 
       const uniqueCategoryIds = Array.from(categoryIdSet);
 
+      // Bounded per category, mirroring the take(200) on the uncategorised
+      // branch below. An unbounded .collect() per descendant category meant a
+      // broad parent category could pull the entire catalogue into one query.
       const categoryProductsList = await Promise.all(
         uniqueCategoryIds.map((catId) =>
           ctx.db
             .query("products")
             .withIndex("by_categoryId", (q) => q.eq("categoryId", catId as any))
             .filter((q) => q.eq(q.field("active"), true))
-            .collect()
+            .take(CATEGORY_CANDIDATE_LIMIT)
         )
       );
       products = categoryProductsList.flat();
@@ -1125,8 +1157,6 @@ export const getActiveProducts = query({
         .take(200);
     }
 
-    const __t1 = Date.now();
-    console.log(`[PERF][CONVEX] getActiveProducts: Product retrieval took ${__t1 - __t0}ms. Fetched ${products.length} products.`);
 
     // Optimize lookups by filtering approved boutiques early
     const approvedBoutiqueIds = await getApprovedBoutiqueIds(ctx);
@@ -1134,22 +1164,30 @@ export const getActiveProducts = query({
 
     // If browsing general catalog (no specific boutiqueId filter), hide products from boutiques that are currently closed
     if (!args.boutiqueId) {
+      // Fetch each distinct boutique once, in parallel. This previously awaited
+      // inside a for-loop over every product: the memo meant each boutique was
+      // only read once, but the reads were fully serialised, so latency scaled
+      // with the number of distinct boutiques in the result.
+      const distinctBoutiqueIds = Array.from(new Set(filtered.map((p) => p.boutiqueId)));
+      const boutiqueDocs = await Promise.all(
+        distinctBoutiqueIds.map((id) => ctx.db.get(id))
+      );
       const boutiqueCache = new Map<string, any>();
-      const openStoreProducts: typeof filtered = [];
-      for (const p of filtered) {
-        let b = boutiqueCache.get(p.boutiqueId);
-        if (!b) {
-          b = await ctx.db.get(p.boutiqueId);
-          boutiqueCache.set(p.boutiqueId, b);
-        }
-        if (b) {
-          const status = getBoutiqueStatus(b, Date.now());
-          if (status.type === "OPEN" || status.type === "CLOSED_TODAY" || status.type === "CLOSED_EXTENDED") {
-            openStoreProducts.push(p);
-          }
-        }
-      }
-      filtered = openStoreProducts;
+      distinctBoutiqueIds.forEach((id, i) => boutiqueCache.set(id as string, boutiqueDocs[i]));
+
+      // One timestamp for the whole pass, so two products from the same
+      // boutique can't disagree about whether it is open.
+      const now = Date.now();
+      filtered = filtered.filter((p) => {
+        const b = boutiqueCache.get(p.boutiqueId);
+        if (!b) return false;
+        const status = getBoutiqueStatus(b, now);
+        return (
+          status.type === "OPEN" ||
+          status.type === "CLOSED_TODAY" ||
+          status.type === "CLOSED_EXTENDED"
+        );
+      });
     }
 
     // Featured filter
@@ -1165,8 +1203,6 @@ export const getActiveProducts = query({
       filtered = filtered.filter(p => p.price <= args.maxPrice!);
     }
 
-    const __t2 = Date.now();
-    console.log(`[PERF][CONVEX] getActiveProducts: Boutique retrieval & early filtering took ${__t2 - __t1}ms.`);
 
     // Location-based delivery radius filter & scoring
     let boutiqueStatsMap = new Map<string, { distanceKm: number; durationMin: number; hiveScore: number }>();
@@ -1257,12 +1293,8 @@ export const getActiveProducts = query({
       filtered = filtered.filter((p) => deliverableBoutiqueIds.has(p.boutiqueId));
     }
 
-    const __t3 = Date.now();
-    console.log(`[PERF][CONVEX] getActiveProducts: Location & Haversine distance calc took ${__t3 - __t2}ms.`);
 
     const enriched = await enrichProducts(ctx, filtered);
-    const __t4 = Date.now();
-    console.log(`[PERF][CONVEX] getActiveProducts: enrichProducts took ${__t4 - __t3}ms. Enriched ${filtered.length} products.`);
 
     let purchasable = enriched.filter((p) => p.active && p.boutique && p.boutique.verified && getTotalStock(p.stockBySize) > 0);
 
@@ -1318,14 +1350,106 @@ export const getActiveProducts = query({
       });
 
       scoredProducts.sort((a, b) => b.score - a.score);
-      const __t5 = Date.now();
-      console.log(`[PERF][CONVEX] getActiveProducts: Score calc & sort took ${__t5 - __t4}ms. Total execution took ${__t5 - __t0}ms.`);
       return scoredProducts.map((sp) => sp.product);
     }
 
-    const __t6 = Date.now();
-    console.log(`[PERF][CONVEX] getActiveProducts: Total execution without scoring took ${__t6 - __t0}ms.`);
     return purchasable;
+  }
+}
+
+/**
+ * Full catalog selection. Unchanged in behaviour and signature.
+ *
+ * Still returns every matching product, which is correct for its remaining
+ * consumers: the sitemap needs the whole catalogue, the shop page is already
+ * scoped to a single boutique, and the recommendation rails use the result as a
+ * candidate pool. The product listing page no longer uses this — see
+ * getCatalogPage below.
+ */
+export const getActiveProducts = query({
+  args: {
+    categoryIds: v.optional(v.array(v.id("categories"))),
+    featuredOnly: v.optional(v.boolean()),
+    minPrice: v.optional(v.number()),
+    maxPrice: v.optional(v.number()),
+    userLat: v.optional(v.number()),
+    userLng: v.optional(v.number()),
+    boutiqueId: v.optional(v.id("boutiques")),
+  },
+  handler: async (ctx, args) => {
+    return await selectCatalogProducts(ctx, args);
+  },
+});
+
+/**
+ * One page of the product listing grid.
+ *
+ * Replaces the previous arrangement, where the client fetched the entire
+ * filtered catalogue and called .slice() on it. Selection, occasion/new-arrival
+ * filtering, and ordering all happen here over the full candidate set — so the
+ * ordering is still global and page 2 genuinely continues page 1 — but only one
+ * page of narrow cards crosses the wire.
+ *
+ * Deliberately offset-based rather than cursor-based (.paginate). The grid uses
+ * numbered page controls that can jump to an arbitrary page, which a cursor
+ * cannot express; and every sort mode this page offers is computed per-request
+ * from the shopper's coordinates rather than read from an index, so a cursor
+ * over an index would not produce the ordering the shopper asked for.
+ */
+export const getCatalogPage = query({
+  args: {
+    categoryIds: v.optional(v.array(v.id("categories"))),
+    featuredOnly: v.optional(v.boolean()),
+    minPrice: v.optional(v.number()),
+    maxPrice: v.optional(v.number()),
+    userLat: v.optional(v.number()),
+    userLng: v.optional(v.number()),
+    boutiqueId: v.optional(v.id("boutiques")),
+    // Post-selection filters — neither is indexable. See convex/shared/catalog.ts.
+    occasions: v.optional(v.array(v.string())),
+    newArrivals: v.optional(v.boolean()),
+    sort: v.optional(
+      v.union(
+        v.literal("trending"),
+        v.literal("nearby"),
+        v.literal("priceAsc"),
+        v.literal("priceDesc")
+      )
+    ),
+    page: v.optional(v.number()),
+    pageSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    // Capped at the grid's own page size. This is a public query, so the cap is
+    // the API contract, not a hint — without it a caller could request a page
+    // large enough to reintroduce the full-catalogue transfer this replaced.
+    // Raise deliberately if a second consumer ever needs a larger page.
+    const pageSize = Math.min(Math.max(args.pageSize ?? 12, 1), 12);
+    const requestedPage = Math.max(args.page ?? 1, 1);
+
+    const enriched = await selectCatalogProducts(ctx, args);
+
+    const cards = enriched.map(toCatalogCard);
+    const filtered = applyCatalogFilters(cards, {
+      newArrivals: args.newArrivals,
+      occasions: args.occasions,
+    });
+    const sorted = applyCatalogSort(filtered, args.sort ?? DEFAULT_SORT);
+
+    const totalCount = sorted.length;
+    const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1);
+    // Clamp rather than return an empty page: a shopper sitting on page 5 who
+    // narrows a filter should land on the last real page, not on nothing.
+    const page = Math.min(requestedPage, totalPages);
+    const start = (page - 1) * pageSize;
+
+    return {
+      products: sorted.slice(start, start + pageSize),
+      totalCount,
+      totalPages,
+      page,
+      pageSize,
+    };
   },
 });
 

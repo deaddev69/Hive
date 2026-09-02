@@ -7,6 +7,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { ProductCardData } from "@/lib/mockProducts";
 import { calculateDisplayPricing } from "@/lib/pricing";
+import { toQueryCoords } from "@/lib/distance";
 import { ProductDetail } from "@/lib/mockProductDetails";
 import { getRelatedProducts } from "@/data/related-products";
 import { useLocation } from "@/context/LocationContext";
@@ -84,7 +85,7 @@ export const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ 
   const { latitude, longitude } = useLocation();
   const dbProducts = useQuery(
     api.products.getActiveProducts,
-    latitude !== null && longitude !== null ? { userLat: latitude, userLng: longitude } : {}
+    toQueryCoords(latitude, longitude)
   );
 
   // Retrieve scored recommendations from our heuristic logic

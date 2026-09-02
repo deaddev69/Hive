@@ -10,6 +10,7 @@ import Image from "next/image";
 import { cleanProductTitle } from "../product/ProductCard";
 import { QuickViewModal } from "../product/QuickViewModal";
 import { calculateDisplayPricing } from "@/lib/pricing";
+import { toQueryCoords } from "@/lib/distance";
 
 interface EmptyCartStateProps {
   onClose: () => void;
@@ -88,7 +89,7 @@ export const EmptyCartState: React.FC<EmptyCartStateProps> = ({ onClose }) => {
   // Dedicated recommendations query for the empty cart drawer
   const dbProducts = useQuery(
     api.products.getCartDrawerRecommendations,
-    latitude !== null && longitude !== null ? { userLat: latitude, userLng: longitude } : {}
+    toQueryCoords(latitude, longitude)
   );
 
   const recommendedProducts = React.useMemo(() => {
