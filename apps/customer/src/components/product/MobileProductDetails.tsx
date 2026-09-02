@@ -170,7 +170,7 @@ export function MobileProductDetails({
               <div
                 key={item.key}
                 className={cn(
-                  "border border-stone-200/60 rounded-xl p-3 bg-hive-cream/60 flex items-start gap-2.5 transition-all",
+                  "border border-stone-200/70 rounded-xl p-3 bg-stone-50/70 flex items-start gap-2.5 transition-all shadow-2xs",
                   isLastOdd && "col-span-2"
                 )}
               >
@@ -204,7 +204,7 @@ export function MobileProductDetails({
       {(fitRecommendation || silhouette) && (
         <div className="flex flex-col gap-2 select-none">
           {fitRecommendation && (
-            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/70 bg-hive-cream/40 text-stone-700">
+            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/70 bg-stone-50/70 text-stone-700 shadow-2xs">
               <Ruler className="w-4 h-4 text-stone-500 flex-shrink-0" />
               <div className="flex flex-col">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider leading-none mb-0.5 text-stone-800">{fitBadgeConfig[fitRecommendation].label}</span>
@@ -213,7 +213,7 @@ export function MobileProductDetails({
             </div>
           )}
           {silhouette && (
-            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/70 bg-hive-cream/40 text-stone-600">
+            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/70 bg-stone-50/70 text-stone-600 shadow-2xs">
               <Shirt className="w-4 h-4 text-stone-400 flex-shrink-0" />
               <span className="text-[11px] font-medium leading-tight">{silhouetteConfig[silhouette]}</span>
             </div>

@@ -165,7 +165,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
               <div 
                 key={item.key} 
                 className={cn(
-                  "border border-[#EAE1D4] rounded-xl p-3.5 bg-hive-cream/50 flex items-start gap-2.5",
+                  "border border-stone-200/70 rounded-xl p-3.5 bg-stone-50/70 flex items-start gap-2.5 shadow-2xs",
                   isLastOdd && "col-span-2"
                 )}
               >

@@ -25,15 +25,15 @@ export default function WishlistPage() {
 
   return (
     <div className="min-h-screen bg-white text-stone-900 antialiased selection:bg-amber-100 pb-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-left">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-left">
         
         {/* Header section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-baseline gap-4 mb-10 pb-6 border-b border-stone-200/80">
-          <div className="space-y-1">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-baseline gap-3 mb-6 pb-4 border-b border-stone-200/80">
+          <div className="space-y-0.5">
             <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
               Your Collection
             </span>
-            <h1 className="text-3xl font-serif font-bold text-stone-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900 tracking-tight">
               My Wishlist
             </h1>
           </div>
@@ -47,28 +47,27 @@ export default function WishlistPage() {
         {/* Main content grid */}
         {items.length === 0 ? (
           /* Elegant Empty State with Gold Heart */
-          <div className="py-20 text-center space-y-5 max-w-sm mx-auto flex flex-col items-center select-none animate-[fadeIn_0.3s_ease-out]">
+          <div className="py-8 sm:py-12 text-center space-y-4 max-w-sm mx-auto flex flex-col items-center select-none animate-[fadeIn_0.3s_ease-out]">
             {/* Ambient Gold Glow & Signature Heart */}
-            <div className="relative w-20 h-20 flex items-center justify-center mb-1">
-              <div className="absolute inset-0 rounded-full bg-[#F5C22B]/15 blur-xl pointer-events-none" />
-              <div className="relative w-16 h-16 rounded-2xl bg-amber-50/60 border border-amber-200/50 flex items-center justify-center shadow-xs">
-                <Heart className="w-8 h-8 fill-[#F5C22B] stroke-[#F5C22B]" />
+            <div className="relative w-16 h-16 flex items-center justify-center mb-0.5">
+              <div className="absolute inset-0 rounded-full bg-[#F5C22B]/15 blur-lg pointer-events-none" />
+              <div className="relative w-14 h-14 rounded-2xl bg-amber-50/70 border border-amber-200/60 flex items-center justify-center shadow-2xs">
+                <Heart className="w-7 h-7 fill-[#F5C22B] stroke-[#F5C22B]" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h2 className="font-serif text-2xl font-bold text-stone-900">No Favorites Saved</h2>
-              <p className="text-xs text-stone-500 leading-relaxed max-w-[290px] mx-auto font-normal">
+            <div className="space-y-1.5">
+              <h2 className="font-serif text-xl sm:text-2xl font-bold text-stone-900">No Favorites Saved</h2>
+              <p className="text-xs text-stone-500 leading-relaxed max-w-[280px] mx-auto font-normal">
                 Your wishlist is empty. Explore curated styles from Kochi&apos;s finest boutiques and save the pieces you love.
               </p>
             </div>
 
-            <Link href="/products" className="mt-2">
+            <Link href="/products" className="mt-1">
               <button
                 type="button"
-                className="h-11 px-6 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl text-xs font-bold shadow-sm cursor-pointer flex items-center justify-center gap-2"
+                className="h-10 px-5 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl text-xs font-bold uppercase tracking-wider shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
               >
-                <Heart className="w-3.5 h-3.5 fill-[#F5C22B] stroke-[#F5C22B]" />
                 <span>Explore Styles</span>
                 <ArrowRight className="w-3.5 h-3.5 text-stone-400" />
               </button>

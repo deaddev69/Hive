@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Zap, Moon } from "lucide-react";
 
 export interface DeliveryCountdownData {
   mode: "today" | "tomorrow";
@@ -30,15 +31,8 @@ function formatTimeIST(epochMs: number): string {
     .toUpperCase();
 }
 
-const GoldDot = () => (
-  <span className="relative flex h-2 w-2 shrink-0">
-    <span className="absolute inline-flex h-full w-full rounded-full bg-[#D9A71E] opacity-75 animate-ping" />
-    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#D9A71E]" />
-  </span>
-);
-
 const PillShell = ({ children }: { children: React.ReactNode }) => (
-  <div className="min-h-[38px] flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50/80 border border-amber-200/60 select-none">
+  <div className="min-h-[38px] flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-stone-50 border border-stone-200/90 select-none">
     {children}
   </div>
 );
@@ -77,11 +71,11 @@ export function DeliveryCountdownPill({
   if (countdown.mode === "tomorrow") {
     return (
       <PillShell>
-        <GoldDot />
-        <p className="text-[11.5px] font-semibold text-stone-800 leading-tight">
-          <span aria-hidden>🌙</span> Order tonight for Priority Morning Delivery to{" "}
-          <span className="font-bold">{localityLabel}</span> by{" "}
-          <span className="font-bold">{formatTimeIST(countdown.targetDeliveryAtMs)}</span> tomorrow
+        <Moon className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
+        <p className="text-[11.5px] font-medium text-stone-700 leading-tight">
+          Order tonight for Priority Morning Delivery to{" "}
+          <span className="font-bold text-stone-900">{localityLabel}</span> by{" "}
+          <span className="font-bold text-stone-900">{formatTimeIST(countdown.targetDeliveryAtMs)}</span> tomorrow
         </p>
       </PillShell>
     );
@@ -92,11 +86,11 @@ export function DeliveryCountdownPill({
   if (!isUrgent) {
     return (
       <PillShell>
-        <GoldDot />
-        <p className="text-[11.5px] font-semibold text-stone-800 leading-tight">
-          <span aria-hidden>⚡</span> Order today for delivery to{" "}
-          <span className="font-bold">{localityLabel}</span> by{" "}
-          <span className="font-bold">{formatTimeIST(countdown.targetDeliveryAtMs)}</span> today
+        <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
+        <p className="text-[11.5px] font-medium text-stone-700 leading-tight">
+          Order today for delivery to{" "}
+          <span className="font-bold text-stone-900">{localityLabel}</span> by{" "}
+          <span className="font-bold text-stone-900">{formatTimeIST(countdown.targetDeliveryAtMs)}</span> today
         </p>
       </PillShell>
     );
@@ -104,14 +98,15 @@ export function DeliveryCountdownPill({
 
   return (
     <PillShell>
-      <GoldDot />
-      <p className="text-[11.5px] font-semibold text-stone-800 leading-tight">
-        <span aria-hidden>⚡</span> Order in the next{" "}
-        <span className="font-mono font-bold tabular-nums text-stone-900">
-          {remainingMs === null ? "--:--" : formatClock(remainingMs)}
+      <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 animate-pulse shrink-0" />
+      <p className="text-[11.5px] font-medium text-stone-700 leading-tight">
+        Order in the next{" "}
+        <span className="font-mono font-bold tabular-nums text-stone-950">
+          {remainingMs != null ? formatClock(remainingMs) : "--:--"}
         </span>{" "}
-        for delivery to <span className="font-bold">{localityLabel}</span> by{" "}
-        <span className="font-bold">{formatTimeIST(countdown.targetDeliveryAtMs)}</span> today
+        for delivery to{" "}
+        <span className="font-bold text-stone-900">{localityLabel}</span> by{" "}
+        <span className="font-bold text-stone-900">{formatTimeIST(countdown.targetDeliveryAtMs)}</span> today
       </p>
     </PillShell>
   );

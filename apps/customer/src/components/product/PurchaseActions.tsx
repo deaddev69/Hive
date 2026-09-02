@@ -273,9 +273,10 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
           <button
             type="button"
             onClick={onSelectSizePrompt}
-            className="h-14 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs shadow-sm hover:shadow active:scale-[0.98] transition-all cursor-pointer"
+            className="h-14 w-full rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-900 border border-stone-300/80 font-bold uppercase tracking-wider text-xs shadow-2xs active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
           >
-            Select Size
+            <span>Select Size</span>
+            <span className="text-stone-400">→</span>
           </button>
         ) : isOutOfStock ? (
           <button
@@ -322,9 +323,10 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
           <button
             type="button"
             onClick={onSelectSizePrompt}
-            className="h-14 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs shadow-sm hover:shadow active:scale-[0.98] transition-all cursor-pointer"
+            className="h-14 w-full rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-900 border border-stone-300/80 font-bold uppercase tracking-wider text-xs shadow-2xs active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
           >
-            Select Size
+            <span>Select Size</span>
+            <span className="text-stone-400">→</span>
           </button>
         ) : isOutOfStock ? (
           <button
@@ -917,12 +919,13 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
         <button
           type="button"
           onClick={handleSelectSizePrompt}
-          className="hidden lg:flex h-12 w-full rounded-2xl bg-hive-dark text-white font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] shadow-sm hover:shadow cursor-pointer items-center justify-center"
+          className="hidden lg:flex h-12 w-full rounded-2xl bg-stone-100 hover:bg-stone-200 text-stone-900 border border-stone-300/80 font-bold uppercase tracking-wider text-xs transition-all active:scale-[0.98] shadow-2xs cursor-pointer items-center justify-center gap-1.5"
         >
-          Select Size
+          <span>Select Size</span>
+          <span className="text-stone-400">→</span>
         </button>
       ) : isOutOfStock ? (
-        <div className="bg-hive-cream border border-hive-border/40 rounded-2xl p-4.5 space-y-3.5">
+        <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4.5 space-y-3.5 shadow-2xs">
           <div className="text-xs">
             <span className="font-extrabold uppercase tracking-wider text-hive-dark block">
               Restock Notification
