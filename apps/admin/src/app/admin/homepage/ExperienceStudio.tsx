@@ -946,28 +946,34 @@ function BlockConfigEditor({ block, schema, collections, categories, onSave, onC
           {(schema.fields.includes("bgOverlayTheme") || formData.renderer === "premiumGrid") && (
             <div>
               <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Background & Atmosphere (Luxury Editorial Tones)
+                Background Overlay Tone (Pinterest & Heritage Aesthetics)
               </label>
               <select
                 className="w-full h-10 px-3 rounded-lg border border-slate-200 text-xs font-semibold bg-white cursor-pointer"
-                value={formData.config.bgOverlayTheme || "alabaster_studio"}
+                value={formData.config.bgOverlayTheme || "temple_heritage"}
                 onChange={e => updateConfig("bgOverlayTheme", e.target.value)}
               >
-                <optgroup label="Editorial Palettes & Tones">
-                  <option value="kerala_kasavu">Kerala Kasavu (Warm Sandalwood & Gold Hairlines)</option>
-                  <option value="monsoon_sage">Monsoon Sage (Coastal Celadon Mineral Green)</option>
-                  <option value="rose_vermilion">Rose Vermilion (Blush Silk & Festive Terracotta)</option>
-                  <option value="royal_indigo">Royal Indigo (Deep Kochi Harbor Navy)</option>
-                  <option value="noir_champagne">Noir Champagne (Velvet Midnight Black)</option>
-                  <option value="alabaster_minimal">Alabaster Gallery (Pure Clean White)</option>
+                <optgroup label="✨ Pinterest Indian Heritage & Temple Vibes">
+                  <option value="temple_heritage">Kerala Temple & Lotus Blossom (Warm Sandalwood / Heritage)</option>
+                  <option value="ivory_mandala">Royal Gold Mandala Watermark (Parchment & Sun-Ray Motif)</option>
+                  <option value="mughal_floral">Meenakari & Mughal Floral Filigree (Block Print Ribbons)</option>
+                  <option value="baroque_gold">Vintage Baroque Gold Frame (Ornate Gilded Borders)</option>
                 </optgroup>
-                <optgroup label="Custom Image Blending">
-                  <option value="custom_veil_dark">Cinematic Dark Veil (Dramatic Scrim for Uploaded Image)</option>
-                  <option value="custom_veil_light">Soft Light Veil (Warm Scrim for Uploaded Image)</option>
+                <optgroup label="🌸 Aesthetic Moodboards & Tones">
+                  <option value="indigo_watercolor">Indigo & Cyanotype Watercolor (Pinterest Moodboard - Deep Navy)</option>
+                  <option value="organic_linen">Organic Cream Linen & Pressed Botanicals (Natural Oatmeal)</option>
+                  <option value="rose_blush">Blush Rose & Vermilion Silk (Bridal & Festive Luxe)</option>
+                  <option value="midnight_obsidian">Midnight Obsidian & Gold Dust (Dark Luxury Vignette)</option>
+                </optgroup>
+                <optgroup label="🖼️ Overlays For Custom Uploaded Image">
+                  <option value="soft_veil_light">Subtle Light Veil (Soft Warm Fog Overlay)</option>
+                  <option value="dark_vignette_blur">Dark Vignette Blur (High-Contrast Dramatic Dark Overlay)</option>
+                  <option value="light">Classic Light Wallpaper (Ivory Minimalist)</option>
+                  <option value="dark">Classic Dark Vignette</option>
                 </optgroup>
               </select>
               <p className="text-[10px] text-slate-400 mt-1">
-                Selects the background lighting, ambiance, and edge blending for this premium edit.
+                Selects the background art, watermarks, and overlay filter for this premium block. If a custom background image is uploaded, this tone acts as the blending veil.
               </p>
             </div>
           )}

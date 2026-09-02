@@ -425,78 +425,378 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     const isPremiumGrid = block.renderer === "premiumGrid" && blockProducts.length >= PREMIUM_GRID_MIN_PRODUCTS;
 
     if (isPremiumGrid) {
-      const cardCtaText = block.config?.cardCtaText;
+      const productCount = blockProducts.length;
+      const gridColsClass = productCount >= 5 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 lg:grid-cols-3";
+      const sectionPaddingClass = productCount >= 5 ? "pt-10 pb-8 sm:pt-14 sm:pb-12" : "pt-8 pb-6 sm:pt-10 sm:pb-8";
+      const bgImg = block.data?.bgImage || block.config?.bgImage || block.config?.desktopImage;
+      const bgImgUrl = bgImg
+        ? typeof bgImg === "string"
+          ? bgImg
+          // Full-bleed section background — "original" so it is not width-capped.
+          : bgImg.url || (bgImg.objectKey ? getPublicUrl(bgImg, "original") : null)
+        : null;
+
+      const bgOverlayTheme = block.config?.bgOverlayTheme || "temple_heritage";
+      const isDarkTheme = ["dark", "midnight_obsidian", "indigo_watercolor", "dark_vignette_blur"].includes(bgOverlayTheme);
+      const isLightBg = !isDarkTheme;
+      const cardCtaText = block.config?.cardCtaText || "Take a closer look →";
+
       const badgeTitle = block.config?.badgeTitle?.trim();
-      const blockTitle = block.title?.trim() || "The Premium Edit";
+      const blockTitle = block.title?.trim();
       const blockSubtitle = block.subtitle?.trim();
       const hasHeader = Boolean(badgeTitle || blockTitle || blockSubtitle);
 
-      const leadProduct = blockProducts[0];
-      const supportingProducts = blockProducts.slice(1, block.config?.maxProducts || 5);
+      // Resolve theme specific background colors & watermark colors
+      const themeConfig = (() => {
+        switch (bgOverlayTheme) {
+          case "temple_heritage":
+            return {
+              bgClass: "bg-[#F8F3EA]",
+              watermarkColor: "text-amber-900/35",
+              accentColor: "text-amber-800",
+            };
+          case "ivory_mandala":
+            return {
+              bgClass: "bg-[#FAF6EE]",
+              watermarkColor: "text-amber-800/30",
+              accentColor: "text-amber-800",
+            };
+          case "mughal_floral":
+            return {
+              bgClass: "bg-[#FAF7F2]",
+              watermarkColor: "text-amber-950/35",
+              accentColor: "text-amber-900",
+            };
+          case "baroque_gold":
+            return {
+              bgClass: "bg-[#FDFBF7]",
+              watermarkColor: "text-amber-700/30",
+              accentColor: "text-amber-800",
+            };
+          case "indigo_watercolor":
+            return {
+              bgClass: "bg-[#0E1726]",
+              watermarkColor: "text-sky-400/25",
+              accentColor: "text-sky-300",
+            };
+          case "organic_linen":
+            return {
+              bgClass: "bg-[#F5F2EB]",
+              watermarkColor: "text-stone-800/25",
+              accentColor: "text-stone-700",
+            };
+          case "rose_blush":
+            return {
+              bgClass: "bg-[#FAF2F0]",
+              watermarkColor: "text-rose-900/25",
+              accentColor: "text-rose-800",
+            };
+          case "midnight_obsidian":
+            return {
+              bgClass: "bg-[#0B0B0C]",
+              watermarkColor: "text-amber-400/20",
+              accentColor: "text-amber-400",
+            };
+          case "soft_veil_light":
+            return {
+              bgClass: "bg-hive-cream",
+              watermarkColor: "text-amber-900/20",
+              accentColor: "text-amber-800",
+            };
+          case "dark_vignette_blur":
+            return {
+              bgClass: "bg-[#111111]",
+              watermarkColor: "text-white/20",
+              accentColor: "text-amber-400",
+            };
+          default:
+            return {
+              bgClass: isLightBg ? "bg-[#FAF7F2]" : "bg-[#111111]",
+              watermarkColor: isLightBg ? "text-amber-900/30" : "text-amber-400/20",
+              accentColor: isLightBg ? "text-amber-800" : "text-amber-400",
+            };
+        }
+      })();
 
       return (
-        <section className="w-full bg-white py-6 sm:py-10 border-b border-stone-100">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6 sm:gap-8">
-            {/* Clean Luxury Editorial Header */}
+        <section className={`relative w-full overflow-hidden ${sectionPaddingClass} ${themeConfig.bgClass}`}>
+          {/* Top Soft Feather Gradient Blend Layer */}
+          <div className={`absolute top-0 inset-x-0 h-10 md:h-16 z-[2] pointer-events-none ${
+            isLightBg 
+              ? "bg-gradient-to-b from-white via-white/50 to-transparent" 
+              : "bg-gradient-to-b from-slate-900/80 via-black/40 to-transparent"
+          }`} />
+
+          {/* Background Image with Dynamic Blending Veil */}
+          {bgImgUrl && (
+            <div className="absolute inset-0 w-full h-full z-0">
+              <Image
+                src={bgImgUrl}
+                alt={blockTitle || "Premium Curation Background"}
+                fill
+                sizes="100vw"
+                className="object-cover object-center"
+              />
+              <div className={`absolute inset-0 ${
+                bgOverlayTheme === "dark_vignette_blur" || bgOverlayTheme === "midnight_obsidian"
+                  ? "bg-black/65 backdrop-blur-[1.5px]"
+                  : isLightBg
+                    ? "bg-hive-cream/65 backdrop-blur-[0.5px]"
+                    : "bg-black/50 backdrop-blur-[1px]"
+              }`} />
+            </div>
+          )}
+
+          {/* ── PINTEREST & HERITAGE SVG WATERMARK OVERLAYS ── */}
+          {/* 1. Temple Heritage (Temple Gopuram + Lotus + Deepam Bell) */}
+          {bgOverlayTheme === "temple_heritage" && (
+            <>
+              {/* Left: Temple Gopuram & Lotus Blossom */}
+              <div className={`absolute top-0 left-0 w-36 sm:w-60 h-60 pointer-events-none z-[1] select-none overflow-hidden ${themeConfig.watermarkColor}`}>
+                <svg className="w-full h-full" viewBox="0 0 140 160" fill="none" stroke="currentColor">
+                  {/* Temple Gopuram Spire Architecture */}
+                  <path d="M70 10 L66 22 L74 22 Z" fill="currentColor" fillOpacity="0.25" strokeWidth="1" />
+                  <path d="M60 22 L80 22 L84 38 L56 38 Z" strokeWidth="1" />
+                  <path d="M52 38 L88 38 L94 58 L46 58 Z" strokeWidth="1" />
+                  <path d="M42 58 L98 58 L106 82 L34 82 Z" strokeWidth="1.2" />
+                  <path d="M30 82 L110 82 L120 115 L20 115 Z" strokeWidth="1.2" />
+                  <path d="M20 115 L120 115 L120 150 L20 150 Z" strokeWidth="1.2" />
+                  {/* Temple Arch Entrance */}
+                  <path d="M50 150 C 50 125, 90 125, 90 150" strokeWidth="1.5" fill="currentColor" fillOpacity="0.1" />
+                  {/* Blooming Lotus Watermark Base */}
+                  <circle cx="70" cy="148" r="4" fill="currentColor" />
+                  <path d="M70 142 C 60 135, 45 142, 48 152 C 55 156, 68 154, 70 148" fill="currentColor" fillOpacity="0.2" strokeWidth="0.8" />
+                  <path d="M70 142 C 80 135, 95 142, 92 152 C 85 156, 72 154, 70 148" fill="currentColor" fillOpacity="0.2" strokeWidth="0.8" />
+                </svg>
+              </div>
+
+              {/* Right: Hanging Temple Lamp & Brass Bell */}
+              <div className={`absolute top-0 right-0 w-32 sm:w-52 h-52 pointer-events-none z-[1] select-none overflow-hidden ${themeConfig.watermarkColor}`}>
+                <svg className="w-full h-full" viewBox="0 0 120 140" fill="none" stroke="currentColor">
+                  {/* Hanging Chain */}
+                  <line x1="85" y1="0" x2="85" y2="40" strokeWidth="1.2" strokeDasharray="3 3" />
+                  {/* Temple Bell */}
+                  <path d="M75 40 C 75 35, 95 35, 95 40 L98 62 C 102 65, 102 70, 95 72 L75 72 C 68 70, 68 65, 72 62 Z" fill="currentColor" fillOpacity="0.15" strokeWidth="1.2" />
+                  <circle cx="85" cy="74" r="2.5" fill="currentColor" />
+                  {/* Hanging Floral Garland Beads */}
+                  <circle cx="85" cy="85" r="1.5" fill="currentColor" />
+                  <circle cx="85" cy="95" r="1.5" fill="currentColor" />
+                  <circle cx="85" cy="105" r="2" fill="currentColor" />
+                  {/* Mughal Corner Tendril */}
+                  <path d="M110 50 C 95 70, 95 95, 115 110" strokeWidth="1" strokeLinecap="round" />
+                </svg>
+              </div>
+            </>
+          )}
+
+          {/* 2. Royal Gold Mandala Watermark */}
+          {bgOverlayTheme === "ivory_mandala" && (
+            <>
+              <div className={`absolute -top-10 -left-10 w-44 sm:w-72 h-72 pointer-events-none z-[1] select-none overflow-hidden ${themeConfig.watermarkColor}`}>
+                <svg className="w-full h-full" viewBox="0 0 200 200" fill="none" stroke="currentColor">
+                  <circle cx="100" cy="100" r="85" strokeWidth="1" strokeDasharray="4 4" />
+                  <circle cx="100" cy="100" r="70" strokeWidth="1.2" />
+                  <circle cx="100" cy="100" r="50" strokeWidth="0.8" />
+                  <circle cx="100" cy="100" r="30" fill="currentColor" fillOpacity="0.08" strokeWidth="1.2" />
+                  <circle cx="100" cy="100" r="8" fill="currentColor" />
+                  {/* 16 Radial Petals */}
+                  {[0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5].map((deg) => (
+                    <path
+                      key={deg}
+                      d="M100 100 L94 40 C 100 30, 100 30, 106 40 Z"
+                      transform={`rotate(${deg} 100 100)`}
+                      fill="currentColor"
+                      fillOpacity="0.12"
+                      strokeWidth="0.8"
+                    />
+                  ))}
+                </svg>
+              </div>
+              <div className={`absolute -bottom-10 -right-10 w-44 sm:w-72 h-72 pointer-events-none z-[1] select-none overflow-hidden ${themeConfig.watermarkColor}`}>
+                <svg className="w-full h-full" viewBox="0 0 200 200" fill="none" stroke="currentColor">
+                  <circle cx="100" cy="100" r="70" strokeWidth="1.2" />
+                  <circle cx="100" cy="100" r="50" strokeWidth="0.8" />
+                  <circle cx="100" cy="100" r="30" fill="currentColor" fillOpacity="0.08" strokeWidth="1.2" />
+                  {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+                    <path
+                      key={deg}
+                      d="M100 100 L94 45 C 100 35, 100 35, 106 45 Z"
+                      transform={`rotate(${deg} 100 100)`}
+                      fill="currentColor"
+                      fillOpacity="0.12"
+                      strokeWidth="0.8"
+                    />
+                  ))}
+                </svg>
+              </div>
+            </>
+          )}
+
+          {/* 3. Vintage Baroque Gold Frame */}
+          {bgOverlayTheme === "baroque_gold" && (
+            <>
+              {/* Top-Left Baroque Corner Scroll */}
+              <div className={`absolute top-0 left-0 w-32 sm:w-48 h-48 pointer-events-none z-[1] select-none ${themeConfig.watermarkColor}`}>
+                <svg className="w-full h-full" viewBox="0 0 100 100" fill="none" stroke="currentColor">
+                  <path d="M10 90 L10 20 C 10 10, 20 10, 90 10" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M18 85 L18 28 C 18 18, 28 18, 85 18" strokeWidth="0.8" strokeDasharray="3 3" />
+                  {/* Acanthus Leaf Scroll Core */}
+                  <circle cx="20" cy="20" r="6" fill="currentColor" fillOpacity="0.2" strokeWidth="1.2" />
+                  <path d="M20 20 C 35 15, 45 25, 55 20 C 45 35, 35 35, 20 20" fill="currentColor" fillOpacity="0.15" />
+                  <path d="M20 20 C 15 35, 25 45, 20 55 C 35 45, 35 35, 20 20" fill="currentColor" fillOpacity="0.15" />
+                  <circle cx="55" cy="20" r="2" fill="currentColor" />
+                  <circle cx="20" cy="55" r="2" fill="currentColor" />
+                </svg>
+              </div>
+              {/* Top-Right Baroque Corner Scroll */}
+              <div className={`absolute top-0 right-0 w-32 sm:w-48 h-48 pointer-events-none z-[1] select-none ${themeConfig.watermarkColor}`}>
+                <svg className="w-full h-full transform scale-x-[-1]" viewBox="0 0 100 100" fill="none" stroke="currentColor">
+                  <path d="M10 90 L10 20 C 10 10, 20 10, 90 10" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M18 85 L18 28 C 18 18, 28 18, 85 18" strokeWidth="0.8" strokeDasharray="3 3" />
+                  <circle cx="20" cy="20" r="6" fill="currentColor" fillOpacity="0.2" strokeWidth="1.2" />
+                  <path d="M20 20 C 35 15, 45 25, 55 20 C 45 35, 35 35, 20 20" fill="currentColor" fillOpacity="0.15" />
+                  <path d="M20 20 C 15 35, 25 45, 20 55 C 35 45, 35 35, 20 20" fill="currentColor" fillOpacity="0.15" />
+                </svg>
+              </div>
+            </>
+          )}
+
+          {/* 4. Mughal / Meenakari Floral Ribbons (Default fallback / mughal_floral) */}
+          {(bgOverlayTheme === "mughal_floral" || bgOverlayTheme === "light") && (
+            <>
+              {/* Left Kalka Paisley Block-Print */}
+              <div className={`absolute top-0 left-0 w-32 sm:w-52 h-52 pointer-events-none z-[1] select-none overflow-hidden ${themeConfig.watermarkColor}`}>
+                <svg className="w-full h-full" viewBox="0 0 120 140" fill="none" stroke="currentColor">
+                  <path
+                    d="M25 125 C 10 95, 20 50, 60 20 C 85 2, 105 20, 85 45 C 65 70, 35 75, 42 105 C 48 128, 75 120, 65 135 Z"
+                    fill="currentColor"
+                    fillOpacity="0.06"
+                    strokeWidth="1.2"
+                  />
+                  <circle cx="58" cy="42" r="8" fill="currentColor" fillOpacity="0.12" strokeWidth="1" />
+                  <circle cx="58" cy="42" r="3" fill="currentColor" fillOpacity="0.25" />
+                  <circle cx="28" cy="100" r="1.5" fill="currentColor" />
+                  <circle cx="34" cy="55" r="1.5" fill="currentColor" />
+                  <circle cx="62" cy="28" r="1.5" fill="currentColor" />
+                  <path d="M42 105 C 30 115, 18 108, 12 95 C 8 85, 15 78, 22 84" strokeWidth="1" strokeLinecap="round" />
+                </svg>
+              </div>
+
+              {/* Right Mughal Floral Blossom */}
+              <div className={`absolute top-0 right-0 w-32 sm:w-52 h-52 pointer-events-none z-[1] select-none overflow-hidden ${themeConfig.watermarkColor}`}>
+                <svg className="w-full h-full" viewBox="0 0 120 140" fill="none" stroke="currentColor">
+                  <circle cx="65" cy="45" r="14" fill="currentColor" fillOpacity="0.08" strokeWidth="1.2" />
+                  <circle cx="65" cy="45" r="6" fill="currentColor" fillOpacity="0.2" strokeWidth="0.8" />
+                  <circle cx="65" cy="45" r="2" fill="currentColor" />
+                  <path d="M65 27 C 62 33, 62 39, 65 45 C 68 39, 68 33, 65 27 Z" fill="currentColor" fillOpacity="0.18" />
+                  <path d="M65 45 C 71 42, 77 42, 83 45 C 77 48, 71 48, 65 45 Z" fill="currentColor" fillOpacity="0.18" />
+                  <path d="M65 45 C 62 51, 62 57, 65 63 C 68 57, 68 51, 65 45 Z" fill="currentColor" fillOpacity="0.18" />
+                  <path d="M47 45 C 53 42, 59 42, 65 45 C 59 48, 53 48, 47 45 Z" fill="currentColor" fillOpacity="0.18" />
+                  <path d="M65 63 C 75 80, 90 95, 105 105" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
+              </div>
+            </>
+          )}
+
+          {/* 5. Indigo & Cyanotype Watercolor (Moodboard Theme) */}
+          {bgOverlayTheme === "indigo_watercolor" && (
+            <>
+              {/* Greek Blue Eye & Botanical Blossom */}
+              <div className={`absolute top-0 right-0 w-36 sm:w-60 h-60 pointer-events-none z-[1] select-none overflow-hidden ${themeConfig.watermarkColor}`}>
+                <svg className="w-full h-full" viewBox="0 0 140 140" fill="none" stroke="currentColor">
+                  {/* Concentric Evil Eye Ripple */}
+                  <circle cx="70" cy="70" r="55" strokeWidth="1.5" strokeDasharray="3 3" />
+                  <circle cx="70" cy="70" r="42" fill="currentColor" fillOpacity="0.08" strokeWidth="1.2" />
+                  <circle cx="70" cy="70" r="28" strokeWidth="1" />
+                  <circle cx="70" cy="70" r="14" fill="currentColor" fillOpacity="0.25" />
+                  <circle cx="70" cy="70" r="5" fill="#FFFFFF" fillOpacity="0.7" />
+                  {/* Soft Botanical Bow Ribbons */}
+                  <path d="M40 100 C 55 90, 85 90, 100 100" strokeWidth="1.2" strokeLinecap="round" />
+                  <path d="M70 95 L65 125 M70 95 L75 125" strokeWidth="1" strokeLinecap="round" />
+                </svg>
+              </div>
+            </>
+          )}
+
+          {/* 6. Organic Linen & Pressed Botanicals */}
+          {bgOverlayTheme === "organic_linen" && (
+            <>
+              {/* Eucalyptus Silhouette */}
+              <div className={`absolute top-0 left-0 w-32 sm:w-52 h-52 pointer-events-none z-[1] select-none overflow-hidden ${themeConfig.watermarkColor}`}>
+                <svg className="w-full h-full" viewBox="0 0 100 120" fill="none" stroke="currentColor">
+                  <path d="M10 110 C 30 90, 50 50, 70 10" strokeWidth="1.2" strokeLinecap="round" />
+                  <ellipse cx="40" cy="75" rx="14" ry="8" transform="rotate(-30 40 75)" fill="currentColor" fillOpacity="0.12" strokeWidth="0.8" />
+                  <ellipse cx="60" cy="45" rx="12" ry="7" transform="rotate(-40 60 45)" fill="currentColor" fillOpacity="0.12" strokeWidth="0.8" />
+                  <ellipse cx="68" cy="20" rx="9" ry="5" transform="rotate(-45 68 20)" fill="currentColor" fillOpacity="0.15" strokeWidth="0.8" />
+                </svg>
+              </div>
+            </>
+          )}
+
+          {/* 7. Blush Rose & Vermilion Silk */}
+          {bgOverlayTheme === "rose_blush" && (
+            <>
+              {/* Rose Petal & Zari Filigree */}
+              <div className={`absolute top-0 right-0 w-32 sm:w-52 h-52 pointer-events-none z-[1] select-none overflow-hidden ${themeConfig.watermarkColor}`}>
+                <svg className="w-full h-full" viewBox="0 0 120 120" fill="none" stroke="currentColor">
+                  <circle cx="60" cy="60" r="45" strokeWidth="1" strokeDasharray="2 2" />
+                  <path d="M60 25 C 40 40, 40 80, 60 95 C 80 80, 80 40, 60 25 Z" fill="currentColor" fillOpacity="0.15" strokeWidth="0.8" />
+                  <path d="M25 60 C 40 40, 80 40, 95 60 C 80 80, 40 80, 25 60 Z" fill="currentColor" fillOpacity="0.15" strokeWidth="0.8" />
+                  <circle cx="60" cy="60" r="8" fill="currentColor" fillOpacity="0.2" />
+                </svg>
+              </div>
+            </>
+          )}
+
+          {/* 8. Midnight Obsidian & Gold Dust */}
+          {bgOverlayTheme === "midnight_obsidian" && (
+            <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">
+              <div className="absolute top-1/4 left-1/4 w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse opacity-60" />
+              <div className="absolute top-1/3 right-1/3 w-1 h-1 rounded-full bg-amber-200 animate-pulse opacity-50" />
+              <div className="absolute bottom-1/4 right-1/4 w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse opacity-70" />
+              <div className="absolute bottom-1/3 left-1/3 w-1 h-1 rounded-full bg-amber-100 animate-pulse opacity-40" />
+            </div>
+          )}
+
+          <div className={`relative z-10 max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col items-center gap-8 ${isLightBg ? "text-stone-900" : "text-white"}`}>
+            {/* Luxury Header - Only rendered if at least one header field is provided */}
             {hasHeader && (
-              <div className="flex flex-col items-start sm:items-center text-left sm:text-center max-w-3xl sm:mx-auto gap-1">
+              <div className="flex flex-col items-center text-center max-w-2xl gap-1.5 pt-2">
                 {badgeTitle && (
-                  <span className="text-[10px] sm:text-[11px] font-bold text-amber-700 tracking-[0.25em] uppercase">
+                  <span className={`text-[10px] tracking-[0.3em] font-bold uppercase ${themeConfig.accentColor}`}>
                     {badgeTitle}
                   </span>
                 )}
                 
                 {blockTitle && (
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-stone-900 tracking-tight leading-tight">
+                  <h2 className={`text-3xl md:text-5xl lg:text-6xl font-cormorant font-normal tracking-tight ${isLightBg ? "text-stone-900" : "text-white"} leading-[1.15] drop-shadow-xs`}>
                     {blockTitle}
                   </h2>
                 )}
                 
                 {blockSubtitle && (
-                  <p className="text-xs sm:text-sm text-stone-500 font-normal leading-relaxed mt-0.5">
+                  <p className={`text-sm md:text-base lg:text-lg font-cormorant italic mt-1 ${isLightBg ? "text-stone-600" : "text-stone-300"} font-normal leading-relaxed`}>
                     {blockSubtitle}
                   </p>
                 )}
               </div>
             )}
 
-            {/* Seamless Magazine Layout */}
-            {blockProducts.length <= 2 ? (
-              /* 1-2 Items: Clean Centered Grid */
-              <div className="grid grid-cols-2 sm:grid-cols-2 max-w-2xl mx-auto gap-4 sm:gap-6 w-full">
-                {blockProducts.map((product: any) => (
+            {/* Floating Borderless Standalone Cards */}
+            <div className={`grid ${gridColsClass} gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 w-full mt-2`}>
+              {blockProducts.slice(0, block.config?.maxProducts || 6).map((product: any) => (
+                <div key={product.id} className="premium-card-wrapper scale-100 transition-transform duration-500 hover:-translate-y-1 bg-transparent p-0 border-none shadow-none">
                   <ProductCard 
-                    key={product.id}
                     product={product} 
+                    hidePrice={true} 
+                    hideQuickView={true} 
+                    darkTheme={!isLightBg}
                     customCtaText={cardCtaText}
+                    premiumMode={true}
                   />
-                ))}
-              </div>
-            ) : (
-              /* 3+ Items: Desktop Asymmetric Lead + Supporting Grid / Mobile Clean 2-Col */
-              <div className="grid grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-6 items-start w-full">
-                {/* Desktop Hero Lead (Left Column) */}
-                {leadProduct && (
-                  <div className="col-span-2 lg:col-span-5 flex flex-col">
-                    <ProductCard 
-                      product={leadProduct} 
-                      customCtaText={cardCtaText}
-                    />
-                  </div>
-                )}
-
-                {/* Desktop Supporting Grid (Right Column) */}
-                <div className="col-span-2 lg:col-span-7 grid grid-cols-2 gap-4 sm:gap-6">
-                  {supportingProducts.map((product: any) => (
-                    <ProductCard 
-                      key={product.id}
-                      product={product} 
-                      customCtaText={cardCtaText}
-                    />
-                  ))}
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         </section>
       );
