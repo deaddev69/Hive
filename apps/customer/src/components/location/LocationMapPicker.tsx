@@ -91,18 +91,21 @@ const extractGeocodeData = (results: google.maps.GeocoderResult[], source: Rever
   };
 };
 
-function PlaceAutocomplete({ 
-  onPlaceSelect, 
+function PlaceAutocomplete({
+  onPlaceSelect,
   setActiveMapTab,
   lat,
-  lng
-}: { 
+  lng,
+  inputRef,
+}: {
   onPlaceSelect: (place: google.maps.places.PlaceResult) => void;
   setActiveMapTab: (v: any) => void;
   lat?: number;
   lng?: number;
+  // Owned by the parent so the "Search Area Manually" recovery action can focus this input
+  // directly, without duplicating a second search box just for that button.
+  inputRef: React.RefObject<HTMLInputElement | null>;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const places = useMapsLibrary("places");
   const [inputValue, setInputValue] = useState("");
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -253,7 +256,13 @@ function MapPickerInner({
 
   // GPS state
   const [geoLoading, setGeoLoading] = useState(false);
+  // PERMISSION_DENIED / POSITION_UNAVAILABLE get a prominent in-drawer banner instead of a toast:
+  // toasts render fixed to the viewport top, far from the GPS button the shopper just tapped near
+  // the bottom of this full-screen sheet, and are easy to miss entirely. TIMEOUT still uses a
+  // toast — "try again" is the only sensible action there and doesn't need a dedicated screen.
+  const [geoError, setGeoError] = useState<{ code: 1 | 2; message: string } | null>(null);
   const map = useMap();
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Initial camera only. Deliberately NOT passed as the controlled `center`/`zoom` props — see
   // the <Map> block below for why.
@@ -369,7 +378,8 @@ function MapPickerInner({
 
   const requestGeolocation = useCallback(() => {
     setActiveMapTab("gps");
-    
+    setGeoError(null);
+
     if (!navigator.geolocation) {
       toast.error("Location services are not supported by your browser.");
       return;
@@ -379,6 +389,7 @@ function MapPickerInner({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setGeoLoading(false);
+        setGeoError(null);
         const { latitude, longitude } = position.coords;
         if (onChange) onChange(latitude, longitude);
         map?.panTo({ lat: latitude, lng: longitude });
@@ -403,7 +414,15 @@ function MapPickerInner({
       (error) => {
         setGeoLoading(false);
         if (error.code === error.PERMISSION_DENIED) {
-          toast.error("Location access denied. Please enable in settings or search manually.");
+          setGeoError({
+            code: 1,
+            message: "Allow location access for this site in your browser settings, or type your street or area below.",
+          });
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          setGeoError({
+            code: 2,
+            message: "Turn on GPS / Location in your phone's quick settings to detect your address automatically, or type your street or area below.",
+          });
         } else if (error.code === error.TIMEOUT) {
           toast.error("Location request timed out. Please try again.");
         } else {
@@ -427,7 +446,7 @@ function MapPickerInner({
         <>
           {/* Top Search Bar */}
           <div className="absolute top-4 left-4 right-4 z-20">
-            <PlaceAutocomplete onPlaceSelect={handlePlaceSelect} setActiveMapTab={setActiveMapTab} lat={lat} lng={lng} />
+            <PlaceAutocomplete onPlaceSelect={handlePlaceSelect} setActiveMapTab={setActiveMapTab} lat={lat} lng={lng} inputRef={searchInputRef} />
           </div>
 
           {/* Injected Top Overlay (Saved Address Chips) */}
@@ -488,6 +507,62 @@ function MapPickerInner({
               <Minus className="w-5 h-5 stroke-[2.5]" />
             </button>
           </div>
+
+          {/* GPS failure banner — replaces a toast (which renders fixed to the viewport top, far
+              from the GPS button and easy to miss) with feedback centered in this same sheet. */}
+          {geoError && (
+            <div className="absolute inset-0 z-40 flex items-center justify-center p-5">
+              <div
+                className="absolute inset-0 bg-hive-dark/25 backdrop-blur-[2px] pointer-events-auto"
+                onClick={() => setGeoError(null)}
+              />
+              <div className="relative w-full max-w-xs bg-white rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-hive-border/60 p-6 pointer-events-auto animate-in fade-in zoom-in-95 duration-200">
+                <button
+                  type="button"
+                  onClick={() => setGeoError(null)}
+                  aria-label="Dismiss"
+                  className="absolute top-3 right-3 p-1.5 rounded-full text-hive-text-muted hover:text-hive-dark hover:bg-hive-cream transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div className="flex flex-col items-center text-center gap-3">
+                  <span className="relative flex h-12 w-12 items-center justify-center flex-shrink-0">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-hive-amber/20 animate-ping" />
+                    <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-hive-amber/10 text-hive-amber">
+                      <MapPin className="w-6 h-6" />
+                    </span>
+                  </span>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-extrabold text-hive-dark">
+                      {geoError.code === 2 ? "Device Location is Turned Off" : "Location Access Needed"}
+                    </h3>
+                    <p className="text-xs text-hive-text-muted leading-relaxed">{geoError.message}</p>
+                  </div>
+                  <div className="flex flex-col w-full gap-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGeoError(null);
+                        searchInputRef.current?.focus();
+                      }}
+                      className="w-full h-11 rounded-xl bg-hive-dark text-white text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                      Search Area Manually
+                    </button>
+                    <button
+                      type="button"
+                      onClick={requestGeolocation}
+                      className="w-full h-11 rounded-xl border border-hive-border text-hive-dark text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-hive-cream active:scale-[0.98] transition-all cursor-pointer"
+                    >
+                      <Navigation className="w-3.5 h-3.5" />
+                      Try Again
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 
