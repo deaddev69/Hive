@@ -195,17 +195,28 @@ export function ProductDetailPageClient({ product: rawProduct }: ProductDetailPa
             />
           </div>
 
-          {/* You Might Also Like Section */}
-          <div className="lg:hidden">
+          {/*
+            You Might Also Like Section — one mount for both breakpoints.
+
+            This used to render twice: here for mobile, and again below in a
+            `hidden lg:block` block for desktop. Both mounted, and both ran the
+            same work — mapDbProduct over the entire getActiveProducts result
+            (~175 products), a filter, and up to four ProductCard trees each.
+            They also both emitted `id="related-products-title"`, so the two
+            sections' aria-labelledby resolved to the same (mobile) heading.
+
+            Note this is not a Convex saving: the client deduplicates identical
+            query tokens, so the two hooks always shared one subscription. What
+            goes away is the duplicated client-side computation and DOM.
+
+            Below lg it stays a flex child in the same position, inheriting the
+            container's gap-6. At lg, lg:col-span-12 makes it a full-width row
+            after the gallery/info columns, and lg:mt-6 reproduces the spacing
+            the separate desktop block used to provide.
+          */}
+          <div className="lg:col-span-12 lg:mt-6">
             <RelatedProductsSection product={product} />
           </div>
-        </div>
-
-
-
-        {/* You Might Also Like Section (desktop) */}
-        <div className="hidden lg:block mt-6">
-          <RelatedProductsSection product={product} />
         </div>
 
       </div>
