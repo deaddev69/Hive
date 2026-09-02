@@ -4,6 +4,23 @@ import { Play, Image as ImageIcon, Sparkles, Heart, Share2, X, ChevronLeft, Chev
 import { cn } from "@hive/ui";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { ProductDetail } from "@/lib/mockProductDetails";
+import { withImageVariant } from "../../../../../convex/media/urls";
+
+/**
+ * Gallery images arrive here already resolved to the "pdp" width (1200px) by
+ * enrichProducts, and every surface below used to render that same URL — hero,
+ * carousel slide, and both thumbnail strips.
+ *
+ * Sharing one URL meant the thumbnails were free (browser cache hits), but it
+ * also meant the *visible, eager* thumbnail strip forced a full 1200px download
+ * of every image on load, including ones the shopper never opens. Measured on a
+ * real product image: 88 kB per full rendition against 18 kB for a thumbnail.
+ *
+ * So thumbnails now request the "thumbnail" rendition and the off-screen
+ * carousel slides load lazily. That trades N full downloads for one full
+ * download plus N small ones.
+ */
+const thumbUrl = (url: string) => withImageVariant(url, "thumbnail");
 
 export interface ProductGalleryProps {
   images: string[];
@@ -276,15 +293,19 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
             >
               {item.type === "image" ? (
                 <img
-                  src={item.url}
+                  src={thumbUrl(item.url)}
                   alt={`${productName} thumbnail ${idx + 1}`}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               ) : (
                 <div className="w-full h-full relative flex flex-col items-center justify-center bg-hive-dark/5">
                   <img
-                    src={images[0]}
+                    src={thumbUrl(images[0] ?? "")}
                     alt="Video preview"
+                    loading="lazy"
+                    decoding="async"
                     className="absolute inset-0 w-full h-full object-cover opacity-40"
                   />
                   <div className="w-8 h-8 rounded-full bg-hive-amber text-white flex items-center justify-center shadow z-10 transition-transform duration-300 group-hover:scale-110">
@@ -310,10 +331,23 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
           {/* Action Buttons overlay */}
           {renderActionButtons(true)}
           {selectedMedia?.type === "image" ? (
+            // Deliberately a raw <img>, not next/image. This element is the
+            // hover-zoom surface: handleMouseMove writes a scale + dynamic
+            // transformOrigin straight onto `style`, and next/image owns the
+            // element's own style/transform for its fill layout. It also keeps
+            // Vercel's optimizer out of the path — the URL is already a
+            // Cloudflare-transformed rendition, so routing it through a second
+            // optimizer would re-encode an image that is already the right size
+            // and bill for it twice.
             <img
               src={selectedMedia.url}
               alt={productName}
               style={zoomStyle}
+              // Desktop LCP element. Its container is aspect-[3/4], so there is
+              // no layout shift to guard against with intrinsic dimensions.
+              loading="eager"
+              fetchPriority="high"
+              decoding="sync"
               className="w-full h-full object-cover origin-center transition-transform duration-150 ease-out pointer-events-none"
             />
           ) : (
@@ -366,6 +400,14 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                 <img
                   src={item.url}
                   alt={`${productName} slide ${idx + 1}`}
+                  // The first slide is the mobile LCP element, so it loads
+                  // eagerly at high priority. The rest sit off-screen in a
+                  // horizontal scroller and used to be fetched eagerly at full
+                  // width — the single largest source of wasted bytes on this
+                  // page. They now load when the shopper swipes to them.
+                  loading={idx === 0 ? "eager" : "lazy"}
+                  fetchPriority={idx === 0 ? "high" : "auto"}
+                  decoding={idx === 0 ? "sync" : "async"}
                   className="w-full h-full object-cover select-none"
                 />
               ) : (
@@ -408,7 +450,13 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
                   )}
                 >
                   {item.type === "image" ? (
-                    <img src={item.url} alt="mobile thumb" className="w-full h-full object-cover" />
+                    <img
+                      src={thumbUrl(item.url)}
+                      alt={`${productName} thumbnail ${idx + 1}`}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <div className="w-full h-full relative flex items-center justify-center bg-hive-dark/10">
                       <Play className="w-3.5 h-3.5 text-hive-amber fill-current" />
@@ -483,9 +531,15 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
 
             {/* Main zoomable image */}
             <div className="w-full h-full flex items-center justify-center relative p-2 overflow-auto scrollbar-none">
-              <img 
-                src={images[lightboxIndex]} 
-                alt={`${productName} zoom ${lightboxIndex + 1}`} 
+              {/* Raw <img> by necessity: object-contain against a viewport-sized
+                  box with native pinch-zoom. next/image's fill layout assumes a
+                  positioned parent it can cover, which is the opposite of what a
+                  letterboxed zoom view needs. Only mounted while the lightbox is
+                  open, so it costs nothing on load. */}
+              <img
+                src={images[lightboxIndex]}
+                alt={`${productName} zoom ${lightboxIndex + 1}`}
+                decoding="async"
                 className="max-w-full max-h-full object-contain rounded-lg transition-transform duration-300 ease-out select-none"
                 style={{ touchAction: "pinch-zoom" }}
               />

@@ -145,33 +145,30 @@ export function ProductDetailPageClient({ product: rawProduct }: ProductDetailPa
     >
       <div className="max-w-[1440px] mx-auto px-6 lg:px-12 w-full py-6">
         
-        {/* Mobile View Layout (block lg:hidden) - Tightly stacked view with no extra space-y gaps */}
-        <div className="block lg:hidden flex flex-col gap-6 pb-28">
-          {/* 1. Product Image Gallery */}
-          <ProductGallery
-            images={product.images}
-            videoUrl={product.videoUrl}
-            productName={product.name}
-            product={product}
-          />
+        {/*
+          One container that reflows, rather than two complete layouts with one
+          hidden by CSS.
 
-          {/* 2 to 11. Product details & Sizing & Checkout actions stacked compactly */}
-          <MobileProductDetails 
-            product={product} 
-            selectedSize={selectedSize}
-            setSelectedSize={setSelectedSize}
-          />
+          Previously this rendered <ProductGallery> twice with byte-identical
+          props — once inside a `block lg:hidden` column and once inside a
+          `hidden lg:grid`. Both mounted, so every shopper paid for two gallery
+          trees: two sets of state, effects, scroll and mouse handlers, two
+          copies of every <img> element, and a duplicated `gallery-empty-hc` SVG
+          id. Only one was ever visible.
 
+          Below lg this is a flex column (gallery, mobile details, related).
+          At lg it becomes the same 12-column grid as before: the gallery takes
+          7/8 columns, the sticky info panel takes 5/4, and the two `lg:hidden`
+          children drop out of grid flow entirely.
 
-
-          {/* You Might Also Like Section */}
-          <RelatedProductsSection product={product} />
-        </div>
-
-        {/* Desktop View Layout (hidden lg:grid) */}
-        <div className="hidden lg:grid grid-cols-12 gap-8 lg:gap-12 items-start">
-          {/* Left Column */}
-          <div className="lg:col-span-7 xl:col-span-8 w-full space-y-12">
+          Child order is deliberate. `pdp-hero-section` is declared by BOTH
+          MobileProductDetails and ProductInfo, so the IntersectionObserver
+          above resolves it by document order — keeping MobileProductDetails
+          first preserves exactly which element it observes today.
+        */}
+        <div className="flex flex-col gap-6 pb-28 lg:grid lg:grid-cols-12 lg:gap-12 lg:items-start lg:pb-0">
+          {/* 1. Product Image Gallery — single instance, both breakpoints */}
+          <div className="w-full lg:col-span-7 xl:col-span-8 lg:space-y-12">
             <ProductGallery
               images={product.images}
               videoUrl={product.videoUrl}
@@ -180,13 +177,27 @@ export function ProductDetailPageClient({ product: rawProduct }: ProductDetailPa
             />
           </div>
 
-          {/* Right Column: Info & Checkout CTAs (Spans 5 columns, sticky) */}
-          <div className="lg:col-span-5 xl:col-span-4 w-full lg:sticky lg:top-[100px] bg-white rounded-3xl p-6 border border-hive-border/40 shadow-sm">
-            <ProductInfo 
-              product={product} 
+          {/* 2 to 11. Product details & Sizing & Checkout actions stacked compactly */}
+          <div className="lg:hidden">
+            <MobileProductDetails
+              product={product}
               selectedSize={selectedSize}
               setSelectedSize={setSelectedSize}
             />
+          </div>
+
+          {/* Right Column: Info & Checkout CTAs (Spans 5 columns, sticky) */}
+          <div className="hidden lg:block lg:col-span-5 xl:col-span-4 w-full lg:sticky lg:top-[100px] bg-white rounded-3xl p-6 border border-hive-border/40 shadow-sm">
+            <ProductInfo
+              product={product}
+              selectedSize={selectedSize}
+              setSelectedSize={setSelectedSize}
+            />
+          </div>
+
+          {/* You Might Also Like Section */}
+          <div className="lg:hidden">
+            <RelatedProductsSection product={product} />
           </div>
         </div>
 

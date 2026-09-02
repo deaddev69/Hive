@@ -75,6 +75,34 @@ const VARIANT_PARAMS: Record<ImageVariant, string> = {
 };
 
 /**
+ * Re-points an already-built delivery URL at a different variant.
+ *
+ * Some components receive fully-resolved URL strings rather than the underlying
+ * ImageAsset — the product gallery is handed `images: string[]`, already
+ * rendered at the "pdp" width by enrichProducts. Without this, such a component
+ * has no way to ask for a smaller rendition, and a 56px thumbnail ends up
+ * pointing at the same 1200px file as the hero.
+ *
+ * Only rewrites URLs this module produced: a `/cdn-cgi/image/<params>/<key>`
+ * path on any host. Anything else — an Unsplash URL, a Convex storage URL, a
+ * legacy r2.dev link, an empty string — is returned untouched, so a caller can
+ * apply it unconditionally.
+ */
+export function withImageVariant(url: string | undefined | null, variant: ImageVariant): string {
+  if (!url) return "";
+  const marker = "/cdn-cgi/image/";
+  const start = url.indexOf(marker);
+  if (start === -1) return url;
+
+  const paramsStart = start + marker.length;
+  const paramsEnd = url.indexOf("/", paramsStart);
+  if (paramsEnd === -1) return url;
+
+  const params = VARIANT_PARAMS[variant] ?? VARIANT_PARAMS.original;
+  return url.slice(0, paramsStart) + params + url.slice(paramsEnd);
+}
+
+/**
  * Builds the public delivery URL for a stored image asset.
  *
  * Accepts either an ImageAsset object (uses its objectKey) or a plain string.
