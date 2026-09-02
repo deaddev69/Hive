@@ -13,8 +13,14 @@ const config: Config = {
       colors: {
         "hive-gold": "#d4af37",
         "hive-amber": "#E8890C",
+        // Hover-darken shade for hive-amber buttons — previously hand-rolled as two different
+        // hexes (#B45309, #d07b0a) across four files with no shared token.
+        "hive-amber-dark": "#D07B0A",
         "hive-dark": "#1A1200",
         "hive-cream": "#FFFDF5",
+        // Deeper warm-ivory surface tone, distinct from hive-cream — was duplicated as a raw hex
+        // across two files.
+        "hive-cream-deep": "#FCF8F2",
         "hive-white": "#FFFFFF",
         "hive-text": "#2C1E00",
         "hive-text-muted": "#8C7A5A",

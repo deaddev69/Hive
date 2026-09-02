@@ -2,8 +2,10 @@ export const HIVE_THEME = {
   colors: {
     gold: "#d4af37",
     amber: "#E8890C",
+    amberDark: "#D07B0A",
     dark: "#1A1200",
     cream: "#FFFDF5",
+    creamDeep: "#FCF8F2",
     white: "#FFFFFF",
     text: "#2C1E00",
     textMuted: "#8C7A5A",

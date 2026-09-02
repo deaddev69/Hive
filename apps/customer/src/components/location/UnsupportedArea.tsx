@@ -48,7 +48,7 @@ export const UnsupportedArea: React.FC = () => {
         {/* Custom Header with compressed padding */}
         <div className="flex justify-between items-center w-full pb-3 border-b border-slate-100 mb-3 sm:mb-4 text-left py-3 sm:py-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#FEF3C7] flex items-center justify-center text-hive-gold flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-hive-amber/10 flex items-center justify-center text-hive-gold flex-shrink-0">
               <MapPin className="w-5 h-5" />
             </div>
             <div className="flex flex-col">
@@ -139,7 +139,7 @@ export const UnsupportedArea: React.FC = () => {
               setIsOpen(false);
               setDrawerOpen(true);
             }}
-            className="w-full h-12 sm:h-14 flex items-center justify-between bg-hive-amber hover:bg-[#B45309] text-white font-extrabold text-[11px] uppercase tracking-wider px-5 rounded-2xl transition-all shadow-sm hover:shadow active:scale-[0.99] cursor-pointer"
+            className="w-full h-12 sm:h-14 flex items-center justify-between bg-hive-amber hover:bg-hive-amber-dark text-white font-extrabold text-[11px] uppercase tracking-wider px-5 rounded-2xl transition-all shadow-sm hover:shadow active:scale-[0.99] cursor-pointer"
           >
             <MapPin className="w-4 h-4" />
             <span>See What's Available Near You</span>

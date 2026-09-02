@@ -351,7 +351,7 @@ export default function CheckoutAddressPage() {
   if (!isSignedIn) {
     return (
       <div className="min-h-screen bg-slate-50/50 dark:bg-neutral-950/50 flex items-center justify-center p-4 relative">
-        <div className="absolute inset-0 bg-[#FCF8F2] dark:bg-neutral-950 opacity-95"></div>
+        <div className="absolute inset-0 bg-hive-cream-deep dark:bg-neutral-950 opacity-95"></div>
         <div className="relative z-10 w-full max-w-md flex flex-col gap-4">
           <FirebaseAuthCard 
             title="Checkout Sign In" 

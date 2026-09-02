@@ -246,7 +246,7 @@ export function ReturnExchangeActions({
           type="button"
           disabled={submitting}
           onClick={submit}
-          className="py-2.5 bg-hive-amber hover:bg-[#d07b0a] text-white text-xs font-black rounded-xl transition-all cursor-pointer disabled:opacity-60 active:scale-[0.98]"
+          className="py-2.5 bg-hive-amber hover:bg-hive-amber-dark text-white text-xs font-black rounded-xl transition-all cursor-pointer disabled:opacity-60 active:scale-[0.98]"
         >
           {submitting ? "Sending..." : "Submit request"}
         </button>

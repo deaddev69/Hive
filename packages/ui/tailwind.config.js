@@ -5,8 +5,10 @@ module.exports = {
       colors: {
         "hive-gold": "#d4af37",
         "hive-amber": "#E8890C",
+        "hive-amber-dark": "#D07B0A",
         "hive-dark": "#1A1200",
         "hive-cream": "#FFFDF5",
+        "hive-cream-deep": "#FCF8F2",
         "hive-white": "#FFFFFF",
         "hive-text": "#2C1E00",
         "hive-text-muted": "#8C7A5A",

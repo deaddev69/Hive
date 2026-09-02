@@ -49,7 +49,7 @@ export const LocationPermissionModal: React.FC = () => {
       isOpen={isGateOpen}
       onClose={handleJustBrowse}
       hideHeader={true}
-      className="w-[calc(100%-2.5rem)] max-w-md h-fit max-h-[90vh] bg-[#FCF8F2] dark:bg-neutral-950 rounded-[32px] sm:rounded-[32px] border border-stone-250/30 dark:border-neutral-800/80 m-auto"
+      className="w-[calc(100%-2.5rem)] max-w-md h-fit max-h-[90vh] bg-hive-cream-deep dark:bg-neutral-950 rounded-[32px] sm:rounded-[32px] border border-stone-250/30 dark:border-neutral-800/80 m-auto"
     >
       <div className="flex flex-col gap-4 sm:gap-6 text-center items-center py-2 font-sans overflow-y-auto no-scrollbar">
         {loadingStep === "detecting" || loadingStep === "geocoding" ? (
@@ -67,7 +67,7 @@ export const LocationPermissionModal: React.FC = () => {
             {/* Custom Header Row */}
             <div className="w-full flex items-center justify-between gap-4 pb-2 sm:pb-4 border-b border-stone-200/50 dark:border-neutral-800/60">
               <div className="flex items-center gap-3 text-left">
-                <div className="w-12 h-12 rounded-full bg-[#FDF4E3] dark:bg-amber-950/30 flex items-center justify-center text-hive-amber flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-hive-amber/10 dark:bg-amber-950/30 flex items-center justify-center text-hive-amber flex-shrink-0">
                   <MapPin className="w-6 h-6 stroke-[1.8]" />
                 </div>
                 <div className="flex flex-col">
@@ -147,23 +147,23 @@ export const LocationPermissionModal: React.FC = () => {
             </div>
 
             {/* Grid Value Propositions */}
-            <div className="w-full grid grid-cols-3 gap-1 sm:gap-2 bg-[#FCF6EC]/60 dark:bg-neutral-900/40 rounded-2xl border border-[#FCF6EC]/80 dark:border-neutral-800/60 p-2 sm:p-3 text-center">
+            <div className="w-full grid grid-cols-3 gap-1 sm:gap-2 bg-hive-cream-deep/60 dark:bg-neutral-900/40 rounded-2xl border border-hive-cream-deep/80 dark:border-neutral-800/60 p-2 sm:p-3 text-center">
               <div className="flex flex-col items-center gap-1.5">
-                <div className="text-hive-amber p-1 bg-[#FDF4E3] dark:bg-amber-950/40 rounded-lg">
+                <div className="text-hive-amber p-1 bg-hive-amber/10 dark:bg-amber-950/40 rounded-lg">
                   <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8]" />
                 </div>
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-stone-900 dark:text-white leading-tight">Verified boutiques</span>
                 <span className="text-[8px] sm:text-[9px] text-slate-500 dark:text-neutral-400 font-bold leading-none">Trusted local partners</span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
-                <div className="text-hive-amber p-1 bg-[#FDF4E3] dark:bg-amber-950/40 rounded-lg">
+                <div className="text-hive-amber p-1 bg-hive-amber/10 dark:bg-amber-950/40 rounded-lg">
                   <Truck className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8]" />
                 </div>
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-stone-900 dark:text-white leading-tight">Same-day delivery</span>
                 <span className="text-[8px] sm:text-[9px] text-slate-500 dark:text-neutral-400 font-bold leading-none">On eligible orders</span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
-                <div className="text-hive-amber p-1 bg-[#FDF4E3] dark:bg-amber-950/40 rounded-lg">
+                <div className="text-hive-amber p-1 bg-hive-amber/10 dark:bg-amber-950/40 rounded-lg">
                   <Lock className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.8]" />
                 </div>
                 <span className="text-[10px] sm:text-[11px] font-extrabold text-stone-900 dark:text-white leading-tight">Secure shopping</span>
@@ -188,7 +188,7 @@ export const LocationPermissionModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleDetectLocation}
-                className="w-full h-12 rounded-xl bg-hive-amber hover:bg-[#B45309] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-[0.15em] flex items-center justify-between px-5 transition-all shadow-md cursor-pointer select-none"
+                className="w-full h-12 rounded-xl bg-hive-amber hover:bg-hive-amber-dark active:scale-[0.98] text-white font-bold text-xs uppercase tracking-[0.15em] flex items-center justify-between px-5 transition-all shadow-md cursor-pointer select-none"
               >
                 <div className="flex items-center gap-2">
                   <Navigation className="w-4 h-4 fill-white stroke-none" />

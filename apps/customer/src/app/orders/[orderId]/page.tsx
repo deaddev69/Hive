@@ -471,7 +471,7 @@ export default function OrderDetailPage() {
             <div className="space-y-2">
               <Link
                 href={`/orders/${order._id}/track`}
-                className="relative overflow-hidden w-full py-3.5 bg-hive-amber hover:bg-[#d07b0a] text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-hive-amber/20 active:scale-[0.98] transition-all cursor-pointer group"
+                className="relative overflow-hidden w-full py-3.5 bg-hive-amber hover:bg-hive-amber-dark text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-hive-amber/20 active:scale-[0.98] transition-all cursor-pointer group"
               >
                 <span className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out pointer-events-none" />
                 <ShoppingBag className="w-4 h-4" />
