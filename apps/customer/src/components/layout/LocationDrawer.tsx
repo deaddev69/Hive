@@ -262,7 +262,7 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
 
       {/* Drawer — bottom sheet on mobile, right side panel on desktop */}
       <div
-        className={`fixed bg-hive-cream shadow-2xl flex flex-col transition-all duration-300 ease-out z-[9999] border-hive-border
+        className={`fixed bg-white shadow-2xl flex flex-col transition-all duration-300 ease-out z-[9999] border-stone-200
           bottom-0 left-0 right-0 h-[90vh] w-full rounded-t-[28px] border-t
           sm:top-0 sm:bottom-0 sm:right-0 sm:left-auto sm:h-full sm:w-[460px] sm:rounded-t-none sm:border-l sm:border-t-0
           ${animate ? "translate-y-0 sm:translate-x-0" : "translate-y-full sm:translate-y-0 sm:translate-x-full"}
@@ -301,7 +301,7 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-hive-cream transition-colors text-hive-text-muted hover:text-hive-dark outline-none mt-0.5"
+            className="p-1.5 rounded-full hover:bg-stone-100 transition-colors text-stone-500 hover:text-stone-900 outline-none mt-0.5"
             aria-label="Close location drawer"
           >
             <X className="w-5 h-5 stroke-[2.2]" />
@@ -309,7 +309,7 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
         </div>
 
         {/* Full Bleed Map Body */}
-        <div className="flex-1 relative overflow-hidden bg-hive-cream/30 z-0">
+        <div className="flex-1 relative overflow-hidden bg-stone-50 z-0">
 
           {/* Map Layer with Top Overlay (Saved Address Chips) */}
           <LocationMapPicker

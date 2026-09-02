@@ -657,7 +657,7 @@ export const Navbar: React.FC = () => {
 
       {/* ── Mobile drawer — Mini Fashion Magazine ───────────────────── */}
       <div
-        className={`md:hidden fixed inset-y-0 right-0 z-[49] w-[88vw] max-w-[360px] bg-hive-cream shadow-2xl flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] border-l border-stone-200/70 select-none ${
+        className={`md:hidden fixed inset-y-0 right-0 z-[49] w-[88vw] max-w-[360px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] border-l border-stone-200/70 select-none ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
