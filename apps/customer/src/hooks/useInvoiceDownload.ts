@@ -9,7 +9,14 @@
 import { useConvex } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useState } from "react";
-import { generateInvoicePdf, InvoiceData } from "@/lib/pdfGenerator";
+// Type-only: erased at compile time, so it creates no runtime dependency.
+//
+// `generateInvoicePdf` itself is imported dynamically at each call site below
+// rather than here. It pulls in pdf-lib, and a static import put that library
+// into the initial bundle of every route using this hook — /orders,
+// /orders/[orderId] and /order/success — for a button most shoppers never
+// press. Loading it on click moves it into an on-demand chunk instead.
+import type { InvoiceData } from "@/lib/pdfGenerator";
 
 export function useInvoiceDownload() {
   const convex = useConvex();
@@ -77,6 +84,10 @@ export function useInvoiceDownload() {
         generatedAt: order.createdAt ? new Date(order.createdAt).getTime() : Date.now(),
       };
 
+      // Loaded on demand — see the import note at the top of this file. Inside
+      // the existing try, so a failed chunk load surfaces through the same
+      // catch as a generation failure.
+      const { generateInvoicePdf } = await import("@/lib/pdfGenerator");
       const pdfBlob = await generateInvoicePdf(invoiceData);
       triggerBlobDownload(pdfBlob, `Hive_Tax_Invoice_${orderNumber}.pdf`);
     } catch (err) {
@@ -109,6 +120,7 @@ export function useInvoiceDownload() {
       }
 
       if (invoice) {
+        const { generateInvoicePdf } = await import("@/lib/pdfGenerator");
         const pdfBlob = await generateInvoicePdf(invoice);
         triggerBlobDownload(pdfBlob, `Hive_Tax_Invoice_${invoice.invoiceNumber}.pdf`);
         return;
