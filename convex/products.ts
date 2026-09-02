@@ -92,8 +92,17 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
 
   return await Promise.all(
     products.map(async (product) => {
-      // If we don't need all images resolved, only resolve the first image from storage
-      const imagesToResolve = resolveAllImages ? product.images : [product.images[0]].filter(Boolean);
+      // Safely handle missing/empty images array across products
+      const rawImages: any[] = Array.isArray(product.images)
+        ? product.images
+        : product.imageUrl
+        ? [product.imageUrl]
+        : [];
+      const imagesToResolve = resolveAllImages
+        ? rawImages
+        : rawImages.length > 0
+        ? [rawImages[0]]
+        : [];
 
       const resolvedImages = await Promise.all(
         imagesToResolve.map(async (imgId: any) => {
@@ -114,7 +123,7 @@ export async function enrichProducts(ctx: any, products: any[], resolveAllImages
       const category = categoryMap.get(product.categoryId);
       const boutique = boutiqueMap.get(product.boutiqueId);
 
-      const imageUrl = resolvedImages[0] || "";
+      const imageUrl = resolvedImages[0] || product.imageUrl || "";
       const imageUrls = resolveAllImages ? resolvedImages : [imageUrl].filter(Boolean);
 
       const enrichedData = product.boutiqueId ? boutiqueEnrichedMap.get(product.boutiqueId.toString()) : null;

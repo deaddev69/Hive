@@ -109,6 +109,7 @@ export function displayPricing(p: any): {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function deriveOccasion(product: any): string {
+  if (!product) return "casual";
   const catName = (product.categoryName || "").toLowerCase();
   const name = (product.name || "").toLowerCase();
   const desc = (product.description || "").toLowerCase();
