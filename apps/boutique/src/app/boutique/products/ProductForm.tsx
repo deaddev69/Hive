@@ -386,6 +386,25 @@ interface ProductFormProps {
   categories: any[];
 }
 
+/**
+ * Infer MIME type from file extension when Android WebView returns empty file.type.
+ * Capacitor's gallery picker on some Android devices doesn't populate the MIME.
+ */
+function inferMimeType(file: File): string {
+  if (file.type) return file.type;
+  const ext = file.name?.split(".").pop()?.toLowerCase();
+  const mimeMap: Record<string, string> = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    avif: "image/avif",
+    heic: "image/heic",
+    heif: "image/heif",
+  };
+  return mimeMap[ext || ""] || "image/jpeg";
+}
+
 export default function ProductForm({ productToEdit, categories }: ProductFormProps) {
   const router = useRouter();
   const createProduct = useMutation(api.products.createProduct);
@@ -914,19 +933,34 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
       const uploadPromises = localPreviews.map(async (item) => {
         if (item.file) {
+          const resolvedMime = inferMimeType(item.file);
+          console.log("[ProductForm] Uploading file:", {
+            name: item.file.name,
+            rawType: item.file.type,
+            resolvedMime,
+            size: item.file.size,
+          });
+
           const { presignedUrl, sessionId } = await generateUploadUrl({
-            mimeType: item.file.type,
+            mimeType: resolvedMime,
             fileSize: item.file.size,
             ownerType: "boutique",
             ownerId: "products",
             context: "product_image",
           });
 
-          await fetch(presignedUrl, {
+          console.log("[ProductForm] Got presigned URL, uploading to R2...");
+          const uploadRes = await fetch(presignedUrl, {
             method: "PUT",
-            headers: { "Content-Type": item.file.type },
+            headers: { "Content-Type": resolvedMime },
             body: item.file,
           });
+
+          if (!uploadRes.ok) {
+            console.error("[ProductForm] R2 upload failed:", uploadRes.status, uploadRes.statusText);
+            throw new Error(`Image upload failed (${uploadRes.status}). Please check your connection and try again.`);
+          }
+          console.log("[ProductForm] R2 upload success, committing...");
 
           const finalizedAsset = await commitUpload({ sessionId });
           completedUploads++;
@@ -1003,10 +1037,16 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         setIsPublishingComplete(true);
       }
     } catch (e: any) {
-      console.error(e);
+      console.error("[ProductForm] Save failed:", e);
+      console.error("[ProductForm] Error details:", JSON.stringify({
+        message: e?.message,
+        data: e?.data,
+        code: e?.code,
+      }));
       setSubmitting(false);
       setIsPublishingComplete(false);
-      toast.error("Couldn't Save Product", "Something went wrong while saving your product. Please try again.");
+      const detail = e?.data?.message || e?.message || "Unknown error";
+      toast.error("Couldn't Save Product", detail.length > 120 ? detail.substring(0, 117) + "..." : detail);
     } finally {
       setUploadStatusText("");
     }
