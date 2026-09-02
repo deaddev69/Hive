@@ -296,20 +296,19 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         return;
       }
 
+      // High accuracy forces a GPS-chip cold-start lock — 7-10s+ indoors — just to resolve which
+      // locality a shopper is in for a delivery-radius check. Network/WiFi positioning is more
+      // than precise enough for that and typically resolves in 1-3s; it also still works with the
+      // GPS radio off, so this is a straight win rather than a precision/speed tradeoff. A stale
+      // fix from the last minute is fine too, so a repeat tap can return instantly.
       const options = {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 10000, // 10 seconds cache tolerance
+        enableHighAccuracy: false,
+        timeout: 8000,
+        maximumAge: 60000,
       };
-
-      console.log('[Geolocation] Initiating getCurrentPosition with options:', options);
 
       navigator.geolocation.getCurrentPosition(
         async (position) => {
-          console.log('[Geolocation] getCurrentPosition Success. coords:', { 
-            latitude: position.coords.latitude, 
-            longitude: position.coords.longitude 
-          });
           const { latitude, longitude } = position.coords;
 
           setState((prev) => ({
@@ -319,9 +318,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }));
 
           try {
-            console.log('[Geolocation] Fetching reverse geocoding for:', { latitude, longitude });
             const data = await reverseGeocode({ lat: latitude, lng: longitude });
-            console.log('[Geolocation] Reverse Geocode Response:', data);
 
             const locality = data.locality || "";
             const city = data.city || "Kochi";
@@ -347,7 +344,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         },
         (error) => {
           console.warn('[Geolocation] getCurrentPosition Error: Code = ' + error.code + ', Message = ' + error.message);
-
           const getErrorMessage = (code: number) => {
             switch(code) {
               case 1: return "Location permission denied. Please allow location access in your browser settings and try again.";
@@ -356,50 +352,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               default: return "Could not determine your location. Please try again.";
             }
           };
-
-          if (options.enableHighAccuracy) {
-            console.log('[Geolocation] High accuracy failed. Retrying with enableHighAccuracy: false...');
-            navigator.geolocation.getCurrentPosition(
-              async (pos) => {
-                console.log('[Geolocation] Fallback Success. coords:', { 
-                  latitude: pos.coords.latitude, 
-                  longitude: pos.coords.longitude 
-                });
-                const { latitude, longitude } = pos.coords;
-                
-                setState((prev) => ({
-                  ...prev,
-                  latitude,
-                  longitude,
-                }));
-
-                try {
-                  console.log('[Geolocation] Fetching reverse geocoding (fallback) for:', { latitude, longitude });
-                  const data = await reverseGeocode({ lat: latitude, lng: longitude });
-                  console.log('[Geolocation] Reverse Geocode Response (fallback):', data);
-
-                  const locality = data.locality || "";
-                  const city = data.city || "Kochi";
-                  const state = data.state || "Kerala";
-                  const country = data.country || "India";
-                  const postcode = data.pincode || "";
-
-                  await updateLocationDetails({ latitude, longitude, locality, city, state, country, postcode });
-                  resolve({ success: true });
-                } catch (err) {
-                  console.error("Fallback reverse geocoding error:", err);
-                  resolve({ success: false, error: "Could not resolve address. Please try again." });
-                }
-              },
-              (err2) => {
-                console.warn('[Geolocation] Fallback getCurrentPosition Error: Code = ' + err2.code + ', Message = ' + err2.message);
-                resolve({ success: false, error: getErrorMessage(err2.code) });
-              },
-              { ...options, enableHighAccuracy: false, maximumAge: 60000 }
-            );
-          } else {
-            resolve({ success: false, error: getErrorMessage(error.code) });
-          }
+          resolve({ success: false, error: getErrorMessage(error.code) });
         },
         options
       );
