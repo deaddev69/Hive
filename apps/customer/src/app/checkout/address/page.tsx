@@ -78,6 +78,9 @@ type MapResult = {
   city: string;
   state: string;
   pincode: string;
+  /** Present when the value came from the map picker, which spreads a full
+   *  ReverseGeocodeResult in; the Mappls path below supplies only city. */
+  locality?: string;
   eLoc?: string;
 };
 
@@ -192,7 +195,7 @@ export default function CheckoutAddressPage() {
   );
 
   useEffect(() => {
-    if (reservation && urlResId && (!checkoutItems.length || checkoutItems[0].reservationId !== urlResId)) {
+    if (reservation && urlResId && (!checkoutItems.length || checkoutItems[0]?.reservationId !== urlResId)) {
       const normalizedPrice =
         reservation.priceAtReserve > 10000
           ? Math.round(reservation.priceAtReserve / 100)
@@ -791,7 +794,7 @@ export default function CheckoutAddressPage() {
           <div className="lg:col-span-4 space-y-4 hidden lg:block">
             <CustomerPriceBreakdown
               subtotal={subtotal}
-              gstAmount={gstAmount}
+              gstOnCharges={gstAmount}
               deliveryFee={deliveryFee}
               total={total}
               isEstimatedDelivery={true}

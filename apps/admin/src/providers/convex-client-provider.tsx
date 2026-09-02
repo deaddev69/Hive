@@ -48,13 +48,18 @@ function ConvexConfigErrorScreen() {
 }
 
 export function ConvexClientProvider({ children }: { children: ReactNode }) {
-  if (isConfigInvalid) {
+  // Hooks must run unconditionally and in the same order on every render, so
+  // this sits above the config-error return rather than below it. The lazy
+  // initialiser keeps the client from being recreated on re-render (which
+  // caused 429s from Clerk token fetching) and skips construction entirely when
+  // the URL is missing, which is the case the error screen below handles.
+  const [convex] = useState(() =>
+    isConfigInvalid ? null : new ConvexReactClient(convexUrl as string)
+  );
+
+  if (isConfigInvalid || !convex) {
     return <ConvexConfigErrorScreen />;
   }
-
-  // Safe to initialize now that we have a valid absolute URL
-  // Wrap in useState so we don't recreate the client on every re-render (which causes 429s from Clerk token fetching)
-  const [convex] = useState(() => new ConvexReactClient(convexUrl as string));
 
   return (
     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>

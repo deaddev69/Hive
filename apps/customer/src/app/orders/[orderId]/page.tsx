@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import confetti from "canvas-confetti";
 import {
   ArrowLeft,
@@ -66,7 +66,7 @@ function NumberTicker({ value }: { value: number }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Framer Motion Animation Variants
 // ─────────────────────────────────────────────────────────────────────────────
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -77,7 +77,7 @@ const containerVariants = {
   },
 };
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
@@ -100,7 +100,11 @@ export default function OrderDetailPage() {
   const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
   const { token } = useSessionStore();
-  const { downloading, downloadInvoice } = useInvoiceDownload();
+  // useInvoiceDownload became per-order (it tracks which id is downloading, so
+  // a list can show a spinner on one row only). This page was still destructuring
+  // the older flat `downloading` / `downloadInvoice` API, which no longer exists.
+  // Matches the usage in app/orders/page.tsx.
+  const { downloadInvoiceByOrderId, isDownloading } = useInvoiceDownload();
 
   const order = useQuery(api.orders.getOrderById, {
     orderId: orderId as Id<"orders">,
@@ -537,12 +541,12 @@ export default function OrderDetailPage() {
           <div className="grid grid-cols-2 gap-2.5">
             <button
               type="button"
-              disabled={downloading}
-              onClick={() => downloadInvoice(order._id)}
+              disabled={isDownloading(order._id)}
+              onClick={() => downloadInvoiceByOrderId(order._id, order)}
               className="py-3 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-200 text-xs font-bold rounded-2xl flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98] cursor-pointer disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5 text-amber-500" />
-              <span>{downloading ? "Downloading..." : "Invoice"}</span>
+              <span>{isDownloading(order._id) ? "Downloading..." : "Invoice"}</span>
             </button>
 
             <Link

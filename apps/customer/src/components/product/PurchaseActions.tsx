@@ -471,13 +471,23 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
   const isReservationMode = boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED";
   const isPreorderMode = false;
 
-  const resolvedStatus = isStoreOffline
-    ? "closed" as const
-    : isReservationMode
-    ? "reservation" as const
-    : (product.boutique as any).storeStatus === "busy"
-    ? ("busy" as const)
-    : ("open" as const);
+  // A boutique that has hit its daily order cap is PAUSED with
+  // reason "capacity_limit" (see convex/shared/boutiqueStatus.ts). That is a
+  // different message to the shopper than "we are shut" — "try again tomorrow"
+  // rather than opening hours — and the UI below already has a branch for it.
+  // Collapsing every PAUSED reason to "closed" made that branch unreachable, so
+  // a capacity-limited boutique showed opening hours it was not actually
+  // going to honour.
+  const resolvedStatus =
+    boutiqueStatus.type === "PAUSED" && boutiqueStatus.reason === "capacity_limit"
+      ? ("temporarily_unavailable" as const)
+      : isStoreOffline
+      ? ("closed" as const)
+      : isReservationMode
+      ? ("reservation" as const)
+      : (product.boutique as any).storeStatus === "busy"
+      ? ("busy" as const)
+      : ("open" as const);
 
   const triggerToast = (message: string, type: "success" | "info" = "success") => {
     setToast({ message, type });
@@ -984,17 +994,18 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
             onClick={handleAddToCart}
             isServiceable={isLocationServiceable}
             isPreorder={isPreorderMode}
-            preorderType={(boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED") ? boutiqueStatus.type : undefined}
-            nextDayLabel={boutiqueStatus.type === "CLOSED_EXTENDED" ? formatNextDayLabel((boutiqueStatus as any).nextOperatingDay) : ""}
+            // No preorderType/nextDayLabel here: this is the `else` of
+            // `isReservationMode`, so the boutique is necessarily OPEN and both
+            // would always be undefined/"". A closed-today or closed-extended
+            // boutique renders the "Reserve for tomorrow" branch above instead.
           />
           <BuyNowButton 
             variant="unified"
             disabled={!selectedSize} 
-            onClick={handleBuyNow} 
+            onClick={handleBuyNow}
             isServiceable={isLocationServiceable}
             isPreorder={isPreorderMode}
-            preorderType={(boutiqueStatus.type === "CLOSED_TODAY" || boutiqueStatus.type === "CLOSED_EXTENDED") ? boutiqueStatus.type : undefined}
-            nextDayLabel={boutiqueStatus.type === "CLOSED_EXTENDED" ? formatNextDayLabel((boutiqueStatus as any).nextOperatingDay) : ""}
+            // Same as AddToCartButton above — always OPEN in this branch.
           />
         </div>
       )}

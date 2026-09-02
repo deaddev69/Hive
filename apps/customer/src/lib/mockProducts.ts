@@ -6,6 +6,12 @@ export interface ProductCardData {
   imageUrl: string;
   price: number;
   compareAtPrice?: number;
+  /**
+   * Percentage off, derived alongside price by calculateDisplayPricing.
+   * Every mapper that builds a card already sets this; the field was simply
+   * never declared here.
+   */
+  discountPercent?: number;
   rating?: number;
   reviewCount?: number;
   occasion?: string;

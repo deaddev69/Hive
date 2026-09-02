@@ -3,13 +3,19 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
+import type { Id } from "../../../../convex/_generated/dataModel";
 import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup, signOut, browserPopupRedirectResolver } from "firebase/auth";
 import { authPerfLog, logAuthFlowTotalOnce } from "@/lib/authPerf";
 
 export interface SessionUser {
-  _id: string;
+  /**
+   * Typed as the users-table id rather than a bare string: this comes straight
+   * from `api.auth.getMe`, and callers passing it back into Convex (push
+   * subscriptions, account queries) need the branded type or they have to cast.
+   */
+  _id: Id<"users">;
   email?: string;
   name?: string;
   phone?: string;

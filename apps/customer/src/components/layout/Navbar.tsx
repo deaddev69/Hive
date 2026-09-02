@@ -125,7 +125,9 @@ export const Navbar: React.FC = () => {
     'Search "Western Wear"',
     'Search "Local Boutiques"'
   ];
-  const [placeholderText, setPlaceholderText] = useState(keywords[0]);
+  // `keywords[0]` is string | undefined under noUncheckedIndexedAccess, which
+  // would make the whole state optional and break the indexOf below.
+  const [placeholderText, setPlaceholderText] = useState(keywords[0] ?? "");
   const [placeholderFade, setPlaceholderFade] = useState(true);
 
   useEffect(() => {
@@ -134,7 +136,7 @@ export const Navbar: React.FC = () => {
       setTimeout(() => {
         setPlaceholderText((current) => {
           const nextIdx = (keywords.indexOf(current) + 1) % keywords.length;
-          return keywords[nextIdx];
+          return keywords[nextIdx] ?? current;
         });
         setPlaceholderFade(true);
       }, 300);

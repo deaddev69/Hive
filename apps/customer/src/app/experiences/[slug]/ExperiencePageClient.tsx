@@ -11,13 +11,20 @@ import { Sparkles, LayoutGrid } from "lucide-react";
 export function ExperiencePageClient({ slug }: { slug: string }) {
   const { latitude, longitude, city } = useLocation();
 
-  const experienceBlocks = useQuery(api.customerHome.resolveExperiencePayload, {
+  // resolveExperiencePayload returns a ResolvedExperience object, not an array
+  // of blocks — the blocks live on `.blocks`. This was being treated as an
+  // array directly, so `.length` was always undefined (defeating the
+  // "not found" check below) and `.map` threw, taking down every
+  // /experiences/[slug] page. HomeClient destructures the same payload.
+  const experience = useQuery(api.customerHome.resolveExperiencePayload, {
     slug,
     city: city || undefined,
     ...toQueryCoords(latitude, longitude),
   });
 
-  if (experienceBlocks === undefined) {
+  const experienceBlocks = experience?.blocks;
+
+  if (experience === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-hive-dark">
         <Sparkles className="w-8 h-8 text-hive-amber animate-spin" />
@@ -28,7 +35,7 @@ export function ExperiencePageClient({ slug }: { slug: string }) {
     );
   }
 
-  if (experienceBlocks === null || experienceBlocks.length === 0) {
+  if (!experienceBlocks || experienceBlocks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-hive-dark">
         <LayoutGrid className="w-12 h-12 text-slate-300" />

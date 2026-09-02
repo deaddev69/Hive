@@ -83,11 +83,15 @@ function validateSlabs(slabs: CommissionSlab[]): { valid: boolean; error?: strin
     return { valid: false, error: "At least one slab required." };
   }
   const sorted = [...slabs].sort((a, b) => a.minPrice - b.minPrice);
-  if (sorted[0].minPrice !== 0) {
+  if (sorted[0]?.minPrice !== 0) {
     return { valid: false, error: "First slab must start at ₹0." };
   }
   for (let i = 0; i < sorted.length; i++) {
     const s = sorted[i];
+    // Indexing an array yields `T | undefined` under noUncheckedIndexedAccess.
+    // `i` is always in range here, so this guard never fires at runtime — it is
+    // what lets the rest of the loop read `s` without an assertion.
+    if (!s) continue;
     if (s.commissionPercent < 0 || s.commissionPercent > 100 || isNaN(s.commissionPercent)) {
       return { valid: false, error: `Invalid commission % at slab ₹${s.minPrice}.` };
     }
@@ -100,6 +104,8 @@ function validateSlabs(slabs: CommissionSlab[]): { valid: boolean; error?: strin
         return { valid: false, error: `Max price cannot be less than min price (₹${s.minPrice}).` };
       }
       const next = sorted[i + 1];
+      // Same reasoning: `isLast` is false here, so i + 1 is in range.
+      if (!next) continue;
       if (next.minPrice !== s.maxPrice + 1) {
         if (next.minPrice <= s.maxPrice) {
           return { valid: false, error: `Overlap between ₹${s.minPrice}–₹${s.maxPrice} and ₹${next.minPrice}.` };
@@ -177,7 +183,9 @@ export default function SettingsClient() {
       prev.map((t) => {
         if (t.key !== tierKey) return t;
         const newSlabs = [...t.commissionSlabs];
-        newSlabs[slabIndex] = { ...newSlabs[slabIndex], [field]: val };
+        const existing = newSlabs[slabIndex];
+        if (!existing) return t;
+        newSlabs[slabIndex] = { ...existing, [field]: val };
         return { ...t, commissionSlabs: newSlabs };
       })
     );
@@ -217,8 +225,9 @@ export default function SettingsClient() {
         const slabs = t.commissionSlabs.filter((_, idx) => idx !== index);
         // Fix up the new last slab to be open-ended
         const lastIdx = slabs.length - 1;
-        if (lastIdx >= 0) {
-          slabs[lastIdx] = { ...slabs[lastIdx], maxPrice: null };
+        const last = lastIdx >= 0 ? slabs[lastIdx] : undefined;
+        if (last) {
+          slabs[lastIdx] = { ...last, maxPrice: null };
         }
         return { ...t, commissionSlabs: slabs };
       })

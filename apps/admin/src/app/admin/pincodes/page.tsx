@@ -80,7 +80,7 @@ export default function AdminPincodesPage() {
   }, [pincodes]);
 
   if (pincodes === undefined) {
-    return <LoadingState label="Loading serviceable pincodes..." />;
+    return <LoadingState message="Loading serviceable pincodes..." />;
   }
 
   const handleToggle = async (id: Id<"serviceablePincodes">, currentActive: boolean, pin: string) => {

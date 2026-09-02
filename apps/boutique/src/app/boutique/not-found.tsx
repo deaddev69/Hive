@@ -39,27 +39,31 @@ export default function NotFound() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 w-full">
-          <a
-            href="/boutique"
-            onClick={(e) => {
-              e.preventDefault();
+          {/*
+            Buttons rather than links: this page purges stale Workbox caches in
+            the effect above, so both actions must be a *hard* navigation to pull
+            a fresh bundle. next/link would do a client-side transition and keep
+            the stale one, which is the failure this page exists to recover from.
+          */}
+          <button
+            type="button"
+            onClick={() => {
               window.location.href = "/boutique";
             }}
             className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition-colors shadow-lg shadow-amber-500/20 cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             Go to Dashboard
-          </a>
-          <a
-            href="/sign-in"
-            onClick={(e) => {
-              e.preventDefault();
+          </button>
+          <button
+            type="button"
+            onClick={() => {
               window.location.href = "/sign-in";
             }}
             className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-slate-200 font-semibold text-sm border border-slate-600/80 transition-colors cursor-pointer"
           >
             Sign In
-          </a>
+          </button>
         </div>
       </div>
     </div>

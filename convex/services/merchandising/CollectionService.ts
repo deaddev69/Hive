@@ -51,6 +51,7 @@ export class CollectionService {
       name: collectionRaw.name,
       slug: collectionRaw.slug,
       description: collectionRaw.description,
+      coverImage: collectionRaw.coverImage,
       productIds: requiredProductIds, // Store IDs temporarily to let BlockService map the actual objects
     };
   }

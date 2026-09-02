@@ -22,12 +22,12 @@ export interface Collection {
   slug: string;
   title: string;
   /** Occasion id this collection maps onto. */
-  label: string;
-  icon: string;
-  description: string;
-  longDescription: string;
-  imageUrl: string;
-  productCount: number;
+  label?: string;
+  icon?: string;
+  description?: string;
+  longDescription?: string;
+  imageUrl?: string;
+  productCount?: number;
   isFeatured?: boolean;
 }
 
@@ -56,6 +56,14 @@ export interface FeaturedProductRef {
  * are rendered anywhere today.
  */
 export interface CollectionDetails extends Collection {
+  // The editorial page needs the full set, so the members Convex may omit on a
+  // grid card are re-declared as required here.
+  label: string;
+  icon: string;
+  description: string;
+  longDescription: string;
+  imageUrl: string;
+  productCount: number;
   /** Short marketing subtitle shown in the hero. */
   subtitle: string;
   /** Full editorial copy. */

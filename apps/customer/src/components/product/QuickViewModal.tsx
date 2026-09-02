@@ -536,7 +536,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
                   <span className="text-xl md:text-2xl font-black text-stone-900 tracking-tight">
                     {pricing.formattedPrice}
                   </span>
-                  {pricing.compareAtPrice > pricing.price && (
+                  {pricing.compareAtPrice !== undefined && pricing.compareAtPrice > pricing.price && (
                     <>
                       <span className="text-xs sm:text-sm text-stone-400 line-through font-normal">
                         MRP {pricing.formattedMrp}

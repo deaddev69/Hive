@@ -41,7 +41,7 @@ export default function AdminReservationsPage() {
   }, [getToken]);
 
   const reservations = useQuery(
-    (api as any).reservations.getAllReservations_admin,
+    api.reservations.getAllReservations_admin,
     token ? { token } : "skip"
   );
 

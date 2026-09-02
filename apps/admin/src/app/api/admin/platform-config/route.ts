@@ -35,8 +35,8 @@ export async function GET() {
       : [];
 
     return NextResponse.json({
-      markupRate: settings.markupRate * 100, // convert back to percentage
-      platformFeeRate: settings.platformFeeRate * 100, // convert back to percentage
+      markupRate: (settings.markupRate ?? 0.15) * 100, // convert back to percentage
+      platformFeeRate: (settings.platformFeeRate ?? 0.02) * 100, // convert back to percentage
       markupType: settings.markupType || "tiered",
       markupTiers: sortedTiers,
     });

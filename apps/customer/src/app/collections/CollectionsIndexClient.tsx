@@ -105,7 +105,7 @@ export function CollectionsIndexClient() {
       slug: c.slug,
       title: c.name,
       description: c.description || `Hand-picked styles from stores near ${currentArea}`,
-      imageUrl: c.coverImage || FALLBACK_IMAGES[c.slug] || CURATED_LOOKBOOKS_PRESETS[0].imageUrl,
+      imageUrl: c.coverImage || FALLBACK_IMAGES[c.slug] || CURATED_LOOKBOOKS_PRESETS[0]?.imageUrl,
       productCount: typeof c.productCount === "number" && c.productCount > 0 ? c.productCount : 12,
       category: c.slug.includes("wedding") ? "wedding" : c.slug.includes("trending") || c.slug.includes("todays") ? "festive" : "all",
       locality: `${currentArea} Stores`,

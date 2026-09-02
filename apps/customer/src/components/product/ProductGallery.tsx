@@ -447,11 +447,15 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
             className="flex-1 w-full flex items-center justify-center relative overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             onTouchStart={(e) => {
-              touchStartX.current = e.touches[0].clientX;
+              // TouchList is index-accessed, so under noUncheckedIndexedAccess
+              // the first touch is number | undefined — a multi-touch gesture
+              // that ends before this fires can legitimately give an empty list.
+              touchStartX.current = e.touches[0]?.clientX ?? null;
             }}
             onTouchEnd={(e) => {
               if (touchStartX.current === null) return;
-              const touchEndX = e.changedTouches[0].clientX;
+              const touchEndX = e.changedTouches[0]?.clientX;
+              if (touchEndX === undefined) return;
               const diffX = touchStartX.current - touchEndX;
               const minSwipeDistance = 50; // minimum distance to qualify as a swipe
               

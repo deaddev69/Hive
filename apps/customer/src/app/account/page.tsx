@@ -294,6 +294,7 @@ function AddressFormModal({
       city: initial.city,
       locality: initial.line1,
       state: initial.state,
+      country: "India",
       pincode: initial.pincode,
       formattedAddress: initial.formattedAddress,
     } : null

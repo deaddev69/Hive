@@ -30,6 +30,8 @@ export interface ResolvedCollection {
   name: string;
   slug: string;
   description?: string;
+  /** Optional hero image on the collections table; rendered by CollectionHeader. */
+  coverImage?: string;
   products: ResolvedProduct[];
 }
 

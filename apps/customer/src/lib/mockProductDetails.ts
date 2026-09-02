@@ -30,6 +30,26 @@ export interface BoutiqueMeta {
   longitude?: number;
   deliveryRadiusKm?: number;
   trustTier?: string;
+  /**
+   * Trading hours, as stored on the boutique document
+   * (convex/schema.ts boutiques.openingTime / closingTime, both optional
+   * strings). The PDP shows these when a boutique is closed, and
+   * getBoutiqueStatus reads them to decide whether it is open at all.
+   */
+  openingTime?: string;
+  closingTime?: string;
+  /**
+   * Storefront identity fields, all present on the boutique document
+   * (convex/schema.ts boutiques). The PDP's "about the boutique" panel reads
+   * these — `slug` to link through to the shop page, and the rest for the
+   * byline. They were missing here only because this interface predates that
+   * panel; `ownerName` and `description` are required on the document, the
+   * other two optional.
+   */
+  slug?: string;
+  description?: string;
+  logoUrl?: string;
+  ownerName?: string;
 }
 
 export interface ProductDetail {

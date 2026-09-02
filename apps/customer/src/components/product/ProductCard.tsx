@@ -274,7 +274,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         ) : (
           <div className={cn("text-sm sm:text-base font-extrabold leading-tight flex items-baseline flex-wrap gap-1.5 mt-0.5", darkTheme ? "text-amber-300" : "text-slate-900")}>
             <span>₹{displayPrice.toLocaleString("en-IN")}</span>
-            {compareAtPrice > displayPrice && (
+            {compareAtPrice !== undefined && compareAtPrice > displayPrice && (
               <>
                 <span className={cn("text-[11px] sm:text-xs line-through font-normal", darkTheme ? "text-white/50" : "text-slate-400")}>
                   ₹{compareAtPrice.toLocaleString("en-IN")}
