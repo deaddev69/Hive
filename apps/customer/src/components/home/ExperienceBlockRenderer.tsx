@@ -436,8 +436,8 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           : bgImg.url || (bgImg.objectKey ? getPublicUrl(bgImg, "original") : null)
         : null;
 
-      const bgOverlayTheme = block.config?.bgOverlayTheme || "alabaster_studio";
-      const isDarkTheme = ["dark", "midnight_obsidian", "indigo_watercolor", "dark_vignette_blur", "noir_champagne", "custom_veil_dark"].includes(bgOverlayTheme);
+      const bgOverlayTheme = block.config?.bgOverlayTheme || "kerala_kasavu";
+      const isDarkTheme = ["dark", "midnight_obsidian", "indigo_watercolor", "dark_vignette_blur", "noir_champagne", "royal_indigo", "custom_veil_dark"].includes(bgOverlayTheme);
       const isLightBg = !isDarkTheme;
       const cardCtaText = block.config?.cardCtaText || "Take a closer look →";
 
@@ -446,45 +446,67 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
       const blockSubtitle = block.subtitle?.trim();
       const hasHeader = Boolean(badgeTitle || blockTitle || blockSubtitle);
 
-      // Resolve luxury theme specific studio lighting, borders & accent colors
+      // Resolve rich, distinctly visible editorial themes
       const themeConfig = (() => {
         switch (bgOverlayTheme) {
           case "kerala_kasavu":
+          case "temple_heritage":
+          case "ivory_mandala":
+          case "mughal_floral":
+          case "baroque_gold":
           case "organic_linen":
             return {
-              bgClass: "bg-[#FAF9F5]",
-              ambientGlow: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(212, 175, 55, 0.08) 0%, rgba(250, 249, 245, 0) 100%)",
-              borderClass: "border-y border-[#D4AF37]/30",
-              accentColor: "text-amber-800",
-              badgeBg: "bg-amber-100/60 text-amber-900 border border-amber-300/40",
+              bgClass: "bg-[#F3EFE6]",
+              ambientGlow: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212, 175, 55, 0.18) 0%, rgba(243, 239, 230, 0) 100%)",
+              borderClass: "border-y-2 border-[#D4AF37]/50",
+              titleColor: "text-stone-900",
+              subtitleColor: "text-stone-600",
+              accentColor: "text-[#7A5614]",
+              badgeBg: "bg-[#D4AF37]/20 text-[#7A5614] border border-[#D4AF37]/60",
+            };
+          case "monsoon_sage":
+            return {
+              bgClass: "bg-[#E3EBE4]",
+              ambientGlow: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(16, 185, 129, 0.12) 0%, rgba(227, 235, 228, 0) 100%)",
+              borderClass: "border-y-2 border-emerald-800/30",
+              titleColor: "text-[#0F2B20]",
+              subtitleColor: "text-[#2D5344]",
+              accentColor: "text-[#0F2B20]",
+              badgeBg: "bg-emerald-900/15 text-[#0F2B20] border border-emerald-700/40",
+            };
+          case "rose_vermilion":
+          case "rose_blush":
+            return {
+              bgClass: "bg-[#F5E5E3]",
+              ambientGlow: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(244, 63, 94, 0.12) 0%, rgba(245, 229, 227, 0) 100%)",
+              borderClass: "border-y-2 border-rose-400/50",
+              titleColor: "text-[#4A141A]",
+              subtitleColor: "text-[#6B2830]",
+              accentColor: "text-[#4A141A]",
+              badgeBg: "bg-rose-900/15 text-[#4A141A] border border-rose-400/50",
+            };
+          case "royal_indigo":
+            return {
+              bgClass: "bg-[#0B132B]",
+              ambientGlow: "radial-gradient(ellipse 80% 60% at 50% 20%, rgba(56, 189, 248, 0.15) 0%, rgba(11, 19, 43, 0) 100%)",
+              borderClass: "border-y-2 border-sky-500/30",
+              titleColor: "text-white",
+              subtitleColor: "text-sky-200",
+              accentColor: "text-sky-300",
+              badgeBg: "bg-sky-950/80 text-sky-300 border border-sky-400/40",
             };
           case "noir_champagne":
           case "midnight_obsidian":
           case "dark":
           case "indigo_watercolor":
             return {
-              bgClass: "bg-[#09090B]",
-              ambientGlow: "radial-gradient(ellipse 70% 40% at 50% 20%, rgba(245, 194, 43, 0.08) 0%, rgba(9, 9, 11, 0) 100%)",
-              borderClass: "border-y border-stone-850",
+              bgClass: "bg-[#08080A]",
+              ambientGlow: "radial-gradient(ellipse 80% 50% at 50% 20%, rgba(245, 194, 43, 0.15) 0%, rgba(8, 8, 10, 0) 100%)",
+              borderClass: "border-y-2 border-amber-500/30",
+              titleColor: "text-white",
+              subtitleColor: "text-stone-300",
               accentColor: "text-[#F5C22B]",
-              badgeBg: "bg-stone-900 text-[#F5C22B] border border-stone-800",
-            };
-          case "monsoon_sage":
-            return {
-              bgClass: "bg-gradient-to-b from-[#F4F6F4] via-[#F8FAF8] to-[#FFFFFF]",
-              ambientGlow: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(16, 185, 129, 0.05) 0%, rgba(255, 255, 255, 0) 100%)",
-              borderClass: "border-y border-emerald-900/10",
-              accentColor: "text-emerald-900",
-              badgeBg: "bg-emerald-50 text-emerald-900 border border-emerald-200/60",
-            };
-          case "rose_vermilion":
-          case "rose_blush":
-            return {
-              bgClass: "bg-gradient-to-b from-[#FAF5F5] via-[#FDFBFB] to-[#FFFFFF]",
-              ambientGlow: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(244, 63, 94, 0.05) 0%, rgba(255, 255, 255, 0) 100%)",
-              borderClass: "border-y border-rose-200/50",
-              accentColor: "text-rose-900",
-              badgeBg: "bg-rose-50 text-rose-900 border border-rose-200/60",
+              badgeBg: "bg-stone-900 text-[#F5C22B] border border-amber-500/40",
             };
           case "custom_veil_dark":
           case "dark_vignette_blur":
@@ -492,24 +514,32 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               bgClass: "bg-[#0A0A0A]",
               ambientGlow: "none",
               borderClass: "border-y border-stone-800",
+              titleColor: "text-white",
+              subtitleColor: "text-stone-300",
               accentColor: "text-[#F5C22B]",
               badgeBg: "bg-stone-900 text-[#F5C22B] border border-stone-800",
             };
           case "custom_veil_light":
           case "soft_veil_light":
             return {
-              bgClass: "bg-stone-50",
+              bgClass: "bg-stone-100",
               ambientGlow: "none",
-              borderClass: "border-y border-stone-200",
+              borderClass: "border-y border-stone-300",
+              titleColor: "text-stone-900",
+              subtitleColor: "text-stone-600",
               accentColor: "text-amber-800",
               badgeBg: "bg-white text-amber-900 border border-amber-200",
             };
+          case "alabaster_minimal":
           case "alabaster_studio":
+          case "light":
           default:
             return {
-              bgClass: "bg-gradient-to-b from-white via-[#FAF9F6] to-white",
-              ambientGlow: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(245, 194, 43, 0.05) 0%, rgba(255, 255, 255, 0) 100%)",
-              borderClass: "border-y border-stone-200/60",
+              bgClass: "bg-white",
+              ambientGlow: "none",
+              borderClass: "border-y border-stone-200",
+              titleColor: "text-stone-900",
+              subtitleColor: "text-stone-500",
               accentColor: "text-amber-700",
               badgeBg: "bg-amber-50/80 text-amber-900 border border-amber-200/60",
             };
@@ -519,17 +549,12 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
       return (
         <section className={`relative w-full overflow-hidden ${sectionPaddingClass} ${themeConfig.bgClass} ${themeConfig.borderClass}`}>
           {/* Ambient Lighting & Glow Layer */}
-          <div 
-            className="absolute inset-0 pointer-events-none z-[1]" 
-            style={{ background: themeConfig.ambientGlow }} 
-          />
-
-          {/* Top/Bottom Soft Feather Blend Transitions */}
-          <div className={`absolute top-0 inset-x-0 h-8 md:h-12 z-[2] pointer-events-none ${
-            isLightBg 
-              ? "bg-gradient-to-b from-white via-white/40 to-transparent" 
-              : "bg-gradient-to-b from-black/60 to-transparent"
-          }`} />
+          {themeConfig.ambientGlow !== "none" && (
+            <div 
+              className="absolute inset-0 pointer-events-none z-[1]" 
+              style={{ background: themeConfig.ambientGlow }} 
+            />
+          )}
 
           {/* Background Image with Dynamic Blending Veil */}
           {bgImgUrl && (
@@ -549,29 +574,29 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
             </div>
           )}
 
-          {/* Refined Kasavu Handloom Accent Hairline for kerala_kasavu theme */}
-          {(bgOverlayTheme === "kerala_kasavu" || bgOverlayTheme === "organic_linen") && (
-            <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent pointer-events-none z-[2]" />
+          {/* Refined Kasavu Gold Hairlines */}
+          {(bgOverlayTheme === "kerala_kasavu" || bgOverlayTheme === "temple_heritage" || bgOverlayTheme === "organic_linen") && (
+            <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-transparent via-[#D4AF37]/70 to-transparent pointer-events-none z-[2]" />
           )}
 
-          <div className={`relative z-10 max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col items-center gap-8 ${isLightBg ? "text-stone-900" : "text-white"}`}>
+          <div className={`relative z-10 max-w-[1440px] mx-auto px-6 lg:px-12 flex flex-col items-center gap-8 text-center`}>
             {/* Luxury Header - Only rendered if at least one header field is provided */}
             {hasHeader && (
-              <div className="flex flex-col items-center text-center max-w-2xl gap-1.5 pt-2">
+              <div className="flex flex-col items-center text-center max-w-2xl gap-2 pt-2">
                 {badgeTitle && (
-                  <span className={`text-[10px] tracking-[0.3em] font-bold uppercase ${themeConfig.accentColor}`}>
+                  <span className={`text-[10px] tracking-[0.25em] font-bold uppercase px-3.5 py-1 rounded-full ${themeConfig.badgeBg}`}>
                     {badgeTitle}
                   </span>
                 )}
                 
                 {blockTitle && (
-                  <h2 className={`text-3xl md:text-5xl lg:text-6xl font-cormorant font-normal tracking-tight ${isLightBg ? "text-stone-900" : "text-white"} leading-[1.15] drop-shadow-xs`}>
+                  <h2 className={`text-3xl md:text-5xl lg:text-6xl font-cormorant font-normal tracking-tight ${themeConfig.titleColor} leading-[1.15] drop-shadow-2xs`}>
                     {blockTitle}
                   </h2>
                 )}
                 
                 {blockSubtitle && (
-                  <p className={`text-sm md:text-base lg:text-lg font-cormorant italic mt-1 ${isLightBg ? "text-stone-600" : "text-stone-300"} font-normal leading-relaxed`}>
+                  <p className={`text-sm md:text-base lg:text-lg font-cormorant italic mt-0.5 ${themeConfig.subtitleColor} font-normal leading-relaxed`}>
                     {blockSubtitle}
                   </p>
                 )}

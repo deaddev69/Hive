@@ -953,16 +953,17 @@ function BlockConfigEditor({ block, schema, collections, categories, onSave, onC
                 value={formData.config.bgOverlayTheme || "alabaster_studio"}
                 onChange={e => updateConfig("bgOverlayTheme", e.target.value)}
               >
-                <optgroup label="Studio & Editorial Tones">
-                  <option value="alabaster_studio">Alabaster Studio (Warm Champagne Light / Minimalist)</option>
-                  <option value="kerala_kasavu">Kerala Kasavu (Heritage Gold Hairline Accent)</option>
-                  <option value="noir_champagne">Noir Champagne (Velvet Midnight Luxury Dark)</option>
-                  <option value="monsoon_sage">Monsoon Sage (Kochi Coastal Mineral Tint)</option>
-                  <option value="rose_vermilion">Rose Vermilion (Blush Festive Silk)</option>
+                <optgroup label="Editorial Palettes & Tones">
+                  <option value="kerala_kasavu">Kerala Kasavu (Warm Sandalwood & Gold Hairlines)</option>
+                  <option value="monsoon_sage">Monsoon Sage (Coastal Celadon Mineral Green)</option>
+                  <option value="rose_vermilion">Rose Vermilion (Blush Silk & Festive Terracotta)</option>
+                  <option value="royal_indigo">Royal Indigo (Deep Kochi Harbor Navy)</option>
+                  <option value="noir_champagne">Noir Champagne (Velvet Midnight Black)</option>
+                  <option value="alabaster_minimal">Alabaster Gallery (Pure Clean White)</option>
                 </optgroup>
                 <optgroup label="Custom Image Blending">
-                  <option value="custom_veil_light">Soft Light Veil (Warm Ambient Scrim)</option>
-                  <option value="custom_veil_dark">Cinematic Dark Veil (High-Contrast Dramatic Scrim)</option>
+                  <option value="custom_veil_dark">Cinematic Dark Veil (Dramatic Scrim for Uploaded Image)</option>
+                  <option value="custom_veil_light">Soft Light Veil (Warm Scrim for Uploaded Image)</option>
                 </optgroup>
               </select>
               <p className="text-[10px] text-slate-400 mt-1">
