@@ -30,6 +30,20 @@ export interface LocationMapPickerProps {
   children?: (props: { gpsButton: React.ReactNode }) => React.ReactNode;
 }
 
+// `useMapsLibrary("geocoding")` returns undefined until its dynamic import resolves, which can
+// still be in flight the instant a shopper taps "Locate Me" (permission prompt + first render
+// happen before the library script has loaded). Gating on that hook's value meant the reverse
+// geocode was silently skipped on that first tap — no error, just nothing, so the confirm sheet
+// never appeared and the tap looked like it did nothing. `importLibrary` is promise-based and
+// idempotent (repeat calls resolve instantly once loaded), so it never races the hook's state.
+let geocodingLibraryPromise: Promise<google.maps.GeocodingLibrary> | null = null;
+function loadGeocoder(): Promise<google.maps.Geocoder> {
+  if (!geocodingLibraryPromise) {
+    geocodingLibraryPromise = google.maps.importLibrary("geocoding") as Promise<google.maps.GeocodingLibrary>;
+  }
+  return geocodingLibraryPromise.then((lib) => new lib.Geocoder());
+}
+
 const extractGeocodeData = (results: google.maps.GeocoderResult[], source: ReverseGeocodeResult["source"] = "map_pin"): ReverseGeocodeResult => {
   const result = results[0];
   if (!result) {
@@ -240,7 +254,6 @@ function MapPickerInner({
   // GPS state
   const [geoLoading, setGeoLoading] = useState(false);
   const map = useMap();
-  const geocodingLib = useMapsLibrary("geocoding");
 
   // Initial camera only. Deliberately NOT passed as the controlled `center`/`zoom` props — see
   // the <Map> block below for why.
@@ -371,15 +384,20 @@ function MapPickerInner({
         map?.panTo({ lat: latitude, lng: longitude });
         map?.setZoom(16);
 
-        if (onReverseGeocode && geocodingLib) {
-          const geocoder = new geocodingLib.Geocoder();
-          geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
-            if (status === "OK" && results && results.length > 0) {
-              onReverseGeocode(extractGeocodeData(results, "gps"));
-            } else {
+        if (onReverseGeocode) {
+          loadGeocoder()
+            .then((geocoder) => {
+              geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+                if (status === "OK" && results && results.length > 0) {
+                  onReverseGeocode(extractGeocodeData(results, "gps"));
+                } else {
+                  toast.error("Unable to identify this location. Please search manually.");
+                }
+              });
+            })
+            .catch(() => {
               toast.error("Unable to identify this location. Please search manually.");
-            }
-          });
+            });
         }
       },
       (error) => {
@@ -394,7 +412,7 @@ function MapPickerInner({
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  }, [map, onChange, onReverseGeocode, geocodingLib]);
+  }, [map, onChange, onReverseGeocode]);
 
   return (
     <div className="absolute inset-0 w-full h-full">
@@ -509,21 +527,24 @@ function MapPickerInner({
             lastEmittedRef.current = { lat: newLat, lng: newLng };
             if (onChange) onChange(newLat, newLng);
 
-            if (onReverseGeocode && geocodingLib) {
+            if (onReverseGeocode) {
               // Debounced: idle can fire repeatedly while a flick decelerates.
               if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
               geocodeTimerRef.current = setTimeout(() => {
-                const geocoder = new geocodingLib.Geocoder();
-                geocoder.geocode({ location: { lat: newLat, lng: newLng } }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
-                  if (status === "OK" && results && results.length > 0) {
-                    try {
-                      onReverseGeocode(extractGeocodeData(results, "map_pin"));
-                    } catch (err) {
-                      toast.error("Unable to parse location details.");
+                loadGeocoder().then((geocoder) => {
+                  geocoder.geocode({ location: { lat: newLat, lng: newLng } }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+                    if (status === "OK" && results && results.length > 0) {
+                      try {
+                        onReverseGeocode(extractGeocodeData(results, "map_pin"));
+                      } catch (err) {
+                        toast.error("Unable to parse location details.");
+                      }
+                    } else if (status !== "ZERO_RESULTS") {
+                      toast.error("Unable to identify this location. Please try again.");
                     }
-                  } else if (status !== "ZERO_RESULTS") {
-                    toast.error("Unable to identify this location. Please try again.");
-                  }
+                  });
+                }).catch(() => {
+                  toast.error("Unable to identify this location. Please try again.");
                 });
               }, 250);
             }

@@ -327,13 +327,23 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
                       const isActive = pendingResult?.pincode === addr.pincode && Math.abs(mapLat - addr.lat) < 0.001;
                       const labelLower = (addr.label || "").toLowerCase();
                       const emoji = labelLower === "home" ? "🏠" : labelLower === "work" || labelLower === "office" ? "💼" : null;
+                      // Two saved addresses can share a label ("Home", "Home") with nothing to
+                      // tell them apart — append the locality whenever the label isn't unique so
+                      // each chip is identifiable at a glance, not just on tap.
+                      const sameLabelCount = savedAddresses.filter(
+                        (a: any) => (a.label || "").toLowerCase() === labelLower
+                      ).length;
+                      const differentiator = addr.locality || addr.city;
+                      const chipText = sameLabelCount > 1 && differentiator
+                        ? `${addr.label} · ${differentiator}`
+                        : addr.label;
                       return (
                         <button
                           key={addr._id}
                           type="button"
                           onClick={() => handleSelectSavedAddress(addr)}
                           disabled={isSaving}
-                          aria-label={`Switch to saved address: ${addr.label}`}
+                          aria-label={`Switch to saved address: ${chipText}`}
                           className={`snap-start flex items-center gap-2 px-4 py-2.5 rounded-full border shadow-sm transition-all duration-200 cursor-pointer whitespace-nowrap disabled:opacity-60 disabled:cursor-wait focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold ${
                             isActive
                               ? "border-hive-amber bg-white shadow-md scale-105"
@@ -347,6 +357,9 @@ export const LocationDrawer: React.FC<LocationDrawerProps> = ({ isOpen, onClose 
                           )}
                           <span className={`text-xs font-bold ${isActive ? "text-hive-dark" : "text-hive-text"}`}>
                             {addr.label}
+                            {sameLabelCount > 1 && differentiator && (
+                              <span className={`font-semibold ${isActive ? "text-hive-amber" : "text-hive-text-muted"}`}> · {differentiator}</span>
+                            )}
                           </span>
                         </button>
                       );
