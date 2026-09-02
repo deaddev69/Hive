@@ -54,7 +54,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 
       {/* Drawer Surface - responsive bottom-sheet on mobile / right-aligned drawer on desktop */}
       <div
-        className={`fixed bg-hive-cream shadow-2xl flex flex-col transition-all duration-300 ease-out z-[9999] border-hive-border
+        className={`fixed bg-white shadow-2xl flex flex-col transition-all duration-300 ease-out z-[9999] border-stone-200/80
           bottom-0 left-0 right-0 h-[85vh] w-full rounded-t-[30px] border-t
           sm:top-0 sm:bottom-0 sm:right-0 sm:left-auto sm:h-full sm:w-[420px] sm:rounded-t-none sm:border-l sm:border-t-0
           ${

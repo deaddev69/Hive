@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowRight, Heart } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useLocation } from "@/context/LocationContext";
@@ -103,48 +103,54 @@ export const EmptyCartState: React.FC<EmptyCartStateProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="flex flex-col h-full justify-between select-none">
+    <div className="flex flex-col h-full justify-between select-none bg-white">
       
-      {/* Empty State Content */}
-      <div className="flex flex-col items-center justify-center text-center pt-6 pb-2 px-4 flex-1">
-        {/* Subtle Editorial Icon */}
-        <div className="w-12 h-12 rounded-full bg-stone-50 border border-stone-150 flex items-center justify-center relative mb-4">
-          <Sparkles className="w-5 h-5 text-amber-700 stroke-[1.5]" />
+      {/* Empty State Brand Hero */}
+      <div className="flex flex-col items-center justify-center text-center pt-4 pb-2 px-4 flex-1">
+        {/* Real Hive Delivery Bag Brand Visual */}
+        <div className="relative w-44 sm:w-48 aspect-square flex items-center justify-center my-2">
+          <Image
+            src="/brand/hive-carry-bag.png"
+            alt="Hive Delivery Bag"
+            fill
+            sizes="192px"
+            priority
+            className="object-contain drop-shadow-[0_16px_32px_rgba(245,194,43,0.22)]"
+          />
         </div>
-
-        {/* Editorial Label */}
-        <span className="text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700 block mb-1">
-          HIVE CURATION
-        </span>
 
         {/* Headline */}
-        <h3 className="font-serif text-lg font-semibold text-stone-900 leading-snug">
-          Curated Local Designer Pieces
+        <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900 mt-2">
+          Your Bag is Empty
         </h3>
 
-        {/* Body */}
-        <p className="text-xs text-stone-500 mt-2 max-w-[270px] leading-relaxed font-normal">
-          Discover curated apparel and exclusive collections from the finest independent fashion sellers near you.
+        {/* Subtitle */}
+        <p className="text-xs text-stone-500 mt-1 max-w-[270px] leading-relaxed font-normal">
+          Looks like you haven't added any pieces yet. Explore the latest drops from Kochi's top boutiques.
         </p>
 
-        {/* Branded CTA button */}
-        <button
-          type="button"
-          onClick={handleExplore}
-          className="mt-5 px-6 h-11 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-full text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 shadow-sm"
-        >
-          <span>Discover Designers</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        {/* Dual Branded Action Buttons */}
+        <div className="flex items-center gap-2.5 mt-5 w-full max-w-[300px]">
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              router.push("/wishlist");
+            }}
+            className="flex-1 h-11 px-3 bg-white border border-stone-200 hover:border-stone-300 text-stone-800 active:scale-[0.98] transition-all rounded-xl text-xs font-bold shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <Heart className="w-3.5 h-3.5 fill-[#F5C22B] stroke-[#F5C22B]" />
+            <span>Wishlist</span>
+          </button>
 
-        {/* Quiet trust row */}
-        <div className="text-[10px] text-stone-400 font-semibold tracking-wider mt-5 uppercase">
-          Same-Day Delivery • Verified Designers • Curated Fashion
-        </div>
-
-        {/* Branded statistics label */}
-        <div className="text-[11px] text-stone-500 font-normal mt-2.5">
-          50+ designs available for same-day delivery
+          <button
+            type="button"
+            onClick={handleExplore}
+            className="flex-1 h-11 px-3 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl text-xs font-bold shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <span>Explore Styles</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 

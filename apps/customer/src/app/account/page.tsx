@@ -728,117 +728,51 @@ function OverviewTab({
         </section>
       )}
 
-      {/* ── SHOPPING ESSENTIALS TASK GRID ── */}
+      {/* ── CLEAN UTILITY NAVIGATION LIST ── */}
       <section className="space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Shopping Essentials</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <OverviewTile
             href="/orders"
-            icon={<ShoppingBag className="w-5 h-5" />}
+            icon={<ShoppingBag className="w-5 h-5 text-stone-700" />}
             label="My Orders"
             meta={orders === undefined ? "Loading…" : `${orders.length} order${orders.length === 1 ? "" : "s"}`}
-            hoverBg="group-hover:bg-amber-50"
-            hoverText="group-hover:text-amber-900"
+            hoverBg="group-hover:bg-stone-50"
+            hoverText="group-hover:text-stone-900"
           />
           <OverviewTile
             href="/wishlist"
-            icon={<Heart className="w-5 h-5" />}
+            icon={<Heart className="w-5 h-5 fill-[#F5C22B] stroke-[#F5C22B]" />}
             label="Saved Wishlist"
             meta={`${wishlistCount} saved item${wishlistCount === 1 ? "" : "s"}`}
-            hoverBg="group-hover:bg-rose-50"
-            hoverText="group-hover:text-rose-900"
+            hoverBg="group-hover:bg-amber-50/50"
+            hoverText="group-hover:text-amber-900"
           />
           <OverviewTile
             onClick={() => setActiveTab("addresses")}
-            icon={<MapPin className="w-5 h-5" />}
+            icon={<MapPin className="w-5 h-5 text-stone-700" />}
             label="Delivery Addresses"
             meta={`${addresses.length} saved location${addresses.length === 1 ? "" : "s"}`}
-            hoverBg="group-hover:bg-amber-50"
-            hoverText="group-hover:text-amber-900"
+            hoverBg="group-hover:bg-stone-50"
+            hoverText="group-hover:text-stone-900"
           />
           <OverviewTile
-            onClick={() => setActiveTab("reservations")}
-            icon={<Calendar className="w-5 h-5" />}
-            label="Boutique Reservations"
-            meta={
-              reservations === undefined
-                ? "Loading…"
-                : `${reservations.length} booking${reservations.length === 1 ? "" : "s"}`
-            }
-            hoverBg="group-hover:bg-amber-50"
-            hoverText="group-hover:text-amber-900"
+            href="https://wa.me/917356019103"
+            icon={<MessageCircle className="w-5 h-5 text-emerald-600" />}
+            label="Help & Support"
+            meta="Order & fit support on WhatsApp"
+            hoverBg="group-hover:bg-emerald-50/50"
+            hoverText="group-hover:text-emerald-900"
           />
         </div>
       </section>
 
-      {/* ── UPCOMING RESERVATION PREVIEW ── */}
+      {/* ── UPCOMING RESERVATION PREVIEW (If Any) ── */}
       {upcomingReservation && (
         <section className="space-y-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Boutique Reservation</h3>
           <ReservationStatusCard reservation={upcomingReservation} />
         </section>
       )}
-
-      {/* ── CONTINUE SHOPPING ── */}
-      {recentlyViewed && recentlyViewed.length > 0 && (
-        <section className="space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Continue Shopping</h3>
-          <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
-            {recentlyViewed.map((product: any) => {
-              const pricing = calculateDisplayPricing(product);
-              const rawImage = product.images?.[0];
-              const imageUrl = typeof rawImage === "string" && rawImage.startsWith("http") ? rawImage : null;
-              return (
-                <Link
-                  key={product._id}
-                  href={`/products/${product.slug}`}
-                  className="shrink-0 w-32 group cursor-pointer"
-                >
-                  <div className="w-32 h-40 rounded-xl overflow-hidden bg-hive-cream border border-stone-200/80 group-hover:border-stone-300 transition-colors">
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={product.name || "Product"}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <ShoppingBag className="w-5 h-5 text-stone-300" />
-                      </div>
-                    )}
-                  </div>
-                  <p className="mt-1.5 text-xs font-medium text-stone-800 truncate">{product.name}</p>
-                  <p className="text-xs font-bold text-stone-900">{pricing.formattedPrice}</p>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* ── CONCIERGE & SUPPORT CARD ── */}
-      <section className="space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500">Concierge & Support</h3>
-        <div className="bg-white border border-stone-200/80 rounded-2xl p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h4 className="text-sm font-semibold text-stone-900 flex items-center gap-2">
-              <MessageCircle className="w-4 h-4 text-emerald-600" /> WhatsApp Client Concierge
-            </h4>
-            <p className="text-xs text-stone-500 leading-relaxed">
-              Assistance with styling, boutique sizes, and instant 90-min dispatch queries.
-            </p>
-          </div>
-          <a
-            href="https://wa.me/917356019103"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs shrink-0 cursor-pointer"
-          >
-            <span>Chat on WhatsApp</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </a>
-        </div>
-      </section>
     </div>
   );
 }
@@ -1299,16 +1233,14 @@ export default function AccountPage() {
   }, [isAuthenticated, isLoading, router]);
 
   if (isLoading || !isAuthenticated) {
-    // Shaped like the real layout below (hero + compact tile row) instead of a generic
-    // centered spinner, so there's no visible layout jump once real content arrives.
     return (
-      <div className="min-h-screen bg-hive-cream py-6 sm:py-10 px-4 sm:px-6 lg:px-8 animate-pulse select-none">
-        <div className="max-w-5xl mx-auto flex flex-col gap-6">
-          <div className="h-24 bg-hive-dark/[0.05] rounded-3xl" />
-          <div className="h-32 bg-hive-dark/[0.05] rounded-3xl" />
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="min-h-screen bg-white py-6 sm:pt-10 px-4 sm:px-6 lg:px-8 animate-pulse select-none">
+        <div className="max-w-4xl mx-auto flex flex-col gap-6">
+          <div className="h-24 bg-stone-100 rounded-3xl" />
+          <div className="h-14 bg-stone-100 rounded-2xl" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-20 bg-hive-dark/[0.05] rounded-2xl" />
+              <div key={i} className="h-20 bg-stone-100 rounded-2xl" />
             ))}
           </div>
         </div>
@@ -1346,42 +1278,25 @@ function AccountPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-hive-cream text-stone-900 font-sans pb-24 antialiased selection:bg-amber-100">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10">
+    <div className="min-h-screen bg-white text-stone-900 font-sans pb-24 antialiased selection:bg-amber-100">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10">
         
-        {/* ── TOP IDENTITY CARD (Clean & Luxury) ── */}
-        <div className="bg-white border border-stone-200/80 rounded-3xl p-5 sm:p-7 shadow-2xs mb-6 text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* ── TOP IDENTITY CARD (Pure Luxury & Minimalist) ── */}
+        <div className="bg-stone-50/60 border border-stone-200/80 rounded-3xl p-5 sm:p-6 mb-6 text-left flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#F5F2EB] border border-stone-200/80 flex items-center justify-center shadow-2xs select-none shrink-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white border border-stone-200/80 flex items-center justify-center shadow-2xs select-none shrink-0">
               <span className="font-serif text-xl sm:text-2xl font-normal text-stone-900 tracking-wider">
                 {initials}
               </span>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <h1 className="text-xl sm:text-2xl font-serif font-normal text-stone-900">
                 {toTitleCase(user?.name) || "Athul"}
               </h1>
               <p className="text-xs text-stone-500 font-mono sm:font-sans">
-                {user?.phone || user?.email || "Hyperlocal Fashion Account"}
+                {user?.phone || user?.email || "Hive Account"}
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-center">
-            <Link
-              href="/orders"
-              className="h-9 px-3.5 rounded-xl border border-stone-200 hover:border-stone-300 bg-white hover:bg-stone-50 text-xs font-bold text-stone-800 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-            >
-              <ShoppingBag className="w-3.5 h-3.5 text-stone-500" />
-              <span>Orders</span>
-            </Link>
-            <Link
-              href="/wishlist"
-              className="h-9 px-3.5 rounded-xl border border-stone-200 hover:border-stone-300 bg-white hover:bg-stone-50 text-xs font-bold text-stone-800 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-            >
-              <Heart className="w-3.5 h-3.5 text-rose-500" />
-              <span>Wishlist</span>
-            </Link>
           </div>
         </div>
 
@@ -1418,17 +1333,14 @@ function AccountPageContent() {
         </main>
 
         {/* ── CLEAN UNDERSTATED FOOTER (With Discreet Sign Out) ── */}
-        <footer className="mt-14 pt-8 border-t border-stone-200/80 flex flex-col items-center justify-center gap-3 text-center">
+        <footer className="mt-14 pt-8 border-t border-stone-200/60 flex flex-col items-center justify-center gap-2 text-center">
           <button
             onClick={handleSignOut}
-            className="text-xs font-bold text-stone-500 hover:text-stone-900 transition-colors flex items-center gap-1.5 cursor-pointer py-1 px-3 rounded-lg hover:bg-stone-100"
+            className="text-xs font-semibold text-stone-500 hover:text-stone-950 transition-colors flex items-center gap-1.5 cursor-pointer py-1.5 px-4 rounded-xl hover:bg-stone-100/80"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
           </button>
-          <p className="text-[11px] text-stone-400">
-            Hive Now · Hyperlocal Fashion Marketplace · Kochi, Kerala
-          </p>
         </footer>
 
       </div>

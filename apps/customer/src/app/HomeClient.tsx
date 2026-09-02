@@ -52,39 +52,8 @@ function HomePageSkeleton() {
 }
 
 export function HomeClient() {
-  const { latitude, longitude, locality, city, isServiceable } = useLocation();
+  const { latitude, longitude, city } = useLocation();
   const { user } = useSessionStore();
-
-  const urgencyBannerDetails = useMemo(() => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const userLocation = locality || city || "Kochi";
-
-    // Once we know the viewer isn't in a serviceable area, don't promise a delivery window we
-    // can't back up — fall back to a general "expanding" message instead of a specific ETA claim.
-    if (!isServiceable) {
-      return {
-        tag: "HIVE IS EXPANDING",
-        text: `We're not delivering to ${userLocation} yet — check back soon`,
-        isToday: false,
-      };
-    }
-
-    // Boutique active delivery hours (9:00 AM to 8:00 PM)
-    if (currentHour >= 9 && currentHour < 20) {
-      return {
-        tag: "90-MINUTE DELIVERY",
-        text: `Designer looks hand-delivered from top boutiques to ${userLocation} in under 90 minutes`,
-        isToday: true,
-      };
-    } else {
-      return {
-        tag: "NEXT-DAY DISPATCH",
-        text: `Order now for priority morning delivery to ${userLocation}`,
-        isToday: false,
-      };
-    }
-  }, [locality, city, isServiceable]);
 
   // Fetch from Convex using unified Content API
   const homeData = useQuery(
@@ -113,37 +82,6 @@ export function HomeClient() {
 
         {/* Visually hidden H1 for SEO compliance */}
         <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
-
-        {/* Luxury Editorial Ticker Banner (Marquee) */}
-        <div className="w-full overflow-hidden bg-hive-gold py-2 border-b border-[#E0B120]/80 select-none shadow-2xs relative leading-none min-h-[34px] sm:min-h-[38px] flex items-center">
-          <div className="animate-marquee-slow flex items-center text-[10.5px] sm:text-xs font-semibold text-stone-900 tracking-wide">
-            {/* Track 1 */}
-            <div className="flex shrink-0 items-center">
-              <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950">{urgencyBannerDetails.tag}</span>
-              <span className="text-stone-700 mx-1.5">◆</span>
-              <span className="pr-8 font-medium text-stone-900">{urgencyBannerDetails.text}</span>
-              <span className="text-stone-700 mx-1.5">◆</span>
-
-              <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950">{urgencyBannerDetails.tag}</span>
-              <span className="text-stone-700 mx-1.5">◆</span>
-              <span className="pr-8 font-medium text-stone-900">{urgencyBannerDetails.text}</span>
-              <span className="text-stone-700 mx-1.5">◆</span>
-            </div>
-
-            {/* Track 2 (Duplicate for infinite seamless loop) */}
-            <div className="flex shrink-0 items-center" aria-hidden="true">
-              <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950">{urgencyBannerDetails.tag}</span>
-              <span className="text-stone-700 mx-1.5">◆</span>
-              <span className="pr-8 font-medium text-stone-900">{urgencyBannerDetails.text}</span>
-              <span className="text-stone-700 mx-1.5">◆</span>
-
-              <span className="mx-3 font-extrabold uppercase tracking-widest text-stone-950">{urgencyBannerDetails.tag}</span>
-              <span className="text-stone-700 mx-1.5">◆</span>
-              <span className="pr-8 font-medium text-stone-900">{urgencyBannerDetails.text}</span>
-              <span className="text-stone-700 mx-1.5">◆</span>
-            </div>
-          </div>
-        </div>
 
         {/* ── DYNAMIC HOMEPAGE ENGINE ── */}
         {experienceBlocks?.map((block) => (
