@@ -425,171 +425,78 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     const isPremiumGrid = block.renderer === "premiumGrid" && blockProducts.length >= PREMIUM_GRID_MIN_PRODUCTS;
 
     if (isPremiumGrid) {
-      const productCount = blockProducts.length;
-      const sectionPaddingClass = productCount >= 5 ? "pt-10 pb-8 sm:pt-14 sm:pb-12" : "pt-8 pb-6 sm:pt-10 sm:pb-8";
-      const bgImg = block.data?.bgImage || block.config?.bgImage || block.config?.desktopImage;
-      const bgImgUrl = bgImg
-        ? typeof bgImg === "string"
-          ? bgImg
-          : bgImg.url || (bgImg.objectKey ? getPublicUrl(bgImg, "original") : null)
-        : null;
-
-      const bgOverlayTheme = block.config?.bgOverlayTheme || "kerala_kasavu";
-      const cardCtaText = block.config?.cardCtaText || "Take a closer look →";
-
+      const cardCtaText = block.config?.cardCtaText;
       const badgeTitle = block.config?.badgeTitle?.trim();
-      const blockTitle = block.title?.trim();
+      const blockTitle = block.title?.trim() || "The Premium Edit";
       const blockSubtitle = block.subtitle?.trim();
       const hasHeader = Boolean(badgeTitle || blockTitle || blockSubtitle);
 
-      // Resolve curated high-fashion campaign photography backdrop if no custom image is uploaded
-      const resolvedBgImgUrl = bgImgUrl || (() => {
-        switch (bgOverlayTheme) {
-          case "noir_champagne":
-          case "midnight_obsidian":
-          case "dark":
-            return "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1920&q=80";
-          case "monsoon_sage":
-            return "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1920&q=80";
-          case "rose_vermilion":
-          case "rose_blush":
-            return "https://images.unsplash.com/photo-1583391733956-6c78276477e2?auto=format&fit=crop&w=1920&q=80";
-          case "royal_indigo":
-            return "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1920&q=80";
-          case "alabaster_minimal":
-            return "https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=1920&q=80";
-          case "kerala_kasavu":
-          default:
-            return "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=1920&q=80";
-        }
-      })();
-
       const leadProduct = blockProducts[0];
-      const supportingProducts = blockProducts.slice(1, block.config?.maxProducts || 7);
+      const supportingProducts = blockProducts.slice(1, block.config?.maxProducts || 5);
 
       return (
-        <section className={`relative w-full overflow-hidden ${sectionPaddingClass} bg-stone-950 text-white border-y border-stone-800/80`}>
-          {/* Full-Bleed Campaign Photography Background */}
-          {resolvedBgImgUrl && (
-            <div className="absolute inset-0 w-full h-full z-0 select-none">
-              <Image
-                src={resolvedBgImgUrl}
-                alt={blockTitle || "Editorial Campaign Background"}
-                fill
-                sizes="100vw"
-                className="object-cover object-center scale-105 transition-transform duration-1000"
-              />
-              {/* Cinematic Vignette Scrim */}
-              <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/80 to-stone-950/70 backdrop-blur-[1.5px]" />
-              <div className="absolute inset-0 bg-radial from-transparent via-stone-950/40 to-stone-950" />
-            </div>
-          )}
-
-          {/* Refined Gold Hairline Trim */}
-          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#F5C22B]/60 to-transparent pointer-events-none z-[2]" />
-
-          <div className="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 flex flex-col items-center gap-6 sm:gap-10 text-center">
-            {/* Magazine Header Section */}
+        <section className="w-full bg-white py-6 sm:py-10 border-b border-stone-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-6 sm:gap-8">
+            {/* Clean Luxury Editorial Header */}
             {hasHeader && (
-              <div className="flex flex-col items-center text-center max-w-3xl gap-2 pt-2">
+              <div className="flex flex-col items-start sm:items-center text-left sm:text-center max-w-3xl sm:mx-auto gap-1">
                 {badgeTitle && (
-                  <span className="text-[10px] sm:text-[11px] tracking-[0.3em] font-bold uppercase px-4 py-1 rounded-full bg-white/10 text-amber-300 border border-amber-400/30 backdrop-blur-md shadow-xs">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-amber-700 tracking-[0.25em] uppercase">
                     {badgeTitle}
                   </span>
                 )}
                 
                 {blockTitle && (
-                  <h2 className="text-3xl md:text-5xl lg:text-6xl font-cormorant font-normal tracking-tight text-white leading-[1.1] drop-shadow-md">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-stone-900 tracking-tight leading-tight">
                     {blockTitle}
                   </h2>
                 )}
                 
                 {blockSubtitle && (
-                  <p className="text-xs sm:text-sm md:text-base font-cormorant italic text-stone-300 font-normal leading-relaxed max-w-xl">
+                  <p className="text-xs sm:text-sm text-stone-500 font-normal leading-relaxed mt-0.5">
                     {blockSubtitle}
                   </p>
                 )}
               </div>
             )}
 
-            {/* Asymmetric Editorial Lookbook Spread */}
-            <div className="w-full mt-2">
-              {blockProducts.length <= 2 ? (
-                /* Fallback for 1-2 items: Centered Editorial Cards */
-                <div className="flex flex-wrap justify-center gap-4 sm:gap-6 w-full">
-                  {blockProducts.map((product: any, idx: number) => (
-                    <div 
-                      key={product.id} 
-                      className="w-[160px] sm:w-[220px] md:w-[260px] relative rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md p-2 transition-all duration-300 hover:border-amber-400/40 hover:bg-white/[0.08] hover:-translate-y-1"
-                    >
-                      <span className="absolute top-3 left-3 z-10 text-[9px] font-bold tracking-widest uppercase bg-stone-950/80 text-amber-300 border border-white/10 px-2 py-0.5 rounded-md backdrop-blur-sm">
-                        0{idx + 1}
-                      </span>
-                      <ProductCard 
-                        product={product} 
-                        hidePrice={true} 
-                        hideQuickView={true} 
-                        darkTheme={true}
-                        customCtaText={cardCtaText}
-                        premiumMode={true}
-                      />
-                    </div>
+            {/* Seamless Magazine Layout */}
+            {blockProducts.length <= 2 ? (
+              /* 1-2 Items: Clean Centered Grid */
+              <div className="grid grid-cols-2 sm:grid-cols-2 max-w-2xl mx-auto gap-4 sm:gap-6 w-full">
+                {blockProducts.map((product: any) => (
+                  <ProductCard 
+                    key={product.id}
+                    product={product} 
+                    customCtaText={cardCtaText}
+                  />
+                ))}
+              </div>
+            ) : (
+              /* 3+ Items: Desktop Asymmetric Lead + Supporting Grid / Mobile Clean 2-Col */
+              <div className="grid grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-6 items-start w-full">
+                {/* Desktop Hero Lead (Left Column) */}
+                {leadProduct && (
+                  <div className="col-span-2 lg:col-span-5 flex flex-col">
+                    <ProductCard 
+                      product={leadProduct} 
+                      customCtaText={cardCtaText}
+                    />
+                  </div>
+                )}
+
+                {/* Desktop Supporting Grid (Right Column) */}
+                <div className="col-span-2 lg:col-span-7 grid grid-cols-2 gap-4 sm:gap-6">
+                  {supportingProducts.map((product: any) => (
+                    <ProductCard 
+                      key={product.id}
+                      product={product} 
+                      customCtaText={cardCtaText}
+                    />
                   ))}
                 </div>
-              ) : (
-                /* Full Asymmetric Magazine Spread (1 Hero Lead + Staggered Supporting Grid) */
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 items-start w-full text-left">
-                  {/* LEFT: Hero Lead Look (Large Feature Card) */}
-                  {leadProduct && (
-                    <div className="lg:col-span-5 relative group rounded-3xl bg-white/[0.05] border border-white/15 backdrop-blur-lg p-3 sm:p-4 shadow-xl transition-all duration-500 hover:border-amber-400/50 hover:bg-white/[0.08]">
-                      {/* Editorial Badge Pill */}
-                      <div className="flex items-center justify-between gap-2 mb-2 px-1">
-                        <span className="text-[10px] font-bold tracking-[0.2em] uppercase bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full shadow-xs">
-                          LOOK 01 • HERO
-                        </span>
-                        <span className="text-[10px] font-mono tracking-wider text-stone-400 uppercase">
-                          {leadProduct.boutiqueName || "Featured Boutique"}
-                        </span>
-                      </div>
-
-                      {/* Card Component */}
-                      <ProductCard 
-                        product={leadProduct} 
-                        hidePrice={true} 
-                        hideQuickView={true} 
-                        darkTheme={true}
-                        customCtaText={cardCtaText}
-                        premiumMode={true}
-                      />
-                    </div>
-                  )}
-
-                  {/* RIGHT: Staggered Supporting Products Grid */}
-                  <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-3.5 sm:gap-4.5">
-                    {supportingProducts.map((product: any, idx: number) => (
-                      <div 
-                        key={product.id} 
-                        className="relative rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-md p-2 transition-all duration-300 hover:border-amber-400/40 hover:bg-white/[0.08] hover:-translate-y-1 shadow-sm"
-                      >
-                        {/* Numbering Watermark */}
-                        <div className="absolute top-3 left-3 z-10 text-[9px] font-bold tracking-widest uppercase bg-stone-950/80 text-amber-300 border border-white/10 px-2 py-0.5 rounded-md backdrop-blur-sm shadow-xs">
-                          0{idx + 2}
-                        </div>
-
-                        <ProductCard 
-                          product={product} 
-                          hidePrice={true} 
-                          hideQuickView={true} 
-                          darkTheme={true}
-                          customCtaText={cardCtaText}
-                          premiumMode={true}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </section>
       );
