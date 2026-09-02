@@ -91,6 +91,7 @@ import type * as media_logger from "../media/logger.js";
 import type * as media_migration from "../media/migration.js";
 import type * as media_stressTest from "../media/stressTest.js";
 import type * as media_tests from "../media/tests.js";
+import type * as media_urls from "../media/urls.js";
 import type * as merchantCatalog from "../merchantCatalog.js";
 import type * as migrations from "../migrations.js";
 import type * as orders from "../orders.js";
@@ -121,6 +122,7 @@ import type * as services_merchandising_CollectionService from "../services/merc
 import type * as services_merchandising_MerchandisingService from "../services/merchandising/MerchandisingService.js";
 import type * as services_operations_OperationsService from "../services/operations/OperationsService.js";
 import type * as shared_boutiqueStatus from "../shared/boutiqueStatus.js";
+import type * as shared_catalog from "../shared/catalog.js";
 import type * as slack from "../slack.js";
 import type * as tests_authGatingTest from "../tests/authGatingTest.js";
 import type * as tests_boutiqueAudit from "../tests/boutiqueAudit.js";
@@ -250,6 +252,7 @@ declare const fullApi: ApiFromModules<{
   "media/migration": typeof media_migration;
   "media/stressTest": typeof media_stressTest;
   "media/tests": typeof media_tests;
+  "media/urls": typeof media_urls;
   merchantCatalog: typeof merchantCatalog;
   migrations: typeof migrations;
   orders: typeof orders;
@@ -280,6 +283,7 @@ declare const fullApi: ApiFromModules<{
   "services/merchandising/MerchandisingService": typeof services_merchandising_MerchandisingService;
   "services/operations/OperationsService": typeof services_operations_OperationsService;
   "shared/boutiqueStatus": typeof shared_boutiqueStatus;
+  "shared/catalog": typeof shared_catalog;
   slack: typeof slack;
   "tests/authGatingTest": typeof tests_authGatingTest;
   "tests/boutiqueAudit": typeof tests_boutiqueAudit;

@@ -107,15 +107,18 @@ export const EmptyCartState: React.FC<EmptyCartStateProps> = ({ onClose }) => {
       
       {/* Empty State Brand Hero */}
       <div className="flex flex-col items-center justify-center text-center pt-4 pb-2 px-4 flex-1">
-        {/* Real Hive Delivery Bag Brand Visual */}
+        {/* Real Hive Delivery Bag Brand Visual with Clean Amber Halo */}
         <div className="relative w-44 sm:w-48 aspect-square flex items-center justify-center my-2">
+          {/* Smooth, subtle circular amber ambient glow */}
+          <div className="absolute w-36 h-36 rounded-full bg-[#F5C22B]/15 blur-2xl pointer-events-none" />
+          
           <Image
             src="/brand/hive-carry-bag.png"
             alt="Hive Delivery Bag"
             fill
             sizes="192px"
             priority
-            className="object-contain drop-shadow-[0_16px_32px_rgba(245,194,43,0.22)]"
+            className="object-contain relative z-10"
           />
         </div>
 
