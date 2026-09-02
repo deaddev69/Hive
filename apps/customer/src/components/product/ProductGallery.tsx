@@ -39,7 +39,31 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
   productName,
   product,
 }) => {
-  const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
+  // Parse images and videoUrl into a unified media list
+  const mediaList: MediaItem[] = React.useMemo(() => {
+    const list: MediaItem[] = images.map((url, index) => ({
+      type: "image",
+      url,
+      index,
+    }));
+    if (videoUrl) {
+      list.push({ type: "video", url: videoUrl });
+    }
+    return list;
+  }, [images, videoUrl]);
+
+  // Seeded from mediaList during the first render rather than in an effect.
+  // mediaList is derived entirely from props, so the first item is already known
+  // at render time — and the desktop hero below is gated on selectedMedia. While
+  // this started as null, that hero was absent from the server-rendered HTML, so
+  // the browser could not discover the largest image on the page until React had
+  // hydrated, which defeated its fetchPriority="high".
+  //
+  // The effect below still runs, and still handles mediaList changing later
+  // (a different product, or images arriving late).
+  const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(
+    () => mediaList[0] ?? null
+  );
   const [zoomStyle, setZoomStyle] = useState<React.CSSProperties>({});
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const mainImageRef = useRef<HTMLDivElement>(null);
@@ -146,19 +170,6 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
       </div>
     );
   };
-
-  // Parse images and videoUrl into a unified media list
-  const mediaList: MediaItem[] = React.useMemo(() => {
-    const list: MediaItem[] = images.map((url, index) => ({
-      type: "image",
-      url,
-      index,
-    }));
-    if (videoUrl) {
-      list.push({ type: "video", url: videoUrl });
-    }
-    return list;
-  }, [images, videoUrl]);
 
   // Set initial selected media
   useEffect(() => {
