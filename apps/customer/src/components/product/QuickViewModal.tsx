@@ -23,6 +23,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Heart,
   X
 } from "lucide-react";
 import { cn } from "@hive/ui";

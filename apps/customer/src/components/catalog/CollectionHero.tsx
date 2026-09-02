@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
-import { CollectionDetails } from "@/lib/mockCollections";
+import { CollectionDetails } from "@/lib/collections";
 
 interface CollectionHeroProps {
   details: CollectionDetails;

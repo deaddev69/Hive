@@ -1,6 +1,6 @@
 import React from "react";
 import { ShieldCheck, ArrowRight } from "lucide-react";
-import { CollectionDetails } from "@/lib/mockCollections";
+import { CollectionDetails } from "@/lib/collections";
 
 interface CollectionShowcaseProps {
   details: CollectionDetails;

@@ -574,6 +574,30 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
     }
   };
 
+  /**
+   * Adds or removes this product from the wishlist.
+   *
+   * This is the plain toggle, with none of handleSaveToWishlist's
+   * cross-boutique side effects (that one also closes the cross-boutique modal,
+   * opens the cart drawer and logs `cross_boutique_wishlist_selected`, which
+   * would be wrong anywhere else). The body is the same logic that was written
+   * inline on the store-offline button below; both now call this.
+   */
+  const handleWishlistToggle = () => {
+    if (!product.slug) return;
+    toggleItem({
+      id: product.id ?? (product as any)._id,
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      imageUrl: product.images[0] || "",
+      boutiqueName: product.boutique.name,
+    });
+    triggerToast(
+      isFavorite ? "Removed from wishlist" : `Saved ${cleanProductTitle(product.name)} to wishlist`
+    );
+  };
+
   const handleReserve = async () => {
     if (!isAuthenticated) {
       triggerToast("Please log in to reserve an item.", "info");
@@ -868,17 +892,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
       {isStoreOffline ? (
         <button
           type="button"
-          onClick={() => {
-            toggleItem({
-              id: product.id ?? (product as any)._id,
-              slug: product.slug,
-              name: product.name,
-              price: product.price,
-              imageUrl: product.images[0] || "",
-              boutiqueName: product.boutique.name,
-            });
-            triggerToast(isFavorite ? "Removed from wishlist" : `Saved ${cleanProductTitle(product.name)} to wishlist`);
-          }}
+          onClick={handleWishlistToggle}
           className={cn(
             "hidden lg:flex h-12 w-full rounded-2xl font-bold uppercase tracking-widest text-xs transition-all active:scale-[0.98] items-center justify-center gap-2 cursor-pointer shadow-sm border",
             isFavorite

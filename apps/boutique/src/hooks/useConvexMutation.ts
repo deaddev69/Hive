@@ -7,6 +7,7 @@ export function useConvexMutation(
   mutationReferenceOrFunc: any
 ) {
   const isFunc = typeof mutationReferenceOrFunc === "function";
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const executeMutation = isFunc ? mutationReferenceOrFunc : useMutation(mutationReferenceOrFunc);
 
   return useCallback(

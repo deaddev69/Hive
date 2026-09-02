@@ -1,5 +1,5 @@
 import React from "react";
-import { CollectionDetails } from "@/lib/mockCollections";
+import { CollectionDetails } from "@/lib/collections";
 import { Sparkles, ShieldCheck } from "lucide-react";
 
 interface CollectionHeaderProps {

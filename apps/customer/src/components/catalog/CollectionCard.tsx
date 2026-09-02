@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Collection } from "@/lib/mockCollections";
+import { Collection } from "@/lib/collections";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 export interface CollectionCardProps {

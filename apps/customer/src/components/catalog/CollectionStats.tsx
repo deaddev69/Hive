@@ -1,6 +1,6 @@
 import React from "react";
 import { Package, Store, Truck, Star } from "lucide-react";
-import { CollectionDetails } from "@/lib/mockCollections";
+import { CollectionDetails } from "@/lib/collections";
 
 interface CollectionStatsProps {
   details: CollectionDetails;

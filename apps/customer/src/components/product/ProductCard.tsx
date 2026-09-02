@@ -149,7 +149,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   const discountPercent = pricing.discountPercent;
 
   // Derive collection/category label (standardized merchandising)
-  const collectionLabel = useMemoLabel(product.occasion);
+  const collectionLabel = getCollectionLabel(product.occasion);
 
   const isSoldOut = hydrated && product.stockBySize && Object.values(product.stockBySize).reduce((sum, val) => sum + (val || 0), 0) <= 0;
 
@@ -354,8 +354,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   );
 };
 
-// Helper hook or function to map category names cleanly
-function useMemoLabel(occasion?: string) {
+// Helper function to map category names cleanly
+function getCollectionLabel(occasion?: string) {
   if (!occasion) return "General Wear";
   if (occasion === "coords") return "Co-ords Edit";
   if (occasion === "wedding") return "Wedding Season";
