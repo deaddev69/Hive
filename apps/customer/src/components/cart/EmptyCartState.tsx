@@ -129,7 +129,7 @@ export const EmptyCartState: React.FC<EmptyCartStateProps> = ({ onClose }) => {
 
         {/* Subtitle */}
         <p className="text-xs text-stone-500 mt-1 max-w-[270px] leading-relaxed font-normal">
-          Looks like you haven't added any pieces yet. Explore the latest drops from Kochi's top boutiques.
+          Looks like you haven't added anything yet. Explore curated fashion on Hive.
         </p>
 
         {/* Dual Branded Action Buttons */}
