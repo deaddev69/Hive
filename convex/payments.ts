@@ -1350,6 +1350,27 @@ export async function verifyPaymentAndPlaceOrderInternal(
     orderId,
   });
 
+  // 10-minute ops warning if the seller still hasn't accepted.
+  //
+  // This timer used to be scheduled from orders.placeOrder, which now throws on
+  // its first line (COD is unsupported) and has no callers — so on the live
+  // order path it stopped firing entirely, and nothing told ops that an order
+  // was sitting unaccepted.
+  //
+  // Deliberately only the "warning" alert. The 45-minute auto-cancel is already
+  // owned by the sweep_unaccepted_orders_sla cron; scheduling checkOrderAcceptanceSLA's
+  // "auto_cancel" here as well would race two mechanisms that cancel the same
+  // order with different customer-facing side effects.
+  //
+  // The handler re-reads the order and returns early unless it is still
+  // pending_confirmation, so a seller who accepts inside 10 minutes triggers
+  // no alert.
+  await ctx.scheduler.runAfter(
+    10 * 60 * 1000,
+    internal.orders.checkOrderAcceptanceSLA,
+    { orderId, alertType: "warning" }
+  );
+
   return { success: true, orderId, orderNumber };
 }
 
