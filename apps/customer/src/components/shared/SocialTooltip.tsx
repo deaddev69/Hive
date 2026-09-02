@@ -44,6 +44,7 @@ export const SocialTooltip: React.FC<SocialTooltipProps> = ({ variant = "dark" }
           visibility: visible;
           top: -45px;
         }
+        /* Hive Signature Styling: Luxury Gold & Charcoal */
         .social-item a {
           position: relative;
           overflow: hidden;
@@ -53,26 +54,26 @@ export const SocialTooltip: React.FC<SocialTooltipProps> = ({ variant = "dark" }
           width: 36px;
           height: 36px;
           border-radius: 50%;
-          color: #8C7A5A; /* hive-text-muted */
-          background-color: #25211B; /* dark matching footer */
-          border: 1px solid rgba(240, 228, 200, 0.15); /* hive-border style border */
-          transition: all 0.3s ease-in-out;
+          color: #A89F91;
+          background-color: #25211B;
+          border: 1px solid rgba(245, 194, 43, 0.2);
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .social-item a:hover {
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-          color: #ffffff;
+          box-shadow: 0 6px 20px rgba(245, 194, 43, 0.35);
+          color: #181511;
           transform: translateY(-2px);
-          border-color: transparent;
+          border-color: #F5C22B;
         }
         .social-item a svg {
           position: relative;
           z-index: 2;
-          width: 16px;
-          height: 16px;
+          width: 15px;
+          height: 15px;
           transition: transform 0.3s ease-in-out;
         }
         .social-item a:hover svg {
-          transform: scale(1.15);
+          transform: scale(1.12);
         }
         .social-item a .filled-layer {
           position: absolute;
@@ -80,46 +81,52 @@ export const SocialTooltip: React.FC<SocialTooltipProps> = ({ variant = "dark" }
           left: 0;
           width: 100%;
           height: 0;
-          transition: all 0.3s ease-in-out;
+          background-color: #F5C22B;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           z-index: 1;
         }
         .social-item a:hover .filled-layer {
           height: 100%;
         }
 
-        /* Platform Color Specifics */
-        .social-item a[data-social="linkedin"] .filled-layer,
-        .social-item a[data-social="linkedin"] ~ .tooltip {
-          background-color: #0077b5;
+        .social-item .tooltip {
+          position: absolute;
+          top: -30px;
+          left: 50%;
+          transform: translateX(-50%);
+          color: #F5C22B;
+          background-color: #181511;
+          border: 1px solid rgba(245, 194, 43, 0.3);
+          padding: 4px 8px;
+          border-radius: 6px;
+          opacity: 0;
+          visibility: hidden;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          white-space: nowrap;
+          z-index: 100;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
         }
-        .social-item a[data-social="instagram"] .filled-layer,
-        .social-item a[data-social="instagram"] ~ .tooltip {
-          background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-        }
-        .social-item a[data-social="youtube"] .filled-layer,
-        .social-item a[data-social="youtube"] ~ .tooltip {
-          background-color: #ff0000;
-        }
-        .social-item a[data-social="reddit"] .filled-layer,
-        .social-item a[data-social="reddit"] ~ .tooltip {
-          background-color: #ff4500;
-        }
-        .social-item a[data-social="whatsapp"] .filled-layer,
-        .social-item a[data-social="whatsapp"] ~ .tooltip {
-          background-color: #25d366;
+        .social-item:hover .tooltip {
+          opacity: 1;
+          visibility: visible;
+          top: -42px;
         }
 
-        /* Option A: Light theme defaults with transparent backgrounds, gold borders, and dark grey icons */
+        /* Light variant (Drawer / Bright surfaces) */
         .variant-light .social-item a {
-          background-color: transparent;
-          border-color: #F0E4C8;
-          color: #1A1200;
+          background-color: #ffffff;
+          border-color: #E7DECD;
+          color: #57534E;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         }
-        
-        /* Light variant hover overrides */
         .variant-light .social-item a:hover {
-          color: #ffffff;
-          border-color: transparent;
+          color: #181511;
+          border-color: #F5C22B;
+          box-shadow: 0 6px 16px rgba(245, 194, 43, 0.28);
         }
       `}} />
 

@@ -694,267 +694,121 @@ export const Navbar: React.FC = () => {
         </div>
 
         {/* ── Scrollable Body ─────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3.5 space-y-4 text-left">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4 text-left">
           {drawerContentLoaded && (
           <>
-          {/* ── Editorial Locality Spotlight Card ───────────────────── */}
-          <Link
-            href={hydrated && locality ? `/search?q=${encodeURIComponent(locality + " collections")}` : "/products"}
-            prefetch={false}
-            onClick={() => setMobileMenuOpen(false)}
-            className="group relative block w-full h-[115px] rounded-2xl overflow-hidden shadow-xs border border-stone-200/60 active:scale-[0.99] transition-transform"
-          >
-            <img
-              src="/images/drawer/campaign-monsoon.png"
-              alt="Local Fashion Edits"
-              className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-stone-950/90 via-stone-950/60 to-transparent" />
-            <div className="absolute inset-y-0 left-0 px-4 flex flex-col justify-center text-left max-w-[240px]">
-              <span className="text-[8.5px] font-extrabold uppercase tracking-[0.25em] text-amber-400 mb-1 flex items-center gap-1">
-                <Sparkles className="w-2.5 h-2.5" />
-                {hydrated && locality ? `${locality.toUpperCase()} EDITS` : "KOCHI HIGHLIGHTS"}
+          {/* ── Core Fashion Categories ─────────────────────────────── */}
+          <div className="space-y-1">
+            <Link
+              href="/search?q=kurti"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-stone-50 active:bg-amber-50/50 transition-colors group"
+            >
+              <span className="text-[13.5px] font-bold text-stone-900 group-hover:text-amber-900 transition-colors">
+                Kurtis & Suits
               </span>
-              <p className="text-[15px] font-serif font-bold text-white leading-tight">
-                Curated Styles In Your Area
-              </p>
-              <div className="mt-2 inline-flex items-center gap-1 text-[10.5px] font-bold text-amber-300 group-hover:text-amber-200 transition-colors">
-                <span>Explore Local Boutiques</span>
-                <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-            </div>
-          </Link>
+              <ChevronRight className="w-4 h-4 text-stone-300 group-hover:text-stone-700 group-hover:translate-x-0.5 transition-all" />
+            </Link>
 
-          {/* ── Customer Account Hub (Unified Modern Card Group) ───── */}
-          <div className="space-y-1.5">
-            <p className="text-[9.5px] font-extrabold uppercase tracking-[0.22em] text-stone-400 px-1">
-              My Account
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              <Link
-                href="/orders"
-                prefetch={false}
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white hover:bg-amber-50/50 border border-stone-200/70 hover:border-amber-300 transition-all text-center group shadow-2xs"
-              >
-                <div className="w-7 h-7 rounded-full bg-stone-50 group-hover:bg-amber-100/60 flex items-center justify-center mb-1.5 transition-colors">
-                  <Package className="w-3.5 h-3.5 text-stone-700 group-hover:text-amber-700 transition-colors" />
-                </div>
-                <span className="text-xs font-bold text-stone-900 leading-none">Orders</span>
-                <span className="text-[9.5px] text-stone-400 mt-1 leading-none font-medium">Track</span>
-              </Link>
-              <Link
-                href="/wishlist"
-                prefetch={false}
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white hover:bg-amber-50/50 border border-stone-200/70 hover:border-amber-300 transition-all text-center group shadow-2xs"
-              >
-                <div className="w-7 h-7 rounded-full bg-stone-50 group-hover:bg-red-50 flex items-center justify-center mb-1.5 transition-colors">
-                  <Heart className="w-3.5 h-3.5 text-stone-700 group-hover:text-red-500 transition-colors" />
-                </div>
-                <span className="text-xs font-bold text-stone-900 leading-none">Wishlist</span>
-                <span className="text-[9.5px] text-stone-400 mt-1 leading-none font-medium">
-                  {wishlistCount > 0 ? `${wishlistCount} saved` : "Saved"}
-                </span>
-              </Link>
-              <Link
-                href="/account"
-                prefetch={false}
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white hover:bg-amber-50/50 border border-stone-200/70 hover:border-amber-300 transition-all text-center group shadow-2xs"
-              >
-                <div className="w-7 h-7 rounded-full bg-stone-50 group-hover:bg-amber-100/60 flex items-center justify-center mb-1.5 transition-colors">
-                  <UserCheck className="w-3.5 h-3.5 text-stone-700 group-hover:text-amber-700 transition-colors" />
-                </div>
-                <span className="text-xs font-bold text-stone-900 leading-none">Profile</span>
-                <span className="text-[9.5px] text-stone-400 mt-1 leading-none font-medium">Details</span>
-              </Link>
-            </div>
+            <Link
+              href="/search?q=saree"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-stone-50 active:bg-amber-50/50 transition-colors group"
+            >
+              <span className="text-[13.5px] font-bold text-stone-900 group-hover:text-amber-900 transition-colors">
+                Sarees & Ethnic
+              </span>
+              <ChevronRight className="w-4 h-4 text-stone-300 group-hover:text-stone-700 group-hover:translate-x-0.5 transition-all" />
+            </Link>
+
+            <Link
+              href="/search?q=dress"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-stone-50 active:bg-amber-50/50 transition-colors group"
+            >
+              <span className="text-[13.5px] font-bold text-stone-900 group-hover:text-amber-900 transition-colors">
+                Dresses & Co-ords
+              </span>
+              <ChevronRight className="w-4 h-4 text-stone-300 group-hover:text-stone-700 group-hover:translate-x-0.5 transition-all" />
+            </Link>
+
+            <Link
+              href="/search?q=top"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-stone-50 active:bg-amber-50/50 transition-colors group"
+            >
+              <span className="text-[13.5px] font-bold text-stone-900 group-hover:text-amber-900 transition-colors">
+                Tops & Tunics
+              </span>
+              <ChevronRight className="w-4 h-4 text-stone-300 group-hover:text-stone-700 group-hover:translate-x-0.5 transition-all" />
+            </Link>
           </div>
 
-          {/* ── Curated Collections & Fashion Directory ────────────── */}
-          <div className="space-y-1.5 pt-1">
-            <p className="text-[9.5px] font-extrabold uppercase tracking-[0.22em] text-stone-400 px-1">
-              Explore Collections
-            </p>
-            <div className="bg-white rounded-2xl border border-stone-200/70 shadow-2xs overflow-hidden divide-y divide-stone-100">
-              <Link
-                href="/products"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3.5 py-3 hover:bg-amber-50/40 transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
-                    <Sparkles className="w-4 h-4 text-amber-600" />
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-xs font-bold text-stone-900 group-hover:text-amber-800 transition-colors">
-                      New Arrivals
-                    </span>
-                    <span className="text-[10px] text-stone-500 font-medium">
-                      Fresh drops from Kerala boutiques
-                    </span>
-                  </div>
-                </div>
-                <span className="text-[9.5px] font-extrabold uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                  Fresh
-                </span>
-              </Link>
+          <div className="border-t border-stone-200/70 my-2" />
 
-              <Link
-                href="/search?q=ethnic"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3.5 py-3 hover:bg-amber-50/40 transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-stone-100 text-stone-700 flex items-center justify-center font-bold">
-                    <ShoppingBag className="w-4 h-4 text-stone-700" />
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-xs font-bold text-stone-900 group-hover:text-amber-800 transition-colors">
-                      Ethnic & Guestwear
-                    </span>
-                    <span className="text-[10px] text-stone-500 font-medium">
-                      Sarees, Kurtis & Lehengas
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-stone-700 group-hover:translate-x-0.5 transition-all" />
-              </Link>
+          {/* ── Utility & Support Links ─────────────────────────────── */}
+          <div className="space-y-1">
+            <a
+              href="https://wa.me/917356019103?text=Hi%20Hive%20Team%2C%20I%20need%20some%20help%20with%20my%20order%2Fstyling."
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between px-4 py-2.5 rounded-xl hover:bg-stone-50 text-stone-700 hover:text-stone-950 transition-colors group"
+            >
+              <span className="text-xs font-semibold">Contact Us</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 transition-colors" />
+            </a>
 
-              <Link
-                href="/collections"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3.5 py-3 hover:bg-amber-50/40 transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-stone-100 text-stone-700 flex items-center justify-center font-bold">
-                    <Store className="w-4 h-4 text-stone-700" />
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-xs font-bold text-stone-900 group-hover:text-amber-800 transition-colors">
-                      Boutique Directory
-                    </span>
-                    <span className="text-[10px] text-stone-500 font-medium">
-                      Browse top designer stores
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-stone-700 group-hover:translate-x-0.5 transition-all" />
-              </Link>
-
-              <Link
-                href="/products/sale"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center justify-between px-3.5 py-3 hover:bg-rose-50/40 transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-                    <Tag className="w-4 h-4 text-rose-600" />
-                  </div>
-                  <div className="flex flex-col text-left">
-                    <span className="text-xs font-bold text-rose-700 group-hover:text-rose-800 transition-colors">
-                      Clearance & Sale
-                    </span>
-                    <span className="text-[10px] text-stone-500 font-medium">
-                      Limited boutique markdowns
-                    </span>
-                  </div>
-                </div>
-                <span className="text-[9.5px] font-extrabold uppercase tracking-wider bg-rose-100 text-rose-700 px-2 py-0.5 rounded-full">
-                  Offers
-                </span>
-              </Link>
-            </div>
-          </div>
-
-          {/* ── Boutique Partners (Bespoke Foil Card) ───────────────── */}
-          <div className="space-y-1.5 pt-1">
-            <p className="text-[9.5px] font-extrabold uppercase tracking-[0.22em] text-stone-400 px-1">
-              Boutique Partners
-            </p>
             {isApprovedMerchant ? (
               <a
                 href={SELLER_PORTAL_URL}
                 onClick={() => setMobileMenuOpen(false)}
-                className="block group"
+                className="flex items-center justify-between px-4 py-2.5 rounded-xl hover:bg-stone-50 text-stone-700 hover:text-stone-950 transition-colors group"
               >
-                <div className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-stone-900 to-stone-850 border border-amber-500/25 text-white shadow-xs flex items-center justify-between active:scale-[0.99] transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8.5 h-8.5 rounded-xl bg-amber-500/20 border border-amber-400/30 text-amber-400 flex items-center justify-center">
-                      <Store className="w-4 h-4 text-amber-400" />
-                    </div>
-                    <div className="flex flex-col text-left">
-                      <span className="text-xs font-bold leading-tight text-amber-200">Merchant Portal</span>
-                      <span className="text-[10px] text-stone-400 font-medium">Manage your boutique catalog</span>
-                    </div>
-                  </div>
-                  <ArrowUpRight className="w-4 h-4 text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                </div>
+                <span className="text-xs font-semibold">Merchant Portal</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-amber-600 transition-colors" />
               </a>
             ) : isPendingMerchant ? (
               <Link
                 href="/become-seller"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block"
+                className="flex items-center justify-between px-4 py-2.5 rounded-xl hover:bg-stone-50 text-stone-700 hover:text-stone-950 transition-colors group"
               >
-                <div className="w-full p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 flex items-center justify-between">
-                  <div className="flex flex-col text-left">
-                    <span className="text-xs font-bold">Application Under Review</span>
-                    <span className="text-[10px] text-amber-700">We will notify you once approved</span>
-                  </div>
-                  <span className="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full font-bold">
-                    Pending
-                  </span>
-                </div>
+                <span className="text-xs font-semibold">Seller Application (Pending)</span>
+                <ChevronRight className="w-3.5 h-3.5 text-amber-600" />
               </Link>
             ) : (
               <Link
                 href="/become-seller"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block group"
+                className="flex items-center justify-between px-4 py-2.5 rounded-xl hover:bg-stone-50 text-stone-700 hover:text-stone-950 transition-colors group"
               >
-                <div className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-stone-900 to-stone-850 border border-amber-500/25 text-white shadow-xs flex items-center justify-between active:scale-[0.99] transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8.5 h-8.5 rounded-xl bg-amber-500/20 border border-amber-400/30 text-amber-400 flex items-center justify-center">
-                      <Store className="w-4 h-4 text-amber-400" />
-                    </div>
-                    <div className="flex flex-col text-left">
-                      <span className="text-xs font-bold text-amber-200">Sell on Hive</span>
-                      <span className="text-[10px] text-stone-300 font-medium">
-                        List your boutique with 90-min delivery
-                      </span>
-                    </div>
-                  </div>
-                  <ArrowUpRight className="w-4 h-4 text-amber-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                </div>
+                <span className="text-xs font-semibold">Sell on Hive</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 transition-colors" />
               </Link>
             )}
           </div>
 
-          {/* ── Socials Strip ───────────────────────────────────────── */}
+          {/* ── Socials Strip (Hive Gold & Charcoal) ─────────────────── */}
           <div className="pt-2 flex justify-center">
             <SocialTooltip variant="light" />
           </div>
 
-          {/* ── Legal / Help Links ──────────────────────────────────── */}
-          <div className="pt-1 pb-2 text-center">
-            <div className="flex items-center justify-center gap-3 text-[10px] text-stone-400 font-semibold tracking-wide">
-              <a href="mailto:support@hivenow.in" className="hover:text-amber-700 transition-colors">
-                Support
-              </a>
-              <span className="text-stone-300 select-none">•</span>
-              <Link href="/terms" onClick={() => setMobileMenuOpen(false)} className="hover:text-amber-700 transition-colors">
-                Terms
+          {/* ── Legal Policy Links ──────────────────────────────────── */}
+          <div className="pt-1 pb-1 text-center">
+            <div className="flex items-center justify-center gap-2.5 text-[10.5px] text-stone-500 font-medium">
+              <Link href="/legal/returns" onClick={() => setMobileMenuOpen(false)} className="hover:text-stone-900 transition-colors">
+                Returns
               </Link>
               <span className="text-stone-300 select-none">•</span>
-              <Link href="/terms#privacy-policy" onClick={() => setMobileMenuOpen(false)} className="hover:text-amber-700 transition-colors">
+              <Link href="/legal/privacy" onClick={() => setMobileMenuOpen(false)} className="hover:text-stone-900 transition-colors">
                 Privacy
               </Link>
+              <span className="text-stone-300 select-none">•</span>
+              <Link href="/legal/terms" onClick={() => setMobileMenuOpen(false)} className="hover:text-stone-900 transition-colors">
+                Terms
+              </Link>
             </div>
-            <p className="text-[9px] text-stone-400 font-medium mt-1">
-              Hive • Kochi
-            </p>
           </div>
           </>
           )}
