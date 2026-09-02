@@ -81,11 +81,53 @@ interface RelatedProductsSectionProps {
   product: ProductDetail;
 }
 
+/**
+ * How far ahead of the viewport the catalog query starts. Enough that the data
+ * is normally in hand by the time the shopper scrolls here, without turning
+ * this into a prefetch-everything scheme.
+ */
+const PRELOAD_ROOT_MARGIN = "600px";
+
 export const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ product }) => {
   const { latitude, longitude } = useLocation();
+
+  // This section sits below the whole product detail block, so it is normally
+  // off-screen at first paint — yet its query (the full active catalog, ~175
+  // enriched products) used to fire the moment the PDP hydrated, competing with
+  // everything above it. Gate it on the section approaching the viewport.
+  const sentinelRef = React.useRef<HTMLDivElement | null>(null);
+  const [isNearViewport, setIsNearViewport] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isNearViewport) return;
+
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    // Without IntersectionObserver, fall back to the previous behaviour of
+    // loading straight away rather than never showing the section.
+    if (typeof IntersectionObserver === "undefined") {
+      setIsNearViewport(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsNearViewport(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: PRELOAD_ROOT_MARGIN }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isNearViewport]);
+
   const dbProducts = useQuery(
     api.products.getActiveProducts,
-    toQueryCoords(latitude, longitude)
+    isNearViewport ? toQueryCoords(latitude, longitude) : "skip"
   );
 
   // Retrieve scored recommendations from our heuristic logic
@@ -100,8 +142,13 @@ export const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ 
       .slice(0, 4);
   }, [product, products]);
 
+  // Before the query has run — and in the pre-existing "nothing to recommend"
+  // case, which used to return null — render a zero-height sentinel instead of
+  // nothing at all. The observer above needs an element in the document to
+  // watch, and an empty div occupies no space, so this is visually identical to
+  // the previous `return null`.
   if (dbProducts === undefined || recommendations.length === 0) {
-    return null;
+    return <div ref={sentinelRef} aria-hidden="true" />;
   }
 
   return (
