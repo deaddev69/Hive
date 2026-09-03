@@ -19,7 +19,11 @@ import {
 import { updateBoutiqueProductCount } from "./boutiques";
 import { normalizeEmail } from "./users";
 import { resolveDeliveryLabel, resolveDeliveryCountdown } from "./lib/deliveryEta";
-import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
+import {
+  getAllowedSpecKeys,
+  getVerticalConfig,
+  resolveVerticalTypeForCategory,
+} from "./lib/verticals";
 import { internal } from "./_generated/api";
 import {
   getPlatformMarkupRate,
@@ -222,7 +226,14 @@ async function enrichProduct(ctx: any, product: any) {
 /**
  * Computes product catalog content quality score (0-100) and details.
  */
-export function getProductQualityDetails(product: any) {
+export function getProductQualityDetails(
+  product: any,
+  verticalTypeOverride?: string | null
+) {
+  // Records written before verticals existed carry no verticalType and resolve
+  // to apparel, whose rules below reproduce the previous hardcoded scoring
+  // exactly — same fields, same points, same order, same wording.
+  const config = getVerticalConfig(verticalTypeOverride ?? product?.verticalType);
   const missing: string[] = [];
   const gains: Array<{ field: string; points: number; label: string }> = [];
   let score = 0;
@@ -251,44 +262,22 @@ export function getProductQualityDetails(product: any) {
     gains.push({ field: "description", points: 15, label: "Add a descriptive description (+15)" });
   }
 
-  // 4. Material Details (10 pts)
-  if (product.material && product.material.trim() !== "") {
-    score += 10;
-  } else {
-    missing.push("Add material details");
-    gains.push({ field: "material", points: 10, label: "Add material details (+10)" });
-  }
+  // 4. Vertical-specific fields (50 pts, distributed by the vertical registry).
+  // `source` decides where the value is read from: a top-level product column,
+  // or a key inside `products.details`.
+  for (const rule of config.quality.scoredFields) {
+    const raw =
+      rule.source === "column"
+        ? product?.[rule.field]
+        : product?.details?.[rule.field];
+    const present = typeof raw === "string" ? raw.trim() !== "" : Boolean(raw);
 
-  // 5. Care Instructions (10 pts)
-  if (product.care && product.care.trim() !== "") {
-    score += 10;
-  } else {
-    missing.push("Add care instructions");
-    gains.push({ field: "care", points: 10, label: "Add care instructions (+10)" });
-  }
-
-  // 6. Origin Info (10 pts)
-  if (product.origin && product.origin.trim() !== "") {
-    score += 10;
-  } else {
-    missing.push("Add origin info");
-    gains.push({ field: "origin", points: 10, label: "Add origin info (+10)" });
-  }
-
-  // 7. Fit Recommendation (15 pts) — replaces old measurement matrix scoring
-  if (product.fitRecommendation) {
-    score += 15;
-  } else {
-    missing.push("Add fit recommendation (Runs Small / True to Size / Runs Large)");
-    gains.push({ field: "fitRecommendation", points: 15, label: "Add fit recommendation (+15)" });
-  }
-
-  // 8. Story / Narrative (5 pts)
-  if (product.story && product.story.trim() !== "") {
-    score += 5;
-  } else {
-    missing.push("Add a design story / product narrative");
-    gains.push({ field: "story", points: 5, label: "Add a design story / product narrative (+5)" });
+    if (present) {
+      score += rule.points;
+    } else {
+      missing.push(rule.missingLabel);
+      gains.push({ field: rule.field, points: rule.points, label: rule.label });
+    }
   }
 
   return {
@@ -336,8 +325,13 @@ async function validateProductQuality(
     occasion?: string;
     fitRecommendation?: "runs_small" | "true_to_size" | "runs_large";
     silhouette?: "slim_fit" | "regular_fit" | "relaxed_fit" | "oversized";
+    details?: Record<string, string>;
   },
-  existingImages?: string[] // Pre-approved images already stored in the product record (e.g. from CSV import)
+  existingImages?: string[], // Pre-approved images already stored in the product record (e.g. from CSV import)
+  // The product's vertical. Mutation args carry no verticalType of their own, so
+  // the caller passes the resolved value; without it a non-apparel product would
+  // be scored against apparel rules at the featuring gate.
+  verticalType?: string | null
 ) {
   // Mutation Guard: Reject resolved HTTP/HTTPS URLs inside mutations
   // Exception: images that already exist in the product's database record are pre-approved
@@ -412,7 +406,7 @@ async function validateProductQuality(
   }
 
   // 4. Validate featuring gate (Featured products must have a quality score of >= 70%)
-  const quality = getProductQualityDetails(args);
+  const quality = getProductQualityDetails(args, verticalType);
   if (args.featured && !quality.canBeFeatured) {
     throw new Error(
       `Product cannot be featured. Minimum content quality score of 70% required (current score: ${quality.score}%). Please complete more details (e.g. size charts, material details, care instructions, or story).`
@@ -485,13 +479,21 @@ export const createProduct = mutation({
       resolvedCategoryId = matched ? matched._id : (allCategories[0]?._id as any);
     }
 
-    // Validate quality gate if active
-    await validateProductQuality(ctx, args);
+    // Snapshot the vertical from the category being filed under. Resolved once,
+    // here, and never recomputed on later edits.
+    const verticalType = await resolveVerticalTypeForCategory(ctx.db, resolvedCategoryId);
 
-    // Trim and drop empty values, keep allowed specification keys
+    // Validate quality gate if active
+    await validateProductQuality(ctx, args, undefined, verticalType);
+
+    // Trim and drop empty values, keep allowed specification keys.
+    // Unknown keys are dropped rather than rejected, unchanged from before
+    // verticals: the live partner form still submits keys outside the allowed
+    // set, and rejecting here would break every save. Strict rejection lands
+    // once the writers have been migrated.
     const cleanedDetails: Record<string, string> = {};
     if (args.details) {
-      const allowedKeys = new Set(Object.keys(PRODUCT_SPEC_KEYS));
+      const allowedKeys = getAllowedSpecKeys(verticalType);
       for (const [key, value] of Object.entries(args.details)) {
         const trimmed = value.trim();
         if (allowedKeys.has(key) && trimmed) {
@@ -575,6 +577,7 @@ export const createProduct = mutation({
       slug,
       description: args.description,
       categoryId: resolvedCategoryId as any,
+      verticalType,
       basePrice: args.price,
       price: customerPrice,
       baseDiscountPrice: args.discountPrice,
@@ -714,11 +717,18 @@ export const updateProduct = mutation({
       throw new Error("Unauthorized: Product does not belong to your boutique.");
     }
 
-    // Trim and drop empty values, keep allowed specification keys
+    // The product's vertical is a snapshot taken at creation. It is read here,
+    // never recomputed — updateProduct can change categoryId, and that must not
+    // retroactively change how the product's specifications validate or how its
+    // quality is scored.
+    const verticalType = product.verticalType;
+
+    // Trim and drop empty values, keep allowed specification keys.
+    // Unknown keys are dropped, not rejected — see createProduct above.
     let cleanedDetails: Record<string, string> | undefined = undefined;
     if (args.details !== undefined) {
       cleanedDetails = {};
-      const allowedKeys = new Set(Object.keys(PRODUCT_SPEC_KEYS));
+      const allowedKeys = getAllowedSpecKeys(verticalType);
       for (const [key, value] of Object.entries(args.details)) {
         const trimmed = value.trim();
         if (allowedKeys.has(key) && trimmed) {
@@ -728,7 +738,7 @@ export const updateProduct = mutation({
     }
 
     // Validate quality gate if active — pass existing images to skip the URL guard for pre-existing URLs
-    await validateProductQuality(ctx, args, product.images as any);
+    await validateProductQuality(ctx, args, product.images as any, verticalType);
 
     // Validate images in parallel (max 5MB, MIME: jpeg/png/webp)
     const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];

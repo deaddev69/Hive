@@ -4,6 +4,7 @@
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { resolveVerticalTypeForCategory } from "./lib/verticals";
 
 export const insertMockData = mutation({
   args: { categoryImageIds: v.optional(v.record(v.string(), v.string())) },
@@ -141,12 +142,16 @@ export const insertMockData = mutation({
         const outOfStock = (globalIndex % 5 === 0); // 20% out of stock
         const isFresh = globalIndex % 4 === 0;
 
+        const seedCategoryId = categoryIds[catSlug] || categoryIds["dresses"]!;
+        const seedVerticalType = await resolveVerticalTypeForCategory(ctx.db, seedCategoryId);
+
         const pId = await ctx.db.insert("products", {
           boutiqueId: bId,
           name: `${b.boutiqueName} ${name} #${i + 1}`,
           slug: `${b.boutiqueName.replace(/\s+/g, "-").toLowerCase()}-${name.toLowerCase()}-${globalIndex}`,
           description: `A beautiful ${name.toLowerCase()} from ${b.boutiqueName}.`,
-          categoryId: categoryIds[catSlug] || categoryIds["dresses"]!,
+          categoryId: seedCategoryId,
+          verticalType: seedVerticalType,
           price,
           discountPrice: globalIndex % 3 === 0 ? Math.round(price * 0.9) : undefined,
           images: ["https://images.unsplash.com/photo-1618220179428-22790b461013?auto=format&fit=crop&w=800&q=80"],

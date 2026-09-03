@@ -7,7 +7,7 @@ import { getPublicUrl } from "./media/api";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { validateUploadedFile } from "./lib/uploads";
-import { ImageAsset } from "./schema";
+import { ImageAsset, VerticalTypeValidator } from "./schema";
 
 /**
  * Fetch categories.
@@ -79,6 +79,7 @@ export const createCategory = mutation({
     featured:       v.optional(v.boolean()),
     showOnHomepage: v.optional(v.boolean()),
     parentId:       v.optional(v.id("categories")),
+    verticalType:   v.optional(VerticalTypeValidator),
   },
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
@@ -103,6 +104,7 @@ export const createCategory = mutation({
       featured:       args.featured,
       showOnHomepage: args.showOnHomepage,
       parentId:       args.parentId,
+      verticalType:   args.verticalType,
       createdAt:      Date.now(),
     });
     return categoryId;
@@ -128,6 +130,7 @@ export const updateCategory = mutation({
     featured:       v.optional(v.boolean()),
     showOnHomepage: v.optional(v.boolean()),
     parentId:       v.optional(v.id("categories")),
+    verticalType:   v.optional(VerticalTypeValidator),
   },
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
@@ -166,6 +169,7 @@ export const updateCategory = mutation({
       featured:       args.featured,
       showOnHomepage: args.showOnHomepage,
       parentId:       args.parentId,
+      verticalType:   args.verticalType,
     });
     return args.id;
   },

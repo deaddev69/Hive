@@ -5,6 +5,7 @@ import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getMyBoutique, requireBoutiqueOwnership } from "./lib/auth";
 import { updateBoutiqueProductCount } from "./boutiques";
+import { resolveVerticalTypeForCategory } from "./lib/verticals";
 
 /**
  * Links complementary product items to a target product to form a "Complete the Look" bundle.
@@ -280,12 +281,17 @@ export const importProductsCsv = mutation({
           ? (merchantTier === "Bronze" ? "pending" : "approved")
           : undefined;
 
+        // Bulk import is a first-class creation path and takes the same
+        // vertical snapshot as the partner form.
+        const verticalType = await resolveVerticalTypeForCategory(ctx.db, categoryId);
+
         const productId = await ctx.db.insert("products", {
           boutiqueId: args.boutiqueId,
           name: item.name,
           slug,
           description: item.description,
           categoryId,
+          verticalType,
           price: item.price,
           images,
           sizes,

@@ -4,6 +4,31 @@
 
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import type { VerticalType } from "../packages/types/src/verticals";
+
+/**
+ * Closed union of product verticals.
+ *
+ * The literal list is restated here because packages/types is deliberately free
+ * of any convex/values dependency. The two assertions below make the restatement
+ * impossible to get wrong: adding a vertical to VERTICAL_TYPES without adding it
+ * here (or the reverse) fails typecheck.
+ */
+export const VerticalTypeValidator = v.union(
+  v.literal("apparel"),
+  v.literal("fragrance"),
+  v.literal("handbag"),
+  v.literal("footwear"),
+  v.literal("jewellery"),
+  v.literal("lifestyle"),
+);
+
+type ValidatorVerticalType = typeof VerticalTypeValidator.type;
+// Both directions, so neither list can gain or lose a member unnoticed.
+const _verticalUnionCoversRegistry: ValidatorVerticalType extends VerticalType ? true : never = true;
+const _registryCoversVerticalUnion: VerticalType extends ValidatorVerticalType ? true : never = true;
+void _verticalUnionCoversRegistry;
+void _registryCoversVerticalUnion;
 
 /**
  * ImageAsset: A reusable schema for all Cloudflare R2 media assets.
@@ -512,6 +537,12 @@ export default defineSchema({
     slug:             v.string(),
     description:      v.string(),
     categoryId:       v.id("categories"),
+    // Snapshot of the category's vertical at creation time. Stamped once and
+    // never rewritten, so re-categorising a product cannot retroactively change
+    // how its specifications validate or how its quality is scored. Absent on
+    // every product created before verticals existed; such rows resolve
+    // defensively to "apparel" and are deliberately never backfilled.
+    verticalType:     v.optional(VerticalTypeValidator),
     basePrice:        v.optional(v.number()),         // The boutique's set price (optional until migration completes)
     price:            v.number(),
     baseDiscountPrice:v.optional(v.number()),
@@ -1669,6 +1700,10 @@ export default defineSchema({
     featured:       v.optional(v.boolean()),
     showOnHomepage: v.optional(v.boolean()),
     parentId:       v.optional(v.id("categories")),
+    // Which vertical products filed under this category belong to. Unlike the
+    // product field this is live configuration: an admin may change it, and the
+    // change applies to products created afterwards, never to existing ones.
+    verticalType:   v.optional(VerticalTypeValidator),
     createdAt:      v.number(),
   })
     .index("by_active_and_sortOrder", ["active", "sortOrder"])

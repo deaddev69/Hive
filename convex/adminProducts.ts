@@ -6,7 +6,7 @@ import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { updateBoutiqueProductCount } from "./boutiques";
 import { getPublicUrl } from "./media/api";
-import { PRODUCT_SPEC_KEYS } from "../packages/types/src/product";
+import { getAllowedSpecKeys } from "./lib/verticals";
 import { getPlatformSettings, calculateProductPricing } from "./pricingService";
 import { triggerNotification } from "./lib/notifications";
 
@@ -724,7 +724,10 @@ export const updateProductDetailsAdmin = mutation({
     let cleanedDetails: Record<string, string> | undefined = undefined;
     if (args.details !== undefined) {
       cleanedDetails = {};
-      const allowedKeys = new Set(Object.keys(PRODUCT_SPEC_KEYS));
+      // Scoped to the product's own vertical. For apparel — every product that
+      // exists today — this is the same key set as before, so the rejection
+      // behaviour here is unchanged.
+      const allowedKeys = getAllowedSpecKeys(product.verticalType);
       for (const [key, value] of Object.entries(args.details)) {
         const trimmed = value.trim();
         if (allowedKeys.has(key) && trimmed) {
