@@ -46,3 +46,36 @@ export async function resolveVerticalTypeForCategory(
   const category = await db.get(categoryId);
   return effectiveVerticalType(category?.verticalType);
 }
+
+/**
+ * Validates and cleans a product's details record strictly against its vertical.
+ *
+ * Rules:
+ *   - Empty/whitespace string values are stripped.
+ *   - Keys not in the vertical's allowedSpecKeys throw an Error.
+ *   - If details is undefined, returns undefined.
+ */
+export function validateAndCleanProductDetails(
+  details: Record<string, string> | undefined,
+  verticalType?: string | null
+): Record<string, string> | undefined {
+  if (details === undefined) return undefined;
+  const config = getVerticalConfig(verticalType);
+  const allowedKeys = getAllowedSpecKeys(verticalType);
+  const cleaned: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(details)) {
+    const trimmed = typeof value === "string" ? value.trim() : "";
+    if (allowedKeys.has(key)) {
+      if (trimmed) {
+        cleaned[key] = trimmed;
+      }
+    } else {
+      throw new Error(
+        `Invalid product specification key "${key}" for vertical "${config.id}". Allowed keys: ${[...allowedKeys].join(", ")}`
+      );
+    }
+  }
+
+  return cleaned;
+}

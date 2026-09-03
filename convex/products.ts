@@ -23,6 +23,7 @@ import {
   getAllowedSpecKeys,
   getVerticalConfig,
   resolveVerticalTypeForCategory,
+  validateAndCleanProductDetails,
 } from "./lib/verticals";
 import { internal } from "./_generated/api";
 import {
@@ -487,21 +488,9 @@ export const createProduct = mutation({
     // Validate quality gate if active
     await validateProductQuality(ctx, args, undefined, verticalType);
 
-    // Trim and drop empty values, keep allowed specification keys.
-    // Unknown keys are dropped rather than rejected, unchanged from before
-    // verticals: the live partner form still submits keys outside the allowed
-    // set, and rejecting here would break every save. Strict rejection lands
-    // once the writers have been migrated.
-    const cleanedDetails: Record<string, string> = {};
-    if (args.details) {
-      const allowedKeys = getAllowedSpecKeys(verticalType);
-      for (const [key, value] of Object.entries(args.details)) {
-        const trimmed = value.trim();
-        if (allowedKeys.has(key) && trimmed) {
-          cleanedDetails[key] = trimmed;
-        }
-      }
-    }
+    // Trim and drop empty values; strictly reject unrecognized specification keys.
+    const cleanedDetails: Record<string, string> =
+      args.details ? (validateAndCleanProductDetails(args.details, verticalType) ?? {}) : {};
 
     // Validate images in parallel (max 5MB, MIME: jpeg/png/webp)
     const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
@@ -726,19 +715,9 @@ export const updateProduct = mutation({
     // quality is scored.
     const verticalType = product.verticalType;
 
-    // Trim and drop empty values, keep allowed specification keys.
-    // Unknown keys are dropped, not rejected — see createProduct above.
-    let cleanedDetails: Record<string, string> | undefined = undefined;
-    if (args.details !== undefined) {
-      cleanedDetails = {};
-      const allowedKeys = getAllowedSpecKeys(verticalType);
-      for (const [key, value] of Object.entries(args.details)) {
-        const trimmed = value.trim();
-        if (allowedKeys.has(key) && trimmed) {
-          cleanedDetails[key] = trimmed;
-        }
-      }
-    }
+    // Trim and drop empty values; strictly reject unrecognized specification keys.
+    const cleanedDetails: Record<string, string> | undefined =
+      args.details !== undefined ? validateAndCleanProductDetails(args.details, verticalType) : undefined;
 
     // Validate quality gate if active — pass existing images to skip the URL guard for pre-existing URLs
     await validateProductQuality(ctx, args, product.images as any, verticalType);

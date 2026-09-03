@@ -6,7 +6,7 @@ import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { updateBoutiqueProductCount } from "./boutiques";
 import { getPublicUrl } from "./media/api";
-import { getAllowedSpecKeys } from "./lib/verticals";
+import { getAllowedSpecKeys, validateAndCleanProductDetails } from "./lib/verticals";
 import { getPlatformSettings, calculateProductPricing } from "./pricingService";
 import { triggerNotification } from "./lib/notifications";
 
@@ -720,23 +720,9 @@ export const updateProductDetailsAdmin = mutation({
 
     const now = Date.now();
 
-    // Clean details if provided
-    let cleanedDetails: Record<string, string> | undefined = undefined;
-    if (args.details !== undefined) {
-      cleanedDetails = {};
-      // Scoped to the product's own vertical. For apparel — every product that
-      // exists today — this is the same key set as before, so the rejection
-      // behaviour here is unchanged.
-      const allowedKeys = getAllowedSpecKeys(product.verticalType);
-      for (const [key, value] of Object.entries(args.details)) {
-        const trimmed = value.trim();
-        if (allowedKeys.has(key) && trimmed) {
-          cleanedDetails[key] = trimmed;
-        } else if (!allowedKeys.has(key)) {
-          throw new Error(`Invalid product specification key: ${key}`);
-        }
-      }
-    }
+    // Clean details if provided, strictly rejecting invalid keys
+    const cleanedDetails: Record<string, string> | undefined =
+      args.details !== undefined ? validateAndCleanProductDetails(args.details, product.verticalType) : undefined;
 
     // Compute stock totals if sizes/stock modified
     const currentStockBySize = product.stockBySize || {};

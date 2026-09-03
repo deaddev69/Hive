@@ -93,18 +93,94 @@ const DEFAULT_TIER_SLABS = [
   { min_price: 5000, max_price: null, rate: 5 },
 ];
 
-function autoCorrectCapitalization(str: string): string {
-  if (!str) return str;
-  return str.replace(/\b([a-z])([a-z]*)\b/gi, (match, p1, p2) => {
-    return p1.toUpperCase() + p2.toLowerCase();
-  });
-}
+const FASHION_TYPO_DICTIONARY: Record<string, string> = {
+  // Kurtis & Tops
+  "kurt": "Kurti",
+  "kurty": "Kurti",
+  "kurthi": "Kurti",
+  "kurthis": "Kurtis",
+  "kurtas": "Kurtas",
+  "anarkaly": "Anarkali",
+  "anarkli": "Anarkali",
+  "plazo": "Palazzo",
+  "palazo": "Palazzo",
+  "palazzos": "Palazzos",
+  "salwar": "Salwar",
+  "shalwar": "Salwar",
+  "caftan": "Kaftan",
+  "kaftaan": "Kaftan",
+
+  // Sarees & Drapes
+  "sare": "Saree",
+  "sari": "Saree",
+  "saari": "Saree",
+  "saaree": "Saree",
+  "sarees": "Sarees",
+  "saris": "Sarees",
+  "lehanga": "Lehenga",
+  "lehnga": "Lehenga",
+  "lehengaa": "Lehenga",
+  "lehengas": "Lehengas",
+  "dupata": "Dupatta",
+  "dhupatta": "Dupatta",
+  "dupattas": "Dupattas",
+  "churidhar": "Churidar",
+  "churidaar": "Churidar",
+  "blous": "Blouse",
+  "blouze": "Blouse",
+
+  // Kerala & Indian Handlooms / Weaves
+  "kasav": "Kasavu",
+  "banaras": "Banarasi",
+  "benarasi": "Banarasi",
+  "banarsi": "Banarasi",
+  "kanjevaram": "Kanjeevaram",
+  "kanchipuram": "Kanchipuram",
+  "chikan": "Chikankari",
+  "chandery": "Chanderi",
+  "georget": "Georgette",
+  "orgaza": "Organza",
+  "tussur": "Tussar",
+  "ajrak": "Ajrakh",
+
+  // Fragrances & Perfumes
+  "perfum": "Perfume",
+  "parfum": "Parfum",
+  "perfums": "Perfumes",
+  "colongne": "Cologne",
+  "colone": "Cologne",
+  "ithar": "Attar",
+  "oudh": "Oud",
+
+  // Handbags & Accessories
+  "hanbag": "Handbag",
+  "cluch": "Clutch",
+  "clutches": "Clutches",
+  "totebag": "Tote Bag",
+  "corssbody": "Crossbody",
+};
 
 function autoCorrectTitleCasing(str: string): string {
   if (!str) return str;
-  return str.replace(/\b([a-z])([a-z]*)\b/gi, (match, p1, p2) => {
-    return p1.toUpperCase() + p2.toLowerCase();
-  }).trim();
+  return str
+    .split(/\s+/)
+    .map((word) => {
+      const cleanWord = word.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+      if (FASHION_TYPO_DICTIONARY[cleanWord]) {
+        return word.replace(new RegExp(cleanWord, "i"), FASHION_TYPO_DICTIONARY[cleanWord]);
+      }
+      // Preserve uppercase abbreviations (e.g. EDP, EDT, XL, XXL)
+      if (/^[A-Z0-9]{2,4}$/.test(word)) {
+        return word;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(" ")
+    .trim();
+}
+
+function autoCorrectCapitalization(str: string): string {
+  return autoCorrectTitleCasing(str);
 }
 
 function cleanChatGptDescription(text: string): string {
@@ -383,7 +459,7 @@ const productFormSchema = z.object({
   customMaterialType: z.string().optional(),
   care: z.string().optional(),
   customCare: z.string().optional(),
-  craft: z.string().optional(),
+  fabricType: z.string().optional(),
   color: z.string().min(1, "Please enter the color"),
   fabricContent: z.string().optional(),
   fabricDetail: z.string().optional(),
@@ -552,7 +628,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       customMaterialType: "",
       care: "",
       customCare: "",
-      craft: "",
+      fabricType: "",
       color: "",
       fabricContent: "",
       fabricDetail: "",
@@ -578,7 +654,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const customMaterialTypeWatch = watch("customMaterialType");
   const careWatch = watch("care");
   const customCareWatch = watch("customCare");
-  const craftWatch = watch("craft");
+  const fabricTypeWatch = watch("fabricType");
   const fabricContentWatch = watch("fabricContent");
   const fabricDetailWatch = watch("fabricDetail");
   const neckTypeWatch = watch("neckType");
@@ -729,7 +805,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       }
 
       const d = productToEdit.details || {};
-      setValue("craft", d.craft || productToEdit.craft || "");
+      setValue("fabricType", d.fabricType || d.craft || productToEdit.craft || "");
       setValue("color", d.color || "");
       setValue("fabricContent", d.fabricContent || "");
       setValue("fabricDetail", d.fabricDetail || "");
@@ -744,7 +820,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       setValue("fabricFamily", d.fabricFamily || "");
 
       const activeChips = new Set<string>();
-      if (d.craft || productToEdit.craft) activeChips.add("craft");
+      if (d.fabricType || d.craft || productToEdit.craft) activeChips.add("fabricType");
       if (d.fabricContent) activeChips.add("fabricContent");
       if (d.fabricDetail) activeChips.add("fabricDetail");
       if (d.neckType) activeChips.add("neckType");
@@ -1143,7 +1219,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       };
 
       if (currentVerticalConfig.id === "apparel") {
-        if (data.craft) cleanedDetails.craft = autoCorrectCapitalization(data.craft);
+        if (data.fabricType) cleanedDetails.fabricType = autoCorrectCapitalization(data.fabricType);
         if (data.fabricContent) cleanedDetails.fabricContent = data.fabricContent;
         if (data.fabricDetail) cleanedDetails.fabricDetail = data.fabricDetail;
         if (data.neckType) cleanedDetails.neckType = data.neckType;
@@ -2186,7 +2262,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { id: "craft", label: "+ Fabric / Weave" },
+                    { id: "fabricType", label: "+ Fabric / Weave" },
                     { id: "neckType", label: "+ Neck Type" },
                     { id: "pattern", label: "+ Pattern" },
                     { id: "sleeve", label: "+ Sleeve Length" },
@@ -2221,16 +2297,16 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 animate-in fade-in duration-200">
                   
                   {/* Fabric / Weave */}
-                  {activeExtraFields.has("craft") && (
+                  {activeExtraFields.has("fabricType") && (
                     <div className="flex flex-col gap-1.5">
                       <div className="flex justify-between items-center">
                         <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Fabric / Weave</label>
-                        <button type="button" onClick={() => toggleExtraField("craft")} className="text-[11px] text-slate-400 hover:text-red-600 font-semibold cursor-pointer">Remove</button>
+                        <button type="button" onClick={() => toggleExtraField("fabricType")} className="text-[11px] text-slate-400 hover:text-red-600 font-semibold cursor-pointer">Remove</button>
                       </div>
                       <input
                         type="text"
                         placeholder="e.g. Chikankari, Shibori, Banarasi"
-                        {...register("craft")}
+                        {...register("fabricType")}
                         className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900"
                       />
                     </div>

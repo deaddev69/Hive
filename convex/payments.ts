@@ -1063,14 +1063,15 @@ export async function verifyPaymentAndPlaceOrderInternal(
     area: boutique.area,
   } : undefined;
 
-  // Snapshot return eligibility now — the payout hold reads this, and it must
+  // Snapshot return & exchange eligibility now — the payout hold reads this, and it must
   // not change if the seller later switches their store to Final Sale.
+  const returnPolicyItems = orderSnapshot.items.map((i) => ({ productId: i.productId, boutiqueId }));
   const returnsAccepted = await resolveOrderReturnsAccepted(
     ctx.db,
     boutiqueId,
-    orderSnapshot.items.map((i) => ({ productId: i.productId, boutiqueId }))
+    returnPolicyItems
   );
-  const exchangesAccepted = await resolveOrderExchangesAccepted(ctx.db, boutiqueId);
+  const exchangesAccepted = await resolveOrderExchangesAccepted(ctx.db, boutiqueId, returnPolicyItems);
 
   const orderId = await ctx.db.insert("orders", {
     orderNumber,

@@ -511,14 +511,15 @@ export const processPaymentCaptured = internalMutation({
       area: boutique.area,
     } : undefined;
 
-    // Snapshot return eligibility now — the payout hold reads this, and it must
+    // Snapshot return & exchange eligibility now — the payout hold reads this, and it must
     // not change if the seller later switches their store to Final Sale.
+    const returnPolicyItems = orderSnapshot.items.map((i: any) => ({ productId: i.productId, boutiqueId }));
     const returnsAccepted = await resolveOrderReturnsAccepted(
       ctx.db,
       boutiqueId,
-      orderSnapshot.items.map((i: any) => ({ productId: i.productId, boutiqueId }))
+      returnPolicyItems
     );
-  const exchangesAccepted = await resolveOrderExchangesAccepted(ctx.db, boutiqueId);
+    const exchangesAccepted = await resolveOrderExchangesAccepted(ctx.db, boutiqueId, returnPolicyItems);
 
     // Create Order with v2 pricingSnapshot and payoutStatus
     const orderId = await ctx.db.insert("orders", {

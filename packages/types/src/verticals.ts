@@ -171,6 +171,20 @@ export interface VerticalPresentationConfig {
   specIconStyle: "tailoring" | "fragrance" | "accessory" | "generic";
 }
 
+export interface VerticalPolicyConfig {
+  /**
+   * Commercial default for returns when no explicit product policy applies.
+   * Apparel and Handbags default to true (eligible for 24h return).
+   * Fragrance defaults to false (Final Sale).
+   */
+  defaultReturnsAccepted: boolean;
+  /**
+   * Commercial default for size/variant exchanges when no explicit setting applies.
+   * Fragrance defaults to false (hygiene/tampering protection in transit).
+   */
+  defaultExchangesAccepted: boolean;
+}
+
 export interface VerticalConfig {
   id: VerticalType;
   label: string;
@@ -179,6 +193,7 @@ export interface VerticalConfig {
   specLabels: Readonly<Record<string, string>>;
   quality: VerticalQualityConfig;
   presentation: VerticalPresentationConfig;
+  policy: VerticalPolicyConfig;
 }
 
 // ─── SHARED FRAGMENTS ───────────────────────────────────────────────────────
@@ -188,6 +203,11 @@ const GENERIC_PRESENTATION: VerticalPresentationConfig = {
   showScentPyramid:     false,
   showBagDimensions:    false,
   specIconStyle:        "generic",
+};
+
+const GENERIC_POLICY: VerticalPolicyConfig = {
+  defaultReturnsAccepted:  true,
+  defaultExchangesAccepted: true,
 };
 
 /**
@@ -242,6 +262,10 @@ export const VERTICAL_CONFIGS: Readonly<Record<VerticalType, VerticalConfig>> = 
       showBagDimensions:    false,
       specIconStyle:        "tailoring",
     },
+    policy: {
+      defaultReturnsAccepted:  true,
+      defaultExchangesAccepted: true,
+    },
   },
 
   fragrance: {
@@ -279,6 +303,10 @@ export const VERTICAL_CONFIGS: Readonly<Record<VerticalType, VerticalConfig>> = 
       showScentPyramid:     true,
       showBagDimensions:    false,
       specIconStyle:        "fragrance",
+    },
+    policy: {
+      defaultReturnsAccepted:  false,
+      defaultExchangesAccepted: false,
     },
   },
 
@@ -321,6 +349,10 @@ export const VERTICAL_CONFIGS: Readonly<Record<VerticalType, VerticalConfig>> = 
       showBagDimensions:    true,
       specIconStyle:        "accessory",
     },
+    policy: {
+      defaultReturnsAccepted:  true,
+      defaultExchangesAccepted: true,
+    },
   },
 
   footwear: {
@@ -331,6 +363,7 @@ export const VERTICAL_CONFIGS: Readonly<Record<VerticalType, VerticalConfig>> = 
     specLabels: { color: PRODUCT_SPEC_KEYS.color },
     quality:    GENERIC_QUALITY,
     presentation: GENERIC_PRESENTATION,
+    policy:     GENERIC_POLICY,
   },
 
   jewellery: {
@@ -341,6 +374,7 @@ export const VERTICAL_CONFIGS: Readonly<Record<VerticalType, VerticalConfig>> = 
     specLabels: { color: PRODUCT_SPEC_KEYS.color },
     quality:    GENERIC_QUALITY,
     presentation: GENERIC_PRESENTATION,
+    policy:     GENERIC_POLICY,
   },
 
   lifestyle: {
@@ -351,6 +385,7 @@ export const VERTICAL_CONFIGS: Readonly<Record<VerticalType, VerticalConfig>> = 
     specLabels: { color: PRODUCT_SPEC_KEYS.color },
     quality:    GENERIC_QUALITY,
     presentation: GENERIC_PRESENTATION,
+    policy:     GENERIC_POLICY,
   },
 };
 

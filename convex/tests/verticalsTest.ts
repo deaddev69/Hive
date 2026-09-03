@@ -10,7 +10,7 @@ import {
   type QualityRule,
   type VerticalType,
 } from "../../packages/types/src/verticals";
-import { getAllowedSpecKeys } from "../lib/verticals";
+import { getAllowedSpecKeys, validateAndCleanProductDetails } from "../lib/verticals";
 
 /**
  * Contract tests for the vertical registry.
@@ -200,6 +200,98 @@ checkTrue(
 for (const id of VERTICAL_TYPES) {
   checkTrue(`${id} does not accept the unmigrated "craft" key`, !getAllowedSpecKeys(id).has("craft"));
 }
+
+// ─── 5b. Strict Specification Key Validation (Phase 5B) ──────────────────────
+// Verifies that validateAndCleanProductDetails accepts valid keys for each vertical,
+// strips empty/whitespace values, and strictly throws on unknown/cross-vertical keys.
+
+function checkThrows(name: string, fn: () => void, expectedErrorSubstring?: string) {
+  try {
+    fn();
+    failed++;
+    console.error(`[FAIL] ${name}: Expected exception but none was thrown.`);
+  } catch (err: any) {
+    if (!expectedErrorSubstring || String(err?.message || err).includes(expectedErrorSubstring)) {
+      passed++;
+      console.log(`[PASS] ${name}`);
+    } else {
+      failed++;
+      console.error(
+        `[FAIL] ${name}: Threw unexpected error.\n         expected substring: ${expectedErrorSubstring}\n         got: ${err?.message || err}`
+      );
+    }
+  }
+}
+
+// Undefined input preserves undefined
+check("validateAndCleanProductDetails(undefined) returns undefined", validateAndCleanProductDetails(undefined, "apparel"), undefined);
+
+// Empty input returns empty object
+check("validateAndCleanProductDetails({}) returns {}", validateAndCleanProductDetails({}, "apparel"), {});
+
+// Strips whitespace and empty string values
+check(
+  "validateAndCleanProductDetails strips empty and whitespace-only values",
+  validateAndCleanProductDetails({ color: "  Red  ", neckType: "", sleeve: "   " }, "apparel"),
+  { color: "Red" }
+);
+
+// Accepts all valid keys dynamically derived from registry
+for (const vType of VERTICAL_TYPES) {
+  const allowed = [...getAllowedSpecKeys(vType)];
+  const samplePayload: Record<string, string> = {};
+  for (const k of allowed) {
+    samplePayload[k] = `Sample ${k}`;
+  }
+  const result = validateAndCleanProductDetails(samplePayload, vType);
+  check(`all ${allowed.length} registry keys for ${vType} are accepted`, Object.keys(result || {}).length, allowed.length);
+}
+
+// Apparel rejects non-apparel and invalid keys
+checkThrows(
+  "apparel strictly rejects unmigrated 'craft' key",
+  () => validateAndCleanProductDetails({ craft: "Chikankari" }, "apparel"),
+  "Invalid product specification key \"craft\""
+);
+checkThrows(
+  "apparel strictly rejects fragrance key 'topNotes'",
+  () => validateAndCleanProductDetails({ topNotes: "Bergamot" }, "apparel"),
+  "Invalid product specification key \"topNotes\""
+);
+checkThrows(
+  "apparel strictly rejects handbag key 'bagType'",
+  () => validateAndCleanProductDetails({ bagType: "Tote" }, "apparel"),
+  "Invalid product specification key \"bagType\""
+);
+
+// Fragrance rejects apparel and invalid keys
+checkThrows(
+  "fragrance strictly rejects apparel key 'neckType'",
+  () => validateAndCleanProductDetails({ neckType: "V-Neck" }, "fragrance"),
+  "Invalid product specification key \"neckType\""
+);
+checkThrows(
+  "fragrance strictly rejects unmigrated 'craft' key",
+  () => validateAndCleanProductDetails({ craft: "Oud" }, "fragrance"),
+  "Invalid product specification key \"craft\""
+);
+
+// Handbag rejects apparel and fragrance keys
+checkThrows(
+  "handbag strictly rejects apparel key 'sleeve'",
+  () => validateAndCleanProductDetails({ sleeve: "Full" }, "handbag"),
+  "Invalid product specification key \"sleeve\""
+);
+checkThrows(
+  "handbag strictly rejects fragrance key 'fragranceFamily'",
+  () => validateAndCleanProductDetails({ fragranceFamily: "Woody" }, "handbag"),
+  "Invalid product specification key \"fragranceFamily\""
+);
+checkThrows(
+  "handbag strictly rejects unmigrated 'craft' key",
+  () => validateAndCleanProductDetails({ craft: "Leather Craft" }, "handbag"),
+  "Invalid product specification key \"craft\""
+);
 
 // ─── 6. Scoring parity with the pre-vertical implementation ─────────────────
 // A frozen copy of the scoring rules as they were before this change. If the

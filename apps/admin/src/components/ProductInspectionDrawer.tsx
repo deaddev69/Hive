@@ -67,8 +67,19 @@ export function ProductInspectionDrawer({
   const [story, setStory] = useState(product?.story || "");
   const [occasion, setOccasion] = useState(product?.occasion || "");
 
-  // Specifications (details record)
-  const [details, setDetails] = useState<Record<string, string>>(product?.details || {});
+  // Specifications (details record) - sanitized on init to valid vertical spec keys only
+  const [details, setDetails] = useState<Record<string, string>>(() => {
+    const raw = product?.details || {};
+    const config = getVerticalConfig(product?.verticalType);
+    const allowed = new Set(config.specKeys);
+    const sanitized: Record<string, string> = {};
+    for (const [k, v] of Object.entries(raw)) {
+      if (allowed.has(k as any) && v) {
+        sanitized[k] = String(v);
+      }
+    }
+    return sanitized;
+  });
 
   // Drawer options
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
@@ -227,10 +238,13 @@ export function ProductInspectionDrawer({
   const handleSave = async (silent = false) => {
     setSaving(true);
     try {
-      // Filter details map to non-empty fields
+      // Filter details map to non-empty fields and allowed vertical spec keys
+      const allowedKeys = new Set(verticalConfig.specKeys);
       const cleanedDetails: Record<string, string> = {};
       Object.entries(details).forEach(([k, v]) => {
-        if (v && v.trim()) cleanedDetails[k] = v.trim();
+        if (allowedKeys.has(k as any) && v && v.trim()) {
+          cleanedDetails[k] = v.trim();
+        }
       });
 
       await updateProductDetails({

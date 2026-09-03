@@ -12,6 +12,7 @@
 
 import { GenericDatabaseReader } from "convex/server";
 import { DataModel, Id } from "../_generated/dataModel";
+import { getVerticalConfig } from "./verticals";
 
 type DbReader = GenericDatabaseReader<DataModel>;
 
@@ -22,7 +23,15 @@ export type ReturnPolicyItem = {
 
 /**
  * Resolve return eligibility for a single item.
- * A product's own setting wins; otherwise its boutique's default applies.
+ *
+ * Precedence:
+ *   1. Product explicit override wins (`product.returnsAccepted !== undefined`).
+ *   2. Vertical default from product snapshot (`getVerticalConfig(product?.verticalType)`).
+ *      - If vertical default is false (Fragrance / Final Sale by default):
+ *        An explicit boutique opt-in (`returnsAcceptedDefault === true`) can permit returns.
+ *        Unset boutique setting (`undefined`) defaults to false.
+ *      - If vertical default is true (Apparel, Handbag, etc.):
+ *        Inherits boutique default (`returnsAcceptedDefault !== false`, where undefined is true).
  */
 async function resolveItemReturnsAccepted(
   db: DbReader,
@@ -34,9 +43,20 @@ async function resolveItemReturnsAccepted(
     return product.returnsAccepted;
   }
 
+  const verticalConfig = getVerticalConfig(product?.verticalType);
+  const verticalDefaultReturns = verticalConfig.policy.defaultReturnsAccepted;
+
   if (item.boutiqueId) {
     const itemBoutique = await db.get(item.boutiqueId);
+    if (verticalDefaultReturns === false) {
+      // Commercial override: boutique must explicitly opt-in to accept returns on a Final Sale vertical
+      return itemBoutique?.returnsAcceptedDefault === true;
+    }
     return itemBoutique?.returnsAcceptedDefault !== false;
+  }
+
+  if (verticalDefaultReturns === false) {
+    return false;
   }
 
   return fallbackBoutiqueDefault;
@@ -74,15 +94,27 @@ export async function resolveOrderReturnsAccepted(
 /**
  * Resolve exchange eligibility for a whole order.
  *
- * Exchanges are a separate seller opt-in from returns: a boutique may be happy
- * to swap a size while refusing cash refunds, or the reverse. Falls back to the
- * return policy only when the boutique has never set an exchange preference, so
- * existing sellers keep the behaviour their current setting implied.
+ * Precedence:
+ *   1. Vertical-level exchange check per item:
+ *      - Any item with `defaultExchangesAccepted === false` (Fragrance) makes the order non-exchangeable.
+ *   2. Store-level exchange preference:
+ *      - `boutique.exchangesAcceptedDefault !== undefined ? boutique.exchangesAcceptedDefault : boutique.returnsAcceptedDefault !== false`
  */
 export async function resolveOrderExchangesAccepted(
   db: DbReader,
-  boutiqueId: Id<"boutiques">
+  boutiqueId: Id<"boutiques">,
+  items?: ReturnPolicyItem[]
 ): Promise<boolean> {
+  if (items && items.length > 0) {
+    for (const item of items) {
+      const product = await db.get(item.productId);
+      const verticalConfig = getVerticalConfig(product?.verticalType);
+      if (verticalConfig.policy.defaultExchangesAccepted === false) {
+        return false;
+      }
+    }
+  }
+
   const boutique = await db.get(boutiqueId);
   if (boutique?.exchangesAcceptedDefault !== undefined) {
     return boutique.exchangesAcceptedDefault;

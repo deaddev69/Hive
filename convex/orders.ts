@@ -445,17 +445,22 @@ export const placeOrder = mutation({
       area: boutique.area,
     } : undefined;
 
-    // Snapshot return eligibility now — the payout hold reads this, and it must
+    // Snapshot return & exchange eligibility now — the payout hold reads this, and it must
     // not change if the seller later switches their store to Final Sale.
+    const returnPolicyItems = orderSnapshot.items.map((i: any) => ({
+      productId: i.productId,
+      boutiqueId: primaryBoutiqueId,
+    }));
     const returnsAccepted = await resolveOrderReturnsAccepted(
       ctx.db,
       primaryBoutiqueId,
-      orderSnapshot.items.map((i: any) => ({
-        productId: i.productId,
-        boutiqueId: primaryBoutiqueId,
-      }))
+      returnPolicyItems
     );
-  const exchangesAccepted = await resolveOrderExchangesAccepted(ctx.db, primaryBoutiqueId);
+    const exchangesAccepted = await resolveOrderExchangesAccepted(
+      ctx.db,
+      primaryBoutiqueId,
+      returnPolicyItems
+    );
 
     // Create the order
     const orderId = await ctx.db.insert("orders", {
