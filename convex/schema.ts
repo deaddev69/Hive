@@ -543,6 +543,8 @@ export default defineSchema({
     // every product created before verticals existed; such rows resolve
     // defensively to "apparel" and are deliberately never backfilled.
     verticalType:     v.optional(VerticalTypeValidator),
+    // Origin of the listing photography: in-store boutique photo vs AI-assisted visual preview.
+    photoSource:      v.optional(v.union(v.literal("in_store"), v.literal("ai_enhanced"))),
     basePrice:        v.optional(v.number()),         // The boutique's set price (optional until migration completes)
     price:            v.number(),
     baseDiscountPrice:v.optional(v.number()),

@@ -91,7 +91,7 @@ function createFallbackStream(text: string): ReadableStream {
 
 export async function POST(req: NextRequest) {
   try {
-    const { roughText, type, style = "casual" } = await req.json();
+    const { roughText, type, style = "casual", verticalType = "apparel" } = await req.json();
 
     if (!roughText || !roughText.trim()) {
       return NextResponse.json({ error: "Rough text input is required" }, { status: 400 });
@@ -106,7 +106,14 @@ export async function POST(req: NextRequest) {
     const styleInstruction = STYLE_PROMPTS[style] || STYLE_PROMPTS.casual!;
 
     // 3. Assemble Prompt
-    const systemPrompt = `You are a product copywriter for a clothing store. Rewrite the user's rough notes into a clear, simple, and natural product description.
+    const roleMap: Record<string, string> = {
+      fragrance: "You are a product copywriter for a boutique fragrance brand. Rewrite the notes into a clear, evocative description focusing on scent profile, notes, and occasion wear.",
+      handbag: "You are a product copywriter for a designer handbag boutique. Rewrite the notes into a clean description focusing on silhouette, capacity, styling, and leather/fabric quality.",
+      apparel: "You are a product copywriter for a clothing store. Rewrite the user's rough notes into a clear, simple, and natural product description.",
+    };
+    const rolePrompt = roleMap[verticalType] || roleMap.apparel!;
+
+    const systemPrompt = `${rolePrompt}
     
     STYLE DIRECTION:
     ${styleInstruction}

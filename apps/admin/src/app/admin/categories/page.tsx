@@ -3,8 +3,9 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
-import { Button, Card, CardContent } from "@hive/ui";
+import { Card, CardContent, Button } from "@hive/ui";
 import { Plus, Edit3, Trash2, Power, ArrowLeft, Loader2, ListCollapse, UploadCloud } from "lucide-react";
+import { VERTICAL_CONFIGS, VERTICAL_TYPES, VerticalType } from "@hive/types";
 import Link from "next/link";
 
 export default function AdminCategoriesPage() {
@@ -23,6 +24,7 @@ export default function AdminCategoriesPage() {
   const [sortOrder, setSortOrder] = useState(1);
   const [active, setActive] = useState(true);
   const [showOnHomepage, setShowOnHomepage] = useState(false);
+  const [verticalType, setVerticalType] = useState<VerticalType>("apparel");
   
   // Image Upload State
   const [imageStorageId, setImageStorageId] = useState<string | null>(null);
@@ -74,6 +76,7 @@ export default function AdminCategoriesPage() {
     setSortOrder(category.sortOrder);
     setActive(category.active);
     setShowOnHomepage(category.showOnHomepage ?? false);
+    setVerticalType(category.verticalType || "apparel");
   };
 
   const resetForm = () => {
@@ -86,6 +89,7 @@ export default function AdminCategoriesPage() {
     setSortOrder((categories?.length || 0) + 1);
     setActive(true);
     setShowOnHomepage(false);
+    setVerticalType("apparel");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,6 +139,7 @@ export default function AdminCategoriesPage() {
           active,
           sortOrder,
           showOnHomepage,
+          verticalType,
         });
         alert("Category updated successfully!");
       } else {
@@ -145,6 +150,7 @@ export default function AdminCategoriesPage() {
           active,
           sortOrder,
           showOnHomepage,
+          verticalType,
         });
         alert("Category created successfully!");
       }
@@ -221,6 +227,21 @@ export default function AdminCategoriesPage() {
               onChange={handleNameChange}
               className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold focus:border-transparent text-sm bg-hive-cream/10"
             />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-hive-text-muted">Vertical Type</label>
+            <select
+              value={verticalType}
+              onChange={(e) => setVerticalType(e.target.value as VerticalType)}
+              className="w-full px-4 py-2.5 rounded-xl border border-hive-border/60 focus:outline-none focus:ring-1.5 focus:ring-hive-gold focus:border-transparent text-sm bg-hive-cream/10"
+            >
+              {VERTICAL_TYPES.map((vt) => (
+                <option key={vt} value={vt}>
+                  {VERTICAL_CONFIGS[vt].label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -368,6 +389,9 @@ export default function AdminCategoriesPage() {
                           <span className="font-serif font-bold text-hive-dark text-sm truncate">{category.name}</span>
                           <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-hive-comb/80 border border-hive-border/60 text-hive-dark">
                             Pos: {category.sortOrder}
+                          </span>
+                          <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 border border-slate-200 text-slate-700 capitalize">
+                            {category.verticalType || "apparel"}
                           </span>
                           {category.active ? (
                             <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-bold bg-green-50 text-green-700 border border-green-200">

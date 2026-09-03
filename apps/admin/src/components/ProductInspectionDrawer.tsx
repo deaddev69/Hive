@@ -17,7 +17,7 @@ import {
   Loader2,
   ListRestart
 } from "lucide-react";
-import { PRODUCT_SPEC_KEYS } from "@hive/types";
+import { getVerticalConfig } from "@hive/types";
 
 interface ProductInspectionDrawerProps {
   product: any;
@@ -32,6 +32,11 @@ export function ProductInspectionDrawer({
 }: ProductInspectionDrawerProps) {
   // Query full product details in case enriched data has missing specs
   const product = initialProduct;
+
+  // Derive vertical configuration for specs and variant labels
+  const verticalConfig = useMemo(() => {
+    return getVerticalConfig(product?.verticalType);
+  }, [product?.verticalType]);
 
   // Local Form state
   const [name, setName] = useState(product?.name || "");
@@ -549,9 +554,9 @@ export function ProductInspectionDrawer({
                                   {acc.key === "details" && (
                                     <>
                                       <p>{description || "No description provided."}</p>
-                                      {(Object.entries(PRODUCT_SPEC_KEYS) as [string, string][]).some(([k]) => details[k]) && (
+                                      {(Object.entries(verticalConfig.specLabels) as [string, string][]).some(([k]) => details[k]) && (
                                         <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-2">
-                                          {(Object.entries(PRODUCT_SPEC_KEYS) as [string, string][]).map(([k, label]) => {
+                                          {(Object.entries(verticalConfig.specLabels) as [string, string][]).map(([k, label]) => {
                                             const val = details[k]?.trim();
                                             if (!val) return null;
                                             return (
@@ -693,9 +698,9 @@ export function ProductInspectionDrawer({
                       <h4 className="text-[9px] font-extrabold uppercase tracking-wider text-stone-450">Product Details</h4>
                       <p className="text-[10px] text-stone-550 leading-normal">{description || "No description provided."}</p>
                       
-                      {(Object.entries(PRODUCT_SPEC_KEYS) as [string, string][]).some(([k]) => details[k]) && (
+                      {(Object.entries(verticalConfig.specLabels) as [string, string][]).some(([k]) => details[k]) && (
                         <div className="grid grid-cols-2 gap-2 pt-1 border-t border-stone-50">
-                          {(Object.entries(PRODUCT_SPEC_KEYS) as [string, string][]).map(([k, label]) => {
+                          {(Object.entries(verticalConfig.specLabels) as [string, string][]).map(([k, label]) => {
                             const val = details[k]?.trim();
                             if (!val) return null;
                             return (
@@ -998,7 +1003,7 @@ export function ProductInspectionDrawer({
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4">
-                  {(Object.entries(PRODUCT_SPEC_KEYS) as [string, string][]).map(([key, label]) => (
+                  {(Object.entries(verticalConfig.specLabels) as [string, string][]).map(([key, label]) => (
                     <div key={key} className="flex flex-col gap-1">
                       <label className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">{label}</label>
                       <input 

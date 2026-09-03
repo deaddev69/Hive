@@ -17,6 +17,9 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Cropper from "react-easy-crop";
+import { VariantEditor } from "./VariantEditor";
+import { SpecificationEditor } from "./SpecificationEditor";
+import { getVerticalConfig } from "@hive/types";
 
 // Constant arrays
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "Free"];
@@ -68,7 +71,17 @@ const PATTERN_OPTIONS = [
 ];
 const FABRIC_FAMILY_OPTIONS = [
   "Silk", "Cotton", "Banarasi", "Linen", "Organza", "Chanderi",
-  "Georgette", "Crepe", "Velvet", "Rayon", "Polyester", "Other"
+  "Georgette", "Chiffon", "Rayon", "Velvet", "Modal", "Satin",
+  "Tussar", "Kalamkari", "Mulmul", "Other"
+];
+
+// Tier 1 Commission Slabs for real-time pricing calculation
+const TIER1_COMMISSION_SLABS = [
+  { min_price: 0, max_price: 499, rate: 2 },
+  { min_price: 500, max_price: 999, rate: 3 },
+  { min_price: 1000, max_price: 1499, rate: 4 },
+  { min_price: 1500, max_price: 4999, rate: 5 },
+  { min_price: 5000, max_price: null, rate: 5 },
 ];
 
 const DEFAULT_TIER_SLABS = [
@@ -85,6 +98,34 @@ function autoCorrectCapitalization(str: string): string {
   return str.replace(/\b([a-z])([a-z]*)\b/gi, (match, p1, p2) => {
     return p1.toUpperCase() + p2.toLowerCase();
   });
+}
+
+function autoCorrectTitleCasing(str: string): string {
+  if (!str) return str;
+  return str.replace(/\b([a-z])([a-z]*)\b/gi, (match, p1, p2) => {
+    return p1.toUpperCase() + p2.toLowerCase();
+  }).trim();
+}
+
+function cleanChatGptDescription(text: string): string {
+  if (!text) return "";
+  return text
+    // Strip common AI conversational headers/intros
+    .replace(/^(certainly|here is a description|here's a description|sure|of course|introducing)[^:\n]*:?\s*/i, "")
+    // Strip markdown asterisks (**bold** -> bold, *italic* -> italic)
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    // Strip markdown headers (### Header -> Header)
+    .replace(/^#{1,6}\s+/gm, "")
+    // Normalize bullet markers (* or - or •) to clean bullet dots
+    .replace(/^[\*\-•]\s*/gm, "• ")
+    // Strip outer quotation marks
+    .replace(/^["'“](.*)["'”]$/s, "$1")
+    // Collapse 3+ newlines to max 2
+    .replace(/\n{3,}/g, "\n\n")
+    // Auto-capitalize first letter of sentences
+    .replace(/(^\s*|[.!?]\s+)([a-z])/g, (_, p1, p2) => p1 + p2.toUpperCase())
+    .trim();
 }
 
 function calculatePricingBreakdown(basePriceRupees: number, config?: any, rawTierKey?: string) {
@@ -338,9 +379,9 @@ const productFormSchema = z.object({
   categoryId: z.string().min(1, "Please choose a category for this product"),
   description: z.string().min(1, "Product description is required"),
   story: z.string().optional(),
-  materialType: z.string().min(1, "Please select the garment material"),
+  materialType: z.string().optional(),
   customMaterialType: z.string().optional(),
-  care: z.string().min(1, "Please select care instructions"),
+  care: z.string().optional(),
   customCare: z.string().optional(),
   craft: z.string().optional(),
   color: z.string().min(1, "Please enter the color"),
@@ -450,6 +491,19 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   // Progressive Disclosure: visible extra detail chips in Step 4 (excluding mandatory Material and Care)
   const [activeExtraFields, setActiveExtraFields] = useState<Set<string>>(new Set());
 
+  // Photo Source (in_store vs ai_enhanced)
+  const [photoSource, setPhotoSource] = useState<"in_store" | "ai_enhanced">(
+    productToEdit?.photoSource || "in_store"
+  );
+
+  // Extra specifications details (for modular SpecificationEditor)
+  const [extraDetails, setExtraDetails] = useState<Record<string, string>>(
+    productToEdit?.details || {}
+  );
+
+  // Unsaved local draft prompt state
+  const [hasDraftToResume, setHasDraftToResume] = useState(false);
+
   // Uploading / Submitting status
   const [submitting, setSubmitting] = useState(false);
   const [uploadStatusText, setUploadStatusText] = useState("");
@@ -457,9 +511,9 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   // AI Description states
   const [generatingDesc, setGeneratingDesc] = useState(false);
 
-  // Categories helper list
+  // Categories helper list with verticalType preserved
   const allCategoriesList = useMemo(() => {
-    const list: { _id: string; name: string }[] = [];
+    const list: { _id: string; name: string; verticalType?: string }[] = [];
     const nameSet = new Set<string>();
 
     (categories || []).forEach((c) => {
@@ -467,7 +521,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       if (cleanName.toLowerCase() === "ethnic wer") {
         cleanName = "Ethnic Wear";
       }
-      list.push({ _id: c._id, name: cleanName });
+      list.push({ _id: c._id, name: cleanName, verticalType: c.verticalType });
       nameSet.add(cleanName.toLowerCase());
     });
 
@@ -540,15 +594,105 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const selectedCategoryObj = allCategoriesList.find((c) => c._id === categoryIdWatch);
   const isSareeCategory = selectedCategoryObj?.name?.toLowerCase().includes("saree") || false;
 
-  // Auto-set FREE size for Sarees
+  const currentVerticalConfig = useMemo(() => {
+    return getVerticalConfig(selectedCategoryObj?.verticalType || (productToEdit?.verticalType as any));
+  }, [selectedCategoryObj?.verticalType, productToEdit?.verticalType]);
+
+  // Check for saved local draft on mount (only when creating new product)
   useEffect(() => {
-    if (isSareeCategory) {
+    if (productToEdit) return;
+    try {
+      const saved = localStorage.getItem("hive_partner_product_draft");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && (parsed.name || parsed.description || parsed.price)) {
+          setHasDraftToResume(true);
+        }
+      }
+    } catch {}
+  }, [productToEdit]);
+
+  const handleResumeDraft = () => {
+    try {
+      const saved = localStorage.getItem("hive_partner_product_draft");
+      if (!saved) return;
+      const d = JSON.parse(saved);
+      if (d.name) setValue("name", d.name);
+      if (d.price) setValue("price", d.price);
+      if (d.mrp) setValue("mrp", d.mrp);
+      if (d.discountPrice) setValue("discountPrice", d.discountPrice);
+      if (d.categoryId) setValue("categoryId", d.categoryId);
+      if (d.color) setValue("color", d.color);
+      if (d.description) setValue("description", d.description);
+      if (d.materialType) setValue("materialType", d.materialType);
+      if (d.care) setValue("care", d.care);
+      if (d.story) setValue("story", d.story);
+      if (d.selectedSizes && Array.isArray(d.selectedSizes)) setSelectedSizes(d.selectedSizes);
+      if (d.stockBySize) setStockBySize(d.stockBySize);
+      if (d.photoSource) setPhotoSource(d.photoSource);
+      if (d.extraDetails) setExtraDetails(d.extraDetails);
+      if (d.step && d.step > 1) {
+        setCurrentStep(d.step);
+        setMaxUnlockedStep((prev) => Math.max(prev, d.step) as any);
+      }
+      setHasDraftToResume(false);
+      toast.success("Draft Resumed", "Restored your unsaved product form.");
+    } catch {
+      setHasDraftToResume(false);
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    try {
+      localStorage.removeItem("hive_partner_product_draft");
+    } catch {}
+    setHasDraftToResume(false);
+    toast.info("Draft Discarded", "Starting with a blank form.");
+  };
+
+  // Debounced draft autosave to localStorage
+  useEffect(() => {
+    if (productToEdit) return;
+    const timer = setTimeout(() => {
+      try {
+        const vals = getValues();
+        const draftPayload = {
+          ...vals,
+          selectedSizes,
+          stockBySize,
+          photoSource,
+          extraDetails,
+          step: currentStep,
+          updatedAt: Date.now(),
+        };
+        localStorage.setItem("hive_partner_product_draft", JSON.stringify(draftPayload));
+      } catch {}
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [
+    productToEdit,
+    nameWatch,
+    priceWatch,
+    mrpWatch,
+    descriptionWatch,
+    colorWatch,
+    categoryIdWatch,
+    selectedSizes,
+    stockBySize,
+    photoSource,
+    extraDetails,
+    currentStep,
+  ]);
+
+  // Auto-set FREE size for Sarees (apparel only)
+  useEffect(() => {
+    if (isSareeCategory && currentVerticalConfig.id === "apparel") {
       if (!selectedSizes.includes("Free") && !selectedSizes.includes("FREE")) {
         setSelectedSizes(["Free"]);
         setStockBySize((prev) => ({ ...prev, Free: prev.Free || prev.FREE || 1 }));
       }
     }
-  }, [isSareeCategory]);
+  }, [isSareeCategory, currentVerticalConfig.id]);
 
   // Load product to edit
   useEffect(() => {
@@ -820,6 +964,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           roughText: roughInput,
           type: "description",
           style: "standard",
+          verticalType: currentVerticalConfig.id,
         }),
       });
 
@@ -992,6 +1137,34 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
       const finalDescription = data.description.trim();
 
+      // Build details payload sanitized against the active vertical
+      const cleanedDetails: Record<string, string> = {
+        color: data.color || "",
+      };
+
+      if (currentVerticalConfig.id === "apparel") {
+        if (data.craft) cleanedDetails.craft = autoCorrectCapitalization(data.craft);
+        if (data.fabricContent) cleanedDetails.fabricContent = data.fabricContent;
+        if (data.fabricDetail) cleanedDetails.fabricDetail = data.fabricDetail;
+        if (data.neckType) cleanedDetails.neckType = data.neckType;
+        if (data.closure) cleanedDetails.closure = data.closure;
+        if (data.sleeve) cleanedDetails.sleeve = data.sleeve;
+        if (data.sleeveStyling) cleanedDetails.sleeveStyling = data.sleeveStyling;
+        if (data.shape) cleanedDetails.shape = data.shape;
+        if (data.hemline) cleanedDetails.hemline = data.hemline;
+        if (data.length) cleanedDetails.length = data.length;
+        if (data.pattern) cleanedDetails.pattern = data.pattern;
+        if (data.fabricFamily) cleanedDetails.fabricFamily = data.fabricFamily;
+      }
+
+      // Merge extra details allowed by the active vertical
+      const allowedSpecKeys = new Set(currentVerticalConfig.specKeys);
+      for (const [k, v] of Object.entries(extraDetails)) {
+        if (allowedSpecKeys.has(k as any) && v && v.trim()) {
+          cleanedDetails[k] = v.trim();
+        }
+      }
+
       const payload = {
         name: data.name,
         description: finalDescription,
@@ -1001,6 +1174,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         compareAtPrice: data.mrp ? Math.round(parseFloat(data.mrp) * 100) : undefined,
         discountPrice: data.discountPrice ? Math.round(parseFloat(data.discountPrice) * 100) : undefined,
         images: finalImages,
+        photoSource,
         sizes: selectedSizes,
         stockBySize,
         featured,
@@ -1009,31 +1183,19 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         materialType: finalMaterial,
         material: finalMaterial,
         care: finalCare,
-        details: {
-          ...(data.craft ? { craft: autoCorrectCapitalization(data.craft) } : {}),
-          color: data.color || "",
-          fabricContent: data.fabricContent || "",
-          fabricDetail: data.fabricDetail || "",
-          neckType: data.neckType || "",
-          closure: data.closure || "",
-          sleeve: data.sleeve || "",
-          sleeveStyling: data.sleeveStyling || "",
-          shape: data.shape || "",
-          hemline: data.hemline || "",
-          length: data.length || "",
-          pattern: data.pattern || "",
-          fabricFamily: data.fabricFamily || "",
-        },
-        fitRecommendation,
-        silhouette,
+        details: cleanedDetails,
+        fitRecommendation: currentVerticalConfig.presentation.showGarmentFitWidget ? fitRecommendation : undefined,
+        silhouette: currentVerticalConfig.presentation.showGarmentFitWidget ? silhouette : undefined,
         approvalStatus: (productToEdit?.approvalStatus === "approved" ? "approved" : "pending") as any,
       };
 
       if (productToEdit?._id) {
         await updateProduct({ id: productToEdit._id as any, ...payload });
+        try { localStorage.removeItem("hive_partner_product_draft"); } catch {}
         setIsPublishingComplete(true);
       } else {
         await createProduct(payload);
+        try { localStorage.removeItem("hive_partner_product_draft"); } catch {}
         setIsPublishingComplete(true);
       }
     } catch (e: any) {
@@ -1100,7 +1262,20 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
             <X className="w-5 h-5" />
           </button>
           <span className="text-xs font-bold uppercase tracking-widest text-slate-900">New Product Post</span>
-          <div className="w-8 h-8" />
+          <button
+            type="button"
+            onClick={handleStep1Next}
+            disabled={!canGoNext || croppingInProgress}
+            className={cn(
+              "text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 select-none cursor-pointer active:scale-95",
+              canGoNext && !croppingInProgress
+                ? "bg-slate-950 text-white shadow-xs hover:bg-slate-900"
+                : "bg-slate-100 text-slate-300 cursor-not-allowed"
+            )}
+          >
+            <span>Next ({localPreviews.length}/3)</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {/* Viewport Container */}
@@ -1286,10 +1461,39 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         </div>
 
         {/* Bottom Action Footer */}
-        <div className="px-6 py-4 bg-white border-t border-slate-100 flex items-center justify-between shrink-0 z-20">
-          <span className="text-xs font-medium text-slate-500 font-sans">
-            {localPreviews.length} of 3 required photos selected
-          </span>
+        <div className="px-6 py-4 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 z-20 pb-safe">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs font-medium text-slate-500 font-sans">
+              {localPreviews.length} of 3 required photos selected
+            </span>
+            {/* Photo Source Selector */}
+            <div className="flex items-center gap-1 bg-slate-100/90 p-0.5 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setPhotoSource("in_store")}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer",
+                  photoSource === "in_store"
+                    ? "bg-white text-slate-900 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+              >
+                📷 Authentic Photo
+              </button>
+              <button
+                type="button"
+                onClick={() => setPhotoSource("ai_enhanced")}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer",
+                  photoSource === "ai_enhanced"
+                    ? "bg-white text-slate-900 shadow-2xs"
+                    : "text-slate-500 hover:text-slate-800"
+                )}
+              >
+                ✨ AI Preview
+              </button>
+            </div>
+          </div>
 
           <button
             type="button"
@@ -1332,6 +1536,32 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   return (
     <div className="w-full max-w-2xl mx-auto px-4 py-8 font-sans animate-in fade-in duration-200">
       
+      {/* Unsaved Local Draft Banner */}
+      {hasDraftToResume && (
+        <div className="mb-6 p-3.5 bg-amber-50/90 border border-amber-200/80 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
+          <div className="flex items-center gap-2 text-amber-900 font-medium">
+            <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>You have an unsaved product draft. Resume where you left off?</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleResumeDraft}
+              className="px-3 py-1 bg-amber-950 text-white rounded-lg text-xs font-bold hover:bg-black cursor-pointer active:scale-95"
+            >
+              Resume Draft
+            </button>
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              className="px-2.5 py-1 text-amber-800 hover:text-red-600 rounded-lg text-xs font-semibold cursor-pointer"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Header & Minimalist Linear Progress Stepper */}
       <div className="flex flex-col gap-6 border-b border-slate-100 pb-6 mb-8">
         <div className="flex items-center justify-between">
@@ -1504,6 +1734,13 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   type="text"
                   placeholder="e.g. Floral Dream Tiered Midi Dress"
                   {...register("name")}
+                  autoCapitalize="words"
+                  autoCorrect="on"
+                  spellCheck={true}
+                  onBlur={(e) => {
+                    const titleCased = autoCorrectTitleCasing(e.target.value);
+                    setValue("name", titleCased, { shouldDirty: true });
+                  }}
                   className="w-full px-4 py-3 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-[13px] font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
                 />
                 {errors.name && <span className="text-red-500 text-xs font-medium">{errors.name.message}</span>}
@@ -1517,6 +1754,13 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                     type="text"
                     placeholder="e.g. Crimson Red"
                     {...register("color")}
+                    autoCapitalize="words"
+                    autoCorrect="on"
+                    spellCheck={true}
+                    onBlur={(e) => {
+                      const titleCased = autoCorrectTitleCasing(e.target.value);
+                      setValue("color", titleCased, { shouldDirty: true });
+                    }}
                     className="w-full px-4 py-3 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-[13px] font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all"
                   />
                   {errors.color && <span className="text-red-500 text-xs font-medium">{errors.color.message}</span>}
@@ -1659,168 +1903,29 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         )}
 
         {/* ─────────────────────────────────────────────────────────────────── */}
-        {/* STEP 3: 📏 SIZES & STOCK (MANDATORY QUANTITY IN STOCK)              */}
+        {/* STEP 3: 📏 SIZES / VARIANTS & STOCK (MANDATORY QUANTITY IN STOCK)   */}
         {/* ─────────────────────────────────────────────────────────────────── */}
         {currentStep === 3 && (
           <div className="flex flex-col gap-6 animate-in fade-in duration-200">
-            
-            <div className="flex flex-col gap-6">
-              
-              {/* Saree Auto-Free Size Notice */}
-              {isSareeCategory ? (
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
-                  <Info className="w-4 h-4 text-slate-600 shrink-0" />
-                  <p className="text-xs font-medium text-slate-700">
-                    Sarees are automatically Free Size. Size &quot;Free&quot; has been selected for you.
-                  </p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Available Sizes *</label>
-                    <span className="text-[10px] text-slate-400 font-medium">Select all sizes you have</span>
-                  </div>
-                  <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2.5">
-                    {SIZE_OPTIONS.map((sz) => {
-                      const isSelected = selectedSizes.includes(sz);
-                      return (
-                        <button
-                          type="button"
-                          key={sz}
-                          onClick={() => toggleSize(sz)}
-                          className={cn(
-                            "min-h-[48px] min-w-[56px] px-3 py-2.5 rounded-xl border text-sm font-bold transition-all flex items-center justify-center cursor-pointer select-none shrink-0 active:scale-95",
-                            isSelected 
-                              ? "bg-slate-950 text-white border-slate-950 shadow-xs" 
-                              : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                          )}
-                        >
-                          {sz}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Per-Size Stock Inputs — Mandatory */}
-              {selectedSizes.length > 0 && (
-                <div className="flex flex-col gap-2 animate-in fade-in duration-200">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                      Quantity in Stock (Units) *
-                    </label>
-                    <span className="text-[10px] text-red-500 font-semibold">Mandatory for each size</span>
-                  </div>
-                  
-                  <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 bg-white">
-                    {selectedSizes.map((sz) => {
-                      const qty = stockBySize[sz] || 0;
-                      const hasZero = qty <= 0;
-                      return (
-                        <div key={sz} className={cn(
-                          "px-4 py-3 flex justify-between items-center transition-colors",
-                          hasZero && "bg-red-50/20"
-                        )}>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-slate-900">{sz}</span>
-                            {hasZero && (
-                              <span className="text-[10px] text-red-500 font-medium">(Please enter quantity)</span>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => decrementStock(sz)}
-                              className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
-                            >
-                              <Minus className="w-4 h-4 stroke-[2.5]" />
-                            </button>
-                            
-                            <input
-                              type="number"
-                              min="1"
-                              value={stockBySize[sz] || ""}
-                              onChange={(e) => handleStockChange(sz, parseInt(e.target.value) || 0)}
-                              className={cn(
-                                "w-16 h-9 px-2 py-1 border rounded-xl text-sm font-bold text-center focus:border-slate-900 focus:outline-none",
-                                hasZero ? "border-red-300 bg-red-50/40 text-red-700" : "border-slate-200 text-slate-900"
-                              )}
-                              placeholder="1"
-                            />
-
-                            <button
-                              type="button"
-                              onClick={() => incrementStock(sz)}
-                              className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all cursor-pointer active:scale-95 shrink-0"
-                            >
-                              <Plus className="w-4 h-4 stroke-[2.5]" />
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <hr className="border-slate-100" />
-
-              {/* Fit Recommendation */}
-              <div className="flex flex-col gap-2">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Fit Sizing</label>
-                <div className="grid grid-cols-3 gap-2 w-full max-w-sm">
-                  {[
-                    { val: "runs_small", label: "Runs Small" },
-                    { val: "true_to_size", label: "True to Size" },
-                    { val: "runs_large", label: "Runs Large" },
-                  ].map((rec) => (
-                    <button
-                      key={rec.val}
-                      type="button"
-                      onClick={() => setFitRecommendation(rec.val as any)}
-                      className={cn(
-                        "min-h-[44px] py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer text-center select-none active:scale-95",
-                        fitRecommendation === rec.val 
-                          ? "bg-slate-950 text-white border-slate-950 font-bold shadow-2xs" 
-                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                      )}
-                    >
-                      {rec.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Silhouette */}
-              <div className="flex flex-col gap-2">
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Silhouette</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-md">
-                  {[
-                    { val: "slim_fit", label: "Slim" },
-                    { val: "regular_fit", label: "Regular" },
-                    { val: "relaxed_fit", label: "Relaxed" },
-                    { val: "oversized", label: "Oversized" },
-                  ].map((sil) => (
-                    <button
-                      key={sil.val}
-                      type="button"
-                      onClick={() => setSilhouette(sil.val as any)}
-                      className={cn(
-                        "min-h-[44px] py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer text-center select-none active:scale-95",
-                        silhouette === sil.val 
-                          ? "bg-slate-950 text-white border-slate-950 font-bold shadow-2xs" 
-                          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                      )}
-                    >
-                      {sil.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-            </div>
+            <VariantEditor
+              config={currentVerticalConfig.variant}
+              showGarmentFit={currentVerticalConfig.presentation.showGarmentFitWidget}
+              selectedSizes={selectedSizes}
+              onToggleSize={toggleSize}
+              onAddCustomSize={(customSz: string) => {
+                setSelectedSizes((prev) => [...prev, customSz]);
+                setStockBySize((prev) => ({ ...prev, [customSz]: 1 }));
+              }}
+              stockBySize={stockBySize}
+              onStockChange={handleStockChange}
+              onIncrementStock={incrementStock}
+              onDecrementStock={decrementStock}
+              isSareeCategory={isSareeCategory}
+              fitRecommendation={fitRecommendation}
+              onFitRecommendationChange={setFitRecommendation}
+              silhouette={silhouette}
+              onSilhouetteChange={setSilhouette}
+            />
 
             {/* Bottom Navigation */}
             <div className="flex items-center justify-between pt-4 border-t border-slate-100">
@@ -1841,7 +1946,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
-
           </div>
         )}
 
@@ -1861,6 +1965,22 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   </div>
                   
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cur = getValues("description");
+                        if (cur) {
+                          setValue("description", cleanChatGptDescription(cur), { shouldDirty: true });
+                          toast.success("Text Cleaned", "Formatting, asterisks, and quotes cleaned.");
+                        }
+                      }}
+                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                      title="Clean ChatGPT formatting, asterisks, and quotes"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-600" />
+                      <span>Clean Format</span>
+                    </button>
+
                     <button
                       type="button"
                       disabled={generatingDesc}
@@ -1883,9 +2003,30 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 </div>
 
                 <textarea
-                  placeholder="Describe the silhouette, fabric feel, work details, or occasion styling tips..."
+                  placeholder={
+                    currentVerticalConfig.id === "fragrance"
+                      ? "Describe the olfactory character, projection, longevity, and ideal wearing occasions..."
+                      : currentVerticalConfig.id === "handbag"
+                      ? "Describe the silhouette, leather/fabric finish, compartment layout, and carry options..."
+                      : "Describe the silhouette, fabric feel, work details, or occasion styling tips..."
+                  }
                   {...register("description")}
                   rows={3}
+                  autoCapitalize="sentences"
+                  autoCorrect="on"
+                  spellCheck={true}
+                  onBlur={(e) => {
+                    const cleaned = cleanChatGptDescription(e.target.value);
+                    setValue("description", cleaned, { shouldDirty: true });
+                  }}
+                  onPaste={() => {
+                    setTimeout(() => {
+                      const cur = getValues("description");
+                      if (cur) {
+                        setValue("description", cleanChatGptDescription(cur), { shouldDirty: true });
+                      }
+                    }, 50);
+                  }}
                   className={cn(
                     "w-full px-4 py-3 bg-white border rounded-xl text-[13px] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 font-sans leading-relaxed resize-none transition-all",
                     errors.description ? "border-red-500" : "border-slate-200 hover:border-slate-300"
@@ -2218,10 +2359,21 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 </div>
               )}
 
+              {/* Specification Editor for Non-Apparel Verticals (Fragrance, Handbag, etc.) */}
+              {currentVerticalConfig.id !== "apparel" && (
+                <SpecificationEditor
+                  config={currentVerticalConfig}
+                  details={extraDetails}
+                  onDetailChange={(k, v) => setExtraDetails((prev) => ({ ...prev, [k]: v }))}
+                  activeExtraFields={activeExtraFields}
+                  onToggleExtraField={toggleExtraField}
+                />
+              )}
+
             </div>
 
             {/* Bottom Navigation */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 gap-2">
               <button
                 type="button"
                 onClick={() => setCurrentStep(3)}
@@ -2230,23 +2382,38 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 ← Back to Sizes & Stock
               </button>
 
-              <button
-                type="submit"
-                disabled={submitting}
-                className="px-7 py-3 bg-slate-950 hover:bg-slate-900 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer active:scale-[0.98] flex items-center gap-2"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-white" />
-                    <span>{uploadStatusText || "Saving Listing..."}</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Send to Hive</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => {
+                    setActive(false);
+                    handleSubmit(onFormSubmit, onFormError)();
+                  }}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer select-none active:scale-95"
+                >
+                  Save as Draft
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  onClick={() => setActive(true)}
+                  className="px-7 py-3 bg-slate-950 hover:bg-slate-900 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer active:scale-[0.98] flex items-center gap-2"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>{uploadStatusText || "Saving Listing..."}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Send to Hive</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
           </div>

@@ -462,6 +462,7 @@ export const createProduct = mutation({
                        )),
     returnsAccepted: v.optional(v.boolean()),
     approvalStatus: v.optional(v.string()),
+    photoSource: v.optional(v.union(v.literal("in_store"), v.literal("ai_enhanced"))),
     token: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -578,6 +579,7 @@ export const createProduct = mutation({
       description: args.description,
       categoryId: resolvedCategoryId as any,
       verticalType,
+      photoSource: args.photoSource,
       basePrice: args.price,
       price: customerPrice,
       baseDiscountPrice: args.discountPrice,
@@ -707,6 +709,7 @@ export const updateProduct = mutation({
                        )),
     returnsAccepted: v.optional(v.boolean()),
     approvalStatus: v.optional(v.string()),
+    photoSource: v.optional(v.union(v.literal("in_store"), v.literal("ai_enhanced"))),
     token: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -854,6 +857,7 @@ export const updateProduct = mutation({
       mrp: args.mrp ?? args.compareAtPrice,
       compareAtPrice: args.compareAtPrice ?? args.mrp,
       images: args.images,
+      photoSource: args.photoSource,
       sizes: args.sizes,
       stockBySize: args.stockBySize,
       sameDayEligible: true, // platform-wide Porter 90-min promise, not a per-product toggle
