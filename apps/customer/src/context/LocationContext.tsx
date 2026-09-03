@@ -226,7 +226,6 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       regionName,
     };
 
-    console.log('[Geolocation] Saving to localStorage:', locationData);
     localStorage.setItem("hive_location", JSON.stringify(locationData));
     localStorage.setItem("hive_customer_pincode", data.postcode);
     localStorage.setItem("hive_customer_region", regionName);
