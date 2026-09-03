@@ -50,6 +50,7 @@ export interface SizeSelectorProps {
   onOpenSizeGuide: () => void;
   fitNote?: string;
   hasMeasurements?: boolean;
+  label?: string;
 }
 
 export const SizeSelector: React.FC<SizeSelectorProps> = ({
@@ -60,6 +61,7 @@ export const SizeSelector: React.FC<SizeSelectorProps> = ({
   onOpenSizeGuide,
   fitNote,
   hasMeasurements = true,
+  label = "Size",
 }) => {
   const currentStock = selectedSize ? inventory[selectedSize] ?? 0 : 0;
 
@@ -69,7 +71,7 @@ export const SizeSelector: React.FC<SizeSelectorProps> = ({
       {/* Header Label */}
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold uppercase tracking-wider text-stone-900">
-          Choose Size
+          Choose {label}
         </span>
         {hasMeasurements && (
           <button

@@ -1,3 +1,5 @@
+import { VerticalType } from "@hive/types";
+
 export interface ProductReview {
   id: string;
   userName: string;
@@ -71,6 +73,9 @@ export interface ProductDetail {
   deliveryInfo: string;
   sameDayEligible: boolean;
   returnsAccepted?: boolean;
+  verticalType?: VerticalType;
+  photoSource?: "in_store" | "ai_enhanced";
+  details?: Record<string, string>;
   inventory: Record<string, number>; // size to stock count
   featuredReviews: ProductReview[];
 }

@@ -2,10 +2,12 @@
 import React, { useState } from "react";
 import { Scissors, Compass, Ruler, FileText, Shirt, CheckCircle2, RotateCcw, ShieldCheck, Star } from "lucide-react";
 import { cn } from "@hive/ui";
-import { PRODUCT_SPEC_KEYS } from "@hive/types";
+import { getVerticalConfig } from "@hive/types";
 import { ProductDetail } from "@/lib/mockProductDetails";
 import { SizeSelector } from "./SizeSelector";
 import { PurchaseActions } from "./PurchaseActions";
+import { ProductSpecifications } from "./ProductSpecifications";
+import { ProductPhotoDisclaimer } from "./ProductPhotoDisclaimer";
 import { useRouter } from "next/navigation";
 import { cleanProductTitle } from "./ProductCard";
 import Link from "next/link";
@@ -70,19 +72,13 @@ export function MobileProductDetails({
       .join(" ");
   };
 
-  const isReturnsAccepted = (product as any).returnsAccepted ?? true;
+  const isReturnsAccepted = product.returnsAccepted ?? true;
+
+  const verticalConfig = getVerticalConfig(product.verticalType);
 
   const hasDescription = product.description && product.description.trim() !== "";
-
-  const productDetails = (product as any).details || {};
-  const renderedSpecs = Object.entries(PRODUCT_SPEC_KEYS)
-    .map(([key, label]) => {
-      const val = productDetails[key]?.trim();
-      return { label, value: val };
-    })
-    .filter(item => !!item.value);
-
-  const hasDetails = renderedSpecs.length > 0;
+  const productDetails = product.details || {};
+  const hasDetails = verticalConfig.specKeys.some((key) => Boolean(productDetails[key]?.trim()));
 
   // Prepare spec list items dynamically using tailoring-focused icons (Fabric, Craft, Fit Notes)
   const specItems = [
@@ -194,14 +190,15 @@ export function MobileProductDetails({
           inventory={stockMap}
           selectedSize={selectedSize}
           onSelectSize={setSelectedSize}
-          hasMeasurements={false}
+          hasMeasurements={verticalConfig.variant.requiresMeasurements}
+          label={verticalConfig.variant.label}
           onOpenSizeGuide={() => { }}
           fitNote={product.fitNote}
         />
       </div>
 
       {/* ── SECTION 2.5: FIT BADGE & SILHOUETTE INDICATOR ── */}
-      {(fitRecommendation || silhouette) && (
+      {verticalConfig.presentation.showGarmentFitWidget && (fitRecommendation || silhouette) && (
         <div className="flex flex-col gap-2 select-none">
           {fitRecommendation && (
             <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl border border-stone-200/70 bg-stone-50/70 text-stone-700 shadow-2xs">
@@ -267,20 +264,10 @@ export function MobileProductDetails({
             )}
 
             {/* Specifications Grid */}
-            {hasDetails && (
-              <div className="grid grid-cols-2 gap-x-8 gap-y-3.5 pt-1.5 pb-1 text-left border-t border-stone-100/60">
-                {renderedSpecs.map((item, idx) => (
-                  <div key={idx} className="space-y-0.5">
-                    <span className="text-[9px] font-extrabold text-hive-text-muted uppercase tracking-wider block">
-                      {item.label}
-                    </span>
-                    <span className="text-xs font-semibold text-hive-dark block leading-tight">
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <ProductSpecifications product={product} config={verticalConfig} />
+
+            {/* Photo Origin Reassurance Note */}
+            <ProductPhotoDisclaimer source={product.photoSource} variant="note" />
           </div>
         )}
 

@@ -286,7 +286,7 @@ export const VERTICAL_CONFIGS: Readonly<Record<VerticalType, VerticalConfig>> = 
     id:    "handbag",
     label: "Handbags & Bags",
     variant: {
-      label:                "Size / Dimensions",
+      label:                "Option",
       defaultOptions:       ["One Size", "Mini", "Small", "Medium", "Large"],
       allowCustom:          true,
       requiresMeasurements: false,
