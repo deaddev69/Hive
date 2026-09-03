@@ -8,7 +8,7 @@
     "npm": ">=9.0.0"
   },
   "scripts": {
-    "test": "npx tsx convex/tests/signatureTest.ts && npx tsx convex/tests/payoutHoldTest.ts && npx tsx convex/tests/couponTest.ts && npx tsx convex/tests/exchangeFlowTest.ts && npx tsx convex/tests/boutiqueHoursTest.ts",
+    "test": "npx tsx convex/tests/signatureTest.ts && npx tsx convex/tests/payoutHoldTest.ts && npx tsx convex/tests/couponTest.ts && npx tsx convex/tests/exchangeFlowTest.ts && npx tsx convex/tests/boutiqueHoursTest.ts && npx tsx apps/customer/src/lib/safeStorage.test.ts",
     "prebuild": "npm run test",
     "build": "turbo run build",
     "dev": "turbo run dev",

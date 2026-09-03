@@ -8,6 +8,7 @@ import { useFirebaseAuth } from "@/hooks/useFirebaseAuth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { signInWithPopup, signOut, browserPopupRedirectResolver } from "firebase/auth";
 import { authPerfLog, logAuthFlowTotalOnce } from "@/lib/authPerf";
+import { safeGetItem, safeSetItem, safeRemoveItem } from "@/lib/safeStorage";
 
 export interface SessionUser {
   /**
@@ -60,7 +61,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Load initial guest status from localStorage
   useEffect(() => {
-    const savedGuest = localStorage.getItem("hive_guest") === "true";
+    const savedGuest = safeGetItem("hive_guest") === "true";
     setIsGuest(savedGuest);
   }, []);
 
@@ -134,7 +135,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const res = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
       setIsGuest(false);
-      localStorage.removeItem("hive_guest");
+      safeRemoveItem("hive_guest");
       return { token: "firebase", userId: res.user.uid, role: "customer" };
     } catch (err) {
       console.error("Firebase Google SignIn error:", err);
@@ -146,7 +147,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       await signOut(auth);
       setIsGuest(false);
-      localStorage.removeItem("hive_guest");
+      safeRemoveItem("hive_guest");
     } catch (err) {
       console.error("Firebase signOut error:", err);
     }
@@ -155,9 +156,9 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const setGuestMode = (enabled: boolean) => {
     setIsGuest(enabled);
     if (enabled) {
-      localStorage.setItem("hive_guest", "true");
+      safeSetItem("hive_guest", "true");
     } else {
-      localStorage.removeItem("hive_guest");
+      safeRemoveItem("hive_guest");
     }
   };
 

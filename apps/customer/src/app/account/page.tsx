@@ -45,6 +45,7 @@ import { ReservationStatusCard } from "@/components/reservation/ReservationStatu
 import { LocationMapPicker, ReverseGeocodeResult } from "@/components/location/LocationMapPicker";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { calculateDisplayPricing } from "@/lib/pricing";
+import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toTitleCase(str?: string): string {
@@ -1016,10 +1017,10 @@ function SettingsTab({ user, token }: { user: any; token: string | null }) {
       setPrefPhone(user.phone);
       setPhoneVal(user.phone);
       if (typeof window !== "undefined") {
-        localStorage.setItem("hive_pref_phone", user.phone);
+        safeSetItem("hive_pref_phone", user.phone);
       }
     } else if (typeof window !== "undefined") {
-      const storedPhone = localStorage.getItem("hive_pref_phone");
+      const storedPhone = safeGetItem("hive_pref_phone");
       if (storedPhone) {
         setPrefPhone(storedPhone);
         setPhoneVal(storedPhone);
@@ -1034,7 +1035,7 @@ function SettingsTab({ user, token }: { user: any; token: string | null }) {
     const trimmed = val.trim();
     if (!trimmed) return;
     setPrefPhone(trimmed);
-    localStorage.setItem("hive_pref_phone", trimmed);
+    safeSetItem("hive_pref_phone", trimmed);
     try {
       await updatePhone({ phone: trimmed, token: token || undefined });
       toast.success("Phone number updated successfully");

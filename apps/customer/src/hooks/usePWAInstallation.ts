@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
+import { safeGetItem, safeSetItem, safeRemoveItem } from "@/lib/safeStorage";
 
 export function usePWAInstallation() {
   const [showPrompt, setShowPrompt] = useState(false);
@@ -16,8 +17,8 @@ export function usePWAInstallation() {
   // Track product detail page views in localStorage
   useEffect(() => {
     if (pathname && pathname !== "/products" && pathname.startsWith("/products/")) {
-      const currentViews = parseInt(localStorage.getItem("hive_pwa_product_views") || "0", 10);
-      localStorage.setItem("hive_pwa_product_views", (currentViews + 1).toString());
+      const currentViews = parseInt(safeGetItem("hive_pwa_product_views") || "0", 10);
+      safeSetItem("hive_pwa_product_views", (currentViews + 1).toString());
     }
   }, [pathname]);
 
@@ -43,7 +44,7 @@ export function usePWAInstallation() {
 
     const handleAppInstalled = () => {
       setShowPrompt(false);
-      localStorage.setItem("hive_pwa_installed", "true");
+      safeSetItem("hive_pwa_installed", "true");
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -57,7 +58,7 @@ export function usePWAInstallation() {
 
   // Monitor user journey qualifications to show prompt
   useEffect(() => {
-    const dismissedTimestamp = localStorage.getItem("hive_pwa_dismissed_at");
+    const dismissedTimestamp = safeGetItem("hive_pwa_dismissed_at");
     if (dismissedTimestamp) {
       const dismissedTime = parseInt(dismissedTimestamp, 10);
       const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
@@ -66,7 +67,7 @@ export function usePWAInstallation() {
         return;
       } else {
         // Cooldown expired, clear it
-        localStorage.removeItem("hive_pwa_dismissed_at");
+        safeRemoveItem("hive_pwa_dismissed_at");
       }
     }
 
@@ -79,7 +80,7 @@ export function usePWAInstallation() {
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    localStorage.setItem("hive_pwa_dismissed_at", Date.now().toString());
+    safeSetItem("hive_pwa_dismissed_at", Date.now().toString());
   };
 
   const handleInstall = async () => {

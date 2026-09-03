@@ -6,6 +6,7 @@ import { api } from "../../../../convex/_generated/api";
 import { useSessionStore } from "./SessionContext";
 import { isWithinDeliveryRadius } from "../../../../convex/lib/serviceability";
 import { calculateDistanceKm } from "@/lib/distance";
+import { safeGetItem, safeSetItem, safeRemoveItem } from "@/lib/safeStorage";
 
 export interface LocationState {
   pincode: string | null;
@@ -92,8 +93,8 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // 1. Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem("hive_location");
-    const browseAll = localStorage.getItem("hive_browse_all") === "true";
+    const saved = safeGetItem("hive_location");
+    const browseAll = safeGetItem("hive_browse_all") === "true";
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -149,7 +150,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           regionName,
         };
 
-        localStorage.setItem("hive_location", JSON.stringify(locationData));
+        safeSetItem("hive_location", JSON.stringify(locationData));
         setState((prev) => ({
           ...prev,
           pincode: dbLocation.postcode,
@@ -200,7 +201,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const setBrowseAllProducts = useCallback((v: boolean) => {
-    localStorage.setItem("hive_browse_all", v ? "true" : "false");
+    safeSetItem("hive_browse_all", v ? "true" : "false");
     setState((prev) => ({ ...prev, browseAllProducts: v }));
   }, []);
 
@@ -226,12 +227,12 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       regionName,
     };
 
-    localStorage.setItem("hive_location", JSON.stringify(locationData));
-    localStorage.setItem("hive_customer_pincode", data.postcode);
-    localStorage.setItem("hive_customer_region", regionName);
+    safeSetItem("hive_location", JSON.stringify(locationData));
+    safeSetItem("hive_customer_pincode", data.postcode);
+    safeSetItem("hive_customer_region", regionName);
 
     // Reset browse-all mode when the user explicitly sets a new delivery location
-    localStorage.setItem("hive_browse_all", "false");
+    safeSetItem("hive_browse_all", "false");
     setState((prev) => ({
       ...prev,
       pincode: data.postcode,
@@ -385,11 +386,11 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [convex, updateLocationDetails]);
 
   const clearLocation = useCallback(() => {
-    localStorage.removeItem("hive_location");
-    localStorage.removeItem("hive_customer_pincode");
-    localStorage.removeItem("hive_customer_region");
-    localStorage.removeItem("hive_customer_serviceable");
-    localStorage.setItem("hive_browse_all", "false");
+    safeRemoveItem("hive_location");
+    safeRemoveItem("hive_customer_pincode");
+    safeRemoveItem("hive_customer_region");
+    safeRemoveItem("hive_customer_serviceable");
+    safeSetItem("hive_browse_all", "false");
 
     setState((prev) => ({
       ...prev,

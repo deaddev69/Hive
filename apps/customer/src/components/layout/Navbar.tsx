@@ -44,6 +44,7 @@ import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { getSignInUrl, getSignUpUrl, navigateToSignIn, navigateToSignUp } from "@/lib/auth-redirect";
 import { getAnonSessionId } from "@/lib/anonSession";
+import { safeGetItem, safeSetItem, safeRemoveItem } from "@/lib/safeStorage";
 import { HeaderStatusPill } from "@/components/shared/HeaderStatusPill";
 
 export const Navbar: React.FC = () => {
@@ -151,7 +152,7 @@ export const Navbar: React.FC = () => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("hive_recent_searches");
+      const stored = safeGetItem("hive_recent_searches");
       if (stored) {
         try {
           setRecentSearches(JSON.parse(stored));
@@ -277,7 +278,7 @@ export const Navbar: React.FC = () => {
       const updated = [query, ...recentSearches.filter((s) => s !== query)].slice(0, 5);
       setRecentSearches(updated);
       if (typeof window !== "undefined") {
-        localStorage.setItem("hive_recent_searches", JSON.stringify(updated));
+        safeSetItem("hive_recent_searches", JSON.stringify(updated));
       }
       router.push(`/search?q=${encodeURIComponent(query)}`);
       setMobileMenuOpen(false);
@@ -916,7 +917,7 @@ export const Navbar: React.FC = () => {
                       onClick={() => {
                         setRecentSearches([]);
                         if (typeof window !== "undefined") {
-                          localStorage.removeItem("hive_recent_searches");
+                          safeRemoveItem("hive_recent_searches");
                         }
                       }}
                       className="text-[10px] text-stone-400 hover:text-stone-600 font-semibold underline cursor-pointer"
@@ -958,7 +959,7 @@ export const Navbar: React.FC = () => {
                         const updated = [chip, ...recentSearches.filter((s) => s !== chip)].slice(0, 5);
                         setRecentSearches(updated);
                         if (typeof window !== "undefined") {
-                          localStorage.setItem("hive_recent_searches", JSON.stringify(updated));
+                          safeSetItem("hive_recent_searches", JSON.stringify(updated));
                         }
                         router.push(`/search?q=${encodeURIComponent(chip)}`);
                         setSearchOpen(false);
@@ -1015,7 +1016,7 @@ export const Navbar: React.FC = () => {
                     const updated = [suggestion, ...recentSearches.filter((s) => s !== suggestion)].slice(0, 5);
                     setRecentSearches(updated);
                     if (typeof window !== "undefined") {
-                      localStorage.setItem("hive_recent_searches", JSON.stringify(updated));
+                      safeSetItem("hive_recent_searches", JSON.stringify(updated));
                     }
                     router.push(`/search?q=${encodeURIComponent(suggestion)}`);
                     setSearchOpen(false);
@@ -1041,7 +1042,7 @@ export const Navbar: React.FC = () => {
                       const updated = [searchQuery, ...recentSearches.filter((s) => s !== searchQuery)].slice(0, 5);
                       setRecentSearches(updated);
                       if (typeof window !== "undefined") {
-                        localStorage.setItem("hive_recent_searches", JSON.stringify(updated));
+                        safeSetItem("hive_recent_searches", JSON.stringify(updated));
                       }
                       router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
                       setSearchOpen(false);
@@ -1071,7 +1072,7 @@ export const Navbar: React.FC = () => {
                             const updated = [chip, ...recentSearches.filter((s) => s !== chip)].slice(0, 5);
                             setRecentSearches(updated);
                             if (typeof window !== "undefined") {
-                              localStorage.setItem("hive_recent_searches", JSON.stringify(updated));
+                              safeSetItem("hive_recent_searches", JSON.stringify(updated));
                             }
                             router.push(`/search?q=${encodeURIComponent(chip)}`);
                             setSearchOpen(false);

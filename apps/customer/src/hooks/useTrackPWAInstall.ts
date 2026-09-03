@@ -3,16 +3,17 @@
 import { useEffect } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@convex/api";
+import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
 
 function getDeviceId(): string {
   if (typeof window === "undefined") return "";
-  let id = localStorage.getItem("hive_pwa_device_id");
+  let id = safeGetItem("hive_pwa_device_id");
   if (!id) {
     id =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
         : `dev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem("hive_pwa_device_id", id);
+    safeSetItem("hive_pwa_device_id", id);
   }
   return id;
 }
