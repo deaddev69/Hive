@@ -5,6 +5,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
+  register: false, // Registration is handled by RegisterServiceWorker.tsx with proper error handling
   customWorkerSrc: "worker",
   dynamicStartUrl: false,
   cacheStartUrl: false,

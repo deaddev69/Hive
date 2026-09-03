@@ -43,6 +43,7 @@ export const metadata: Metadata = {
 import { Toaster } from "@hive/ui";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { PwaUpdateManager } from "@/components/pwa/PwaUpdateManager";
+import { RegisterServiceWorker } from "@/components/pwa/RegisterServiceWorker";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export default function RootLayout({
@@ -64,6 +65,7 @@ export default function RootLayout({
           </CustomerLayout>
           <div id="modal-root" />
           <InstallPrompt />
+          <RegisterServiceWorker />
           <PwaUpdateManager />
         </ConvexClientProvider>
         {/* Real-user Core Web Vitals. Mounted once, at the root, so every route
