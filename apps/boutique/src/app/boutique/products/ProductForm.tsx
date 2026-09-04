@@ -811,7 +811,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       clearDraftImagesFromIDB();
     } catch {}
     setHasDraftToResume(false);
-    toast.info("Draft Discarded", "Starting with a blank form.");
   };
 
   // Debounced draft autosave to localStorage & IndexedDB
@@ -1074,7 +1073,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       return copy;
     });
     setSelectedPreviewIndex(0);
-    toast.success("Cover Photo Set", "This photo will appear first on the customer storefront.");
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
@@ -1247,11 +1245,9 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           streamAccumulator += chunkText;
           setValue("description", streamAccumulator, { shouldDirty: true, shouldValidate: true });
         }
-        toast.success("Description Generated", "Product description written and formatted.");
       } else {
         const text = await response.text();
         setValue("description", text, { shouldDirty: true, shouldValidate: true });
-        toast.success("Description Generated", "Product description written and formatted.");
       }
     } catch (e: any) {
       console.error(e);
@@ -1687,7 +1683,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   onClick={() => {
                     const idx = selectedPreviewIndex;
                     removeImage(idx);
-                    toast.success("Photo Removed", "Image has been removed from the listing.");
                   }}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer active:scale-95"
                 >
@@ -2332,7 +2327,6 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                         const cur = getValues("description");
                         if (cur) {
                           setValue("description", cleanChatGptDescription(cur), { shouldDirty: true });
-                          toast.success("Text Cleaned", "Formatting, asterisks, and quotes cleaned.");
                         }
                       }}
                       className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold transition-all flex items-center gap-1 cursor-pointer shrink-0"
