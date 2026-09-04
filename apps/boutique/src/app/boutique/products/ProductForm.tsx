@@ -12,7 +12,8 @@ import {
   Upload, X, ArrowLeft, ArrowRight, Check, AlertCircle, ChevronDown, 
   ChevronUp, ChevronLeft, ChevronRight, Loader2, Sparkles, Image as ImageIcon, 
   Save, CheckCircle2, Search, Plus, Minus, Trash2, HelpCircle, Store, Coins, 
-  ShieldCheck, Tag, Layers, Sliders, Scissors, FileText, Info
+  ShieldCheck, Tag, Layers, Sliders, Scissors, FileText, Info, Camera, Star,
+  Bot
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -948,6 +949,30 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     setSelectedPreviewIndex(fileIndex);
   };
 
+  const moveImageUp = (index: number) => {
+    if (index <= 0) return;
+    setLocalPreviews((prev) => {
+      const next = [...prev];
+      const temp = next[index]!;
+      next[index] = next[index - 1]!;
+      next[index - 1] = temp;
+      return next;
+    });
+    setSelectedPreviewIndex(index - 1);
+  };
+
+  const moveImageDown = (index: number) => {
+    if (index >= localPreviews.length - 1) return;
+    setLocalPreviews((prev) => {
+      const next = [...prev];
+      const temp = next[index]!;
+      next[index] = next[index + 1]!;
+      next[index + 1] = temp;
+      return next;
+    });
+    setSelectedPreviewIndex(index + 1);
+  };
+
   const handleApplyCrop = async () => {
     setCroppingInProgress(true);
     try {
@@ -1276,15 +1301,31 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       }
     } catch (e: any) {
       console.error("[ProductForm] Save failed:", e);
-      console.error("[ProductForm] Error details:", JSON.stringify({
-        message: e?.message,
-        data: e?.data,
-        code: e?.code,
-      }));
+      if (process.env.NODE_ENV === "development") {
+        console.error("[ProductForm] Error details:", JSON.stringify({
+          message: e?.message,
+          data: e?.data,
+          code: e?.code,
+        }));
+      }
       setSubmitting(false);
       setIsPublishingComplete(false);
-      const detail = e?.data?.message || e?.message || "Unknown error";
-      toast.error("Couldn't Save Product", detail.length > 120 ? detail.substring(0, 117) + "..." : detail);
+
+      const rawMessage = e?.data?.message || e?.message || "";
+      const isInternalError =
+        rawMessage.includes("ArgumentValidationError") ||
+        rawMessage.includes("Server Error") ||
+        rawMessage.includes("Validator:") ||
+        rawMessage.includes("Uncaught");
+
+      let userMessage = "Please check the entered product information and try again.";
+      if (process.env.NODE_ENV === "development" && rawMessage) {
+        userMessage = rawMessage.length > 120 ? rawMessage.substring(0, 117) + "..." : rawMessage;
+      } else if (!isInternalError && rawMessage) {
+        userMessage = rawMessage.length > 120 ? rawMessage.substring(0, 117) + "..." : rawMessage;
+      }
+
+      toast.error("Couldn't Save Product", userMessage);
     } finally {
       setUploadStatusText("");
     }
@@ -1338,20 +1379,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
             <X className="w-5 h-5" />
           </button>
           <span className="text-xs font-bold uppercase tracking-widest text-slate-900">New Product Post</span>
-          <button
-            type="button"
-            onClick={handleStep1Next}
-            disabled={!canGoNext || croppingInProgress}
-            className={cn(
-              "text-xs font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-xl transition-all flex items-center gap-1.5 select-none cursor-pointer active:scale-95",
-              canGoNext && !croppingInProgress
-                ? "bg-slate-950 text-white shadow-xs hover:bg-slate-900"
-                : "bg-slate-100 text-slate-300 cursor-not-allowed"
-            )}
-          >
-            <span>Next ({localPreviews.length}/3)</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="w-8" aria-hidden="true" />
         </div>
 
         {/* Viewport Container */}
@@ -1432,29 +1460,93 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
             </div>
           )}
 
-          {/* Recents Bar */}
-          <div className="px-5 py-2.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between shrink-0 select-none">
-            <div className="flex items-center gap-1 cursor-default">
-              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Recents</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </div>
+          {/* Image Action Bar — appears when a photo is selected */}
+          {localPreviews.length > 0 && (
+            <div className="px-4 py-2.5 bg-white border-y border-slate-100 flex items-center justify-between gap-2 shrink-0 select-none animate-in fade-in duration-150">
+              <div className="flex items-center gap-1.5">
+                {/* Set Cover */}
+                <button
+                  type="button"
+                  onClick={() => setCoverImage(selectedPreviewIndex)}
+                  disabled={selectedPreviewIndex === 0}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold transition-all cursor-pointer active:scale-95",
+                    selectedPreviewIndex === 0
+                      ? "bg-amber-50 text-amber-700 cursor-default"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  )}
+                >
+                  <Star className="w-3.5 h-3.5" fill={selectedPreviewIndex === 0 ? "currentColor" : "none"} />
+                  <span>{selectedPreviewIndex === 0 ? "Cover" : "Set Cover"}</span>
+                </button>
 
-            <div className="flex items-center gap-3">
-              {localPreviews.length > 0 && (
-                <span className="text-[10px] font-medium text-slate-500">
-                  {localPreviews.length} of 5 selected
+                {/* Remove */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const idx = selectedPreviewIndex;
+                    removeImage(idx);
+                    toast.success("Photo Removed", "Image has been removed from the listing.");
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer active:scale-95"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remove</span>
+                </button>
+              </div>
+
+              {/* Reorder */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => moveImageUp(selectedPreviewIndex)}
+                  disabled={selectedPreviewIndex <= 0}
+                  className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-90",
+                    selectedPreviewIndex <= 0
+                      ? "text-slate-300 cursor-not-allowed"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  )}
+                  title="Move left"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-[10px] font-medium text-slate-400 min-w-[2.5rem] text-center">
+                  {selectedPreviewIndex + 1} / {localPreviews.length}
                 </span>
-              )}
-              <div className="bg-white border border-slate-200/80 px-2.5 py-0.5 rounded-full text-[10px] font-semibold text-slate-600 flex items-center gap-1.5 shadow-2xs">
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-900" />
-                Multi-Select
+                <button
+                  type="button"
+                  onClick={() => moveImageDown(selectedPreviewIndex)}
+                  disabled={selectedPreviewIndex >= localPreviews.length - 1}
+                  className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer active:scale-90",
+                    selectedPreviewIndex >= localPreviews.length - 1
+                      ? "text-slate-300 cursor-not-allowed"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  )}
+                  title="Move right"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
+          )}
+
+          {/* Gallery Header */}
+          <div className="px-5 py-2 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between shrink-0 select-none">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              {localPreviews.length > 0 ? `${localPreviews.length} photo${localPreviews.length !== 1 ? "s" : ""}` : "No photos yet"}
+            </span>
+            {localPreviews.length > 0 && (
+              <span className="text-[10px] font-medium text-slate-400">
+                Tap to select · Reorder with arrows
+              </span>
+            )}
           </div>
 
           {/* Gallery Photo Grid */}
           <div className="p-4 bg-white flex-1 overflow-y-auto">
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
               
               {/* Upload Button Tile */}
               <button
@@ -1462,17 +1554,17 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 onClick={() => fileInputRef.current?.click()}
                 disabled={localPreviews.length >= 5}
                 className={cn(
-                  "aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 transition-all select-none",
+                  "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 transition-all select-none",
                   localPreviews.length >= 5
                     ? "bg-slate-50 border-slate-200 cursor-not-allowed opacity-40"
-                    : "bg-slate-50/60 hover:bg-slate-100/80 border-slate-200/80 active:scale-95 cursor-pointer"
+                    : "bg-slate-50/60 hover:bg-slate-100/80 border-slate-300 active:scale-95 cursor-pointer hover:border-slate-400"
                 )}
               >
-                <Plus className="w-4 h-4 text-slate-600 stroke-[2]" />
-                <span className="text-[10px] font-medium text-slate-600">Add</span>
+                <Plus className="w-5 h-5 text-slate-500 stroke-[2]" />
+                <span className="text-[11px] font-medium text-slate-500">Add</span>
               </button>
 
-              {/* Preview Selection Tiles */}
+              {/* Preview Selection Tiles — clean, no overlays */}
               {localPreviews.map((prev, idx) => {
                 const isSelectedForPreview = idx === selectedPreviewIndex;
                 return (
@@ -1484,50 +1576,31 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, idx)}
                     className={cn(
-                      "aspect-square rounded-xl overflow-hidden border relative cursor-pointer group transition-all",
+                      "aspect-square rounded-xl overflow-hidden border-2 relative cursor-pointer transition-all active:scale-[0.97]",
                       isSelectedForPreview 
-                        ? "border-slate-900 ring-2 ring-slate-900/10 shadow-xs" 
-                        : "border-slate-200 hover:border-slate-350",
+                        ? "border-slate-900 ring-2 ring-slate-900/15 shadow-md" 
+                        : "border-transparent hover:border-slate-300",
                       draggedItemIndex === idx && "opacity-50 scale-95"
                     )}
                   >
-                    <img src={prev.url} alt={`Thumb ${idx}`} className="w-full h-full object-cover pointer-events-none" />
+                    <img src={prev.url} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover pointer-events-none" />
                     
-                    {/* Badge number */}
-                    <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-slate-950/80 text-white flex items-center justify-center text-[9px] font-bold">
+                    {/* Position badge */}
+                    <div className={cn(
+                      "absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-sm",
+                      isSelectedForPreview
+                        ? "bg-slate-900 text-white"
+                        : "bg-black/50 text-white/90"
+                    )}>
                       {idx + 1}
                     </div>
 
-                    {/* Delete badge */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeImage(idx);
-                      }}
-                      className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-600 transition-colors cursor-pointer"
-                      title="Remove image"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                    
+                    {/* Cover ribbon */}
                     {idx === 0 && (
-                      <div className="absolute bottom-1 left-1 bg-slate-950/80 text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider pointer-events-none">
+                      <div className="absolute top-2 left-2 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider pointer-events-none flex items-center gap-1 shadow-sm">
+                        <Star className="w-2.5 h-2.5" fill="currentColor" />
                         Cover
                       </div>
-                    )}
-
-                    {idx > 0 && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCoverImage(idx);
-                        }}
-                        className="absolute bottom-1 left-1 bg-white/95 text-slate-900 text-[8px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider hover:bg-slate-200 shadow-xs cursor-pointer z-10"
-                      >
-                        Set Cover
-                      </button>
                     )}
                   </div>
                 );
@@ -1537,8 +1610,8 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         </div>
 
         {/* Bottom Action Footer */}
-        <div className="px-6 py-4 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 z-20 pb-safe">
-          <div className="flex items-center gap-3 flex-wrap">
+        <div className="px-5 py-3.5 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0 z-20 pb-safe">
+          <div className="flex flex-col xs:flex-row items-start xs:items-center gap-2.5 sm:gap-3">
             <span className="text-xs font-medium text-slate-500 font-sans">
               {localPreviews.length} of 3 required photos selected
             </span>
@@ -1548,43 +1621,47 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 type="button"
                 onClick={() => setPhotoSource("in_store")}
                 className={cn(
-                  "px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer",
+                  "px-3 py-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95",
                   photoSource === "in_store"
-                    ? "bg-white text-slate-900 shadow-2xs"
+                    ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-500 hover:text-slate-800"
                 )}
               >
-                📷 Authentic Photo
+                <Camera className="w-3.5 h-3.5" />
+                Original Photos
               </button>
               <button
                 type="button"
                 onClick={() => setPhotoSource("ai_enhanced")}
                 className={cn(
-                  "px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer",
+                  "px-3 py-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95",
                   photoSource === "ai_enhanced"
-                    ? "bg-white text-slate-900 shadow-2xs"
+                    ? "bg-white text-slate-900 shadow-sm"
                     : "text-slate-500 hover:text-slate-800"
                 )}
               >
-                ✨ AI Preview
+                <Bot className="w-3.5 h-3.5" />
+                AI Generated
               </button>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleStep1Next}
-            disabled={!canGoNext || croppingInProgress}
-            className={cn(
-              "text-xs font-bold uppercase tracking-wider px-6 py-2.5 rounded-xl transition-all flex items-center gap-2 select-none",
-              canGoNext && !croppingInProgress
-                ? "bg-slate-950 hover:bg-slate-900 text-white cursor-pointer active:scale-[0.98] shadow-xs" 
-                : "bg-slate-100 text-slate-400 cursor-not-allowed"
-            )}
-          >
-            <span>Continue</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex justify-end w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleStep1Next}
+              disabled={!canGoNext || croppingInProgress}
+              className={cn(
+                "text-xs font-bold uppercase tracking-wider px-6 py-2.5 rounded-xl transition-all flex items-center gap-2 select-none",
+                canGoNext && !croppingInProgress
+                  ? "bg-slate-950 hover:bg-slate-900 text-white cursor-pointer active:scale-[0.98] shadow-xs" 
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed"
+              )}
+            >
+              <span>Continue</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         <input

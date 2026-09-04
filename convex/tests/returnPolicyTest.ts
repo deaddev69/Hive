@@ -256,7 +256,7 @@ export async function runReturnPolicyTests() {
   }
 }
 
-if (process.argv[1]?.endsWith("returnPolicyTest.ts")) {
+if (typeof process !== "undefined" && process.argv && process.argv[1]?.includes("returnPolicyTest")) {
   runReturnPolicyTests().catch((err) => {
     console.error(err);
     process.exit(1);
