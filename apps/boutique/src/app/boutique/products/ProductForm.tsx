@@ -13,7 +13,7 @@ import {
   ChevronUp, ChevronLeft, ChevronRight, Loader2, Sparkles, Image as ImageIcon, 
   Save, CheckCircle2, Search, Plus, Minus, Trash2, HelpCircle, Store, Coins, 
   ShieldCheck, Tag, Layers, Sliders, Scissors, FileText, Info, Camera, Star,
-  Bot
+  Bot, RotateCcw
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -1546,27 +1546,38 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           <div className="w-8" aria-hidden="true" />
         </div>
 
-        {/* Draft Recovery Banner for Step 1 */}
+        {/* Sleek Floating Draft Pill for Step 1 */}
         {hasDraftToResume && (
-          <div className="mx-4 mt-3 p-3 bg-amber-50/95 border border-amber-200/90 rounded-2xl flex items-center justify-between gap-3 text-xs shrink-0 z-30 shadow-xs animate-in fade-in slide-in-from-top-1 duration-200">
-            <div className="flex items-center gap-2 text-amber-900 font-medium">
-              <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
-              <span>You have an unsaved product draft. Resume where you left off?</span>
+          <div className="mx-4 mt-2.5 mb-1 p-2.5 sm:p-3 bg-slate-950 text-white rounded-2xl shadow-xl border border-slate-800 flex items-center justify-between gap-3 shrink-0 z-30 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="flex items-center gap-2.5 min-w-0 pl-1">
+              <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                <RotateCcw className="w-3.5 h-3.5 text-white/90" />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-semibold text-white tracking-tight truncate">
+                  Unsaved Draft Found
+                </span>
+                <span className="text-[10px] text-slate-400 truncate">
+                  Pick up where you left off
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
                 onClick={handleResumeDraft}
-                className="px-3 py-1.5 bg-amber-950 text-white rounded-lg text-xs font-bold hover:bg-black cursor-pointer active:scale-95 transition-all"
+                className="px-3.5 py-1.5 bg-white text-slate-950 hover:bg-slate-100 rounded-xl text-xs font-bold transition-all cursor-pointer select-none active:scale-95 shadow-sm"
               >
-                Resume Draft
+                Resume
               </button>
               <button
                 type="button"
                 onClick={handleDiscardDraft}
-                className="px-2.5 py-1.5 text-amber-800 hover:text-red-600 rounded-lg text-xs font-semibold cursor-pointer transition-all"
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg text-xs font-medium cursor-pointer transition-colors"
+                title="Discard draft"
               >
-                Discard
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -1879,27 +1890,38 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   return (
     <div className="w-full max-w-2xl mx-auto px-4 py-8 font-sans animate-in fade-in duration-200">
       
-      {/* Unsaved Local Draft Banner */}
+      {/* Sleek Obsidian Draft Recovery Banner */}
       {hasDraftToResume && (
-        <div className="mb-6 p-3.5 bg-amber-50/90 border border-amber-200/80 rounded-2xl flex items-center justify-between gap-3 text-xs animate-in fade-in duration-200">
-          <div className="flex items-center gap-2 text-amber-900 font-medium">
-            <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
-            <span>You have an unsaved product draft. Resume where you left off?</span>
+        <div className="mb-6 p-2.5 sm:p-3 bg-slate-950 text-white rounded-2xl shadow-xl border border-slate-800 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-2.5 min-w-0 pl-1">
+            <div className="w-7 h-7 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+              <RotateCcw className="w-3.5 h-3.5 text-white/90" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-semibold text-white tracking-tight truncate">
+                Unsaved Draft Found
+              </span>
+              <span className="text-[10px] text-slate-400 truncate">
+                Pick up where you left off
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
               onClick={handleResumeDraft}
-              className="px-3 py-1 bg-amber-950 text-white rounded-lg text-xs font-bold hover:bg-black cursor-pointer active:scale-95"
+              className="px-3.5 py-1.5 bg-white text-slate-950 hover:bg-slate-100 rounded-xl text-xs font-bold transition-all cursor-pointer select-none active:scale-95 shadow-sm"
             >
-              Resume Draft
+              Resume
             </button>
             <button
               type="button"
               onClick={handleDiscardDraft}
-              className="px-2.5 py-1 text-amber-800 hover:text-red-600 rounded-lg text-xs font-semibold cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg text-xs font-medium cursor-pointer transition-colors"
+              title="Discard draft"
             >
-              Discard
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
