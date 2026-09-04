@@ -523,6 +523,64 @@ function inferMimeType(file: File): string {
   return mimeMap[ext || ""] || "image/jpeg";
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// INDEXEDDB HELPERS: Persist cropped photos across refreshes & navigation
+// ─────────────────────────────────────────────────────────────────────────────
+const DRAFT_DB_NAME = "hive_product_draft_db";
+const DRAFT_STORE_NAME = "draft_images";
+
+function openDraftDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined" || !window.indexedDB) {
+      return reject(new Error("IndexedDB not available"));
+    }
+    const req = window.indexedDB.open(DRAFT_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(DRAFT_STORE_NAME)) {
+        req.result.createObjectStore(DRAFT_STORE_NAME);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveDraftImagesToIDB(
+  items: { file?: File; storageId?: string; cropSettings?: any }[]
+) {
+  try {
+    const db = await openDraftDB();
+    const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
+    const store = tx.objectStore(DRAFT_STORE_NAME);
+    store.put(items, "current_images");
+  } catch {}
+}
+
+async function loadDraftImagesFromIDB(): Promise<
+  { file?: File; storageId?: string; cropSettings?: any }[] | null
+> {
+  try {
+    const db = await openDraftDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(DRAFT_STORE_NAME, "readonly");
+      const store = tx.objectStore(DRAFT_STORE_NAME);
+      const req = store.get("current_images");
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function clearDraftImagesFromIDB() {
+  try {
+    const db = await openDraftDB();
+    const tx = db.transaction(DRAFT_STORE_NAME, "readwrite");
+    tx.objectStore(DRAFT_STORE_NAME).delete("current_images");
+  } catch {}
+}
+
 export default function ProductForm({ productToEdit, categories }: ProductFormProps) {
   const router = useRouter();
   const createProduct = useMutation(api.products.createProduct);
@@ -678,42 +736,70 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   // Check for saved local draft on mount (only when creating new product)
   useEffect(() => {
     if (productToEdit) return;
-    try {
-      const saved = localStorage.getItem("hive_partner_product_draft");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && (parsed.name || parsed.description || parsed.price)) {
+    const checkDraft = async () => {
+      try {
+        const saved = localStorage.getItem("hive_partner_product_draft");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && (parsed.name || parsed.description || parsed.price || (parsed.step && parsed.step > 1))) {
+            setHasDraftToResume(true);
+            return;
+          }
+        }
+        // Also check if images are stored in IndexedDB
+        const savedImages = await loadDraftImagesFromIDB();
+        if (savedImages && savedImages.length > 0) {
           setHasDraftToResume(true);
         }
-      }
-    } catch {}
+      } catch {}
+    };
+    checkDraft();
   }, [productToEdit]);
 
-  const handleResumeDraft = () => {
+  const handleResumeDraft = async () => {
     try {
       const saved = localStorage.getItem("hive_partner_product_draft");
-      if (!saved) return;
-      const d = JSON.parse(saved);
-      if (d.name) setValue("name", d.name);
-      if (d.price) setValue("price", d.price);
-      if (d.mrp) setValue("mrp", d.mrp);
-      if (d.discountPrice) setValue("discountPrice", d.discountPrice);
-      if (d.categoryId) setValue("categoryId", d.categoryId);
-      if (d.color) setValue("color", d.color);
-      if (d.description) setValue("description", d.description);
-      if (d.materialType) setValue("materialType", d.materialType);
-      if (d.care) setValue("care", d.care);
-      if (d.story) setValue("story", d.story);
-      if (d.selectedSizes && Array.isArray(d.selectedSizes)) setSelectedSizes(d.selectedSizes);
-      if (d.stockBySize) setStockBySize(d.stockBySize);
-      if (d.photoSource) setPhotoSource(d.photoSource);
-      if (d.extraDetails) setExtraDetails(d.extraDetails);
-      if (d.step && d.step > 1) {
-        setCurrentStep(d.step);
-        setMaxUnlockedStep((prev) => Math.max(prev, d.step) as any);
+      const d = saved ? JSON.parse(saved) : null;
+      if (d) {
+        if (d.name) setValue("name", d.name);
+        if (d.price) setValue("price", d.price);
+        if (d.mrp) setValue("mrp", d.mrp);
+        if (d.discountPrice) setValue("discountPrice", d.discountPrice);
+        if (d.categoryId) setValue("categoryId", d.categoryId);
+        if (d.color) setValue("color", d.color);
+        if (d.description) setValue("description", d.description);
+        if (d.materialType) setValue("materialType", d.materialType);
+        if (d.care) setValue("care", d.care);
+        if (d.story) setValue("story", d.story);
+        if (d.selectedSizes && Array.isArray(d.selectedSizes)) setSelectedSizes(d.selectedSizes);
+        if (d.stockBySize) setStockBySize(d.stockBySize);
+        if (d.photoSource) setPhotoSource(d.photoSource);
+        if (d.extraDetails) setExtraDetails(d.extraDetails);
       }
+
+      // Restore photos from IndexedDB
+      const savedImages = await loadDraftImagesFromIDB();
+      if (savedImages && savedImages.length > 0) {
+        const restored = savedImages.map((item) => ({
+          url: item.file ? URL.createObjectURL(item.file) : (item.storageId || ""),
+          file: item.file,
+          storageId: item.storageId,
+          cropSettings: item.cropSettings || { zoom: 1, x: 0, y: 0, aspect: "1:1" as const },
+        }));
+        setLocalPreviews(restored);
+      }
+
+      if (d?.step && d.step > 1) {
+        const targetStep = d.step as 1 | 2 | 3 | 4;
+        setCurrentStep(targetStep);
+        setMaxUnlockedStep((prev) => Math.max(prev, targetStep) as any);
+        if (typeof window !== "undefined") {
+          window.history.pushState({ step: targetStep }, "");
+        }
+      }
+
       setHasDraftToResume(false);
-      toast.success("Draft Resumed", "Restored your unsaved product form.");
+      toast.success("Draft Resumed", "Restored your unsaved product form and photos.");
     } catch {
       setHasDraftToResume(false);
     }
@@ -722,12 +808,13 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const handleDiscardDraft = () => {
     try {
       localStorage.removeItem("hive_partner_product_draft");
+      clearDraftImagesFromIDB();
     } catch {}
     setHasDraftToResume(false);
     toast.info("Draft Discarded", "Starting with a blank form.");
   };
 
-  // Debounced draft autosave to localStorage
+  // Debounced draft autosave to localStorage & IndexedDB
   useEffect(() => {
     if (productToEdit) return;
     const timer = setTimeout(() => {
@@ -743,6 +830,16 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           updatedAt: Date.now(),
         };
         localStorage.setItem("hive_partner_product_draft", JSON.stringify(draftPayload));
+
+        if (localPreviews.length > 0) {
+          saveDraftImagesToIDB(
+            localPreviews.map((p) => ({
+              file: p.file,
+              storageId: p.storageId,
+              cropSettings: p.cropSettings,
+            }))
+          );
+        }
       } catch {}
     }, 600);
     return () => clearTimeout(timer);
@@ -759,7 +856,71 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     photoSource,
     extraDetails,
     currentStep,
+    localPreviews,
   ]);
+
+  // Browser History & Popstate integration for Back navigation
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (!window.history.state?.step) {
+      window.history.replaceState({ step: currentStep }, "");
+    }
+
+    const handlePopState = (e: PopStateEvent) => {
+      const targetStep = e.state?.step;
+      if (targetStep && targetStep >= 1 && targetStep <= 4) {
+        setCurrentStep(targetStep);
+      } else if (currentStep > 1) {
+        setCurrentStep((prev) => Math.max(1, prev - 1) as any);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [currentStep]);
+
+  // Warn before accidental page reload or tab close
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isPublishingComplete) return;
+      const hasData = localPreviews.length > 0 || !!nameWatch || !!priceWatch || currentStep > 1;
+      if (hasData) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [localPreviews.length, nameWatch, priceWatch, currentStep, isPublishingComplete]);
+
+  const goToStep = (step: 1 | 2 | 3 | 4) => {
+    setCurrentStep(step);
+    setMaxUnlockedStep((prev) => Math.max(prev, step) as any);
+    if (typeof window !== "undefined") {
+      window.history.pushState({ step }, "");
+    }
+  };
+
+  const handleGoBack = () => {
+    if (currentStep > 1) {
+      if (typeof window !== "undefined" && window.history.state?.step && window.history.state.step > 1) {
+        window.history.back();
+      } else {
+        const prevStep = Math.max(1, currentStep - 1) as 1 | 2 | 3 | 4;
+        setCurrentStep(prevStep);
+      }
+    }
+  };
+
+  const handleExitForm = () => {
+    const hasUnsaved = localPreviews.length > 0 || !!nameWatch || !!priceWatch || currentStep > 1;
+    if (hasUnsaved && !window.confirm("You have unsaved changes in this listing. Exit back to products?")) {
+      return;
+    }
+    router.push("/boutique/products");
+  };
 
   // Auto-set FREE size for Sarees (apparel only)
   useEffect(() => {
@@ -1107,8 +1268,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       return;
     }
     await handleApplyCrop();
-    setCurrentStep(2);
-    setMaxUnlockedStep((prev) => Math.max(prev, 2) as any);
+    goToStep(2);
   };
 
   const handleStep2Next = async () => {
@@ -1117,8 +1277,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       toast.error("Missing Details", "Please fill in the category, product name, color, and price to continue.");
       return;
     }
-    setCurrentStep(3);
-    setMaxUnlockedStep((prev) => Math.max(prev, 3) as any);
+    goToStep(3);
   };
 
   const handleStep3Next = () => {
@@ -1133,8 +1292,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       return;
     }
 
-    setCurrentStep(4);
-    setMaxUnlockedStep((prev) => Math.max(prev, 4) as any);
+    goToStep(4);
   };
 
   const onFormError = (errs: any) => {
@@ -1292,11 +1450,17 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
       if (productToEdit?._id) {
         await updateProduct({ id: productToEdit._id as any, ...payload });
-        try { localStorage.removeItem("hive_partner_product_draft"); } catch {}
+        try {
+          localStorage.removeItem("hive_partner_product_draft");
+          clearDraftImagesFromIDB();
+        } catch {}
         setIsPublishingComplete(true);
       } else {
         await createProduct(payload);
-        try { localStorage.removeItem("hive_partner_product_draft"); } catch {}
+        try {
+          localStorage.removeItem("hive_partner_product_draft");
+          clearDraftImagesFromIDB();
+        } catch {}
         setIsPublishingComplete(true);
       }
     } catch (e: any) {
@@ -1373,7 +1537,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
           <button
             type="button"
-            onClick={() => router.push("/boutique/products")}
+            onClick={handleExitForm}
             className="text-slate-400 hover:text-slate-900 transition-colors p-1.5 rounded-lg hover:bg-slate-50 cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -1382,8 +1546,34 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           <div className="w-8" aria-hidden="true" />
         </div>
 
+        {/* Draft Recovery Banner for Step 1 */}
+        {hasDraftToResume && (
+          <div className="mx-4 mt-3 p-3 bg-amber-50/95 border border-amber-200/90 rounded-2xl flex items-center justify-between gap-3 text-xs shrink-0 z-30 shadow-xs animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="flex items-center gap-2 text-amber-900 font-medium">
+              <Sparkles className="w-4 h-4 text-amber-700 shrink-0" />
+              <span>You have an unsaved product draft. Resume where you left off?</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleResumeDraft}
+                className="px-3 py-1.5 bg-amber-950 text-white rounded-lg text-xs font-bold hover:bg-black cursor-pointer active:scale-95 transition-all"
+              >
+                Resume Draft
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                className="px-2.5 py-1.5 text-amber-800 hover:text-red-600 rounded-lg text-xs font-semibold cursor-pointer transition-all"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Viewport Container */}
-        <div className="flex-1 overflow-y-auto bg-[#FBFBFA] flex flex-col">
+        <div className="flex-1 overflow-y-auto bg-[#FBFBFA] flex flex-col scroll-smooth">
           
           {/* Viewport Frame */}
           <div className="w-full bg-[#F3F3F1] flex justify-center items-center py-4 relative shrink-0">
@@ -1545,7 +1735,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           </div>
 
           {/* Gallery Photo Grid */}
-          <div className="p-4 bg-white flex-1 overflow-y-auto">
+          <div className="p-4 pb-24 sm:pb-12 bg-white">
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
               
               {/* Upload Button Tile */}
@@ -1720,11 +1910,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         <div className="flex items-center justify-between">
           <button
             type="button"
-            onClick={() => {
-              if (currentStep === 2) setCurrentStep(1);
-              else if (currentStep === 3) setCurrentStep(2);
-              else if (currentStep === 4) setCurrentStep(3);
-            }}
+            onClick={handleGoBack}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -1737,7 +1923,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
           <Button
             variant="ghost"
-            onClick={() => router.push("/boutique/products")}
+            onClick={handleExitForm}
             className="text-xs font-semibold text-slate-500 hover:text-slate-900 p-0 h-auto"
           >
             Cancel
