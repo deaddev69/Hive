@@ -2711,48 +2711,81 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
             </div>
 
+              {/* Listing Visibility Selection Card */}
+              <div className="p-4 bg-slate-50/90 border border-slate-200/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-slate-900 tracking-tight flex items-center gap-1.5">
+                    Listing Status
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    {active
+                      ? "Visible immediately to shoppers on the Hive storefront."
+                      : "Saved to your dashboard inventory without publishing publicly."}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/90 shadow-2xs shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setActive(true)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 select-none active:scale-95",
+                      active
+                        ? "bg-slate-950 text-white shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    )}
+                  >
+                    <span className={cn("w-2 h-2 rounded-full", active ? "bg-emerald-400 animate-pulse" : "bg-slate-300")} />
+                    <span>Public</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActive(false)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 select-none active:scale-95",
+                      !active
+                        ? "bg-slate-950 text-white shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    )}
+                  >
+                    <span className={cn("w-2 h-2 rounded-full", !active ? "bg-amber-400" : "bg-slate-300")} />
+                    <span>Unlisted</span>
+                  </button>
+                </div>
+              </div>
+
             {/* Bottom Navigation */}
             <div className="flex items-center justify-between pt-4 border-t border-slate-100 gap-2">
               <button
                 type="button"
-                onClick={() => setCurrentStep(3)}
+                onClick={handleGoBack}
                 className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
               >
                 ← Back to Sizes & Stock
               </button>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={() => {
-                    setActive(false);
-                    handleSubmit(onFormSubmit, onFormError)();
-                  }}
-                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer select-none active:scale-95"
-                >
-                  Save as Draft
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  onClick={() => setActive(true)}
-                  className="px-7 py-3 bg-slate-950 hover:bg-slate-900 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer active:scale-[0.98] flex items-center gap-2"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      <span>{uploadStatusText || "Saving Listing..."}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Send to Hive</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </div>
+              <button
+                type="submit"
+                disabled={submitting}
+                className={cn(
+                  "px-7 py-3 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer active:scale-[0.98] flex items-center gap-2 select-none",
+                  active
+                    ? "bg-slate-950 hover:bg-slate-900"
+                    : "bg-slate-800 hover:bg-slate-700"
+                )}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                    <span>{uploadStatusText || (active ? "Publishing Listing..." : "Saving Listing...")}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{active ? "Publish to Hive" : "Save as Unlisted"}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
             </div>
 
           </div>
