@@ -6,9 +6,36 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { resolveVerticalTypeForCategory } from "./lib/verticals";
 
+/**
+ * Whether mock-data seeding may run in this environment.
+ *
+ * `insertMockData` deletes every product, boutique, category, collection and
+ * experience before reseeding, and it was reachable as an unauthenticated public
+ * mutation — one anonymous call against the production deployment would have
+ * destroyed the live catalogue. The seed workflow in convex/seed.ts already gates
+ * on ENABLE_DEBUG_TOOLS, but that gate sat on the *action*, so calling the
+ * mutation directly bypassed it entirely.
+ *
+ * Same double gate as the debug admin promoters in convex/users.ts: production is
+ * refused outright, and every other environment must opt in explicitly. Exported
+ * as a pure predicate so it can be tested without the Convex runtime.
+ */
+export function isSeedingAllowed(
+  nodeEnv: string | undefined,
+  enableDebugTools: string | undefined
+): boolean {
+  if (nodeEnv === "production") return false;
+  return enableDebugTools === "true";
+}
+
 export const insertMockData = mutation({
   args: { categoryImageIds: v.optional(v.record(v.string(), v.string())) },
   handler: async (ctx, args) => {
+    // STRICT ENVIRONMENT GATE — must precede any destructive work.
+    if (!isSeedingAllowed(process.env.NODE_ENV, process.env.ENABLE_DEBUG_TOOLS)) {
+      throw new Error("Unauthorized: Mock data seeding is strictly disabled in this environment.");
+    }
+
     const now = Date.now();
 
     // 1. Clean up existing data

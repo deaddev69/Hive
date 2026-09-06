@@ -66,10 +66,12 @@ export const updateWhatsAppStatus = internalMutation({
     errorPayload: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Find the log entry by wamid
+    // Find the log entry by wamid. Uses the by_providerMessageId index — this was a
+    // `.filter()`, which is a full scan of notificationLogs on every status update, and
+    // the webhook driving it processes one call per status in the payload.
     const log = await ctx.db
       .query("notificationLogs")
-      .filter((q) => q.eq(q.field("providerMessageId"), args.wamid))
+      .withIndex("by_providerMessageId", (q) => q.eq("providerMessageId", args.wamid))
       .first();
 
     if (log) {

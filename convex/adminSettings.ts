@@ -227,10 +227,30 @@ export const updatePlatformSettings = mutation({
   },
 });
 
+/**
+ * Whether a caller-supplied secret may update platform pricing configuration.
+ *
+ * The previous check was `if (expectedSecret && args.secret && args.secret !== expectedSecret)`,
+ * which FAILED OPEN: omitting the secret entirely made the guard's condition falsy, so an
+ * unauthenticated caller could rewrite markup rates, platform fee rates and tier slabs.
+ *
+ * Fails closed on all three cases now, mirroring updateBoutiqueKycStatus in convex/boutiques.ts:
+ * no server secret configured, no secret supplied, or a mismatch. Exported as a pure predicate so
+ * it can be tested without the Convex runtime.
+ */
+export function isPlatformApiSecretValid(
+  expectedSecret: string | undefined,
+  providedSecret: string | undefined
+): boolean {
+  if (!expectedSecret) return false;
+  if (!providedSecret) return false;
+  return providedSecret === expectedSecret;
+}
+
 /** @deprecated Use updatePlatformConfig instead */
 export const updatePlatformSettingsFromApi = mutation({
   args: {
-    secret: v.optional(v.string()),
+    secret: v.string(),
     markupRate: v.number(),
     platformFeeRate: v.number(),
     markupType: v.union(v.literal("flat"), v.literal("tiered")),
@@ -241,7 +261,7 @@ export const updatePlatformSettingsFromApi = mutation({
   },
   handler: async (ctx, args) => {
     const expectedSecret = process.env.CLERK_SECRET_KEY;
-    if (expectedSecret && args.secret && args.secret !== expectedSecret) {
+    if (!isPlatformApiSecretValid(expectedSecret, args.secret)) {
       throw new Error("Unauthorized: Invalid secret key.");
     }
     const settings = await ctx.db.query("platformSettings").first();
