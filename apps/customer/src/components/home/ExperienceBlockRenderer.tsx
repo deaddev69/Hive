@@ -416,7 +416,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
 
     const isCarousel = block.renderer === "productCarousel";
     const isTwoGrid = block.renderer === "twoProductGrid";
-    const twoGridProducts = blockProducts.slice(0, block.config?.maxProducts || 2);
+    const twoGridProducts = blockProducts.slice(0, block.config?.maxProducts || 8);
     // Premium Curation's full-bleed themed layout (background art, watermarks, generous padding)
     // is built to showcase a spread of products. Below a minimum count it reads as broken —
     // mostly empty decorative chrome around one floating card — so we fall back to the plain
@@ -804,7 +804,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
 
     return (
       <section className={`w-full bg-white pt-5 pb-1 sm:pt-8 sm:pb-2 border-b border-hive-border/20 ${block.config?.theme === "dark" ? "bg-slate-900 text-white" : ""}`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-2 sm:gap-2.5 text-left">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-2 sm:gap-2.5 text-left">
           <div className="flex flex-col gap-1 cursor-pointer group" onClick={() => {
             if(block.data.collection?.slug) {
               router.push(`/collections/${block.data.collection.slug}`);
@@ -817,7 +817,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           </div>
 
           {isCarousel ? (
-            <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:-mx-8 lg:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth scroll-pl-6 lg:scroll-pl-8">
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth scroll-pl-4 sm:scroll-pl-6 lg:scroll-pl-8">
               {blockProducts.map((product: any) => (
                 <div key={product.id} className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start">
                   <ProductCard product={product} />
@@ -825,11 +825,9 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               ))}
             </div>
           ) : isTwoGrid ? (
-            <div className={`flex flex-wrap gap-3 sm:gap-6 w-full ${twoGridProducts.length === 1 ? "justify-center" : ""}`}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 w-full">
               {twoGridProducts.map((product: any) => (
-                <div key={product.id} className="w-[145px] sm:w-[190px] lg:w-[210px] flex-shrink-0">
-                  <ProductCard product={product} />
-                </div>
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
@@ -890,7 +888,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     
     return (
       <section className={`w-full ${bgClass} pt-2 pb-5 sm:pt-3 sm:pb-7 border-b border-hive-border/20`}>
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-2.5 text-left">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-2.5 text-left">
           <div className="flex items-end justify-between">
             <div className="flex flex-col gap-0.5">
               <span className="text-[9px] font-bold text-hive-amber tracking-widest uppercase">
@@ -910,7 +908,7 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
           </div>
 
           {isCarousel ? (
-            <div className="flex gap-4 overflow-x-auto pb-2 -mx-6 px-6 lg:-mx-8 lg:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth scroll-pl-6 lg:scroll-pl-8">
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x scroll-smooth scroll-pl-4 sm:scroll-pl-6 lg:scroll-pl-8">
               {displayProducts.map((product: any) => (
                 <div key={product.id} className="w-[140px] sm:w-[190px] flex-shrink-0 snap-start">
                   <ProductCard product={product} />
@@ -936,11 +934,9 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
               </div>
             </div>
           ) : isTwoGrid ? (
-            <div className={`flex flex-wrap gap-3 sm:gap-6 w-full ${displayProducts.length === 1 ? "justify-center" : ""}`}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 w-full">
               {displayProducts.map((product: any) => (
-                <div key={product.id} className="w-[145px] sm:w-[190px] lg:w-[210px] flex-shrink-0">
-                  <ProductCard product={product} />
-                </div>
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
