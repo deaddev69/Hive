@@ -151,6 +151,7 @@ import type * as tests_rateLimitTtlTest from "../tests/rateLimitTtlTest.js";
 import type * as tests_retryPayment from "../tests/retryPayment.js";
 import type * as tests_retryPaymentSetup from "../tests/retryPaymentSetup.js";
 import type * as tests_returnPolicyTest from "../tests/returnPolicyTest.js";
+import type * as tests_roadDistanceCacheTest from "../tests/roadDistanceCacheTest.js";
 import type * as tests_runCartCurrencyTests from "../tests/runCartCurrencyTests.js";
 import type * as tests_runHyperlocalTests from "../tests/runHyperlocalTests.js";
 import type * as tests_runLocalPricingTests from "../tests/runLocalPricingTests.js";
@@ -320,6 +321,7 @@ declare const fullApi: ApiFromModules<{
   "tests/retryPayment": typeof tests_retryPayment;
   "tests/retryPaymentSetup": typeof tests_retryPaymentSetup;
   "tests/returnPolicyTest": typeof tests_returnPolicyTest;
+  "tests/roadDistanceCacheTest": typeof tests_roadDistanceCacheTest;
   "tests/runCartCurrencyTests": typeof tests_runCartCurrencyTests;
   "tests/runHyperlocalTests": typeof tests_runHyperlocalTests;
   "tests/runLocalPricingTests": typeof tests_runLocalPricingTests;
