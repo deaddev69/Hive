@@ -34,12 +34,22 @@ export function ProductDetailPageClient({ product: rawProduct }: ProductDetailPa
   // Record this view so the "Recently Viewed" homepage block has something to show.
   const { isAuthenticated } = useSessionStore();
   const trackProductView = useMutation(api.homepage.trackProductView);
+  const productId = (rawProduct as any)?._id ?? rawProduct?.id;
+
   useEffect(() => {
-    if (!isAuthenticated || !rawProduct?.id || (rawProduct as any).isUnavailable) return;
-    trackProductView({ productId: rawProduct.id as any }).catch(() => {
-      // Non-critical — a failed view-tracking call shouldn't disrupt the shopper.
+    if (!isAuthenticated || !productId || (rawProduct as any)?.isUnavailable) return;
+
+    trackProductView({ productId: productId as any }).catch((err) => {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[PDP] Failed to track product view:", err);
+      }
     });
-  }, [isAuthenticated, rawProduct?.id, trackProductView]);
+  }, [
+    isAuthenticated,
+    productId,
+    (rawProduct as any)?.isUnavailable,
+    trackProductView,
+  ]);
 
   // Set up IntersectionObserver on the hero section block for the sticky bar
   useEffect(() => {
