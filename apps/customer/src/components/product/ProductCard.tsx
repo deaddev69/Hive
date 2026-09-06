@@ -156,11 +156,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
   return (
     <div className="relative w-full h-full flex flex-col group select-none transition-all duration-300 bg-transparent border-none">
       
-      {/* ── Image area (3:4 or 4:5 Aspect Ratio, rounded-2xl or rounded-[20px]) ── */}
+      {/* ── Image area (4:5 Aspect Ratio, rounded-xl sm:rounded-2xl) ── */}
       <div className={cn(
         "relative w-full overflow-hidden bg-stone-50 transform translate-z-0 transition-all",
-        premiumMode ? "aspect-square rounded-[24px]" : "aspect-[3/4] rounded-2xl"
-      )} style={{ aspectRatio: premiumMode ? "1/1" : "3/4" }}>
+        premiumMode ? "aspect-square rounded-[24px]" : "aspect-[4/5] rounded-xl sm:rounded-2xl"
+      )} style={{ aspectRatio: premiumMode ? "1/1" : "4/5" }}>
         
         {/* Product image link */}
         <Link href={`/products/${product.slug}`} prefetch={false} className="absolute inset-0 block w-full h-full z-10">
@@ -216,8 +216,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         )}
       </div>
 
-      {/* ── Card content (Clean, breathing layout below image) ── */}
-      <div className="pt-2 pb-0.5 px-0.5 flex flex-col text-left justify-start gap-1">
+      {/* ── Card content (Clean, compact layout below image) ── */}
+      <div className="pt-1.5 pb-0.5 px-0.5 flex flex-col text-left justify-start gap-0.5 sm:gap-1">
         {/* Boutique Name */}
         <Link
           href={`/shop/${boutique?.slug || (product as any).boutiqueId || (product as any).boutique?.id || ""}`}

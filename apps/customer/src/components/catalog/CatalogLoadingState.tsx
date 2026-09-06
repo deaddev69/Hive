@@ -10,8 +10,8 @@ const SkeletonCard: React.FC<SkeletonCardProps> = ({ delay = 0 }) => (
     className="w-full bg-white border border-hive-border/40 rounded-[24px] p-3 overflow-hidden"
     style={{ animationDelay: `${delay}ms` }}
   >
-    {/* Image placeholder — 3:4 aspect to match ProductCard */}
-    <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden bg-hive-comb/20">
+    {/* Image placeholder — 4:5 aspect to match ProductCard */}
+    <div className="relative w-full aspect-[4/5] rounded-xl sm:rounded-2xl overflow-hidden bg-hive-comb/20">
       <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
     </div>
 
