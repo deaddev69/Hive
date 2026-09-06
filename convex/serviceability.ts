@@ -75,17 +75,47 @@ export const seedServiceZones = mutation({
 });
 
 /**
- * Check if a given city is serviceable (case-insensitive).
+ * Whether any approved boutique can actually deliver to these coordinates.
+ *
+ * This used to fall back to matching the caller's `city` string against active serviceZones rows
+ * whenever no boutique was in range. That fallback only ever fired when the geometry had already
+ * said no, so every result it produced was a claim that Hive serves someone no boutique can
+ * reach — which is how a Hyderabad row once reported a shopper as serviceable 848 km from the
+ * nearest boutique, and how Aluva still reports serviceable today with no boutique able to reach
+ * it and no pincode backing.
+ *
+ * Deliberately NOT replaced with resolveDiscoveryContext. That answers a different question —
+ * which service area a shopper is in — and substituting it here would rebuild the same defect in
+ * better clothing: measured against current data there is ~3 km2 that sits within 3 km of a
+ * pincode yet outside every boutique's delivery radius, and ~159 km2 that is genuinely
+ * deliverable but nowhere near a pincode centroid. Discovery identity and delivery capability are
+ * separate questions and this one is answered by boutique geometry alone.
+ *
+ * `city` is retained as an argument so the deployed client keeps working, but it cannot influence
+ * the result and is no longer echoed back as though this query had verified it. Every other
+ * serviceability consumer — LocationContext, orders, payments, reservations — already decided on
+ * geometry alone, so this removes the last disagreement rather than introducing a new definition.
  */
 export const checkServiceability = query({
   args: {
+    // DEPRECATED AND UNUSED. See above: retained only for client compatibility.
     city: v.string(),
     lat: v.optional(v.number()),
     lng: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // 1. PRIMARY CHECK: If GPS coordinates are provided, evaluate Haversine distance
-    if (args.lat !== undefined && args.lng !== undefined && args.lat !== 0 && args.lng !== 0) {
+    // Fail closed without usable coordinates: there is nothing to measure against, and the old
+    // behaviour of falling through to a city-string match is exactly what is being removed.
+    if (args.lat === undefined || args.lng === undefined || (args.lat === 0 && args.lng === 0)) {
+      return {
+        isServiceable: false,
+        city: null,
+        state: "",
+        reason: "NO_COORDINATES",
+      };
+    }
+
+    {
       const approvedBoutiques = await ctx.db
         .query("boutiques")
         .withIndex("by_status", (q) => q.eq("status", "APPROVED"))
@@ -108,33 +138,25 @@ export const checkServiceability = query({
         isWithinDeliveryRadius(args.lat, args.lng, b as any)
       );
 
-      // If at least 1 boutique can fulfill to these coordinates, pass immediately
+      // At least one boutique can fulfil to these coordinates.
       if (nearbyBoutiques.length > 0) {
         return {
           isServiceable: true,
-          city: args.city,
+          // Not echoing the caller's city back: this query verified delivery geometry, not the
+          // name the client attached to it, and returning it looked like confirmation.
+          city: null,
           state: "",
           reason: "BOUTIQUE_IN_RANGE",
         };
       }
     }
 
-    // 2. SECONDARY FALLBACK: Check macro serviceZones string match
-    const searchCity = args.city.trim().toLowerCase();
-    const activeZones = await ctx.db
-      .query("serviceZones")
-      .withIndex("by_isActive", (q) => q.eq("isActive", true))
-      .collect();
-
-    const matched = activeZones.find(
-      (z) => z.city.trim().toLowerCase() === searchCity
-    );
-
+    // No boutique in range. That is the answer — there is no second opinion to consult.
     return {
-      isServiceable: !!matched,
-      city: matched?.city || args.city,
-      state: matched?.state || "",
-      reason: matched ? "ZONE_ACTIVE" : "OUT_OF_RANGE",
+      isServiceable: false,
+      city: null,
+      state: "",
+      reason: "OUT_OF_RANGE",
     };
   },
 });
