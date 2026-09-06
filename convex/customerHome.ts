@@ -8,6 +8,7 @@ import { OperationsService } from "./services/operations/OperationsService";
 import { MerchandisingService } from "./services/merchandising/MerchandisingService";
 import { blockDemand } from "./services/content/BlockService";
 import { getCurrentUserOrNull } from "./lib/auth";
+import { resolveDiscoveryContext } from "./lib/discoveryContext";
 
 /** Upper bound on the shopper's history read by the personalisation overlay. */
 const HISTORY_LIMIT = 20;
@@ -29,13 +30,29 @@ export const resolveExperiencePayload = query({
     userId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
-    // No identity is threaded in. This payload is therefore identical for every caller with the
-    // same coordinates, which is what makes it safely shareable between shoppers.
-    return ContentService.getExperience(ctx, args.slug, {
+    // Discovery identity: which Hive service area, if any, this coordinate belongs to. Resolved
+    // from active pincode centroids — never from the caller's `city` string, which is why
+    // args.city is not passed to the resolver.
+    const discovery = await resolveDiscoveryContext(ctx, { lat: args.userLat, lng: args.userLng });
+
+    // Logistics coordinates are deliberately the ORIGINAL request coordinates, not
+    // discovery.coords. Discovery eligibility ("does this shopper belong to a service area?") and
+    // logistics ("how far is this boutique from this point?") are different questions. An
+    // out-of-area shopper still gets honest distance and ETA figures; they simply are not treated
+    // as belonging to a service area. Collapsing the two would silently change what out-of-area
+    // shoppers see today, which this wiring is not meant to do.
+    const experience = await ContentService.getExperience(ctx, args.slug, {
       lat: args.userLat,
       lng: args.userLng,
       city: args.city,
     });
+
+    if (!experience) return experience;
+
+    // Additive. Nothing consumes serviceArea yet — the candidate/vertical layers that will are
+    // later phases. Surfacing it now gives those phases a stable identity to build on, and makes
+    // discovery eligibility independently observable from logistics enrichment.
+    return { ...experience, discovery };
   },
 });
 

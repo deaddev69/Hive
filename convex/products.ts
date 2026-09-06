@@ -19,6 +19,7 @@ import {
 import { updateBoutiqueProductCount } from "./boutiques";
 import { normalizeEmail } from "./users";
 import { resolveDeliveryLabel, resolveDeliveryCountdown } from "./lib/deliveryEta";
+import { resolveDiscoveryContext } from "./lib/discoveryContext";
 import {
   getAllowedSpecKeys,
   getVerticalConfig,
@@ -1429,6 +1430,12 @@ export const getCatalogPage = query({
     const pageSize = Math.min(Math.max(args.pageSize ?? 12, 1), 12);
     const requestedPage = Math.max(args.page ?? 1, 1);
 
+    // Discovery identity for this coordinate. Resolved from active pincode centroids; the
+    // caller's coordinates continue to flow into selectCatalogProducts unchanged, so logistics
+    // (distance, ETA, radius filtering) behaves exactly as before. Discovery eligibility and
+    // logistics enrichment are separate questions and stay independently observable.
+    const discovery = await resolveDiscoveryContext(ctx, { lat: args.userLat, lng: args.userLng });
+
     const enriched = await selectCatalogProducts(ctx, args);
 
     const cards = enriched.map(toCatalogCard);
@@ -1451,6 +1458,8 @@ export const getCatalogPage = query({
       totalPages,
       page,
       pageSize,
+      // Additive; nothing consumes it yet. See the note above resolveDiscoveryContext.
+      discovery,
     };
   },
 });
@@ -2441,9 +2450,15 @@ export const searchProductsInternal = internalQuery({
       (p: any) => p.active && p.boutique && getTotalStock(p.stockBySize) > 0
     );
 
+    // Resolved here rather than in the searchProducts action, which has no database access.
+    // Logistics filtering above already used the raw request coordinates and is unchanged.
+    const discovery = await resolveDiscoveryContext(ctx, { lat: args.userLat, lng: args.userLng });
+
     return {
       products: activeEnriched,
       totalMatchedCount: activeEnriched.length,
+      // Additive; nothing consumes it yet.
+      discovery,
     };
   },
 });
