@@ -70,6 +70,15 @@ crons.hourly(
   internal.media.cleanup.cleanupOrphans
 );
 
+// Delete expired road-distance rows. The table has carried expiresAt and a by_expiresAt index
+// since it was created and writes set a 7-day TTL, but nothing ever swept it.
+crons.interval(
+  "cleanup_expired_road_distances_daily",
+  { hours: 24 },
+  internal.locationActions.cleanupExpiredRoadDistances,
+  {}
+);
+
 // Delete dead rate-limit rows. Nothing previously cleaned this table, so every distinct key —
 // including the caller-supplied anonymous search keys — became a permanent row.
 crons.interval(
