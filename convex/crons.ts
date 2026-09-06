@@ -70,6 +70,15 @@ crons.hourly(
   internal.media.cleanup.cleanupOrphans
 );
 
+// Delete dead rate-limit rows. Nothing previously cleaned this table, so every distinct key —
+// including the caller-supplied anonymous search keys — became a permanent row.
+crons.interval(
+  "cleanup_expired_rate_limits_hourly",
+  { hours: 1 },
+  internal.rateLimitMaintenance.cleanupExpiredRateLimits,
+  {}
+);
+
 // Safety cron: Sweep unaccepted orders > 45 minutes every 5 minutes
 crons.interval(
   "sweep_unaccepted_orders_sla_every_5_minutes",

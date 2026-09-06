@@ -2166,11 +2166,25 @@ export const getDashboardMetrics = query({
 export const checkSearchRateLimitInternal = internalMutation({
   args: { userId: v.optional(v.string()), sessionId: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    const key = args.userId 
-      ? `search:${args.userId}` 
-      : `search:anon:${args.sessionId || "global"}`;
-    // Limit to 30 searches per minute per user/session
-    await checkRateLimit(ctx, key, 30, 60 * 1000);
+    // Signed-in callers key on a server-derived identity, which is the only key here that is
+    // actually trustworthy — it cannot be rotated to mint a fresh bucket.
+    if (args.userId) {
+      await checkRateLimit(ctx, `search:${args.userId}`, 30, 60 * 1000);
+      return;
+    }
+
+    // Anonymous callers previously fell back to a single shared `search:anon:global` bucket when
+    // no sessionId was supplied. That was the worst of both worlds: it stopped nobody (an
+    // attacker just sends a random sessionId and gets a private bucket) while letting one caller
+    // exhaust the shared 30/min and lock every other signed-out shopper out of search. Skipping
+    // the limit is strictly safer than a bucket that only harms legitimate users.
+    if (!args.sessionId) return;
+
+    // NOTE: sessionId is client-generated and rotatable, so this bounds honest usage rather than
+    // deliberate abuse — it keeps one shopper's tab from hammering search, nothing more. Real
+    // anonymous abuse protection needs a server-derived signal (IP / edge layer), which Convex
+    // does not expose to queries, mutations or actions. Tracked as separate architecture work.
+    await checkRateLimit(ctx, `search:anon:${args.sessionId}`, 30, 60 * 1000);
   },
 });
 

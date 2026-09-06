@@ -2018,7 +2018,12 @@ export default defineSchema({
     count: v.number(),
     windowStart: v.number(),
   })
-    .index("by_key", ["key"]),
+    .index("by_key", ["key"])
+    // Rate-limit rows were never deleted: every distinct key became a permanent row, and the
+    // anonymous search key is caller-supplied, so rotating it minted rows without bound. Reads
+    // already ignore a stale window (checkRateLimit resets it), so this index exists purely so the
+    // maintenance sweep can find dead rows by age instead of scanning the table.
+    .index("by_windowStart", ["windowStart"]),
 
   refundQueue: defineTable({
     paymentId:   v.id("payments"),
