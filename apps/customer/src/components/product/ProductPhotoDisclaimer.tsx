@@ -22,12 +22,12 @@ export function ProductPhotoDisclaimer({
     return (
       <div
         className={cn(
-          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/60 text-white backdrop-blur-md text-[11px] font-medium tracking-wide shadow-sm select-none pointer-events-none",
+          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-stone-950/70 text-stone-200 border border-white/20 backdrop-blur-md text-[10px] font-medium tracking-widest uppercase shadow-sm select-none pointer-events-none",
           className
         )}
       >
-        <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-        <span>AI Visual Preview</span>
+        <Sparkles className="w-3 h-3 text-amber-200/90 shrink-0 stroke-[1.5]" />
+        <span>Studio Preview</span>
       </div>
     );
   }
@@ -47,8 +47,8 @@ export function ProductPhotoDisclaimer({
         <span className="flex items-start gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
           <span>
-            <strong className="font-semibold text-stone-700">AI Visual Preview:</strong>{" "}
-            Digital representation. Product appearance may vary slightly from the delivered item.
+            <strong className="font-semibold text-stone-700">Studio Preview:</strong>{" "}
+            Digitally styled for visual reference. You will receive the authentic, original product upon delivery.
           </span>
         </span>
       ) : (

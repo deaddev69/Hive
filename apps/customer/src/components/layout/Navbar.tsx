@@ -16,7 +16,6 @@ import {
   Package,
   Home,
   Heart,
-  Sparkles,
   Store,
   Phone,
   FileText,

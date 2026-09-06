@@ -6,7 +6,7 @@ import { api } from "@convex/api";
 import { useLocation } from "@/context/LocationContext";
 import { toQueryCoords } from "@/lib/distance";
 import { ExperienceBlockRenderer } from "@/components/home/ExperienceBlockRenderer";
-import { Sparkles, LayoutGrid } from "lucide-react";
+import { Loader2, LayoutGrid } from "lucide-react";
 
 export function ExperiencePageClient({ slug }: { slug: string }) {
   const { latitude, longitude, city } = useLocation();
@@ -27,7 +27,7 @@ export function ExperiencePageClient({ slug }: { slug: string }) {
   if (experience === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-hive-dark">
-        <Sparkles className="w-8 h-8 text-hive-amber animate-spin" />
+        <Loader2 className="w-7 h-7 text-amber-600/80 dark:text-amber-400 animate-spin" strokeWidth={1.75} />
         <p className="font-serif italic text-lg text-hive-text-muted animate-pulse">
           Loading experience...
         </p>

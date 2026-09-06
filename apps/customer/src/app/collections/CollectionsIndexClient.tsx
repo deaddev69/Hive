@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
-import { ArrowRight, Sparkles, Store, ShieldCheck, Timer, Compass, MapPin } from "lucide-react";
+import { ArrowRight, Loader2, Store, ShieldCheck, Timer, Compass, MapPin } from "lucide-react";
 import { CollectionCard } from "@/components/catalog/CollectionCard";
 import { useLocation } from "@/context/LocationContext";
 
@@ -138,7 +138,7 @@ export function CollectionsIndexClient() {
   if (rawCollections === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 text-stone-900">
-        <Sparkles className="w-6 h-6 text-amber-500 animate-spin" />
+        <Loader2 className="w-6 h-6 text-amber-600/80 dark:text-amber-400 animate-spin" strokeWidth={1.75} />
         <p className="font-serif italic text-sm text-stone-500 animate-pulse">
           Curating lookbooks near you...
         </p>

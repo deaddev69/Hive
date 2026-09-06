@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Play, Image as ImageIcon, Sparkles, Heart, Share2, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, Image as ImageIcon, Heart, Share2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@hive/ui";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { ProductDetail } from "@/lib/mockProductDetails";

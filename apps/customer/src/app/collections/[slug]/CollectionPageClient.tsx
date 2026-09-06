@@ -7,7 +7,7 @@ import { useLocation } from "@/context/LocationContext";
 import { toQueryCoords } from "@/lib/distance";
 import { ProductCard } from "@/components/product/ProductCard";
 import { CollectionHeader } from "@/components/catalog/CollectionHeader";
-import { LayoutGrid, Sparkles } from "lucide-react";
+import { LayoutGrid, Loader2 } from "lucide-react";
 import { mapDbProduct } from "@/components/home/ExperienceBlockRenderer";
 
 export function CollectionPageClient({ slug }: { slug: string }) {
@@ -22,7 +22,7 @@ export function CollectionPageClient({ slug }: { slug: string }) {
   if (data === undefined) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-hive-dark">
-        <Sparkles className="w-8 h-8 text-hive-amber animate-spin" />
+        <Loader2 className="w-7 h-7 text-amber-600/80 dark:text-amber-400 animate-spin" strokeWidth={1.75} />
         <p className="font-serif italic text-lg text-hive-text-muted animate-pulse">
           Curating your edit...
         </p>

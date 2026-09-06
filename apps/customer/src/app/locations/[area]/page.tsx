@@ -1,7 +1,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { MapPin, Truck, Clock, ArrowRight, ChevronRight, Sparkles, ShieldCheck, ShoppingBag, Store } from "lucide-react";
+import { MapPin, Truck, Clock, ArrowRight, ChevronRight, Zap, ShieldCheck, ShoppingBag, Store } from "lucide-react";
 import { KOCHI_LOCATIONS } from "@/lib/locations";
 import { SITE_URL } from "@/lib/seo";
 
@@ -171,7 +171,7 @@ export default async function LocationPage({ params }: Props) {
             <div className="relative z-10 hidden lg:block bg-hive-comb/5 border border-hive-border/10 rounded-2xl p-6 shadow-2xl backdrop-blur-sm">
               <div className="flex flex-col items-center text-center gap-3">
                 <div className="w-16 h-16 rounded-full bg-hive-gold/15 flex items-center justify-center border border-hive-gold/30">
-                  <Sparkles className="w-8 h-8 text-hive-gold animate-pulse" />
+                  <Zap className="w-8 h-8 text-hive-gold" />
                 </div>
                 <div>
                   <h3 className="text-sm font-serif font-bold text-white">Hyperlocal Speed</h3>

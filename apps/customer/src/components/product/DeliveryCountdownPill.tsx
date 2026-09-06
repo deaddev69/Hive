@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Zap, Moon } from "lucide-react";
+import { cn } from "@hive/ui";
 
 export interface DeliveryCountdownData {
   mode: "today" | "tomorrow";
@@ -31,8 +32,19 @@ function formatTimeIST(epochMs: number): string {
     .toUpperCase();
 }
 
-const PillShell = ({ children }: { children: React.ReactNode }) => (
-  <div className="min-h-[38px] flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-stone-50 border border-stone-200/90 select-none">
+const PillShell = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div
+    className={cn(
+      "min-h-[42px] flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-amber-50/70 dark:bg-stone-900/70 border border-amber-200/80 dark:border-amber-900/40 backdrop-blur-sm shadow-2xs select-none transition-all",
+      className
+    )}
+  >
     {children}
   </div>
 );
@@ -70,12 +82,14 @@ export function DeliveryCountdownPill({
 
   if (countdown.mode === "tomorrow") {
     return (
-      <PillShell>
-        <Moon className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20 shrink-0" />
-        <p className="text-[11.5px] font-medium text-stone-700 leading-tight">
-          Order tonight for Priority Morning Delivery to{" "}
-          <span className="font-bold text-stone-900">{localityLabel}</span> by{" "}
-          <span className="font-bold text-stone-900">{formatTimeIST(countdown.targetDeliveryAtMs)}</span> tomorrow
+      <PillShell className="bg-stone-50/80 dark:bg-stone-900/60 border-stone-200/80 dark:border-stone-800">
+        <div className="w-6 h-6 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+          <Moon className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 fill-amber-500/20" />
+        </div>
+        <p className="text-[12px] text-stone-700 dark:text-stone-300 leading-snug">
+          <strong className="font-bold text-stone-950 dark:text-stone-100">Order tonight</strong> for Priority Morning Delivery to{" "}
+          <span className="font-bold text-stone-900 dark:text-stone-100">{localityLabel}</span> by{" "}
+          <span className="font-bold text-stone-900 dark:text-stone-100">{formatTimeIST(countdown.targetDeliveryAtMs)}</span> tomorrow
         </p>
       </PillShell>
     );
@@ -86,28 +100,38 @@ export function DeliveryCountdownPill({
   if (!isUrgent) {
     return (
       <PillShell>
-        <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 shrink-0" />
-        <p className="text-[11.5px] font-medium text-stone-700 leading-tight">
-          Order today for delivery to{" "}
-          <span className="font-bold text-stone-900">{localityLabel}</span> by{" "}
-          <span className="font-bold text-stone-900">{formatTimeIST(countdown.targetDeliveryAtMs)}</span> today
+        <div className="w-6 h-6 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+          <Zap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 fill-amber-500" />
+        </div>
+        <p className="text-[12px] text-stone-700 dark:text-stone-300 leading-snug">
+          <strong className="font-bold text-amber-700 dark:text-amber-400">Hive it Now!</strong>{" "}
+          Delivered to <span className="font-bold text-stone-900 dark:text-stone-100">{localityLabel}</span> by{" "}
+          <span className="font-bold text-stone-900 dark:text-stone-100">{formatTimeIST(countdown.targetDeliveryAtMs)}</span>
         </p>
+        <span className="ml-auto hidden sm:inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 uppercase tracking-wider shrink-0">
+          90-Min
+        </span>
       </PillShell>
     );
   }
 
   return (
-    <PillShell>
-      <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 animate-pulse shrink-0" />
-      <p className="text-[11.5px] font-medium text-stone-700 leading-tight">
-        Order in the next{" "}
-        <span className="font-mono font-bold tabular-nums text-stone-950">
+    <PillShell className="border-amber-400/80 dark:border-amber-500/40 bg-amber-50/90 dark:bg-stone-900/90">
+      <div className="w-6 h-6 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+        <Zap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 fill-amber-500 animate-pulse" />
+      </div>
+      <p className="text-[12px] text-stone-700 dark:text-stone-300 leading-snug">
+        <strong className="font-bold text-amber-700 dark:text-amber-400">Hive it Now!</strong>{" "}
+        Order in next{" "}
+        <span className="font-mono font-bold tabular-nums text-amber-800 dark:text-amber-300">
           {remainingMs != null ? formatClock(remainingMs) : "--:--"}
         </span>{" "}
-        for delivery to{" "}
-        <span className="font-bold text-stone-900">{localityLabel}</span> by{" "}
-        <span className="font-bold text-stone-900">{formatTimeIST(countdown.targetDeliveryAtMs)}</span> today
+        for delivery to <span className="font-bold text-stone-900 dark:text-stone-100">{localityLabel}</span> by{" "}
+        <span className="font-bold text-stone-900 dark:text-stone-100">{formatTimeIST(countdown.targetDeliveryAtMs)}</span>
       </p>
+      <span className="ml-auto hidden sm:inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/15 text-amber-800 dark:text-amber-300 uppercase tracking-wider shrink-0">
+        90-Min
+      </span>
     </PillShell>
   );
 }
