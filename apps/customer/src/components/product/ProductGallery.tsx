@@ -5,7 +5,6 @@ import { cn } from "@hive/ui";
 import { useWishlistStore } from "@/store/wishlist-store";
 import { ProductDetail } from "@/lib/mockProductDetails";
 import { withImageVariant } from "../../../../../convex/media/urls";
-import { ProductPhotoDisclaimer } from "./ProductPhotoDisclaimer";
 
 /**
  * Gallery images arrive here already resolved to the "pdp" width (1200px) by
@@ -377,10 +376,6 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
             )
           )}
 
-          {/* AI Visual Preview badge overlay (Desktop) */}
-          <div className="absolute bottom-6 left-6 z-20">
-            <ProductPhotoDisclaimer source={product?.photoSource} variant="badge" />
-          </div>
         </div>
       </div>
 
@@ -390,11 +385,6 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
       <div className="block md:hidden w-full relative">
         {/* Action Buttons overlay */}
         {renderActionButtons(false)}
-
-        {/* AI Visual Preview badge overlay (Mobile) */}
-        <div className="absolute bottom-4 left-4 z-20">
-          <ProductPhotoDisclaimer source={product?.photoSource} variant="badge" />
-        </div>
 
         {/* Swipe container */}
         <div
