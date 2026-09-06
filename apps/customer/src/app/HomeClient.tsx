@@ -4,8 +4,8 @@ import React, { useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useLocation } from "@/context/LocationContext";
-import { useSessionStore } from "@/context/SessionContext";
 import { toQueryCoords } from "@/lib/distance";
+import { mergePersonalizedBlocks } from "@/lib/homeMerge";
 import { ExperienceBlockRenderer } from "@/components/home/ExperienceBlockRenderer";
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode, fallback: React.ReactNode }, { hasError: boolean }> {
@@ -53,23 +53,31 @@ function HomePageSkeleton() {
 
 export function HomeClient() {
   const { latitude, longitude, city } = useLocation();
-  const { user } = useSessionStore();
 
-  // Fetch from Convex using unified Content API
-  const homeData = useQuery(
-    api.customerHome.resolveExperiencePayload,
-    {
-      slug: "homepage",
-      city: city || undefined,
-      // Rounded to the same ~111 m precision the server already collapses these
-      // to, so shoppers in one cell share a cached execution instead of each
-      // spawning their own. See toQueryCoords.
-      ...toQueryCoords(latitude, longitude),
-      userId: (user?._id as any) || undefined,
-    }
+  const contentArgs = {
+    slug: "homepage",
+    city: city || undefined,
+    // Rounded to the same ~111 m precision the server already collapses these
+    // to, so shoppers in one cell share a cached execution instead of each
+    // spawning their own. See toQueryCoords.
+    ...toQueryCoords(latitude, longitude),
+  };
+
+  // Shared composition. Carries no identity, so it is identical for every shopper in this
+  // location cell and can be cached across them. `userId` is deliberately NOT sent — it used to
+  // be, and because the server passed it straight through, anyone could request another
+  // shopper's personalised homepage by supplying their id.
+  const homeData = useQuery(api.customerHome.resolveExperiencePayload, contentArgs);
+
+  // Per-shopper overlay. Identity comes from the auth context server-side; there is no identity
+  // argument to spoof. Returns null for signed-out shoppers, who keep the composition's guest
+  // fallback exactly as before.
+  const personalizedBlocks = useQuery(api.customerHome.getPersonalizedBlocks, contentArgs);
+
+  const experienceBlocks = useMemo(
+    () => mergePersonalizedBlocks(homeData?.blocks as any, personalizedBlocks as any),
+    [homeData, personalizedBlocks]
   );
-
-  const { blocks: experienceBlocks } = homeData ?? {};
 
   // Render loading skeleton
   if (homeData === undefined) {
