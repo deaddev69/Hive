@@ -84,7 +84,7 @@ const DEFAULT_MAX_RECOMMENDED = 12;
 const DEFAULT_MAX_SMART_RAIL = 8;
 
 /** Products a single block intends to display. */
-function blockDemand(block: any): number {
+export function blockDemand(block: any): number {
   const configured = block.config?.maxProducts;
   if (configured) return configured;
   switch (block.blockType) {
