@@ -3,7 +3,7 @@
 
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { haversineKm } from "./lib/serviceability";
+import { haversineKm, isWithinDeliveryRadius } from "./lib/serviceability";
 import { requireRole } from "./lib/auth";
 
 
@@ -91,11 +91,22 @@ export const checkServiceability = query({
         .withIndex("by_status", (q) => q.eq("status", "APPROVED"))
         .collect();
 
-      const nearbyBoutiques = approvedBoutiques.filter((b) => {
-        const distance = haversineKm(args.lat!, args.lng!, b.latitude, b.longitude);
-        const maxRadius = b.deliveryRadiusKm ?? 15;
-        return distance <= maxRadius;
-      });
+      // Delegates to the same helper the order gate uses, rather than re-implementing the check.
+      //
+      // This previously compared RAW straight-line distance against a 15km default, while
+      // convex/lib/serviceability.ts — which decides whether an order or reservation is actually
+      // allowed — compares an estimated ROAD distance (haversine x 1.5) against a 13km default.
+      // The drawer was therefore roughly 1.7x more permissive than the gate behind it, so a
+      // shopper could be told "we deliver to you" here and then be refused at checkout. Measured
+      // against the current 11 approved boutiques, the two models differ over about half the
+      // area the drawer was calling serviceable.
+      //
+      // Sharing the function rather than copying its constants also picks up the addressDetails
+      // coordinate fallback, which the inline version did not have: a boutique whose coordinates
+      // live only on addressDetails was silently treated as unreachable here.
+      const nearbyBoutiques = approvedBoutiques.filter((b) =>
+        isWithinDeliveryRadius(args.lat, args.lng, b as any)
+      );
 
       // If at least 1 boutique can fulfill to these coordinates, pass immediately
       if (nearbyBoutiques.length > 0) {
