@@ -184,8 +184,9 @@ function OrderCard({
   const isActive = ["placed", "confirmed", "picked_up", "out_for_delivery"].includes(uiStatus);
   const isDelivered = uiStatus === "delivered" || order.status === "delivered";
 
-  // Window runs from when the order was placed, matching the server.
-  const withinWindow = Date.now() - order.createdAt <= 24 * 60 * 60 * 1000;
+  // Window runs from delivery, matching the server and the payout hold.
+  const deliveredTime = order.deliveredAt || order.updatedAt;
+  const withinWindow = Date.now() - deliveredTime <= 24 * 60 * 60 * 1000;
   // Respect the policy frozen onto the order — a Final Sale purchase must not
   // be offered a return here only to be refused on the next screen.
   const returnsAllowed = order.returnsAccepted !== false;

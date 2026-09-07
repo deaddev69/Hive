@@ -410,10 +410,10 @@ export default function OrderDetailPage() {
             {(() => {
               const isFinalSale = (order as any).returnsAccepted === false || (order as any).items?.every((i: any) => i.returnsAccepted === false);
               const isDelivered = order.status === "delivered";
-              // Window runs from when the order was placed, matching the server.
-              const hoursSinceOrder = (Date.now() - order.createdAt) / (1000 * 60 * 60);
-              const isWindowActive = isDelivered && hoursSinceOrder <= 24;
-              const hoursSinceDelivery = hoursSinceOrder;
+              // Window runs from delivery, matching the server.
+              const deliveredTime = order.deliveredAt || order.updatedAt;
+              const hoursSinceDelivery = isDelivered ? (Date.now() - deliveredTime) / (1000 * 60 * 60) : 0;
+              const isWindowActive = isDelivered && hoursSinceDelivery <= 24;
 
               if (isFinalSale) {
                 return (
@@ -487,9 +487,10 @@ export default function OrderDetailPage() {
               {(() => {
                 const isFinalSale = (order as any).returnsAccepted === false || (order as any).items?.every((i: any) => i.returnsAccepted === false);
                 const isDelivered = order.status === "delivered";
-                // Window runs from when the order was placed, matching the server.
-                const hoursSinceOrder = (Date.now() - order.createdAt) / (1000 * 60 * 60);
-                const isWindowActive = isDelivered && hoursSinceOrder <= 24;
+                // Window runs from delivery, matching the server.
+                const deliveredTime = order.deliveredAt || order.updatedAt;
+                const isWindowActive =
+                  isDelivered && (Date.now() - deliveredTime) / (1000 * 60 * 60) <= 24;
 
                 if (isFinalSale) {
                   return (

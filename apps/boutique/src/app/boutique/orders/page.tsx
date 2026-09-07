@@ -478,6 +478,39 @@ export default function BoutiqueOrders() {
                         <span className="md:hidden text-[10px] font-extrabold text-[#94a3b8] uppercase tracking-wider block mb-2">Order Status</span>
                         <OrderStatusBadge status={order.status} />
 
+                        {/* Courier timestamps from Porter, so the boutique can
+                            see when the item actually moved. */}
+                        {(order.pickedUpAt || order.deliveredAt) && (
+                          <div className="mt-2 px-2.5 py-2 bg-emerald-50/60 border border-emerald-200/60 rounded-xl text-left space-y-0.5">
+                            {order.pickedUpAt && (
+                              <p className="text-[10px] text-emerald-900 font-semibold leading-snug flex items-center gap-1">
+                                <Truck className="w-3 h-3 shrink-0" />
+                                Picked up{" "}
+                                {new Date(order.pickedUpAt).toLocaleString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}
+                              </p>
+                            )}
+                            {order.deliveredAt && (
+                              <p className="text-[10px] text-emerald-900 font-bold leading-snug flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 shrink-0" />
+                                Delivered{" "}
+                                {new Date(order.deliveredAt).toLocaleString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                })}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
                         {/* Acceptance attribution — compact actor badge */}
                         {order.acceptanceActivity && (
                           <div className="mt-2 px-2.5 py-2 bg-stone-50/80 border border-stone-200/60 rounded-xl text-left">

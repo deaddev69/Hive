@@ -63,8 +63,11 @@ export const requestExchange = mutation({
       throw new ConvexError("A return is already in progress for this order.");
     }
 
-    // Window runs from when the order was placed, not from delivery.
-    const windowClosesAt = order.createdAt + RETURN_WINDOW_MS;
+    // Window runs from delivery, matching the seller's payout hold so the two
+    // can never disagree: money stays frozen for exactly as long as the
+    // customer can still act on the order.
+    const windowOpensFrom = order.deliveredAt ?? order.updatedAt;
+    const windowClosesAt = windowOpensFrom + RETURN_WINDOW_MS;
     if (now > windowClosesAt) {
       throw new ConvexError("The 24-hour exchange window for this order has closed.");
     }

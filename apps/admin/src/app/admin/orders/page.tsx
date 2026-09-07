@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
+import { OrderTimeline } from "@/components/orders/OrderTimeline";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Card, CardContent } from "@hive/ui";
 import { formatCurrency } from "@hive/utils";
@@ -391,6 +392,9 @@ function OrderDetailDrawer({
               }
               return null;
             })()}
+
+            {/* Timeline — real courier timestamps, not when Hive processed them */}
+            <OrderTimeline orderId={order._id} />
 
             {/* Delivery Address */}
             <div className="bg-slate-50 rounded-2xl p-4 border border-hive-border/40">

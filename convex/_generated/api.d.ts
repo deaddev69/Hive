@@ -96,6 +96,7 @@ import type * as media_tests from "../media/tests.js";
 import type * as media_urls from "../media/urls.js";
 import type * as merchantCatalog from "../merchantCatalog.js";
 import type * as migrations from "../migrations.js";
+import type * as orderTimeline from "../orderTimeline.js";
 import type * as orders from "../orders.js";
 import type * as payments from "../payments.js";
 import type * as porter from "../porter.js";
@@ -269,6 +270,7 @@ declare const fullApi: ApiFromModules<{
   "media/urls": typeof media_urls;
   merchantCatalog: typeof merchantCatalog;
   migrations: typeof migrations;
+  orderTimeline: typeof orderTimeline;
   orders: typeof orders;
   payments: typeof payments;
   porter: typeof porter;

@@ -990,6 +990,10 @@ export const getBoutiqueOrders = query({
         invoiceNumber: invoice?.invoiceNumber || null,
         invoicePdfUrl: invoice?.pdfUrl || null,
         shipmentStatus: shipment?.status || null,
+        // Courier timestamps, so the boutique can see when their item actually
+        // moved rather than only its current status.
+        pickedUpAt: shipment?.pickedUpAt ?? order.pickedUpAt ?? null,
+        deliveredAt: shipment?.deliveredAt ?? order.deliveredAt ?? null,
         shipment: shipment ? {
           _id: shipment._id,
           provider: shipment.provider,
