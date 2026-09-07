@@ -623,7 +623,7 @@ export default function CheckoutAddressPage() {
             Delivery Address
           </h1>
           <p className="text-xs text-hive-text-muted font-medium">
-            Choose where you'd like your order delivered.
+            Choose where you&apos;d like your order delivered.
           </p>
         </div>
 

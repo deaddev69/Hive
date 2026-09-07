@@ -42,7 +42,7 @@ export const CollectionCard: React.FC<CollectionCardProps> = ({
           <div className="absolute top-3.5 left-3.5 sm:top-5 sm:left-5">
             <span className="px-2.5 py-1 rounded-full bg-amber-400 text-stone-950 text-[9px] font-extrabold uppercase tracking-[0.18em] shadow-xs inline-flex items-center gap-1.5">
               <Sparkles className="w-2.5 h-2.5 text-stone-950" />
-              Editor's Spotlight
+              Editor&apos;s Spotlight
             </span>
           </div>
 

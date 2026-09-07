@@ -475,7 +475,7 @@ export function BecomeSellerClient() {
             </span>
           </h1>
           <p className="text-sm sm:text-base text-stone-500 max-w-2xl leading-relaxed text-center">
-            Join Kerala's hyperlocal fashion marketplace. From boutiques to independent designers, Hive helps partners reach nearby customers with same-day logistics.
+            Join Kerala&apos;s hyperlocal fashion marketplace. From boutiques to independent designers, Hive helps partners reach nearby customers with same-day logistics.
           </p>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 max-w-2xl w-full text-left">
@@ -625,7 +625,7 @@ export function BecomeSellerClient() {
             </div>
             <h3 className="text-lg font-serif font-semibold text-hive-dark">Sell Nearby</h3>
             <p className="text-xs text-stone-500 leading-relaxed font-sans">
-              Reach customers within your delivery radius. Focus local marketing directly to high-intent buyers in Kochi's prime sub-zones.
+              Reach customers within your delivery radius. Focus local marketing directly to high-intent buyers in Kochi&apos;s prime sub-zones.
             </p>
           </div>
 
@@ -823,8 +823,8 @@ export function BecomeSellerClient() {
                   onChange={(e: any) => setStoreCategory(e.target.value)}
                   className="w-full h-11 px-4 rounded-xl border border-hive-border/50 text-hive-dark bg-white text-xs transition-all duration-200 outline-none focus:border-hive-gold focus:ring-1 focus:ring-hive-gold font-medium"
                 >
-                  <option value="women_fashion">Women's Fashion</option>
-                  <option value="mens_fashion">Men's Fashion</option>
+                  <option value="women_fashion">Women&apos;s Fashion</option>
+                  <option value="mens_fashion">Men&apos;s Fashion</option>
                   <option value="jewellery">Jewellery</option>
                   <option value="multi_category">Multi-category Store</option>
                 </select>

@@ -238,7 +238,7 @@ export default async function LocationPage({ params }: Props) {
                 <h2 className="text-sm font-extrabold uppercase tracking-wider text-hive-dark dark:text-white">Browse Fashion</h2>
               </div>
               <p className="text-xs text-hive-text-muted dark:text-neutral-400 leading-relaxed font-medium">
-                Explore designer kurtis, modern co-ords, traditional sarees, and premium menswear from Kochi's finest stores, delivered in hours.
+                Explore designer kurtis, modern co-ords, traditional sarees, and premium menswear from Kochi&apos;s finest stores, delivered in hours.
               </p>
             </div>
             

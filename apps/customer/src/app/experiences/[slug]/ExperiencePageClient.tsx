@@ -41,7 +41,7 @@ export function ExperiencePageClient({ slug }: { slug: string }) {
         <LayoutGrid className="w-12 h-12 text-slate-300" />
         <h2 className="font-serif text-2xl font-bold">Experience Not Found</h2>
         <p className="text-slate-500 max-w-md text-center">
-          We couldn't find the editorial experience you're looking for. It may have been unpublished or removed.
+          We couldn&apos;t find the editorial experience you&apos;re looking for. It may have been unpublished or removed.
         </p>
       </div>
     );

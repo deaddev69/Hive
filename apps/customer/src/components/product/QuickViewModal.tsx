@@ -716,7 +716,7 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({
               <span>→</span>
             </button>
             <span className="text-[10.5px] text-stone-500 font-medium mt-1.5 text-center block">
-              We'll bookmark this piece so you can easily order it right after!
+              We&apos;ll bookmark this piece so you can easily order it right after!
             </span>
             
             {/* Option 2: Switch Bag */}

@@ -28,7 +28,7 @@ export const CollectionShowcase: React.FC<CollectionShowcaseProps> = ({
                   className="text-[10px] font-extrabold uppercase tracking-[0.22em]"
                   style={{ color: details.accentColor }}
                 >
-                  Editor's Pick
+                  Editor&apos;s Pick
                 </span>
                 <h2 className="text-xl font-serif font-extrabold text-hive-dark">
                   From This Collection
@@ -86,7 +86,7 @@ export const CollectionShowcase: React.FC<CollectionShowcaseProps> = ({
                       className="absolute top-3 left-3 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider text-white"
                       style={{ background: details.accentColor }}
                     >
-                      Editor's Pick
+                      Editor&apos;s Pick
                     </div>
                   )}
                 </div>

@@ -28,7 +28,7 @@ export const ReservationStatusCard: React.FC<ReservationStatusCardProps> = ({ re
               <span className="text-sm font-bold">Awaiting Seller Acceptance</span>
             </div>
             <p className="text-xs text-stone-600">
-              The boutique will confirm availability {reservation.scheduledConfirmDate ? `on ${reservation.scheduledConfirmDate}` : "tomorrow"}. You'll receive a WhatsApp message once accepted!
+              The boutique will confirm availability {reservation.scheduledConfirmDate ? `on ${reservation.scheduledConfirmDate}` : "tomorrow"}. You&apos;ll receive a WhatsApp message once accepted!
             </p>
           </div>
         );

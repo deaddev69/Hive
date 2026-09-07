@@ -198,7 +198,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
               Launching Soon in {locality || city || "your area"}
             </h3>
             <p className="text-xs sm:text-sm text-stone-500 mt-2 max-w-md leading-relaxed font-normal">
-              We're currently onboarding boutiques, brands and fashion partners for your area.
+              We&apos;re currently onboarding boutiques, brands and fashion partners for your area.
             </p>
 
             <div className="mt-6 flex flex-col items-center gap-3 w-full max-w-sm">

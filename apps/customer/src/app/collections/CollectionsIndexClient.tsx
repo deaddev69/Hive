@@ -249,7 +249,7 @@ export function CollectionsIndexClient() {
               No lookbooks found in this category
             </h3>
             <p className="text-xs text-stone-500 max-w-xs">
-              Select "All Edits" to view all fashion lookbooks near you.
+              Select &quot;All Edits&quot; to view all fashion lookbooks near you.
             </p>
             <button
               onClick={() => setActiveCategory("all")}

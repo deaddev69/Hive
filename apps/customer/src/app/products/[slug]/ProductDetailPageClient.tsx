@@ -106,7 +106,7 @@ export function ProductDetailPageClient({ product: rawProduct }: ProductDetailPa
                   </h1>
                   <p className="text-sm text-hive-text-muted leading-relaxed font-medium">
                     This boutique is taking a short break {reopenText}.<br/>
-                    Save to wishlist and we'll remind you when they're back.
+                    Save to wishlist and we&apos;ll remind you when they&apos;re back.
                   </p>
                 </div>
               </>
@@ -120,7 +120,7 @@ export function ProductDetailPageClient({ product: rawProduct }: ProductDetailPa
                     Product Unavailable
                   </h1>
                   <p className="text-sm text-hive-text-muted leading-relaxed font-medium">
-                    The product "{product.name}" is no longer available.
+                    The product &quot;{product.name}&quot; is no longer available.
                   </p>
                 </div>
               </>

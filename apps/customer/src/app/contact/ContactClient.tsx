@@ -16,7 +16,7 @@ export function ContactClient() {
         
         <h1 className="text-3xl md:text-4xl font-serif font-black text-hive-dark mb-4 tracking-tight">Contact Us</h1>
         <p className="text-hive-dark/70 mb-10 leading-relaxed text-sm md:text-base">
-          We're here to help! If you have any questions about your order, returns, or our platform, please reach out using the contact information below.
+          We&apos;re here to help! If you have any questions about your order, returns, or our platform, please reach out using the contact information below.
         </p>
 
         <div className="bg-white rounded-2xl shadow-sm border border-hive-border/20 p-6 md:p-8 space-y-8">

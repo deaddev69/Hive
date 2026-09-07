@@ -55,7 +55,7 @@ export default async function LegalDocumentPage({ params }: Props) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4">
         <h1 className="text-2xl font-serif font-black text-hive-dark">Document Not Found</h1>
-        <p className="text-sm text-hive-text-muted">The legal document "{slug}" could not be found.</p>
+        <p className="text-sm text-hive-text-muted">The legal document &quot;{slug}&quot; could not be found.</p>
         <Link href="/" className="text-hive-amber font-semibold hover:underline mt-4 flex items-center gap-2">
           <ArrowLeft className="w-4 h-4" /> Return Home
         </Link>

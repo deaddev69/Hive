@@ -404,9 +404,9 @@ function EmptyOrdersState({ onRedirect }: { onRedirect: () => void }) {
   return (
     <div className="py-20 text-center space-y-6 max-w-sm mx-auto flex flex-col items-center animate-fadeIn">
       <div className="space-y-4">
-        <h2 className="font-serif text-2xl font-light text-hive-dark">You haven't placed any orders yet</h2>
+        <h2 className="font-serif text-2xl font-light text-hive-dark">You haven&apos;t placed any orders yet</h2>
         <p className="text-xs text-hive-text-muted leading-relaxed max-w-[280px] mx-auto font-medium">
-          Your curation journey is waiting. Explore unique, hand-crafted pieces from India's finest independent local designers.
+          Your curation journey is waiting. Explore unique, hand-crafted pieces from India&apos;s finest independent local designers.
         </p>
       </div>
       <button

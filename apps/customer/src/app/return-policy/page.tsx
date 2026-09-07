@@ -73,7 +73,7 @@ export default function ReturnPolicyPage() {
               2.2 Return requests raised after expiry of this window may not be accepted, except where required under applicable consumer protection law.
             </p>
             <p>
-              2.3 To initiate a return, Customers should raise a request through the Platform's “My Orders” section or contact <a href="mailto:support@hivenow.in" className="underline text-stone-850">support@hivenow.in</a> within the return window stated above.
+              2.3 To initiate a return, Customers should raise a request through the Platform&apos;s “My Orders” section or contact <a href="mailto:support@hivenow.in" className="underline text-stone-850">support@hivenow.in</a> within the return window stated above.
             </p>
           </section>
 

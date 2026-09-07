@@ -128,7 +128,7 @@ export const UnsupportedArea: React.FC = () => {
             Fashion, Available <span className="text-hive-gold">Near You</span>
           </h3>
           <p className="text-xs sm:text-sm text-slate-500 max-w-[280px] sm:max-w-md mx-auto leading-relaxed font-medium">
-            Choose a Kochi location to see what's available in your area.
+            Choose a Kochi location to see what&apos;s available in your area.
           </p>
         </div>
 
@@ -142,7 +142,7 @@ export const UnsupportedArea: React.FC = () => {
             className="w-full h-12 sm:h-14 flex items-center justify-between bg-hive-amber hover:bg-hive-amber-dark text-white font-extrabold text-[11px] uppercase tracking-wider px-5 rounded-2xl transition-all shadow-sm hover:shadow active:scale-[0.99] cursor-pointer"
           >
             <MapPin className="w-4 h-4" />
-            <span>See What's Available Near You</span>
+            <span>See What&apos;s Available Near You</span>
             <ChevronRight className="w-4 h-4" />
           </button>
 
@@ -157,7 +157,7 @@ export const UnsupportedArea: React.FC = () => {
         {/* Footer Text */}
         <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400 font-medium mt-4 sm:mt-5">
           <Lock className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>Your location helps us show what's available in your area.</span>
+          <span>Your location helps us show what&apos;s available in your area.</span>
         </div>
       </div>
     </Modal>

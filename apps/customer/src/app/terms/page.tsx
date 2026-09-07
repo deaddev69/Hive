@@ -685,7 +685,7 @@ export default function TermsPage() {
             </div>
             {searchQuery && (
               <p className="mt-2.5 text-xs text-slate-500 dark:text-slate-400 pl-1">
-                Found {filteredSections.length} section{filteredSections.length === 1 ? "" : "s"} matching "{searchQuery}"
+                Found {filteredSections.length} section{filteredSections.length === 1 ? "" : "s"} matching &quot;{searchQuery}&quot;
               </p>
             )}
           </div>
@@ -812,7 +812,7 @@ export default function TermsPage() {
                 <FileText className="w-12 h-12 text-slate-300 dark:text-neutral-700 mx-auto mb-4" />
                 <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">No Matching Terms Found</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  We couldn't find any section matching your search query "{searchQuery}". Try searching for related keywords like "refunds", "eligibility", or "delivery".
+                  We couldn&apos;t find any section matching your search query &quot;{searchQuery}&quot;. Try searching for related keywords like &quot;refunds&quot;, &quot;eligibility&quot;, or &quot;delivery&quot;.
                 </p>
                 <button
                   onClick={() => setSearchQuery("")}

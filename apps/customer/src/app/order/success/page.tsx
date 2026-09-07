@@ -156,7 +156,7 @@ function OrderSuccessContent() {
           <div className="space-y-2">
             <h1 className="font-serif text-2xl font-bold text-slate-900">No Recent Order Found</h1>
             <p className="text-xs text-slate-500 max-w-[280px] mx-auto leading-relaxed">
-              We couldn't locate any recent purchase details for this session. Explore our catalog to discover new styles.
+              We couldn&apos;t locate any recent purchase details for this session. Explore our catalog to discover new styles.
             </p>
           </div>
           <button
