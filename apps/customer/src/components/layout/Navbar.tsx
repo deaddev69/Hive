@@ -314,23 +314,27 @@ export const Navbar: React.FC = () => {
               <div className="flex items-center min-w-0">
                 <button
                   onClick={() => setDrawerOpen(true)}
-                  className={`flex items-center gap-1.5 px-2 min-h-11 rounded-full bg-white dark:bg-neutral-900 border border-stone-200/90 dark:border-neutral-800 shadow-xs text-xs font-semibold transition-all select-none cursor-pointer min-w-0 max-w-full ${
-                    hydrated && !(locality || city)
-                      ? "animate-location-glow text-stone-600"
-                      : "text-stone-800 dark:text-stone-100"
-                  }`}
+                  className="flex items-center min-h-11 min-w-0 max-w-full select-none cursor-pointer"
                   aria-label="Change location"
                 >
-                  <MapPin className={`w-3.5 h-3.5 flex-shrink-0 shrink-0 ${hydrated && !(locality || city) ? "text-stone-400" : "text-hive-gold"}`} />
                   {/*
-                    No chevron here, unlike the desktop pill. Keeping the tracks equal is what
-                    centres the logo, which caps this pill at ~105px on a 375px screen — and the
-                    chevron's icon plus its gap cost 20px of that, enough to truncate the default
-                    "Set Location" down to "Set Locat…". The pin, the glow while no location is
-                    set, and a full-height tap target already read as a control.
+                    The tap target is this button, which stays 44px tall; the chip below is only
+                    the visible part. Drawing the border on the chip rather than the button lets
+                    the pill read as small as the design wants without shrinking the target back
+                    under the minimum.
                   */}
-                  <span className="truncate font-semibold text-stone-800 dark:text-stone-100 text-[11px] min-[390px]:text-xs">
-                    {hydrated && (locality || city) ? (locality || city) : "Set Location"}
+                  <span
+                    className={`flex items-center gap-1 px-2 py-1 rounded-full bg-white dark:bg-neutral-900 border border-stone-200/90 dark:border-neutral-800 shadow-xs font-semibold transition-all min-w-0 max-w-full ${
+                      hydrated && !(locality || city)
+                        ? "animate-location-glow text-stone-600"
+                        : "text-stone-800 dark:text-stone-100"
+                    }`}
+                  >
+                    <MapPin className={`w-3 h-3 flex-shrink-0 shrink-0 ${hydrated && !(locality || city) ? "text-stone-400" : "text-hive-gold"}`} />
+                    <span className="truncate font-semibold text-stone-800 dark:text-stone-100 text-[10px] min-[390px]:text-[11px]">
+                      {hydrated && (locality || city) ? (locality || city) : "Set Location"}
+                    </span>
+                    <ChevronDown className="w-3 h-3 text-stone-400 shrink-0" />
                   </span>
                 </button>
               </div>
@@ -349,7 +353,7 @@ export const Navbar: React.FC = () => {
                     // location pill half a pixel on each side. At full size below 360px the two
                     // 44px icons overlapped the logo by 10px, and up to 390px the pill lost
                     // enough width to truncate its own "Set Location" label.
-                    className="h-5 min-[360px]:h-6 min-[390px]:h-7 w-auto object-contain"
+                    className="h-4 min-[360px]:h-5 min-[390px]:h-6 w-auto object-contain"
                   />
                 </Link>
               </div>
