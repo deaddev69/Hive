@@ -13,8 +13,31 @@ async function ensureDraftBlock(ctx: any, blockId: any) {
   const block = await ctx.db.get(blockId);
   if (!block) throw new Error("Block not found");
   if (block.status !== "published") return blockId;
-  const { _id, _creationTime, ...blockData } = block;
-  return await ctx.db.insert("experienceBlocks", { ...blockData, status: "draft" });
+
+  const existingDraft = await ctx.db
+    .query("experienceBlocks")
+    .withIndex("by_experience_status_sort", (q: any) =>
+      q.eq("experienceId", block.experienceId).eq("status", "draft")
+    )
+    .filter((q: any) => q.eq(q.field("blockKey"), block.blockKey))
+    .first();
+  if (existingDraft) {
+    return existingDraft._id;
+  }
+
+  return await ctx.db.insert("experienceBlocks", {
+    experienceId: block.experienceId,
+    blockKey: block.blockKey,
+    title: block.title,
+    subtitle: block.subtitle,
+    blockType: block.blockType,
+    renderer: block.renderer,
+    config: block.config || {},
+    sortOrder: block.sortOrder,
+    status: "draft",
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -467,6 +490,7 @@ export const updateBlockContent = mutation({
     id: v.id("experienceBlocks"),
     title: v.optional(v.string()),
     subtitle: v.optional(v.string()),
+    renderer: v.optional(v.string()),
     // Only the Personalized Rail card sends this, to switch between the recentlyViewed and
     // recommended sourcing strategies without forcing the operator to delete and re-add the
     // block. Still publish-gated: it goes through ensureDraftBlock like every other edit.
@@ -480,7 +504,11 @@ export const updateBlockContent = mutation({
     await enforceAdmin(ctx);
     const { id, ...updates } = args;
     const targetId = await ensureDraftBlock(ctx, id);
-    await ctx.db.patch(targetId, updates);
+    await ctx.db.patch(targetId, {
+      ...updates,
+      updatedAt: Date.now(),
+    });
+    return targetId;
   },
 });
 
@@ -497,14 +525,16 @@ export const updateBlockLayout = mutation({
         v.literal("twoProductGrid"),
         v.literal("vibeGrid"),
         v.literal("premiumGrid"),
-        v.literal("squareCard")
+        v.literal("squareCard"),
+        v.literal("bubbles")
       )
     ),
   },
   handler: async (ctx, args) => {
     await enforceAdmin(ctx);
     const targetId = await ensureDraftBlock(ctx, args.id);
-    await ctx.db.patch(targetId, { renderer: args.renderer });
+    await ctx.db.patch(targetId, { renderer: args.renderer, updatedAt: Date.now() });
+    return targetId;
   },
 });
 

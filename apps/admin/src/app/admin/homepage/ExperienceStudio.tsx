@@ -67,9 +67,9 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     name: "Category Grid",
     category: "Collections",
     icon: Layout,
-    description: "Grid of product categories.",
-    defaultConfig: { title: "Shop by Category", renderer: "occasionGrid", config: {} },
-    fields: ["title", "subtitle"]
+    description: "Editorial cards or avatar bubbles of product categories.",
+    defaultConfig: { title: "SHOP BY CATEGORY", renderer: "editorialGrid", config: {} },
+    fields: ["title", "subtitle", "renderer"]
   },
   {
     id: "recentlyViewed",
@@ -502,6 +502,7 @@ export function ExperienceStudio() {
                                   id: block._id,
                                   title: updates.title,
                                   subtitle: updates.subtitle,
+                                  renderer: updates.renderer,
                                   config: updates.config,
                                   // Personalized Rail is the only card that can switch this.
                                   ...(updates.blockType !== block.blockType &&
@@ -651,6 +652,10 @@ const RENDERER_OPTIONS_BY_BLOCK_TYPE: Record<string, { value: string; label: str
   smartRail: [
     { value: "productCarousel", label: "Product Carousel (Horizontal Scroll)" },
     { value: "twoProductGrid", label: "2-Column Product Grid" },
+  ],
+  category: [
+    { value: "editorialGrid", label: "2-Column Editorial Card Grid (Fashion Lookbook)" },
+    { value: "bubbles", label: "Circular Avatars Rail (Horizontal Scroll)" },
   ],
   banner: [
     { value: "largeCards", label: "Wide Landscape Banner (2.4:1 Desktop / 2:1 Mobile)" },

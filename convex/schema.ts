@@ -2314,56 +2314,14 @@ export default defineSchema({
       v.literal("twoProductGrid"),
       v.literal("vibeGrid"),
       v.literal("premiumGrid"),
-      v.literal("squareCard")
+      v.literal("squareCard"),
+      v.literal("bubbles")
     )),
-    config: v.object({
-      collectionId: v.optional(v.string()),
-      bannerId: v.optional(v.string()),
-      maxProducts: v.optional(v.number()),
-      showTitle: v.optional(v.boolean()),
-      showSubtitle: v.optional(v.boolean()),
-      showSeeAll: v.optional(v.boolean()),
-      theme: v.optional(v.string()),
-      layout: v.optional(v.string()),
-      spacing: v.optional(v.string()),
-      aspectRatio: v.optional(v.string()),
-      desktopImage: v.optional(v.any()),
-      mobileImage: v.optional(v.any()),
-      bgImage: v.optional(v.any()),
-      badgeTitle: v.optional(v.string()),
-      cardCtaText: v.optional(v.string()),
-      bgOverlayTheme: v.optional(v.string()),
-      targetUrl: v.optional(v.string()),
-      // smartRail: which sourcing strategy the rail uses. Absent = "newArrivals".
-      // "trending" still deliberately absent — no popularity signal exists yet (0 reviews,
-      // 0 view history), so it would ship as noise.
-      ruleType: v.optional(v.union(
-        v.literal("newArrivals"),
-        v.literal("categoryAuto"),
-        v.literal("priceCeiling")
-      )),
-      // smartRail + ruleType "categoryAuto": which category to pull from.
-      categoryId: v.optional(v.string()),
-      // smartRail + ruleType "priceCeiling": max price in RUPEES as the shopper sees it
-      // (e.g. 999 for "Under ₹999"), matched against the same normalisation
-      // calculateDisplayPricing applies on the storefront.
-      priceCeiling: v.optional(v.number()),
-      items: v.optional(
-        v.array(
-          v.object({
-            label: v.optional(v.string()),
-            emoji: v.optional(v.string()),
-            targetUrl: v.optional(v.string()),
-            backgroundColor: v.optional(v.string()),
-            imageUrl: v.optional(v.any()),
-            brandName: v.optional(v.string()),
-            offerText: v.optional(v.string()),
-          })
-        )
-      ),
-    }),
+    config: v.any(),
     sortOrder: v.number(),
     status: v.union(v.literal("draft"), v.literal("published"), v.literal("archived")),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   })
     .index("by_experience_status_sort", ["experienceId", "status", "sortOrder"])
     .index("by_blockKey", ["blockKey"]),

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ProductCard } from "@/components/product/ProductCard";
 import { TrustStrip } from "@/components/trust/TrustStrip";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowRight, ArrowUpRight } from "lucide-react";
 import { MoodBoardGrid } from "@/components/home/MoodBoardGrid";
 import { calculateDisplayPricing } from "@/lib/pricing";
 // Canonical public image URL builder, shared with the Convex backend so client
@@ -510,45 +510,108 @@ export function ExperienceBlockRenderer({ block }: { block: any }) {
     return <EditorialBannerBlock block={block} />;
   }
 
-  // 2. CATEGORY BUBBLES
+  // 2. CATEGORY BLOCK (Editorial Fashion Grid by default, or optional bubbles rail)
   if (block.blockType === "category") {
     const categories = block.data.categories || [];
     if (categories.length === 0) return null;
-    return (
-      <section className="w-full bg-white py-4 sm:py-6 border-b border-hive-border/20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col gap-2 text-left">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-serif font-semibold text-hive-dark tracking-wide">
-              {block.title || "Shop by Category"}
-            </h2>
-            {block.subtitle && <p className="text-xs text-slate-500">{block.subtitle}</p>}
+
+    if (block.renderer === "bubbles") {
+      return (
+        <section className="w-full bg-white dark:bg-neutral-950 py-4 sm:py-6 border-b border-hive-border/20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-2 text-left">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-xl sm:text-2xl font-serif font-semibold text-hive-dark dark:text-white tracking-wide">
+                {block.title || "Shop by Category"}
+              </h2>
+              {block.subtitle && <p className="text-xs text-slate-500">{block.subtitle}</p>}
+            </div>
+            <div className="relative group/rail w-full">
+              <div
+                ref={categoryScrollRef}
+                className="flex gap-4 sm:gap-6 pb-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 scroll-pl-4 sm:scroll-pl-6"
+              >
+                {categories.map((subcat: any) => (
+                  <button
+                    key={subcat._id}
+                    onClick={() => router.push(`/collections/${subcat.slug}`)}
+                    className="flex flex-col items-center gap-2.5 w-20 sm:w-24 flex-shrink-0 group cursor-pointer"
+                  >
+                    <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border border-hive-border/40 bg-slate-50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-md">
+                      <Image
+                        src={subcat.homepageImageUrl || subcat.imageUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80"}
+                        alt={subcat.name}
+                        fill
+                        sizes="96px"
+                        className="object-cover pointer-events-none"
+                      />
+                    </div>
+                    <span className="text-[11px] sm:text-xs font-bold text-slate-800 dark:text-white text-center leading-tight truncate w-full">
+                      {subcat.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="relative group/rail w-full">
-            <div
-              ref={categoryScrollRef}
-              className="flex gap-6 pb-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] justify-start -mx-6 px-6 lg:-mx-8 lg:px-8 scroll-pl-6 lg:scroll-pl-8"
-            >
-              {categories.map((subcat: any) => (
+        </section>
+      );
+    }
+
+    // Default: High-End 2-Column Editorial Grid (Streetwear / Fashion Lookbook Style)
+    return (
+      <section className="w-full bg-white dark:bg-neutral-950 py-6 sm:py-8 md:py-12 border-b border-hive-border/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col gap-4 sm:gap-6 text-left">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-neutral-900 dark:text-white tracking-tight uppercase">
+              {block.title || "SHOP BY CATEGORY"}
+            </h2>
+            {block.subtitle && (
+              <p className="text-xs sm:text-sm text-neutral-500 font-medium">
+                {block.subtitle}
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+            {categories.map((subcat: any) => {
+              const imageSrc =
+                subcat.homepageImageUrl ||
+                subcat.imageUrl ||
+                "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80";
+
+              return (
                 <button
                   key={subcat._id}
                   onClick={() => router.push(`/collections/${subcat.slug}`)}
-                  className="flex flex-col items-center gap-3 w-24 sm:w-28 flex-shrink-0 group cursor-pointer"
+                  className="group relative aspect-[3/4] w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 shadow-sm hover:shadow-xl transition-all duration-300 active:scale-[0.98] text-left cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-gold"
+                  aria-label={`Shop ${subcat.name}`}
                 >
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border border-hive-border/40 bg-slate-50 transition-all duration-300 group-hover:scale-[1.03] group-hover:shadow-md">
-                    <Image
-                      src={subcat.homepageImageUrl || subcat.imageUrl || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80"}
-                      alt={subcat.name}
-                      fill
-                      sizes="96px"
-                      className="object-cover pointer-events-none"
-                    />
+                  {/* Category Image */}
+                  <Image
+                    src={imageSrc}
+                    alt={subcat.name}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="object-cover object-center pointer-events-none transition-transform duration-700 ease-out group-hover:scale-105"
+                  />
+
+                  {/* Gradient Scrim for crisp text contrast */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 via-40% to-transparent pointer-events-none" />
+
+                  {/* Overlay Content */}
+                  <div className="absolute bottom-0 inset-x-0 p-3 sm:p-4 md:p-5 flex items-center justify-between gap-2 z-10">
+                    <span className="text-white font-black text-sm sm:text-base md:text-lg tracking-wider uppercase truncate drop-shadow-sm">
+                      {subcat.name}
+                    </span>
+
+                    {/* Circular Glassmorphism Action Arrow Button */}
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 backdrop-blur-md border border-white/25 flex items-center justify-center text-white shrink-0 transition-all duration-300 group-hover:bg-white group-hover:text-black group-hover:scale-110 shadow-sm">
+                      <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+                    </div>
                   </div>
-                  <span className="text-[10px] sm:text-xs font-bold text-slate-800 dark:text-white text-center leading-tight truncate w-full">
-                    {subcat.name}
-                  </span>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
       </section>
