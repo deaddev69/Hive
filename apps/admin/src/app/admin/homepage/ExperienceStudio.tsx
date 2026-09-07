@@ -510,9 +510,6 @@ export function ExperienceStudio() {
                                     ? { blockType: updates.blockType }
                                     : {}),
                                 });
-                                if (updates.renderer) {
-                                  await updateBlockLayoutMut({ id: block._id, renderer: updates.renderer });
-                                }
                                 toast.success("Configuration saved");
                               }}
                               onClose={() => setExpandedBlockId(null)}
