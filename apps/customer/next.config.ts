@@ -33,14 +33,26 @@ const nextConfig: NextConfig = {
   // Transpile shared workspace packages
   transpilePackages: ["@hive/types", "@hive/ui", "@hive/utils"],
 
-  // Image optimization — Vercel resizes/re-encodes (WebP/AVIF) on the fly instead of every
-  // product photo, banner, and drawer asset being served at its raw uploaded size. This was
-  // previously switched off site-wide (unoptimized: true) — almost certainly to avoid Vercel's
-  // usage-based image-optimization billing — but it meant literally no image on the customer
-  // site was ever resized or re-encoded, which is the single largest contributor to the slow
-  // "first product image visible" timing found in the 2026-08-31 performance investigation.
-  // Requires a Vercel plan with image optimization included (Pro or above).
+  // Vercel's image optimizer is switched off deliberately.
+  //
+  // With it on, /_next/image returned HTTP 402 (x-vercel-error:
+  // OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED) once the account's optimization quota was spent.
+  // Already-cached variants kept serving, so the breakage was invisible on older images and hit
+  // only ones needing a fresh transformation: every newly uploaded content-engine banner and
+  // every newly added static asset rendered as a broken image in production.
+  //
+  // Turning it off costs far less than it appears. Images stored in R2 are delivered through
+  // cdn.hivenow.in, which already resizes and re-encodes them via Cloudflare's
+  // /cdn-cgi/image/ transformations (see convex/media/urls.ts) — so they stay optimized, and
+  // routing them through Vercel as well was paying to redo work Cloudflare had already done.
+  // What this does give up is per-width resizing for the "original" variant and for local
+  // public/ assets, which are served as stored.
+  //
+  // The follow-up is a custom Cloudflare loader mapping next/image widths onto
+  // /cdn-cgi/image/width=..., which restores responsive widths without the Vercel dependency.
+  // remotePatterns is retained: unused while unoptimized, required again if that lands.
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
