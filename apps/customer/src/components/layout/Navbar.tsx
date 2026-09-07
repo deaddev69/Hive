@@ -322,9 +322,9 @@ export const Navbar: React.FC = () => {
             <div className="flex sm:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center justify-center pointer-events-auto">
               <Link href="/" className="hover:opacity-85 active:scale-95 transition-all flex items-center justify-center">
                 <Image
-                  src="/customer-logo.png?v=2"
+                  src="/hive-logo-gold-trimmed.png"
                   alt="hive.now"
-                  width={112}
+                  width={139}
                   height={36}
                   priority
                   className="h-8 w-auto object-contain"
