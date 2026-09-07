@@ -290,7 +290,7 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
             {banners.map((banner: any, idx: number) => (
               <div
                 key={banner._id || idx}
-                className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[16/10] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+                className="banner-card flex-shrink-0 w-full snap-center group relative aspect-[2/1] rounded-xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
                 style={{ animationDelay: `${idx * 150}ms` }}
                 onClick={() => {
                   if (banner.targetUrl) router.push(banner.targetUrl);
