@@ -159,6 +159,7 @@ import type * as tests_runMerchantTests from "../tests/runMerchantTests.js";
 import type * as tests_runVacationTests from "../tests/runVacationTests.js";
 import type * as tests_serviceabilityAlignmentTest from "../tests/serviceabilityAlignmentTest.js";
 import type * as tests_serviceabilityFallbackTest from "../tests/serviceabilityFallbackTest.js";
+import type * as tests_settlementLedgerTest from "../tests/settlementLedgerTest.js";
 import type * as tests_signatureTest from "../tests/signatureTest.js";
 import type * as tests_testPipeline from "../tests/testPipeline.js";
 import type * as tests_vacationCapacity from "../tests/vacationCapacity.js";
@@ -331,6 +332,7 @@ declare const fullApi: ApiFromModules<{
   "tests/runVacationTests": typeof tests_runVacationTests;
   "tests/serviceabilityAlignmentTest": typeof tests_serviceabilityAlignmentTest;
   "tests/serviceabilityFallbackTest": typeof tests_serviceabilityFallbackTest;
+  "tests/settlementLedgerTest": typeof tests_settlementLedgerTest;
   "tests/signatureTest": typeof tests_signatureTest;
   "tests/testPipeline": typeof tests_testPipeline;
   "tests/vacationCapacity": typeof tests_vacationCapacity;

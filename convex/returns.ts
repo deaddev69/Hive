@@ -187,9 +187,11 @@ export const updateReturnStatusAdmin = mutation({
  * Terminal step of a cash return: the item is back with the seller, so unwind
  * their payout and refund the customer.
  *
- * Order of operations matters. The seller's held transfer is reversed first so
- * the money is back in Hive's balance, and only then is the refund queued —
- * refunding from a balance that has not been recovered yet would overdraw it.
+ * Both happen in one Razorpay call. The refund carries `reverse_all`, which
+ * reverses the seller's transfer and refunds the customer atomically. An
+ * earlier version did these as two independent steps and a live return failed
+ * because the refund cron fired before the reversal had settled — Razorpay
+ * rejected it, since the seller's share was not refundable from our account.
  *
  * Idempotent: a duplicate Porter `delivered` webhook cannot refund twice, both
  * because of the status guard here and the idempotency key on the refund queue.
@@ -209,14 +211,15 @@ export const completeReturnRefund = internalMutation({
       return { success: false, reason: `return_status_${order.returnStatus ?? "none"}` };
     }
 
-    // 1. Unwind the seller's payout — they have the goods back.
-    await ctx.scheduler.runAfter(0, internal.razorpayRoute.reverseSellerTransfer, {
-      orderId: args.orderId,
-      reason: "return_completed",
-    });
-
-    // 2. Refund the customer through the existing queue, so this inherits the
-    //    drain cron, the retry behaviour, and a real Razorpay refund id.
+    // The refund itself unwinds the seller's transfer, via `reverse_all` in
+    // processRefundQueue. Reversing separately here first would race with the
+    // refund cron: if the refund fires before the reversal settles, Razorpay
+    // rejects it because the seller's share is not refundable from our account.
+    // That is exactly how a live return failed, so the two steps are now one
+    // atomic Razorpay call instead of two independent ones.
+    //
+    // Refund through the existing queue, so this inherits the drain cron, the
+    // retry behaviour, and a real Razorpay refund id.
     if (order.paymentId) {
       const idempotencyKey = `return_refund_${args.orderId}`;
       const existing = await ctx.db

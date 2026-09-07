@@ -4,7 +4,7 @@
 
 import { mutation, internalMutation, action, internalAction, MutationCtx, internalQuery, query } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
-import { getAuthenticatedUser } from "./lib/auth";
+import { getAuthenticatedUser, requireRole } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 import { incrementBoutiqueOrderCount } from "./lib/boutiqueCounters";
 import { validateProductSizeAndStock, MOCK_INVENTORY } from "./lib/mockInventory";
@@ -1830,6 +1830,82 @@ export const enqueueRefund = internalMutation({
  * Runs as a cron every 5 minutes. Includes env-var guard to no-op gracefully
  * if Razorpay credentials are not yet configured.
  */
+/**
+ * Put a failed refund back in the queue.
+ *
+ * A refund that fails at Razorpay currently has no route back — it sits at
+ * "failed" forever while the order claims to be refunded and the customer is
+ * still owed the money. This is the recovery path for that, and it is the only
+ * way to re-attempt one after the underlying cause has been fixed.
+ *
+ * Deliberately admin-gated and audited: re-queuing moves real money.
+ */
+/**
+ * Refunds that failed at Razorpay and are still owed to a customer.
+ *
+ * These were previously invisible: the order reads "refunded" while the money
+ * never left, so nothing in the admin panel showed the discrepancy.
+ */
+export const listFailedRefundsAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireRole(ctx, "admin");
+
+    const failed = await ctx.db
+      .query("refundQueue")
+      .withIndex("by_status", (q) => q.eq("status", "failed"))
+      .collect();
+
+    return await Promise.all(
+      failed.map(async (item) => {
+        const order = item.orderId ? await ctx.db.get(item.orderId) : null;
+        return {
+          _id: item._id,
+          amountPaise: item.amountPaise,
+          reason: item.reason,
+          lastError: item.lastError ?? null,
+          createdAt: item.createdAt,
+          orderNumber: (order as any)?.orderNumber ?? null,
+        };
+      })
+    );
+  },
+});
+
+export const retryFailedRefundAdmin = mutation({
+  args: { refundQueueId: v.id("refundQueue") },
+  handler: async (ctx, args) => {
+    const admin = await requireRole(ctx, "admin");
+    const now = Date.now();
+
+    const item = await ctx.db.get(args.refundQueueId);
+    if (!item) throw new ConvexError("Refund queue item not found");
+    if (item.status !== "failed") {
+      throw new ConvexError(`Only a failed refund can be retried. This one is ${item.status}.`);
+    }
+
+    await ctx.db.patch(args.refundQueueId, {
+      status: "pending",
+      lastError: undefined,
+    });
+
+    await ctx.db.insert("auditLogs", {
+      actorId: admin._id,
+      actorRole: "admin",
+      action: "refund.retried",
+      entityType: "refundQueue",
+      entityId: args.refundQueueId,
+      metadata: JSON.stringify({
+        amountPaise: item.amountPaise,
+        previousError: String(item.lastError ?? "").slice(0, 300),
+      }),
+      createdAt: now,
+    });
+
+    return { success: true, amountPaise: item.amountPaise };
+  },
+});
+
 export const processRefundQueue = internalAction({
   args: {},
   handler: async (ctx) => {
@@ -1873,6 +1949,24 @@ export const processRefundQueue = internalAction({
           throw new ConvexError(`No razorpayPaymentId found for payment ${refundItem.paymentId}`);
         }
 
+        // When the order's payment carries a Route transfer, part of the money
+        // sits in the seller's linked account and is NOT refundable from ours.
+        // Refunding the full amount without unwinding that first is rejected by
+        // Razorpay with a bare "invalid request sent".
+        //
+        // `reverse_all` makes Razorpay reverse the transfers and refund the
+        // customer in a single atomic call. Doing it as two separate steps —
+        // reverse, then refund — races: the refund cron can fire before the
+        // reversal has settled, which is exactly how a live return failed.
+        let reverseAll = false;
+        if (refundItem.orderId) {
+          const relatedOrder: any = await ctx.runQuery(
+            (internal.orders as any).getById,
+            { id: refundItem.orderId }
+          );
+          reverseAll = !!relatedOrder?.razorpayTransferId;
+        }
+
         // Call Razorpay Refund API
         const authHeader = btoa(`${razorpayKeyId}:${razorpayKeySecret}`);
         const response = await fetch(
@@ -1885,6 +1979,7 @@ export const processRefundQueue = internalAction({
             },
             body: JSON.stringify({
               amount: refundItem.amountPaise,
+              ...(reverseAll ? { reverse_all: 1 } : {}),
               notes: {
                 reason: refundItem.reason,
                 orderId: refundItem.orderId ?? "N/A",
