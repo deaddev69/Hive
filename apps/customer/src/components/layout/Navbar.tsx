@@ -349,7 +349,7 @@ export const Navbar: React.FC = () => {
                     // location pill half a pixel on each side. At full size below 360px the two
                     // 44px icons overlapped the logo by 10px, and up to 390px the pill lost
                     // enough width to truncate its own "Set Location" label.
-                    className="h-6 min-[360px]:h-7 min-[390px]:h-8 w-auto object-contain"
+                    className="h-5 min-[360px]:h-6 min-[390px]:h-7 w-auto object-contain"
                   />
                 </Link>
               </div>
