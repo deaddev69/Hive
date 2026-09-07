@@ -33,26 +33,45 @@ const nextConfig: NextConfig = {
   // Transpile shared workspace packages
   transpilePackages: ["@hive/types", "@hive/ui", "@hive/utils"],
 
-  // Vercel's image optimizer is switched off deliberately.
+  // Images are resized by Cloudflare, not by Vercel.
   //
-  // With it on, /_next/image returned HTTP 402 (x-vercel-error:
-  // OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED) once the account's optimization quota was spent.
-  // Already-cached variants kept serving, so the breakage was invisible on older images and hit
-  // only ones needing a fresh transformation: every newly uploaded content-engine banner and
-  // every newly added static asset rendered as a broken image in production.
+  // Vercel's optimizer began returning HTTP 402 (x-vercel-error:
+  // OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED) once the account's transformation quota was spent.
+  // Already-cached renditions kept serving, so the failure was invisible on older images and hit
+  // only those needing a fresh one: every newly uploaded content-engine banner and every newly
+  // added static asset rendered broken in production. It was switched off entirely as a hotfix,
+  // which restored the images but gave up per-width resizing.
   //
-  // Turning it off costs far less than it appears. Images stored in R2 are delivered through
-  // cdn.hivenow.in, which already resizes and re-encodes them via Cloudflare's
-  // /cdn-cgi/image/ transformations (see convex/media/urls.ts) — so they stay optimized, and
-  // routing them through Vercel as well was paying to redo work Cloudflare had already done.
-  // What this does give up is per-width resizing for the "original" variant and for local
-  // public/ assets, which are served as stored.
+  // Cloudflare fronts both the R2 media bucket (cdn.hivenow.in) and this site, and already
+  // performs the same work through /cdn-cgi/image/ — convex/media/urls.ts has been emitting such
+  // URLs all along. Pointing next/image at it via the loader below restores responsive widths
+  // with one optimizer in the path instead of two.
   //
-  // The follow-up is a custom Cloudflare loader mapping next/image widths onto
-  // /cdn-cgi/image/width=..., which restores responsive widths without the Vercel dependency.
-  // remotePatterns is retained: unused while unoptimized, required again if that lands.
+  // remotePatterns no longer gates anything: a custom loader bypasses Next's own optimizer, which
+  // is what consults it. Retained so the settings above remain valid if this is ever reverted.
   images: {
-    unoptimized: true,
+    loader: "custom",
+    loaderFile: "./src/lib/cloudflareImageLoader.ts",
+
+    // Widths offered for viewport-relative slots (any `sizes` containing vw).
+    //
+    // Deliberately shorter than Next's default eight. Cloudflare bills per distinct
+    // transformation, and its default scale-down fit never upscales, so a width above a source's
+    // own resolution bills a second transformation to return identical bytes. Measured against
+    // real production media, the largest source is the 1586px hero banner and product photography
+    // sits at or below ~681px, so entries above 1600 could not return anything new.
+    //
+    //   640   phones at 100vw (360-430px at ~1.5-2x) and half-width rails at 3x
+    //   828   the widest a phone can actually use: 430px at 2x, or 100vw on a small tablet
+    //   1080  tablet and small-laptop full-bleed
+    //   1600  covers the hero banner's native width; nothing larger exists to serve
+    deviceSizes: [640, 828, 1080, 1600],
+
+    // Widths offered for fixed-px slots — the 48/56/64/72/80/96px thumbnails in orders, cart and
+    // shop headers, and the 120/139px logos. Each needs its slot at 1x, 2x and 3x, which these
+    // six cover; 384 is the largest a 128px slot can ask for at 3x.
+    imageSizes: [64, 96, 128, 192, 256, 384],
+
     remotePatterns: [
       {
         protocol: "https",
