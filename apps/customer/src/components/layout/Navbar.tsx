@@ -299,70 +299,93 @@ export const Navbar: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-14 sm:h-16 flex items-center justify-between gap-2.5 sm:gap-4 w-full relative">
             {/* ── MOBILE TOP BAR (sm:hidden) ── */}
-            {/* 1. Mobile Left: Location Pill */}
-            <div className="flex sm:hidden items-center shrink-0">
-              <button
-                onClick={() => setDrawerOpen(true)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-neutral-900 border border-stone-200/90 dark:border-neutral-800 shadow-xs text-xs font-semibold transition-all select-none cursor-pointer max-w-[130px] min-[390px]:max-w-[155px] ${
-                  hydrated && !(locality || city)
-                    ? "animate-location-glow text-stone-600"
-                    : "text-stone-800 dark:text-stone-100"
-                }`}
-                aria-label="Change location"
-              >
-                <MapPin className={`w-3.5 h-3.5 flex-shrink-0 shrink-0 ${hydrated && !(locality || city) ? "text-stone-400" : "text-hive-gold"}`} />
-                <span className="truncate flex-1 font-semibold text-stone-800 dark:text-stone-100 text-[11px] min-[390px]:text-xs">
-                  {hydrated && (locality || city) ? (locality || city) : "Set Location"}
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 text-stone-400 shrink-0 ml-0.5" />
-              </button>
-            </div>
+            {/*
+              Three explicit tracks rather than an absolutely-centred logo.
+              The logo used to be positioned against the viewport (absolute left-1/2), which left
+              it unaware of the location pill beside it: measured on production it sat 20px on top
+              of the pill at 375px and 48px at 320px, where it also collided with the icons on the
+              other side. As a grid cell it cannot overlap either neighbour.
+              The outer 1fr tracks are equal, so the logo is centred between the clusters and not
+              merely against the viewport — the side weights differ (the pill is wider than the two
+              icons), which is why viewport-centring read as off-centre even when nothing collided.
+            */}
+            <div className="grid sm:hidden grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 w-full">
+              {/* 1. Mobile Left: Location Pill */}
+              <div className="flex items-center min-w-0">
+                <button
+                  onClick={() => setDrawerOpen(true)}
+                  className={`flex items-center gap-1.5 px-2 min-h-11 rounded-full bg-white dark:bg-neutral-900 border border-stone-200/90 dark:border-neutral-800 shadow-xs text-xs font-semibold transition-all select-none cursor-pointer min-w-0 max-w-full ${
+                    hydrated && !(locality || city)
+                      ? "animate-location-glow text-stone-600"
+                      : "text-stone-800 dark:text-stone-100"
+                  }`}
+                  aria-label="Change location"
+                >
+                  <MapPin className={`w-3.5 h-3.5 flex-shrink-0 shrink-0 ${hydrated && !(locality || city) ? "text-stone-400" : "text-hive-gold"}`} />
+                  {/*
+                    No chevron here, unlike the desktop pill. Keeping the tracks equal is what
+                    centres the logo, which caps this pill at ~105px on a 375px screen — and the
+                    chevron's icon plus its gap cost 20px of that, enough to truncate the default
+                    "Set Location" down to "Set Locat…". The pin, the glow while no location is
+                    set, and a full-height tap target already read as a control.
+                  */}
+                  <span className="truncate font-semibold text-stone-800 dark:text-stone-100 text-[11px] min-[390px]:text-xs">
+                    {hydrated && (locality || city) ? (locality || city) : "Set Location"}
+                  </span>
+                </button>
+              </div>
 
-            {/* 2. Mobile Center: hive.now Logo (Mathematically Centered) */}
-            <div className="flex sm:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center justify-center pointer-events-auto">
-              <Link href="/" className="hover:opacity-85 active:scale-95 transition-all flex items-center justify-center">
-                <Image
-                  src="/hive-logo-gold-trimmed.png"
-                  alt="hive.now"
-                  width={139}
-                  height={36}
-                  priority
-                  className="h-8 w-auto object-contain"
-                />
-              </Link>
-            </div>
+              {/* 2. Mobile Center: hive.now Logo */}
+              <div className="flex items-center justify-center">
+                <Link href="/" className="hover:opacity-85 active:scale-95 transition-all flex items-center justify-center">
+                  <Image
+                    src="/hive-logo-gold-trimmed.png"
+                    alt="hive.now"
+                    width={139}
+                    height={36}
+                    priority
+                    // Stepped so the mark takes only the width the side tracks can spare. Those
+                    // tracks are equal — that is what centres it — so every pixel here costs the
+                    // location pill half a pixel on each side. At full size below 360px the two
+                    // 44px icons overlapped the logo by 10px, and up to 390px the pill lost
+                    // enough width to truncate its own "Set Location" label.
+                    className="h-6 min-[360px]:h-7 min-[390px]:h-8 w-auto object-contain"
+                  />
+                </Link>
+              </div>
 
-            {/* 3. Mobile Right: Cart & Hamburger Action Icons */}
-            <div className="flex sm:hidden items-center gap-1 shrink-0">
-              {/* Cart bag */}
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="relative p-2 text-hive-dark hover:text-hive-gold hover:bg-stone-100/50 rounded-full transition-colors duration-150 outline-none flex items-center justify-center min-w-[40px] min-h-[40px]"
-                aria-label="Open cart"
-              >
-                <PremiumShoppingBag className="w-5 h-5" strokeWidth={1.8} />
-                {itemsCount > 0 && (
-                  <Badge
-                    variant="primary"
-                    className="absolute top-1 right-1 scale-90 min-w-[16px] h-[16px] px-1 bg-hive-dark text-hive-gold border border-white rounded-full flex items-center justify-center text-[9px] font-bold"
-                  >
-                    {itemsCount}
-                  </Badge>
-                )}
-              </button>
+              {/* 3. Mobile Right: Cart & Hamburger Action Icons */}
+              <div className="flex items-center gap-1 shrink-0 justify-self-end">
+                {/* Cart bag */}
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="relative text-hive-dark hover:text-hive-gold hover:bg-stone-100/50 rounded-full transition-colors duration-150 outline-none flex items-center justify-center w-11 h-11"
+                  aria-label="Open cart"
+                >
+                  <PremiumShoppingBag className="w-5 h-5" strokeWidth={1.8} />
+                  {itemsCount > 0 && (
+                    <Badge
+                      variant="primary"
+                      className="absolute top-1.5 right-1.5 scale-90 min-w-[16px] h-[16px] px-1 bg-hive-dark text-hive-gold border border-white rounded-full flex items-center justify-center text-[9px] font-bold"
+                    >
+                      {itemsCount}
+                    </Badge>
+                  )}
+                </button>
 
-              {/* Mobile hamburger */}
-              <button
-                onClick={() => setMobileMenuOpen((v) => !v)}
-                className="p-2 text-hive-dark hover:text-hive-gold hover:bg-stone-100/50 rounded-full transition-colors duration-150 outline-none flex items-center justify-center min-w-[40px] min-h-[40px]"
-                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-5 h-5 stroke-[1.75]" />
-                ) : (
-                  <Menu className="w-5 h-5 stroke-[1.75]" />
-                )}
-              </button>
+                {/* Mobile hamburger */}
+                <button
+                  onClick={() => setMobileMenuOpen((v) => !v)}
+                  className="text-hive-dark hover:text-hive-gold hover:bg-stone-100/50 rounded-full transition-colors duration-150 outline-none flex items-center justify-center w-11 h-11"
+                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                >
+                  {mobileMenuOpen ? (
+                    <X className="w-5 h-5 stroke-[1.75]" />
+                  ) : (
+                    <Menu className="w-5 h-5 stroke-[1.75]" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* ── DESKTOP TOP BAR (hidden sm:flex) ── */}
