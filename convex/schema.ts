@@ -2313,7 +2313,8 @@ export default defineSchema({
       v.literal("editorialGrid"),
       v.literal("twoProductGrid"),
       v.literal("vibeGrid"),
-      v.literal("premiumGrid")
+      v.literal("premiumGrid"),
+      v.literal("squareCard")
     )),
     config: v.object({
       collectionId: v.optional(v.string()),
@@ -2325,6 +2326,7 @@ export default defineSchema({
       theme: v.optional(v.string()),
       layout: v.optional(v.string()),
       spacing: v.optional(v.string()),
+      aspectRatio: v.optional(v.string()),
       desktopImage: v.optional(v.any()),
       mobileImage: v.optional(v.any()),
       bgImage: v.optional(v.any()),

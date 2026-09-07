@@ -52,7 +52,7 @@ export function InstallPrompt() {
               {/* Hook Copy */}
               <div className="space-y-1.5 md:space-y-3">
                 <h2 className="text-2xl md:text-5xl font-serif font-bold text-white leading-tight">
-                  Manage your boutique <span className="text-amber-500 font-semibold">on the go.</span>
+                  Manage your fashion brand <span className="text-amber-500 font-semibold">on the go.</span>
                 </h2>
                 <p className="text-stone-300 text-sm md:text-lg">
                   Add Hive Partners to your home screen for quick access to orders, inventory, and analytics.

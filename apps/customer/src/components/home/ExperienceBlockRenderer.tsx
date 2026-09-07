@@ -341,15 +341,173 @@ function HeroBannerCarousel({ banners }: { banners: any[] }) {
   );
 }
 
+function EditorialBannerBlock({ block }: { block: any }) {
+  const router = useRouter();
+  const banners = block.data?.banners || [];
+  if (banners.length === 0) return null;
+
+  const banner = banners[0];
+  const desktopSrc = banner.desktopImage || banner.mobileImage || FALLBACK_BANNER;
+  const mobileSrc = banner.mobileImage || banner.desktopImage || FALLBACK_BANNER;
+  const targetUrl = banner.targetUrl || block.config?.targetUrl;
+  const title = block.title || banner.title;
+  const subtitle = block.subtitle;
+
+  const renderer = block.renderer || "largeCards";
+  const aspectRatio = block.config?.aspectRatio || (renderer === "squareCard" ? "square" : renderer === "editorialGrid" ? "portrait" : "landscape");
+  const isSquare = aspectRatio === "square" || renderer === "squareCard";
+  const isPortrait = aspectRatio === "portrait" || renderer === "editorialGrid";
+
+  const handleNavigate = () => {
+    if (targetUrl) router.push(targetUrl);
+  };
+
+  // 1. SQUARE BANNER / INSTAGRAM POST STYLE (1:1)
+  if (isSquare) {
+    const hasCopy = Boolean(title?.trim() || subtitle?.trim());
+
+    return (
+      <section className="w-full bg-white py-3 sm:py-5">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          {/* Mobile View: Full 1:1 Square Card */}
+          <div
+            className="md:hidden banner-card group relative w-full aspect-square max-w-md mx-auto rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+            onClick={handleNavigate}
+          >
+            <Image
+              src={mobileSrc}
+              alt={title || "Hive square banner"}
+              fill
+              sizes="(max-width: 768px) 100vw, 500px"
+              className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+            />
+            {hasCopy && (
+              <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/85 via-black/40 to-transparent text-white flex flex-col gap-1 pointer-events-none">
+                {title && <h3 className="text-base font-serif font-bold leading-tight drop-shadow-sm">{title}</h3>}
+                {subtitle && <p className="text-xs text-zinc-200 line-clamp-2 drop-shadow-sm">{subtitle}</p>}
+              </div>
+            )}
+            <div className="sheen-glow" />
+          </div>
+
+          {/* Desktop View: Split Editorial if copy exists, or Centered Spotlight Card */}
+          {hasCopy ? (
+            <div
+              className="hidden md:flex max-w-5xl mx-auto rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-gradient-to-r from-stone-50/90 via-white to-amber-50/30 group cursor-pointer transition-all duration-500 hover:shadow-md"
+              onClick={handleNavigate}
+            >
+              <div className="w-1/2 aspect-square relative overflow-hidden bg-slate-100 flex-shrink-0">
+                <Image
+                  src={desktopSrc}
+                  alt={title || "Hive editorial"}
+                  fill
+                  sizes="50vw"
+                  className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
+                <div className="sheen-glow" />
+              </div>
+              <div className="w-1/2 p-8 lg:p-12 flex flex-col justify-center items-start gap-3.5 text-left">
+                <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600">Hive Editorial</span>
+                {title && (
+                  <h2 className="text-3xl lg:text-4xl font-serif font-bold text-hive-dark tracking-tight leading-tight">
+                    {title}
+                  </h2>
+                )}
+                {subtitle && (
+                  <p className="text-sm text-slate-600 leading-relaxed max-w-md font-sans">
+                    {subtitle}
+                  </p>
+                )}
+                <div className="pt-2">
+                  <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-950 text-white rounded-2xl text-xs font-bold uppercase tracking-wider group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors shadow-sm">
+                    Explore Drop <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="hidden md:block banner-card group relative max-w-xl mx-auto aspect-square rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer hover:shadow-md"
+              onClick={handleNavigate}
+            >
+              <Image
+                src={desktopSrc}
+                alt={title || "Hive square banner"}
+                fill
+                sizes="600px"
+                className="object-cover pointer-events-none transform group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
+              <div className="sheen-glow" />
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  // 2. PORTRAIT LOOKBOOK (4:5)
+  if (isPortrait) {
+    return (
+      <section className="w-full bg-white py-3 sm:py-5">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div
+            className="banner-card group relative w-full max-w-sm sm:max-w-md mx-auto aspect-[4/5] rounded-3xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+            onClick={handleNavigate}
+          >
+            <HeroPicture
+              desktopSrc={desktopSrc}
+              mobileSrc={mobileSrc}
+              alt={title || "Hive lookbook banner"}
+              priority={false}
+            />
+            {title && (
+              <div className="absolute inset-x-0 bottom-0 p-5 bg-gradient-to-t from-black/85 via-black/30 to-transparent text-white flex flex-col gap-1 pointer-events-none">
+                <h3 className="text-lg font-serif font-bold leading-tight drop-shadow-sm">{title}</h3>
+                {subtitle && <p className="text-xs text-zinc-200 line-clamp-2 drop-shadow-sm">{subtitle}</p>}
+              </div>
+            )}
+            <div className="sheen-glow" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // 3. WIDE LANDSCAPE BANNER (2.4:1 Desktop / 2:1 Mobile - Default)
+  return (
+    <section className="w-full bg-white pt-1 pb-0.5">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div
+          className="banner-card group relative w-full aspect-[2/1] sm:aspect-[2.4/1] rounded-2xl overflow-hidden border border-hive-border/40 shadow-sm bg-slate-50 transform transition-all duration-500 cursor-pointer"
+          onClick={handleNavigate}
+        >
+          <HeroPicture
+            desktopSrc={desktopSrc}
+            mobileSrc={mobileSrc}
+            alt={title || "Hive campaign banner"}
+            priority={false}
+          />
+          <div className="sheen-glow" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function ExperienceBlockRenderer({ block }: { block: any }) {
   const router = useRouter();
   const mobileScrollRef = useRef<HTMLDivElement>(null);
   const categoryScrollRef = useRef<HTMLDivElement>(null);
 
-  // 1. EDITORIAL BANNERS (Hero & Banners)
-  if (block.blockType === "hero" || block.blockType === "banner") {
+  // 1. HERO BANNERS (Global Carousel at Top)
+  if (block.blockType === "hero") {
     const banners = block.data.banners || [];
     return <HeroBannerCarousel banners={banners} />;
+  }
+
+  // 2. EDITORIAL BANNERS (Between Collection Rows)
+  if (block.blockType === "banner") {
+    return <EditorialBannerBlock block={block} />;
   }
 
   // 2. CATEGORY BUBBLES

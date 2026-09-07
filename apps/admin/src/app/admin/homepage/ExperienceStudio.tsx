@@ -50,8 +50,8 @@ const BLOCK_REGISTRY: BlockSchema[] = [
     category: "Marketing",
     icon: Layers,
     description: "Graphic lifestyle banner image between collection rows.",
-    defaultConfig: { title: "", renderer: "largeCards", config: {} },
-    fields: ["bannerUpload", "targetUrl"]
+    defaultConfig: { title: "", renderer: "largeCards", config: { aspectRatio: "landscape" } },
+    fields: ["title", "subtitle", "renderer", "bannerUpload", "targetUrl"]
   },
   {
     id: "collection",
@@ -652,6 +652,11 @@ const RENDERER_OPTIONS_BY_BLOCK_TYPE: Record<string, { value: string; label: str
     { value: "productCarousel", label: "Product Carousel (Horizontal Scroll)" },
     { value: "twoProductGrid", label: "2-Column Product Grid" },
   ],
+  banner: [
+    { value: "largeCards", label: "Wide Landscape Banner (2.4:1 Desktop / 2:1 Mobile)" },
+    { value: "squareCard", label: "Square Spotlight / Instagram Post (1:1 Ratio)" },
+    { value: "editorialGrid", label: "Portrait Lookbook (4:5 Ratio)" },
+  ],
   collection: [
     { value: "productCarousel", label: "Product Carousel (Horizontal Scroll)" },
     { value: "twoProductGrid", label: "2-Column Product Grid" },
@@ -663,6 +668,7 @@ const ALL_RENDERER_OPTIONS = [
   { value: "twoProductGrid", label: "2-Column Product Grid" },
   { value: "premiumGrid", label: "Premium Zara-Style Grid (Full Visual Width)" },
   { value: "largeCards", label: "Large Cards" },
+  { value: "squareCard", label: "Square Spotlight / Instagram Post (1:1 Ratio)" },
   { value: "moodGrid", label: "Mood Grid" },
   { value: "occasionGrid", label: "Category / Occasion Grid" },
   { value: "editorialGrid", label: "Editorial Grid" },
@@ -798,83 +804,118 @@ function BlockConfigEditor({ block, schema, collections, categories, onSave, onC
               <input type="text" className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.subtitle} onChange={e => setFormData({ ...formData, subtitle: e.target.value })} />
             </div>
           )}
-          {schema.fields.includes("bannerUpload") && (
-            <div className="space-y-4 border-t border-b border-slate-100 py-3">
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Desktop Banner Image (Landscape)
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    ref={desktopInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={e => handleFileUpload(e, "desktopImage")}
-                  />
-                  <button
-                    type="button"
-                    disabled={uploading}
-                    onClick={() => desktopInputRef.current?.click()}
-                    className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
-                  >
-                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                    Choose Desktop Image
-                  </button>
-                </div>
-                {formData.config.desktopImage && (
-                  <div className="mt-2 relative aspect-[16/6] rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-[140px]">
-                    <img
-                      src={
-                        typeof formData.config.desktopImage === "string"
-                          ? formData.config.desktopImage
-                          : getPublicUrl(formData.config.desktopImage, "original")
-                      }
-                      alt="Desktop Banner Preview"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-              </div>
+          {schema.fields.includes("bannerUpload") && (() => {
+            const isSquare = formData.renderer === "squareCard" || formData.config?.aspectRatio === "square";
+            const isPortrait = formData.renderer === "editorialGrid" || formData.config?.aspectRatio === "portrait";
 
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                  Mobile Banner Image (Compact)
-                </label>
-                <div className="flex items-center gap-3">
-                  <input
-                    ref={mobileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={e => handleFileUpload(e, "mobileImage")}
-                  />
-                  <button
-                    type="button"
-                    disabled={uploading}
-                    onClick={() => mobileInputRef.current?.click()}
-                    className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-200 disabled:opacity-50 border border-slate-200 cursor-pointer"
-                  >
-                    {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                    Choose Mobile Image
-                  </button>
-                </div>
-                {formData.config.mobileImage && (
-                  <div className="mt-2 relative aspect-[2/1] rounded-xl overflow-hidden border border-slate-200 bg-slate-50 max-h-[120px]">
-                    <img
-                      src={
-                        typeof formData.config.mobileImage === "string"
-                          ? formData.config.mobileImage
-                          : getPublicUrl(formData.config.mobileImage, "original")
-                      }
-                      alt="Mobile Banner Preview"
-                      className="w-full h-full object-cover"
-                    />
+            const desktopRatioClass = isSquare
+              ? "aspect-square max-h-[180px] max-w-[180px]"
+              : isPortrait
+              ? "aspect-[4/5] max-h-[190px] max-w-[152px]"
+              : "aspect-[2.4/1] max-h-[140px]";
+
+            const mobileRatioClass = isSquare
+              ? "aspect-square max-h-[180px] max-w-[180px]"
+              : isPortrait
+              ? "aspect-[4/5] max-h-[190px] max-w-[152px]"
+              : "aspect-[2/1] max-h-[120px]";
+
+            return (
+              <div className="space-y-4 border-t border-b border-slate-100 py-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      {isSquare
+                        ? "Desktop Image (Square 1:1, e.g. 1080×1080 px)"
+                        : isPortrait
+                        ? "Desktop Image (Portrait 4:5, e.g. 1080×1350 px)"
+                        : "Desktop Banner Image (Landscape 2.4:1, e.g. 2400×1000 px)"}
+                    </label>
+                    <span className="text-[10px] text-amber-600 font-semibold">
+                      {isSquare ? "1:1 Instagram Post" : isPortrait ? "4:5 Lookbook" : "2.4:1 Wide"}
+                    </span>
                   </div>
-                )}
+                  <div className="flex items-center gap-3">
+                    <input
+                      ref={desktopInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => handleFileUpload(e, "desktopImage")}
+                    />
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => desktopInputRef.current?.click()}
+                      className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-800 disabled:opacity-50 cursor-pointer"
+                    >
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      Choose Desktop Image
+                    </button>
+                  </div>
+                  {formData.config.desktopImage && (
+                    <div className={`mt-2 relative ${desktopRatioClass} rounded-xl overflow-hidden border border-slate-200 bg-slate-50`}>
+                      <img
+                        src={
+                          typeof formData.config.desktopImage === "string"
+                            ? formData.config.desktopImage
+                            : getPublicUrl(formData.config.desktopImage, "original")
+                        }
+                        alt="Desktop Banner Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      {isSquare
+                        ? "Mobile Image (Square 1:1 — Optional if same as desktop)"
+                        : isPortrait
+                        ? "Mobile Image (Portrait 4:5 — Optional)"
+                        : "Mobile Banner Image (Compact 2:1, e.g. 1200×600 px)"}
+                    </label>
+                    <span className="text-[10px] text-slate-400">
+                      {isSquare ? "1:1 Square" : isPortrait ? "4:5 Portrait" : "2:1 Compact"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      ref={mobileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => handleFileUpload(e, "mobileImage")}
+                    />
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => mobileInputRef.current?.click()}
+                      className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-200 disabled:opacity-50 border border-slate-200 cursor-pointer"
+                    >
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      Choose Mobile Image
+                    </button>
+                  </div>
+                  {formData.config.mobileImage && (
+                    <div className={`mt-2 relative ${mobileRatioClass} rounded-xl overflow-hidden border border-slate-200 bg-slate-50`}>
+                      <img
+                        src={
+                          typeof formData.config.mobileImage === "string"
+                            ? formData.config.mobileImage
+                            : getPublicUrl(formData.config.mobileImage, "original")
+                        }
+                        alt="Mobile Banner Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {(schema.fields.includes("bgImageUpload") || formData.renderer === "premiumGrid") && (
             <div className="space-y-2 border-t border-b border-slate-100 py-3">
@@ -1021,7 +1062,22 @@ function BlockConfigEditor({ block, schema, collections, categories, onSave, onC
             return (
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 mb-1">Renderer (Layout)</label>
-                <select className="w-full p-2.5 rounded-xl border border-slate-200 text-sm" value={formData.renderer} onChange={e => setFormData({ ...formData, renderer: e.target.value })}>
+                <select
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-sm"
+                  value={formData.renderer}
+                  onChange={e => {
+                    const newRenderer = e.target.value;
+                    let newAspectRatio = formData.config.aspectRatio;
+                    if (newRenderer === "squareCard") newAspectRatio = "square";
+                    else if (newRenderer === "editorialGrid") newAspectRatio = "portrait";
+                    else if (newRenderer === "largeCards") newAspectRatio = "landscape";
+                    setFormData({
+                      ...formData,
+                      renderer: newRenderer,
+                      config: { ...formData.config, aspectRatio: newAspectRatio }
+                    });
+                  }}
+                >
                   {options.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
