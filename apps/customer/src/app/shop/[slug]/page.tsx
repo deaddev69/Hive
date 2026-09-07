@@ -81,6 +81,7 @@ export default function BoutiqueStorefrontPage() {
                   src={boutique.logoUrl}
                   alt={`${boutique.boutiqueName} logo`}
                   fill
+                  sizes="64px"
                   className="object-cover"
                 />
               </div>

@@ -365,6 +365,7 @@ export default function OrderDetailPage() {
                         src={item.imageUrl || "/placeholder.png"}
                         alt={item.productName || "Product"}
                         fill
+                        sizes="56px"
                         className="object-cover"
                       />
                     </div>

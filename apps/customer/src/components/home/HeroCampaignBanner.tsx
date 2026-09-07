@@ -47,6 +47,9 @@ export function HeroCampaignBanner() {
               src={imageUrl}
               alt={current.title}
               fill
+              // Full-bleed inside max-w-7xl with px-4/px-6/px-8 gutters, so the slot is the
+              // viewport minus those gutters until the 1280px cap, then a fixed 1216px.
+              sizes="(max-width: 640px) calc(100vw - 32px), (max-width: 1024px) calc(100vw - 48px), (max-width: 1280px) calc(100vw - 64px), 1216px"
               priority
               className="object-cover object-center"
             />

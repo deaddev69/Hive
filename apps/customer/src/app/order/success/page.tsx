@@ -638,7 +638,7 @@ function OrderSummaryCard({
           <div key={idx} className="flex items-center gap-3">
             <div className="relative w-12 h-14 bg-slate-100 rounded-xl overflow-hidden shrink-0 border border-slate-200/60">
               {item.imageUrl ? (
-                <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
+                <Image src={item.imageUrl} alt={item.name} fill sizes="48px" className="object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-slate-400">
                   <ShoppingBag className="w-5 h-5" />

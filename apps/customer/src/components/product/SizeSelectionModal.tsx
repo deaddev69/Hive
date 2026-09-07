@@ -59,6 +59,7 @@ export const SizeSelectionModal: React.FC<SizeSelectionModalProps> = ({
                 src={imageUrl}
                 alt={productName}
                 fill
+                sizes="64px"
                 className="object-cover"
               />
             ) : (
