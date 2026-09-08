@@ -1,4 +1,4 @@
-import { mutation } from "./_generated/server";
+import { internalMutation, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { getPlatformMarkupRate } from "./pricingHelpers";
@@ -384,6 +384,11 @@ export const backfillSameDayEligible = mutation({
  * from the new parent by walking parentId. Nothing about pricing, payouts or
  * serviceability depends on the category tree.
  *
+ * Declared as an internalMutation: it is not reachable from any client, only
+ * from the CLI and from other server functions. The other migrations in this
+ * file gate on `if (identity !== null) requireRole(...)`, which lets an
+ * unauthenticated caller through — worth revisiting, but out of scope here.
+ *
  * Runs as a dry run by default and reports exactly what it would do. Pass
  * `{ apply: true }` to write.
  *
@@ -393,14 +398,9 @@ export const backfillSameDayEligible = mutation({
  * Reversal: clear parentId on the children and delete the three created
  * parents. Both are ordinary admin operations on the categories screen.
  */
-export const buildCategoryHierarchy = mutation({
+export const buildCategoryHierarchy = internalMutation({
   args: { apply: v.optional(v.boolean()) },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (identity !== null) {
-      await requireRole(ctx, "admin");
-    }
-
     const apply = args.apply === true;
 
     // Parents to create, keyed by the marker used in the mapping below.

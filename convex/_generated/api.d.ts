@@ -139,6 +139,7 @@ import type * as tests_boutiqueAudit from "../tests/boutiqueAudit.js";
 import type * as tests_boutiqueHoursTest from "../tests/boutiqueHoursTest.js";
 import type * as tests_cancellationRefundTest from "../tests/cancellationRefundTest.js";
 import type * as tests_cartCurrency from "../tests/cartCurrency.js";
+import type * as tests_categoryAttributesTest from "../tests/categoryAttributesTest.js";
 import type * as tests_checkTimestamps from "../tests/checkTimestamps.js";
 import type * as tests_couponTest from "../tests/couponTest.js";
 import type * as tests_dataIntegrityAudit from "../tests/dataIntegrityAudit.js";
@@ -322,6 +323,7 @@ declare const fullApi: ApiFromModules<{
   "tests/boutiqueHoursTest": typeof tests_boutiqueHoursTest;
   "tests/cancellationRefundTest": typeof tests_cancellationRefundTest;
   "tests/cartCurrency": typeof tests_cartCurrency;
+  "tests/categoryAttributesTest": typeof tests_categoryAttributesTest;
   "tests/checkTimestamps": typeof tests_checkTimestamps;
   "tests/couponTest": typeof tests_couponTest;
   "tests/dataIntegrityAudit": typeof tests_dataIntegrityAudit;
