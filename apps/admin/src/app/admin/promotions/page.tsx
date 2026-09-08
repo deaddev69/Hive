@@ -29,6 +29,7 @@ import {
   Upload,
   Trash2,
   Check,
+  Edit3,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -39,6 +40,7 @@ export default function AdminPromotionsPage() {
     isAuthenticated ? {} : "skip"
   );
   const createPromotion = useMutation(api.promotions.createPromotion);
+  const updatePromotion = useMutation(api.promotions.updatePromotion);
   const toggleStatus = useMutation(api.promotions.togglePromotionStatus);
   const archivePromotion = useMutation(api.promotions.archivePromotion);
   const duplicatePromotion = useMutation(api.promotions.duplicatePromotion);
@@ -49,6 +51,7 @@ export default function AdminPromotionsPage() {
   const [filterTab, setFilterTab] = useState<"all" | "active" | "draft" | "archived">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingPromoId, setEditingPromoId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingCreative, setUploadingCreative] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -205,6 +208,40 @@ export default function AdminPromotionsPage() {
     return true;
   });
 
+  const handleOpenEdit = (promo: any) => {
+    setEditingPromoId(promo._id);
+    setForm({
+      name: promo.name || "",
+      type: promo.type || "sponsored_banner",
+      placement: promo.placement || "ORDER_SUCCESS_SPONSORED",
+      status: promo.status || "active",
+      priority: promo.priority || 1,
+      badge: promo.badge || "",
+      title: promo.title || "",
+      subtitle: promo.subtitle || "",
+      creativeUrl: promo.creativeUrl || "",
+      brandLogoUrl: promo.brandLogoUrl || "",
+      aspectRatio: promo.aspectRatio || "1:1",
+      ctaText: promo.ctaText || "Shop Now →",
+      destinationType: promo.destination?.type || (promo.ctaLink?.startsWith("http") ? "external" : "store"),
+      destinationValue: promo.destination?.value || promo.ctaLink || "",
+      brandName: promo.brandName || "",
+      rewardTitle: promo.rewardConfig?.rewardTitle || "₹100 OFF",
+      rewardType: promo.rewardConfig?.rewardType || "fixed",
+      discountValue: promo.rewardConfig?.discountValue || 100,
+      minOrderRupees: promo.rewardConfig?.minOrderPaise ? promo.rewardConfig.minOrderPaise / 100 : 0,
+      expiresInDays: promo.rewardConfig?.expiresInDays || 30,
+      terms: promo.rewardConfig?.terms || "",
+      audience: promo.targeting?.audience || "everyone",
+      locationType: promo.targeting?.locationType || "all",
+      pincodesInput: promo.targeting?.pincodes ? promo.targeting.pincodes.join(", ") : "",
+      vertical: promo.targeting?.vertical || "apparel",
+      maxImpressions: promo.displayRules?.maxImpressionsPerCustomer || 1,
+      cooldownDays: promo.displayRules?.cooldownDays || 30,
+    });
+    setIsCreateOpen(true);
+  };
+
   const handleCreateSubmit = async (statusOverride?: "draft" | "active") => {
     setSubmitting(true);
     try {
@@ -213,7 +250,17 @@ export default function AdminPromotionsPage() {
           ? form.pincodesInput.split(",").map((s) => s.trim()).filter(Boolean)
           : undefined;
 
-      await createPromotion({
+      const destinationValue = form.destinationValue || "default";
+      const ctaLink =
+        destinationValue.startsWith("http://") || destinationValue.startsWith("https://")
+          ? destinationValue
+          : form.destinationType === "external"
+          ? destinationValue
+          : form.destinationType === "store"
+          ? `/shop/${destinationValue}`
+          : `/collections/${destinationValue}`;
+
+      const promoPayload = {
         name: form.name,
         type: form.type,
         placement: form.placement,
@@ -228,14 +275,9 @@ export default function AdminPromotionsPage() {
         ctaText: form.ctaText,
         destination: {
           type: form.destinationType,
-          value: form.destinationValue || "default",
+          value: destinationValue,
         },
-        ctaLink:
-          form.destinationType === "external"
-            ? form.destinationValue
-            : form.destinationType === "store"
-            ? `/shop/${form.destinationValue}`
-            : `/collections/${form.destinationValue}`,
+        ctaLink,
         brandName: form.brandName || undefined,
         rewardConfig:
           form.type === "scratch_card" || form.type === "coupon"
@@ -260,11 +302,23 @@ export default function AdminPromotionsPage() {
           maxClaimsPerCustomer: 1,
           cooldownDays: Number(form.cooldownDays) || 30,
         },
-      });
+      };
+
+      if (editingPromoId) {
+        await updatePromotion({
+          promotionId: editingPromoId as any,
+          patch: promoPayload,
+        });
+        alert("Promotion updated successfully!");
+      } else {
+        await createPromotion(promoPayload);
+        alert("Promotion created successfully!");
+      }
 
       setIsCreateOpen(false);
+      setEditingPromoId(null);
     } catch (err: any) {
-      alert("Failed to create promotion: " + (err.message || String(err)));
+      alert("Failed to save promotion: " + (err.message || String(err)));
     } finally {
       setSubmitting(false);
     }
@@ -302,11 +356,10 @@ export default function AdminPromotionsPage() {
               key={tab}
               type="button"
               onClick={() => setFilterTab(tab)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-colors cursor-pointer ${
-                filterTab === tab
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize transition-colors cursor-pointer ${filterTab === tab
                   ? "bg-slate-900 text-white shadow-2xs"
                   : "text-slate-600 hover:bg-slate-100"
-              }`}
+                }`}
             >
               {tab}
             </button>
@@ -394,15 +447,14 @@ export default function AdminPromotionsPage() {
                     </td>
                     <td className="px-4 py-4">
                       <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                          promo.status === "active"
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${promo.status === "active"
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                             : promo.status === "scheduled"
-                            ? "bg-amber-50 text-amber-700 border border-amber-200"
-                            : promo.status === "archived"
-                            ? "bg-rose-50 text-rose-700 border border-rose-200"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
+                              ? "bg-amber-50 text-amber-700 border border-amber-200"
+                              : promo.status === "archived"
+                                ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                : "bg-slate-100 text-slate-600"
+                          }`}
                       >
                         {promo.status === "active" ? (
                           <CheckCircle2 className="w-3 h-3" />
@@ -418,6 +470,14 @@ export default function AdminPromotionsPage() {
                       {promo.priority}
                     </td>
                     <td className="px-5 py-4 text-right space-x-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(promo)}
+                        title="Edit Promotion"
+                        className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 hover:text-amber-600 transition-colors cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => toggleStatus({ promotionId: promo._id })}
@@ -455,13 +515,15 @@ export default function AdminPromotionsPage() {
         )}
       </div>
 
-      {/* Structured Create Promotion Builder Modal with Live Mobile Preview */}
+      {/* Structured Create / Edit Promotion Builder Modal with Live Mobile Preview */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl border border-slate-200 max-w-5xl w-full p-6 shadow-2xl space-y-4 my-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Create Post-Purchase Promotion</h2>
+                <h2 className="text-lg font-bold text-slate-900">
+                  {editingPromoId ? "Edit Post-Purchase Promotion" : "Create Post-Purchase Promotion"}
+                </h2>
                 <p className="text-xs text-slate-500">Configure content, targeting, and preview real-time customer rendering.</p>
               </div>
               <button
@@ -613,11 +675,10 @@ export default function AdminPromotionsPage() {
                             key={ar}
                             type="button"
                             onClick={() => setForm({ ...form, aspectRatio: ar })}
-                            className={`flex-1 py-1.5 rounded-lg border text-center font-bold text-xs cursor-pointer transition-colors ${
-                              form.aspectRatio === ar
+                            className={`flex-1 py-1.5 rounded-lg border text-center font-bold text-xs cursor-pointer transition-colors ${form.aspectRatio === ar
                                 ? "bg-amber-500 text-slate-950 border-amber-500 shadow-2xs"
                                 : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
-                            }`}
+                              }`}
                           >
                             {ar}
                           </button>
@@ -954,7 +1015,10 @@ export default function AdminPromotionsPage() {
             <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
               <button
                 type="button"
-                onClick={() => setIsCreateOpen(false)}
+                onClick={() => {
+                  setEditingPromoId(null);
+                  setIsCreateOpen(false);
+                }}
                 className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 cursor-pointer"
               >
                 Cancel
@@ -965,7 +1029,7 @@ export default function AdminPromotionsPage() {
                 onClick={() => handleCreateSubmit("draft")}
                 className="px-4 py-2 rounded-xl border border-slate-300 text-slate-800 font-bold text-xs hover:bg-slate-50 cursor-pointer"
               >
-                Save Draft
+                {editingPromoId ? "Save as Draft" : "Save Draft"}
               </button>
               <button
                 type="button"
@@ -974,7 +1038,7 @@ export default function AdminPromotionsPage() {
                 className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs flex items-center gap-1.5 cursor-pointer"
               >
                 {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>Publish Promotion</span>
+                <span>{editingPromoId ? "Save Changes" : "Publish Promotion"}</span>
               </button>
             </div>
           </div>
