@@ -114,7 +114,7 @@ export const backfillProductPerformance = mutation({
 /**
  * Migration to backfill merchantTier to 'Bronze' and approvalStatus to 'approved' for legacy records.
  */
-export const backfillListingApprovalFields = mutation({
+export const backfillListingApprovalFields = internalMutation({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -152,7 +152,7 @@ export const backfillListingApprovalFields = mutation({
  * Migration to backfill the slug field for all approved boutiques that lack one.
  * Uses a basic slugify function based on the boutiqueName.
  */
-export const backfillBoutiqueSlugs = mutation({
+export const backfillBoutiqueSlugs = internalMutation({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -200,7 +200,7 @@ export const backfillBoutiqueSlugs = mutation({
 /**
  * Phase 1 Migration: Set basePrice and bump customer price by 15%
  */
-export const migrateProductPricesPhase1 = mutation({
+export const migrateProductPricesPhase1 = internalMutation({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -249,7 +249,7 @@ export const migrateProductPricesPhase1 = mutation({
 /**
  * Migration to seed/backfill platformSettings with the default tiered slabs.
  */
-export const migratePlatformSettingsToTiered = mutation({
+export const migratePlatformSettingsToTiered = internalMutation({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -358,7 +358,7 @@ export const recalculateAllProductPrices = mutation({
  * 90-minute promise, so the flag is a platform constant rather than per-product metadata. The
  * forms no longer send it and both write paths now set true; this aligns the existing rows.
  */
-export const backfillSameDayEligible = mutation({
+export const backfillSameDayEligible = internalMutation({
   args: {},
   handler: async (ctx) => {
     const products = await ctx.db.query("products").collect();
