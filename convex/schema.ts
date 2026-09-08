@@ -1708,6 +1708,15 @@ export default defineSchema({
     featured:       v.optional(v.boolean()),
     showOnHomepage: v.optional(v.boolean()),
     parentId:       v.optional(v.id("categories")),
+    // Garments sold in one size only — sarees, dupattas, stoles. Replaces a
+    // name.includes("saree") check in the partner app, which meant renaming a
+    // category silently changed how its products were sized.
+    isFreeSize:     v.optional(v.boolean()),
+    // Editorial copy for the category landing page. Optional: a category with
+    // no copy gets a generated fallback rather than an empty block, so an
+    // admin-created category is never silently blank.
+    seoIntro:       v.optional(v.string()),
+    seoDescription: v.optional(v.string()),
     // Which vertical products filed under this category belong to. Unlike the
     // product field this is live configuration: an admin may change it, and the
     // change applies to products created afterwards, never to existing ones.

@@ -18,6 +18,27 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
 }) => {
   const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
 
+  /**
+   * Top-level categories, each with its subcategories.
+   *
+   * Rendering these at equal weight made "Women's Fashion" and "Sarees" look
+   * like alternatives rather than a group and one of its members. Selecting a
+   * parent already returns its descendants' products (getCatalogPage resolves
+   * the tree), so the nesting shown here matches what the filter actually does.
+   */
+  const groups = React.useMemo(() => {
+    if (!dbCategories) return [];
+    const byOrder = (a: any, b: any) =>
+      (a.sortOrder || 0) - (b.sortOrder || 0) || a.name.localeCompare(b.name);
+    return dbCategories
+      .filter((c: any) => !c.parentId)
+      .sort(byOrder)
+      .map((parent: any) => ({
+        parent,
+        children: dbCategories.filter((c: any) => c.parentId === parent._id).sort(byOrder),
+      }));
+  }, [dbCategories]);
+
   const toggle = (id: string) => {
     onChange(
       selected.includes(id)
@@ -51,28 +72,44 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
     );
   }
 
+  const chip = (cat: any, isChild: boolean) => {
+    const active = selected.includes(cat._id);
+    return (
+      <button
+        key={cat._id}
+        type="button"
+        onClick={() => toggle(cat._id)}
+        className={cn(
+          "inline-flex items-center px-3 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer select-none",
+          isChild ? "font-medium" : "font-semibold",
+          active
+            ? "bg-stone-900 dark:bg-white text-white dark:text-stone-900 shadow-xs scale-[1.02]"
+            : "bg-stone-50 dark:bg-stone-900 text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-800 hover:border-amber-400 hover:bg-stone-100"
+        )}
+        aria-pressed={active}
+      >
+        <span>{cat.name}</span>
+      </button>
+    );
+  };
+
   return (
     <FilterSection title="Category" activeCount={selected.length}>
-      <div className="flex flex-wrap gap-2 py-1">
-        {dbCategories.map((cat: any) => {
-          const active = selected.includes(cat._id);
-          return (
-            <button
-              key={cat._id}
-              type="button"
-              onClick={() => toggle(cat._id)}
-              className={cn(
-                "inline-flex items-center px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer select-none",
-                active
-                  ? "bg-stone-900 dark:bg-white text-white dark:text-stone-900 shadow-xs scale-[1.02]"
-                  : "bg-stone-50 dark:bg-stone-900 text-stone-700 dark:text-stone-300 border border-stone-200/80 dark:border-stone-800 hover:border-amber-400 hover:bg-stone-100"
-              )}
-              aria-pressed={active}
-            >
-              <span>{cat.name}</span>
-            </button>
-          );
-        })}
+      <div className="flex flex-col gap-3 py-1">
+        {groups.map(({ parent, children }) => (
+          <div key={parent._id} className="flex flex-col gap-1.5">
+            {/*
+              Selecting the parent is a real choice, not just a label: the server
+              expands it to every descendant, so it reads as "all of this group".
+            */}
+            <div className="flex flex-wrap gap-2">{chip(parent, false)}</div>
+            {children.length > 0 && (
+              <div className="flex flex-wrap gap-2 pl-3 border-l border-stone-200/70 dark:border-stone-800 ml-1">
+                {children.map((child: any) => chip(child, true))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </FilterSection>
   );

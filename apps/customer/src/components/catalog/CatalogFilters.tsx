@@ -3,6 +3,8 @@
 import React from "react";
 import { cn } from "@hive/ui";
 import { X, RotateCcw } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "../../../../../convex/_generated/api";
 import {
   CatalogFilterState,
   DEFAULT_FILTER_STATE,
@@ -28,6 +30,12 @@ export const CatalogFilters: React.FC<CatalogFiltersProps> = ({
   className,
 }) => {
   const activeCount = countActiveFilters(filters);
+
+  // The chips below carried category IDs, so an active category filter showed
+  // the shopper a raw document id instead of the category's name.
+  const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
+  const categoryName = (id: string) =>
+    dbCategories?.find((c) => c._id === id)?.name ?? "Category";
 
   const reset = () => onChange(DEFAULT_FILTER_STATE);
 
@@ -99,7 +107,7 @@ export const CatalogFilters: React.FC<CatalogFiltersProps> = ({
           {filters.categories.map((id) => (
             <ActiveTag
               key={`cat-${id}`}
-              label={id}
+              label={categoryName(id)}
               onRemove={() =>
                 patch({ categories: filters.categories.filter((c) => c !== id) })
               }

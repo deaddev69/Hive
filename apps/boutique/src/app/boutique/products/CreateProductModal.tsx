@@ -746,18 +746,17 @@ export default function CreateProductModal({
     }
   };
 
-  const isSareeCategory = React.useMemo(() => {
+  // Free-size garments, from the category's own flag rather than its name.
+  const isFreeSizeCategory = React.useMemo(() => {
     return selectedCategoryIds.some((catId) => {
-      const found = allCategoriesList.find((c) => c._id === catId || c.name.toLowerCase() === catId.toLowerCase());
-      if (!found) return false;
-      const lower = found.name.toLowerCase();
-      return lower.includes("saree") || lower.includes("sarree");
+      const found = allCategoriesList.find((c: any) => c._id === catId);
+      return (found as any)?.isFreeSize === true;
     });
   }, [selectedCategoryIds, allCategoriesList]);
 
   // Auto-set FREE size for Saree category
   useEffect(() => {
-    if (isSareeCategory) {
+    if (isFreeSizeCategory) {
       setSelectedSizes(["FREE"]);
       setStockBySize((prev) => {
         if (prev["FREE"] !== undefined) return prev;
@@ -771,7 +770,7 @@ export default function CreateProductModal({
         return prev;
       });
     }
-  }, [isSareeCategory]);
+  }, [isFreeSizeCategory]);
 
   useEffect(() => {
     if (isOpen) {
@@ -1281,7 +1280,7 @@ export default function CreateProductModal({
 
             <hr className="border-slate-100 -my-3" />
 
-            {isSareeCategory ? (
+            {isFreeSizeCategory ? (
               <div className="flex flex-col gap-2 bg-[#f8fafc] p-4 rounded-2xl border border-[#f1f5f9]">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-700">PRODUCT SIZE</label>
                 <div className="text-xs font-semibold text-slate-800 flex items-center gap-2">

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { CatalogLayout } from "@/components/catalog/CatalogLayout";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import { MobileFilterDrawer } from "@/components/catalog/MobileFilterDrawer";
-import { getCategoryContent } from "@/lib/content/categoryContent";
+import { getCategoryContent, resolveCategoryContent } from "@/lib/content/categoryContent";
 import { CategorySEOBlock } from "@/components/seo/CategorySEOBlock";
 import { CatalogHeader } from "@/components/catalog/CatalogHeader";
 import { CatalogToolbar } from "@/components/catalog/CatalogToolbar";
@@ -107,6 +107,19 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
         categoryResolution.status === "resolved" ? [categoryResolution.id] : [],
     }));
   }, [categoryResolution]);
+
+  const seoCategory = useMemo(() => {
+    if (categoryResolution.status !== "resolved" || !dbCategories) return null;
+    const match = dbCategories.find((c) => c._id === categoryResolution.id);
+    return match
+      ? {
+          name: match.name,
+          slug: match.slug,
+          seoIntro: (match as any).seoIntro ?? null,
+          seoDescription: (match as any).seoDescription ?? null,
+        }
+      : null;
+  }, [categoryResolution, dbCategories]);
 
   // Resolve selected category names for the results summary pill
   const selectedCategoryNames = useMemo(() => {
@@ -359,9 +372,17 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
         />
       )}
 
-      {/* Render SEO block only if we are on a specific category page */}
-      {categorySlugFromUrl && (
-        <CategorySEOBlock content={getCategoryContent(categorySlugFromUrl)} />
+      {/*
+        SEO block for a category page. A resolved category always gets one:
+        hand-written copy where it exists, then the category's own admin-editable
+        text, then a generated block. A slug with no category behind it (the
+        editorial landing pages) still falls back to the hand-written map.
+      */}
+      {categoryResolution.status === "resolved" && seoCategory && (
+        <CategorySEOBlock content={resolveCategoryContent(seoCategory)} />
+      )}
+      {categoryResolution.status === "none" && initialCategorySlug && (
+        <CategorySEOBlock content={getCategoryContent(initialCategorySlug)} />
       )}
     </CatalogLayout>
   );

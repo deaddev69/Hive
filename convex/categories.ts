@@ -158,6 +158,9 @@ export const createCategory = mutation({
     featured:       v.optional(v.boolean()),
     showOnHomepage: v.optional(v.boolean()),
     parentId:       v.optional(v.id("categories")),
+    isFreeSize:     v.optional(v.boolean()),
+    seoIntro:       v.optional(v.string()),
+    seoDescription: v.optional(v.string()),
     verticalType:   v.optional(VerticalTypeValidator),
   },
   handler: async (ctx, args) => {
@@ -186,6 +189,9 @@ export const createCategory = mutation({
       featured:       args.featured,
       showOnHomepage: args.showOnHomepage,
       parentId:       args.parentId,
+      isFreeSize:     args.isFreeSize,
+      seoIntro:       args.seoIntro,
+      seoDescription: args.seoDescription,
       verticalType:   args.verticalType,
       createdAt:      Date.now(),
     });
@@ -212,6 +218,9 @@ export const updateCategory = mutation({
     featured:       v.optional(v.boolean()),
     showOnHomepage: v.optional(v.boolean()),
     parentId:       v.optional(v.id("categories")),
+    isFreeSize:     v.optional(v.boolean()),
+    seoIntro:       v.optional(v.string()),
+    seoDescription: v.optional(v.string()),
     verticalType:   v.optional(VerticalTypeValidator),
   },
   handler: async (ctx, args) => {
@@ -254,6 +263,9 @@ export const updateCategory = mutation({
       featured:       args.featured,
       showOnHomepage: args.showOnHomepage,
       parentId:       args.parentId,
+      isFreeSize:     args.isFreeSize,
+      seoIntro:       args.seoIntro,
+      seoDescription: args.seoDescription,
       verticalType:   args.verticalType,
     });
     return args.id;

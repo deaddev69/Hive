@@ -42,6 +42,9 @@ type CategoryRow = {
   active: boolean;
   sortOrder: number;
   showOnHomepage?: boolean;
+  isFreeSize?: boolean;
+  seoIntro?: string;
+  seoDescription?: string;
   verticalType?: VerticalType;
   imageUrl?: string | null;
   imageStorageId?: unknown;
@@ -80,6 +83,9 @@ export default function AdminCategoriesPage() {
   const [sortOrder, setSortOrder] = useState(1);
   const [active, setActive] = useState(true);
   const [showOnHomepage, setShowOnHomepage] = useState(false);
+  const [isFreeSize, setIsFreeSize] = useState(false);
+  const [seoIntro, setSeoIntro] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
   const [verticalType, setVerticalType] = useState<VerticalType>("apparel");
   const [imageStorageId, setImageStorageId] = useState<unknown>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -135,6 +141,9 @@ export default function AdminCategoriesPage() {
       setSortOrder((categories?.length ?? 0) + 1);
       setActive(true);
       setShowOnHomepage(false);
+      setIsFreeSize(false);
+      setSeoIntro("");
+      setSeoDescription("");
       setVerticalType("apparel");
       setImageStorageId(null);
       setPreviewUrl(null);
@@ -146,6 +155,9 @@ export default function AdminCategoriesPage() {
     setSortOrder(category.sortOrder);
     setActive(category.active);
     setShowOnHomepage(category.showOnHomepage ?? false);
+    setIsFreeSize(category.isFreeSize ?? false);
+    setSeoIntro(category.seoIntro ?? "");
+    setSeoDescription(category.seoDescription ?? "");
     setVerticalType(category.verticalType ?? "apparel");
     setImageStorageId(category.imageStorageId ?? null);
     setPreviewUrl(category.imageUrl ?? null);
@@ -220,6 +232,9 @@ export default function AdminCategoriesPage() {
         active,
         sortOrder,
         showOnHomepage,
+        isFreeSize,
+        seoIntro: seoIntro.trim() || undefined,
+        seoDescription: seoDescription.trim() || undefined,
         verticalType,
         parentId: parentId ? (parentId as any) : undefined,
       };
@@ -561,7 +576,46 @@ export default function AdminCategoriesPage() {
                               Show on homepage
                             </span>
                           </label>
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={isFreeSize}
+                              onChange={(e) => setIsFreeSize(e.target.checked)}
+                              className="rounded border-hive-border text-hive-gold focus:ring-hive-gold w-4 h-4"
+                            />
+                            <span className="text-sm font-bold text-hive-dark">One size only</span>
+                          </label>
                         </div>
+                      </div>
+                      <p className="-mt-3 text-[11px] text-hive-text-muted">
+                        &ldquo;One size only&rdquo; skips the size matrix in the seller form —
+                        sarees, dupattas, stoles.
+                      </p>
+
+                      <div className="flex flex-col gap-3 pt-1">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs font-semibold uppercase tracking-wider text-hive-text-muted">
+                            Landing page copy
+                          </span>
+                          <span className="text-[11px] text-hive-text-muted">
+                            Optional. Left blank, the page falls back to copy generated from the
+                            category name — never an empty block.
+                          </span>
+                        </div>
+                        <textarea
+                          value={seoIntro}
+                          onChange={(e) => setSeoIntro(e.target.value)}
+                          rows={3}
+                          placeholder="Opening paragraph shown under the product grid"
+                          className="w-full px-4 py-3 rounded-xl border border-hive-border text-hive-text bg-white text-sm outline-none focus:border-hive-gold focus:ring-1 focus:ring-hive-gold resize-y"
+                        />
+                        <textarea
+                          value={seoDescription}
+                          onChange={(e) => setSeoDescription(e.target.value)}
+                          rows={2}
+                          placeholder="Search result description (roughly 150 characters)"
+                          className="w-full px-4 py-3 rounded-xl border border-hive-border text-hive-text bg-white text-sm outline-none focus:border-hive-gold focus:ring-1 focus:ring-hive-gold resize-y"
+                        />
                       </div>
 
                       {error && (

@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import Cropper from "react-easy-crop";
 import { VariantEditor } from "./VariantEditor";
 import { SpecificationEditor } from "./SpecificationEditor";
+import { DynamicAttributeFields, AttributeFieldDef } from "./DynamicAttributeFields";
 import { getVerticalConfig } from "@hive/types";
 
 // Constant arrays
@@ -646,22 +647,52 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   // AI Description states
   const [generatingDesc, setGeneratingDesc] = useState(false);
 
-  // Categories helper list with verticalType preserved
+  // Categories helper list, with the hierarchy and vertical preserved.
   const allCategoriesList = useMemo(() => {
-    const list: { _id: string; name: string; verticalType?: string }[] = [];
-    const nameSet = new Set<string>();
+    const list: {
+      _id: string;
+      name: string;
+      verticalType?: string;
+      parentId?: string;
+      isFreeSize?: boolean;
+    }[] = [];
 
-    (categories || []).forEach((c) => {
+    (categories || []).forEach((c: any) => {
       let cleanName = c.name;
       if (cleanName.toLowerCase() === "ethnic wer") {
         cleanName = "Ethnic Wear";
       }
-      list.push({ _id: c._id, name: cleanName, verticalType: c.verticalType });
-      nameSet.add(cleanName.toLowerCase());
+      list.push({
+        _id: c._id,
+        name: cleanName,
+        verticalType: c.verticalType,
+        parentId: c.parentId,
+        isFreeSize: c.isFreeSize,
+      });
     });
 
     return list;
   }, [categories]);
+
+  /**
+   * The picker's two levels: each top-level category with its subcategories.
+   *
+   * A parent that has subcategories is a heading, not a choice — filing a
+   * product directly under "Women's Fashion" when "Sarees" exists makes it
+   * invisible to anyone browsing the subcategory. A parent with no children of
+   * its own stays selectable, because there is nothing more specific to pick.
+   */
+  const categoryGroups = useMemo(() => {
+    const byOrder = (a: { name: string }, b: { name: string }) =>
+      a.name.localeCompare(b.name);
+    const roots = allCategoriesList.filter((c) => !c.parentId).sort(byOrder);
+    return roots.map((parent) => ({
+      parent,
+      children: allCategoriesList
+        .filter((c) => c.parentId === parent._id)
+        .sort(byOrder),
+    }));
+  }, [allCategoriesList]);
 
   // Form hook definition
   const {
@@ -727,11 +758,53 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const fabricFamilyWatch = watch("fabricFamily");
 
   const selectedCategoryObj = allCategoriesList.find((c) => c._id === categoryIdWatch);
-  const isSareeCategory = selectedCategoryObj?.name?.toLowerCase().includes("saree") || false;
+
+  // Free-size garments (sarees, dupattas, stoles) skip the size matrix. This
+  // used to be a name.includes("saree") check, which meant renaming a category
+  // silently changed how its products were sized, and a free-size category with
+  // any other name never got the behaviour at all. It is now a flag an admin
+  // sets on the category itself.
+  const isFreeSizeCategory = selectedCategoryObj?.isFreeSize === true;
 
   const currentVerticalConfig = useMemo(() => {
     return getVerticalConfig(selectedCategoryObj?.verticalType || (productToEdit?.verticalType as any));
   }, [selectedCategoryObj?.verticalType, productToEdit?.verticalType]);
+
+  /**
+   * The admin-defined attribute schema for the chosen category, if it has one.
+   *
+   * When it does, it replaces the built-in vertical form entirely — that is what
+   * lets a new category ask its own questions without a deploy. When it does
+   * not, nothing changes and the hardcoded VerticalConfig path below runs, which
+   * is the case for every clothing category.
+   */
+  const attributeSchema = useQuery(
+    api.attributeSets.getForCategory,
+    selectedCategoryObj ? { categoryId: selectedCategoryObj._id as any } : "skip"
+  );
+
+  const dynamicFields: AttributeFieldDef[] = useMemo(
+    () => (attributeSchema?.fields as AttributeFieldDef[] | undefined) ?? [],
+    [attributeSchema]
+  );
+
+  const usesDynamicAttributes = dynamicFields.length > 0;
+
+  const [missingAttributeKeys, setMissingAttributeKeys] = useState<string[]>([]);
+
+  // A category change makes the previous category's answers meaningless — its
+  // keys are not in the new schema and the server would reject them.
+  const lastSchemaCategoryRef = useRef<string | null>(null);
+  useEffect(() => {
+    const categoryId = selectedCategoryObj?._id ?? null;
+    if (lastSchemaCategoryRef.current === categoryId) return;
+    const previous = lastSchemaCategoryRef.current;
+    lastSchemaCategoryRef.current = categoryId;
+    // Skip the very first run so a product being edited keeps its saved values.
+    if (previous === null) return;
+    setExtraDetails({});
+    setMissingAttributeKeys([]);
+  }, [selectedCategoryObj?._id]);
 
   // Check for saved local draft on mount (only when creating new product)
   useEffect(() => {
@@ -921,15 +994,15 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     router.push("/boutique/products");
   };
 
-  // Auto-set FREE size for Sarees (apparel only)
+  // Auto-set FREE size for free-size categories (apparel only)
   useEffect(() => {
-    if (isSareeCategory && currentVerticalConfig.id === "apparel") {
+    if (isFreeSizeCategory && currentVerticalConfig.id === "apparel") {
       if (!selectedSizes.includes("Free") && !selectedSizes.includes("FREE")) {
         setSelectedSizes(["Free"]);
         setStockBySize((prev) => ({ ...prev, Free: prev.Free || prev.FREE || 1 }));
       }
     }
-  }, [isSareeCategory, currentVerticalConfig.id]);
+  }, [isFreeSizeCategory, currentVerticalConfig.id]);
 
   // Load product to edit
   useEffect(() => {
@@ -1419,11 +1492,35 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         if (data.fabricFamily) cleanedDetails.fabricFamily = data.fabricFamily;
       }
 
-      // Merge extra details allowed by the active vertical
-      const allowedSpecKeys = new Set(currentVerticalConfig.specKeys);
-      for (const [k, v] of Object.entries(extraDetails)) {
-        if (allowedSpecKeys.has(k as any) && v && v.trim()) {
-          cleanedDetails[k] = v.trim();
+      // Merge extra details against whichever schema governs this category. The
+      // admin-defined one, when it exists, is the same list the server validates
+      // against — so anything the seller answered here is accepted, and required
+      // answers are caught before the round trip rather than as a server error.
+      if (usesDynamicAttributes) {
+        const missing: string[] = [];
+        for (const field of dynamicFields) {
+          const value = (extraDetails[field.key] ?? "").trim();
+          if (value) {
+            cleanedDetails[field.key] = value;
+          } else if (field.required) {
+            missing.push(field.key);
+          }
+        }
+        if (missing.length > 0) {
+          setMissingAttributeKeys(missing);
+          const labels = dynamicFields
+            .filter((f) => missing.includes(f.key))
+            .map((f) => f.label)
+            .join(", ");
+          throw new Error(`Please fill in: ${labels}.`);
+        }
+        setMissingAttributeKeys([]);
+      } else {
+        const allowedSpecKeys = new Set(currentVerticalConfig.specKeys);
+        for (const [k, v] of Object.entries(extraDetails)) {
+          if (allowedSpecKeys.has(k as any) && v && v.trim()) {
+            cleanedDetails[k] = v.trim();
+          }
         }
       }
 
@@ -2039,7 +2136,16 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                   )}
                 >
                   <span className={selectedCategoryObj ? "font-semibold text-slate-900" : "text-slate-400 font-normal"}>
-                    {selectedCategoryObj ? selectedCategoryObj.name : "Select category (e.g. Sarees, Kurtis, Lehengas...)"}
+                    {selectedCategoryObj
+                      ? [
+                          selectedCategoryObj.parentId
+                            ? allCategoriesList.find((c) => c._id === selectedCategoryObj.parentId)?.name
+                            : null,
+                          selectedCategoryObj.name,
+                        ]
+                          .filter(Boolean)
+                          .join(" › ")
+                      : "Select category (e.g. Sarees, Kurtis, Lehengas...)"}
                   </span>
                   <ChevronDown className="w-4 h-4 text-slate-400" />
                 </button>
@@ -2062,26 +2168,60 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                       </div>
                       
                       <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-1 py-1 scrollbar-none">
-                        {allCategoriesList.map((c) => {
-                          const isSelected = categoryIdWatch === c._id;
+                        {categoryGroups.map(({ parent, children }) => {
+                          const parentSelected = categoryIdWatch === parent._id;
+                          const hasChildren = children.length > 0;
+
                           return (
-                            <button
-                              key={c._id}
-                              type="button"
-                              onClick={() => {
-                                setValue("categoryId", c._id, { shouldValidate: true });
-                                setIsCategoryPickerOpen(false);
-                              }}
-                              className={cn(
-                                "w-full px-4 py-2.5 rounded-xl text-left text-xs font-medium transition-all flex justify-between items-center cursor-pointer",
-                                isSelected
-                                  ? "bg-slate-950 text-white font-bold"
-                                  : "text-slate-700 hover:bg-slate-50"
+                            <div key={parent._id} className="flex flex-col gap-1">
+                              {hasChildren ? (
+                                // A heading, not an option. Its children are the
+                                // real choices.
+                                <span className="px-4 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+                                  {parent.name}
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setValue("categoryId", parent._id, { shouldValidate: true });
+                                    setIsCategoryPickerOpen(false);
+                                  }}
+                                  className={cn(
+                                    "w-full px-4 py-2.5 rounded-xl text-left text-xs font-medium transition-all flex justify-between items-center cursor-pointer",
+                                    parentSelected
+                                      ? "bg-slate-950 text-white font-bold"
+                                      : "text-slate-700 hover:bg-slate-50"
+                                  )}
+                                >
+                                  <span>{parent.name}</span>
+                                  {parentSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                </button>
                               )}
-                            >
-                              <span>{c.name}</span>
-                              {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                            </button>
+
+                              {children.map((child) => {
+                                const isSelected = categoryIdWatch === child._id;
+                                return (
+                                  <button
+                                    key={child._id}
+                                    type="button"
+                                    onClick={() => {
+                                      setValue("categoryId", child._id, { shouldValidate: true });
+                                      setIsCategoryPickerOpen(false);
+                                    }}
+                                    className={cn(
+                                      "w-full pl-7 pr-4 py-2.5 rounded-xl text-left text-xs font-medium transition-all flex justify-between items-center cursor-pointer",
+                                      isSelected
+                                        ? "bg-slate-950 text-white font-bold"
+                                        : "text-slate-700 hover:bg-slate-50"
+                                    )}
+                                  >
+                                    <span>{child.name}</span>
+                                    {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
                           );
                         })}
                       </div>
@@ -2283,7 +2423,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
               onStockChange={handleStockChange}
               onIncrementStock={incrementStock}
               onDecrementStock={decrementStock}
-              isSareeCategory={isSareeCategory}
+              isFreeSizeCategory={isFreeSizeCategory}
               fitRecommendation={fitRecommendation}
               onFitRecommendationChange={setFitRecommendation}
               silhouette={silhouette}
@@ -2721,15 +2861,33 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 </div>
               )}
 
-              {/* Specification Editor for Non-Apparel Verticals (Fragrance, Handbag, etc.) */}
-              {currentVerticalConfig.id !== "apparel" && (
-                <SpecificationEditor
-                  config={currentVerticalConfig}
-                  details={extraDetails}
-                  onDetailChange={(k, v) => setExtraDetails((prev) => ({ ...prev, [k]: v }))}
-                  activeExtraFields={activeExtraFields}
-                  onToggleExtraField={toggleExtraField}
+              {/*
+                Attribute form. An admin-defined schema wins outright; otherwise
+                the built-in editor renders the vertical's own fields, which is
+                the path every apparel category stays on.
+              */}
+              {usesDynamicAttributes ? (
+                <DynamicAttributeFields
+                  fields={dynamicFields}
+                  values={extraDetails}
+                  missingKeys={missingAttributeKeys}
+                  onChange={(k, v) => {
+                    setExtraDetails((prev) => ({ ...prev, [k]: v }));
+                    if (v.trim()) {
+                      setMissingAttributeKeys((prev) => prev.filter((key) => key !== k));
+                    }
+                  }}
                 />
+              ) : (
+                currentVerticalConfig.id !== "apparel" && (
+                  <SpecificationEditor
+                    config={currentVerticalConfig}
+                    details={extraDetails}
+                    onDetailChange={(k, v) => setExtraDetails((prev) => ({ ...prev, [k]: v }))}
+                    activeExtraFields={activeExtraFields}
+                    onToggleExtraField={toggleExtraField}
+                  />
+                )
               )}
 
             </div>

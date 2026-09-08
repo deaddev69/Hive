@@ -161,3 +161,61 @@ export const CATEGORY_CONTENT: Record<string, CategoryContent> = {
 export function getCategoryContent(slug: string): CategoryContent | null {
   return CATEGORY_CONTENT[slug.toLowerCase()] || null;
 }
+
+/**
+ * Editorial copy for a category, in three tiers.
+ *
+ * 1. A hand-written entry in CATEGORY_CONTENT above, if the slug has one.
+ * 2. The category's own admin-editable seoIntro / seoDescription.
+ * 3. A generated block built from the category name.
+ *
+ * The third tier exists because the first two do not cover a category an admin
+ * created five minutes ago. Previously a slug outside the four hand-written
+ * entries rendered no SEO block at all — which is every category actually in
+ * the database — so the section was silently absent on almost every page.
+ */
+export function resolveCategoryContent(category: {
+  name: string;
+  slug: string;
+  seoIntro?: string | null;
+  seoDescription?: string | null;
+}): CategoryContent {
+  const handWritten = getCategoryContent(category.slug);
+  if (handWritten) return handWritten;
+
+  const name = category.name.trim();
+  const lower = name.toLowerCase();
+
+  const intro =
+    category.seoIntro?.trim() ||
+    `Browse ${lower} from boutiques across Ernakulam. Every piece here is stocked by a local store, photographed in store, and delivered the same day — so you can shop the city's ${lower} without leaving home.`;
+
+  const metaDescription =
+    category.seoDescription?.trim() ||
+    `Shop ${lower} from premium local boutiques in Ernakulam. Same-day delivery, easy returns and secure payments on Hive.`;
+
+  return {
+    slug: category.slug,
+    title: name,
+    seoTitle: `${name} in Ernakulam | Local Boutiques on Hive`,
+    metaDescription,
+    shortDescription: `Shop ${lower} from local boutiques in Ernakulam.`,
+    intro,
+    whyHive: defaultWhyHive,
+    deliveryAreas: defaultDeliveryAreas,
+    keywords: [lower, `${lower} ernakulam`, `${lower} kochi`, "boutiques in ernakulam"],
+    faqs: [
+      {
+        question: `Do you deliver ${lower} on the same day?`,
+        answer:
+          "Yes. Orders placed before the daily cutoff are picked up from the boutique and delivered to your door in Ernakulam the same day.",
+      },
+      {
+        question: `Can I return ${lower} bought on Hive?`,
+        answer:
+          "Return eligibility is shown on each product page before you buy, and the window starts when the order is delivered.",
+      },
+    ],
+    relatedCategories: [],
+  };
+}

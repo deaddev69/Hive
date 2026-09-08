@@ -15,7 +15,7 @@ export interface VariantEditorProps {
   onStockChange: (size: string, qty: number) => void;
   onIncrementStock: (size: string) => void;
   onDecrementStock: (size: string) => void;
-  isSareeCategory?: boolean;
+  isFreeSizeCategory?: boolean;
   fitRecommendation: "runs_small" | "true_to_size" | "runs_large";
   onFitRecommendationChange: (fit: "runs_small" | "true_to_size" | "runs_large") => void;
   silhouette: "slim_fit" | "regular_fit" | "relaxed_fit" | "oversized";
@@ -32,7 +32,7 @@ export function VariantEditor({
   onStockChange,
   onIncrementStock,
   onDecrementStock,
-  isSareeCategory,
+  isFreeSizeCategory,
   fitRecommendation,
   onFitRecommendationChange,
   silhouette,
@@ -61,7 +61,7 @@ export function VariantEditor({
   return (
     <div className="flex flex-col gap-6 select-text" style={{ touchAction: "pan-y" }}>
       {/* Saree Notice for Apparel */}
-      {isSareeCategory ? (
+      {isFreeSizeCategory ? (
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
           <Info className="w-4 h-4 text-slate-600 shrink-0" />
           <p className="text-xs font-medium text-slate-700">
