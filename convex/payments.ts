@@ -1781,14 +1781,33 @@ export const completeRefundQueueItem = internalMutation({
       });
     }
 
-    // Update order paymentStatus if applicable
-    if (args.status === "completed" && item.orderId) {
+    // Bring the order's own flags in line with what actually happened.
+    //
+    // `refundStatus` used to be left at "pending" forever on a refund that had
+    // completed, and `transferStatus` still read "processed" even though
+    // `reverse_all` had just reversed the seller's transfer. Both are what the
+    // admin panel reads, so a fully refunded order displayed as a refund still
+    // pending against a transfer still standing.
+    if (item.orderId) {
       const order = await ctx.db.get(item.orderId);
       if (order) {
-        await ctx.db.patch(item.orderId, {
-          paymentStatus: "refunded",
-          updatedAt: now,
-        });
+        if (args.status === "completed") {
+          await ctx.db.patch(item.orderId, {
+            paymentStatus: "refunded",
+            refundStatus: "processed",
+            // The refund carried `reverse_all` whenever a transfer existed, so
+            // Razorpay has unwound the seller's share along with it.
+            ...(order.razorpayTransferId ? { transferStatus: "reversed" as const } : {}),
+            updatedAt: now,
+          });
+        } else {
+          // A failed refund leaves the customer owed money. Say so on the
+          // order rather than leaving it reading "pending" indefinitely.
+          await ctx.db.patch(item.orderId, {
+            refundStatus: "failed",
+            updatedAt: now,
+          });
+        }
       }
     }
   }

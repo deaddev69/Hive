@@ -58,7 +58,7 @@ crons.interval(
 
 // Process refund queue every 15 minutes (was 5 — reduced to cut I/O)
 crons.interval(
-  "process_refund_queue_every_5_minutes",
+  "process_refund_queue_every_15_minutes",
   { minutes: 15 },
   internal.payments.processRefundQueue
 );
