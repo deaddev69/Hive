@@ -217,6 +217,12 @@ export function OrderMoneyTrail({ orderId }: { orderId: Id<"orders"> }) {
 
   const failedRefund = refund.jobs.find((j: any) => j.status === "failed");
 
+  // Money is in, but there is no linked account for the seller's share to
+  // reach. Without this the panel just reads "not set" twice, which looks like
+  // a display bug rather than an order nobody can settle.
+  const sellerUnpayable =
+    data.orderPaymentStatus === "paid" && !route.linkedAccountId && !route.transferId;
+
   return (
     <div className="space-y-3">
       {statusMismatch && (
@@ -227,6 +233,23 @@ export function OrderMoneyTrail({ orderId }: { orderId: Id<"orders"> }) {
             <span className="font-mono">{data.orderPaymentStatus}</span>. The
             customer has paid and the order is not being treated as paid.
           </p>
+        </div>
+      )}
+
+      {sellerUnpayable && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3 flex items-start gap-2">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-700 mt-0.5 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-[11px] text-amber-950 font-semibold">
+              {money.sellerPayoutPaise === null
+                ? "This seller has no Razorpay linked account, so their share cannot be paid out automatically."
+                : `${formatCurrency(money.sellerPayoutPaise)} is owed to this seller, but they have no Razorpay linked account so it cannot be paid out automatically.`}
+            </p>
+            <p className="text-[10px] text-amber-800 mt-0.5">
+              The customer&apos;s money is captured and sitting in Hive&apos;s account. Onboard the
+              boutique to Razorpay Route, or settle them by bank transfer.
+            </p>
+          </div>
         </div>
       )}
 
@@ -305,7 +328,10 @@ export function OrderMoneyTrail({ orderId }: { orderId: Id<"orders"> }) {
         />
         <div className="border-t border-hive-border/40 my-2" />
         <Money label="Courier quoted" paise={data.estimatedCourierCostPaise} />
-        <Money label="Courier actual" paise={data.actualCourierCostPaise} />
+        <Money
+          label="Courier actual"
+          paise={data.hasShipment ? data.actualCourierCostPaise : null}
+        />
         {money.source !== "pricingSnapshot" && (
           <p className="text-[10px] text-amber-700 mt-2">
             Legacy order — placed before the pricing snapshot existed, so the fee
@@ -434,7 +460,13 @@ export function OrderMoneyTrail({ orderId }: { orderId: Id<"orders"> }) {
             />
           </>
         ) : (
-          <p className="text-[11px] text-slate-400">No shipment booked yet.</p>
+          <p className="text-[11px] text-slate-400">
+            {["pending_payment", "pending_confirmation"].includes(data.orderStatus)
+              ? "No shipment yet — the boutique has not accepted this order."
+              : data.orderStatus === "cancelled"
+                ? "No shipment — this order was cancelled before dispatch."
+                : "No shipment yet — the boutique has not marked this order ready for pickup. Tracking, the rider's details and delivery times appear here once Porter books a trip."}
+          </p>
         )}
 
         {returnCourier && (

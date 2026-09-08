@@ -223,6 +223,11 @@ export const getOrderFinancialsAdmin = query({
       courier: shipment ? shipmentView(shipment) : null,
       returnCourier: returnShipment ? shipmentView(returnShipment) : null,
 
+      // Why the Porter card is empty, so the panel can say so rather than
+      // leaving the reader to guess whether something failed.
+      orderStatus: order.status,
+      hasShipment: !!order.shipmentId,
+
       // ── The split ───────────────────────────────────────────────────────
       money: buildMoneySplit(order),
       estimatedCourierCostPaise:
