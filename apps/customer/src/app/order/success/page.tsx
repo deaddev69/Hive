@@ -14,7 +14,6 @@ import {
   RotateCcw,
   Headphones,
   Lock,
-  Sparkles,
 } from "lucide-react";
 import { useOrderStore } from "@/store/order-store";
 import { useQuery } from "convex/react";
@@ -25,13 +24,28 @@ import { ScratchRewardCard } from "@/components/checkout/ScratchRewardCard";
 import { SponsoredOfferCard } from "@/components/checkout/SponsoredOfferCard";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Redesigned Post-Purchase Confirmation (Lean, Focused, Monetizable)
-// Layer 1: Confirmation Hero (Payment successful, amount, order #)
-// Layer 2: Delivery Reassurance (90-Min Express, Lucide Zap vector icon)
-// Layer 3: Attention Surface (Interactive Scratch Reward & Sponsored Offer)
-// Layer 4: Primary & Secondary Actions (View Order Details → & Continue Shopping)
-// Layer 5: Trust & Reassurance Strip
+// Non-blocking Error Boundary for promotional slots
 // ─────────────────────────────────────────────────────────────────────────────
+class SilentErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  override componentDidCatch(error: any) {
+    console.warn("Non-blocking promotion error suppressed:", error);
+  }
+  override render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
+
 function OrderSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -165,23 +179,8 @@ function OrderSuccessContent() {
       {/* LAYER 1: CONFIRMATION HERO                                          */}
       {/* ─────────────────────────────────────────────────────────────────── */}
       <section className="relative w-full rounded-3xl bg-white border border-stone-200/80 p-6 sm:p-7 shadow-xs text-center overflow-hidden">
-        {/* Confetti celebration accents */}
+        {/* Checkmark badge */}
         <div className="relative inline-flex items-center justify-center mb-3">
-          {/* Ambient celebration particles */}
-          <div className="absolute -top-3 -left-4 text-amber-400 rotate-12 select-none pointer-events-none">
-            <Sparkles className="w-4 h-4 fill-amber-300" />
-          </div>
-          <div className="absolute -top-3.5 -right-4 text-amber-400 -rotate-12 select-none pointer-events-none">
-            <Sparkles className="w-4 h-4 fill-amber-300" />
-          </div>
-          <div className="absolute -bottom-1 -left-5 text-emerald-400 select-none pointer-events-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-          </div>
-          <div className="absolute -bottom-1 -right-5 text-amber-400 select-none pointer-events-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
-          </div>
-
-          {/* Green checkmark circle */}
           <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 border-2 border-white">
             <Check className="w-6 h-6 stroke-[3]" />
           </div>
@@ -251,19 +250,26 @@ function OrderSuccessContent() {
 
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* LAYER 3: ATTENTION SURFACE (REWARDS & SPONSORED OFFERS)             */}
+      {/* Only rendered when active, eligible campaigns exist.               */}
       {/* ─────────────────────────────────────────────────────────────────── */}
-      {/* Slot 1: Gamified Scratch Card Reward */}
-      <section>
-        <ScratchRewardCard
-          orderNumber={resolvedOrder.id}
-          promotion={rewardPromotions?.[0]}
-        />
-      </section>
+      <SilentErrorBoundary>
+        {/* Slot 1: Gamified Scratch Card Reward */}
+        {rewardPromotions && rewardPromotions.length > 0 && (
+          <section>
+            <ScratchRewardCard
+              orderNumber={resolvedOrder.id}
+              promotion={rewardPromotions[0]}
+            />
+          </section>
+        )}
 
-      {/* Slot 2: Sponsored / Partner Brand Promotion */}
-      <section>
-        <SponsoredOfferCard promotion={sponsoredPromotions?.[0]} />
-      </section>
+        {/* Slot 2: Sponsored / Partner Brand Promotion */}
+        {sponsoredPromotions && sponsoredPromotions.length > 0 && (
+          <section>
+            <SponsoredOfferCard promotion={sponsoredPromotions[0]} />
+          </section>
+        )}
+      </SilentErrorBoundary>
 
       {/* ─────────────────────────────────────────────────────────────────── */}
       {/* LAYER 4: PRIMARY & SECONDARY ACTIONS                                */}
@@ -331,10 +337,6 @@ function OrderSuccessSkeleton() {
       <div className="h-64 rounded-3xl bg-stone-100 border border-stone-200/60" />
       {/* Delivery Card Skeleton */}
       <div className="h-20 rounded-2xl bg-stone-100 border border-stone-200/60" />
-      {/* Scratch Card Skeleton */}
-      <div className="h-36 rounded-3xl bg-stone-100 border border-stone-200/60" />
-      {/* Sponsored Banner Skeleton */}
-      <div className="h-28 rounded-2xl bg-stone-100 border border-stone-200/60" />
       {/* Action Buttons */}
       <div className="h-12 rounded-2xl bg-stone-200" />
       <div className="h-12 rounded-2xl bg-stone-100 border border-stone-200" />

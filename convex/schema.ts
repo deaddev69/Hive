@@ -2671,7 +2671,8 @@ export default defineSchema({
                     v.literal("archived")
                   ),
     priority:     v.number(), // Sort priority (1 is highest)
-    badge:        v.optional(v.string()), // e.g. "Just for you ✨", "Sponsored · The Linen Club"
+    ownerType:    v.optional(v.union(v.literal("hive"), v.literal("partner"))), // Explicit ownership ("hive" vs "partner")
+    badge:        v.optional(v.string()), // e.g. "Featured on Hive", "Sponsored · The Linen Club"
     title:        v.string(), // e.g. "Scratch & Win Rewards", "Flat 20% Off"
     subtitle:     v.optional(v.string()), // e.g. "Get a reward for your next Hive purchase.", "on your next purchase"
     creativeUrl:  v.optional(v.string()),

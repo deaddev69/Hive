@@ -60,6 +60,9 @@ export default function AdminPromotionsPage() {
   const creativeFileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Track the last suggested badge so manual edits are never silently overwritten
+  const [lastSuggestedBadge, setLastSuggestedBadge] = useState<string>("Sponsored · The Linen Club");
+
   // Structured Builder Form State
   const [form, setForm] = useState<{
     name: string;
@@ -67,6 +70,7 @@ export default function AdminPromotionsPage() {
     placement: "ORDER_SUCCESS_REWARD" | "ORDER_SUCCESS_SPONSORED";
     status: "draft" | "active" | "scheduled";
     priority: number;
+    ownerType: "hive" | "partner";
     badge: string;
     title: string;
     subtitle: string;
@@ -98,13 +102,14 @@ export default function AdminPromotionsPage() {
     placement: "ORDER_SUCCESS_SPONSORED",
     status: "active",
     priority: 2,
+    ownerType: "partner",
     badge: "Sponsored · The Linen Club",
     title: "Flat 20% Off",
     subtitle: "on your next purchase",
     creativeUrl: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=600&q=80",
     brandLogoUrl: "",
     aspectRatio: "1:1",
-    ctaText: "Shop Now →",
+    ctaText: "Shop Now",
     destinationType: "store",
     destinationValue: "the-linen-club",
     brandName: "The Linen Club",
@@ -121,6 +126,46 @@ export default function AdminPromotionsPage() {
     maxImpressions: 1,
     cooldownDays: 30,
   });
+
+  const handleBrandNameChange = (newBrandName: string) => {
+    const suggested =
+      form.ownerType === "hive"
+        ? "Featured on Hive"
+        : newBrandName
+        ? `Sponsored · ${newBrandName}`
+        : "";
+    setForm((prev) => {
+      const shouldUpdateBadge = !prev.badge || prev.badge === lastSuggestedBadge;
+      return {
+        ...prev,
+        brandName: newBrandName,
+        badge: shouldUpdateBadge ? suggested : prev.badge,
+      };
+    });
+    if (!form.badge || form.badge === lastSuggestedBadge) {
+      setLastSuggestedBadge(suggested);
+    }
+  };
+
+  const handleOwnerTypeChange = (newOwnerType: "hive" | "partner") => {
+    const suggested =
+      newOwnerType === "hive"
+        ? "Featured on Hive"
+        : form.brandName
+        ? `Sponsored · ${form.brandName}`
+        : "Sponsored";
+    setForm((prev) => {
+      const shouldUpdateBadge = !prev.badge || prev.badge === lastSuggestedBadge;
+      return {
+        ...prev,
+        ownerType: newOwnerType,
+        badge: shouldUpdateBadge ? suggested : prev.badge,
+      };
+    });
+    if (!form.badge || form.badge === lastSuggestedBadge) {
+      setLastSuggestedBadge(suggested);
+    }
+  };
 
   // Cloudflare R2 / CDN Direct File Upload Helper
   const uploadFileToR2 = async (
@@ -210,19 +255,22 @@ export default function AdminPromotionsPage() {
 
   const handleOpenEdit = (promo: any) => {
     setEditingPromoId(promo._id);
+    const initialBadge = promo.badge || "";
+    setLastSuggestedBadge(initialBadge);
     setForm({
       name: promo.name || "",
       type: promo.type || "sponsored_banner",
       placement: promo.placement || "ORDER_SUCCESS_SPONSORED",
       status: promo.status || "active",
       priority: promo.priority || 1,
-      badge: promo.badge || "",
+      ownerType: promo.ownerType || (promo.type === "brand_offer" ? "hive" : "partner"),
+      badge: initialBadge,
       title: promo.title || "",
       subtitle: promo.subtitle || "",
       creativeUrl: promo.creativeUrl || "",
       brandLogoUrl: promo.brandLogoUrl || "",
       aspectRatio: promo.aspectRatio || "1:1",
-      ctaText: promo.ctaText || "Shop Now →",
+      ctaText: (promo.ctaText || "Shop Now").replace(/\s*(?:→|->|>)\s*$/, "").trim(),
       destinationType: promo.destination?.type || (promo.ctaLink?.startsWith("http") ? "external" : "store"),
       destinationValue: promo.destination?.value || promo.ctaLink || "",
       brandName: promo.brandName || "",
@@ -266,13 +314,14 @@ export default function AdminPromotionsPage() {
         placement: form.placement,
         status: statusOverride || form.status,
         priority: Number(form.priority) || 1,
+        ownerType: form.ownerType,
         badge: form.badge || undefined,
         title: form.title,
         subtitle: form.subtitle || undefined,
         creativeUrl: form.creativeUrl || undefined,
         brandLogoUrl: form.brandLogoUrl || undefined,
         aspectRatio: form.aspectRatio,
-        ctaText: form.ctaText,
+        ctaText: (form.ctaText || "Shop Now").replace(/\s*(?:→|->|>)\s*$/, "").trim(),
         destination: {
           type: form.destinationType,
           value: destinationValue,
@@ -390,7 +439,7 @@ export default function AdminPromotionsPage() {
             <Sparkles className="w-8 h-8 text-amber-400 mx-auto" />
             <p className="text-sm font-semibold text-slate-700">No promotions found</p>
             <p className="text-xs text-slate-400">
-              The order confirmation screen automatically uses high-converting default fallbacks when no campaigns are active.
+              The order confirmation screen renders clean transactional confirmations when no campaigns are active.
             </p>
           </div>
         ) : (
@@ -554,6 +603,17 @@ export default function AdminPromotionsPage() {
                       />
                     </div>
                     <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Campaign Ownership *</label>
+                      <select
+                        value={form.ownerType}
+                        onChange={(e) => handleOwnerTypeChange(e.target.value as "hive" | "partner")}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white"
+                      >
+                        <option value="partner">Partner Brand (Sponsored)</option>
+                        <option value="hive">Hive-Owned (Featured on Hive)</option>
+                      </select>
+                    </div>
+                    <div>
                       <label className="block font-semibold text-slate-700 mb-1">Promotion Type *</label>
                       <select
                         value={form.type}
@@ -631,7 +691,7 @@ export default function AdminPromotionsPage() {
                         <input
                           type="text"
                           value={form.brandName}
-                          onChange={(e) => setForm({ ...form, brandName: e.target.value })}
+                          onChange={(e) => handleBrandNameChange(e.target.value)}
                           placeholder="The Linen Club"
                           className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white"
                         />
@@ -813,10 +873,10 @@ export default function AdminPromotionsPage() {
                   </div>
                 </div>
 
-                {/* 3. Destination */}
+                {/* 3. Destination & CTA */}
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                  <span className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">3. Destination (Type-Safe)</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <span className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">3. Destination & CTA</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                       <label className="block font-semibold text-slate-700 mb-1">Destination Target</label>
                       <select
@@ -838,6 +898,16 @@ export default function AdminPromotionsPage() {
                         value={form.destinationValue}
                         onChange={(e) => setForm({ ...form, destinationValue: e.target.value })}
                         placeholder={form.destinationType === "external" ? "https://..." : "e.g. the-linen-club"}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">CTA Button Text *</label>
+                      <input
+                        type="text"
+                        value={form.ctaText}
+                        onChange={(e) => setForm({ ...form, ctaText: e.target.value })}
+                        placeholder="Shop Now"
                         className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white"
                       />
                     </div>
@@ -954,9 +1024,11 @@ export default function AdminPromotionsPage() {
                   {/* Rendered Live Preview Card */}
                   {form.type === "scratch_card" ? (
                     <div className="w-full rounded-2xl bg-gradient-to-br from-[#FFFBEB] via-[#FEF3C7]/70 to-[#FDE68A]/40 border border-amber-200/80 p-3.5 shadow-2xs">
-                      <span className="px-2 py-0.5 rounded-full bg-amber-200 text-[9px] font-bold text-amber-900 block w-fit mb-1">
-                        {form.badge || "Just for you ✨"}
-                      </span>
+                      {form.badge && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-200 text-[9px] font-bold text-amber-900 block w-fit mb-1">
+                          {form.badge.replace(/[✨🎉★☆]/g, "").trim()}
+                        </span>
+                      )}
                       <h4 className="font-black text-stone-900 text-sm leading-snug">
                         {form.title || "Scratch & Win Rewards"}
                       </h4>
@@ -964,8 +1036,9 @@ export default function AdminPromotionsPage() {
                         {form.subtitle || "Get a reward for your next Hive purchase."}
                       </p>
                       <div className="mt-2.5 flex items-center justify-between">
-                        <span className="px-3 py-1 rounded-full bg-stone-900 text-white text-[10px] font-bold">
-                          {form.ctaText || "Scratch Now →"}
+                        <span className="px-3 py-1 rounded-full bg-stone-900 text-white text-[10px] font-bold inline-flex items-center gap-1">
+                          <span>{(form.ctaText || "Scratch Now").replace(/\s*(?:→|->|>)\s*$/, "").trim()}</span>
+                          <ArrowRight className="w-2.5 h-2.5" />
                         </span>
                         <div className="w-12 h-12 rounded-xl bg-amber-400 flex items-center justify-center text-amber-950 font-bold text-[9px] shadow-2xs border border-amber-300">
                           <Gift className="w-4 h-4" />
@@ -976,7 +1049,7 @@ export default function AdminPromotionsPage() {
                     <div className="w-full rounded-2xl border border-stone-200 bg-white p-3 shadow-2xs flex items-center justify-between gap-2.5">
                       <div className="flex-1 min-w-0">
                         <span className="text-[8px] font-bold tracking-wider text-stone-400 uppercase block">
-                          {form.badge || "Sponsored · Brand"}
+                          {form.badge || (form.ownerType === "hive" ? "Featured on Hive" : form.brandName ? `Sponsored · ${form.brandName}` : "Sponsored")}
                         </span>
                         <h4 className="font-black text-stone-900 text-xs mt-0.5 leading-snug truncate">
                           {form.title || "Flat 20% Off"}
@@ -984,8 +1057,9 @@ export default function AdminPromotionsPage() {
                         <p className="text-[9px] text-stone-500 truncate">
                           {form.subtitle || "on your next purchase"}
                         </p>
-                        <span className="mt-2 inline-block px-2.5 py-0.5 rounded-full border border-stone-300 text-[9px] font-bold text-stone-800">
-                          {form.ctaText || "Shop Now →"}
+                        <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-stone-300 text-[9px] font-bold text-stone-800">
+                          <span>{(form.ctaText || "Shop Now").replace(/\s*(?:→|->|>)\s*$/, "").trim()}</span>
+                          <ArrowRight className="w-2.5 h-2.5" />
                         </span>
                       </div>
                       <div className="w-16 h-16 rounded-lg bg-stone-100 border border-stone-200 shrink-0 overflow-hidden relative flex items-center justify-center">

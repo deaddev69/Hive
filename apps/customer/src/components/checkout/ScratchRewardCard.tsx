@@ -27,14 +27,19 @@ export const ScratchRewardCard: React.FC<ScratchRewardCardProps> = ({
   promotion,
 }) => {
   const { token } = useSessionStore();
-  const promotionId = promotion?._id || "default_scratch_reward";
+  const promotionId = promotion?._id;
 
   // Check if this order already claimed a reward
-  const existingClaim = useQuery(api.promotions.getExistingClaim, {
-    orderNumber,
-    promotionId,
-    token: token || undefined,
-  });
+  const existingClaim = useQuery(
+    api.promotions.getExistingClaim,
+    promotionId
+      ? {
+          orderNumber,
+          promotionId,
+          token: token || undefined,
+        }
+      : "skip"
+  );
 
   const claimRewardMutation = useMutation(api.promotions.claimScratchReward);
 
@@ -50,10 +55,10 @@ export const ScratchRewardCard: React.FC<ScratchRewardCardProps> = ({
 
   // Sync existing claim from backend
   useEffect(() => {
-    if (existingClaim?.claimed) {
+    if (existingClaim?.claimed && existingClaim.rewardCode) {
       setRevealedReward({
         code: existingClaim.rewardCode,
-        title: existingClaim.rewardTitle,
+        title: existingClaim.rewardTitle || "Reward Unlocked",
         subtitle: "on your next order",
       });
       setIsRevealed(true);
@@ -75,7 +80,7 @@ export const ScratchRewardCard: React.FC<ScratchRewardCardProps> = ({
   };
 
   const handleStartScratch = async () => {
-    if (isRevealed || isClaiming) return;
+    if (isRevealed || isClaiming || !promotionId) return;
     setIsScratching(true);
     setIsClaiming(true);
 
@@ -98,19 +103,10 @@ export const ScratchRewardCard: React.FC<ScratchRewardCardProps> = ({
         setIsClaiming(false);
         triggerCelebration();
       }, 700);
-    } catch {
-      // Fallback safe client reveal with zero disruption to order confirmation
-      setTimeout(() => {
-        setRevealedReward({
-          code: "HIVE100",
-          title: "₹100 OFF",
-          subtitle: "on your next order",
-        });
-        setIsRevealed(true);
-        setIsScratching(false);
-        setIsClaiming(false);
-        triggerCelebration();
-      }, 700);
+    } catch (err: any) {
+      setIsScratching(false);
+      setIsClaiming(false);
+      toast.error(err?.message || "Unable to claim reward at this time.");
     }
   };
 
@@ -125,6 +121,11 @@ export const ScratchRewardCard: React.FC<ScratchRewardCardProps> = ({
       toast.info("Code: " + revealedReward.code);
     }
   };
+
+  if (!promotion) return null;
+
+  const cleanCtaText = (promotion.ctaText || "Scratch Now").replace(/\s*(?:→|->|>)\s*$/, "").trim();
+  const cleanBadge = promotion.badge ? promotion.badge.replace(/[✨🎉★☆]/g, "").trim() : null;
 
   return (
     <div className="relative w-full rounded-3xl bg-gradient-to-br from-[#FFFBEB] via-[#FEF3C7]/70 to-[#FDE68A]/40 border border-amber-200/80 p-5 shadow-xs overflow-hidden">
@@ -145,17 +146,21 @@ export const ScratchRewardCard: React.FC<ScratchRewardCardProps> = ({
                 transition={{ duration: 0.2 }}
                 className="space-y-1.5"
               >
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-200/70 text-[10px] font-bold text-amber-900 tracking-wide">
-                  {promotion?.badge || "Just for you ✨"}
-                </span>
+                {cleanBadge && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-200/70 text-[10px] font-bold text-amber-900 tracking-wide">
+                    {cleanBadge}
+                  </span>
+                )}
 
                 <h3 className="text-base sm:text-lg font-black text-stone-900 leading-tight">
-                  {promotion?.title || "Scratch & Win Rewards"}
+                  {promotion.title || "Scratch & Win Rewards"}
                 </h3>
 
-                <p className="text-xs text-stone-600 font-medium leading-relaxed max-w-[210px]">
-                  {promotion?.subtitle || "Get exciting offers from Hive and our partner brands."}
-                </p>
+                {promotion.subtitle && (
+                  <p className="text-xs text-stone-600 font-medium leading-relaxed max-w-[210px]">
+                    {promotion.subtitle}
+                  </p>
+                )}
 
                 <div className="pt-2">
                   <button
@@ -171,7 +176,7 @@ export const ScratchRewardCard: React.FC<ScratchRewardCardProps> = ({
                       </>
                     ) : (
                       <>
-                        <span>{promotion?.ctaText || "Scratch Now"}</span>
+                        <span>{cleanCtaText}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </>
                     )}
@@ -187,39 +192,43 @@ export const ScratchRewardCard: React.FC<ScratchRewardCardProps> = ({
                 className="space-y-1.5"
               >
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-200/80 text-[10px] font-bold text-amber-900">
-                  You won! 🎉
+                  Reward Unlocked
                 </span>
 
                 <h3 className="text-2xl font-black text-stone-900 tracking-tight">
-                  {revealedReward?.title || "₹100 OFF"}
+                  {revealedReward?.title || "Special Offer"}
                 </h3>
 
-                <p className="text-xs text-stone-600 font-medium">
-                  {revealedReward?.subtitle || "on your next order"}
-                </p>
+                {revealedReward?.subtitle && (
+                  <p className="text-xs text-stone-600 font-medium">
+                    {revealedReward.subtitle}
+                  </p>
+                )}
 
                 {/* Code Pill */}
-                <div className="pt-1.5 flex flex-col gap-1.5">
-                  <button
-                    type="button"
-                    onClick={handleCopyCode}
-                    className="inline-flex items-center justify-between gap-2.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white border border-amber-200 text-stone-900 shadow-2xs transition-colors cursor-pointer w-fit group"
-                  >
-                    <span className="font-mono text-xs font-extrabold tracking-wider text-stone-900">
-                      {revealedReward?.code || "HIVE100"}
-                    </span>
-                    {copied ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 transition-colors" />
-                    )}
-                  </button>
+                {revealedReward?.code && (
+                  <div className="pt-1.5 flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleCopyCode}
+                      className="inline-flex items-center justify-between gap-2.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white border border-amber-200 text-stone-900 shadow-2xs transition-colors cursor-pointer w-fit group"
+                    >
+                      <span className="font-mono text-xs font-extrabold tracking-wider text-stone-900">
+                        {revealedReward.code}
+                      </span>
+                      {copied ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 transition-colors" />
+                      )}
+                    </button>
 
-                  <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-                    <Check className="w-3 h-3 stroke-[2.5]" />
-                    <span>Coupon added to your account</span>
+                    <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+                      <Check className="w-3 h-3 stroke-[2.5]" />
+                      <span>Coupon added to your account</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
