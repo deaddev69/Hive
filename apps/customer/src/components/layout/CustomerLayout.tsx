@@ -5,6 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { useLocation } from "@/context/LocationContext";
 import { Navbar } from "./Navbar";
 import { CheckoutHeader } from "./CheckoutHeader";
+import { OrderConfirmationHeader } from "./OrderConfirmationHeader";
 import { Footer } from "./Footer";
 import { LocationDrawer } from "./LocationDrawer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
@@ -21,13 +22,16 @@ export const CustomerLayout: React.FC<{ children: React.ReactNode }> = ({ childr
   const isPdp = pathname ? /^\/products\/[^/]+$/.test(pathname) && pathname !== "/products" : false;
 
   const isCheckoutPage = pathname?.startsWith("/checkout") ?? false;
+  const isOrderConfirmation = pathname?.startsWith("/order/success") ?? false;
   const backHref = pathname === "/checkout/review" ? "/checkout/address" : "/cart";
   const subline = pathname === "/checkout/review" ? "Step 2 of 2 • Review & Pay" : "Step 1 of 2 • Delivery Address";
 
   return (
     <div className="flex flex-col min-h-screen">
 
-      {isCheckoutPage ? (
+      {isOrderConfirmation ? (
+        <OrderConfirmationHeader />
+      ) : isCheckoutPage ? (
         <CheckoutHeader backHref={backHref} subline={subline} />
       ) : (
         <Navbar />

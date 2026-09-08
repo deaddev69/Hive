@@ -231,7 +231,7 @@ export async function generateInvoicePdf(invoice: InvoiceData, logoUrl?: string)
   const addrLine1 = (addr.line1 || "Kochi, Kerala").substring(0, 32);
   page.drawText(addrLine1, { x: 315, y: cardY + 39, size: 8, font: fontHelvetica, color: colorDark });
   page.drawText(`${addr.city || "Kochi"}, ${addr.state || "Kerala"} - ${addr.pincode || "682024"}`, { x: 315, y: cardY + 26, size: 8, font: fontHelveticaBold, color: colorDark });
-  page.drawText("Dispatch Mode: 90-Min Express", { x: 315, y: cardY + 13, size: 7.5, font: fontHelveticaBold, color: colorAmber });
+  page.drawText("90-Min Express Delivery", { x: 315, y: cardY + 13, size: 7.5, font: fontHelveticaBold, color: colorAmber });
 
   // ── 4. ITEMISED TAX INVOICE TABLE ────────────────────────────────────────
   let currentY = cardY - 24;

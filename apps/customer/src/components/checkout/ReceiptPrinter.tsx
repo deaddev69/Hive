@@ -70,7 +70,7 @@ const printingKeyframeTimes = [
 const statusLabels: Record<ReceiptPrinterStage, ReactNode> = {
   processing: "Verifying order with Hive...",
   printing: "Printing your Hive receipt...",
-  complete: "Order Confirmed & Paid",
+  complete: "Order confirmed",
 };
 
 function useReceiptPrinter(component: string) {
@@ -120,7 +120,7 @@ export function ReceiptPrinterMachine({
   return (
     <div
       className={cn(
-        "relative isolate w-full overflow-hidden rounded-3xl border border-stone-200/80 bg-hive-cream dark:bg-stone-900 p-4 pb-5 shadow-sm text-stone-900",
+        "relative isolate w-full overflow-hidden rounded-3xl border border-stone-200/80 bg-white dark:bg-stone-900 p-4 pb-5 shadow-sm text-stone-900",
         className
       )}
       {...props}

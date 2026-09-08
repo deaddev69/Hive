@@ -8,7 +8,7 @@
  */
 import { useConvex } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 // Type-only: erased at compile time, so it creates no runtime dependency.
 //
 // `generateInvoicePdf` itself is imported dynamically at each call site below
@@ -18,9 +18,23 @@ import { useState } from "react";
 // press. Loading it on click moves it into an on-demand chunk instead.
 import type { InvoiceData } from "@/lib/pdfGenerator";
 
+type DownloadState = "idle" | "downloading" | "success" | "error";
+
 export function useInvoiceDownload() {
   const convex = useConvex();
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [state, setState] = useState<DownloadState>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetAfterDelay = useCallback((delay = 3000) => {
+    if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
+    clearTimerRef.current = setTimeout(() => {
+      setActiveId(null);
+      setState("idle");
+      setErrorMessage(null);
+    }, delay);
+  }, []);
 
   /**
    * Helper to trigger a browser file download from a Blob
@@ -42,7 +56,9 @@ export function useInvoiceDownload() {
   const downloadFromOrderData = async (order: any) => {
     if (!order) return;
     const orderNumber = order.id || order.orderNumber || "ORDER";
-    setDownloadingId(orderNumber);
+    setActiveId(orderNumber);
+    setState("downloading");
+    setErrorMessage(null);
 
     try {
       const invoiceData: InvoiceData = {
@@ -90,11 +106,13 @@ export function useInvoiceDownload() {
       const { generateInvoicePdf } = await import("@/lib/pdfGenerator");
       const pdfBlob = await generateInvoicePdf(invoiceData);
       triggerBlobDownload(pdfBlob, `Hive_Tax_Invoice_${orderNumber}.pdf`);
+      setState("success");
+      resetAfterDelay();
     } catch (err) {
       console.error("Client-side invoice generation failed:", err);
-      alert("Could not generate invoice at this time. Please try again.");
-    } finally {
-      setDownloadingId(null);
+      setState("error");
+      setErrorMessage("Could not generate invoice. Tap to retry.");
+      resetAfterDelay(5000);
     }
   };
 
@@ -102,7 +120,10 @@ export function useInvoiceDownload() {
    * Look up an invoice by Convex order ID and open its PDF or fallback to client-side generation.
    */
   const downloadInvoiceByOrderId = async (orderId: string, fallbackOrder?: any) => {
-    setDownloadingId(orderId);
+    setActiveId(orderId);
+    setState("downloading");
+    setErrorMessage(null);
+
     try {
       const invoice = await convex.query(api.invoices.getInvoiceByOrderId, {
         orderId: orderId as any,
@@ -110,6 +131,8 @@ export function useInvoiceDownload() {
 
       if (invoice && invoice.pdfUrl) {
         window.open(invoice.pdfUrl, "_blank");
+        setState("success");
+        resetAfterDelay();
         return;
       }
 
@@ -123,25 +146,37 @@ export function useInvoiceDownload() {
         const { generateInvoicePdf } = await import("@/lib/pdfGenerator");
         const pdfBlob = await generateInvoicePdf(invoice);
         triggerBlobDownload(pdfBlob, `Hive_Tax_Invoice_${invoice.invoiceNumber}.pdf`);
+        setState("success");
+        resetAfterDelay();
         return;
       }
 
-      alert("No invoice available for this order yet.");
+      setState("error");
+      setErrorMessage("Invoice not available yet. Tap to retry.");
+      resetAfterDelay(5000);
     } catch (err) {
-      console.warn("Convex invoice lookup failed, attempting fallback generation:", err);
+      console.warn("Invoice download failed, attempting fallback:", err);
       if (fallbackOrder) {
-        await downloadFromOrderData(fallbackOrder);
-      } else {
-        alert("Failed to load invoice. Please try again.");
+        try {
+          await downloadFromOrderData(fallbackOrder);
+          return;
+        } catch {
+          // Fall through to error state below
+        }
       }
-    } finally {
-      setDownloadingId(null);
+      setState("error");
+      setErrorMessage("Failed to download invoice. Tap to retry.");
+      resetAfterDelay(5000);
     }
   };
 
   return {
     downloadInvoiceByOrderId,
     downloadFromOrderData,
-    isDownloading: (id: string) => downloadingId === id,
+    isDownloading: (id: string) => activeId === id && state === "downloading",
+    isSuccess: (id: string) => activeId === id && state === "success",
+    isError: (id: string) => activeId === id && state === "error",
+    errorMessage,
+    downloadState: state,
   };
 }

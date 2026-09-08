@@ -1,5 +1,5 @@
 // convex/adminLogistics.ts
-import { query, mutation, internalMutation, action } from "./_generated/server";
+import { query, mutation, internalMutation, internalQuery, action } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
@@ -1716,6 +1716,23 @@ export const prepareShiprocketShipmentInternal = internalMutation({
 /**
  * Updates shipment details with the response from the logistics provider.
  */
+/**
+ * The booking state of one shipment, for the Porter action to check before it
+ * creates anything. Actions cannot read the database directly.
+ */
+export const getShipmentBookingStateInternal = internalQuery({
+  args: { shipmentId: v.id("shipments") },
+  handler: async (ctx, args) => {
+    const shipment = await ctx.db.get(args.shipmentId);
+    if (!shipment) return null;
+    return {
+      awbNumber: shipment.awbNumber ?? "",
+      status: shipment.status,
+      trackingUrl: shipment.trackingUrl ?? null,
+    };
+  },
+});
+
 export const updateShipmentDetails = internalMutation({
   args: {
     shipmentId: v.id("shipments"),

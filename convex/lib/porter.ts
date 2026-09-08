@@ -1,6 +1,11 @@
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
+import {
+  resolveBookingDecision,
+  porterRequestId,
+  type PorterBookingResult,
+} from "./porterBooking";
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -106,16 +111,50 @@ export const createOrder = internalAction({
     // "call on arrival"). Shown to the rider alongside the address.
     deliveryInstructions: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<PorterBookingResult> => {
     if (!process.env.PORTER_API_URL || !process.env.PORTER_API_KEY) {
       throw new Error("Missing PORTER_API_URL or PORTER_API_KEY environment variable.");
     }
 
-    // We use the shipment ID as the requestId. Porter requires uuid max 32 chars.
-    const cryptoId = crypto.randomUUID().replace(/-/g, "");
+    // Refuse to book a rider this shipment already has.
+    //
+    // Every dispatch path reuses the shipment row, so a retry, a double-click
+    // or a second scheduler run all arrive here with a shipment that may
+    // already carry a CRN. Booking again dispatches a second real rider, bills
+    // the trip twice, and overwrites the first CRN so nobody can even find the
+    // original. Returning the existing booking makes the call idempotent, and
+    // the caller sees success because the shipment genuinely is booked.
+    const existing: {
+      awbNumber: string;
+      status: string;
+      trackingUrl: string | null;
+    } | null = await ctx.runQuery(
+      internal.adminLogistics.getShipmentBookingStateInternal,
+      { shipmentId: args.shipmentId }
+    );
+    if (!existing) {
+      throw new Error(`Shipment ${args.shipmentId} not found — refusing to book.`);
+    }
+
+    const decision = resolveBookingDecision(existing);
+    if (decision.action === "skip") {
+      console.warn(
+        `[PORTER] Booking skipped for ${args.orderNumber}: ${decision.reason}, CRN ${decision.crn}.`
+      );
+      return {
+        crn: decision.crn,
+        trackingUrl: existing.trackingUrl ?? undefined,
+        estimatedPickupTime: undefined,
+        alreadyBooked: true,
+      };
+    }
+
+    // Only a dead CRN gets folded into the request id, so a genuine re-book
+    // after a failure is a new request rather than a lookup of the old one.
+    const requestId = await porterRequestId(args.shipmentId, decision.deadCrn);
 
     const payload = {
-      request_id: cryptoId,
+      request_id: requestId,
       pickup_details: {
         address: args.pickupAddress,
       },
@@ -168,6 +207,7 @@ export const createOrder = internalAction({
       crn: crn,
       trackingUrl: trackingUrl,
       estimatedPickupTime: data.estimated_pickup_time,
+      alreadyBooked: false,
     };
   },
 });
