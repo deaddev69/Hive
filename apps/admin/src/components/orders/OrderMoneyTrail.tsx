@@ -145,6 +145,51 @@ function Card({
   );
 }
 
+/**
+ * Porter hands back two links: a tracking page for the job, and a live map for
+ * the rider once one is assigned. The seller portal shows both; admin was
+ * showing only the first, which meant the team fielding "where is my order"
+ * had less to go on than the boutique did.
+ */
+function TrackingLinks({
+  trackingUrl,
+  liveTrackingUrl,
+  label = "Open Porter tracking",
+}: {
+  trackingUrl: string | null;
+  liveTrackingUrl: string | null;
+  label?: string;
+}) {
+  if (!trackingUrl && !liveTrackingUrl) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 mt-2">
+      {liveTrackingUrl && (
+        <a
+          href={liveTrackingUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-hive-dark text-hive-gold text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity"
+        >
+          <Truck className="w-3 h-3" />
+          Track live
+        </a>
+      )}
+      {trackingUrl && (
+        <a
+          href={trackingUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-hive-border/60 text-[10px] font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          <Truck className="w-3 h-3" />
+          {label}
+        </a>
+      )}
+    </div>
+  );
+}
+
 export function OrderMoneyTrail({ orderId }: { orderId: Id<"orders"> }) {
   const data = useQuery(api.orderFinancials.getOrderFinancialsAdmin, { orderId });
 
@@ -363,21 +408,30 @@ export function OrderMoneyTrail({ orderId }: { orderId: Id<"orders"> }) {
                 ? `${courier.driverName}${courier.vehiclePlate ? ` · ${courier.vehiclePlate}` : ""}`
                 : "—"}
             </Row>
-            <Row label="Rider phone">{courier.driverPhone ?? "—"}</Row>
+            <Row label="Rider phone">
+              {courier.driverPhone ? (
+                <a
+                  href={`tel:${courier.driverPhone}`}
+                  className="font-mono text-hive-amber hover:underline"
+                >
+                  {courier.driverPhone}
+                </a>
+              ) : (
+                "—"
+              )}
+            </Row>
+            {courier.etaMinutes !== null && (
+              <Row label="ETA">
+                <span className="text-amber-700">{courier.etaMinutes} mins away</span>
+              </Row>
+            )}
             <Row label="Picked up">{stamp(courier.pickedUpAt)}</Row>
             <Row label="Delivered">{stamp(courier.deliveredAt)}</Row>
             <Row label="Last courier update">{stamp(courier.lastWebhookAt)}</Row>
-            {courier.trackingUrl && (
-              <a
-                href={courier.trackingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-hive-amber hover:underline"
-              >
-                <Truck className="w-3 h-3" />
-                Open Porter tracking
-              </a>
-            )}
+            <TrackingLinks
+              trackingUrl={courier.trackingUrl}
+              liveTrackingUrl={courier.liveTrackingUrl}
+            />
           </>
         ) : (
           <p className="text-[11px] text-slate-400">No shipment booked yet.</p>
@@ -394,17 +448,11 @@ export function OrderMoneyTrail({ orderId }: { orderId: Id<"orders"> }) {
             <CopyableId label="Return CRN" value={returnCourier.crn} />
             <Row label="Collected">{stamp(returnCourier.pickedUpAt)}</Row>
             <Row label="Back with seller">{stamp(returnCourier.deliveredAt)}</Row>
-            {returnCourier.trackingUrl && (
-              <a
-                href={returnCourier.trackingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1.5 text-[11px] font-bold text-hive-amber hover:underline"
-              >
-                <Truck className="w-3 h-3" />
-                Track return
-              </a>
-            )}
+            <TrackingLinks
+              trackingUrl={returnCourier.trackingUrl}
+              liveTrackingUrl={returnCourier.liveTrackingUrl}
+              label="Track return"
+            />
           </div>
         )}
       </Card>

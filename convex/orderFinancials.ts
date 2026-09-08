@@ -66,6 +66,44 @@ function buildMoneySplit(order: any) {
 }
 
 /**
+ * Porter's placeholder tracking link on sandbox bookings. Never show it — it
+ * goes nowhere and looks like a working link.
+ */
+const PLACEHOLDER_TRACKING_URL = "http://test.com";
+
+function usableUrl(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === PLACEHOLDER_TRACKING_URL) return null;
+  return trimmed;
+}
+
+/**
+ * One shipment as the admin needs to see it.
+ *
+ * Deliberately the same set the seller already gets on their own orders — the
+ * live tracking link, the rider's ETA and their phone number — because admin
+ * was the surface fielding "where is my order" with less information than the
+ * boutique had.
+ */
+function shipmentView(shipment: any) {
+  return {
+    provider: shipment.provider ?? null,
+    crn: shipment.providerBookingId || shipment.awbNumber || null,
+    status: shipment.status ?? null,
+    trackingUrl: usableUrl(shipment.trackingUrl),
+    liveTrackingUrl: usableUrl(shipment.liveTrackingUrl),
+    driverName: shipment.driverName ?? null,
+    driverPhone: shipment.driverPhone ?? null,
+    vehiclePlate: shipment.vehiclePlate ?? null,
+    etaMinutes: typeof shipment.etaMinutes === "number" ? shipment.etaMinutes : null,
+    pickedUpAt: shipment.pickedUpAt ?? null,
+    deliveredAt: shipment.deliveredAt ?? null,
+    lastWebhookAt: shipment.lastWebhookAt ?? null,
+  };
+}
+
+/**
  * Payment, Route settlement, refund and courier state for one order.
  *
  * Admin-only: it exposes Razorpay identifiers and the seller's payout position,
@@ -182,29 +220,8 @@ export const getOrderFinancialsAdmin = query({
         : null,
 
       // ── Porter ──────────────────────────────────────────────────────────
-      courier: shipment
-        ? {
-            provider: (shipment as any).provider ?? null,
-            crn: (shipment as any).awbNumber || null,
-            status: (shipment as any).status ?? null,
-            trackingUrl: (shipment as any).trackingUrl ?? null,
-            driverName: (shipment as any).driverName ?? null,
-            driverPhone: (shipment as any).driverPhone ?? null,
-            vehiclePlate: (shipment as any).vehiclePlate ?? null,
-            pickedUpAt: (shipment as any).pickedUpAt ?? null,
-            deliveredAt: (shipment as any).deliveredAt ?? null,
-            lastWebhookAt: (shipment as any).lastWebhookAt ?? null,
-          }
-        : null,
-      returnCourier: returnShipment
-        ? {
-            crn: (returnShipment as any).awbNumber || null,
-            status: (returnShipment as any).status ?? null,
-            trackingUrl: (returnShipment as any).trackingUrl ?? null,
-            pickedUpAt: (returnShipment as any).pickedUpAt ?? null,
-            deliveredAt: (returnShipment as any).deliveredAt ?? null,
-          }
-        : null,
+      courier: shipment ? shipmentView(shipment) : null,
+      returnCourier: returnShipment ? shipmentView(returnShipment) : null,
 
       // ── The split ───────────────────────────────────────────────────────
       money: buildMoneySplit(order),
