@@ -60,17 +60,20 @@ const fetchProductBySlug = cache((slug: string) =>
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   
-  if (getCategoryContent(slug)) {
-    return getCategoryMetadata(slug);
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!convexUrl) {
+    return getCategoryContent(slug) ? getCategoryMetadata(slug) : {};
   }
 
-  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-  if (!convexUrl) return {};
-
   try {
-    // 1. Check if slug belongs to a database category
+    // Same precedence as the page body: database category first, then editorial
+    // landing page, then product.
     const dbCategory = await fetchCategoryBySlug(slug);
     if (dbCategory) {
+      return getCategoryMetadata(slug);
+    }
+
+    if (getCategoryContent(slug)) {
       return getCategoryMetadata(slug);
     }
 
@@ -93,28 +96,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductOrCategoryPage({ params }: Props) {
   const { slug } = await params;
 
-  if (getCategoryContent(slug)) {
-    const formattedCategory = slug.charAt(0).toUpperCase() + slug.slice(1);
-    return (
-      <>
-        <BreadcrumbSchema 
-          items={[
-            { name: "Home", url: "/" },
-            { name: "Products", url: "/products" },
-            { name: formattedCategory, url: `/products/${slug}` },
-          ]} 
-        />
-        <ProductsClient initialCategorySlug={slug} />
-      </>
-    );
-  }
-
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
   if (!convexUrl) {
     return notFound();
   }
 
-  // 1. Check if slug belongs to a database category
+  // 1. A real database category wins. Its slug is passed through so the catalogue
+  //    filters to it (and, via getCatalogPage, to all of its descendants).
   let dbCategory = null;
   try {
     dbCategory = await fetchCategoryBySlug(slug);
@@ -123,17 +111,36 @@ export default async function ProductOrCategoryPage({ params }: Props) {
   }
 
   if (dbCategory) {
-    const formattedCategory = dbCategory.name;
     return (
       <>
-        <BreadcrumbSchema 
+        <BreadcrumbSchema
+          items={[
+            { name: "Home", url: "/" },
+            { name: "Products", url: "/products" },
+            { name: dbCategory.name, url: `/products/${slug}` },
+          ]}
+        />
+        <ProductsClient initialCategorySlug={slug} />
+      </>
+    );
+  }
+
+  // 2. An editorial landing page with no category behind it (women, men, sale,
+  //    accessories). These are marketing surfaces, not filters — none of these
+  //    slugs names a category — so they render the unfiltered catalogue plus
+  //    their SEO block rather than a category filter that cannot resolve.
+  if (getCategoryContent(slug)) {
+    const formattedCategory = slug.charAt(0).toUpperCase() + slug.slice(1);
+    return (
+      <>
+        <BreadcrumbSchema
           items={[
             { name: "Home", url: "/" },
             { name: "Products", url: "/products" },
             { name: formattedCategory, url: `/products/${slug}` },
-          ]} 
+          ]}
         />
-        <ProductsClient initialCategorySlug={slug} />
+        <ProductsClient />
       </>
     );
   }

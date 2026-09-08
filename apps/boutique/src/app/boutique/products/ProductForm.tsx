@@ -1386,9 +1386,16 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         ? autoCorrectCapitalization(data.customCare || "") 
         : (data.care || undefined);
       
+      // The picker writes a real category _id, so this is a lookup, not a guess.
+      // It used to fall back to allCategoriesList[0] when nothing matched, which
+      // filed the product under whichever category happened to sort first —
+      // silently, with no error the seller could see. Fail loudly instead.
       const primaryCatId = data.categoryId;
-      const foundCategory = allCategoriesList.find((c: any) => c._id === primaryCatId || c.slug === primaryCatId || c.name?.toLowerCase() === primaryCatId?.toLowerCase());
-      const resolvedCatId = foundCategory ? foundCategory._id : (allCategoriesList[0]?._id || primaryCatId);
+      const foundCategory = allCategoriesList.find((c: any) => c._id === primaryCatId);
+      if (!foundCategory) {
+        throw new Error("Please choose a category for this product before publishing.");
+      }
+      const resolvedCatId = foundCategory._id;
 
       const finalDescription = data.description.trim();
 

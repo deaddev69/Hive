@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import { CatalogLayout } from "@/components/catalog/CatalogLayout";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import { MobileFilterDrawer } from "@/components/catalog/MobileFilterDrawer";
@@ -75,28 +76,37 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
     return dbBoutiques.find((b) => b._id === boutiqueIdFromUrl);
   }, [dbBoutiques, boutiqueIdFromUrl]);
 
-  // When URL ?category=slug changes and categories load, pre-select the matching category
-  useEffect(() => {
-    if (!dbCategories) return;
-    if (!categorySlugFromUrl) {
-      // No category in URL — clear category filter but keep other filters
-      setFilters((prev) => ({ ...prev, categories: [] }));
-      return;
-    }
-    const canonicalSlug = categorySlugFromUrl === "women" ? "womens-ethnic" : 
-                          categorySlugFromUrl === "bags" ? "handbags" : 
-                          categorySlugFromUrl;
-    const match = dbCategories.find(
-      (c) => c.slug === canonicalSlug || 
-             c.name.toLowerCase().replace(/\s+/g, "-") === canonicalSlug ||
-             c.slug === categorySlugFromUrl ||
-             c.name.toLowerCase().replace(/\s+/g, "-") === categorySlugFromUrl
-    );
-    if (match) {
-      setFilters((prev) => ({ ...prev, categories: [match._id] }));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Resolve ?category=<slug> against the database by exact slug, and nothing else.
+  //
+  // There is deliberately no alias table and no name-derived fallback here. Both
+  // used to exist ("women" -> "womens-ethnic", "bags" -> "handbags") and were the
+  // reason a mistyped or retired slug silently rendered the entire catalogue: no
+  // branch matched, no category filter was applied, and the grid looked like a
+  // working "all products" page rather than a broken link. A category that needs
+  // a particular URL sets that URL in its own `slug` field in admin.
+  const categoryResolution = useMemo<
+    | { status: "none" }
+    | { status: "pending" }
+    | { status: "resolved"; id: Id<"categories">; name: string }
+    | { status: "unknown"; slug: string }
+  >(() => {
+    if (!categorySlugFromUrl) return { status: "none" };
+    if (dbCategories === undefined) return { status: "pending" };
+    const wanted = categorySlugFromUrl.trim().toLowerCase();
+    const match = dbCategories.find((c) => c.slug.toLowerCase() === wanted);
+    return match
+      ? { status: "resolved", id: match._id as Id<"categories">, name: match.name }
+      : { status: "unknown", slug: categorySlugFromUrl };
   }, [categorySlugFromUrl, dbCategories]);
+
+  useEffect(() => {
+    if (categoryResolution.status === "pending") return;
+    setFilters((prev) => ({
+      ...prev,
+      categories:
+        categoryResolution.status === "resolved" ? [categoryResolution.id] : [],
+    }));
+  }, [categoryResolution]);
 
   // Resolve selected category names for the results summary pill
   const selectedCategoryNames = useMemo(() => {
@@ -139,7 +149,15 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
     return args;
   }, [browseAll, latitude, longitude, filters, boutiqueIdFromUrl, currentPage, sortOption]);
 
-  const catalogPage = useQuery(api.products.getCatalogPage, queryArgs);
+  // A URL that names a category must never fall through to an unfiltered grid.
+  // While the slug is still resolving, and permanently if it resolves to
+  // nothing, the catalogue query is skipped rather than run without a category.
+  const catalogQueryArgs =
+    categoryResolution.status === "pending" || categoryResolution.status === "unknown"
+      ? "skip"
+      : queryArgs;
+
+  const catalogPage = useQuery(api.products.getCatalogPage, catalogQueryArgs);
 
   const activeFilterCount = countActiveFilters(filters);
 
@@ -178,6 +196,33 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
     setFilters(DEFAULT_FILTER_STATE);
     setCurrentPage(1);
   };
+
+  // The URL named a category that no longer exists. Say so, instead of quietly
+  // rendering every product in the catalogue as if the link had worked.
+  if (categoryResolution.status === "unknown") {
+    return (
+      <CatalogLayout breadcrumbs={[{ label: "All Products" }]}>
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 w-full">
+          <CategoryPillRail />
+          <div className="w-full flex flex-col items-center justify-center py-20 px-6 text-center gap-3">
+            <h1 className="text-xl font-serif font-extrabold text-hive-dark">
+              We couldn&apos;t find that category
+            </h1>
+            <p className="text-sm text-hive-text-muted max-w-sm leading-relaxed">
+              &ldquo;{categoryResolution.slug}&rdquo; isn&apos;t one of our categories any
+              more. Pick one above, or browse everything.
+            </p>
+            <Link
+              href="/products?browse=all"
+              className="mt-2 inline-flex items-center px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-colors"
+            >
+              Browse all products
+            </Link>
+          </div>
+        </div>
+      </CatalogLayout>
+    );
+  }
 
   if (catalogPage === undefined) {
     return (

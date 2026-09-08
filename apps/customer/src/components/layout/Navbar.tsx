@@ -1046,7 +1046,7 @@ export const Navbar: React.FC = () => {
                         key={subcat._id}
                         type="button"
                         onClick={() => {
-                          router.push(`/products/${subcat.slug}`);
+                          router.push(`/products?category=${encodeURIComponent(subcat.slug)}`);
                           setSearchOpen(false);
                         }}
                         className="flex flex-col items-center gap-2 flex-shrink-0 group cursor-pointer"
@@ -1159,7 +1159,7 @@ export const Navbar: React.FC = () => {
                             key={subcat._id}
                             type="button"
                             onClick={() => {
-                              router.push(`/products/${subcat.slug}`);
+                              router.push(`/products?category=${encodeURIComponent(subcat.slug)}`);
                               setSearchOpen(false);
                             }}
                             className="flex flex-col items-center gap-1.5 flex-shrink-0 group cursor-pointer"

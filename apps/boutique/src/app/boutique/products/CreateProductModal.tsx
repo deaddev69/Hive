@@ -690,9 +690,16 @@ export default function CreateProductModal({
       setUploadStatusText(productToEdit ? "Updating product catalog..." : "Publishing product...");
       setUploadingImages(false);
 
-      const rawCatId = selectedCategoryIds[0] || (allCategoriesList?.[0]?._id || "womens-ethnic");
-      const foundCat = allCategoriesList.find((c: any) => c._id === rawCatId || c.slug === rawCatId || c.name?.toLowerCase() === (rawCatId || "").toLowerCase());
-      const resolvedCatId = foundCat ? foundCat._id : (allCategoriesList?.[0]?._id || rawCatId);
+      // "womens-ethnic" was the old hardcoded fallback here. No category carries
+      // that slug, so whenever it was reached the mutation failed validation with
+      // an opaque error; the allCategoriesList[0] fallback beside it was worse,
+      // filing the product under an arbitrary category without saying so.
+      const rawCatId = selectedCategoryIds[0];
+      const foundCat = allCategoriesList.find((c: any) => c._id === rawCatId);
+      if (!foundCat) {
+        throw new Error("Please choose a category for this product before publishing.");
+      }
+      const resolvedCatId = foundCat._id;
 
       const finalMaterial = materialType === "Other" ? autoCorrectCapitalization(customMaterialType) : materialType;
       const finalCare = care === "Other" ? autoCorrectCapitalization(customCare) : care;
@@ -882,8 +889,9 @@ export default function CreateProductModal({
       } else {
         // Reset form
         setName("");
-        const defaultCatId = allCategoriesList[0]?._id || "";
-        setSelectedCategoryIds(defaultCatId ? [defaultCatId] : []);
+        // Start empty. Pre-selecting the first category made "seller forgot to
+        // pick one" indistinguishable from "seller chose the first one".
+        setSelectedCategoryIds([]);
         setDescription("");
         setStory("");
         setMaterialType("");

@@ -110,18 +110,16 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        // Carry the slug across. This rule used to send every /collections/<slug>
+        // to a bare /products, which is why homepage category tiles rendered the
+        // whole catalogue instead of the category that was clicked.
+        source: "/collections/:slug",
+        destination: "/products?category=:slug",
+        permanent: true,
+      },
+      {
         source: "/collections/:slug*",
         destination: "/products",
-        permanent: true,
-      },
-      {
-        source: "/category/ethnic-wer",
-        destination: "/products?category=womens-ethnic",
-        permanent: true,
-      },
-      {
-        source: "/category/ethnic-wear",
-        destination: "/products?category=womens-ethnic",
         permanent: true,
       },
       {
