@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
+import React, { useState, useRef } from "react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
+import { getPublicUrl } from "../../../../../../convex/media/urls";
 import {
   Sparkles,
   Plus,
@@ -25,6 +26,9 @@ import {
   Tag,
   MapPin,
   Calendar,
+  Upload,
+  Trash2,
+  Check,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -35,10 +39,19 @@ export default function AdminPromotionsPage() {
   const archivePromotion = useMutation(api.promotions.archivePromotion);
   const duplicatePromotion = useMutation(api.promotions.duplicatePromotion);
 
+  const generateUploadUrl = useAction(api.media.api.generateUploadUrl);
+  const commitUpload = useAction(api.media.api.commitUpload);
+
   const [filterTab, setFilterTab] = useState<"all" | "active" | "draft" | "archived">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingCreative, setUploadingCreative] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [showManualUrlInput, setShowManualUrlInput] = useState(false);
+
+  const creativeFileInputRef = useRef<HTMLInputElement>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
 
   // Structured Builder Form State
   const [form, setForm] = useState<{
@@ -51,6 +64,7 @@ export default function AdminPromotionsPage() {
     title: string;
     subtitle: string;
     creativeUrl: string;
+    brandLogoUrl: string;
     aspectRatio: "1:1" | "3:4" | "4:5" | "16:9";
     ctaText: string;
     destinationType: "product" | "store" | "category" | "promotion" | "external";
@@ -81,6 +95,7 @@ export default function AdminPromotionsPage() {
     title: "Flat 20% Off",
     subtitle: "on your next purchase",
     creativeUrl: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=600&q=80",
+    brandLogoUrl: "",
     aspectRatio: "1:1",
     ctaText: "Shop Now →",
     destinationType: "store",
@@ -99,6 +114,77 @@ export default function AdminPromotionsPage() {
     maxImpressions: 1,
     cooldownDays: 30,
   });
+
+  // Cloudflare R2 / CDN Direct File Upload Helper
+  const uploadFileToR2 = async (
+    file: File,
+    context: "banner_image" | "brand_logo"
+  ): Promise<string> => {
+    const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"];
+    if (!allowedMimeTypes.includes(file.type)) {
+      throw new Error("Invalid file format. Please upload JPG, PNG, or WebP.");
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error("File exceeds the 10MB maximum limit.");
+    }
+
+    const { presignedUrl, sessionId } = await generateUploadUrl({
+      mimeType: file.type,
+      fileSize: file.size,
+      ownerType: "admin",
+      ownerId: "promotions",
+      context,
+    });
+
+    const res = await fetch(presignedUrl, {
+      method: "PUT",
+      headers: { "Content-Type": file.type },
+      body: file,
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to upload image data to storage.");
+    }
+
+    const finalizedAsset = await commitUpload({ sessionId });
+    const cdnUrl = getPublicUrl(finalizedAsset, "original");
+    if (!cdnUrl) {
+      throw new Error("Failed to construct CDN image URL.");
+    }
+    return cdnUrl;
+  };
+
+  const handleCreativeFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    setUploadingCreative(true);
+    try {
+      const cdnUrl = await uploadFileToR2(file, "banner_image");
+      setForm((prev) => ({ ...prev, creativeUrl: cdnUrl }));
+    } catch (err: any) {
+      console.error("Creative upload failed:", err);
+      alert("Failed to upload creative banner: " + (err.message || String(err)));
+    } finally {
+      setUploadingCreative(false);
+      if (creativeFileInputRef.current) creativeFileInputRef.current.value = "";
+    }
+  };
+
+  const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+    setUploadingLogo(true);
+    try {
+      const cdnUrl = await uploadFileToR2(file, "brand_logo");
+      setForm((prev) => ({ ...prev, brandLogoUrl: cdnUrl }));
+    } catch (err: any) {
+      console.error("Logo upload failed:", err);
+      alert("Failed to upload brand logo: " + (err.message || String(err)));
+    } finally {
+      setUploadingLogo(false);
+      if (logoFileInputRef.current) logoFileInputRef.current.value = "";
+    }
+  };
 
   const filteredPromotions = (promotions || []).filter((p) => {
     if (filterTab === "active" && p.status !== "active") return false;
@@ -133,6 +219,7 @@ export default function AdminPromotionsPage() {
         title: form.title,
         subtitle: form.subtitle || undefined,
         creativeUrl: form.creativeUrl || undefined,
+        brandLogoUrl: form.brandLogoUrl || undefined,
         aspectRatio: form.aspectRatio,
         ctaText: form.ctaText,
         destination: {
@@ -474,24 +561,46 @@ export default function AdminPromotionsPage() {
                     </div>
                     <div>
                       <label className="block font-semibold text-slate-700 mb-1">Brand Name</label>
-                      <input
-                        type="text"
-                        value={form.brandName}
-                        onChange={(e) => setForm({ ...form, brandName: e.target.value })}
-                        placeholder="The Linen Club"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white"
-                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={form.brandName}
+                          onChange={(e) => setForm({ ...form, brandName: e.target.value })}
+                          placeholder="The Linen Club"
+                          className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-white"
+                        />
+                        {/* Hidden logo file input */}
+                        <input
+                          ref={logoFileInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/avif"
+                          onChange={handleLogoFileChange}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => logoFileInputRef.current?.click()}
+                          disabled={uploadingLogo}
+                          title="Upload brand logo"
+                          className="px-2.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors"
+                        >
+                          {uploadingLogo ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                          ) : form.brandLogoUrl ? (
+                            <div className="flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                              <span className="text-[10px] font-bold">Logo Set</span>
+                            </div>
+                          ) : (
+                            <>
+                              <Upload className="w-3.5 h-3.5" />
+                              <span className="text-[10px]">Add Logo</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Creative Image URL</label>
-                      <input
-                        type="url"
-                        value={form.creativeUrl}
-                        onChange={(e) => setForm({ ...form, creativeUrl: e.target.value })}
-                        placeholder="https://images.unsplash.com/..."
-                        className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white"
-                      />
-                    </div>
+
                     <div>
                       <label className="block font-semibold text-slate-700 mb-1">Aspect Ratio</label>
                       <div className="flex gap-2">
@@ -500,16 +609,141 @@ export default function AdminPromotionsPage() {
                             key={ar}
                             type="button"
                             onClick={() => setForm({ ...form, aspectRatio: ar })}
-                            className={`flex-1 py-1.5 rounded-lg border text-center font-bold text-xs cursor-pointer ${
+                            className={`flex-1 py-1.5 rounded-lg border text-center font-bold text-xs cursor-pointer transition-colors ${
                               form.aspectRatio === ar
-                                ? "bg-amber-500 text-slate-950 border-amber-500"
-                                : "bg-white border-slate-200 text-slate-600"
+                                ? "bg-amber-500 text-slate-950 border-amber-500 shadow-2xs"
+                                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-100"
                             }`}
                           >
                             {ar}
                           </button>
                         ))}
                       </div>
+                    </div>
+
+                    {/* Creative Banner Upload Zone (R2 / CDN) */}
+                    <div className="sm:col-span-2 space-y-2 pt-1">
+                      <div className="flex items-center justify-between">
+                        <label className="block font-semibold text-slate-700">
+                          Creative Banner Asset *
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowManualUrlInput(!showManualUrlInput)}
+                          className="text-[10px] text-slate-400 hover:text-slate-600 underline cursor-pointer"
+                        >
+                          {showManualUrlInput ? "Hide custom URL" : "Or enter custom URL"}
+                        </button>
+                      </div>
+
+                      {/* Hidden File Input */}
+                      <input
+                        ref={creativeFileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/avif"
+                        onChange={handleCreativeFileChange}
+                        className="hidden"
+                      />
+
+                      {form.creativeUrl ? (
+                        /* Current Banner Preview with Replace / Remove Actions */
+                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-slate-200 shadow-2xs">
+                          <div className="relative w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center">
+                            <Image
+                              src={form.creativeUrl}
+                              alt="Creative Preview"
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[9px] border border-emerald-200">
+                                <Check className="w-2.5 h-2.5" />
+                                Ready on Hive CDN
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-mono">
+                                Ratio: {form.aspectRatio}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-mono truncate mt-1">
+                              {form.creativeUrl}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => creativeFileInputRef.current?.click()}
+                              disabled={uploadingCreative}
+                              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                            >
+                              {uploadingCreative ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                              ) : (
+                                <>
+                                  <Upload className="w-3 h-3" />
+                                  <span>Replace</span>
+                                </>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setForm({ ...form, creativeUrl: "" })}
+                              className="p-1.5 rounded-xl border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                              title="Remove banner"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Upload Trigger Dropzone */
+                        <div
+                          onClick={() => !uploadingCreative && creativeFileInputRef.current?.click()}
+                          className="border-2 border-dashed border-slate-200 hover:border-amber-400 bg-white hover:bg-amber-50/20 rounded-2xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group"
+                        >
+                          {uploadingCreative ? (
+                            <div className="py-2 flex flex-col items-center gap-2">
+                              <Loader2 className="w-6 h-6 animate-spin text-amber-500" />
+                              <span className="text-xs font-bold text-slate-700">Uploading banner to Cloudflare R2...</span>
+                              <span className="text-[10px] text-slate-400">Verifying headers and deploying to CDN</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="w-10 h-10 rounded-xl bg-amber-50 group-hover:bg-amber-100 text-amber-600 flex items-center justify-center transition-colors">
+                                <Upload className="w-5 h-5 stroke-[2.2]" />
+                              </div>
+                              <div>
+                                <span className="text-xs font-bold text-slate-800 block">
+                                  Click to upload promotion banner
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  JPG, PNG, WebP, AVIF up to 10MB · Automatically hosted on Hive R2 / CDN
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Optional Manual URL Fallback Input */}
+                      {showManualUrlInput && (
+                        <div className="pt-2 animate-in fade-in duration-200">
+                          <label className="block text-[10px] font-semibold text-slate-500 mb-1">
+                            Direct Image URL Override:
+                          </label>
+                          <input
+                            type="url"
+                            value={form.creativeUrl}
+                            onChange={(e) => setForm({ ...form, creativeUrl: e.target.value })}
+                            placeholder="https://cdn.hivenow.in/..."
+                            className="w-full px-3 py-1.5 rounded-xl border border-slate-200 bg-white font-mono text-[11px]"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
