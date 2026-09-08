@@ -3,10 +3,11 @@
 
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { requireRole } from "./lib/auth";
 import { updateBoutiqueProductCount } from "./boutiques";
 import { getPublicUrl } from "./media/api";
-import { getAllowedSpecKeys, validateAndCleanProductDetails } from "./lib/verticals";
+import { getAllowedSpecKeys, validateAndCleanProductDetails, validateProductDetailsForCategory } from "./lib/verticals";
 import { getPlatformSettings, calculateProductPricing } from "./pricingService";
 import { triggerNotification } from "./lib/notifications";
 
@@ -722,7 +723,14 @@ export const updateProductDetailsAdmin = mutation({
 
     // Clean details if provided, strictly rejecting invalid keys
     const cleanedDetails: Record<string, string> | undefined =
-      args.details !== undefined ? validateAndCleanProductDetails(args.details, product.verticalType) : undefined;
+      args.details !== undefined
+        ? await validateProductDetailsForCategory(
+            ctx.db,
+            (args.categoryId ?? product.categoryId) as Id<"categories">,
+            args.details,
+            product.verticalType
+          )
+        : undefined;
 
     // Compute stock totals if sizes/stock modified
     const currentStockBySize = product.stockBySize || {};

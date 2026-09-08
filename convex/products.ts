@@ -25,6 +25,7 @@ import {
   getVerticalConfig,
   resolveVerticalTypeForCategory,
   validateAndCleanProductDetails,
+  validateProductDetailsForCategory,
 } from "./lib/verticals";
 import { internal } from "./_generated/api";
 import {
@@ -471,15 +472,24 @@ export const createProduct = mutation({
     const user = await getAuthenticatedUser(ctx, args.token);
     const boutique = await getMyBoutique(ctx, args.token);
 
-    // Resolve categoryId if passed as slug or name string
+    // Resolve categoryId, which older clients may send as a slug or a name.
+    //
+    // An unmatched value used to fall through to allCategories[0], filing the
+    // product under whichever category sorted first and reporting success. A
+    // category that cannot be resolved is a caller error, not a default.
     let resolvedCategoryId: any = args.categoryId;
     const allCategories = await ctx.db.query("categories").collect();
-    if (allCategories.length > 0 && typeof args.categoryId === "string") {
+    if (typeof args.categoryId === "string") {
       const searchCat = args.categoryId.toLowerCase();
       const matched = allCategories.find(
         (c: any) => c._id === args.categoryId || c.slug === args.categoryId || (c.name ? c.name.toLowerCase() : "") === searchCat
       );
-      resolvedCategoryId = matched ? matched._id : (allCategories[0]?._id as any);
+      if (!matched) {
+        throw new Error(
+          `Unknown category "${args.categoryId}". Choose a category from the list before publishing.`
+        );
+      }
+      resolvedCategoryId = matched._id;
     }
 
     // Snapshot the vertical from the category being filed under. Resolved once,
@@ -490,8 +500,14 @@ export const createProduct = mutation({
     await validateProductQuality(ctx, args, undefined, verticalType);
 
     // Trim and drop empty values; strictly reject unrecognized specification keys.
-    const cleanedDetails: Record<string, string> =
-      args.details ? (validateAndCleanProductDetails(args.details, verticalType) ?? {}) : {};
+    const cleanedDetails: Record<string, string> = args.details
+      ? ((await validateProductDetailsForCategory(
+          ctx.db,
+          resolvedCategoryId,
+          args.details,
+          verticalType
+        )) ?? {})
+      : {};
 
     // Validate images in parallel (max 5MB, MIME: jpeg/png/webp)
     const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
@@ -718,7 +734,14 @@ export const updateProduct = mutation({
 
     // Trim and drop empty values; strictly reject unrecognized specification keys.
     const cleanedDetails: Record<string, string> | undefined =
-      args.details !== undefined ? validateAndCleanProductDetails(args.details, verticalType) : undefined;
+      args.details !== undefined
+        ? await validateProductDetailsForCategory(
+            ctx.db,
+            (args.categoryId ?? product.categoryId) as Id<"categories">,
+            args.details,
+            verticalType
+          )
+        : undefined;
 
     // Validate quality gate if active — pass existing images to skip the URL guard for pre-existing URLs
     await validateProductQuality(ctx, args, product.images as any, verticalType);

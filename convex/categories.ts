@@ -9,6 +9,85 @@ import { requireRole } from "./lib/auth";
 import { validateUploadedFile } from "./lib/uploads";
 import { ImageAsset, VerticalTypeValidator } from "./schema";
 
+// ─── HIERARCHY INVARIANTS ───────────────────────────────────────────────────
+//
+// The tree is deliberately capped at two levels: a top-level category and its
+// children. Everything downstream assumes that shape — the seller picker offers
+// "parent, then subcategory", the storefront groups a parent with its children,
+// and getCatalogPage walks descendants on every parent-level browse. Allowing a
+// third level would silently change all three.
+
+const MAX_CATEGORY_DEPTH = 2;
+
+/**
+ * A slug is the category's public URL and the only key the storefront resolves
+ * against. Two categories sharing one would make which of them a link opens a
+ * matter of insertion order.
+ */
+async function assertSlugAvailable(
+  ctx: { db: any },
+  slug: string,
+  exceptId?: Id<"categories">
+) {
+  const trimmed = slug.trim().toLowerCase();
+  if (!trimmed) throw new Error("Slug is required.");
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(trimmed)) {
+    throw new Error(
+      `Invalid slug "${slug}". Use lowercase letters, numbers and single hyphens, e.g. "party-wear".`
+    );
+  }
+  const existing = await ctx.db
+    .query("categories")
+    .withIndex("by_slug", (q: any) => q.eq("slug", trimmed))
+    .first();
+  if (existing && existing._id !== exceptId) {
+    throw new Error(
+      `The slug "${trimmed}" is already used by the category "${existing.name}". Slugs must be unique.`
+    );
+  }
+  return trimmed;
+}
+
+/**
+ * Validates a proposed parent for `childId` (undefined when creating).
+ *
+ * Rejects self-parenting, cycles, parents that are themselves children (which
+ * would create a third level), and — when the category already has children of
+ * its own — any attempt to demote it under another parent.
+ */
+async function assertValidParent(
+  ctx: { db: any },
+  parentId: Id<"categories"> | undefined,
+  childId?: Id<"categories">
+) {
+  if (!parentId) return;
+
+  if (childId && parentId === childId) {
+    throw new Error("A category cannot be its own parent.");
+  }
+
+  const parent = await ctx.db.get(parentId);
+  if (!parent) throw new Error("The selected parent category no longer exists.");
+
+  if (parent.parentId) {
+    throw new Error(
+      `"${parent.name}" is already a subcategory of another category. Categories nest at most ${MAX_CATEGORY_DEPTH} levels deep.`
+    );
+  }
+
+  if (childId) {
+    const children = await ctx.db
+      .query("categories")
+      .withIndex("by_parentId", (q: any) => q.eq("parentId", childId))
+      .collect();
+    if (children.length > 0) {
+      throw new Error(
+        `This category has ${children.length} subcategor${children.length === 1 ? "y" : "ies"} of its own, so it cannot become a subcategory. Move or reassign its children first.`
+      );
+    }
+  }
+}
+
 /**
  * Fetch categories.
  * If onlyActive is true, returns active ones sorted by sortOrder.
@@ -84,6 +163,9 @@ export const createCategory = mutation({
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
 
+    const slug = await assertSlugAvailable(ctx, args.slug);
+    await assertValidParent(ctx, args.parentId);
+
     if (args.imageStorageId && typeof args.imageStorageId === "string" && !args.imageStorageId.startsWith("http")) {
       // Validate category image (max 5MB, MIME: jpeg/png/webp) (legacy storage IDs only)
       const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
@@ -93,7 +175,7 @@ export const createCategory = mutation({
 
     const categoryId = await ctx.db.insert("categories", {
       name:           args.name,
-      slug:           args.slug,
+      slug,
       imageStorageId: args.imageStorageId,
       imageUrl:       args.imageUrl,
       homepageImage:  args.homepageImage,
@@ -135,6 +217,9 @@ export const updateCategory = mutation({
   handler: async (ctx, args) => {
     await requireRole(ctx, "admin");
 
+    const slug = await assertSlugAvailable(ctx, args.slug, args.id);
+    await assertValidParent(ctx, args.parentId, args.id);
+
     if (args.imageStorageId && typeof args.imageStorageId === "string" && !args.imageStorageId.startsWith("http")) {
       // Validate new category image if changed (legacy storage IDs only)
       const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
@@ -158,7 +243,7 @@ export const updateCategory = mutation({
 
     await ctx.db.patch(args.id, {
       name:           args.name,
-      slug:           args.slug,
+      slug,
       imageStorageId: args.imageStorageId,
       imageUrl:       args.imageUrl,
       homepageImage:  args.homepageImage,
@@ -206,6 +291,19 @@ export const deleteCategory = mutation({
     
     const category = await ctx.db.get(args.id);
     if (!category) throw new Error("Category not found");
+
+    // Deleting a parent would leave its children pointing at a missing row.
+    // getCatalogPage resolves descendants by parentId, so those children would
+    // still browse and list but could never be reached from their parent again.
+    const children = await ctx.db
+      .query("categories")
+      .withIndex("by_parentId", (q) => q.eq("parentId", args.id))
+      .collect();
+    if (children.length > 0) {
+      throw new Error(
+        `Cannot delete "${category.name}". ${children.length} subcategor${children.length === 1 ? "y belongs" : "ies belong"} to it: ${children.map((c) => c.name).join(", ")}. Move or delete those first.`
+      );
+    }
 
     // Check if there are products in this category
     const products = await ctx.db

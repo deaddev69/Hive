@@ -1718,6 +1718,45 @@ export default defineSchema({
     .index("by_parentId", ["parentId"])
     .index("by_slug", ["slug"]),
 
+  // ─── CATEGORY ATTRIBUTE SCHEMAS ────────────────────────────────────────────
+  //
+  // The questions a seller answers when listing into a given category, defined
+  // as data so a new vertical needs no deploy.
+  //
+  // This does NOT replace packages/types/src/verticals.ts. Apparel keeps running
+  // on the hardcoded VerticalConfig path, which is what every clothing product
+  // in the catalogue was validated against; a category only takes the DB path
+  // once a row exists here for it. The two are read in that order, never merged,
+  // so a clothing listing can never be validated against a half-migrated schema.
+  //
+  // `key` is what lands in products.details. It is immutable once products carry
+  // it — renaming a key orphans the values already stored under the old one.
+  attributeSets: defineTable({
+    categoryId: v.id("categories"),
+    fields: v.array(
+      v.object({
+        key:      v.string(),
+        label:    v.string(),
+        type:     v.union(
+          v.literal("text"),
+          v.literal("number"),
+          v.literal("select"),
+          v.literal("multi-select")
+        ),
+        // Only meaningful for select / multi-select.
+        options:  v.optional(v.array(v.string())),
+        required: v.boolean(),
+        // Display suffix, e.g. "ml" for perfume volume or "L" for bag capacity.
+        // Presentation only; the stored value stays the bare number.
+        unit:     v.optional(v.string()),
+        helpText: v.optional(v.string()),
+      })
+    ),
+    updatedAt: v.number(),
+    updatedBy: v.optional(v.id("users")),
+  })
+    .index("by_categoryId", ["categoryId"]),
+
   // ─── DELIVERY ZONES & PINCODES ─────────────────────────────────────────────
   deliveryZones: defineTable({
     code: v.string(),
