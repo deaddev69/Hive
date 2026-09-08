@@ -1,4 +1,4 @@
-import { internalMutation, mutation } from "./_generated/server";
+import { internalMutation, internalQuery, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { VerticalTypeValidator } from "./schema";
@@ -598,6 +598,224 @@ export const setCategoryVerticalType = internalMutation({
       note: apply
         ? "Category updated. Existing products keep the vertical they were stamped with at creation; only products created from now on pick up the new value."
         : "Dry run. Re-run with \"apply\":true to write.",
+    };
+  },
+});
+
+/**
+ * Read-only census of the catalogue by category.
+ *
+ * Phase 0 of the taxonomy rework: every decision about what to keep, merge,
+ * rename or delete depends on knowing where the products actually are, and
+ * nothing in the admin UI shows that. Reports per category the number of
+ * products, how many are active, and which verticals those products were
+ * stamped with at creation — the last one matters because re-parenting a
+ * category never restamps its existing products.
+ *
+ * Also reports products whose categoryId points at a category that no longer
+ * exists, which would otherwise be invisible.
+ *
+ * Writes nothing.
+ *
+ *   npx convex run --prod migrations:categoryProductCensus
+ */
+export const categoryProductCensus = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const categories = await ctx.db.query("categories").collect();
+    const byId = new Map(categories.map((c) => [c._id as string, c]));
+
+    const rows = await Promise.all(
+      categories.map(async (category) => {
+        const products = await ctx.db
+          .query("products")
+          .withIndex("by_categoryId", (q) => q.eq("categoryId", category._id))
+          .collect();
+
+        const verticals = products.reduce<Record<string, number>>((acc, p) => {
+          const key = (p as { verticalType?: string }).verticalType ?? "(unset)";
+          acc[key] = (acc[key] ?? 0) + 1;
+          return acc;
+        }, {});
+
+        const parent = category.parentId ? byId.get(category.parentId as string) : undefined;
+
+        return {
+          name:        category.name,
+          slug:        category.slug,
+          parent:      parent ? parent.slug : null,
+          active:      category.active,
+          vertical:    category.verticalType ?? "(unset)",
+          products:    products.length,
+          activeProducts: products.filter((p) => p.active === true).length,
+          productVerticals: verticals,
+        };
+      })
+    );
+
+    // Products pointing at a category that has since been deleted.
+    const allProducts = await ctx.db.query("products").collect();
+    const orphaned = allProducts.filter(
+      (p) => p.categoryId && !byId.has(p.categoryId as string)
+    ).length;
+    const uncategorised = allProducts.filter((p) => !p.categoryId).length;
+
+    return {
+      totalProducts: allProducts.length,
+      totalCategories: categories.length,
+      orphanedProducts: orphaned,
+      uncategorisedProducts: uncategorised,
+      rows: rows.sort((a, b) => b.products - a.products),
+    };
+  },
+});
+
+/**
+ * Re-files a category under a different parent, or detaches it to top level.
+ *
+ * The admin screen can already do this, but doing it there is what detached
+ * three categories by accident: `updateCategory` replaces the whole row, so a
+ * parent left unset in the form is written as undefined. This touches
+ * `parentId` and nothing else, reports the move before making it, and refuses
+ * the two structurally invalid cases rather than writing a broken tree.
+ *
+ * Products are not read or moved: they keep their categoryId, and the storefront
+ * reaches them from the new parent by walking parentId in selectCatalogProducts.
+ *
+ *   npx convex run --prod migrations:setCategoryParent '{"slug":"pinteresty","parentSlug":"womens-fashion"}'
+ *   npx convex run --prod migrations:setCategoryParent '{"slug":"pinteresty","parentSlug":"womens-fashion","apply":true}'
+ *
+ * Reversal: run it again with the previous parent, or with parentSlug omitted
+ * to return the category to top level.
+ */
+export const setCategoryParent = internalMutation({
+  args: {
+    slug: v.string(),
+    parentSlug: v.optional(v.string()),
+    apply: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const apply = args.apply === true;
+
+    const category = await ctx.db
+      .query("categories")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+    if (!category) throw new Error(`No category with slug "${args.slug}"`);
+
+    // A category with children of its own cannot become someone's child:
+    // nesting is capped at two levels by MAX_CATEGORY_DEPTH.
+    const ownChildren = await ctx.db
+      .query("categories")
+      .withIndex("by_parentId", (q) => q.eq("parentId", category._id))
+      .collect();
+    if (args.parentSlug && ownChildren.length > 0) {
+      throw new Error(
+        `"${category.name}" has ${ownChildren.length} subcategories of its own, so it cannot become a subcategory. Move them first.`
+      );
+    }
+
+    let parent = null;
+    if (args.parentSlug) {
+      parent = await ctx.db
+        .query("categories")
+        .withIndex("by_slug", (q) => q.eq("slug", args.parentSlug!))
+        .first();
+      if (!parent) throw new Error(`No category with slug "${args.parentSlug}"`);
+      if (parent._id === category._id) throw new Error("A category cannot be its own parent.");
+      if (parent.parentId) {
+        throw new Error(`"${parent.name}" is itself a subcategory. Nesting is two levels deep.`);
+      }
+    }
+
+    const currentParent = category.parentId ? await ctx.db.get(category.parentId) : null;
+    const from = currentParent ? `/${currentParent.slug}` : "(top-level)";
+    const to = parent ? `/${parent.slug}` : "(top-level)";
+
+    if (from === to) {
+      return { applied: false, note: `"${category.name}" is already under ${to}. Nothing to do.` };
+    }
+
+    const products = await ctx.db
+      .query("products")
+      .withIndex("by_categoryId", (q) => q.eq("categoryId", category._id))
+      .collect();
+
+    if (apply) {
+      await ctx.db.patch(category._id, {
+        parentId: parent ? parent._id : undefined,
+      });
+    }
+
+    return {
+      applied: apply,
+      change: `"${category.name}" (/${category.slug}): ${from} -> ${to}`,
+      productsInCategory: products.length,
+      note: apply
+        ? "Category re-filed. No product was read or modified."
+        : "Dry run. Re-run with \"apply\":true to write.",
+    };
+  },
+});
+
+/**
+ * Edits a category's display fields without disturbing the rest of the row.
+ *
+ * `updateCategory` is a full replace: every field the admin form does not send
+ * is written as undefined, which is how three categories silently lost their
+ * parent. This patches only the fields actually passed, so changing a name
+ * cannot detach a category or clear its image.
+ *
+ * Reports the before and after of each field before writing.
+ *
+ *   npx convex run --prod migrations:setCategoryFields '{"slug":"mens-fashion","active":true}'
+ *   npx convex run --prod migrations:setCategoryFields '{"slug":"mens-fashion","active":true,"apply":true}'
+ *
+ * Reversal: run it again with the previous values, which the dry run prints.
+ */
+export const setCategoryFields = internalMutation({
+  args: {
+    slug: v.string(),
+    name: v.optional(v.string()),
+    active: v.optional(v.boolean()),
+    showOnHomepage: v.optional(v.boolean()),
+    sortOrder: v.optional(v.number()),
+    apply: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const apply = args.apply === true;
+
+    const category = await ctx.db
+      .query("categories")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+    if (!category) throw new Error(`No category with slug "${args.slug}"`);
+
+    const patch: Record<string, unknown> = {};
+    const changes: string[] = [];
+
+    const consider = <T,>(field: string, next: T | undefined, current: T) => {
+      if (next === undefined || next === current) return;
+      patch[field] = next;
+      changes.push(`${field}: ${JSON.stringify(current)} -> ${JSON.stringify(next)}`);
+    };
+
+    consider("name", args.name, category.name);
+    consider("active", args.active, category.active);
+    consider("showOnHomepage", args.showOnHomepage, category.showOnHomepage);
+    consider("sortOrder", args.sortOrder, category.sortOrder);
+
+    if (changes.length === 0) {
+      return { applied: false, note: `"${category.name}" already matches. Nothing to do.` };
+    }
+
+    if (apply) await ctx.db.patch(category._id, patch);
+
+    return {
+      applied: apply,
+      category: `${category.name} (/${category.slug})`,
+      changes,
+      note: apply ? "Category updated. Parent, image and every other field untouched." : "Dry run. Re-run with \"apply\":true to write.",
     };
   },
 });
