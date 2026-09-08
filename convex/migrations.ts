@@ -1,6 +1,7 @@
 import { internalMutation, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
+import { VerticalTypeValidator } from "./schema";
 import { getPlatformMarkupRate } from "./pricingHelpers";
 import { calculateProductPricing, DEFAULT_TIER_SLABS, getPlatformConfig, calculateAllInclusivePricePaise } from "./pricingService";
 
@@ -523,6 +524,80 @@ export const buildCategoryHierarchy = internalMutation({
       note: apply
         ? "Categories updated. No product was read or modified."
         : "Dry run. Re-run with {\"apply\":true} to write.",
+    };
+  },
+});
+
+/**
+ * Corrects a single category's `verticalType`.
+ *
+ * `buildCategoryHierarchy` only filled in a vertical where one was missing, so
+ * a row that already carried the wrong value kept it. `handbags` is the live
+ * case: it sits under the `accessories` parent (handbag) while still declaring
+ * `apparel`, and `resolveVerticalTypeForCategory` reads the category directly
+ * rather than walking parentId, so new products filed there would be stamped
+ * apparel and validated against apparel spec keys.
+ *
+ * Only the one field is patched. Existing products are deliberately left alone:
+ * a product snapshots its vertical once at creation and is never recomputed, so
+ * changing the category cannot retroactively alter how an existing product's
+ * specs validate. The dry run reports which products would have been affected
+ * had that not been the rule, so the blast radius is visible before writing.
+ *
+ *   npx convex run --prod migrations:setCategoryVerticalType '{"slug":"handbags","verticalType":"handbag"}'
+ *   npx convex run --prod migrations:setCategoryVerticalType '{"slug":"handbags","verticalType":"handbag","apply":true}'
+ *
+ * Reversal: run it again with the previous value.
+ */
+export const setCategoryVerticalType = internalMutation({
+  args: {
+    slug: v.string(),
+    verticalType: VerticalTypeValidator,
+    apply: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const apply = args.apply === true;
+
+    const category = await ctx.db
+      .query("categories")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+
+    if (!category) throw new Error(`No category with slug "${args.slug}"`);
+
+    const parent = category.parentId ? await ctx.db.get(category.parentId) : null;
+
+    const products = await ctx.db
+      .query("products")
+      .withIndex("by_categoryId", (q) => q.eq("categoryId", category._id))
+      .collect();
+
+    const stamped = products.reduce<Record<string, number>>((acc, p) => {
+      const key = (p as { verticalType?: string }).verticalType ?? "(unset)";
+      acc[key] = (acc[key] ?? 0) + 1;
+      return acc;
+    }, {});
+
+    if (category.verticalType === args.verticalType) {
+      return {
+        applied: false,
+        note: `"${category.name}" is already ${args.verticalType}. Nothing to do.`,
+      };
+    }
+
+    const change = `"${category.name}" (/${category.slug}): ${category.verticalType ?? "(unset)"} -> ${args.verticalType}`;
+
+    if (apply) await ctx.db.patch(category._id, { verticalType: args.verticalType });
+
+    return {
+      applied: apply,
+      change,
+      parent: parent ? `${parent.name} (${parent.verticalType ?? "(unset)"})` : "(top-level)",
+      existingProducts: products.length,
+      existingProductVerticals: stamped,
+      note: apply
+        ? "Category updated. Existing products keep the vertical they were stamped with at creation; only products created from now on pick up the new value."
+        : "Dry run. Re-run with \"apply\":true to write.",
     };
   },
 });
