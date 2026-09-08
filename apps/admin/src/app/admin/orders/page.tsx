@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { OrderTimeline } from "@/components/orders/OrderTimeline";
+import { OrderMoneyTrail } from "@/components/orders/OrderMoneyTrail";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { Card, CardContent } from "@hive/ui";
 import { formatCurrency } from "@hive/utils";
@@ -463,6 +464,9 @@ function OrderDetailDrawer({
                 ))}
               </div>
             </div>
+
+            {/* Money and logistics trail: Razorpay, Route, refunds, Porter */}
+            <OrderMoneyTrail orderId={order._id} />
 
             {/* Invoice */}
             <AdminInvoiceSection orderId={orderId} />
