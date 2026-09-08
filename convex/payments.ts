@@ -427,6 +427,9 @@ export const initCheckoutSessionInternal = internalMutation({
       lat: addr.lat,
       lng: addr.lng,
       phone: finalPhone,
+      locality: addr.locality,
+      receiverName: addr.receiverName,
+      deliveryInstructions: addr.deliveryInstructions,
     };
 
 

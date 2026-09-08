@@ -9,6 +9,11 @@ import { internal } from "./_generated/api";
 import { triggerNotification } from "./lib/notifications";
 import { markOrderFinanciallyDelivered, markOrderPayoutEligible } from "./adminFinance";
 import { recordOrderActivity } from "./lib/orderActivity";
+import {
+  buildCustomerPorterAddress,
+  buildBoutiquePorterAddress,
+  assertPorterAddressUsable,
+} from "./lib/porterAddress";
 
 interface StatusTransitionArgs {
   oldStatus?: string;
@@ -950,38 +955,22 @@ export const updateOrderStatus = mutation({
 
       await ctx.db.patch(args.orderId, { shipmentId });
 
+      const pickupAddress = buildBoutiquePorterAddress(boutique);
+      const dropAddress = buildCustomerPorterAddress(
+        order.deliveryAddress,
+        (customer as any)?.name || customer?.email || "Customer",
+        order.deliveryAddress.phone || customer?.phone
+      );
+      assertPorterAddressUsable(pickupAddress, "pickup");
+      assertPorterAddressUsable(dropAddress, "drop");
+
       await ctx.scheduler.runAfter(0, internal.lib.porter.createOrder, {
         orderId: args.orderId,
         shipmentId: shipmentId,
-        pickupAddress: {
-          street_address1: boutique?.address || "Store",
-          city: boutique?.addressDetails?.city || boutique?.city || "",
-          state: boutique?.addressDetails?.state || boutique?.state || "",
-          pincode: boutique?.addressDetails?.pincode || boutique?.pincode || "",
-          country: "India",
-          lat: boutique?.latitude || 0,
-          lng: boutique?.longitude || 0,
-          contact_details: {
-            name: boutique?.boutiqueName || "Boutique",
-            phone_number: boutique?.phone ? `+91${boutique.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
-          }
-        },
-        dropAddress: {
-          street_address1: order.deliveryAddress.line1 || order.deliveryAddress.formattedAddress || "Home",
-          street_address2: order.deliveryAddress.line2 || order.deliveryAddress.houseNumber || "",
-          landmark: order.deliveryAddress.landmark || "",
-          city: order.deliveryAddress.city || "",
-          state: order.deliveryAddress.state || "",
-          pincode: order.deliveryAddress.pincode || "",
-          country: "India",
-          lat: order.deliveryAddress.lat || 0,
-          lng: order.deliveryAddress.lng || 0,
-          contact_details: {
-            name: (customer as any)?.name || customer?.email || "Customer",
-            phone_number: order.deliveryAddress.phone || customer?.phone ? `+91${(order.deliveryAddress.phone || customer?.phone || "").replace(/\D/g, '').slice(-10)}` : "+910000000000",
-          }
-        },
+        pickupAddress,
+        dropAddress,
         orderNumber: order.orderNumber,
+        deliveryInstructions: order.deliveryAddress.deliveryInstructions,
       });
     }
 
@@ -1289,38 +1278,41 @@ export const initiateReturnAdmin = mutation({
     const customerPhone = order.deliveryAddress.phone || customer?.phone || "";
     const boutiquePhone = orderPickup?.phone || boutique?.phone || "";
 
+    // The boutique snapshot taken at order time wins over the live record, so a
+    // seller who has since moved still gets the return at the address the parcel
+    // actually left from.
+    const returnPickup = buildCustomerPorterAddress(
+      order.deliveryAddress,
+      returnPickupAddress.name,
+      customerPhone
+    );
+    const returnDrop = buildBoutiquePorterAddress(
+      orderPickup
+        ? {
+            boutiqueName: orderPickup.boutiqueName,
+            address: orderPickup.address,
+            city: orderPickup.city ?? boutique?.city,
+            state: orderPickup.state ?? boutique?.state,
+            pincode: orderPickup.pincode ?? boutique?.pincode,
+            latitude: orderPickup.latitude,
+            longitude: orderPickup.longitude,
+            phone: orderPickup.phone,
+            addressDetails: boutique?.addressDetails,
+          }
+        : boutique,
+      returnDeliveryAddress.name,
+      boutiquePhone
+    );
+    assertPorterAddressUsable(returnPickup, "return pickup");
+    assertPorterAddressUsable(returnDrop, "return drop");
+
     await ctx.scheduler.runAfter(0, internal.lib.porter.createOrder, {
       orderId: args.orderId,
       shipmentId: returnShipmentId,
-      pickupAddress: {
-        street_address1: order.deliveryAddress.line1 || order.deliveryAddress.formattedAddress || "Home",
-        street_address2: order.deliveryAddress.line2 || order.deliveryAddress.houseNumber || "",
-        landmark: order.deliveryAddress.landmark || "",
-        city: order.deliveryAddress.city || "",
-        state: order.deliveryAddress.state || "",
-        pincode: order.deliveryAddress.pincode || "",
-        country: "India",
-        lat: order.deliveryAddress.lat,
-        lng: order.deliveryAddress.lng,
-        contact_details: {
-          name: returnPickupAddress.name,
-          phone_number: customerPhone ? `+91${customerPhone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
-        },
-      },
-      dropAddress: {
-        street_address1: orderPickup?.address || boutique?.address || "Store",
-        city: orderPickup?.city || boutique?.addressDetails?.city || boutique?.city || "",
-        state: orderPickup?.state || boutique?.addressDetails?.state || boutique?.state || "",
-        pincode: orderPickup?.pincode || boutique?.addressDetails?.pincode || boutique?.pincode || "",
-        country: "India",
-        lat: orderPickup?.latitude || boutique?.latitude || 0,
-        lng: orderPickup?.longitude || boutique?.longitude || 0,
-        contact_details: {
-          name: returnDeliveryAddress.name,
-          phone_number: boutiquePhone ? `+91${boutiquePhone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
-        },
-      },
+      pickupAddress: returnPickup,
+      dropAddress: returnDrop,
       orderNumber: order.orderNumber + "-RET",
+      deliveryInstructions: order.deliveryAddress.deliveryInstructions,
     });
 
     // ── Audit log ─────────────────────────────────────────────────────────

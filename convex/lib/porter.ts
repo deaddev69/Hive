@@ -102,6 +102,9 @@ export const createOrder = internalAction({
     pickupAddress: v.any(), // AddressDetails mapped
     dropAddress: v.any(), // AddressDetails mapped
     orderNumber: v.string(),
+    // Free text the customer typed about reaching their door ("gate code 4B",
+    // "call on arrival"). Shown to the rider alongside the address.
+    deliveryInstructions: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     if (!process.env.PORTER_API_URL || !process.env.PORTER_API_KEY) {
@@ -124,7 +127,10 @@ export const createOrder = internalAction({
           {
             type: "text",
             description: `Handle with care. Order: ${args.orderNumber}`,
-          }
+          },
+          ...(args.deliveryInstructions?.trim()
+            ? [{ type: "text", description: args.deliveryInstructions.trim() }]
+            : []),
         ]
       }
     };

@@ -788,6 +788,10 @@ export default defineSchema({
       phone:            v.optional(v.string()),
       locality:         v.optional(v.string()),
       eLoc:             v.optional(v.string()),
+      // Who the rider should ask for, and how to reach the door. Both are typed
+      // by the customer at checkout and are passed through to Porter.
+      receiverName:         v.optional(v.string()),
+      deliveryInstructions: v.optional(v.string()),
     }),
     pickupAddress: v.optional(v.object({
       boutiqueName: v.string(),

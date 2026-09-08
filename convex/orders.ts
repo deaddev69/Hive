@@ -21,6 +21,11 @@ import { resolveOrderReturnsAccepted, resolveOrderExchangesAccepted } from "./li
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
 import { recordOrderActivity } from "./lib/orderActivity";
 import { checkServiceability } from "./lib/serviceability";
+import {
+  buildCustomerPorterAddress,
+  buildBoutiquePorterAddress,
+  assertPorterAddressUsable,
+} from "./lib/porterAddress";
 // ─── Cart item input shape for order placement ────────────────────────────
 const cartItemArg = v.object({
   productId:   v.string(),
@@ -174,6 +179,9 @@ export const placeOrder = mutation({
       lat:              addr.lat,
       lng:              addr.lng,
       phone:            finalPhone,
+      locality:         addr.locality,
+      receiverName:         addr.receiverName,
+      deliveryInstructions: addr.deliveryInstructions,
     };
 
     // Use real coordinates from the DB address record (the snapshot lat/lng can be 0).
@@ -1050,40 +1058,24 @@ export const retryBoutiqueOrderDispatch = action({
       throw new Error("Unauthorized");
     }
     
+    const pickupAddress = buildBoutiquePorterAddress(boutique);
+    const dropAddress = buildCustomerPorterAddress(
+      order.deliveryAddress,
+      order.customerName || "Customer"
+    );
+    assertPorterAddressUsable(pickupAddress, "pickup");
+    assertPorterAddressUsable(dropAddress, "drop");
+
     // Call the Porter createOrder action
     const result = await ctx.runAction(internal.lib.porter.createOrder, {
       orderId: args.orderId,
       shipmentId: order.shipmentId,
-      pickupAddress: {
-        street_address1: boutique.address || "Store",
-        city: boutique.addressDetails?.city || boutique.city || "",
-        state: boutique.addressDetails?.state || boutique.state || "",
-        pincode: boutique.addressDetails?.pincode || boutique.pincode || "",
-        country: "India",
-        lat: boutique.latitude || 0,
-        lng: boutique.longitude || 0,
-        contact_details: {
-          name: boutique.boutiqueName || "Boutique",
-          phone_number: boutique.phone ? `+91${boutique.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
-        }
-      },
-      dropAddress: {
-        street_address1: order.deliveryAddress.line1 || "",
-        street_address2: order.deliveryAddress.line2 || "",
-        city: order.deliveryAddress.city,
-        state: order.deliveryAddress.state,
-        pincode: order.deliveryAddress.pincode,
-        country: "India",
-        lat: order.deliveryAddress.lat,
-        lng: order.deliveryAddress.lng,
-        contact_details: {
-          name: order.customerName || "Customer",
-          phone_number: order.deliveryAddress.phone ? `+91${order.deliveryAddress.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
-        }
-      },
+      pickupAddress,
+      dropAddress,
       orderNumber: order.orderNumber,
+      deliveryInstructions: order.deliveryAddress.deliveryInstructions,
     });
-    
+
     return result;
   }
 });
@@ -2077,38 +2069,21 @@ export const readyForPickupAction = action({
     try {
       console.log(`[PORTER] Booking rider for order ${order.orderNumber}...`);
 
+      const pickupAddress = buildBoutiquePorterAddress(boutique);
+      const dropAddress = buildCustomerPorterAddress(
+        order.deliveryAddress,
+        order.customerName || "Customer"
+      );
+      assertPorterAddressUsable(pickupAddress, "pickup");
+      assertPorterAddressUsable(dropAddress, "drop");
+
       const result = await ctx.runAction(internal.lib.porter.createOrder, {
         orderId: args.orderId,
         shipmentId: shipmentId,
-        pickupAddress: {
-          street_address1: boutique.address || "Store",
-          city: boutique.addressDetails?.city || boutique.city || "",
-          state: boutique.addressDetails?.state || boutique.state || "",
-          pincode: boutique.addressDetails?.pincode || boutique.pincode || "",
-          country: "India",
-          lat: boutique.latitude || 0,
-          lng: boutique.longitude || 0,
-          contact_details: {
-            name: boutique.boutiqueName || "Boutique",
-            phone_number: boutique.phone ? `+91${boutique.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
-          }
-        },
-        dropAddress: {
-          street_address1: order.deliveryAddress.line1 || order.deliveryAddress.formattedAddress || "Home",
-          street_address2: order.deliveryAddress.line2 || order.deliveryAddress.houseNumber || "",
-          landmark: order.deliveryAddress.landmark || "",
-          city: order.deliveryAddress.city || "",
-          state: order.deliveryAddress.state || "",
-          pincode: order.deliveryAddress.pincode || "",
-          country: "India",
-          lat: order.deliveryAddress.lat || 0,
-          lng: order.deliveryAddress.lng || 0,
-          contact_details: {
-            name: order.customerName || "Customer",
-            phone_number: order.deliveryAddress.phone ? `+91${order.deliveryAddress.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
-          }
-        },
+        pickupAddress,
+        dropAddress,
         orderNumber: order.orderNumber,
+        deliveryInstructions: order.deliveryAddress.deliveryInstructions,
       });
 
       console.log(`[PORTER] Booking success for ${order.orderNumber} — CRN: ${result.crn}`);

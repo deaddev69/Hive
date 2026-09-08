@@ -7,6 +7,11 @@ import { logSystemAlert } from "./lib/alerts";
 import { assertHyperlocalTransitionPrerequisites } from "./orders";
 import { markOrderFinanciallyDelivered, markOrderPayoutEligible } from "./adminFinance";
 import { triggerNotification } from "./lib/notifications";
+import {
+  buildCustomerPorterAddress,
+  buildBoutiquePorterAddress,
+  assertPorterAddressUsable,
+} from "./lib/porterAddress";
 
 // Provider configuration registry
 export const LOGISTICS_PROVIDERS = {
@@ -1611,37 +1616,21 @@ export const dispatchShiprocketOrderAdmin = action({
     const prep = await ctx.runMutation(internal.adminLogistics.prepareShiprocketShipmentInternal, { orderId: args.orderId });
 
     // 3. Chain Porter call
+    const pickupAddress = buildBoutiquePorterAddress(prep.boutique);
+    const dropAddress = buildCustomerPorterAddress(
+      prep.order.deliveryAddress,
+      prep.order.customerName || prep.order.deliveryAddress.label || "Customer"
+    );
+    assertPorterAddressUsable(pickupAddress, "pickup");
+    assertPorterAddressUsable(dropAddress, "drop");
+
     const result = await ctx.runAction(internal.lib.porter.createOrder, {
       orderId: args.orderId,
       shipmentId: prep.shipmentId,
-      pickupAddress: {
-        street_address1: prep.boutique.address || "Store",
-        city: prep.boutique.city,
-        state: prep.boutique.state,
-        pincode: prep.boutique.pincode,
-        country: "India",
-        lat: prep.boutique.latitude || 0,
-        lng: prep.boutique.longitude || 0,
-        contact_details: {
-          name: prep.boutique.boutiqueName || "Boutique",
-          phone_number: prep.boutique.phone ? `+91${prep.boutique.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
-        }
-      },
-      dropAddress: {
-        street_address1: prep.order.deliveryAddress.line1 || "",
-        street_address2: prep.order.deliveryAddress.line2 || "",
-        city: prep.order.deliveryAddress.city,
-        state: prep.order.deliveryAddress.state,
-        pincode: prep.order.deliveryAddress.pincode,
-        country: "India",
-        lat: prep.order.deliveryAddress.lat,
-        lng: prep.order.deliveryAddress.lng,
-        contact_details: {
-          name: prep.order.deliveryAddress.name || "Customer",
-          phone_number: prep.order.deliveryAddress.phone ? `+91${prep.order.deliveryAddress.phone.replace(/\D/g, '').slice(-10)}` : "+910000000000",
-        }
-      },
+      pickupAddress,
+      dropAddress,
       orderNumber: prep.order.orderNumber,
+      deliveryInstructions: prep.order.deliveryAddress.deliveryInstructions,
     });
 
     return { success: true, shipmentId: prep.shipmentId, ...result };
@@ -1657,6 +1646,12 @@ export const prepareShiprocketShipmentInternal = internalMutation({
 
     const boutique = await ctx.db.get(order.boutiqueId);
     if (!boutique) throw new Error("Boutique not found");
+
+    // Porter shows this name to the rider at the door, so prefer the person's
+    // own name over the address label ("Home").
+    const customer = await ctx.db.get(order.customerId);
+    const customerName =
+      (customer as any)?.name || order.deliveryAddress.label || "Customer";
 
     const now = Date.now();
     const shipmentId = await ctx.db.insert("shipments", {
@@ -1675,12 +1670,14 @@ export const prepareShiprocketShipmentInternal = internalMutation({
         phone: order.pickupAddress?.phone || boutique.phone || "Pending" 
       },
       deliveryAddress: {
-        name: order.deliveryAddress.label || "Customer",
-        line1: order.deliveryAddress.line1 || "Pending",
+        // Map-picked addresses leave line1 empty and carry the street in
+        // formattedAddress, so falling back keeps the shipment record readable.
+        name: customerName,
+        line1: order.deliveryAddress.line1 || order.deliveryAddress.formattedAddress || "Pending",
         city: order.deliveryAddress.city,
         state: order.deliveryAddress.state,
         pincode: order.deliveryAddress.pincode,
-        phone: "Pending"
+        phone: order.deliveryAddress.phone || "Pending"
       },
       rawWebhookEvents: [{
         timestamp: now,
@@ -1709,6 +1706,7 @@ export const prepareShiprocketShipmentInternal = internalMutation({
       },
       order: {
         orderNumber: order.orderNumber,
+        customerName,
         deliveryAddress: order.deliveryAddress,
       }
     };
