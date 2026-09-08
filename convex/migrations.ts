@@ -1,4 +1,5 @@
 import { mutation } from "./_generated/server";
+import { v } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { getPlatformMarkupRate } from "./pricingHelpers";
 import { calculateProductPricing, DEFAULT_TIER_SLABS, getPlatformConfig, calculateAllInclusivePricePaise } from "./pricingService";
@@ -367,5 +368,161 @@ export const backfillSameDayEligible = mutation({
       }
     }
     return { total: products.length, updated };
+  },
+});
+
+/**
+ * One-time: give the flat category list a hierarchy.
+ *
+ * Every category in production is currently top-level, which is why the seller
+ * picker is a flat wall and the storefront cannot group anything. This creates
+ * the three parents that do not exist yet and files the existing categories
+ * under them.
+ *
+ * It touches the `categories` table only. No product is read, moved or
+ * re-categorised: a product keeps its categoryId, and getCatalogPage reaches it
+ * from the new parent by walking parentId. Nothing about pricing, payouts or
+ * serviceability depends on the category tree.
+ *
+ * Runs as a dry run by default and reports exactly what it would do. Pass
+ * `{ apply: true }` to write.
+ *
+ *   npx convex run --prod migrations:buildCategoryHierarchy
+ *   npx convex run --prod migrations:buildCategoryHierarchy '{"apply":true}'
+ *
+ * Reversal: clear parentId on the children and delete the three created
+ * parents. Both are ordinary admin operations on the categories screen.
+ */
+export const buildCategoryHierarchy = mutation({
+  args: { apply: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity !== null) {
+      await requireRole(ctx, "admin");
+    }
+
+    const apply = args.apply === true;
+
+    // Parents to create, keyed by the marker used in the mapping below.
+    const PARENTS = [
+      { marker: "WOMEN", name: "Women's Fashion", slug: "womens-fashion", sortOrder: 1, verticalType: "apparel" as const },
+      { marker: "MEN",   name: "Men's Fashion",   slug: "mens-fashion",   sortOrder: 2, verticalType: "apparel" as const },
+      { marker: "ACC",   name: "Accessories",     slug: "accessories",    sortOrder: 3, verticalType: "handbag" as const },
+    ];
+
+    // Existing category slug -> parent marker.
+    // Deliberately absent: t-shirts, pinteresty, frok. Each is ambiguous and
+    // stays top-level until someone decides where it belongs.
+    const MAPPING: Record<string, string> = {
+      "sarees":         "WOMEN",
+      "kurtis":         "WOMEN",
+      "lehengas":       "WOMEN",
+      "anarkalis":      "WOMEN",
+      "gowns":          "WOMEN",
+      "indo-western":   "WOMEN",
+      "blouses":        "WOMEN",
+      "dupattas":       "WOMEN",
+      "co-ord-sets":    "WOMEN",
+      "fusion-wear":    "WOMEN",
+      "tops":           "WOMEN",
+      "maternity-wear": "WOMEN",
+      "night-wear":     "WOMEN",
+      "korean-wear":    "WOMEN",
+      "ethnic-wer":     "MEN",
+      "handbags":       "ACC",
+    };
+
+    // Slugs and names that disagree today. Old slugs keep working through the
+    // redirects added in apps/customer/next.config.ts.
+    const RENAMES: Record<string, { name?: string; slug?: string }> = {
+      "ethnic-wer": { name: "Men's Ethnic Wear", slug: "mens-ethnic-wear" },
+      "handbags":   { name: "Handbags",          slug: "handbags" },
+    };
+
+    // Categories that sell in one size only.
+    const FREE_SIZE_SLUGS = new Set(["sarees", "dupattas"]);
+
+    const existing = await ctx.db.query("categories").collect();
+    const bySlug = new Map(existing.map((c) => [c.slug, c]));
+
+    const plan: string[] = [];
+    const warnings: string[] = [];
+    const parentIds = new Map<string, any>();
+
+    // 1. Parents
+    for (const parent of PARENTS) {
+      const found = bySlug.get(parent.slug);
+      if (found) {
+        parentIds.set(parent.marker, found._id);
+        plan.push(`reuse parent "${found.name}" (/${found.slug})`);
+        continue;
+      }
+      plan.push(`CREATE parent "${parent.name}" (/${parent.slug}, ${parent.verticalType})`);
+      if (apply) {
+        const id = await ctx.db.insert("categories", {
+          name:           parent.name,
+          slug:           parent.slug,
+          active:         true,
+          sortOrder:      parent.sortOrder,
+          showOnHomepage: true,
+          verticalType:   parent.verticalType,
+          createdAt:      Date.now(),
+        });
+        parentIds.set(parent.marker, id);
+      }
+    }
+
+    // 2. Children
+    for (const [slug, marker] of Object.entries(MAPPING)) {
+      const category = bySlug.get(slug);
+      if (!category) {
+        warnings.push(`no category with slug "${slug}" — skipped`);
+        continue;
+      }
+      if (category.parentId) {
+        warnings.push(`"${category.name}" already has a parent — left alone`);
+        continue;
+      }
+
+      const rename = RENAMES[slug];
+      const patch: Record<string, unknown> = { parentId: parentIds.get(marker) };
+      let note = `"${category.name}" (/${slug}) -> ${marker}`;
+
+      if (rename?.name && rename.name !== category.name) {
+        patch.name = rename.name;
+        note += `, rename to "${rename.name}"`;
+      }
+      if (rename?.slug && rename.slug !== category.slug) {
+        patch.slug = rename.slug;
+        note += `, reslug to /${rename.slug}`;
+      }
+      if (!category.verticalType) {
+        patch.verticalType = marker === "ACC" ? "handbag" : "apparel";
+        note += `, vertical = ${patch.verticalType}`;
+      }
+      if (FREE_SIZE_SLUGS.has(slug) && category.isFreeSize !== true) {
+        patch.isFreeSize = true;
+        note += ", one size only";
+      }
+
+      plan.push(note);
+      if (apply) await ctx.db.patch(category._id, patch);
+    }
+
+    // 3. Anything left top-level, so nothing is silently forgotten.
+    for (const category of existing) {
+      if (MAPPING[category.slug]) continue;
+      if (PARENTS.some((p) => p.slug === category.slug)) continue;
+      warnings.push(`"${category.name}" (/${category.slug}) stays top-level — not in the mapping`);
+    }
+
+    return {
+      applied: apply,
+      plan,
+      warnings,
+      note: apply
+        ? "Categories updated. No product was read or modified."
+        : "Dry run. Re-run with {\"apply\":true} to write.",
+    };
   },
 });

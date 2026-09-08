@@ -127,6 +127,20 @@ const nextConfig: NextConfig = {
         destination: "/products?category=:slug*",
         permanent: true,
       },
+      // Two categories shipped with a slug that disagreed with their name:
+      // "Mens" was reachable at /ethnic-wer (a typo) and "Accessories" at
+      // /handbags. The hierarchy migration corrects both, so the old addresses
+      // are redirected rather than left to 404.
+      {
+        source: "/products/ethnic-wer",
+        destination: "/products?category=mens-ethnic-wear",
+        permanent: true,
+      },
+      {
+        source: "/collections/ethnic-wer",
+        destination: "/products?category=mens-ethnic-wear",
+        permanent: true,
+      },
     ];
   },
 
