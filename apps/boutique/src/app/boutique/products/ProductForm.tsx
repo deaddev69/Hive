@@ -599,6 +599,8 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
   // Pickers modal state
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
+  // Which parent the picker is currently inside. null means the root list.
+  const [pickerParentId, setPickerParentId] = useState<string | null>(null);
   const [isMaterialPickerOpen, setIsMaterialPickerOpen] = useState(false);
   const [isCarePickerOpen, setIsCarePickerOpen] = useState(false);
 
@@ -758,6 +760,30 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const fabricFamilyWatch = watch("fabricFamily");
 
   const selectedCategoryObj = allCategoriesList.find((c) => c._id === categoryIdWatch);
+
+  /**
+   * The picker is a two-level drill-down: the root lists parents, and opening
+   * one replaces the list with just its subcategories.
+   *
+   * Opening it on a product that already has a category starts inside that
+   * category's parent rather than at the root, so editing a product does not
+   * make the seller navigate back to where they already were. A parent that has
+   * since been deactivated resolves to null and falls back to the root.
+   */
+  const pickerParent =
+    pickerParentId
+      ? categoryGroups.find((g) => g.parent._id === pickerParentId) ?? null
+      : null;
+
+  const openCategoryPicker = () => {
+    setPickerParentId(selectedCategoryObj?.parentId ?? null);
+    setIsCategoryPickerOpen(true);
+  };
+
+  const closeCategoryPicker = () => {
+    setIsCategoryPickerOpen(false);
+    setPickerParentId(null);
+  };
 
   // Free-size garments (sarees, dupattas, stoles) skip the size matrix. This
   // used to be a name.includes("saree") check, which meant renaming a category
@@ -2129,7 +2155,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 <input type="hidden" {...register("categoryId")} />
                 <button
                   type="button"
-                  onClick={() => setIsCategoryPickerOpen(true)}
+                  onClick={openCategoryPicker}
                   className={cn(
                     "w-full px-4 py-3 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-[13px] text-slate-800 flex items-center justify-between focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 text-left transition-all cursor-pointer",
                     errors.categoryId && "border-red-500"
@@ -2154,13 +2180,13 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 {/* Category Selection Modal */}
                 {isCategoryPickerOpen && (
                   <div className="fixed inset-0 z-[1000] flex items-end sm:items-center sm:justify-center animate-in fade-in duration-200">
-                    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={() => setIsCategoryPickerOpen(false)} />
+                    <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={closeCategoryPicker} />
                     <div className="relative w-full max-h-[85vh] bg-white rounded-t-2xl sm:rounded-2xl p-6 shadow-2xl flex flex-col gap-4 animate-in slide-in-from-bottom duration-300 sm:max-w-md sm:m-4 overflow-hidden z-10 border border-slate-100 pb-safe">
                       <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                         <span className="text-xs font-bold uppercase tracking-widest text-slate-900">Select Category</span>
                         <button 
                           type="button"
-                          onClick={() => setIsCategoryPickerOpen(false)}
+                          onClick={closeCategoryPicker}
                           className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-all cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" />
@@ -2168,62 +2194,83 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                       </div>
                       
                       <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-1 py-1 scrollbar-none">
-                        {categoryGroups.map(({ parent, children }) => {
-                          const parentSelected = categoryIdWatch === parent._id;
-                          const hasChildren = children.length > 0;
+                        {pickerParent ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => setPickerParentId(null)}
+                              className="w-full px-3 py-2.5 rounded-xl text-left text-[10px] font-extrabold uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <ChevronLeft className="w-3.5 h-3.5 shrink-0" />
+                              {pickerParent.parent.name}
+                            </button>
 
-                          return (
-                            <div key={parent._id} className="flex flex-col gap-1">
-                              {hasChildren ? (
-                                // A heading, not an option. Its children are the
-                                // real choices.
-                                <span className="px-4 pt-3 pb-1 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-                                  {parent.name}
-                                </span>
-                              ) : (
+                            {pickerParent.children.map((child) => {
+                              const isSelected = categoryIdWatch === child._id;
+                              return (
                                 <button
+                                  key={child._id}
                                   type="button"
                                   onClick={() => {
-                                    setValue("categoryId", parent._id, { shouldValidate: true });
-                                    setIsCategoryPickerOpen(false);
+                                    setValue("categoryId", child._id, { shouldValidate: true });
+                                    closeCategoryPicker();
                                   }}
                                   className={cn(
                                     "w-full px-4 py-2.5 rounded-xl text-left text-xs font-medium transition-all flex justify-between items-center cursor-pointer",
-                                    parentSelected
+                                    isSelected
                                       ? "bg-slate-950 text-white font-bold"
                                       : "text-slate-700 hover:bg-slate-50"
                                   )}
                                 >
-                                  <span>{parent.name}</span>
-                                  {parentSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                  <span>{child.name}</span>
+                                  {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                                 </button>
-                              )}
+                              );
+                            })}
+                          </>
+                        ) : (
+                          categoryGroups.map(({ parent, children }) => {
+                            // A parent that has subcategories is navigation, not a
+                            // choice: filing a product directly under "Women's" when
+                            // "Sarees" exists makes it invisible to anyone browsing the
+                            // subcategory. A parent with no children of its own stays
+                            // selectable, because there is nothing more specific to pick.
+                            if (children.length > 0) {
+                              return (
+                                <button
+                                  key={parent._id}
+                                  type="button"
+                                  onClick={() => setPickerParentId(parent._id)}
+                                  className="w-full px-4 py-2.5 rounded-xl text-left text-[11px] font-extrabold uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all flex justify-between items-center cursor-pointer"
+                                >
+                                  <span>{parent.name}</span>
+                                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                </button>
+                              );
+                            }
 
-                              {children.map((child) => {
-                                const isSelected = categoryIdWatch === child._id;
-                                return (
-                                  <button
-                                    key={child._id}
-                                    type="button"
-                                    onClick={() => {
-                                      setValue("categoryId", child._id, { shouldValidate: true });
-                                      setIsCategoryPickerOpen(false);
-                                    }}
-                                    className={cn(
-                                      "w-full pl-7 pr-4 py-2.5 rounded-xl text-left text-xs font-medium transition-all flex justify-between items-center cursor-pointer",
-                                      isSelected
-                                        ? "bg-slate-950 text-white font-bold"
-                                        : "text-slate-700 hover:bg-slate-50"
-                                    )}
-                                  >
-                                    <span>{child.name}</span>
-                                    {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          );
-                        })}
+                            const parentSelected = categoryIdWatch === parent._id;
+                            return (
+                              <button
+                                key={parent._id}
+                                type="button"
+                                onClick={() => {
+                                  setValue("categoryId", parent._id, { shouldValidate: true });
+                                  closeCategoryPicker();
+                                }}
+                                className={cn(
+                                  "w-full px-4 py-2.5 rounded-xl text-left text-xs font-medium transition-all flex justify-between items-center cursor-pointer",
+                                  parentSelected
+                                    ? "bg-slate-950 text-white font-bold"
+                                    : "text-slate-700 hover:bg-slate-50"
+                                )}
+                              >
+                                <span>{parent.name}</span>
+                                {parentSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                              </button>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
                   </div>
