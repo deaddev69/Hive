@@ -101,13 +101,27 @@ export default function AdminCategoriesPage() {
     [categories, selectedId]
   );
 
-  /** Categories eligible to be a parent: top-level ones, excluding the row itself. */
+  /**
+   * Categories eligible to be a parent: active top-level ones, excluding the
+   * row itself.
+   *
+   * A deactivated category is retired, so it must not be offered as a home for
+   * new subcategories. It stays in the list while it is this row's current
+   * parent: dropping it would leave the select with a value it does not
+   * contain, which renders as "None" and silently detaches the category on the
+   * next save.
+   */
   const parentOptions = useMemo(() => {
     if (!categories) return [];
     return categories
-      .filter((c) => !c.parentId && c._id !== selectedId)
+      .filter(
+        (c) =>
+          !c.parentId &&
+          c._id !== selectedId &&
+          (c.active || c._id === parentId)
+      )
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [categories, selectedId]);
+  }, [categories, selectedId, parentId]);
 
   /** The tree, in the order it is rendered: each parent followed by its children. */
   const tree = useMemo(() => {
@@ -484,6 +498,7 @@ export default function AdminCategoriesPage() {
                         {parentOptions.map((c) => (
                           <option key={c._id} value={c._id}>
                             {c.name}
+                            {c.active ? "" : " (inactive)"}
                           </option>
                         ))}
                       </Select>
