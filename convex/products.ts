@@ -327,7 +327,7 @@ async function validateProductQuality(
     story?: string;
     occasion?: string;
     fitRecommendation?: "runs_small" | "true_to_size" | "runs_large";
-    silhouette?: "slim_fit" | "regular_fit" | "relaxed_fit" | "oversized";
+    silhouette?: "slim_fit" | "regular_fit" | "relaxed_fit" | "oversized" | "skinny_fit" | "straight_fit" | "tapered_fit" | "wide_leg" | "bootcut";
     details?: Record<string, string>;
   },
   existingImages?: string[], // Pre-approved images already stored in the product record (e.g. from CSV import)
@@ -461,7 +461,12 @@ export const createProduct = mutation({
                          v.literal("slim_fit"),
                          v.literal("regular_fit"),
                          v.literal("relaxed_fit"),
-                         v.literal("oversized")
+                         v.literal("oversized"),
+                         v.literal("skinny_fit"),
+                         v.literal("straight_fit"),
+                         v.literal("tapered_fit"),
+                         v.literal("wide_leg"),
+                         v.literal("bootcut")
                        )),
     returnsAccepted: v.optional(v.boolean()),
     approvalStatus: v.optional(v.string()),
@@ -711,7 +716,12 @@ export const updateProduct = mutation({
                          v.literal("slim_fit"),
                          v.literal("regular_fit"),
                          v.literal("relaxed_fit"),
-                         v.literal("oversized")
+                         v.literal("oversized"),
+                         v.literal("skinny_fit"),
+                         v.literal("straight_fit"),
+                         v.literal("tapered_fit"),
+                         v.literal("wide_leg"),
+                         v.literal("bootcut")
                        )),
     returnsAccepted: v.optional(v.boolean()),
     approvalStatus: v.optional(v.string()),

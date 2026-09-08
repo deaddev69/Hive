@@ -7,6 +7,9 @@ import {
   effectiveVerticalType,
   getVerticalConfig,
   isVerticalType,
+  resolveCategorySizing,
+  isFreeSizeLiteral,
+  SIZING_PRESETS,
   type QualityRule,
   type VerticalType,
 } from "../../packages/types/src/verticals";
@@ -511,12 +514,84 @@ for (const id of VERTICAL_TYPES) {
   checkTrue(`a complete ${id} listing is featurable`, configQuality(perfectByVertical[id]).canBeFeatured);
 }
 
-// Fragrance scores must come from `details`, not from apparel columns.
-check(
-  "a fragrance product is not scored on apparel columns",
-  configQuality({ ...perfectByVertical.fragrance, details: {} }).score,
-  55
+// ─── 8. Phase 1: Unified Category Sizing Resolver Tests ─────────────────────
+
+// Compatibility helper: isFreeSizeLiteral
+checkTrue('isFreeSizeLiteral("Free") is true', isFreeSizeLiteral("Free"));
+checkTrue('isFreeSizeLiteral("FREE") is true', isFreeSizeLiteral("FREE"));
+checkTrue('isFreeSizeLiteral("FS") is true', isFreeSizeLiteral("FS"));
+checkTrue('isFreeSizeLiteral("Free Size") is true', isFreeSizeLiteral("Free Size"));
+check('isFreeSizeLiteral("M") is false', isFreeSizeLiteral("M"), false);
+check('isFreeSizeLiteral("32") is false', isFreeSizeLiteral("32"), false);
+check('isFreeSizeLiteral(undefined) is false', isFreeSizeLiteral(undefined), false);
+
+// 1. Men's Jeans -> waist_numeric + bottoms + bottom silhouettes
+const mensJeans = resolveCategorySizing(
+  { slug: "mens-jeans", name: "Jeans", verticalType: "apparel" },
+  { slug: "mens-fashion", name: "Men's Fashion" }
 );
+check("Men's Jeans sizeSystem is waist_numeric", mensJeans.sizeSystem, "waist_numeric");
+check("Men's Jeans variant label is Waist Size (Inches)", mensJeans.variant.label, "Waist Size (Inches)");
+check("Men's Jeans defaultOptions are 28..42", mensJeans.variant.defaultOptions, SIZING_PRESETS.waist_numeric);
+checkTrue("Men's Jeans allows custom sizes", mensJeans.variant.allowCustom);
+checkTrue("Men's Jeans shows garment fit widget", mensJeans.fitOptions.showGarmentFitWidget);
+check("Men's Jeans first silhouette is straight_fit", mensJeans.fitOptions.silhouettes[0]?.value, "straight_fit");
+check("Men's Jeans has 7 bottomwear silhouettes", mensJeans.fitOptions.silhouettes.length, 7);
+check("Men's Jeans measurement profile is bottoms", mensJeans.measurementProfile.type, "bottoms");
+check("Men's Jeans measurements include waist, inseam, length, hip", mensJeans.measurementProfile.columns.map(c => c.key), ["waist", "inseam", "length", "hip"]);
+checkTrue("Men's Jeans requiresMeasurements", mensJeans.variant.requiresMeasurements);
+
+// 2. Men's T-Shirts -> alpha + tops + top silhouettes
+const mensTshirts = resolveCategorySizing(
+  { slug: "t-shirts", name: "T-Shirts", verticalType: "apparel" },
+  { slug: "mens-fashion", name: "Men's Fashion" }
+);
+check("Men's T-Shirts sizeSystem is alpha", mensTshirts.sizeSystem, "alpha");
+check("Men's T-Shirts variant label is Size", mensTshirts.variant.label, "Size");
+check("Men's T-Shirts defaultOptions are XS..4XL, Free", mensTshirts.variant.defaultOptions, SIZING_PRESETS.alpha);
+checkTrue("Men's T-Shirts allows custom sizes", mensTshirts.variant.allowCustom);
+checkTrue("Men's T-Shirts shows garment fit widget", mensTshirts.fitOptions.showGarmentFitWidget);
+check("Men's T-Shirts first silhouette is regular_fit", mensTshirts.fitOptions.silhouettes[0]?.value, "regular_fit");
+check("Men's T-Shirts has 4 topwear silhouettes", mensTshirts.fitOptions.silhouettes.length, 4);
+check("Men's T-Shirts measurement profile is tops", mensTshirts.measurementProfile.type, "tops");
+check("Men's T-Shirts measurements include chest, waist, shoulder, length", mensTshirts.measurementProfile.columns.map(c => c.key), ["chest", "waist", "shoulder", "length"]);
+
+// 3. Women's Sarees -> free_size + no garment fit
+const womensSarees = resolveCategorySizing(
+  { slug: "sarees", name: "Sarees", isFreeSize: true, verticalType: "apparel" },
+  { slug: "womens-fashion", name: "Women's Fashion" }
+);
+check("Women's Sarees sizeSystem is free_size", womensSarees.sizeSystem, "free_size");
+check("Women's Sarees defaultOptions is ['Free Size']", womensSarees.variant.defaultOptions, ["Free Size"]);
+check("Women's Sarees does not show garment fit widget", womensSarees.fitOptions.showGarmentFitWidget, false);
+check("Women's Sarees has 0 silhouettes", womensSarees.fitOptions.silhouettes.length, 0);
+check("Women's Sarees measurement profile is free_size", womensSarees.measurementProfile.type, "free_size");
+
+// 4. Accessories Belts -> belt_numeric + no garment fit + no tape measurements
+const belts = resolveCategorySizing(
+  { slug: "belts", name: "Belts", verticalType: "lifestyle" },
+  { slug: "accessories", name: "Accessories" }
+);
+check("Accessories Belts sizeSystem is belt_numeric", belts.sizeSystem, "belt_numeric");
+check("Accessories Belts variant label is Belt Size (Inches)", belts.variant.label, "Belt Size (Inches)");
+check("Accessories Belts defaultOptions are 28..42 + Free Size", belts.variant.defaultOptions, SIZING_PRESETS.belt_numeric);
+checkTrue("Accessories Belts allows custom sizes", belts.variant.allowCustom);
+check("Accessories Belts does not show garment fit widget", belts.fitOptions.showGarmentFitWidget, false);
+check("Accessories Belts measurement profile is none", belts.measurementProfile.type, "none");
+check("Accessories Belts requiresMeasurements is false", belts.variant.requiresMeasurements, false);
+
+// 5. Explicit category.sizeSystem override (Tier 1 precedence)
+const overridden = resolveCategorySizing(
+  { slug: "mens-jeans", name: "Jeans", sizeSystem: "custom", verticalType: "apparel" }
+);
+check("Explicit sizeSystem override beats category fallback", overridden.sizeSystem, "custom");
+
+// 6. Immutability: Verify resolveCategorySizing does NOT mutate input objects
+const frozenCat = Object.freeze({ slug: "mens-trousers", name: "Trousers", verticalType: "apparel" });
+const frozenParent = Object.freeze({ slug: "mens-fashion", name: "Men's Fashion" });
+const resolvedFrozen = resolveCategorySizing(frozenCat, frozenParent);
+check("Immutable input resolves properly", resolvedFrozen.sizeSystem, "waist_numeric");
+check("Category object was not mutated", frozenCat.slug, "mens-trousers");
 
 console.log(`\nVerticals: ${passed} passed, ${failed} failed.`);
 

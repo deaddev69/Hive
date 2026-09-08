@@ -4,7 +4,7 @@
 
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import type { VerticalType } from "../packages/types/src/verticals";
+import type { SizeSystemType, VerticalType } from "../packages/types/src/verticals";
 
 /**
  * Closed union of product verticals.
@@ -29,6 +29,29 @@ const _verticalUnionCoversRegistry: ValidatorVerticalType extends VerticalType ?
 const _registryCoversVerticalUnion: VerticalType extends ValidatorVerticalType ? true : never = true;
 void _verticalUnionCoversRegistry;
 void _registryCoversVerticalUnion;
+
+/**
+ * Closed union of category sizing systems.
+ *
+ * Parallels SizeSystemType from @hive/types.
+ */
+export const SizeSystemValidator = v.union(
+  v.literal("alpha"),
+  v.literal("waist_numeric"),
+  v.literal("waist_numeric_women"),
+  v.literal("footwear_uk_men"),
+  v.literal("footwear_uk_women"),
+  v.literal("free_size"),
+  v.literal("belt_numeric"),
+  v.literal("kids_age"),
+  v.literal("custom"),
+);
+
+type ValidatorSizeSystemType = typeof SizeSystemValidator.type;
+const _sizeSystemUnionCoversRegistry: ValidatorSizeSystemType extends SizeSystemType ? true : never = true;
+const _registryCoversSizeSystemUnion: SizeSystemType extends ValidatorSizeSystemType ? true : never = true;
+void _sizeSystemUnionCoversRegistry;
+void _registryCoversSizeSystemUnion;
 
 /**
  * ImageAsset: A reusable schema for all Cloudflare R2 media assets.
@@ -607,7 +630,12 @@ export default defineSchema({
                          v.literal("slim_fit"),
                          v.literal("regular_fit"),
                          v.literal("relaxed_fit"),
-                         v.literal("oversized")
+                         v.literal("oversized"),
+                         v.literal("skinny_fit"),
+                         v.literal("straight_fit"),
+                         v.literal("tapered_fit"),
+                         v.literal("wide_leg"),
+                         v.literal("bootcut")
                        )),
     seedSource:       v.optional(v.union(v.literal("demo"), v.literal("production"))),
     // Security: Version field for optimistic concurrency control (prevents overselling race conditions)
@@ -1721,6 +1749,7 @@ export default defineSchema({
     // product field this is live configuration: an admin may change it, and the
     // change applies to products created afterwards, never to existing ones.
     verticalType:   v.optional(VerticalTypeValidator),
+    sizeSystem:     v.optional(SizeSystemValidator),
     createdAt:      v.number(),
   })
     .index("by_active_and_sortOrder", ["active", "sortOrder"])

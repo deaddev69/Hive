@@ -414,3 +414,393 @@ export function effectiveVerticalType(value?: string | null): VerticalType {
 export function getVerticalConfig(value?: string | null): VerticalConfig {
   return VERTICAL_CONFIGS[effectiveVerticalType(value)];
 }
+
+// ─── CATEGORY-AWARE SIZING RESOLUTION ───────────────────────────────────────
+//
+// A single shared resolver that establishes:
+//   1. variant config (size label, units, default options, custom allowed)
+//   2. fit options (whether garment fit widget shows, and which silhouettes apply)
+//   3. measurement profile (which measurement columns apply: tops, bottoms, etc.)
+//
+// The three dimensions are strictly decoupled: belts have numeric waist sizes
+// but no garment fit widget and no tape measurements; jeans have waist sizes
+// with bottoms silhouettes and bottoms tape measurements; kurtis have alpha sizes
+// with tops silhouettes and tops tape measurements.
+//
+// Precedence:
+//   explicit category.sizeSystem
+//           ↓
+//   category-aware fallback (exact slug identity, then keyword heuristics)
+//           ↓
+//   fallbackVertical default
+
+export type SizeSystemType =
+  | "alpha"
+  | "waist_numeric"
+  | "waist_numeric_women"
+  | "footwear_uk_men"
+  | "footwear_uk_women"
+  | "free_size"
+  | "belt_numeric"
+  | "kids_age"
+  | "custom";
+
+export interface FitSilhouetteOption {
+  value: string;
+  label: string;
+  description: string;
+}
+
+export interface FitOptions {
+  showGarmentFitWidget: boolean;
+  silhouettes: FitSilhouetteOption[];
+}
+
+export interface MeasurementColumn {
+  key: string;
+  label: string;
+  unit: string;
+}
+
+export interface MeasurementProfile {
+  type: "tops" | "bottoms" | "footwear" | "free_size" | "none";
+  columns: MeasurementColumn[];
+}
+
+export interface CategorySizingResolution {
+  sizeSystem: SizeSystemType;
+  variant: VerticalVariantConfig;
+  fitOptions: FitOptions;
+  measurementProfile: MeasurementProfile;
+}
+
+export interface CategorySizingInput {
+  sizeSystem?: SizeSystemType | null;
+  slug?: string | null;
+  name?: string | null;
+  isFreeSize?: boolean | null;
+  verticalType?: string | null;
+  parentId?: string | null;
+}
+
+export interface ParentCategorySizingInput {
+  slug?: string | null;
+  name?: string | null;
+}
+
+// ─── SIZING PRESETS ─────────────────────────────────────────────────────────
+
+export const SIZING_PRESETS: Readonly<Record<SizeSystemType, readonly string[]>> = {
+  waist_numeric:        ["28", "30", "32", "34", "36", "38", "40", "42"],
+  waist_numeric_women:  ["26", "28", "30", "32", "34", "36", "38", "40"],
+  footwear_uk_men:      ["UK 6", "UK 7", "UK 8", "UK 9", "UK 10", "UK 11", "UK 12"],
+  footwear_uk_women:    ["UK 3", "UK 4", "UK 5", "UK 6", "UK 7", "UK 8", "UK 9"],
+  belt_numeric:         ["28", "30", "32", "34", "36", "38", "40", "42", "Free Size"],
+  free_size:            ["Free Size"],
+  alpha:                ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "Free"],
+  kids_age:             ["0-6M", "6-12M", "1-2Y", "2-3Y", "3-4Y", "4-5Y", "5-6Y", "7-8Y", "9-10Y"],
+  custom:               ["Standard", "Free Size"],
+};
+
+// ─── FIT SILHOUETTE PRESETS ─────────────────────────────────────────────────
+
+export const TOPS_SILHOUETTES: readonly FitSilhouetteOption[] = [
+  { value: "regular_fit", label: "Regular",   description: "Regular Fit — standard drape, classic silhouette" },
+  { value: "slim_fit",    label: "Slim",      description: "Slim Fit — tailored outline, cut close to the body" },
+  { value: "relaxed_fit", label: "Relaxed",   description: "Relaxed Fit — extra room, comfortable cut" },
+  { value: "oversized",   label: "Oversized", description: "Oversized Cut — intentionally loose and baggy" },
+];
+
+export const BOTTOMS_SILHOUETTES: readonly FitSilhouetteOption[] = [
+  { value: "straight_fit", label: "Straight", description: "Straight Fit — classic straight leg drape from hip to hem" },
+  { value: "slim_fit",     label: "Slim",     description: "Slim Fit — fitted through hip and thigh with a narrow leg opening" },
+  { value: "skinny_fit",   label: "Skinny",   description: "Skinny Fit — close cut from hip to hem" },
+  { value: "tapered_fit",  label: "Tapered",  description: "Tapered Fit — roomy through thigh, narrowing toward the ankle" },
+  { value: "relaxed_fit",  label: "Relaxed",  description: "Relaxed Fit — generous cut through seat and thigh" },
+  { value: "wide_leg",     label: "Wide Leg", description: "Wide Leg — spacious, relaxed cut with generous leg room" },
+  { value: "bootcut",      label: "Bootcut",  description: "Bootcut — fitted through thigh with a subtle flare at the hem" },
+];
+
+// ─── MEASUREMENT COLUMN PRESETS ─────────────────────────────────────────────
+
+export const TOPS_MEASUREMENT_COLUMNS: readonly MeasurementColumn[] = [
+  { key: "chest",    label: "Chest",          unit: "in" },
+  { key: "waist",    label: "Waist",          unit: "in" },
+  { key: "shoulder", label: "Shoulder",       unit: "in" },
+  { key: "length",   label: "Garment Length", unit: "in" },
+];
+
+export const BOTTOMS_MEASUREMENT_COLUMNS: readonly MeasurementColumn[] = [
+  { key: "waist",  label: "Waist",          unit: "in" },
+  { key: "inseam", label: "Inseam",         unit: "in" },
+  { key: "length", label: "Outseam Length", unit: "in" },
+  { key: "hip",    label: "Hip",            unit: "in" },
+];
+
+export const FOOTWEAR_MEASUREMENT_COLUMNS: readonly MeasurementColumn[] = [
+  { key: "insole",     label: "Insole Length",          unit: "cm" },
+  { key: "footLength", label: "Recommended Foot Length", unit: "cm" },
+];
+
+export const FREE_SIZE_MEASUREMENT_COLUMNS: readonly MeasurementColumn[] = [
+  { key: "length", label: "Length", unit: "m" },
+  { key: "width",  label: "Width",  unit: "in" },
+];
+
+// ─── BACKWARDS COMPATIBILITY HELPERS ───────────────────────────────────────
+
+/**
+ * Checks whether a size string represents a "Free Size" / "Free" / "FS" variant.
+ * Preserves backward compatibility with existing products containing "Free" or "FS"
+ * without forcing data rewrites.
+ */
+export function isFreeSizeLiteral(s?: string | null): boolean {
+  if (!s || typeof s !== "string") return false;
+  const lower = s.trim().toLowerCase();
+  return lower === "free" || lower === "free size" || lower === "fs" || lower === "standard";
+}
+
+// ─── RESOLVER IMPLEMENTATION ────────────────────────────────────────────────
+
+export function resolveCategorySizing(
+  category?: CategorySizingInput | null,
+  parentCategory?: ParentCategorySizingInput | null,
+  fallbackVertical?: string | null
+): CategorySizingResolution {
+  const catSlug = (category?.slug ?? "").toLowerCase().trim();
+  const catName = (category?.name ?? "").toLowerCase().trim();
+  const parentSlug = (parentCategory?.slug ?? "").toLowerCase().trim();
+  const parentName = (parentCategory?.name ?? "").toLowerCase().trim();
+  const effectiveVertical = effectiveVerticalType(category?.verticalType ?? fallbackVertical);
+
+  // ── Step 1: Resolve sizeSystem (Precedence: explicit -> category fallback -> vertical default)
+  let sizeSystem: SizeSystemType;
+
+  if (category?.sizeSystem) {
+    sizeSystem = category.sizeSystem;
+  } else if (category?.isFreeSize === true) {
+    sizeSystem = "free_size";
+  } else {
+    // Category-aware fallback matching audited 37-category production taxonomy:
+    // Men's bottomwear
+    if (
+      catSlug === "mens-jeans" ||
+      catSlug === "mens-trousers" ||
+      catSlug === "mens-shorts"
+    ) {
+      sizeSystem = "waist_numeric";
+    }
+    // Men's topwear
+    else if (
+      catSlug === "mens-shirts" ||
+      catSlug === "mens-polos" ||
+      catSlug === "mens-jackets" ||
+      catSlug === "mens-sweatshirts" ||
+      catSlug === "mens-ethnic-wear" ||
+      catSlug === "t-shirts"
+    ) {
+      sizeSystem = "alpha";
+    }
+    // Accessories: Belts
+    else if (catSlug === "belts" || catName === "belts" || catName === "belt") {
+      sizeSystem = "belt_numeric";
+    }
+    // Free-size accessories & ethnic drapes
+    else if (
+      catSlug === "sarees" ||
+      catSlug === "dupattas" ||
+      catSlug === "handbags" ||
+      catSlug === "wallets" ||
+      catSlug === "watches" ||
+      catSlug === "sunglasses" ||
+      catSlug === "jewellery" ||
+      catSlug === "hair-accessories" ||
+      catSlug === "scarves-stoles" ||
+      catSlug === "hats-caps"
+    ) {
+      sizeSystem = "free_size";
+    }
+    // Keyword heuristics for new/unlisted categories
+    else if (
+      catSlug.includes("jeans") ||
+      catSlug.includes("trouser") ||
+      catSlug.includes("pants") ||
+      catSlug.includes("chinos") ||
+      catSlug.includes("shorts") ||
+      catName.includes("jeans") ||
+      catName.includes("trouser") ||
+      catName.includes("pants") ||
+      catName.includes("chinos") ||
+      catName.includes("shorts")
+    ) {
+      const isWomen =
+        catSlug.includes("women") ||
+        catName.includes("women") ||
+        parentSlug.includes("women") ||
+        parentName.includes("women");
+      sizeSystem = isWomen ? "waist_numeric_women" : "waist_numeric";
+    } else if (
+      catSlug.includes("shoe") ||
+      catSlug.includes("footwear") ||
+      catSlug.includes("sandals") ||
+      catSlug.includes("sneaker") ||
+      catSlug.includes("heels") ||
+      catSlug.includes("juttis") ||
+      catName.includes("shoe") ||
+      catName.includes("footwear")
+    ) {
+      const isWomen =
+        catSlug.includes("women") ||
+        catName.includes("women") ||
+        parentSlug.includes("women") ||
+        parentName.includes("women");
+      sizeSystem = isWomen ? "footwear_uk_women" : "footwear_uk_men";
+    } else if (
+      catSlug.includes("saree") ||
+      catSlug.includes("dupatta") ||
+      catSlug.includes("stole") ||
+      catSlug.includes("scarf") ||
+      catSlug.includes("shawl") ||
+      catName.includes("saree") ||
+      catName.includes("dupatta")
+    ) {
+      sizeSystem = "free_size";
+    } else if (
+      catSlug.includes("kid") ||
+      catSlug.includes("baby") ||
+      catName.includes("kid") ||
+      catName.includes("baby")
+    ) {
+      sizeSystem = "kids_age";
+    } else {
+      // Tier 3: Vertical default
+      switch (effectiveVertical) {
+        case "footwear":
+          sizeSystem = "footwear_uk_men";
+          break;
+        case "handbag":
+        case "jewellery":
+        case "lifestyle":
+          sizeSystem = "free_size";
+          break;
+        case "fragrance":
+          sizeSystem = "custom";
+          break;
+        case "apparel":
+        default:
+          sizeSystem = "alpha";
+          break;
+      }
+    }
+  }
+
+  // ── Step 2: Determine Decoupled Category Features
+  const isBottoms =
+    sizeSystem === "waist_numeric" ||
+    sizeSystem === "waist_numeric_women" ||
+    catSlug.includes("jeans") ||
+    catSlug.includes("trouser") ||
+    catSlug.includes("shorts") ||
+    catSlug.includes("chinos") ||
+    catName.includes("jeans") ||
+    catName.includes("trouser");
+
+  const isBelt = sizeSystem === "belt_numeric" || catSlug === "belts" || catName === "belts";
+  const isFootwear =
+    sizeSystem === "footwear_uk_men" ||
+    sizeSystem === "footwear_uk_women" ||
+    effectiveVertical === "footwear" ||
+    catSlug.includes("shoe") ||
+    catSlug.includes("footwear");
+  const isFreeSizeCat = sizeSystem === "free_size" || category?.isFreeSize === true;
+
+  // ── Step 3: Resolve Fit Options (Independent from sizeSystem)
+  let fitOptions: FitOptions;
+  if (isBottoms && !isBelt) {
+    fitOptions = {
+      showGarmentFitWidget: true,
+      silhouettes: [...BOTTOMS_SILHOUETTES],
+    };
+  } else if (effectiveVertical === "apparel" && !isFreeSizeCat && !isBelt && !isFootwear) {
+    fitOptions = {
+      showGarmentFitWidget: true,
+      silhouettes: [...TOPS_SILHOUETTES],
+    };
+  } else {
+    // Belts, accessories, footwear, free-size drapes have no garment fit widget
+    fitOptions = {
+      showGarmentFitWidget: false,
+      silhouettes: [],
+    };
+  }
+
+  // ── Step 4: Resolve Measurement Profile (Independent from sizeSystem)
+  let measurementProfile: MeasurementProfile;
+  if (isBottoms && !isBelt) {
+    measurementProfile = {
+      type: "bottoms",
+      columns: [...BOTTOMS_MEASUREMENT_COLUMNS],
+    };
+  } else if (effectiveVertical === "apparel" && !isFreeSizeCat && !isBelt && !isFootwear) {
+    measurementProfile = {
+      type: "tops",
+      columns: [...TOPS_MEASUREMENT_COLUMNS],
+    };
+  } else if (isFootwear) {
+    measurementProfile = {
+      type: "footwear",
+      columns: [...FOOTWEAR_MEASUREMENT_COLUMNS],
+    };
+  } else if (isFreeSizeCat && (catSlug.includes("saree") || catSlug.includes("kasavu") || catName.includes("saree"))) {
+    measurementProfile = {
+      type: "free_size",
+      columns: [...FREE_SIZE_MEASUREMENT_COLUMNS],
+    };
+  } else {
+    measurementProfile = {
+      type: "none",
+      columns: [],
+    };
+  }
+
+  // ── Step 5: Construct VerticalVariantConfig
+  let axisLabel = "Size";
+  let axisUnit: string | undefined;
+  const allowCustom = true; // Sellers can always enter arbitrary sizes (e.g. 26, 44, 31, 33)
+
+  if (sizeSystem === "waist_numeric" || sizeSystem === "waist_numeric_women") {
+    axisLabel = "Waist Size (Inches)";
+  } else if (sizeSystem === "belt_numeric") {
+    axisLabel = "Belt Size (Inches)";
+  } else if (sizeSystem === "footwear_uk_men" || sizeSystem === "footwear_uk_women") {
+    axisLabel = "Shoe Size (UK)";
+    axisUnit = "UK";
+  } else if (sizeSystem === "kids_age") {
+    axisLabel = "Age / Size";
+  } else if (effectiveVertical === "fragrance") {
+    axisLabel = "Volume";
+    axisUnit = "ml";
+  }
+
+  // Special case: Fragrance vertical preserves its dedicated volume options
+  const defaultOptions =
+    effectiveVertical === "fragrance" && sizeSystem === "custom"
+      ? VERTICAL_CONFIGS.fragrance.variant.defaultOptions
+      : SIZING_PRESETS[sizeSystem] ?? SIZING_PRESETS.alpha;
+
+  const variant: VerticalVariantConfig = {
+    label: axisLabel,
+    unit: axisUnit,
+    defaultOptions,
+    allowCustom,
+    requiresMeasurements: measurementProfile.type !== "none",
+  };
+
+  return {
+    sizeSystem,
+    variant,
+    fitOptions,
+    measurementProfile,
+  };
+}
+

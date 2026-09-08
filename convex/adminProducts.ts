@@ -704,7 +704,12 @@ export const updateProductDetailsAdmin = mutation({
       v.literal("slim_fit"),
       v.literal("regular_fit"),
       v.literal("relaxed_fit"),
-      v.literal("oversized")
+      v.literal("oversized"),
+      v.literal("skinny_fit"),
+      v.literal("straight_fit"),
+      v.literal("tapered_fit"),
+      v.literal("wide_leg"),
+      v.literal("bootcut")
     )),
     material: v.optional(v.string()),
     care: v.optional(v.string()),
