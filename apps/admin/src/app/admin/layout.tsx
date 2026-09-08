@@ -23,6 +23,7 @@ const NAV_GROUPS = [
     items: [
       { label: "Blog & SEO", href: "/admin/blog", icon: BookOpen },
       { label: "Campaigns", href: "/admin/marketing/campaigns", icon: Send },
+      { label: "Post-Purchase Promos", href: "/admin/promotions", icon: Sparkles },
     ]
   },
   {

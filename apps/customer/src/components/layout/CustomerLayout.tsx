@@ -10,6 +10,7 @@ import { Footer } from "./Footer";
 import { LocationDrawer } from "./LocationDrawer";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { MobileBottomNav } from "./MobileBottomNav";
+import { cn } from "@hive/ui";
 
 import { usePathname } from "next/navigation";
 
@@ -36,23 +37,25 @@ export const CustomerLayout: React.FC<{ children: React.ReactNode }> = ({ childr
       ) : (
         <Navbar />
       )}
-      
+
       {/* Root Layout Main */}
-      <main className="flex-grow w-full flex flex-col pb-20 md:pb-0">{children}</main>
-      
+      <main className={cn("flex-grow w-full flex flex-col", !isOrderConfirmation && "pb-20 md:pb-0")}>
+        {children}
+      </main>
+
       {/* Hide footer completely on mobile views across the entire site */}
       <div className="hidden md:block">
         <Footer />
       </div>
 
-      {/* Sticky bottom nav for mobile */}
-      <MobileBottomNav />
-      
+      {/* Sticky bottom nav for mobile (hidden on order confirmation) */}
+      {!isOrderConfirmation && <MobileBottomNav />}
+
       <LocationDrawer
         isOpen={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
       />
-      
+
       {/* Shopping Cart Side Drawer */}
       <CartDrawer
         isOpen={isSidebarOpen}

@@ -2650,5 +2650,125 @@ export default defineSchema({
     .index("by_status", ["status"])
     .index("by_boutiqueId", ["boutiqueId"])
     .index("by_orderId", ["orderId"]),
+
+  // ─── POST-PURCHASE PROMOTIONS & REWARDS ENGINE ───────────────────────────
+  postPurchasePromotions: defineTable({
+    name:         v.string(), // Internal campaign name
+    type:         v.union(
+                    v.literal("scratch_card"),
+                    v.literal("sponsored_banner"),
+                    v.literal("brand_offer"),
+                    v.literal("coupon")
+                  ),
+    placement:    v.union(
+                    v.literal("ORDER_SUCCESS_REWARD"),
+                    v.literal("ORDER_SUCCESS_SPONSORED")
+                  ),
+    status:       v.union(
+                    v.literal("draft"),
+                    v.literal("active"),
+                    v.literal("scheduled"),
+                    v.literal("archived")
+                  ),
+    priority:     v.number(), // Sort priority (1 is highest)
+    badge:        v.optional(v.string()), // e.g. "Just for you ✨", "Sponsored · The Linen Club"
+    title:        v.string(), // e.g. "Scratch & Win Rewards", "Flat 20% Off"
+    subtitle:     v.optional(v.string()), // e.g. "Get a reward for your next Hive purchase.", "on your next purchase"
+    creativeUrl:  v.optional(v.string()),
+    aspectRatio:  v.optional(
+                    v.union(
+                      v.literal("1:1"),
+                      v.literal("3:4"),
+                      v.literal("4:5"),
+                      v.literal("16:9")
+                    )
+                  ),
+    ctaText:      v.string(), // e.g. "Scratch Now →", "Shop Now →"
+    // Type-Safe Destination
+    destination:  v.optional(
+                    v.object({
+                      type: v.union(
+                        v.literal("product"),
+                        v.literal("store"),
+                        v.literal("category"),
+                        v.literal("promotion"),
+                        v.literal("external")
+                      ),
+                      value: v.string(),
+                    })
+                  ),
+    ctaLink:      v.optional(v.string()),
+    brandName:    v.optional(v.string()),
+    brandLogoUrl: v.optional(v.string()),
+    // Server-held reward parameters — NO public rewardCode!
+    rewardConfig: v.optional(
+                    v.object({
+                      rewardTitle: v.string(), // e.g. "₹100 OFF"
+                      rewardSubtitle: v.optional(v.string()), // e.g. "on your next order"
+                      rewardType: v.union(v.literal("fixed"), v.literal("percentage")),
+                      discountValue: v.number(), // e.g. 100 for ₹100 or 20 for 20%
+                      minOrderPaise: v.optional(v.number()), // e.g. 99900 for ₹999
+                      expiresInDays: v.optional(v.number()), // e.g. 30
+                      terms: v.optional(v.string()),
+                      claimLimit: v.optional(v.number()),
+                    })
+                  ),
+    // Hyperlocal Targeting primitives
+    targeting:    v.optional(
+                    v.object({
+                      audience: v.union(
+                        v.literal("everyone"),
+                        v.literal("new_customers"),
+                        v.literal("returning_customers")
+                      ),
+                      locationType: v.union(v.literal("all"), v.literal("selected_pincodes")),
+                      pincodes: v.optional(v.array(v.string())),
+                      vertical: v.optional(v.string()),
+                    })
+                  ),
+    // Frequency & Exposure Rules
+    displayRules: v.optional(
+                    v.object({
+                      maxImpressionsPerCustomer: v.optional(v.number()),
+                      maxClaimsPerCustomer: v.optional(v.number()),
+                      cooldownDays: v.optional(v.number()),
+                    })
+                  ),
+    startAt:      v.optional(v.number()),
+    endAt:        v.optional(v.number()),
+    createdAt:    v.number(),
+    updatedAt:    v.number(),
+  })
+    .index("by_placement_status", ["placement", "status"])
+    .index("by_status_priority", ["status", "priority"]),
+
+  // Durable Claim Records enforcing 1-reward-per-order idempotency
+  promotionClaims: defineTable({
+    promotionId:   v.id("postPurchasePromotions"),
+    userId:        v.optional(v.id("users")),
+    orderNumber:   v.string(), // Order identifier guaranteeing single claim per order
+    couponCode:    v.string(), // Unique server-minted coupon code
+    rewardTitle:   v.string(),
+    discountPaise: v.number(),
+    claimedAt:     v.number(),
+    status:        v.union(v.literal("active"), v.literal("redeemed"), v.literal("expired")),
+  })
+    .index("by_orderNumber_promotionId", ["orderNumber", "promotionId"])
+    .index("by_userId", ["userId"]),
+
+  // Append-only event tracking for analytics (clean decoupled aggregation)
+  promotionEvents: defineTable({
+    promotionId: v.id("postPurchasePromotions"),
+    eventType:   v.union(
+                   v.literal("impression"),
+                   v.literal("click"),
+                   v.literal("scratch_start"),
+                   v.literal("claim")
+                 ),
+    orderNumber: v.optional(v.string()),
+    userId:      v.optional(v.id("users")),
+    timestamp:   v.number(),
+  })
+    .index("by_promotionId_eventType", ["promotionId", "eventType"]),
 });
 

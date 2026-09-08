@@ -18,9 +18,9 @@ export const OrderConfirmationHeader: React.FC = () => {
         <div className="flex-1 flex justify-start">
           <Link
             href="/orders"
-            className="flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-stone-900 transition-colors duration-150 group cursor-pointer"
+            className="flex items-center gap-1.5 text-xs font-bold text-stone-700 hover:text-stone-900 transition-colors duration-150 group cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-4 h-4 stroke-[2.2] group-hover:-translate-x-0.5 transition-transform" />
             <span>Orders</span>
           </Link>
         </div>

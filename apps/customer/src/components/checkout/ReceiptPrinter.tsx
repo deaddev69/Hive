@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, ReactNode, ComponentPropsWithoutRef } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { CheckCircle2, Loader2, Sparkles, MapPin, Package, ShieldCheck } from "lucide-react";
+import { Check, CheckCircle2, Loader2, Sparkles, MapPin, Package, ShieldCheck } from "lucide-react";
 import { cn } from "@hive/ui";
 
 export type ReceiptPrinterStage = "processing" | "printing" | "complete";
@@ -120,17 +120,12 @@ export function ReceiptPrinterMachine({
   return (
     <div
       className={cn(
-        "relative isolate w-full overflow-hidden rounded-3xl border border-stone-200/80 bg-white dark:bg-stone-900 p-4 pb-5 shadow-sm text-stone-900",
+        "relative isolate w-full overflow-hidden rounded-2xl border border-stone-200/80 bg-white p-4 sm:p-5 shadow-xs text-stone-900",
         className
       )}
       {...props}
     >
       {children}
-      {/* Clean Subtle Paper Slit */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-6 bottom-1.5 z-40 h-1.5 rounded-full border border-stone-200 bg-stone-200/80 dark:bg-stone-800"
-      />
     </div>
   );
 }
@@ -158,12 +153,12 @@ export function ReceiptPrinterScreen({
   return (
     <div
       className={cn(
-        "relative z-10 isolate overflow-hidden rounded-2xl border border-stone-200/80 dark:border-stone-800 bg-white dark:bg-stone-950 p-3.5 text-stone-900 dark:text-white shadow-2xs",
+        "relative z-10 w-full flex flex-col items-center text-center",
         className
       )}
       {...props}
     >
-      <div className="relative z-10">{children}</div>
+      {children}
     </div>
   );
 }
@@ -177,49 +172,40 @@ export function ReceiptPrinterStatus({
   const isComplete = stage === "complete";
 
   return (
-    <div className={cn("flex min-w-0 items-center gap-2", className)} {...props}>
-      <span aria-hidden="true" className="relative grid size-5 shrink-0 place-items-center">
+    <div className={cn("flex flex-col items-center justify-center", className)} {...props}>
+      <span aria-hidden="true" className="relative grid size-8 shrink-0 place-items-center">
         <AnimatePresence initial={false} mode="sync">
           {isComplete ? (
             <motion.span
-              animate={{ opacity: 1, transform: "scale(1)" }}
-              className="col-start-1 row-start-1 grid place-items-center text-emerald-400"
-              exit={{ opacity: animate ? 0 : 1, transform: shouldMove ? "scale(0.96)" : "scale(1)" }}
-              initial={{ opacity: animate ? 0 : 1, transform: shouldMove ? "scale(0.94)" : "scale(1)" }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="col-start-1 row-start-1 grid place-items-center w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/60 shadow-2xs"
+              exit={{ opacity: animate ? 0 : 1, scale: shouldMove ? 0.94 : 1 }}
+              initial={{ opacity: animate ? 0 : 1, scale: shouldMove ? 0.75 : 1 }}
               key="complete"
-              transition={{ duration: animate ? 0.16 : 0, ease: easeOut }}
+              transition={{ duration: animate ? 0.22 : 0, ease: easeOut }}
             >
-              <CheckCircle2 className="w-4.5 h-4.5" />
+              <Check className="w-4.5 h-4.5 stroke-[2.5]" />
             </motion.span>
           ) : (
             <motion.span
-              animate={{ opacity: 1, transform: "scale(1)" }}
-              className="col-start-1 row-start-1 grid place-items-center text-amber-400"
-              exit={{ opacity: animate ? 0 : 1, transform: shouldMove ? "scale(0.96)" : "scale(1)" }}
-              initial={{ opacity: animate ? 0 : 1, transform: shouldMove ? "scale(0.94)" : "scale(1)" }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="col-start-1 row-start-1 grid place-items-center text-amber-500"
+              exit={{ opacity: animate ? 0 : 1, scale: shouldMove ? 0.94 : 1 }}
+              initial={{ opacity: animate ? 0 : 1, scale: shouldMove ? 0.75 : 1 }}
               key="working"
               transition={{ duration: animate ? 0.16 : 0, ease: easeOut }}
             >
-              <Loader2 className={cn("w-4.5 h-4.5", animate && "animate-spin motion-reduce:animate-none")} />
+              <Loader2 className={cn("w-5 h-5", animate && "animate-spin motion-reduce:animate-none")} />
             </motion.span>
           )}
         </AnimatePresence>
       </span>
 
-      <div aria-live="polite" className="grid min-w-0 flex-1 items-center" role="status">
-        <AnimatePresence initial={false} mode="sync">
-          <motion.div
-            animate={{ opacity: 1, transform: "translateY(0px)" }}
-            className="col-start-1 row-start-1 truncate font-medium text-xs text-stone-300"
-            exit={{ opacity: animate ? 0 : 1, transform: shouldMove ? "translateY(-4px)" : "translateY(0px)" }}
-            initial={{ opacity: animate ? 0 : 1, transform: shouldMove ? "translateY(4px)" : "translateY(0px)" }}
-            key={stage}
-            transition={{ duration: animate ? 0.18 : 0, ease: easeOut }}
-          >
-            {children ?? statusLabels[stage]}
-          </motion.div>
-        </AnimatePresence>
-      </div>
+      {!isComplete && (
+        <div aria-live="polite" className="text-center font-medium text-xs text-stone-500 mt-1" role="status">
+          {children ?? statusLabels[stage]}
+        </div>
+      )}
     </div>
   );
 }
