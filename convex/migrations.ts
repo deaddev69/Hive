@@ -925,3 +925,201 @@ export const refileMisfiledTshirtProducts = internalMutation({
     };
   },
 });
+
+/**
+ * Broadens the Men's Fashion and Accessories taxonomies at the child level.
+ *
+ * Women's arrived with fifteen established subcategories; Men's and Accessories
+ * had one each, because the earlier cleanup deliberately restructured existing
+ * production categories rather than inventing new ones. This adds the missing
+ * children, now that the lists have been decided rather than guessed.
+ *
+ * No new parent is created. The three parents are the marketplace's real
+ * verticals, and a parent should represent one of those rather than reserve a
+ * name for inventory that may never arrive.
+ *
+ * The retired `t-shirts` row is reused rather than replaced. It holds no
+ * products, its slug is the natural one, and its identity was always correct --
+ * the fault was two women's products filed into it, which have since been moved.
+ * Creating `mens-t-shirts` alongside it would leave two categories meaning the
+ * same thing. `frok` stays retired: unlike t-shirts, its name is a typo rather
+ * than a category anyone would search for.
+ *
+ * `Kurtas` is deliberately absent. Men's Ethnic Wear already covers kurtas,
+ * sherwanis and nehru jackets, and offering both would leave a seller with a
+ * kurta unable to tell which one to pick -- the same ambiguity that put a salwar
+ * set under T-Shirts. If Ethnic Wear later earns subdivision, that is its own
+ * decision.
+ *
+ * Categories are created without images. The admin screen requires an image
+ * only when creating a category, not when editing one, so these stay editable
+ * and images can be added as inventory arrives.
+ *
+ * Touches the `categories` table only. No product is read, moved or
+ * re-categorised.
+ *
+ *   npx convex run --prod migrations:expandMensAndAccessories
+ *   npx convex run --prod migrations:expandMensAndAccessories '{"apply":true}'
+ *
+ * Reversal: deactivate or delete the created categories, and return t-shirts to
+ * top level and inactive.
+ */
+export const expandMensAndAccessories = internalMutation({
+  args: { apply: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    const apply = args.apply === true;
+
+    const TSHIRTS_SLUG = "t-shirts";
+    const TSHIRTS_PARENT = "mens-fashion";
+
+    const NEW_CATEGORIES = [
+      // Men's Fashion -- every one apparel.
+      { name: "Shirts",                slug: "mens-shirts",      parentSlug: "mens-fashion", vertical: "apparel"   as const },
+      { name: "Polos",                 slug: "mens-polos",       parentSlug: "mens-fashion", vertical: "apparel"   as const },
+      { name: "Trousers",              slug: "mens-trousers",    parentSlug: "mens-fashion", vertical: "apparel"   as const },
+      { name: "Jeans",                 slug: "mens-jeans",       parentSlug: "mens-fashion", vertical: "apparel"   as const },
+      { name: "Shorts",                slug: "mens-shorts",      parentSlug: "mens-fashion", vertical: "apparel"   as const },
+      { name: "Jackets",               slug: "mens-jackets",     parentSlug: "mens-fashion", vertical: "apparel"   as const },
+      { name: "Sweatshirts & Hoodies", slug: "mens-sweatshirts", parentSlug: "mens-fashion", vertical: "apparel"   as const },
+      // Accessories -- the vertical differs per row, since there is no
+      // "accessories" vertical and each one sets its own returns policy and the
+      // built-in seller form used when the category has no attributes of its own.
+      { name: "Wallets",          slug: "wallets",          parentSlug: "accessories", vertical: "handbag"   as const },
+      { name: "Belts",            slug: "belts",            parentSlug: "accessories", vertical: "lifestyle" as const },
+      { name: "Watches",          slug: "watches",          parentSlug: "accessories", vertical: "lifestyle" as const },
+      { name: "Sunglasses",       slug: "sunglasses",       parentSlug: "accessories", vertical: "lifestyle" as const },
+      { name: "Jewellery",        slug: "jewellery",        parentSlug: "accessories", vertical: "jewellery" as const },
+      { name: "Hair Accessories", slug: "hair-accessories", parentSlug: "accessories", vertical: "lifestyle" as const },
+      { name: "Scarves & Stoles", slug: "scarves-stoles",   parentSlug: "accessories", vertical: "apparel"   as const },
+      { name: "Hats & Caps",      slug: "hats-caps",        parentSlug: "accessories", vertical: "apparel"   as const },
+    ];
+
+    const existing = await ctx.db.query("categories").collect();
+    const bySlug = new Map(existing.map((c) => [c.slug, c]));
+
+    const reused: string[] = [];
+    const toCreate: string[] = [];
+    const toModify: string[] = [];
+    const warnings: string[] = [];
+
+    // Parents must exist, be active, and be top level before anything is filed
+    // under them.
+    const parentIds = new Map<string, Id<"categories">>();
+    for (const parentSlug of [TSHIRTS_PARENT, "accessories"]) {
+      const parent = bySlug.get(parentSlug);
+      if (!parent) throw new Error(`Aborted: no parent category with slug "${parentSlug}".`);
+      if (!parent.active) {
+        throw new Error(`Aborted: parent "${parent.name}" (/${parent.slug}) is inactive.`);
+      }
+      if (parent.parentId) {
+        throw new Error(`Aborted: "${parent.name}" is itself a subcategory; nesting is two levels deep.`);
+      }
+      parentIds.set(parentSlug, parent._id);
+      reused.push(`parent "${parent.name}" (/${parent.slug})`);
+    }
+
+    // Children that already exist and need no work.
+    for (const slug of ["handbags", "mens-ethnic-wear"]) {
+      const category = bySlug.get(slug);
+      if (!category) {
+        warnings.push(`expected existing category "${slug}" is missing`);
+        continue;
+      }
+      const parent = category.parentId ? await ctx.db.get(category.parentId) : null;
+      reused.push(`"${category.name}" (/${category.slug}) already under ${parent ? parent.name : "(top-level)"}`);
+    }
+
+    // T-Shirts: reactivate and file under Men's Fashion, keeping name and slug.
+    const tshirts = bySlug.get(TSHIRTS_SLUG);
+    if (!tshirts) {
+      warnings.push(`no category with slug "${TSHIRTS_SLUG}" -- nothing to reuse`);
+    } else {
+      const products = await ctx.db
+        .query("products")
+        .withIndex("by_categoryId", (q) => q.eq("categoryId", tshirts._id))
+        .collect();
+      if (products.length > 0) {
+        throw new Error(
+          `Aborted: "${tshirts.name}" holds ${products.length} products. It was expected to be empty before being reused for Men's.`
+        );
+      }
+
+      const parentId = parentIds.get(TSHIRTS_PARENT)!;
+      const changes: string[] = [];
+      const patch: Record<string, unknown> = {};
+      if (!tshirts.active) {
+        patch.active = true;
+        changes.push("reactivate");
+      }
+      if (tshirts.parentId !== parentId) {
+        patch.parentId = parentId;
+        changes.push("file under Men's Fashion");
+      }
+      if (changes.length === 0) {
+        reused.push(`"${tshirts.name}" (/${tshirts.slug}) already active under Men's Fashion`);
+      } else {
+        toModify.push(`"${tshirts.name}" (/${tshirts.slug}): ${changes.join(", ")}`);
+        if (apply) await ctx.db.patch(tshirts._id, patch);
+      }
+    }
+
+    // New children.
+    let sortOrder = existing.reduce((max, c) => Math.max(max, c.sortOrder || 0), 0);
+    for (const spec of NEW_CATEGORIES) {
+      const clash = bySlug.get(spec.slug);
+      if (clash) {
+        const parent = clash.parentId ? await ctx.db.get(clash.parentId) : null;
+        warnings.push(
+          `slug "${spec.slug}" already belongs to "${clash.name}" under ${parent ? parent.name : "(top-level)"} -- skipped`
+        );
+        continue;
+      }
+
+      sortOrder++;
+      toCreate.push(
+        `"${spec.name}" (/${spec.slug}) under ${spec.parentSlug}, ${spec.vertical}, sortOrder ${sortOrder}`
+      );
+
+      if (apply) {
+        await ctx.db.insert("categories", {
+          name:           spec.name,
+          slug:           spec.slug,
+          active:         true,
+          sortOrder,
+          // Children stay off the homepage: the homepage block filters on
+          // showOnHomepage with no level filter, so a child set true renders
+          // beside the parents as though it were one.
+          showOnHomepage: false,
+          parentId:       parentIds.get(spec.parentSlug)!,
+          verticalType:   spec.vertical,
+          createdAt:      Date.now(),
+        });
+      }
+    }
+
+    // Reported rather than changed: the Accessories parent still declares the
+    // handbag vertical, which stops describing it once it holds jewellery and
+    // watches. It only matters for a product filed directly on the parent, and
+    // a parent with children is not selectable in the seller picker, so this is
+    // left as a decision rather than folded into a taxonomy migration.
+    const accessories = bySlug.get("accessories");
+    if (accessories && accessories.verticalType === "handbag") {
+      warnings.push(
+        `"Accessories" still declares verticalType "handbag"; consider "lifestyle" now that it spans jewellery and watches`
+      );
+    }
+
+    return {
+      applied: apply,
+      reused,
+      toModify,
+      toCreate,
+      warnings,
+      categoriesCreated: apply ? toCreate.length : 0,
+      productChanges: 0,
+      note: apply
+        ? "Categories updated. No product was read, moved or re-categorised."
+        : "Dry run. Re-run with \"apply\":true to write.",
+    };
+  },
+});
