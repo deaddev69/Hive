@@ -282,7 +282,10 @@ export const claimScratchReward = mutation({
 export const listAdminPromotions = query({
   args: { token: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    await requireRole(ctx, "admin", args.token);
+    const user = await getCurrentUserOrNull(ctx, args.token);
+    if (!user || user.role !== "admin") {
+      return [];
+    }
     const promos = await ctx.db.query("postPurchasePromotions").collect();
     promos.sort((a, b) => a.priority - b.priority);
     return promos;

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useQuery, useMutation, useAction, useConvexAuth } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { getPublicUrl } from "../../../../../../convex/media/urls";
 import {
@@ -33,7 +33,11 @@ import {
 import Image from "next/image";
 
 export default function AdminPromotionsPage() {
-  const promotions = useQuery(api.promotions.listAdminPromotions, {});
+  const { isAuthenticated } = useConvexAuth();
+  const promotions = useQuery(
+    api.promotions.listAdminPromotions,
+    isAuthenticated ? {} : "skip"
+  );
   const createPromotion = useMutation(api.promotions.createPromotion);
   const toggleStatus = useMutation(api.promotions.togglePromotionStatus);
   const archivePromotion = useMutation(api.promotions.archivePromotion);
