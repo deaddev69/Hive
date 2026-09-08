@@ -503,6 +503,8 @@ export const simulateLogisticsWebhookAdmin = mutation({
       } else if (args.status === "in_transit") {
         orderPatch.status = "in_transit";
         orderPatch.inTransitAt = now;
+        // The parcel is in the rider's hands, so it was collected.
+        if (!order.pickedUpAt) orderPatch.pickedUpAt = now;
       } else if (args.status === "out_for_delivery") {
         orderPatch.status = "out_for_delivery";
         orderPatch.outForDeliveryAt = now;
@@ -682,6 +684,13 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
       if (args.status === "picked_up") {
         returnPatchData.pickedUpAt = eventTs;
       }
+      // Porter has no separate "picked up" event: `order_start_trip` means the
+      // rider has the parcel and is driving to the drop, which IS the pickup.
+      // Without this the collection time was never recorded on a real delivery
+      // and the timeline's pickup row stayed permanently empty.
+      if (args.status === "in_transit" && !shipment.pickedUpAt) {
+        returnPatchData.pickedUpAt = eventTs;
+      }
 
       // Driver details
       if (args.driverDetails) {
@@ -800,6 +809,13 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
     if (args.status === "picked_up") {
       patchData.pickedUpAt = eventTs;
     }
+    // Porter has no separate "picked up" event: `order_start_trip` means the
+    // rider has the parcel and is driving to the drop, which IS the pickup.
+    // Without this the collection time was never recorded on a real delivery
+    // and the timeline's pickup row stayed permanently empty.
+    if (args.status === "in_transit" && !shipment.pickedUpAt) {
+      patchData.pickedUpAt = eventTs;
+    }
     // Porter reports the real trip fare on completion — record it before the
     // settlement snapshot is frozen so Hive unit economics use the actual cost.
     if (args.actualTripFare !== undefined && args.actualTripFare > 0) {
@@ -863,6 +879,8 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
       } else if (args.status === "in_transit") {
         orderPatch.status = "in_transit";
         orderPatch.inTransitAt = now;
+        // The parcel is in the rider's hands, so it was collected.
+        if (!order.pickedUpAt) orderPatch.pickedUpAt = now;
       } else if (args.status === "out_for_delivery") {
         orderPatch.status = "out_for_delivery";
         orderPatch.outForDeliveryAt = now;
