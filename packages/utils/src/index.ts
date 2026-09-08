@@ -7,3 +7,4 @@ export * from "./order";
 export * from "./roles";
 export * from "./toast";
 export * from "./location/locationCache";
+export * from "./promotion";

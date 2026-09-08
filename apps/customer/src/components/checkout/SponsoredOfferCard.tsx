@@ -4,6 +4,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { getPromotionMediaStyle, type PromotionAspectRatio } from "@hive/utils";
 
 interface SponsoredOfferCardProps {
   promotion?: {
@@ -18,7 +19,7 @@ interface SponsoredOfferCardProps {
     ctaLink?: string;
     brandName?: string;
     creativeUrl?: string;
-    aspectRatio?: "1:1" | "3:4" | "4:5" | "16:9";
+    aspectRatio?: PromotionAspectRatio;
   };
 }
 
@@ -51,6 +52,9 @@ export const SponsoredOfferCard: React.FC<SponsoredOfferCardProps> = ({
     .replace(/\s*(?:→|->|>)\s*$/, "")
     .trim();
 
+  // Dynamic geometry derived from campaign aspect ratio
+  const mediaStyle = getPromotionMediaStyle(promotion.aspectRatio, "customer");
+
   return (
     <div className="relative w-full rounded-2xl border border-stone-200/80 bg-white p-4 shadow-xs overflow-hidden flex items-center justify-between gap-3 sm:gap-4 group">
       {/* Left Column: Promotion Copy & Action */}
@@ -80,20 +84,23 @@ export const SponsoredOfferCard: React.FC<SponsoredOfferCardProps> = ({
         </div>
       </div>
 
-      {/* Right Column: Brand Creative with Framing */}
+      {/* Right Column: Brand Creative with Ratio-Driven Framing */}
       {creativeUrl ? (
-        <div className="relative w-28 h-28 sm:w-32 sm:h-28 rounded-xl overflow-hidden bg-stone-100 shrink-0 border border-stone-200/60 flex items-center justify-center">
+        <div
+          className="relative rounded-xl overflow-hidden bg-stone-100 shrink-0 border border-stone-200/60 flex items-center justify-center transition-[width,aspect-ratio] duration-200"
+          style={mediaStyle}
+        >
           <Image
             src={creativeUrl}
             alt={brandName || title}
             fill
-            className="object-cover object-center group-hover:scale-103 transition-transform duration-300"
-            sizes="128px"
+            className="w-full h-full object-cover object-center group-hover:scale-103 transition-transform duration-300"
+            sizes={mediaStyle.width}
             unoptimized
           />
 
           {brandName && (
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 pt-4 text-center">
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-1.5 pt-4 text-center pointer-events-none">
               <p className="text-[9px] font-bold text-white uppercase tracking-wider truncate">
                 {brandName}
               </p>
@@ -101,7 +108,10 @@ export const SponsoredOfferCard: React.FC<SponsoredOfferCardProps> = ({
           )}
         </div>
       ) : brandName ? (
-        <div className="relative w-28 h-28 sm:w-32 sm:h-28 rounded-xl bg-stone-50 shrink-0 border border-stone-200/60 flex flex-col items-center justify-center p-2 text-center">
+        <div
+          className="relative rounded-xl bg-stone-50 shrink-0 border border-stone-200/60 flex flex-col items-center justify-center p-2 text-center transition-[width,aspect-ratio] duration-200"
+          style={mediaStyle}
+        >
           <span className="text-xs font-bold text-stone-700 tracking-tight">{brandName}</span>
         </div>
       ) : null}

@@ -32,6 +32,7 @@ import {
   Edit3,
 } from "lucide-react";
 import Image from "next/image";
+import { getPromotionMediaStyle } from "@hive/utils";
 
 export default function AdminPromotionsPage() {
   const { isAuthenticated } = useConvexAuth();
@@ -126,6 +127,8 @@ export default function AdminPromotionsPage() {
     maxImpressions: 1,
     cooldownDays: 30,
   });
+
+  const previewMediaStyle = getPromotionMediaStyle(form.aspectRatio, "admin");
 
   const handleBrandNameChange = (newBrandName: string) => {
     const suggested =
@@ -773,12 +776,15 @@ export default function AdminPromotionsPage() {
                       {form.creativeUrl ? (
                         /* Current Banner Preview with Replace / Remove Actions */
                         <div className="flex items-center gap-3 p-3 rounded-2xl bg-white border border-slate-200 shadow-2xs">
-                          <div className="relative w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center">
+                          <div
+                            className="relative rounded-xl bg-slate-100 border border-slate-200 shrink-0 overflow-hidden flex items-center justify-center transition-[width,aspect-ratio] duration-200"
+                            style={previewMediaStyle}
+                          >
                             <Image
                               src={form.creativeUrl}
                               alt="Creative Preview"
                               fill
-                              className="object-cover"
+                              className="w-full h-full object-cover"
                               unoptimized
                             />
                           </div>
@@ -1062,13 +1068,16 @@ export default function AdminPromotionsPage() {
                           <ArrowRight className="w-2.5 h-2.5" />
                         </span>
                       </div>
-                      <div className="w-16 h-16 rounded-lg bg-stone-100 border border-stone-200 shrink-0 overflow-hidden relative flex items-center justify-center">
+                      <div
+                        className="rounded-lg bg-stone-100 border border-stone-200 shrink-0 overflow-hidden relative flex items-center justify-center transition-[width,aspect-ratio] duration-200"
+                        style={previewMediaStyle}
+                      >
                         {form.creativeUrl ? (
                           <Image
                             src={form.creativeUrl}
                             alt="preview"
                             fill
-                            className="object-cover"
+                            className="w-full h-full object-cover"
                             unoptimized
                           />
                         ) : (
