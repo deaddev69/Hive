@@ -1,8 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Scissors, Compass, Ruler, FileText, Shirt, CheckCircle2, RotateCcw, Truck, ShieldCheck, Star } from "lucide-react";
 import { cn } from "@hive/ui";
-import { getVerticalConfig } from "@hive/types";
+import { getVerticalConfig, resolveCategorySizing } from "@hive/types";
+import { SILHOUETTE_DESCRIPTIONS } from "@/lib/silhouettes";
+import { MeasurementMatrix } from "./MeasurementMatrix";
 import { ProductDetail } from "@/lib/mockProductDetails";
 import { SizeSelector } from "./SizeSelector";
 import { PurchaseActions } from "./PurchaseActions";
@@ -44,7 +46,8 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
 
   // Fit recommendation & silhouette from product
   const fitRecommendation = (product as any).fitRecommendation as "runs_small" | "true_to_size" | "runs_large" | undefined;
-  const silhouette = (product as any).silhouette as "slim_fit" | "regular_fit" | "relaxed_fit" | "oversized" | undefined;
+  const silhouette = (product as any).silhouette as string | undefined;
+  const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
 
   const fitBadgeConfig = {
     runs_small:   { label: "Runs Small", advice: "Consider ordering one size up." },
@@ -52,12 +55,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
     runs_large:   { label: "Runs Large", advice: "Consider ordering one size down." },
   };
 
-  const silhouetteConfig = {
-    slim_fit:     "Slim Fit — tailored outline, cut close to the body",
-    regular_fit:  "Regular Fit — standard drape, classic silhouette",
-    relaxed_fit:  "Relaxed Fit — extra room, comfortable cut",
-    oversized:    "Oversized Cut — intentionally loose and baggy",
-  };
+  const silhouetteConfig: Record<string, string> = SILHOUETTE_DESCRIPTIONS;
 
   // Occasion tags formatter helper
   const formatTag = (tag: string) => {
@@ -70,6 +68,21 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
   const isReturnsAccepted = product.returnsAccepted ?? true;
 
   const verticalConfig = getVerticalConfig(product.verticalType);
+  const hasCustomSellerMeasurements =
+    Array.isArray((product as any).measurementMatrix) &&
+    (product as any).measurementMatrix.length > 0;
+
+  const resolvedSizing = useMemo(() => {
+    return resolveCategorySizing(
+      (product as any).category || {
+        name: (product as any).categoryName || product.name || "",
+        slug: (product as any).categorySlug || (product as any).slug || "",
+        verticalType: product.verticalType,
+      },
+      null,
+      product.verticalType
+    );
+  }, [product]);
 
   const hasDescription = product.description && product.description.trim() !== "";
   const productDetails = product.details || {};
@@ -185,15 +198,30 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({
           inventory={stockMap}
           selectedSize={selectedSize}
           onSelectSize={setSelectedSize}
-          hasMeasurements={verticalConfig.variant.requiresMeasurements}
-          label={verticalConfig.variant.label}
-          onOpenSizeGuide={() => {}}
+          hasMeasurements={resolvedSizing.variant.requiresMeasurements}
+          hasCustomSellerMeasurements={hasCustomSellerMeasurements}
+          label={resolvedSizing.variant.label}
+          onOpenSizeGuide={() => setIsSizeGuideOpen((prev) => !prev)}
           fitNote={product.fitNote}
         />
+        {isSizeGuideOpen && (
+          <div className="mt-3 p-3.5 bg-stone-50/90 border border-stone-200/80 rounded-2xl animate-fade-in shadow-xs">
+            <MeasurementMatrix
+              productName={product.name}
+              category={(product as any).category}
+              verticalType={product.verticalType}
+              measurementMatrix={(product as any).measurementMatrix}
+              sizes={product.sizes}
+              selectedSize={selectedSize}
+              isOpen={isSizeGuideOpen}
+              setIsOpen={setIsSizeGuideOpen}
+            />
+          </div>
+        )}
       </div>
 
       {/* ── SECTION 2.5: FIT BADGE & SILHOUETTE INDICATOR ── */}
-      {verticalConfig.presentation.showGarmentFitWidget && (fitRecommendation || silhouette) && (
+      {resolvedSizing.fitOptions.showGarmentFitWidget && (fitRecommendation || (silhouette && silhouetteConfig[silhouette])) && (
         <div className="flex flex-col gap-2 select-none">
           {fitRecommendation && (
             <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-stone-200/80 bg-stone-50/60 text-stone-700">

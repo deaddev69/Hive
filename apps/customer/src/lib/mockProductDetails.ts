@@ -16,6 +16,8 @@ export interface MeasurementRow {
   shoulder: string; // in inches
   length: string; // in inches
   hip?: string;
+  inseam?: string;
+  width?: string;
   fitType?: string;
   stretch?: string;
 }

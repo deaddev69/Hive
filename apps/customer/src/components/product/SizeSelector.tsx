@@ -51,6 +51,7 @@ export interface SizeSelectorProps {
   fitNote?: string;
   hasMeasurements?: boolean;
   label?: string;
+  hasCustomSellerMeasurements?: boolean;
 }
 
 export const SizeSelector: React.FC<SizeSelectorProps> = ({
@@ -62,6 +63,7 @@ export const SizeSelector: React.FC<SizeSelectorProps> = ({
   fitNote,
   hasMeasurements = true,
   label = "Size",
+  hasCustomSellerMeasurements = false,
 }) => {
   const currentStock = selectedSize ? inventory[selectedSize] ?? 0 : 0;
 
@@ -79,7 +81,7 @@ export const SizeSelector: React.FC<SizeSelectorProps> = ({
             onClick={onOpenSizeGuide}
             className="text-[11px] font-semibold text-stone-500 hover:text-stone-900 underline underline-offset-2 transition-colors cursor-pointer"
           >
-            View measurements →
+            {hasCustomSellerMeasurements ? "View garment measurements →" : "View standard size guide →"}
           </button>
         )}
       </div>
