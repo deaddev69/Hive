@@ -657,6 +657,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       verticalType?: string;
       parentId?: string;
       isFreeSize?: boolean;
+      sortOrder?: number;
     }[] = [];
 
     (categories || []).forEach((c: any) => {
@@ -670,6 +671,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         verticalType: c.verticalType,
         parentId: c.parentId,
         isFreeSize: c.isFreeSize,
+        sortOrder: c.sortOrder,
       });
     });
 
@@ -685,14 +687,24 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
    * its own stays selectable, because there is nothing more specific to pick.
    */
   const categoryGroups = useMemo(() => {
-    const byOrder = (a: { name: string }, b: { name: string }) =>
+    // Parents follow the sortOrder an admin set on the categories screen, so
+    // the running order of the marketplace is a merchandising decision rather
+    // than an accident of the alphabet. Children stay alphabetical: their
+    // sortOrder is an insertion counter nobody curates, and a list of fifteen
+    // is quicker to scan by name.
+    const byName = (a: { name: string }, b: { name: string }) =>
       a.name.localeCompare(b.name);
-    const roots = allCategoriesList.filter((c) => !c.parentId).sort(byOrder);
+    const bySortOrder = (
+      a: { sortOrder?: number; name: string },
+      b: { sortOrder?: number; name: string }
+    ) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || byName(a, b);
+
+    const roots = allCategoriesList.filter((c) => !c.parentId).sort(bySortOrder);
     return roots.map((parent) => ({
       parent,
       children: allCategoriesList
         .filter((c) => c.parentId === parent._id)
-        .sort(byOrder),
+        .sort(byName),
     }));
   }, [allCategoriesList]);
 
