@@ -3,11 +3,12 @@
 import React, { useState } from "react";
 import { Plus, Minus, Info, X } from "lucide-react";
 import { cn } from "@hive/ui";
-import { VerticalVariantConfig } from "@hive/types";
+import { VerticalVariantConfig, FitOptions } from "@hive/types";
 
 export interface VariantEditorProps {
   config: VerticalVariantConfig;
   showGarmentFit: boolean;
+  fitOptions?: FitOptions;
   selectedSizes: string[];
   onToggleSize: (size: string) => void;
   onAddCustomSize?: (size: string) => void;
@@ -18,13 +19,14 @@ export interface VariantEditorProps {
   isFreeSizeCategory?: boolean;
   fitRecommendation: "runs_small" | "true_to_size" | "runs_large";
   onFitRecommendationChange: (fit: "runs_small" | "true_to_size" | "runs_large") => void;
-  silhouette: "slim_fit" | "regular_fit" | "relaxed_fit" | "oversized";
-  onSilhouetteChange: (sil: "slim_fit" | "regular_fit" | "relaxed_fit" | "oversized") => void;
+  silhouette: string;
+  onSilhouetteChange: (sil: any) => void;
 }
 
 export function VariantEditor({
   config,
   showGarmentFit,
+  fitOptions,
   selectedSizes,
   onToggleSize,
   onAddCustomSize,
@@ -58,21 +60,46 @@ export function VariantEditor({
 
   const axisLabel = config.label || "Size";
 
+  const sizeHeading =
+    axisLabel === "Waist Size (Inches)"
+      ? "Available Waist Size (Inches) *"
+      : axisLabel === "Belt Size (Inches)"
+      ? "Available Belt Size (Inches) *"
+      : axisLabel.startsWith("Shoe Size")
+      ? `Available ${axisLabel} *`
+      : `Available ${axisLabel}s *`;
+
+  const addBtnText = axisLabel.toLowerCase().includes("size")
+    ? "Add Size"
+    : `Add ${axisLabel}`;
+
+  const silhouettes =
+    fitOptions?.silhouettes && fitOptions.silhouettes.length > 0
+      ? fitOptions.silhouettes
+      : [
+          { value: "slim_fit", label: "Slim", description: "Closer to body, tailored contour" },
+          { value: "regular_fit", label: "Regular", description: "Standard classic silhouette" },
+          { value: "relaxed_fit", label: "Relaxed", description: "Loose, comfortable everyday drape" },
+          { value: "oversized", label: "Oversized", description: "Intentionally roomy streetwear fit" },
+        ];
+
   return (
     <div className="flex flex-col gap-6 select-text" style={{ touchAction: "pan-y" }}>
-      {/* Saree Notice for Apparel */}
+      {/* Free Size Notice */}
       {isFreeSizeCategory ? (
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
           <Info className="w-4 h-4 text-slate-600 shrink-0" />
           <p className="text-xs font-medium text-slate-700">
-            Sarees are automatically Free Size. Size &quot;Free&quot; has been selected for you.
+            {selectedSizes.some((s) => s === "Free")
+              ? 'This product has size "Free" selected.'
+              : 'This product is Free Size. "Free Size" has been selected for you.'}
           </p>
         </div>
       ) : (
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-              Available {axisLabel}s *
+              {sizeHeading}
             </label>
             <span className="text-[10px] text-slate-400 font-medium">
               Select all options in stock
@@ -126,7 +153,7 @@ export function VariantEditor({
                 className="min-h-[44px] px-3 py-2 rounded-xl border border-dashed border-slate-300 hover:border-slate-400 bg-white text-slate-600 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all active:scale-95"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add {axisLabel}</span>
+                <span>{addBtnText}</span>
               </button>
             )}
           </div>
@@ -137,7 +164,13 @@ export function VariantEditor({
               <input
                 type="text"
                 autoFocus
-                placeholder={config.unit ? `e.g. 75${config.unit}` : `e.g. Custom ${axisLabel}`}
+                placeholder={
+                  config.unit
+                    ? `e.g. 75${config.unit}`
+                    : axisLabel.toLowerCase().includes("waist")
+                    ? "e.g. 31"
+                    : `e.g. Custom ${axisLabel}`
+                }
                 value={customInput}
                 onChange={(e) => setCustomInput(e.target.value)}
                 className="h-10 px-3.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-slate-900 w-44"
@@ -231,7 +264,7 @@ export function VariantEditor({
         </div>
       )}
 
-      {/* Apparel-only: Fit Recommendation & Silhouette */}
+      {/* Garment Fit Recommendation & Silhouette */}
       {showGarmentFit && (
         <div className="flex flex-col gap-6 pt-2 border-t border-slate-100">
           {/* Fit Recommendation */}
@@ -263,33 +296,31 @@ export function VariantEditor({
           </div>
 
           {/* Silhouette */}
-          <div className="flex flex-col gap-2">
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-              Silhouette
-            </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-md">
-              {[
-                { val: "slim_fit", label: "Slim" },
-                { val: "regular_fit", label: "Regular" },
-                { val: "relaxed_fit", label: "Relaxed" },
-                { val: "oversized", label: "Oversized" },
-              ].map((sil) => (
-                <button
-                  key={sil.val}
-                  type="button"
-                  onClick={() => onSilhouetteChange(sil.val as any)}
-                  className={cn(
-                    "min-h-[44px] py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer text-center select-none active:scale-95",
-                    silhouette === sil.val
-                      ? "bg-slate-950 text-white border-slate-950 font-bold shadow-2xs"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
-                  )}
-                >
-                  {sil.label}
-                </button>
-              ))}
+          {silhouettes.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                Silhouette
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-md">
+                {silhouettes.map((sil) => (
+                  <button
+                    key={sil.value}
+                    type="button"
+                    title={sil.description}
+                    onClick={() => onSilhouetteChange(sil.value as any)}
+                    className={cn(
+                      "min-h-[44px] py-2.5 px-3 text-xs font-semibold rounded-xl border transition-all cursor-pointer text-center select-none active:scale-95",
+                      silhouette === sil.value
+                        ? "bg-slate-950 text-white border-slate-950 font-bold shadow-2xs"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"
+                    )}
+                  >
+                    {sil.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

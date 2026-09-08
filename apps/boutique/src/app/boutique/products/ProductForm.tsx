@@ -21,10 +21,9 @@ import Cropper from "react-easy-crop";
 import { VariantEditor } from "./VariantEditor";
 import { SpecificationEditor } from "./SpecificationEditor";
 import { DynamicAttributeFields, AttributeFieldDef } from "./DynamicAttributeFields";
-import { getVerticalConfig } from "@hive/types";
+import { getVerticalConfig, resolveCategorySizing, isFreeSizeLiteral } from "@hive/types";
 
 // Constant arrays
-const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "Free"];
 const MATERIAL_OPTIONS = [
   "Cotton", "Silk", "Linen", "Cotton Linen", "Georgette", "Chiffon",
   "Velvet", "Rayon", "Satin", "Blend", "Other"
@@ -620,7 +619,17 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [stockBySize, setStockBySize] = useState<Record<string, number>>({});
   const [fitRecommendation, setFitRecommendation] = useState<"runs_small" | "true_to_size" | "runs_large">("true_to_size");
-  const [silhouette, setSilhouette] = useState<"slim_fit" | "regular_fit" | "relaxed_fit" | "oversized">("regular_fit");
+  const [silhouette, setSilhouette] = useState<
+    | "slim_fit"
+    | "regular_fit"
+    | "relaxed_fit"
+    | "oversized"
+    | "skinny_fit"
+    | "straight_fit"
+    | "tapered_fit"
+    | "wide_leg"
+    | "bootcut"
+  >("regular_fit");
   
   const [featured, setFeatured] = useState(false);
   const [active, setActive] = useState(true);
@@ -797,16 +806,39 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     setPickerParentId(null);
   };
 
-  // Free-size garments (sarees, dupattas, stoles) skip the size matrix. This
-  // used to be a name.includes("saree") check, which meant renaming a category
-  // silently changed how its products were sized, and a free-size category with
-  // any other name never got the behaviour at all. It is now a flag an admin
-  // sets on the category itself.
-  const isFreeSizeCategory = selectedCategoryObj?.isFreeSize === true;
+  const parentCategoryObj = useMemo(() => {
+    if (!selectedCategoryObj?.parentId) return null;
+    return allCategoriesList.find((c) => c._id === selectedCategoryObj.parentId) ?? null;
+  }, [selectedCategoryObj?.parentId, allCategoriesList]);
 
   const currentVerticalConfig = useMemo(() => {
     return getVerticalConfig(selectedCategoryObj?.verticalType || (productToEdit?.verticalType as any));
   }, [selectedCategoryObj?.verticalType, productToEdit?.verticalType]);
+
+  const resolvedSizing = useMemo(() => {
+    return resolveCategorySizing(
+      selectedCategoryObj,
+      parentCategoryObj,
+      currentVerticalConfig.id
+    );
+  }, [selectedCategoryObj, parentCategoryObj, currentVerticalConfig.id]);
+
+  const isFreeSizeCategory = resolvedSizing.sizeSystem === "free_size" || selectedCategoryObj?.isFreeSize === true;
+
+  // Keep silhouette aligned with category's allowed silhouettes
+  useEffect(() => {
+    if (resolvedSizing.fitOptions.showGarmentFitWidget && resolvedSizing.fitOptions.silhouettes.length > 0) {
+      const validValues = resolvedSizing.fitOptions.silhouettes.map((s) => s.value);
+      if (!validValues.includes(silhouette)) {
+        const savedSil = productToEdit?.silhouette;
+        if (savedSil && validValues.includes(savedSil) && productToEdit.categoryId === selectedCategoryObj?._id) {
+          setSilhouette(savedSil as any);
+        } else {
+          setSilhouette((resolvedSizing.fitOptions.silhouettes[0]?.value as any) || "regular_fit");
+        }
+      }
+    }
+  }, [resolvedSizing.fitOptions, silhouette, productToEdit, selectedCategoryObj?._id]);
 
   /**
    * The admin-defined attribute schema for the chosen category, if it has one.
@@ -1032,15 +1064,17 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     router.push("/boutique/products");
   };
 
-  // Auto-set FREE size for free-size categories (apparel only)
+  // Auto-set free size for free-size categories (new products or switched category)
   useEffect(() => {
-    if (isFreeSizeCategory && currentVerticalConfig.id === "apparel") {
-      if (!selectedSizes.includes("Free") && !selectedSizes.includes("FREE")) {
-        setSelectedSizes(["Free"]);
-        setStockBySize((prev) => ({ ...prev, Free: prev.Free || prev.FREE || 1 }));
+    if (isFreeSizeCategory) {
+      const hasAnyFreeSize = selectedSizes.some(isFreeSizeLiteral);
+      const isOriginalCategory = productToEdit && productToEdit.categoryId === selectedCategoryObj?._id;
+      if (!hasAnyFreeSize && (!isOriginalCategory || !productToEdit?.sizes?.length)) {
+        setSelectedSizes(["Free Size"]);
+        setStockBySize((prev) => ({ ...prev, "Free Size": prev["Free Size"] || 1 }));
       }
     }
-  }, [isFreeSizeCategory, currentVerticalConfig.id]);
+  }, [isFreeSizeCategory, selectedSizes, productToEdit, selectedCategoryObj?._id]);
 
   // Load product to edit
   useEffect(() => {
@@ -1581,8 +1615,8 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         material: finalMaterial,
         care: finalCare,
         details: cleanedDetails,
-        fitRecommendation: currentVerticalConfig.presentation.showGarmentFitWidget ? fitRecommendation : undefined,
-        silhouette: currentVerticalConfig.presentation.showGarmentFitWidget ? silhouette : undefined,
+        fitRecommendation: resolvedSizing.fitOptions.showGarmentFitWidget ? fitRecommendation : undefined,
+        silhouette: resolvedSizing.fitOptions.showGarmentFitWidget ? silhouette : undefined,
         approvalStatus: (productToEdit?.approvalStatus === "approved" ? "approved" : "pending") as any,
       };
 
@@ -2470,8 +2504,9 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         {currentStep === 3 && (
           <div className="flex flex-col gap-6 animate-in fade-in duration-200">
             <VariantEditor
-              config={currentVerticalConfig.variant}
-              showGarmentFit={currentVerticalConfig.presentation.showGarmentFitWidget}
+              config={resolvedSizing.variant}
+              showGarmentFit={resolvedSizing.fitOptions.showGarmentFitWidget}
+              fitOptions={resolvedSizing.fitOptions}
               selectedSizes={selectedSizes}
               onToggleSize={toggleSize}
               onAddCustomSize={(customSz: string) => {
