@@ -49,7 +49,6 @@ export default function AdminProductsPage() {
   // Boutique Dropdown Search State
   const [isBoutiqueDropdownOpen, setIsBoutiqueDropdownOpen] = useState(false);
   const [boutiqueSearch, setBoutiqueSearch] = useState("");
-  const [syncing, setSyncing] = useState(false);
 
   // Quality check modal state
   const [qualityCheckProduct, setQualityCheckProduct] = useState<any>(null);
@@ -101,7 +100,6 @@ export default function AdminProductsPage() {
   const deactivateProduct = useMutation(api.adminProducts.deactivateProductAdmin);
   const reactivateProduct = useMutation(api.adminProducts.reactivateProductAdmin);
   const toggleProductHidden = useMutation(api.adminProducts.toggleProductHiddenAdmin);
-  const backfillStats = useMutation(api.migrations.backfillProductPerformance);
   const approveProduct = useMutation(api.adminProducts.approveProductAdmin);
   const requestChangesProduct = useMutation(api.adminProducts.requestChangesProductAdmin);
 
@@ -230,27 +228,6 @@ export default function AdminProductsPage() {
         <div>
           <h1 className="text-3xl font-serif font-black text-hive-dark">Catalog Control Tower</h1>
           <p className="text-sm text-hive-text-muted">Monitor merchant trust, listing quality, inventory stock risks, and delivered revenue.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            disabled={syncing}
-            onClick={async () => {
-              setSyncing(true);
-              try {
-                const res = await backfillStats();
-                alert(`Successfully synced performance metrics for ${res.backfilledCount} products.`);
-              } catch (err: any) {
-                alert("Sync failed: " + err.message);
-              } finally {
-                setSyncing(false);
-              }
-            }}
-            className="px-3.5 py-2 text-xs font-bold text-hive-dark border-hive-border hover:bg-slate-50 rounded-xl flex items-center gap-1.5 shadow-sm bg-white"
-          >
-            <Activity className={cn("w-3.5 h-3.5 text-hive-amber shrink-0", syncing && "animate-spin")} />
-            Sync Performance Stats
-          </Button>
         </div>
       </div>
 

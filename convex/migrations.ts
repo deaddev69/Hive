@@ -1,4 +1,4 @@
-import { internalMutation, internalQuery, mutation } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { requireRole } from "./lib/auth";
@@ -12,7 +12,7 @@ import { calculateProductPricing, DEFAULT_TIER_SLABS, getPlatformConfig, calcula
  * Migration to backfill the productPerformance table for all historical orders and claims.
  * Keeps convex queries strictly read-only and aggregates all stats safely in O(1) fields.
  */
-export const backfillProductPerformance = mutation({
+export const backfillProductPerformance = internalMutation({
   args: {},
   handler: async (ctx) => {
     // If run from client, enforce admin check. Bypassed for Convex CLI run command.
@@ -282,7 +282,7 @@ export const migratePlatformSettingsToTiered = internalMutation({
  * Migration to recalculate all product prices according to all-inclusive upfront pricing.
  * Sets storefront price = Base Price + Handling Fee + Platform Fee + GST.
  */
-export const recalculateAllProductPrices = mutation({
+export const recalculateAllProductPrices = internalMutation({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();

@@ -125,7 +125,7 @@ function validateSlabs(slabs: CommissionSlab[]): { valid: boolean; error?: strin
 export default function SettingsClient() {
   const config = useQuery(api.adminSettings.getPlatformConfig);
   const updateConfig = useMutation(api.adminSettings.updatePlatformConfig);
-  const recalculatePrices = useMutation(api.migrations.recalculateAllProductPrices);
+  const recalculatePrices = useMutation(api.adminSettings.recalculateAllProductPrices);
 
   const [tiers, setTiers] = useState<TierPricingConfig[]>(DEFAULT_TIERS);
   const [isSaving, setIsSaving] = useState(false);
@@ -259,8 +259,8 @@ export default function SettingsClient() {
     setRecalcResult(null);
     try {
       const res = await recalculatePrices({});
-      setRecalcResult(res);
-      toast.success(res);
+      setRecalcResult(res.message);
+      toast.success(res.message);
     } catch (err: any) {
       toast.error(err.message || "Failed to recalculate prices.");
     } finally {
