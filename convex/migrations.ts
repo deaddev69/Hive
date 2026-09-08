@@ -1,5 +1,6 @@
 import { internalMutation, internalQuery, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { requireRole } from "./lib/auth";
 import { VerticalTypeValidator } from "./schema";
 import { getPlatformMarkupRate } from "./pricingHelpers";
@@ -816,6 +817,111 @@ export const setCategoryFields = internalMutation({
       category: `${category.name} (/${category.slug})`,
       changes,
       note: apply ? "Category updated. Parent, image and every other field untouched." : "Dry run. Re-run with \"apply\":true to write.",
+    };
+  },
+});
+
+/**
+ * One-time: re-files the two products misfiled under "T-Shirts".
+ *
+ * Neither is a t-shirt. A census of the catalogue found the category holds a
+ * 3-piece salwar set and a linen top, which is why it sat at top level looking
+ * unclassifiable. They are moved to the closest existing categories rather than
+ * new ones, so the taxonomy gains no empty nodes on the strength of two rows.
+ *
+ * Deliberately not a generic "move products" mutation. The two moves are named
+ * here by product id, and every one of them is checked against the state this
+ * was written for: the product must still exist, still carry the same name, and
+ * still sit in the category it is being moved out of. Anything else aborts
+ * without writing, because it means the catalogue changed underneath this and
+ * the intended move may no longer be the right one.
+ *
+ * Only `categoryId` is patched. Price, inventory, seller, vertical, details and
+ * slug are untouched — and re-categorising never restamps a product's vertical,
+ * which is set once at creation.
+ *
+ * Idempotent: a product already in its destination is reported and skipped, so
+ * re-running is safe and does nothing.
+ *
+ * The T-Shirts category is left in place. Deleting it is a separate step, after
+ * this has been verified, so the two changes have their own rollback boundary.
+ *
+ *   npx convex run --prod migrations:refileMisfiledTshirtProducts
+ *   npx convex run --prod migrations:refileMisfiledTshirtProducts '{"apply":true}'
+ *
+ * Reversal: move both products back to the t-shirts category.
+ */
+export const refileMisfiledTshirtProducts = internalMutation({
+  args: { apply: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    const apply = args.apply === true;
+
+    const MOVES = [
+      {
+        productId: "n175gfhrexn5253n3b6z0c8ca18dm39d",
+        expectedName: "3-piece Crush Fabric Salwar Set",
+        fromSlug: "t-shirts",
+        toSlug: "co-ord-sets",
+      },
+      {
+        productId: "n17b6e2vt5rftjj32n1efk7qc58cs1dj",
+        expectedName: "Yellow cotton-linen slitted top",
+        fromSlug: "t-shirts",
+        toSlug: "tops",
+      },
+    ];
+
+    const categoryBySlug = async (slug: string) => {
+      const category = await ctx.db
+        .query("categories")
+        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .first();
+      if (!category) throw new Error(`Aborted: no category with slug "${slug}".`);
+      return category;
+    };
+
+    const plan: string[] = [];
+    const alreadyDone: string[] = [];
+
+    for (const move of MOVES) {
+      const product = await ctx.db.get(move.productId as Id<"products">);
+      if (!product) {
+        throw new Error(`Aborted: product ${move.productId} no longer exists.`);
+      }
+      if (product.name !== move.expectedName) {
+        throw new Error(
+          `Aborted: product ${move.productId} is now named "${product.name}", expected "${move.expectedName}". The catalogue changed since this migration was written.`
+        );
+      }
+
+      const from = await categoryBySlug(move.fromSlug);
+      const to = await categoryBySlug(move.toSlug);
+      if (!to.active) {
+        throw new Error(`Aborted: destination category "${to.name}" is inactive.`);
+      }
+
+      if (product.categoryId === to._id) {
+        alreadyDone.push(`"${product.name}" is already in ${to.name}`);
+        continue;
+      }
+      if (product.categoryId !== from._id) {
+        throw new Error(
+          `Aborted: "${product.name}" is not in ${from.name} any more. Expected it there before moving it to ${to.name}.`
+        );
+      }
+
+      plan.push(`"${product.name}": ${from.name} -> ${to.name}`);
+      if (apply) await ctx.db.patch(product._id, { categoryId: to._id });
+    }
+
+    return {
+      applied: apply,
+      plan,
+      alreadyDone,
+      productsChanged: plan.length,
+      note: apply
+        ? "Products re-filed. Only categoryId was written; the T-Shirts category still exists and is now expected to be empty."
+        : "Dry run. Re-run with \"apply\":true to write.",
     };
   },
 });
