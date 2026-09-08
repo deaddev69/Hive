@@ -1,7 +1,17 @@
 // convex/tests/promotionUxCorrectionTest.ts
 // Verifies all 8 criteria of the post-purchase UX correction
 
-import assert from "node:assert/strict";
+function assertEqual(actual: unknown, expected: unknown, message?: string) {
+  if (actual !== expected) {
+    throw new Error(`Assertion failed: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}. ${message || ""}`);
+  }
+}
+
+function assertDeepEqual(actual: unknown, expected: unknown) {
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`Deep assertion failed: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  }
+}
 
 console.log("Running Promotion UX Correction Verification Suite...\n");
 
@@ -10,12 +20,12 @@ function sanitizeCtaText(text?: string): string {
   return (text || "Shop Now").replace(/\s*(?:→|->|>)\s*$/, "").trim();
 }
 
-assert.equal(sanitizeCtaText("Shop Now →"), "Shop Now");
-assert.equal(sanitizeCtaText("Scratch Now →"), "Scratch Now");
-assert.equal(sanitizeCtaText("Shop Now ->"), "Shop Now");
-assert.equal(sanitizeCtaText("Shop Now >"), "Shop Now");
-assert.equal(sanitizeCtaText("Claim Offer"), "Claim Offer");
-assert.equal(sanitizeCtaText(""), "Shop Now");
+assertEqual(sanitizeCtaText("Shop Now →"), "Shop Now");
+assertEqual(sanitizeCtaText("Scratch Now →"), "Scratch Now");
+assertEqual(sanitizeCtaText("Shop Now ->"), "Shop Now");
+assertEqual(sanitizeCtaText("Shop Now >"), "Shop Now");
+assertEqual(sanitizeCtaText("Claim Offer"), "Claim Offer");
+assertEqual(sanitizeCtaText(""), "Shop Now");
 console.log("✓ Test 1 Passed: CTA text sanitization strips duplicate trailing arrows");
 
 // 2. Badge & Emoji Sanitization: Strips ✨, 🎉, and resolves ownerType without inferring from missing brand
@@ -41,20 +51,20 @@ function resolveBadge(promo: {
 }
 
 // User's Rule 1: Don't use type === "brand_offer" alone or missing brandName to determine Hive ownership
-assert.equal(
+assertEqual(
   resolveBadge({ ownerType: "hive", brandName: undefined }),
   "Featured on Hive"
 );
-assert.equal(
+assertEqual(
   resolveBadge({ ownerType: "partner", brandName: "The Linen Club" }),
   "Sponsored · The Linen Club"
 );
 // Custom badge is preserved (stripped of emojis)
-assert.equal(
+assertEqual(
   resolveBadge({ badge: "Just for you ✨", ownerType: "hive" }),
   "Just for you"
 );
-assert.equal(
+assertEqual(
   resolveBadge({ badge: "Summer Edit · The Linen Club", ownerType: "partner", brandName: "The Linen Club" }),
   "Summer Edit · The Linen Club"
 );
@@ -85,14 +95,14 @@ function computeSuggestedBadge(
 
 // Scenario A: Brand changes from empty -> generates default
 const step1 = computeSuggestedBadge("", "", "The Linen Club", "partner");
-assert.equal(step1.newBadge, "Sponsored · The Linen Club");
+assertEqual(step1.newBadge, "Sponsored · The Linen Club");
 
 // Scenario B: Admin manually edits badge to "Summer Edit · The Linen Club"
 const manualBadge = "Summer Edit · The Linen Club";
 // Admin changes brand to "Van Heusen"
 const step2 = computeSuggestedBadge(manualBadge, step1.newSuggested, "Van Heusen", "partner");
 // Must NOT overwrite manual custom badge!
-assert.equal(step2.newBadge, "Summer Edit · The Linen Club");
+assertEqual(step2.newBadge, "Summer Edit · The Linen Club");
 console.log("✓ Test 3 Passed: Admin custom badges are never overwritten when brandName changes");
 
 // 4. Zero-Blank-State / No-Promo Fallback Test:
@@ -104,7 +114,7 @@ function resolvePromotions(activePromos: any[]) {
   return activePromos;
 }
 
-assert.deepEqual(resolvePromotions([]), []);
+assertDeepEqual(resolvePromotions([]), []);
 console.log("✓ Test 4 Passed: Empty active promotion query returns [] (no fake rewards or hardcoded Linen Club)");
 
 // 5. State F: Query Failure Isolation Test
@@ -121,7 +131,7 @@ function renderPageExperience(hasPromotions: boolean, queryFailed: boolean) {
 }
 
 const failedState = renderPageExperience(false, true);
-assert.deepEqual(failedState, [
+assertDeepEqual(failedState, [
   "ConfirmationHero",
   "DeliveryReassurance",
   "PrimaryActions",
