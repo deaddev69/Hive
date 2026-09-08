@@ -54,7 +54,7 @@ export interface PhysicalAddress {
 }
 
 // ─── MEASUREMENT MATRIX ───────────────────────────────────────────────────────
-export type ProductSize = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "Free";
+export type ProductSize = "XS" | "S" | "M" | "L" | "XL" | "XXL" | "3XL" | "4XL" | "Free";
 
 export interface SizeMeasurement {
   bust?:   string;  // in cm

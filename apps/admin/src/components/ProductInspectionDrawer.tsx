@@ -496,7 +496,7 @@ export function ProductInspectionDrawer({
                       <div className="space-y-2 select-none border-t border-stone-100 pt-3">
                         <span className="text-[10px] font-bold text-stone-450 uppercase tracking-widest block">Choose Size</span>
                         <div className="flex flex-wrap gap-2">
-                          {["XS", "S", "M", "L", "XL", "XXL", "Free"].map(sz => {
+                          {["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "Free"].map(sz => {
                             const isAvailable = sizes.includes(sz);
                             const hasStock = (stockBySize[sz] || 0) > 0;
                             const isSelected = selectedSizePreview === sz;
@@ -659,7 +659,7 @@ export function ProductInspectionDrawer({
                     <div className="space-y-1.5 select-none border-t pt-3 text-left">
                       <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Choose Size</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {["XS", "S", "M", "L", "XL", "XXL", "Free"].map(sz => {
+                        {["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "Free"].map(sz => {
                           const isAvailable = sizes.includes(sz);
                           const hasStock = (stockBySize[sz] || 0) > 0;
                           const isSelected = selectedSizePreview === sz;
@@ -874,7 +874,7 @@ export function ProductInspectionDrawer({
                 <div className="space-y-3">
                   <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Available Sizes (Click to Toggle)</span>
                   <div className="flex flex-wrap gap-2">
-                    {["XS", "S", "M", "L", "XL", "XXL", "Free"].map(sz => {
+                    {["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "Free"].map(sz => {
                       const active = sizes.includes(sz);
                       return (
                         <button

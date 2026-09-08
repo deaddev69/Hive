@@ -694,7 +694,7 @@ export default function BoutiqueInventory() {
                   <div className="pt-2 border-t border-[#f1f5f9]/20 mt-1 flex flex-col gap-2">
                     {/* Quick Size Select Pills */}
                     {(() => {
-                      const availablePills = ["XS", "S", "M", "L", "XL", "XXL", "FREE"].filter(
+                      const availablePills = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "FREE"].filter(
                         (sz) => !localProdSizes.includes(sz)
                       );
                       if (availablePills.length === 0) return null;

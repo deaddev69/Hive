@@ -7,7 +7,7 @@ import { Button, Modal, TextEffect } from "@hive/ui";
 import { Upload, X, ArrowRight, ArrowLeft, Check, ImageIcon, AlertCircle, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { toast } from "@hive/utils";
 
-const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "FREE"];
+const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "FREE"];
 const MATERIAL_OPTIONS = [
   "Cotton", "Silk", "Linen", "Cotton Linen", "Georgette", "Chiffon",
   "Velvet", "Rayon", "Satin", "Blend", "Other"

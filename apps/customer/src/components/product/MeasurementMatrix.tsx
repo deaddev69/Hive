@@ -194,6 +194,7 @@ export function getUniversalSizeChart(sizes: string[] = [], productName: string 
     "XL": { chest: "40\"", waist: "34\"", shoulder: "15.5\"", length: "45\"", hip: "44\"", fitType: "Regular", stretch: "Low" },
     "XXL": { chest: "42\"", waist: "36\"", shoulder: "16\"", length: "46\"", hip: "46\"", fitType: "Regular", stretch: "Low" },
     "3XL": { chest: "44\"", waist: "38\"", shoulder: "16.5\"", length: "46\"", hip: "48\"", fitType: "Regular", stretch: "Low" },
+    "4XL": { chest: "46\"", waist: "40\"", shoulder: "17\"", length: "47\"", hip: "50\"", fitType: "Regular", stretch: "Low" },
   };
 
   const matrix: MeasurementRow[] = [];

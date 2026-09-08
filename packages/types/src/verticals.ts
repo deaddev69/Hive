@@ -239,7 +239,7 @@ export const VERTICAL_CONFIGS: Readonly<Record<VerticalType, VerticalConfig>> = 
     label: "Apparel & Ethnic Wear",
     variant: {
       label:                "Size",
-      defaultOptions:       ["XS", "S", "M", "L", "XL", "XXL", "Free"],
+      defaultOptions:       ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "Free"],
       allowCustom:          false,
       requiresMeasurements: true,
     },

@@ -21,6 +21,7 @@ import { resolveOrderReturnsAccepted, resolveOrderExchangesAccepted } from "./li
 import { getBoutiqueStatus } from "./shared/boutiqueStatus";
 import { recordOrderActivity } from "./lib/orderActivity";
 import { checkServiceability } from "./lib/serviceability";
+import { refundCancelledOrder } from "./lib/refunds";
 import {
   buildCustomerPorterAddress,
   buildBoutiquePorterAddress,
@@ -1378,10 +1379,19 @@ export const updateBoutiqueOrderStatus = mutation({
       // Store raw seller reason INTERNALLY — never expose to customers
       if (args.cancelReason) patch.internalCancelReason = args.cancelReason;
       patch.cancelReason = "Boutique declined order"; // generic public reason
-      patch.refundStatus = "pending";
     }
 
     await ctx.db.patch(args.orderId, patch);
+
+    // The customer never gets the goods, so they get their money back. This
+    // used to set refundStatus and stop, which moved nothing.
+    if (args.status === "cancelled") {
+      await refundCancelledOrder(ctx, {
+        orderId: args.orderId,
+        reason: `Boutique declined order ${order.orderNumber}`,
+        idempotencySuffix: "boutique_declined",
+      });
+    }
 
     // Record order activity for actor attribution (confirmed only for now)
     if (args.status === "confirmed") {
@@ -2370,9 +2380,13 @@ export const sweepUnacceptedOrdersSLA = internalMutation({
         cancelledAt: now,
         internalCancelReason: "Seller did not accept within 45 minutes (Safety Cron Sweep)",
         cancelReason: "Order auto-cancelled: seller did not respond in time",
-        refundStatus: "pending",
         slaAutoCancelledAt: now,
         updatedAt: now,
+      });
+      await refundCancelledOrder(ctx, {
+        orderId: order._id,
+        reason: `Auto-cancelled, seller did not accept order ${order.orderNumber}`,
+        idempotencySuffix: "sla_sweep",
       });
       count++;
     }
@@ -2405,9 +2419,13 @@ export const triggerSlaOrderSweepAdmin = mutation({
         cancelledAt: now,
         internalCancelReason: "Seller did not accept within 45 minutes (Admin SLA Sweep)",
         cancelReason: "Order auto-cancelled: seller did not respond in time",
-        refundStatus: "pending",
         slaAutoCancelledAt: now,
         updatedAt: now,
+      });
+      await refundCancelledOrder(ctx, {
+        orderId: order._id,
+        reason: `Auto-cancelled, seller did not accept order ${order.orderNumber}`,
+        idempotencySuffix: "sla_sweep",
       });
       count++;
     }

@@ -8,7 +8,7 @@ import { Plus, Edit3, Trash2, Loader2, Upload, Search, Image as ImageIcon, Chevr
 import { useRouter } from "next/navigation";
 import { toast } from "@hive/utils";
 
-const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "Free"];
+const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "Free"];
 
 const ALLOWED_CATEGORIES = [
   "Sarees",

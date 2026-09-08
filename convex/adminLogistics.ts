@@ -1103,12 +1103,33 @@ export const confirmRtoReceiptAdmin = mutation({
       updatedAt: now,
     });
 
-    // 4. Update order to cancelled
+    // 4. Close the order out.
+    //
+    // An RTO means the customer was unreachable or refused the parcel. The
+    // seller made the item and shipped it, so under Hive's policy they keep
+    // the payment and get the goods back — there is no customer refund here.
+    //
+    // This used to write `paymentStatus: "refunded"`, which was simply untrue:
+    // no refund was ever queued or sent, so the order claimed the customer had
+    // their money back while the money had not moved at all. The payment stays
+    // "paid" because that is what actually happened.
     await ctx.db.patch(order._id, {
       status: "cancelled",
-      paymentStatus: "refunded",
+      cancelledAt: order.cancelledAt ?? now,
+      cancelReason: "Delivery failed — parcel returned to the boutique",
+      internalCancelReason: `RTO confirmed at boutique. Notes: ${args.notes || "None"}`,
       updatedAt: now,
     });
+
+    // The seller is owed their payout: the item came back to them, but they
+    // fulfilled their side. Release the held Route transfer.
+    if (order.razorpayTransferId) {
+      await ctx.scheduler.runAfter(0, internal.razorpayRoute.updateTransferHold, {
+        orderId: order._id,
+        onHold: false,
+        reason: "rto_seller_keeps_payment",
+      });
+    }
 
     await ctx.db.insert("auditLogs", {
       actorId: admin._id,

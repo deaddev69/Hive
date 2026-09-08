@@ -9,6 +9,7 @@ import { internal } from "./_generated/api";
 import { triggerNotification } from "./lib/notifications";
 import { markOrderFinanciallyDelivered, markOrderPayoutEligible } from "./adminFinance";
 import { recordOrderActivity } from "./lib/orderActivity";
+import { refundCancelledOrder } from "./lib/refunds";
 import {
   buildCustomerPorterAddress,
   buildBoutiquePorterAddress,
@@ -903,6 +904,16 @@ export const updateOrderStatus = mutation({
     if (args.status === "cancelled" && !order.cancelledAt) patch.cancelledAt = now;
 
     await ctx.db.patch(args.orderId, patch);
+
+    // An admin cancelling a paid order owes the customer their money. This
+    // path previously recorded the cancellation and nothing else.
+    if (args.status === "cancelled") {
+      await refundCancelledOrder(ctx, {
+        orderId: args.orderId,
+        reason: `Order ${order.orderNumber} cancelled by Hive admin`,
+        idempotencySuffix: "admin_cancel",
+      });
+    }
 
     // Record order activity for actor attribution (admin confirmation)
     if (args.status === "confirmed") {

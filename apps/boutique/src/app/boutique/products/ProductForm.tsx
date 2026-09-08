@@ -23,7 +23,7 @@ import { SpecificationEditor } from "./SpecificationEditor";
 import { getVerticalConfig } from "@hive/types";
 
 // Constant arrays
-const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "Free"];
+const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "3XL", "4XL", "Free"];
 const MATERIAL_OPTIONS = [
   "Cotton", "Silk", "Linen", "Cotton Linen", "Georgette", "Chiffon",
   "Velvet", "Rayon", "Satin", "Blend", "Other"

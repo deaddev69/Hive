@@ -666,6 +666,8 @@ export default defineSchema({
                       v.literal("L"),
                       v.literal("XL"),
                       v.literal("XXL"),
+                      v.literal("3XL"),
+                      v.literal("4XL"),
                       v.literal("Free")
                     ),
     color:          v.optional(v.string()),
