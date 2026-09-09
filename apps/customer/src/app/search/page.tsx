@@ -275,13 +275,36 @@ function SearchContent() {
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto w-full">
-            <p className="text-sm text-stone-500">No products available for this search.</p>
-            <button
-              onClick={handleClear}
-              className="mt-4 text-xs font-bold text-stone-900 underline cursor-pointer"
-            >
-              Clear filter
-            </button>
+            {/*
+              When every match sits outside the delivery zone the search itself succeeded, so
+              saying nothing matched names the wrong cause and hides the one action that helps.
+              The notice above only renders alongside results; this branch needs its own.
+            */}
+            {hiddenCount > 0 && !browseAnyway ? (
+              <>
+                <p className="text-sm text-stone-600 dark:text-stone-400">
+                  {hiddenCount === 1
+                    ? `The only match for this search is outside your delivery zone.`
+                    : `All ${hiddenCount} matches for this search are outside your delivery zone.`}
+                </p>
+                <button
+                  onClick={() => setBrowseAnyway(true)}
+                  className="mt-4 text-xs font-bold text-stone-900 dark:text-white underline cursor-pointer"
+                >
+                  Show all
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-stone-500">No products available for this search.</p>
+                <button
+                  onClick={handleClear}
+                  className="mt-4 text-xs font-bold text-stone-900 underline cursor-pointer"
+                >
+                  Clear filter
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>

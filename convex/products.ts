@@ -46,7 +46,7 @@ import {
 
 import { checkRateLimit } from "./lib/rateLimit";
 import { getPublicUrl } from "./media/api";
-import { haversineKm, resolveServiceability } from "./lib/serviceability";
+import { haversineKm, resolveServiceability, resolveBoutiqueCoords } from "./lib/serviceability";
 import { ImageAsset } from "./schema";
 import { triggerNotification } from "./lib/notifications";
 
@@ -2470,16 +2470,41 @@ export const searchProductsInternal = internalQuery({
 
     let matched = scoredProducts.map((item: any) => item.product);
 
-    // Filter by location if coordinates are provided
+    // Filter by location if coordinates are provided.
+    //
+    // This used to compare raw straight-line distance against b.deliveryRadiusKm with no default,
+    // so it disagreed with the order gate twice over: it admitted boutiques an order would
+    // refuse, and it silently excluded any boutique with no radius set, since `distance <=
+    // undefined` is false. It also read only top-level coordinates, so a boutique carrying them
+    // on addressDetails was dropped here while Shop found it.
+    //
+    // The cached road distances are read for the same reason Shop reads them: without that, the
+    // same shopper and boutique could be serviceable in search and not in the catalogue whenever
+    // a measurement existed that contradicted the estimate.
     if (args.userLat !== undefined && args.userLng !== undefined) {
+      const startLat = Math.round(args.userLat * 1000) / 1000;
+      const startLng = Math.round(args.userLng * 1000) / 1000;
+      const cachedDistances = await ctx.db
+        .query("cachedRoadDistances")
+        .withIndex("by_start_end", (q) => q.eq("startLat", startLat).eq("startLng", startLng))
+        .collect();
+      const cacheMap = new Map<string, number>();
+      for (const cd of cachedDistances) {
+        cacheMap.set(`${cd.endLat.toFixed(6)},${cd.endLng.toFixed(6)}`, cd.distanceKm);
+      }
+
       const deliverableBoutiqueIds = new Set(
         [...boutiquesMap.values()]
           .filter((b: any) => {
-            const bLat = b.latitude;
-            const bLng = b.longitude;
-            if (bLat === undefined || bLng === undefined) return false;
-            const dist = haversineKm(args.userLat!, args.userLng!, bLat, bLng);
-            return dist <= b.deliveryRadiusKm;
+            const coords = resolveBoutiqueCoords(b);
+            const measured = coords
+              ? cacheMap.get(`${coords.lat.toFixed(6)},${coords.lng.toFixed(6)}`)
+              : undefined;
+            return (
+              resolveServiceability(args.userLat, args.userLng, b, {
+                measuredRoadKm: measured ?? null,
+              }).status === "serviceable"
+            );
           })
           .map((b: any) => b._id)
       );
@@ -2493,7 +2518,7 @@ export const searchProductsInternal = internalQuery({
     );
 
     // Resolved here rather than in the searchProducts action, which has no database access.
-    // Logistics filtering above already used the raw request coordinates and is unchanged.
+    // Discovery identity is a separate question from the delivery filtering above.
     const discovery = await resolveDiscoveryContext(ctx, { lat: args.userLat, lng: args.userLng });
 
     return {
