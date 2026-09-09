@@ -16,6 +16,11 @@ export interface CatalogEmptyStateProps {
   reason?: "filters" | "location";
   /** Opens the location drawer. Only used by the "location" reason. */
   onChangeLocation?: () => void;
+  /**
+   * The category this page is scoped to, when it is a category route. Names what is unavailable
+   * instead of leaving a generic line under a specific heading.
+   */
+  categoryName?: string | null;
 }
 
 export const CatalogEmptyState: React.FC<CatalogEmptyStateProps> = ({
@@ -23,6 +28,7 @@ export const CatalogEmptyState: React.FC<CatalogEmptyStateProps> = ({
   accentColor,
   reason = "filters",
   onChangeLocation,
+  categoryName,
 }) => {
   const accent = accentColor ?? "#C9A84C";
 
@@ -37,11 +43,12 @@ export const CatalogEmptyState: React.FC<CatalogEmptyStateProps> = ({
         </div>
 
         <h3 className="text-xl font-serif font-extrabold text-hive-dark mb-2">
-          No styles available here yet
+          {categoryName
+            ? `No ${categoryName.toLowerCase()} delivered to this location yet`
+            : "No styles available here yet"}
         </h3>
         <p className="text-sm text-hive-text-muted max-w-xs leading-relaxed mb-8">
-          No boutique delivers to this location right now. Try a different location, or browse
-          everything on Hive.
+          Try a different location, or browse everything on Hive.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-3">

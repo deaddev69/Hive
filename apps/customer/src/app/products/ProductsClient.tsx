@@ -174,6 +174,21 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
 
   const activeFilterCount = countActiveFilters(filters);
 
+  // The category a category route imposes, as opposed to one the shopper picked in the sidebar.
+  // Both end up in filters.categories, which is why activeFilterCount cannot tell them apart.
+  const routeCategoryId = categoryResolution.status === "resolved" ? categoryResolution.id : null;
+  const routeCategoryName = categoryResolution.status === "resolved" ? categoryResolution.name : null;
+
+  // Filters the shopper actually chose, and could therefore undo. On /products/sarees the
+  // injected category makes activeFilterCount at least 1 even when nothing has been touched, so
+  // using that to explain an empty grid would blame filters the shopper never set.
+  const userFilterCount = useMemo(() => {
+    const chosenCategories = routeCategoryId
+      ? filters.categories.filter((id) => id !== routeCategoryId)
+      : filters.categories;
+    return countActiveFilters({ ...filters, categories: chosenCategories });
+  }, [filters, routeCategoryId]);
+
   // Filtering, ordering and paging all happen in getCatalogPage now, over the
   // full candidate set — so the ordering stays global and page 2 continues
   // page 1, while only one page of cards crosses the wire. The cards arrive
@@ -206,7 +221,14 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
   }, [latitude, longitude]);
 
   const clearFilters = () => {
-    setFilters(DEFAULT_FILTER_STATE);
+    // The route's category survives a reset. It is part of the address, not a filter the shopper
+    // applied: clearing it left /products/sarees showing the whole catalogue, so the URL and the
+    // grid disagreed about what was being viewed. Only what the shopper chose is cleared.
+    setFilters(
+      routeCategoryId
+        ? { ...DEFAULT_FILTER_STATE, categories: [routeCategoryId] }
+        : DEFAULT_FILTER_STATE
+    );
     setCurrentPage(1);
   };
 
@@ -340,14 +362,15 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
               <CatalogEmptyState
                 onClearFilters={clearFilters}
                 accentColor="#C9A84C"
-                // With no filters set and a location in hand, filters cannot be why the grid is
-                // empty — no boutique reaches this shopper. Offering to reset filters there
+                // With nothing the shopper chose, and a location in hand, filters cannot be why
+                // the grid is empty — no boutique reaches them. Offering to reset filters there
                 // would point at the wrong cause.
                 reason={
-                  activeFilterCount === 0 && !browseAll && latitude !== null && longitude !== null
+                  userFilterCount === 0 && !browseAll && latitude !== null && longitude !== null
                     ? "location"
                     : "filters"
                 }
+                categoryName={routeCategoryName}
                 onChangeLocation={() => setLocationDrawerOpen(true)}
               />
             )}
