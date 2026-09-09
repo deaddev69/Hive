@@ -778,7 +778,10 @@ export async function markOrderFinanciallyDelivered(ctx: any, orderId: any, now:
     merchantPayable: accrualAmount,
     settledAt: now,
     courierQuote: order.orderSnapshot?.courierQuote ?? undefined, // Freeze the original quote
-    pricingSnapshot: order.pricingSnapshot ?? undefined, // v2: Include the full pricing snapshot
+    // `pricingSnapshot` was written here too, but never added to the table's
+    // validator — so every accrual was rejected and NO order could be marked
+    // delivered at all. The order carries its own immutable pricingSnapshot, and
+    // nothing read the copy, so the duplicate is simply dropped.
   };
 
   const settlementId = await ctx.db.insert("settlementLedger", {
