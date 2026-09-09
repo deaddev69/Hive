@@ -29,9 +29,8 @@ function openWhatsApp(message: string) {
 /**
  * Return and exchange actions on a delivered order.
  *
- * Return gives the customer their money back; exchange gives them credit at the
- * same boutique. Both windows are enforced on the server — the UI hides expired
- * buttons for tidiness, but the mutation is what actually refuses.
+ * Return gives the customer their money back; exchange gives them credit.
+ * Both windows are enforced on the server.
  */
 export function ReturnExchangeActions({
   orderId,
@@ -54,7 +53,7 @@ export function ReturnExchangeActions({
 
   const submit = async () => {
     if (!reason.trim()) {
-      toast.error("Please tell us what went wrong so the boutique can help.");
+      toast.error("Please tell us what went wrong with your order.");
       return;
     }
     setSubmitting(true);
@@ -66,8 +65,7 @@ export function ReturnExchangeActions({
         await requestExchange({ orderId, reason: reason.trim() });
         toast.success("Exchange confirmed. Let's sort out your replacement on WhatsApp.");
       }
-      // Both flows hand off to the same support conversation, so the customer
-      // always lands in one thread rather than two depending on what they picked.
+      // Both flows hand off to the same support conversation
       openWhatsApp(
         `Hi Hive Support, I want to request a ${mode} for my order ${orderNumber}. Reason: ${reason.trim()}`
       );
@@ -86,9 +84,9 @@ export function ReturnExchangeActions({
       return (
         <StatusCard
           tone="amber"
-          icon={<Clock className="w-4 h-4" />}
+          icon={<Clock className="w-4 h-4 text-amber-700" />}
           title="Exchange requested"
-          body="The boutique has 24 hours to respond. We'll message you as soon as they do."
+          body="Your exchange request has been submitted. We'll message you as soon as it's confirmed."
         />
       );
     }
@@ -98,20 +96,20 @@ export function ReturnExchangeActions({
         <div className="space-y-2">
           <StatusCard
             tone="emerald"
-            icon={<CheckCircle2 className="w-4 h-4" />}
+            icon={<CheckCircle2 className="w-4 h-4 text-emerald-700" />}
             title="Exchange accepted"
-            body="Message the boutique to agree what you'd like instead. We'll arrange pickup of the original item."
+            body="Confirm what piece or size you'd like instead. We'll arrange doorstep pickup of your original item."
           />
           {exchange.whatsappVisible && (
             <a
               href={`https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
-                `Hi Hive Support, I want to request a exchange for my order ${orderNumber}.`
+                `Hi Hive Support, I want to coordinate my exchange for order #${orderNumber}.`
               )}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-3 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-900 dark:text-emerald-300 font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 border border-emerald-300 dark:border-emerald-800 transition-all cursor-pointer"
+              className="w-full h-11 bg-stone-950 hover:bg-stone-900 text-white font-semibold text-xs uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
             >
-              <Repeat className="w-4 h-4" />
+              <Repeat className="w-3.5 h-3.5 text-stone-400" />
               <span>Continue on WhatsApp</span>
             </a>
           )}
@@ -123,9 +121,9 @@ export function ReturnExchangeActions({
       return (
         <StatusCard
           tone="emerald"
-          icon={<Ticket className="w-4 h-4" />}
+          icon={<Ticket className="w-4 h-4 text-emerald-700" />}
           title="Exchange complete"
-          body="Your credit is ready. Find it under Coupons — it's valid for 30 days at this boutique."
+          body="Your store credit is ready under Coupons — valid for 30 days toward any piece."
         />
       );
     }
@@ -134,9 +132,9 @@ export function ReturnExchangeActions({
       return (
         <StatusCard
           tone="slate"
-          icon={<AlertCircle className="w-4 h-4" />}
+          icon={<AlertCircle className="w-4 h-4 text-stone-500" />}
           title="Exchange declined"
-          body={exchange.rejectionReason || "The boutique couldn't accept this exchange."}
+          body={exchange.rejectionReason || "This exchange request could not be accepted."}
         />
       );
     }
@@ -145,9 +143,9 @@ export function ReturnExchangeActions({
       return (
         <StatusCard
           tone="slate"
-          icon={<Clock className="w-4 h-4" />}
+          icon={<Clock className="w-4 h-4 text-stone-500" />}
           title="Exchange request expired"
-          body="The boutique didn't respond within 24 hours. Contact support and we'll sort it out."
+          body="This exchange request expired. Contact Hive Support and we'll resolve this for you."
         />
       );
     }
@@ -156,21 +154,21 @@ export function ReturnExchangeActions({
   // ── A return is already under way ─────────────────────────────────────────
   if (returnStatus) {
     const copy: Record<string, string> = {
-      requested: "We've got your return request and will confirm it shortly.",
-      approved: "Return approved. We're arranging pickup from your address.",
-      initiated: "A rider is on the way to collect the item.",
-      picked_up: "The item has been collected and is on its way back to the boutique.",
-      in_transit: "The item is on its way back to the boutique.",
-      delivered: "The boutique has received the item. Your refund is being processed.",
-      completed: "Refunded. It should reach your original payment method in 5-7 working days.",
-      failed: "Something went wrong with the return pickup. Contact support and we'll fix it.",
-      cancelled: "This return was cancelled.",
+      requested: "We've received your return request and will confirm pickup details shortly.",
+      approved: "Return approved. We're arranging courier pickup from your delivery address.",
+      initiated: "A rider is on the way to collect the item from your doorstep.",
+      picked_up: "Your item has been collected and is in transit for return inspection.",
+      in_transit: "Your item is in transit for return inspection.",
+      delivered: "Item received and inspected. Your refund is being processed to your original payment method.",
+      completed: "Refund processed. It should reach your original payment method in 5-7 working days.",
+      failed: "Something went wrong with the return pickup. Contact Hive Support and we'll fix it.",
+      cancelled: "This return request was cancelled.",
     };
 
     return (
       <StatusCard
         tone={returnStatus === "completed" ? "emerald" : "amber"}
-        icon={<RotateCcw className="w-4 h-4" />}
+        icon={<RotateCcw className="w-4 h-4 text-stone-600" />}
         title={returnStatus === "completed" ? "Return complete" : "Return in progress"}
         body={copy[returnStatus] || "Your return is being processed."}
       />
@@ -186,17 +184,17 @@ export function ReturnExchangeActions({
         <button
           type="button"
           onClick={() => setMode("exchange")}
-          className="py-3 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-900 dark:text-amber-300 font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 border border-amber-300 dark:border-amber-800 transition-all cursor-pointer active:scale-[0.98]"
+          className="h-11 bg-white hover:bg-stone-50 text-stone-800 border border-stone-200 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
         >
-          <Repeat className="w-4 h-4" />
+          <Repeat className="w-3.5 h-3.5 text-stone-500" />
           <span>Exchange</span>
         </button>
         <button
           type="button"
           onClick={() => setMode("return")}
-          className="py-3 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-200 font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2 border border-slate-200 dark:border-zinc-800 transition-all cursor-pointer active:scale-[0.98]"
+          className="h-11 bg-white hover:bg-stone-50 text-stone-800 border border-stone-200 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
         >
-          <RotateCcw className="w-4 h-4" />
+          <RotateCcw className="w-3.5 h-3.5 text-stone-500" />
           <span>Return</span>
         </button>
       </div>
@@ -205,15 +203,15 @@ export function ReturnExchangeActions({
 
   // ── Reason form ───────────────────────────────────────────────────────────
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-4 space-y-3">
+    <div className="bg-white border border-stone-200/90 rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xs text-left">
       <div className="space-y-1">
-        <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">
+        <h4 className="text-sm font-serif font-bold text-stone-900 tracking-tight">
           {mode === "exchange" ? "Request an exchange" : "Request a return"}
         </h4>
-        <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-relaxed">
+        <p className="text-xs text-stone-500 leading-relaxed font-normal">
           {mode === "exchange"
-            ? "We'll collect this item and give you credit worth what you paid, to spend at this boutique within 30 days."
-            : "We'll refund what you paid to your original payment method once the boutique has the item back."}
+            ? "We'll arrange doorstep collection and issue instant store credit for the full purchase value, valid for 30 days."
+            : "We'll refund what you paid to your original payment method once the item is received and inspected."}
         </p>
       </div>
 
@@ -224,10 +222,10 @@ export function ReturnExchangeActions({
         maxLength={500}
         placeholder={
           mode === "exchange"
-            ? "What size or item would suit you better?"
+            ? "What size or piece would suit you better?"
             : "What was wrong with the item?"
         }
-        className="w-full text-xs rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-950 p-3 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+        className="w-full text-xs rounded-xl border border-stone-200 bg-stone-50/60 p-3.5 text-stone-900 placeholder:text-stone-400 focus:bg-white focus:outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400 transition-all font-sans leading-relaxed"
       />
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -238,7 +236,7 @@ export function ReturnExchangeActions({
             setMode(null);
             setReason("");
           }}
-          className="py-2.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50"
+          className="h-10 bg-white hover:bg-stone-50 border border-stone-200 text-stone-700 text-xs font-semibold rounded-xl transition-all cursor-pointer disabled:opacity-50 active:scale-[0.98]"
         >
           Cancel
         </button>
@@ -246,7 +244,7 @@ export function ReturnExchangeActions({
           type="button"
           disabled={submitting}
           onClick={submit}
-          className="py-2.5 bg-hive-amber hover:bg-hive-amber-dark text-white text-xs font-black rounded-xl transition-all cursor-pointer disabled:opacity-60 active:scale-[0.98]"
+          className="h-10 bg-stone-950 hover:bg-stone-900 active:scale-[0.98] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer disabled:opacity-60 shadow-2xs"
         >
           {submitting ? "Sending..." : "Submit request"}
         </button>
@@ -267,20 +265,17 @@ function StatusCard({
   body: string;
 }) {
   const tones = {
-    amber:
-      "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900 text-amber-700 dark:text-amber-400",
-    emerald:
-      "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400",
-    slate:
-      "bg-slate-50 dark:bg-zinc-900 border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400",
+    amber: "bg-amber-50/70 border-amber-200/80 text-amber-900",
+    emerald: "bg-emerald-50/70 border-emerald-200/80 text-emerald-950",
+    slate: "bg-stone-50 border-stone-200/90 text-stone-700",
   } as const;
 
   return (
-    <div className={`rounded-2xl border p-4 flex items-start gap-3 ${tones[tone]}`}>
+    <div className={`rounded-2xl border p-4 flex items-start gap-3 text-left ${tones[tone]}`}>
       <div className="shrink-0 mt-0.5">{icon}</div>
       <div className="space-y-0.5">
-        <h4 className="text-xs font-extrabold text-slate-900 dark:text-white">{title}</h4>
-        <p className="text-[11px] leading-relaxed">{body}</p>
+        <h4 className="text-xs font-bold text-stone-900">{title}</h4>
+        <p className="text-[11px] leading-relaxed text-stone-600 font-normal">{body}</p>
       </div>
     </div>
   );
