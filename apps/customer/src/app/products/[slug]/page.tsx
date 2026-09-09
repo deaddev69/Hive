@@ -5,7 +5,17 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../convex/_generated/api";
 import { ProductDetailPageClient } from "./ProductDetailPageClient";
 import { Metadata } from "next";
-import { cleanProductTitle } from "@/components/product/ProductCard";
+// cleanTitle is inlined here (same logic as cleanProductTitle in ProductCard.tsx)
+// to avoid importing a client component module into this Server Component,
+// which would crash the RSC renderer in production.
+function cleanTitle(name: string): string {
+  if (!name) return "";
+  return name
+    .replace(/\s*-\s*[A-Za-z0-9\s]+#\d+$/, "")
+    .replace(/\s*#\d+$/, "")
+    .replace(/\s*\(Out of Stock\)$/i, "")
+    .trim();
+}
 import { getCategoryContent } from "@/lib/content/categoryContent";
 import { getCategoryMetadata } from "@/lib/seo";
 import { SITE_URL } from "@/lib/seo";
@@ -83,13 +93,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (!product) return {};
 
     return {
-      title: `${cleanProductTitle(product.name)} — Hive`,
+      title: `${cleanTitle(product.name)} — Hive`,
       description: product.description || `Discover and shop ${product.name} on Hive.`,
       alternates: {
         canonical: `${SITE_URL}/products/${product.slug}`,
       },
       openGraph: {
-        title: `${cleanProductTitle(product.name)} — Hive`,
+        title: `${cleanTitle(product.name)} — Hive`,
         description: product.description || `Discover and shop ${product.name} on Hive.`,
       },
     };
@@ -163,16 +173,34 @@ export default async function ProductOrCategoryPage({ params }: Props) {
     return notFound();
   }
 
+  // Safely adapt Convex product fields to what ProductSchema expects.
+  // Convex enrichProduct() uses imageUrl/images/boutiqueName/active —
+  // ProductSchema expects coverImage/images/boutiqueName/isAvailable.
+  const p = initialProduct as any;
+  const schemaProduct = {
+    _id: p._id,
+    name: p.name ?? "",
+    description: p.description,
+    slug: p.slug ?? "",
+    price: typeof p.price === "number" ? p.price : undefined,
+    images: Array.isArray(p.images) ? p.images : undefined,
+    coverImage: p.imageUrl ?? p.coverImage,
+    boutiqueName: p.boutiqueName,
+    boutique: p.boutique,
+    isUnavailable: p.isUnavailable ?? false,
+    isAvailable: p.active !== false,
+  };
+
   return (
     <>
       <BreadcrumbSchema
         items={[
           { name: "Home", url: "/" },
           { name: "Products", url: "/products" },
-          { name: cleanProductTitle(initialProduct.name), url: `/products/${initialProduct.slug}` },
+          { name: cleanTitle(initialProduct.name), url: `/products/${initialProduct.slug}` },
         ]}
       />
-      <ProductSchema product={initialProduct} />
+      <ProductSchema product={schemaProduct} />
       <ProductDetailPageClient product={initialProduct} />
     </>
   );
