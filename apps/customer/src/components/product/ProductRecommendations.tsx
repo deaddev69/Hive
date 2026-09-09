@@ -85,10 +85,13 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
   occasion,
   boutiqueName,
 }) => {
-  const { isServiceable, latitude, longitude } = useLocation();
+  const { latitude, longitude } = useLocation();
+  // Coordinates go through whether or not the shopper is currently serviceable. Withholding them
+  // when unserviceable dropped the delivery-radius filter altogether, so the one shopper nothing
+  // can be delivered to was the only one recommended the entire catalogue.
   const dbProducts = useQuery(
     api.products.getActiveProducts,
-    isServiceable ? toQueryCoords(latitude, longitude) : {}
+    toQueryCoords(latitude, longitude)
   );
   const [quickViewModal, setQuickViewModal] = useState<{ open: boolean, productId: string | null }>({ open: false, productId: null });
 

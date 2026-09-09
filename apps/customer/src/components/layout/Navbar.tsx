@@ -44,11 +44,12 @@ import { useQuery, useAction } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { getSignInUrl, getSignUpUrl, navigateToSignIn, navigateToSignUp } from "@/lib/auth-redirect";
 import { getAnonSessionId } from "@/lib/anonSession";
+import { toQueryCoords } from "@/lib/distance";
 import { safeGetItem, safeSetItem, safeRemoveItem } from "@/lib/safeStorage";
 import { HeaderStatusPill } from "@/components/shared/HeaderStatusPill";
 
 export const Navbar: React.FC = () => {
-  const { locality, city, setDrawerOpen, isServiceable, updateLocationDetails } = useLocation();
+  const { locality, city, latitude, longitude, setDrawerOpen, isServiceable, updateLocationDetails } = useLocation();
   const { itemsCount, setSidebarOpen } = useCart();
   const wishlistCount = useWishlistStore((state) => state.items.length);
   const [hydrated, setHydrated] = useState(false);
@@ -175,7 +176,15 @@ export const Navbar: React.FC = () => {
       // sessionId buckets the anonymous rate limit per browser. Without it every
       // signed-out shopper shares one counter, so unrelated traffic can lock
       // search for all of them. See lib/anonSession.ts.
-      searchProductsAction({ searchTerm: trimmed, sessionId: getAnonSessionId() })
+      //
+      // Coordinates are sent for the same reason /search sends them: these suggestions lead
+      // straight to that page, and without them the type-ahead drew on the whole catalogue while
+      // the results it linked to were filtered to what can actually be delivered.
+      searchProductsAction({
+        searchTerm: trimmed,
+        sessionId: getAnonSessionId(),
+        ...toQueryCoords(latitude, longitude),
+      })
         .then((res) => {
           setSearchResults(res);
         })
@@ -186,7 +195,7 @@ export const Navbar: React.FC = () => {
     }, 200);
 
     return () => clearTimeout(delayDebounce);
-  }, [searchQuery, searchOpen, searchProductsAction]);
+  }, [searchQuery, searchOpen, searchProductsAction, latitude, longitude]);
 
   const escapeRegExp = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
