@@ -952,13 +952,24 @@ export const getBoutiqueOrders = query({
     if (orders.length === 0) return [];
 
     // Batch load order items, invoices, shipments, customerProfiles, and users
-    const [itemsList, invoicesList, shipmentsList, profilesList, usersList, activityList] = await Promise.all([
+    const [
+      itemsList,
+      invoicesList,
+      shipmentsList,
+      profilesList,
+      usersList,
+      activityList,
+      returnShipmentsList,
+    ] = await Promise.all([
       Promise.all(orders.map((o) => ctx.db.query("orderItems").withIndex("by_orderId", (q) => q.eq("orderId", o._id)).collect())),
       Promise.all(orders.map((o) => ctx.db.query("invoices").withIndex("by_order_id", (q) => q.eq("orderId", o._id)).unique())),
       Promise.all(orders.map((o) => o.shipmentId ? ctx.db.get(o.shipmentId) : null)),
       Promise.all(orders.map((o) => ctx.db.query("customerProfiles").withIndex("by_userId", (q) => q.eq("userId", o.customerId)).unique())),
       Promise.all(orders.map((o) => ctx.db.get(o.customerId))),
       Promise.all(orders.map((o) => ctx.db.query("orderActivity").withIndex("by_orderId", (q) => q.eq("orderId", o._id)).first())),
+      // The return leg. A seller had no way to see that an item was coming
+      // back to them, let alone who was bringing it or when.
+      Promise.all(orders.map((o) => o.returnShipmentId ? ctx.db.get(o.returnShipmentId) : null)),
     ]);
 
     return orders.map((order, i) => {
@@ -992,6 +1003,7 @@ export const getBoutiqueOrders = query({
       });
 
       const activity = activityList[i];
+      const returnShipment = returnShipmentsList[i];
       return {
         ...order,
         items,
@@ -1015,6 +1027,22 @@ export const getBoutiqueOrders = query({
           vehiclePlate: shipment.vehiclePlate || null,
           etaMinutes: shipment.etaMinutes ?? null,
           liveTrackingUrl: shipment.liveTrackingUrl || null,
+        } : null,
+        // The return journey, when the customer has sent the item back. The
+        // seller needs the same rider detail here as on the way out, because
+        // this is the leg that ends with them holding the goods again.
+        returnShipment: returnShipment ? {
+          _id: returnShipment._id,
+          awbNumber: returnShipment.awbNumber || null,
+          status: returnShipment.status,
+          trackingUrl: returnShipment.trackingUrl || null,
+          liveTrackingUrl: returnShipment.liveTrackingUrl || null,
+          driverName: returnShipment.driverName || null,
+          driverPhone: returnShipment.driverPhone || null,
+          vehiclePlate: returnShipment.vehiclePlate || null,
+          etaMinutes: returnShipment.etaMinutes ?? null,
+          pickedUpAt: returnShipment.pickedUpAt ?? null,
+          deliveredAt: returnShipment.deliveredAt ?? null,
         } : null,
         totalBasePrice,
         totalPayout,

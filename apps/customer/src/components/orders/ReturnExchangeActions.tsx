@@ -165,14 +165,24 @@ export function ReturnExchangeActions({
 
   // ── A return is already under way ─────────────────────────────────────────
   if (returnStatus) {
+    // Every stage before the money moves says the same thing about the money,
+    // because "when do I get my refund" is the only question a customer
+    // actually has while an item is on its way back.
     const copy: Record<string, string> = {
-      requested: "We've received your return request and will confirm pickup details shortly.",
-      approved: "Return approved. We're arranging courier pickup from your delivery address.",
-      initiated: "A rider is on the way to collect the item from your doorstep.",
-      picked_up: "Your item has been collected and is in transit for return inspection.",
-      in_transit: "Your item is in transit for return inspection.",
-      delivered: "Item received and inspected. Your refund is being processed to your original payment method.",
-      completed: "Refund processed. It should reach your original payment method in 5-7 working days.",
+      requested:
+        "We've received your return request and will confirm pickup details shortly. Your refund is sent once the boutique has the item back and has checked it over.",
+      approved:
+        "Return approved. We're arranging courier pickup from your delivery address. Your refund is sent once the boutique has the item back and has checked it over.",
+      initiated:
+        "A rider is on the way to collect the item from your doorstep. Once it reaches the boutique and they've checked it over, we'll refund what you paid in full.",
+      picked_up:
+        "Your item has been collected and is on its way back to the boutique. Once it arrives and they've checked it over, we'll refund what you paid in full.",
+      in_transit:
+        "Your item is on its way back to the boutique. Once it arrives and they've checked it over, we'll refund what you paid in full.",
+      delivered:
+        "The boutique has your item back. Your full refund is on its way to the card or account you paid with.",
+      completed:
+        "Refunded in full. It should reach your original payment method within 5-7 working days.",
       failed: "Something went wrong with the return pickup. Contact Hive Support and we'll fix it.",
       cancelled: "This return request was cancelled.",
     };

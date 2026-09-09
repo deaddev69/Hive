@@ -9,6 +9,7 @@ import { Card, CardContent, LoadingState } from "@hive/ui";
 import { formatCurrency, toast } from "@hive/utils";
 import { getClientAuth } from "@/lib/firebase";
 import { ExchangeRequestsPanel } from "@/components/orders/ExchangeRequestsPanel";
+import { ReturnLegPanel } from "@/components/orders/ReturnLegPanel";
 import {
   Loader2,
   ClipboardList,
@@ -610,6 +611,11 @@ export default function BoutiqueOrders() {
                             )}
                           </div>
                         )}
+
+                        <ReturnLegPanel
+                          returnStatus={(order as any).returnStatus}
+                          returnShipment={(order as any).returnShipment}
+                        />
                         
                         {(order.status === "confirmed" || order.status === "packed" || order.status === "booking_failed") && (
                           <button
