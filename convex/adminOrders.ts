@@ -1296,17 +1296,58 @@ export const initiateReturnAdmin = mutation({
     // ── Schedule Porter createOrder ──────────────────────────────────────
     // CRITICAL: pickup = CUSTOMER, drop = BOUTIQUE
     // Uses the exact same Porter address format as forward booking (lines 938-967)
-    // On a return the rider collects from the CUSTOMER, so the pickup contact
-    // must be the customer's number and the drop contact the boutique's. Both
-    // are resolved explicitly here rather than left to a fallback chain, and
-    // the two are checked against each other below.
-    const customerPhone = order.deliveryAddress.phone || customer?.phone || "";
-    const boutiquePhone = orderPickup?.phone || boutique?.phone || "";
+    // On a return the rider collects from the CUSTOMER and delivers to the
+    // BOUTIQUE, so the two ends must carry different numbers. They did not on a
+    // real return: the address on the order had been saved weeks earlier with
+    // the boutique's number in its phone field, so Porter was handed the same
+    // number at both ends and the rider — standing at the customer's door —
+    // rang the shop.
+    //
+    // The address's own phone is still preferred, because a customer may
+    // deliberately name someone else to receive the parcel. But when it turns
+    // out to be the shop's number, the account's own number is the better
+    // guess at who is actually waiting at that door.
+    const lastTen = (value: unknown) => String(value ?? "").replace(/\D/g, "").slice(-10);
 
-    if (!customerPhone) {
+    const boutiquePhone = orderPickup?.phone || boutique?.phone || "";
+    const addressPhone = order.deliveryAddress.phone || "";
+    const accountPhone = customer?.phone || "";
+
+    let customerPhone = addressPhone || accountPhone;
+    let contactCollision = false;
+
+    if (lastTen(customerPhone) && lastTen(customerPhone) === lastTen(boutiquePhone)) {
+      if (lastTen(accountPhone) && lastTen(accountPhone) !== lastTen(boutiquePhone)) {
+        customerPhone = accountPhone;
+      } else {
+        contactCollision = true;
+      }
+    }
+
+    if (!lastTen(customerPhone)) {
       throw new ConvexError(
         "Cannot arrange a return: no contact number for the customer, so the rider would have no way to reach them."
       );
+    }
+
+    if (contactCollision) {
+      // Not fatal — the return still has to happen — but the rider will see one
+      // number at both ends of the trip and cannot tell the customer from the
+      // shop, so it is recorded rather than passing silently.
+      console.warn(
+        `[Return] Order ${order.orderNumber}: customer and boutique share contact number ${lastTen(customerPhone)}. The rider cannot tell them apart.`
+      );
+      await ctx.db.insert("auditLogs", {
+        actorRole: "system",
+        action: "return.contact_collision",
+        entityType: "orders",
+        entityId: order._id,
+        metadata: JSON.stringify({
+          orderNumber: order.orderNumber,
+          sharedNumber: lastTen(customerPhone),
+        }),
+        createdAt: now,
+      });
     }
 
     // The boutique snapshot taken at order time wins over the live record, so a
