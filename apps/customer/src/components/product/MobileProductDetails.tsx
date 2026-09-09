@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from "react";
 import { Scissors, Compass, Ruler, FileText, Shirt, CheckCircle2, RotateCcw, ShieldCheck, Star } from "lucide-react";
 import { cn } from "@hive/ui";
+import { CUSTOMER_FEATURES } from "@/config/features";
 import { getVerticalConfig, resolveCategorySizing } from "@hive/types";
 import { SILHOUETTE_DESCRIPTIONS } from "@/lib/silhouettes";
 import { MeasurementMatrix } from "./MeasurementMatrix";
@@ -362,12 +363,12 @@ export function MobileProductDetails({
                     <span>Final Sale Item</span>
                   </div>
                   <p className="text-[11px] text-stone-600 leading-relaxed pl-5">
-                    Voluntary size exchanges or change-of-mind returns are disabled for this boutique item.
+                    Voluntary returns or change-of-mind cancellations are disabled for this item.
                   </p>
                   <div className="pt-2 border-t border-stone-200/60 flex items-start gap-2">
                     <ShieldCheck className="w-3.5 h-3.5 text-stone-700 flex-shrink-0 mt-0.5" />
                     <p className="text-[11px] text-stone-700 leading-relaxed font-semibold">
-                      Hive Guarantee: Damaged, defective, or incorrect items remain 100% covered. Contact support at +91 73560 19103 or support@hivenow.in for replacement or refund.
+                      Hive Guarantee: Damaged, defective, or incorrect items remain 100% covered. Contact support at +91 73560 19103 or support@hivenow.in for assistance or refund.
                     </p>
                   </div>
                 </div>
@@ -375,15 +376,17 @@ export function MobileProductDetails({
                 <div className="p-3.5 bg-stone-50/80 border border-stone-200/80 rounded-xl space-y-2 text-xs text-stone-800 font-medium">
                   <div className="flex items-center gap-2 font-bold text-stone-900">
                     <RotateCcw className="w-3.5 h-3.5 text-amber-700 flex-shrink-0" />
-                    <span>24-Hour Easy Returns & Size Exchange</span>
+                    <span>{CUSTOMER_FEATURES.EXCHANGES_ENABLED ? "24-Hour Easy Returns & Size Exchange" : "24-Hour Easy Returns"}</span>
                   </div>
                   <p className="text-[11px] text-stone-600 leading-relaxed pl-5.5">
-                    Enjoy a 24-hour return and size exchange window starting from doorstep delivery time.
+                    {CUSTOMER_FEATURES.EXCHANGES_ENABLED
+                      ? "Enjoy a 24-hour return and size exchange window starting from doorstep delivery time."
+                      : "Enjoy a 24-hour return window starting from doorstep delivery time."}
                   </p>
                   <div className="pt-2 border-t border-stone-200/60 flex items-start gap-2">
                     <ShieldCheck className="w-3.5 h-3.5 text-amber-700 flex-shrink-0 mt-0.5" />
                     <p className="text-[11px] text-stone-700 leading-relaxed font-semibold">
-                      Hive Guarantee: Damaged, defective, or wrong items are fully covered with free replacement or 100% refund.
+                      Hive Guarantee: Damaged, defective, or wrong items are fully covered with a 100% refund.
                     </p>
                   </div>
                 </div>

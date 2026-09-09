@@ -27,6 +27,7 @@ import { useSessionStore } from "@/context/SessionContext";
 import { ReviewModal } from "@/components/product/ReviewModal";
 import { formatCurrency } from "@hive/utils";
 import { Tabs, EmptyState } from "@hive/ui";
+import { CUSTOMER_FEATURES } from "@/config/features";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const ACTIVE_STATUSES = [
@@ -338,7 +339,7 @@ function OrderCard({
   const returnsAllowed = order.returnsAccepted !== false;
   const exchangesAllowed = order.exchangesAccepted ?? returnsAllowed;
   const isReturnEligible = isDelivered && withinWindow && returnsAllowed;
-  const isExchangeEligible = isDelivered && withinWindow && exchangesAllowed;
+  const isExchangeEligible = CUSTOMER_FEATURES.EXCHANGES_ENABLED && isDelivered && withinWindow && exchangesAllowed;
 
   const deliverySlot = order.notes?.split("Slot: ")[1] ?? "";
 
@@ -367,7 +368,7 @@ function OrderCard({
               {isActive && (
                 <span className="text-[9px] font-mono font-semibold uppercase tracking-wider text-stone-600 bg-stone-100 border border-stone-200/80 px-2 py-0.5 rounded">
                   {order.status === "replacement_dispatched"
-                    ? "Replacement Dispatched"
+                    ? (CUSTOMER_FEATURES.EXCHANGES_ENABLED ? "Replacement Dispatched" : "Dispatched")
                     : uiStatus.replace(/_/g, " ")}
                 </span>
               )}
@@ -408,7 +409,7 @@ function OrderCard({
             ) : order.status === "replacement_dispatched" ? (
               <span className="flex items-center gap-1.5 text-stone-700 font-medium">
                 <Package className="w-3.5 h-3.5 text-stone-600" />
-                Replacement in transit • Ordered {formatDate(order.createdAt)}
+                {CUSTOMER_FEATURES.EXCHANGES_ENABLED ? "Replacement in transit" : "Order in transit"} • Ordered {formatDate(order.createdAt)}
               </span>
             ) : (
               <>
@@ -436,7 +437,7 @@ function OrderCard({
           {/* Return/exchange window countdown */}
           {isDelivered && (isReturnEligible || isExchangeEligible) && (
             <span className="text-[10px] font-medium text-stone-600 bg-stone-50 border border-stone-200/80 rounded px-2 py-0.5 w-fit">
-              Return/exchange window closes in {hoursLeft}h
+              {isExchangeEligible ? `Return/exchange window closes in ${hoursLeft}h` : `Return window closes in ${hoursLeft}h`}
             </span>
           )}
         </div>

@@ -6,14 +6,14 @@ import { SITE_URL } from "@/lib/seo";
 export const metadata: Metadata = {
   title: "Return and Refund Policy | Hive",
   description:
-    "Learn about Hive's transparent return, exchange, and refund policy for boutique fashion purchases in Kochi and Ernakulam.",
+    "Learn about Hive's transparent return and refund policy for curated fashion purchases in Kochi.",
   alternates: {
     canonical: `${SITE_URL}/return-policy`,
   },
   openGraph: {
     title: "Return and Refund Policy | Hive",
     description:
-      "Learn about Hive's transparent return, exchange, and refund policy for boutique fashion purchases in Kochi and Ernakulam.",
+      "Learn about Hive's transparent return and refund policy for curated fashion purchases in Kochi.",
     url: `${SITE_URL}/return-policy`,
     siteName: "Hive",
     type: "website",

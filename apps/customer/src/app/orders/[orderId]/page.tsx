@@ -30,6 +30,7 @@ import { useSessionStore } from "@/context/SessionContext";
 import { formatCurrency, toast } from "@hive/utils";
 import BeeLoader from "@/components/shared/BeeLoader";
 import { OrderConfirmationPushPrompt } from "@/components/checkout/OrderConfirmationPushPrompt";
+import { CUSTOMER_FEATURES } from "@/config/features";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Animated Number Ticker Component
@@ -100,12 +101,16 @@ function getOrderHero(status: string) {
     case "replacement_requested":
       return {
         title: "Order Delivered",
-        description: "Delivered • Size exchange request received.",
+        description: CUSTOMER_FEATURES.EXCHANGES_ENABLED
+          ? "Delivered • Size exchange request received."
+          : "Delivered • Return request received.",
       };
     case "replacement_approved":
       return {
         title: "Order Delivered",
-        description: "Delivered • Size exchange approved by designer.",
+        description: CUSTOMER_FEATURES.EXCHANGES_ENABLED
+          ? "Delivered • Size exchange approved by designer."
+          : "Delivered • Return request under review.",
       };
     case "refund_requested":
       return {
@@ -116,8 +121,10 @@ function getOrderHero(status: string) {
     // ── In-transit replacement dispatch
     case "replacement_dispatched":
       return {
-        title: "Replacement Dispatched",
-        description: "Your replacement piece is in transit with our delivery partner.",
+        title: CUSTOMER_FEATURES.EXCHANGES_ENABLED ? "Replacement Dispatched" : "Order Dispatched",
+        description: CUSTOMER_FEATURES.EXCHANGES_ENABLED
+          ? "Your replacement piece is in transit with our delivery partner."
+          : "A package for your order is in transit with our delivery partner.",
       };
 
     // ── Terminal & Problem states (explicitly non-guessing)
@@ -583,7 +590,7 @@ export default function OrderDetailPage() {
             {/* ── Returns & Exchanges Policy ─────────────────────────────────── */}
             <motion.section variants={itemVariants} className="space-y-1.5 pt-1 border-t border-stone-100">
               <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 block pt-3">
-                Returns & Exchanges
+                {CUSTOMER_FEATURES.EXCHANGES_ENABLED ? "Returns & Exchanges" : "Returns & Refunds"}
               </span>
               <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200/70 text-xs text-stone-600 space-y-1">
                 <div className="flex items-center justify-between font-bold text-stone-900">
@@ -596,14 +603,22 @@ export default function OrderDetailPage() {
                 </div>
                 <p className="text-[11px] text-stone-500 leading-relaxed font-normal">
                   {isFinalSale
-                    ? "This item is configured as Final Sale. Voluntary returns or size exchanges are disabled. Damaged, defective, or incorrect items remain 100% covered."
+                    ? (CUSTOMER_FEATURES.EXCHANGES_ENABLED
+                        ? "This item is configured as Final Sale. Voluntary returns or size exchanges are disabled. Damaged, defective, or incorrect items remain 100% covered."
+                        : "This item is configured as Final Sale. Voluntary returns or cancellations are disabled. Damaged, defective, or incorrect items remain 100% covered.")
                     : order.status === "replacement_dispatched"
-                      ? "Your replacement item has been dispatched and is currently en route."
+                      ? (CUSTOMER_FEATURES.EXCHANGES_ENABLED
+                          ? "Your replacement item has been dispatched and is currently en route."
+                          : "A package for your order has been dispatched and is currently en route.")
                       : isDelivered
                         ? isWindowActive
-                          ? "Your 24-hour return window is active. Submit return or exchange requests within 24 hours of delivery."
+                          ? (CUSTOMER_FEATURES.EXCHANGES_ENABLED
+                              ? "Your 24-hour return window is active. Submit return or exchange requests within 24 hours of delivery."
+                              : "Your 24-hour return window is active. Submit return requests within 24 hours of delivery.")
                           : "Voluntary return window has ended (24h past delivery). Damaged or wrong item claims remain covered."
-                        : "Voluntary 24-hour size exchanges and returns activate upon delivery."}
+                        : (CUSTOMER_FEATURES.EXCHANGES_ENABLED
+                            ? "Voluntary 24-hour size exchanges and returns activate upon delivery."
+                            : "Voluntary 24-hour returns activate upon delivery.")}
                 </p>
               </div>
 

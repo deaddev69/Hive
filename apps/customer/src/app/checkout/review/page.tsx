@@ -851,7 +851,7 @@ export default function OrderReviewPage() {
               {appliedCoupon && (
                 <div className="border-t border-hive-border/40 pt-4 mt-1 text-left space-y-1.5">
                   <div className="flex justify-between items-center text-xs font-bold text-emerald-700">
-                    <span>Exchange credit ({appliedCoupon.code})</span>
+                    <span>Store credit ({appliedCoupon.code})</span>
                     <span className="font-mono">
                       −₹{(Math.min(appliedCoupon.amountPaise, Math.round(total * 100)) / 100).toFixed(2)}
                     </span>

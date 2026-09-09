@@ -7,6 +7,7 @@ import { toast } from "@hive/utils";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { useConvexMutation } from "@/hooks/useConvexMutation";
+import { CUSTOMER_FEATURES } from "@/config/features";
 
 type Mode = "return" | "exchange";
 
@@ -80,6 +81,17 @@ export function ReturnExchangeActions({
 
   // ── An exchange is already under way ──────────────────────────────────────
   if (exchange) {
+    if (!CUSTOMER_FEATURES.EXCHANGES_ENABLED) {
+      return (
+        <StatusCard
+          tone="amber"
+          icon={<Clock className="w-4 h-4 text-amber-700" />}
+          title="Request in progress"
+          body="Your request has been received. Hive Support will contact you shortly regarding resolution."
+        />
+      );
+    }
+
     if (exchange.status === "pending") {
       return (
         <StatusCard
@@ -179,6 +191,19 @@ export function ReturnExchangeActions({
 
   // ── Choose an action ──────────────────────────────────────────────────────
   if (!mode) {
+    if (!CUSTOMER_FEATURES.EXCHANGES_ENABLED) {
+      return (
+        <button
+          type="button"
+          onClick={() => setMode("return")}
+          className="w-full h-11 bg-white hover:bg-stone-50 text-stone-800 border border-stone-200 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
+        >
+          <RotateCcw className="w-3.5 h-3.5 text-stone-500" />
+          <span>Request a Return</span>
+        </button>
+      );
+    }
+
     return (
       <div className="grid grid-cols-2 gap-2.5">
         <button

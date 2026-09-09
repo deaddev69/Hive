@@ -141,7 +141,7 @@ export const PurchaseConfidenceCard: React.FC<{ className?: string }> = ({ class
     "Verified Fashion Partner",
     "Authentic Product Listing",
     "Measurement Transparency",
-    "Replacement Protection",
+    "Return Protection",
   ];
 
   return (

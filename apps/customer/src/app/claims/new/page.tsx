@@ -40,7 +40,7 @@ function ClaimsFormContent() {
         <div className="space-y-2">
           <h1 className="font-serif text-2xl font-bold text-hive-dark">Claim Submitted</h1>
           <p className="text-xs text-hive-text-muted leading-relaxed">
-            Your support request has been logged successfully. A boutique representative will contact you to coordinate sizes replacements or adjustments.
+            Your claim has been logged successfully. Hive Support will review your request and contact you shortly regarding resolution.
           </p>
         </div>
         <button

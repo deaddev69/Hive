@@ -155,8 +155,8 @@ While this may seem different from mass-market sites, this policy is a deliberat
         answer: "Yes. Every product is listed directly by an independent boutique store in your city and dispatched straight from their physical retail racks."
       },
       {
-        question: "What is the return and exchange policy?",
-        answer: "To maintain strict hygiene standards and ensure every shopper receives brand-new, showroom-fresh clothing, all sales are final once delivered. Returns or replacements are strictly limited to instances where an item arrives damaged or defective due to transit."
+        question: "What is the return policy?",
+        answer: "To maintain strict hygiene standards and ensure every shopper receives brand-new, showroom-fresh clothing, all sales are final once delivered. Returns or refunds are strictly limited to instances where an item arrives damaged or defective due to transit."
       },
       {
         question: "Does the platform provide custom tailoring or alterations?",
