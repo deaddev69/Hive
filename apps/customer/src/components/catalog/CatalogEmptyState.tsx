@@ -1,18 +1,73 @@
 import React from "react";
 import Link from "next/link";
-import { SearchX, RotateCcw, LayoutGrid } from "lucide-react";
+import { SearchX, RotateCcw, LayoutGrid, MapPin } from "lucide-react";
 
 export interface CatalogEmptyStateProps {
   onClearFilters: () => void;
   /** Optional accent colour — used for collection pages */
   accentColor?: string;
+  /**
+   * Why the grid is empty. "filters" is the default and offers to reset them.
+   *
+   * "location" is for the case the filters cannot explain: nothing is filtered, yet no boutique
+   * can deliver to where the shopper is. Offering "reset filters" there sends someone to clear
+   * filters they never set, and leaves the real reason unsaid.
+   */
+  reason?: "filters" | "location";
+  /** Opens the location drawer. Only used by the "location" reason. */
+  onChangeLocation?: () => void;
 }
 
 export const CatalogEmptyState: React.FC<CatalogEmptyStateProps> = ({
   onClearFilters,
   accentColor,
+  reason = "filters",
+  onChangeLocation,
 }) => {
   const accent = accentColor ?? "#C9A84C";
+
+  if (reason === "location") {
+    return (
+      <div className="w-full flex flex-col items-center justify-center py-20 px-6 text-center">
+        <div
+          className="relative w-20 h-20 rounded-full flex items-center justify-center mb-6"
+          style={{ background: `${accent}12`, border: `1.5px dashed ${accent}40` }}
+        >
+          <MapPin className="w-8 h-8" style={{ color: accent }} strokeWidth={1.5} />
+        </div>
+
+        <h3 className="text-xl font-serif font-extrabold text-hive-dark mb-2">
+          No styles available here yet
+        </h3>
+        <p className="text-sm text-hive-text-muted max-w-xs leading-relaxed mb-8">
+          No boutique delivers to this location right now. Try a different location, or browse
+          everything on Hive.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          {onChangeLocation && (
+            <button
+              type="button"
+              onClick={onChangeLocation}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-extrabold uppercase tracking-widest text-white hover:opacity-90 transition-all duration-200 shadow-md"
+              style={{ background: accent, boxShadow: `0 4px 18px ${accent}30` }}
+            >
+              <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
+              Change Location
+            </button>
+          )}
+
+          <Link
+            href="/products?browse=all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold border border-hive-border/60 text-hive-dark hover:border-hive-gold/50 hover:bg-hive-comb/10 transition-all duration-200"
+          >
+            <LayoutGrid className="w-3.5 h-3.5 text-hive-gold" strokeWidth={2} />
+            Browse All Products
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col items-center justify-center py-20 px-6 text-center">

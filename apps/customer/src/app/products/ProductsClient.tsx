@@ -50,7 +50,7 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
   const browseAllFromUrl = searchParams.get("browse") === "all";
   const boutiqueIdFromUrl = searchParams.get("boutiqueId");
 
-  const { latitude, longitude, browseAllProducts } = useLocation();
+  const { latitude, longitude, browseAllProducts, setDrawerOpen: setLocationDrawerOpen } = useLocation();
   const router = useRouter();
 
   // Bypass delivery-radius filtering if user clicked "Browse Products Anyway"
@@ -340,6 +340,15 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
               <CatalogEmptyState
                 onClearFilters={clearFilters}
                 accentColor="#C9A84C"
+                // With no filters set and a location in hand, filters cannot be why the grid is
+                // empty — no boutique reaches this shopper. Offering to reset filters there
+                // would point at the wrong cause.
+                reason={
+                  activeFilterCount === 0 && !browseAll && latitude !== null && longitude !== null
+                    ? "location"
+                    : "filters"
+                }
+                onChangeLocation={() => setLocationDrawerOpen(true)}
               />
             )}
           </div>

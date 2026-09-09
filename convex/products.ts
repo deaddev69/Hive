@@ -46,7 +46,7 @@ import {
 
 import { checkRateLimit } from "./lib/rateLimit";
 import { getPublicUrl } from "./media/api";
-import { haversineKm } from "./lib/serviceability";
+import { haversineKm, resolveServiceability } from "./lib/serviceability";
 import { ImageAsset } from "./schema";
 import { triggerNotification } from "./lib/notifications";
 
@@ -1281,23 +1281,32 @@ async function selectCatalogProducts(ctx: QueryCtx, args: CatalogSelectionArgs) 
         const bLng = b.longitude ?? b.addressDetails?.lng;
         if (bLat === undefined || bLng === undefined) continue;
 
-        // Resolve distance (cache or straight-line fallback)
+        // A measured road distance for this pair when the cache holds one.
         const cacheKey = `${bLat.toFixed(6)},${bLng.toFixed(6)}`;
         const cached = cacheMap.get(cacheKey);
-        
-        let distanceKm = 0;
-        let durationMin = 0;
-        if (cached) {
-          distanceKm = cached.distanceKm;
-          durationMin = cached.durationMin;
-        } else {
-          distanceKm = haversineKm(args.userLat, args.userLng, bLat, bLng);
-          durationMin = (distanceKm / 25) * 60;
-        }
 
-        // Serviceability cutoff: boutique.deliveryRadiusKm
-        const effectiveRadius = b.deliveryRadiusKm ?? 15;
-        if (distanceKm <= effectiveRadius) {
+        // Eligibility comes from the shared rule rather than being decided here.
+        //
+        // This previously compared RAW straight-line distance against a 15km default, while the
+        // gate that actually allows an order compares an estimated ROAD distance against 13km —
+        // so the grid offered products checkout would refuse. Worse, an uncached pair used
+        // straight-line while a cached one used measured road distance, so the same boutique
+        // moved in and out of range as the cache backfilled behind the shopper.
+        //
+        // The cache is now precision, not a different algorithm: resolveServiceability applies
+        // one rule either way, using the measured figure when there is one and scaling the
+        // straight-line estimate when there is not.
+        const decision = resolveServiceability(args.userLat, args.userLng, b as any, {
+          measuredRoadKm: cached ? cached.distanceKm : null,
+        });
+
+        // Distance and ETA are still reported for every boutique the loop reaches, including
+        // out-of-range ones — the cards below read them for display, and suppressing them here
+        // would blank the ETA on a product that is merely being ranked, not hidden.
+        const distanceKm = decision.distanceKm ?? haversineKm(args.userLat, args.userLng, bLat, bLng);
+        const durationMin = cached ? cached.durationMin : (distanceKm / 25) * 60;
+
+        if (decision.status === "serviceable") {
           deliverableBoutiqueIds.add(b._id);
 
           // Calculate normalized MerchantScore:
@@ -1463,10 +1472,10 @@ export const getCatalogPage = query({
     const pageSize = Math.min(Math.max(args.pageSize ?? 12, 1), 12);
     const requestedPage = Math.max(args.page ?? 1, 1);
 
-    // Discovery identity for this coordinate. Resolved from active pincode centroids; the
-    // caller's coordinates continue to flow into selectCatalogProducts unchanged, so logistics
-    // (distance, ETA, radius filtering) behaves exactly as before. Discovery eligibility and
-    // logistics enrichment are separate questions and stay independently observable.
+    // Discovery identity for this coordinate. Resolved from active pincode centroids, never from
+    // a caller-supplied city string. It answers which service area a shopper is in, which is a
+    // different question from whether anyone can deliver to them — selectCatalogProducts settles
+    // that separately through resolveServiceability — and the two stay independently observable.
     const discovery = await resolveDiscoveryContext(ctx, { lat: args.userLat, lng: args.userLng });
 
     const enriched = await selectCatalogProducts(ctx, args);
