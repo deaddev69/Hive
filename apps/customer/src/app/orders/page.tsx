@@ -32,13 +32,29 @@ import { Tabs, EmptyState } from "@hive/ui";
 const ACTIVE_STATUSES = [
   "pending_payment",
   "pending_confirmation",
+  "reservation_converted",
   "confirmed",
+  "packed",
   "pickup_scheduled",
   "picked_up",
   "in_transit",
   "out_for_delivery",
 ];
-const CANCELLED_STATUSES = ["cancelled", "refunded"];
+const CANCELLED_STATUSES = [
+  "cancelled",
+  "refunded",
+  "booking_failed",
+  "declined",
+  "cancelled_by_merchant",
+];
+const COMPLETED_STATUSES = [
+  "delivered",
+  "replacement_delivered",
+  "claim_submitted",
+  "replacement_requested",
+  "replacement_approved",
+  "refund_requested",
+];
 
 const ACTIVE_STEPS = [
   { id: "placed", label: "Placed" },
@@ -84,35 +100,40 @@ export default function MyOrdersPage() {
   const sortedOrders = [...convexOrders].sort((a, b) => b.createdAt - a.createdAt);
 
   const activeOrdersCount = sortedOrders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length;
-  const deliveredOrdersCount = sortedOrders.filter((o) => o.status === "delivered").length;
+  const deliveredOrdersCount = sortedOrders.filter((o) => COMPLETED_STATUSES.includes(o.status)).length;
   const cancelledOrdersCount = sortedOrders.filter((o) => CANCELLED_STATUSES.includes(o.status)).length;
 
   const filteredOrders = sortedOrders.filter((o) => {
     if (activeTab === "active") return ACTIVE_STATUSES.includes(o.status);
-    if (activeTab === "completed") return o.status === "delivered";
+    if (activeTab === "completed") return COMPLETED_STATUSES.includes(o.status);
     if (activeTab === "cancelled") return CANCELLED_STATUSES.includes(o.status);
     return false;
   });
 
-  // Map every Convex status value → one of the 6 UI badge states.
+  // Map every Convex status value → one of the UI step states.
   const mapStatus = (s: string): string => {
     const map: Record<string, string> = {
       pending_payment: "placed",
       pending_confirmation: "placed",
+      reservation_converted: "placed",
       confirmed: "confirmed",
+      packed: "confirmed",
       pickup_scheduled: "picked_up",
       picked_up: "picked_up",
       in_transit: "picked_up",
       out_for_delivery: "out_for_delivery",
       delivered: "delivered",
+      replacement_delivered: "delivered",
       claim_submitted: "delivered",
       replacement_requested: "delivered",
       replacement_approved: "delivered",
-      replacement_dispatched: "delivered",
-      replacement_delivered: "delivered",
+      replacement_dispatched: "picked_up",
       refund_requested: "delivered",
-      refunded: "delivered",
+      refunded: "cancelled",
       cancelled: "cancelled",
+      declined: "cancelled",
+      cancelled_by_merchant: "cancelled",
+      booking_failed: "cancelled",
     };
     return map[s] ?? "placed";
   };
@@ -138,10 +159,7 @@ export default function MyOrdersPage() {
     <div className="min-h-screen bg-white py-10 px-4 sm:px-6 lg:px-8 select-none text-left antialiased">
       <div className="max-w-4xl mx-auto flex flex-col gap-6">
         {/* Page Header */}
-        <div className="space-y-2 pb-6 border-b border-stone-200/80">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
-            Your Purchases
-          </span>
+        <div className="pb-6 border-b border-stone-200/80">
           <div className="flex justify-between items-baseline gap-4">
             <div>
               <h1 className="text-3xl font-serif font-bold text-stone-900 tracking-tight">My Orders</h1>
@@ -153,7 +171,7 @@ export default function MyOrdersPage() {
             </div>
             <Link
               href="/products"
-              className="text-xs font-bold text-stone-900 hover:text-amber-600 transition-colors whitespace-nowrap"
+              className="text-xs font-semibold text-stone-700 hover:text-stone-950 transition-colors whitespace-nowrap"
             >
               Browse Products →
             </Link>
@@ -245,12 +263,12 @@ function OrderProgressStepper({ uiStatus }: { uiStatus: string }) {
             <div className="flex flex-col items-center gap-1 shrink-0">
               <div
                 className={`w-2.5 h-2.5 rounded-full flex items-center justify-center transition-colors ${
-                  isDone || isCurrent ? "bg-hive-amber" : "bg-stone-200"
-                } ${isCurrent ? "ring-2 ring-hive-amber/25 animate-pulse" : ""}`}
+                  isDone || isCurrent ? "bg-stone-900" : "bg-stone-200"
+                } ${isCurrent ? "ring-2 ring-stone-900/15" : ""}`}
               />
             </div>
             {i < ACTIVE_STEPS.length - 1 && (
-              <div className={`h-[2px] flex-1 min-w-[10px] ${isDone ? "bg-hive-amber" : "bg-stone-200"}`} />
+              <div className={`h-[1.5px] flex-1 min-w-[10px] ${isDone ? "bg-stone-900" : "bg-stone-200"}`} />
             )}
           </React.Fragment>
         );
@@ -262,7 +280,7 @@ function OrderProgressStepper({ uiStatus }: { uiStatus: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Component: OrderThumbnails — single image, or a stacked cluster for multi-item orders
 // ─────────────────────────────────────────────────────────────────────────────
-function OrderThumbnails({ items, isActive }: { items: any[]; isActive: boolean }) {
+function OrderThumbnails({ items }: { items: any[] }) {
   const visible = items.slice(0, 3);
 
   return (
@@ -271,7 +289,7 @@ function OrderThumbnails({ items, isActive }: { items: any[]; isActive: boolean 
         <div
           key={item._id || item.id || i}
           style={{ left: i * 6, top: i * 6, zIndex: visible.length - i }}
-          className="absolute rounded-lg overflow-hidden bg-stone-100 border-2 border-white shadow-sm w-16 h-20"
+          className="absolute rounded-xl overflow-hidden bg-stone-100 border border-stone-200/80 shadow-2xs w-16 h-20"
         >
           {item?.imageUrl ? (
             <img src={item.imageUrl} alt={item.productName} className="w-full h-full object-cover" />
@@ -282,9 +300,6 @@ function OrderThumbnails({ items, isActive }: { items: any[]; isActive: boolean 
           )}
         </div>
       ))}
-      {isActive && (
-        <span className="absolute top-0.5 left-0.5 w-2 h-2 rounded-full bg-green-500 border border-white shadow-sm animate-pulse z-10" />
-      )}
     </div>
   );
 }
@@ -338,16 +353,26 @@ function OrderCard({
       }`}
     >
       <div className="flex gap-4 flex-1 min-w-0">
-        <OrderThumbnails items={order.items} isActive={isActive} />
+        <OrderThumbnails items={order.items} />
 
         {/* Order details */}
         <div className="flex flex-col justify-between py-1 flex-1 min-w-0 gap-2">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-mono font-bold text-stone-900 tracking-wider select-all">
-                {order.orderNumber}
+                #{order.orderNumber}
               </span>
-              <OrderStatusBadge status={uiStatus} />
+              {/* Only show minimal status tag if active in-flight; NEVER redundant DELIVERED badge */}
+              {isActive && (
+                <span className="text-[9px] font-mono font-semibold uppercase tracking-wider text-stone-600 bg-stone-100 border border-stone-200/80 px-2 py-0.5 rounded">
+                  {uiStatus.replace(/_/g, " ")}
+                </span>
+              )}
+              {isCancelled && (
+                <span className="text-[9px] font-mono font-semibold uppercase tracking-wider text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
+                  {order.status === "refunded" ? "Refunded" : order.status === "booking_failed" ? "Delivery Unsuccessful" : "Cancelled"}
+                </span>
+              )}
             </div>
 
             <h4 className="text-sm font-serif font-bold text-stone-900 truncate leading-snug">
@@ -366,28 +391,30 @@ function OrderCard({
             )}
           </div>
 
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-hive-text-muted font-medium">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-hive-amber" />
-              {formatDate(order.createdAt)}
-            </span>
-            {deliverySlot && !isDelivered && !isCancelled && (
-              <span className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-hive-amber" />
-                {deliverySlot}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-stone-500 font-medium">
+            {isDelivered ? (
+              <span className="flex items-center gap-1.5 text-stone-700">
+                <CheckCircle2 className="w-3.5 h-3.5 text-stone-800" />
+                Delivered on {formatDate(deliveredTime)}
               </span>
-            )}
-            {isDelivered && (
-              <span className="flex items-center gap-1 text-green-700">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                Delivered {formatDate(deliveredTime)}
-              </span>
-            )}
-            {isCancelled && (
-              <span className="flex items-center gap-1 text-stone-500">
+            ) : isCancelled ? (
+              <span className="flex items-center gap-1.5 text-stone-500">
                 <Ban className="w-3.5 h-3.5" />
-                {order.status === "refunded" ? "Refunded" : "Cancelled"}
+                {order.status === "refunded" ? "Refunded" : order.status === "booking_failed" ? "Delivery Unsuccessful" : "Cancelled"} • {formatDate(order.createdAt)}
               </span>
+            ) : (
+              <>
+                <span className="flex items-center gap-1.5 text-stone-600">
+                  <Calendar className="w-3.5 h-3.5 text-stone-400" />
+                  Ordered on {formatDate(order.createdAt)}
+                </span>
+                {deliverySlot && (
+                  <span className="flex items-center gap-1.5 text-stone-600">
+                    <Clock className="w-3.5 h-3.5 text-stone-400" />
+                    {deliverySlot}
+                  </span>
+                )}
+              </>
             )}
           </div>
 
@@ -398,9 +425,9 @@ function OrderCard({
             </div>
           )}
 
-          {/* Return/exchange window countdown — nudges without being pushy */}
+          {/* Return/exchange window countdown */}
           {isDelivered && (isReturnEligible || isExchangeEligible) && (
-            <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5 w-fit">
+            <span className="text-[10px] font-medium text-stone-600 bg-stone-50 border border-stone-200/80 rounded px-2 py-0.5 w-fit">
               Return/exchange window closes in {hoursLeft}h
             </span>
           )}
@@ -408,48 +435,45 @@ function OrderCard({
       </div>
 
       {/* Right: Paid & CTAs */}
-      <div className="flex flex-col md:items-end gap-4 border-t border-hive-dark/[0.06] md:border-t-0 pt-4 md:pt-0 md:pl-4 shrink-0">
+      <div className="flex flex-col md:items-end gap-3.5 border-t border-stone-100 md:border-t-0 pt-4 md:pt-0 md:pl-4 shrink-0">
         <div className="text-left md:text-right">
-          <span className="text-[9px] font-bold uppercase tracking-widest text-hive-text-muted block">Total Paid</span>
-          <span className="text-base font-serif font-medium text-hive-dark">{formatCurrency(order.total)}</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 block">Total Paid</span>
+          <span className="text-base font-mono font-bold text-stone-900">{formatCurrency(order.total)}</span>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
           {isDelivered ? (
             <>
-              {/* Both open the order page, where the request is recorded and
-                  then handed off to WhatsApp. Linking straight to WhatsApp from
-                  here would start a chat without creating anything to act on. */}
               {isExchangeEligible && (
                 <Link
                   href={`/orders/${order._id}`}
-                  className="h-9 px-3 border border-amber-300 hover:border-amber-500 text-amber-800 bg-amber-50 hover:bg-amber-100 transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm"
+                  className="h-9 px-3 border border-stone-200 hover:border-stone-300 text-stone-800 bg-white hover:bg-stone-50 transition-all rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs"
                 >
-                  <Repeat className="w-3.5 h-3.5" />
+                  <Repeat className="w-3.5 h-3.5 text-stone-500" />
                   <span>Exchange</span>
                 </Link>
               )}
               {isReturnEligible && (
                 <Link
                   href={`/orders/${order._id}`}
-                  className="h-9 px-3 border border-hive-dark/[0.08] hover:border-hive-dark/35 text-hive-text-muted hover:text-hive-dark bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm"
+                  className="h-9 px-3 border border-stone-200 hover:border-stone-300 text-stone-800 bg-white hover:bg-stone-50 transition-all rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs"
                 >
-                  <Undo2 className="w-3.5 h-3.5" />
+                  <Undo2 className="w-3.5 h-3.5 text-stone-500" />
                   <span>Return</span>
                 </Link>
               )}
               {firstItem?.hasReview ? (
-                <div className="h-9 px-4 border border-green-200 text-green-700 bg-green-50/50 rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm">
-                  <CheckCircle className="w-3.5 h-3.5" />
+                <div className="h-9 px-3 border border-stone-200/70 text-stone-500 bg-stone-50 rounded-xl text-xs font-medium flex items-center justify-center gap-1">
+                  <Star className="w-3.5 h-3.5 fill-stone-400 text-stone-400" />
                   <span>Reviewed</span>
                 </div>
               ) : (
                 <button
                   type="button"
                   onClick={() => onOpenReview(order)}
-                  className="h-9 px-4 bg-hive-gold text-slate-900 hover:bg-[#E0B024] active:scale-[0.98] transition-all rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                  className="h-9 px-4 bg-stone-950 text-white hover:bg-stone-800 active:scale-[0.98] transition-all rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                 >
-                  <Star className="w-3.5 h-3.5 fill-slate-900" />
+                  <Star className="w-3.5 h-3.5" />
                   <span>Rate & Review</span>
                 </button>
               )}
@@ -457,17 +481,17 @@ function OrderCard({
               <button
                 onClick={() => downloadInvoiceByOrderId(order._id)}
                 disabled={downloading}
-                className="h-9 px-3 border border-hive-dark/[0.08] hover:border-hive-dark/35 text-hive-text-muted hover:text-hive-dark bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                className="h-9 px-3.5 border border-stone-200 hover:bg-stone-50 text-stone-800 bg-white transition-all rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs disabled:opacity-50 cursor-pointer"
               >
-                {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-hive-text-muted" /> : "Invoice"}
+                {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-500" /> : "Invoice"}
               </button>
 
               <Link
                 href={`/orders/${order._id}`}
-                className="h-9 px-3 border border-hive-dark/[0.08] hover:border-hive-dark/35 text-hive-text-muted hover:text-hive-dark transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1"
+                className="h-9 px-3.5 border border-stone-200 hover:bg-stone-50 text-stone-800 bg-white transition-all rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-2xs"
               >
                 <span>Details</span>
-                <ChevronRight className="w-3 h-3 text-hive-text-muted" />
+                <ChevronRight className="w-3 h-3 text-stone-400" />
               </Link>
             </>
           ) : (
@@ -475,52 +499,23 @@ function OrderCard({
               <button
                 onClick={() => downloadInvoiceByOrderId(order._id)}
                 disabled={downloading}
-                className="h-9 px-4 border border-hive-dark/[0.08] hover:border-hive-dark/35 text-hive-text-muted hover:text-hive-dark bg-white transition-all rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                className="h-9 px-3.5 border border-stone-200 hover:bg-stone-50 text-stone-800 bg-white transition-all rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs disabled:opacity-50 cursor-pointer"
               >
-                {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-hive-text-muted" /> : "Invoice"}
+                {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-stone-500" /> : "Invoice"}
               </button>
 
               <Link
                 href={`/orders/${order._id}`}
-                className={`h-9 px-4 transition-all active:scale-[0.98] rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-sm ${
-                  isCancelled
-                    ? "border border-hive-dark/[0.08] text-hive-text-muted hover:text-hive-dark bg-white"
-                    : "bg-hive-dark text-hive-cream hover:bg-hive-dark/90"
-                }`}
+                className="h-9 px-4 bg-stone-950 text-white hover:bg-stone-800 active:scale-[0.98] transition-all rounded-xl text-xs font-semibold flex items-center justify-center gap-1 shadow-2xs"
               >
                 <span>{isCancelled ? "Details" : "Track"}</span>
-                <ChevronRight className={`w-3.5 h-3.5 ${isCancelled ? "text-hive-text-muted" : "text-hive-gold"}`} />
+                <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
               </Link>
             </>
           )}
         </div>
       </div>
     </motion.div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Component: OrderStatusBadge
-// ─────────────────────────────────────────────────────────────────────────────
-function OrderStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; dot: string; text: string }> = {
-    placed: { label: "Placed", dot: "bg-amber-500", text: "text-amber-700" },
-    confirmed: { label: "Confirmed", dot: "bg-green-500", text: "text-green-700" },
-    picked_up: { label: "Picked Up", dot: "bg-green-500", text: "text-green-700" },
-    out_for_delivery: { label: "Out For Delivery", dot: "bg-amber-500", text: "text-amber-700" },
-    delivered: { label: "Delivered", dot: "bg-green-500", text: "text-green-700" },
-    cancelled: { label: "Cancelled", dot: "bg-stone-400", text: "text-stone-500" },
-  };
-  const { label, dot, text } = map[status] ?? {
-    label: "Processing",
-    dot: "bg-stone-400",
-    text: "text-stone-500",
-  };
-  return (
-    <div className="flex items-center gap-1.5 px-2 py-0.5 border border-stone-200 rounded-full bg-white/50 backdrop-blur-sm shadow-sm">
-      <span className={`w-1.5 h-1.5 rounded-full ${dot} shadow-[0_0_4px_rgba(0,0,0,0.1)]`} />
-      <span className={`text-[9px] font-bold uppercase tracking-widest ${text}`}>{label}</span>
-    </div>
   );
 }
 

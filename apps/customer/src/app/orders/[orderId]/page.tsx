@@ -81,18 +81,118 @@ const DISPLAY_STEPS = [
   { id: "delivered", label: "Delivered" },
 ] as const;
 
+function getOrderHero(status: string) {
+  switch (status) {
+    // ── Delivered states
+    case "delivered":
+    case "replacement_delivered":
+      return {
+        title: "Order Delivered",
+        description: "Your pieces have arrived. We hope you love your selection.",
+      };
+
+    // ── Post-delivery claims & exchanges (retaining delivered context)
+    case "claim_submitted":
+      return {
+        title: "Order Delivered",
+        description: "Delivered • Your claim request is currently in review.",
+      };
+    case "replacement_requested":
+      return {
+        title: "Order Delivered",
+        description: "Delivered • Size exchange request received.",
+      };
+    case "replacement_approved":
+      return {
+        title: "Order Delivered",
+        description: "Delivered • Size exchange approved by designer.",
+      };
+    case "replacement_dispatched":
+      return {
+        title: "Order Delivered",
+        description: "Delivered • Replacement piece is on the way.",
+      };
+    case "refund_requested":
+      return {
+        title: "Order Delivered",
+        description: "Delivered • Return refund request received.",
+      };
+
+    // ── Terminal & Problem states (explicitly non-guessing)
+    case "refunded":
+      return {
+        title: "Order Refunded",
+        description: "A full refund has been processed to your original payment method.",
+      };
+    case "cancelled":
+    case "declined":
+    case "cancelled_by_merchant":
+      return {
+        title: "Cancelled",
+        description: "This order has been cancelled. An instant refund has been initiated to your original payment method.",
+      };
+    case "booking_failed":
+      return {
+        title: "Delivery Unsuccessful",
+        description: "We were unable to secure courier dispatch for this delivery. A full refund has been initiated.",
+      };
+
+    // ── Out for delivery
+    case "out_for_delivery":
+      return {
+        title: "Out for Delivery",
+        description: "Your order is on the courier vehicle and heading to your doorstep.",
+      };
+
+    // ── Dispatched / In transit
+    case "picked_up":
+    case "in_transit":
+    case "pickup_scheduled":
+      return {
+        title: "Order Dispatched",
+        description: "Your package is in transit with our hyper-local delivery partner.",
+      };
+
+    // ── Confirmed / Packed
+    case "confirmed":
+    case "packed":
+      return {
+        title: "Order Confirmed",
+        description: "We've received your order and are preparing your pieces for delivery.",
+      };
+
+    // ── Placed
+    case "pending_payment":
+    case "pending_confirmation":
+    case "reservation_converted":
+      return {
+        title: "Order Placed",
+        description: "We've received your order and are awaiting seller confirmation.",
+      };
+
+    // ── Explicit Non-Guessing Fallback for unknown status
+    default:
+      return {
+        title: "Order Details",
+        description: `Current order status: ${status ? status.replace(/_/g, " ") : "Processing"}.`,
+      };
+  }
+}
+
 function getActiveStepIndex(status: string): number {
   switch (status) {
     case "pending_payment":
     case "pending_confirmation":
-      return 0;
+    case "reservation_converted":
+      return 0; // Placed
     case "confirmed":
-      return 1;
+    case "packed":
+      return 1; // Confirmed
     case "pickup_scheduled":
     case "picked_up":
     case "in_transit":
     case "out_for_delivery":
-      return 2;
+      return 2; // Dispatched
     case "delivered":
     case "claim_submitted":
     case "replacement_requested":
@@ -100,8 +200,13 @@ function getActiveStepIndex(status: string): number {
     case "replacement_dispatched":
     case "replacement_delivered":
     case "refund_requested":
+      return 3; // Delivered
+    case "cancelled":
+    case "declined":
+    case "cancelled_by_merchant":
+    case "booking_failed":
     case "refunded":
-      return 3;
+      return -1; // Terminal / problem state
     default:
       return 0;
   }
@@ -252,7 +357,9 @@ export default function OrderDetailPage() {
   }
 
   const isDeclined = order.status === "declined" || order.status === "cancelled_by_merchant";
-  const isCancelled = isDeclined || order.status === "cancelled" || order.status === "booking_failed";
+  const isBookingFailed = order.status === "booking_failed";
+  const isRefunded = order.status === "refunded";
+  const isCancelled = isDeclined || order.status === "cancelled" || isBookingFailed || isRefunded;
 
   const addr = order.deliveryAddress;
   const formattedAddress = addr
@@ -260,12 +367,19 @@ export default function OrderDetailPage() {
     : "Delivery Address";
 
   const isFinalSale = (order as any).returnsAccepted === false || (order as any).items?.every((i: any) => i.returnsAccepted === false);
-  const isDelivered = order.status === "delivered";
+  const isDelivered =
+    order.status === "delivered" ||
+    order.status === "replacement_delivered" ||
+    order.status === "claim_submitted" ||
+    order.status === "replacement_requested" ||
+    order.status === "replacement_approved" ||
+    order.status === "refund_requested";
   const deliveredTime = order.deliveredAt || order.updatedAt;
   const hoursSinceDelivery = isDelivered ? (Date.now() - deliveredTime) / (1000 * 60 * 60) : 0;
   const isWindowActive = isDelivered && hoursSinceDelivery <= 24;
 
   const hasLiveTracking = Boolean(order.driverDetails?.liveTrackingUrl);
+  const heroContent = getOrderHero(order.status);
 
   return (
     <div className="min-h-screen bg-white text-stone-900 antialiased selection:bg-amber-100 pb-20">
@@ -297,7 +411,7 @@ export default function OrderDetailPage() {
         animate="visible"
         className="max-w-md mx-auto px-5 py-6 space-y-7 text-left"
       >
-        {/* ── Cancelled / Declined State ───────────────────────────────────────── */}
+        {/* ── Cancelled / Declined / Failed / Refunded State ──────────────────── */}
         {isCancelled ? (
           <motion.div
             variants={itemVariants}
@@ -307,9 +421,21 @@ export default function OrderDetailPage() {
               <XCircle className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <h1 className="font-serif text-2xl font-bold text-red-950">Order Cancelled</h1>
+              <h1 className="font-serif text-2xl font-bold text-red-950">
+                {isRefunded
+                  ? "Order Refunded"
+                  : isBookingFailed
+                    ? "Delivery Unsuccessful"
+                    : "Order Cancelled"}
+              </h1>
               <p className="text-xs text-red-700 max-w-xs mx-auto leading-relaxed">
-                This order could not be fulfilled. An instant refund has been initiated to your original payment method.
+                {isRefunded
+                  ? "A full refund has been processed to your original payment method."
+                  : isBookingFailed
+                    ? "We were unable to secure courier dispatch for this delivery. A full refund has been initiated."
+                    : isDeclined
+                      ? "The seller was unable to fulfill this order. A full refund has been initiated."
+                      : "This order has been cancelled. An instant refund has been initiated to your original payment method."}
               </p>
             </div>
             <div className="inline-block px-3 py-1 bg-white border border-red-200 rounded-full text-xs font-mono font-bold text-red-700">
@@ -318,22 +444,18 @@ export default function OrderDetailPage() {
           </motion.div>
         ) : (
           <>
-            {/* ── Dominant Editorial Hero: Order Confirmed ────────────────────── */}
+            {/* ── Dominant Editorial Hero ────────────────────────────────────── */}
             <motion.div variants={itemVariants} className="text-center space-y-3 pt-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 block">
-                Your Purchase
-              </span>
-
               <div className="w-12 h-12 rounded-full bg-stone-900 text-white flex items-center justify-center mx-auto shadow-2xs">
                 <CheckCircle2 className="w-6 h-6 stroke-[2]" />
               </div>
 
               <div className="space-y-1">
                 <h1 className="text-3xl sm:text-4xl font-serif font-bold text-stone-900 tracking-tight">
-                  Order Confirmed
+                  {heroContent.title}
                 </h1>
                 <p className="text-xs text-stone-500 max-w-xs mx-auto leading-relaxed font-medium">
-                  We&apos;ve received your order and are preparing your pieces for delivery.
+                  {heroContent.description}
                 </p>
               </div>
 
@@ -354,7 +476,7 @@ export default function OrderDetailPage() {
 
                 {order.createdAt && (
                   <span className="inline-flex items-center gap-1 text-[11px] text-stone-500 font-medium">
-                    <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                    <Calendar className="w-3.5 h-3.5 text-stone-400" />
                     <span>{formatDate(order.createdAt)}</span>
                   </span>
                 )}
@@ -367,7 +489,10 @@ export default function OrderDetailPage() {
                 Order Status
               </span>
               <OrderStepper status={order.status} />
-              <OrderConfirmationPushPrompt userId={order.customerId} className="mt-1" />
+              {/* Only prompt for live delivery alerts if order is in-flight (never on delivered orders) */}
+              {!isDelivered && (
+                <OrderConfirmationPushPrompt userId={order.customerId} className="mt-1" />
+              )}
             </motion.div>
 
             {/* ── Delivery Address ───────────────────────────────────────────── */}
