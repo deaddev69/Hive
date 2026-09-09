@@ -127,8 +127,10 @@ export function buildCustomerPorterAddress(
 
   // When line1 carries the street, formattedAddress is still useful as the
   // supporting line; when it does not, formattedAddress *is* the street line.
+  // Locality backs both up — a typed line1 with no reverse-geocoded string
+  // would otherwise send the rider a street name with no area attached.
   const street1 = line1 ?? formatted ?? "Delivery address";
-  const street2 = line2 ?? (line1 ? formatted : locality);
+  const street2 = line2 ?? (line1 ? formatted : locality) ?? locality;
 
   return compact({
     apartment_address: clean(address.houseNumber),

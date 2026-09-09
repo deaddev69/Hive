@@ -133,6 +133,34 @@ export function runPorterAddressTests() {
     "Ernakulam South, Kochi, Kerala 682016, India"
   );
 
+  // ── A typed street with no reverse-geocoded string keeps its area ────────
+  // This is the shape a real customer produced: line1 typed by hand, an empty
+  // formattedAddress, and the area only in `locality`.
+  const typedNoFormatted = buildCustomerPorterAddress(
+    {
+      line1: "Surabhi Nagar",
+      formattedAddress: "",
+      houseNumber: "Ramakrishna Mens PG, Room 411",
+      landmark: "Near alakapuri hotel kakkanad ",
+      locality: "Kakkanad",
+      city: "Kochi",
+      state: "Kerala",
+      pincode: "682030",
+      lat: 10.016347879521431,
+      lng: 76.34654210251905,
+      phone: "9605365913",
+    },
+    "Customer"
+  );
+  check("Typed street stays the first line", typedNoFormatted.street_address1, "Surabhi Nagar");
+  check("Locality backs up an empty formattedAddress", typedNoFormatted.street_address2, "Kakkanad");
+  check(
+    "A long door description still reaches apartment_address",
+    typedNoFormatted.apartment_address,
+    "Ramakrishna Mens PG, Room 411"
+  );
+  check("A trailing space is trimmed off the landmark", typedNoFormatted.landmark, "Near alakapuri hotel kakkanad");
+
   // ── The same line is never sent twice ────────────────────────────────────
   const duplicated = buildCustomerPorterAddress(
     {
