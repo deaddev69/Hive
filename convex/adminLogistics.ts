@@ -1,7 +1,9 @@
 // convex/adminLogistics.ts
-import { query, mutation, internalMutation, internalQuery, action } from "./_generated/server";
+import { query, mutation, internalMutation, internalQuery, internalAction, action } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
+import { shouldPollShipment, resolvePorterProgression } from "./lib/porterSync";
 import { requireRole } from "./lib/auth";
 import { logSystemAlert } from "./lib/alerts";
 import { assertHyperlocalTransitionPrerequisites } from "./orders";
@@ -1795,5 +1797,122 @@ export const updateShipmentDetails = internalMutation({
     }
 
     await ctx.db.patch(args.shipmentId, patch);
+  },
+});
+
+/**
+ * Shipments still in flight, for the Porter poll.
+ *
+ * Deliberately a small, cheap query: the poll runs on a timer, so it must not
+ * walk the whole shipments table on every tick.
+ */
+const POLL_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+/** Porter rate-limits the account, so each tick asks about very few trips. */
+const POLL_BATCH = 4;
+
+export const listPollableShipmentsInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const cutoff = Date.now() - POLL_MAX_AGE_MS;
+    const recent = await ctx.db.query("shipments").order("desc").take(40);
+    return recent
+      .filter((s) => shouldPollShipment(s))
+      // A trip older than half a day is not still in progress — it was
+      // abandoned or cancelled outside Hive. Polling those burns the whole
+      // rate limit and starves the one shipment that is actually moving.
+      .filter((s) => (s.createdAt ?? s._creationTime) >= cutoff)
+      .slice(0, POLL_BATCH)
+      .map((s) => ({
+        shipmentId: s._id,
+        crn: s.awbNumber,
+        status: s.status,
+        isReturn: !!s.isReturn,
+      }));
+  },
+});
+
+/**
+ * Ask Porter what has happened to every shipment still in flight.
+ *
+ * Hive's courier state used to depend entirely on Porter's webhooks reaching
+ * us. When they did not — a stale URL, a rejected header, a 404 at the edge —
+ * nothing else ever asked, and orders sat at "booking requested" while a real
+ * rider collected and delivered the parcel. Twenty-four shipments went out that
+ * way without Hive recording a single event.
+ *
+ * This closes that hole: the same transitions the webhook applies, driven from
+ * Porter's own Track Order API on a timer. Webhooks stay the fast path; this is
+ * the floor under them. Both funnel through
+ * `processLogisticsStatusUpdateInternal`, which is idempotent, so an event
+ * arriving twice — once by webhook, once by poll — settles to the same state.
+ */
+export const pollActivePorterShipments = internalAction({
+  args: {},
+  handler: async (ctx): Promise<{ checked: number; advanced: number; failed: number }> => {
+    if (!process.env.PORTER_API_URL || !process.env.PORTER_API_KEY) {
+      return { checked: 0, advanced: 0, failed: 0 };
+    }
+
+    const pending: Array<{
+      shipmentId: Id<"shipments">;
+      crn: string;
+      status: string;
+      isReturn: boolean;
+    }> = await ctx.runQuery(internal.adminLogistics.listPollableShipmentsInternal, {});
+
+    let advanced = 0;
+    let failed = 0;
+
+    for (const row of pending) {
+      try {
+        const sync: any = await ctx.runAction(internal.lib.porter.syncOrderDetails, {
+          crn: row.crn,
+        });
+        const view = sync.view;
+        if (!view) continue;
+
+        // Porter may have moved several steps since we last heard, and the
+        // shipment state machine refuses a jump. Walk the transitions its own
+        // timings prove happened.
+        const steps = resolvePorterProgression(row.status, view);
+        if (steps.length === 0) continue;
+
+        for (const step of steps) {
+          await ctx.runMutation(internal.adminLogistics.processLogisticsStatusUpdateInternal, {
+            awbNumber: row.crn,
+            status: step.status,
+            remarks: "Synced from Porter (no webhook received)",
+            eventTs: step.at ?? undefined,
+            actualTripFare: view.actualFarePaise ?? undefined,
+            porterRawOrder: sync.rawOrder,
+            driverDetails: view.partner
+              ? {
+                  name: view.partner.name,
+                  phone: view.partner.phone,
+                  vehiclePlate: view.partner.vehiclePlate,
+                  trackingUrl: sync.trackingUrl,
+                  liveTrackingUrl: sync.liveTrackingUrl,
+                  etaMinutes: sync.etaMinutes,
+                }
+              : undefined,
+          });
+          advanced++;
+        }
+      } catch (err: any) {
+        failed++;
+        const message = err?.message ?? String(err);
+        console.error(`[PorterPoll] ${row.crn} could not be synced: ${message}`);
+        // Porter answers 429 per account, so continuing the loop only deepens
+        // the hole and starves the next tick too.
+        if (message.includes("429")) break;
+      }
+    }
+
+    if (advanced > 0 || failed > 0) {
+      console.log(
+        `[PorterPoll] checked ${pending.length}, advanced ${advanced}, failed ${failed}.`
+      );
+    }
+    return { checked: pending.length, advanced, failed };
   },
 });

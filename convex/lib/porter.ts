@@ -1,6 +1,7 @@
 import { internalAction } from "../_generated/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
+import { extractPartnerInfo, resolvePorterSyncView } from "./porterSync";
 import {
   resolveBookingDecision,
   porterRequestId,
@@ -260,19 +261,21 @@ export const syncOrderDetails = internalAction({
   },
   handler: async (ctx, args) => {
     const data = await fetchOrderFromPorter(args.crn);
-    
-    const result: any = {};
-    const driver = data.driver_details || data.order_details?.driver_details;
-    if (driver?.driver_name || driver?.name) result.name = driver.driver_name || driver.name;
-    const phone = normalizeDriverPhone(driver?.mobile || driver?.phone);
-    if (phone) result.phone = phone;
-    if (driver?.vehicle_number || driver?.vehiclePlate) result.vehiclePlate = driver.vehicle_number || driver.vehiclePlate;
+
+    // The Track Order API returns the rider under `partner_info`, not the
+    // `driver_details` the webhooks use. Reading only the latter meant a
+    // response carrying the rider's name, number and plate yielded nothing.
+    const partner = extractPartnerInfo(data);
+    const view = resolvePorterSyncView(data);
+
+    const result: any = { rawOrder: data, view };
+    if (partner?.name) result.name = partner.name;
+    if (partner?.phone) result.phone = partner.phone;
+    if (partner?.vehiclePlate) result.vehiclePlate = partner.vehiclePlate;
     if (data.tracking_url && data.tracking_url !== "http://test.com") result.trackingUrl = data.tracking_url;
     if (data.live_tracking_url) result.liveTrackingUrl = data.live_tracking_url;
     if (data.estimated_pickup_time !== undefined) result.etaMinutes = data.estimated_pickup_time;
-    
-    result.rawOrder = data;
-    
+
     return result;
   },
 });

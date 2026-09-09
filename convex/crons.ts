@@ -57,6 +57,15 @@ crons.interval(
 );
 
 // Process refund queue every 15 minutes (was 5 — reduced to cut I/O)
+// Porter's webhooks are the fast path; this is the floor under them. When they
+// stop arriving, nothing else asked Porter what had happened, and orders sat at
+// "booking requested" while a real rider delivered the parcel.
+crons.interval(
+  "poll_active_porter_shipments_every_2_minutes",
+  { minutes: 2 },
+  internal.adminLogistics.pollActivePorterShipments
+);
+
 crons.interval(
   "process_refund_queue_every_15_minutes",
   { minutes: 15 },
