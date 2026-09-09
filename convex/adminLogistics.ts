@@ -1814,6 +1814,13 @@ export const updateShipmentDetails = internalMutation({
 const POLL_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 /** Porter rate-limits the account, so each tick asks about very few trips. */
 const POLL_BATCH = 4;
+/**
+ * Porter also rate-limits per ORDER, separately from the account, and answers
+ * "maximum number of request exceeded for this order" once a single CRN has
+ * been asked about too often. So a trip is left alone for a while after each
+ * successful read rather than being polled on every tick.
+ */
+const POLL_MIN_SPACING_MS = 4 * 60 * 1000;
 
 export const listPollableShipmentsInternal = internalQuery({
   args: {},
@@ -1826,6 +1833,7 @@ export const listPollableShipmentsInternal = internalQuery({
       // abandoned or cancelled outside Hive. Polling those burns the whole
       // rate limit and starves the one shipment that is actually moving.
       .filter((s) => (s.createdAt ?? s._creationTime) >= cutoff)
+      .filter((s) => !s.porterLastSyncAt || s.porterLastSyncAt <= Date.now() - POLL_MIN_SPACING_MS)
       .slice(0, POLL_BATCH)
       .map((s) => ({
         shipmentId: s._id,
