@@ -79,11 +79,11 @@ export default function WishlistPage() {
               {/* Editorial Artwork */}
               <div className="relative w-full max-w-[320px] sm:max-w-[380px] md:max-w-[410px] aspect-[1024/682] mx-auto mb-3 sm:mb-4">
                 <Image
-                  src="/brand/wishlist-empty-editorial.png"
+                  src="/brand/wishlist-editorial-v2.png"
                   alt="Hive Wishlist - Good Style Takes Time"
                   fill
                   priority
-                  sizes="(max-width: 640px) 320px, 410px"
+                  unoptimized
                   className="object-contain mix-blend-multiply pointer-events-none"
                 />
               </div>
