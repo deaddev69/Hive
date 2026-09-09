@@ -3,27 +3,19 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
-import confetti from "canvas-confetti";
+import { useParams } from "next/navigation";
+import { motion, type Variants } from "framer-motion";
 import {
   ArrowLeft,
-  Clock,
   MapPin,
   CheckCircle2,
   XCircle,
   Copy,
   Check,
-  ShieldCheck,
   Download,
-  ShoppingBag,
-  Sparkles,
-  ChevronRight,
-  FileText,
   AlertCircle,
-  Package,
-  RotateCcw,
-  Zap,
+  ChevronRight,
+  ExternalLink,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -64,6 +56,96 @@ function NumberTicker({ value }: { value: number }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Status Mapping & 4-Step Progress Stepper
+// ─────────────────────────────────────────────────────────────────────────────
+const DISPLAY_STEPS = [
+  { id: "placed", label: "Placed" },
+  { id: "confirmed", label: "Confirmed" },
+  { id: "dispatched", label: "Dispatched" },
+  { id: "delivered", label: "Delivered" },
+] as const;
+
+function getActiveStepIndex(status: string): number {
+  switch (status) {
+    case "pending_payment":
+    case "pending_confirmation":
+      return 0;
+    case "confirmed":
+      return 1;
+    case "pickup_scheduled":
+    case "picked_up":
+    case "in_transit":
+    case "out_for_delivery":
+      return 2;
+    case "delivered":
+    case "claim_submitted":
+    case "replacement_requested":
+    case "replacement_approved":
+    case "replacement_dispatched":
+    case "replacement_delivered":
+    case "refund_requested":
+    case "refunded":
+      return 3;
+    default:
+      return 0;
+  }
+}
+
+function OrderStepper({ status }: { status: string }) {
+  const currentStep = getActiveStepIndex(status);
+
+  return (
+    <div className="w-full pt-1 pb-2">
+      <div className="flex items-center justify-between relative">
+        {/* Track Line Background */}
+        <div className="absolute top-2.5 left-4 right-4 h-[2px] bg-stone-200" />
+        {/* Active Progress Track */}
+        <div
+          className="absolute top-2.5 left-4 h-[2px] bg-stone-900 transition-all duration-500"
+          style={{ width: `calc(${(currentStep / (DISPLAY_STEPS.length - 1)) * 100}% - 16px)` }}
+        />
+
+        {DISPLAY_STEPS.map((step, idx) => {
+          const isDone = idx < currentStep;
+          const isCurrent = idx === currentStep;
+
+          return (
+            <div key={step.id} className="flex flex-col items-center gap-2 z-10">
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center border-2 transition-all ${
+                  isDone
+                    ? "bg-stone-900 border-stone-900 text-white"
+                    : isCurrent
+                      ? "bg-stone-900 border-stone-900 text-white ring-4 ring-stone-900/10"
+                      : "bg-white border-stone-300 text-transparent"
+                }`}
+              >
+                {isDone ? (
+                  <Check className="w-3 h-3 stroke-[3]" />
+                ) : isCurrent ? (
+                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                ) : null}
+              </div>
+              <span
+                className={`text-[11px] tracking-tight ${
+                  isCurrent
+                    ? "text-stone-950 font-semibold"
+                    : isDone
+                      ? "text-stone-700 font-medium"
+                      : "text-stone-400"
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Framer Motion Animation Variants
 // ─────────────────────────────────────────────────────────────────────────────
 const containerVariants: Variants = {
@@ -71,39 +153,33 @@ const containerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
+      staggerChildren: 0.06,
+      delayChildren: 0.05,
     },
   },
 };
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      type: "spring",
-      stiffness: 260,
-      damping: 20,
+      duration: 0.35,
+      ease: [0.16, 1, 0.3, 1],
     },
   },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// /orders/[orderId] — High Conversion Post-Purchase Confirmation Page
+// /orders/[orderId] — Editorial Post-Purchase Confirmation Page
 // ─────────────────────────────────────────────────────────────────────────────
 export default function OrderDetailPage() {
-  const router = useRouter();
   const params = useParams();
   const orderId = params.orderId as string;
   const [mounted, setMounted] = useState(false);
   const [copied, setCopied] = useState(false);
   const { token } = useSessionStore();
-  // useInvoiceDownload became per-order (it tracks which id is downloading, so
-  // a list can show a spinner on one row only). This page was still destructuring
-  // the older flat `downloading` / `downloadInvoice` API, which no longer exists.
-  // Matches the usage in app/orders/page.tsx.
   const { downloadInvoiceByOrderId, isDownloading } = useInvoiceDownload();
 
   const order = useQuery(api.orders.getOrderById, {
@@ -114,22 +190,6 @@ export default function OrderDetailPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Trigger celebratory confetti on initial load for active orders
-  useEffect(() => {
-    if (order && order.status !== "cancelled" && order.status !== "booking_failed") {
-      try {
-        confetti({
-          particleCount: 40,
-          spread: 60,
-          origin: { y: 0.3 },
-          colors: ["#F59E0B", "#10B981", "#F5C22B"],
-        });
-      } catch {
-        // Fallback gracefully if canvas context fails
-      }
-    }
-  }, [order]);
 
   const handleCopyOrderId = (idStr: string) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -142,7 +202,7 @@ export default function OrderDetailPage() {
 
   if (!mounted || order === undefined) {
     return (
-      <div className="min-h-screen bg-white dark:bg-neutral-950 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
         <BeeLoader message="Loading order details..." />
       </div>
     );
@@ -151,16 +211,16 @@ export default function OrderDetailPage() {
   // ── Order Not Found State ──────────────────────────────────────────────────
   if (!order) {
     return (
-      <div className="min-h-screen bg-white dark:bg-neutral-950 flex items-center justify-center py-20 px-6 text-center select-none">
-        <div className="max-w-md w-full bg-white border border-hive-border rounded-3xl p-8 shadow-sm space-y-6 flex flex-col items-center">
+      <div className="min-h-screen bg-white flex items-center justify-center py-20 px-6 text-center select-none">
+        <div className="max-w-md w-full bg-white border border-stone-200 rounded-3xl p-8 space-y-6 flex flex-col items-center">
           <div className="w-16 h-16 rounded-full bg-red-50 border border-red-200/50 flex items-center justify-center">
             <AlertCircle className="w-8 h-8 text-red-500 stroke-[1.8]" />
           </div>
           <div className="space-y-2">
-            <h1 className="font-serif text-2xl font-bold text-hive-dark">Order Not Found</h1>
-            <p className="text-xs text-hive-text-muted max-w-[280px] mx-auto leading-relaxed">
+            <h1 className="font-serif text-2xl font-bold text-stone-900">Order Not Found</h1>
+            <p className="text-xs text-stone-500 max-w-[280px] mx-auto leading-relaxed">
               We couldn&apos;t locate any order matching ID:{" "}
-              <span className="font-extrabold text-hive-dark select-all">{orderId}</span>
+              <span className="font-mono font-bold text-stone-800 select-all">{orderId}</span>
             </p>
           </div>
           <Link
@@ -178,189 +238,140 @@ export default function OrderDetailPage() {
   const isDeclined = order.status === "declined" || order.status === "cancelled_by_merchant";
   const isCancelled = isDeclined || order.status === "cancelled" || order.status === "booking_failed";
 
-  // Parse delivery metadata with smart fallbacks
-  const paymentMethodRaw = order.notes?.match(/Payment: (\w+)/)?.[1] ?? "online";
-  const deliverySlotStr = order.notes?.split("Slot: ")?.[1] ?? "";
-  const [datePart, ...slotParts] = deliverySlotStr.split(" ");
-  const parsedSlot = slotParts.join(" ");
-
-  const deliveryDateDisplay = datePart && datePart !== "undefined"
-    ? datePart
-    : new Date(order.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric" });
-
-  const deliverySlotDisplay = parsedSlot && parsedSlot.length > 2
-    ? parsedSlot
-    : "5:00 PM - 7:00 PM";
-
   const addr = order.deliveryAddress;
   const formattedAddress = addr
     ? `${addr.line1 || addr.formattedAddress || ""}, ${addr.city || ""} (${addr.pincode || ""})`
     : "Delivery Address";
 
+  const isFinalSale = (order as any).returnsAccepted === false || (order as any).items?.every((i: any) => i.returnsAccepted === false);
+  const isDelivered = order.status === "delivered";
+  const deliveredTime = order.deliveredAt || order.updatedAt;
+  const hoursSinceDelivery = isDelivered ? (Date.now() - deliveredTime) / (1000 * 60 * 60) : 0;
+  const isWindowActive = isDelivered && hoursSinceDelivery <= 24;
+
+  const hasLiveTracking = Boolean(order.driverDetails?.liveTrackingUrl);
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 pb-16">
+    <div className="min-h-screen bg-white text-stone-900 antialiased selection:bg-amber-100 pb-20">
       
       {/* ── Top Navigation Bar ──────────────────────────────────────────────── */}
-      <header className="bg-white dark:bg-zinc-900 border-b border-slate-200/80 dark:border-zinc-800 px-4 py-3 sticky top-0 z-30 flex items-center justify-between shadow-xs">
+      <header className="bg-white border-b border-stone-200/80 px-4 py-3.5 sticky top-0 z-30 flex items-center justify-between">
         <Link
           href="/orders"
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:white transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-stone-600 hover:text-stone-950 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>My Orders</span>
         </Link>
-        <span className="font-mono font-bold text-xs tracking-tight text-slate-800 dark:text-zinc-200">
+        <span className="font-mono text-xs font-semibold tracking-tight text-stone-800">
           #{order.orderNumber}
         </span>
         <Link
           href="/contact"
-          className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline"
+          className="text-xs font-medium text-stone-500 hover:text-stone-900 transition-colors"
         >
           Need Help?
         </Link>
       </header>
 
-      {/* ── Main Post-Purchase Canvas ────────────────────────────────────────── */}
+      {/* ── Main Editorial Content ─────────────────────────────────────────── */}
       <motion.main
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-md mx-auto p-4 space-y-4"
+        className="max-w-md mx-auto px-5 py-6 space-y-7 text-left"
       >
-        {/* ── Single-State Hero Status Banner ─────────────────────────────────── */}
+        {/* ── Cancelled / Declined State ───────────────────────────────────────── */}
         {isCancelled ? (
           <motion.div
             variants={itemVariants}
-            className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-3xl p-6 text-center space-y-3 shadow-xs"
+            className="border border-red-200 rounded-3xl p-6 text-center space-y-3 bg-red-50/40"
           >
-            <div className="w-14 h-14 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mx-auto text-red-600 dark:text-red-400 shadow-inner">
-              <XCircle className="w-8 h-8" />
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600">
+              <XCircle className="w-6 h-6" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-red-950 dark:text-red-200">Order Declined / Cancelled</h1>
-              <p className="text-xs text-red-700 dark:text-red-400 mt-1 leading-relaxed">
-                This order was declined due to high demand. An instant full refund has been initiated to your original payment method within approximately 1 hour.
+            <div className="space-y-1">
+              <h1 className="font-serif text-2xl font-bold text-red-950">Order Cancelled</h1>
+              <p className="text-xs text-red-700 max-w-xs mx-auto leading-relaxed">
+                This order could not be fulfilled. An instant refund has been initiated to your original payment method.
               </p>
             </div>
-            <div className="inline-block px-3 py-1 bg-white dark:bg-zinc-900 border border-red-200 dark:border-red-800 rounded-full text-xs font-mono font-bold text-red-700 dark:text-red-400">
+            <div className="inline-block px-3 py-1 bg-white border border-red-200 rounded-full text-xs font-mono font-bold text-red-700">
               ID: {order.orderNumber}
             </div>
           </motion.div>
         ) : (
-          <motion.div
-            variants={itemVariants}
-            className="relative overflow-hidden bg-gradient-to-b from-amber-500/10 via-emerald-500/5 to-white dark:to-zinc-900 border border-emerald-200/80 dark:border-emerald-900/50 rounded-3xl p-6 text-center space-y-4 shadow-sm"
-          >
-            {/* Subtle background glow mesh */}
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+          <>
+            {/* ── Dominant Editorial Hero: Order Confirmed ────────────────────── */}
+            <motion.div variants={itemVariants} className="text-center space-y-3 pt-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-600 flex items-center justify-center mx-auto shadow-2xs">
+                <CheckCircle2 className="w-6 h-6 stroke-[2.2]" />
+              </div>
 
-            {/* Spring Animated Checkmark with Ping Ripple */}
-            <div className="relative w-16 h-16 mx-auto">
-              <span className="animate-ping absolute inset-0 rounded-full bg-emerald-400 opacity-30" />
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: [0.8, 1.18, 1], opacity: 1 }}
-                transition={{ type: "spring", stiffness: 220, damping: 15 }}
-                className="relative w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/25"
+              <div className="space-y-1">
+                <h1 className="font-serif text-3xl sm:text-4xl font-normal text-stone-900 tracking-tight">
+                  Order Confirmed
+                </h1>
+                <p className="text-xs text-stone-500 max-w-xs mx-auto leading-relaxed font-normal">
+                  We&apos;ve received your order and are preparing your pieces for delivery.
+                </p>
+              </div>
+
+              {/* Order ID Pill with Copy Feedback */}
+              <button
+                type="button"
+                onClick={() => handleCopyOrderId(order.orderNumber)}
+                className="inline-flex items-center gap-2 px-3 py-1 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-full text-xs font-mono font-medium text-stone-700 transition-colors cursor-pointer group active:scale-95"
               >
-                <CheckCircle2 className="w-9 h-9 stroke-[2.2]" />
-              </motion.div>
-            </div>
-
-            <div className="space-y-1">
-              <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                Order Confirmed!
-              </h1>
-              <p className="text-xs text-slate-600 dark:text-zinc-400 max-w-xs mx-auto">
-                We&apos;ve received your order and notified your boutique partner.
-              </p>
-            </div>
-
-            {/* Interactive Copyable Order ID Pill */}
-            <button
-              type="button"
-              onClick={() => handleCopyOrderId(order.orderNumber)}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-full text-xs font-mono font-bold text-slate-800 dark:text-zinc-200 shadow-xs hover:border-amber-500 transition-all cursor-pointer group active:scale-95"
-            >
-              <span>ID: {order.orderNumber}</span>
-              <motion.span animate={{ scale: copied ? [1, 1.3, 1] : 1 }}>
+                <span>ID: {order.orderNumber}</span>
                 {copied ? (
                   <Check className="w-3.5 h-3.5 text-emerald-600" />
                 ) : (
-                  <Copy className="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 transition-colors" />
+                  <Copy className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 transition-colors" />
                 )}
-              </motion.span>
-            </button>
+              </button>
 
-            <OrderConfirmationPushPrompt userId={order.customerId} />
-          </motion.div>
-        )}
+              <div className="pt-1">
+                <OrderConfirmationPushPrompt userId={order.customerId} />
+              </div>
+            </motion.div>
 
-        {/* ── Order Timeline Tracker ──────────────────────────────────────────── */}
-        {!isCancelled && (
-          <>
-            {/* Delivery & Fitting Slot Schedule Card */}
-            <motion.div
-              variants={itemVariants}
-              className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-4 space-y-3 shadow-xs"
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-zinc-800">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-amber-500" />
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                    Delivery & Fitting Window
-                  </h2>
-                </div>
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Order Received
+            {/* ── Restrained 4-Step Status Tracker ────────────────────────────── */}
+            <motion.div variants={itemVariants} className="pt-2 pb-1 border-y border-stone-100">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-400 block mb-3">
+                Order Status
+              </span>
+              <OrderStepper status={order.status} />
+            </motion.div>
+
+            {/* ── Delivery Address ───────────────────────────────────────────── */}
+            <motion.section variants={itemVariants} className="space-y-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-400 block">
+                Delivery Address
+              </span>
+              <div className="flex items-start gap-2 pt-0.5">
+                <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-stone-700 leading-relaxed font-normal">
+                  {formattedAddress}
+                </p>
+              </div>
+            </motion.section>
+
+            {/* ── Order Summary & Items ──────────────────────────────────────── */}
+            <motion.section variants={itemVariants} className="space-y-3 pt-1 border-t border-stone-100">
+              <div className="flex items-baseline justify-between pt-3 pb-1">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-400">
+                  Order Summary ({order.items.length} {order.items.length === 1 ? "Item" : "Items"})
+                </span>
+                <span className="text-sm font-semibold text-stone-900">
+                  <NumberTicker value={order.total} />
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5 text-xs">
-                <div className="bg-slate-50 dark:bg-zinc-800/60 p-3 rounded-2xl border border-slate-100 dark:border-zinc-800/80">
-                  <span className="block text-slate-400 dark:text-zinc-400 text-[10px] uppercase font-bold tracking-wider">
-                    Selected Date
-                  </span>
-                  <span className="font-bold text-slate-900 dark:text-zinc-100 mt-0.5 block">
-                    {deliveryDateDisplay}
-                  </span>
-                </div>
-                <div className="bg-slate-50 dark:bg-zinc-800/60 p-3 rounded-2xl border border-slate-100 dark:border-zinc-800/80">
-                  <span className="block text-slate-400 dark:text-zinc-400 text-[10px] uppercase font-bold tracking-wider">
-                    Preferred Slot
-                  </span>
-                  <span className="font-bold text-slate-900 dark:text-zinc-100 mt-0.5 block">
-                    {deliverySlotDisplay}
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-1.5 pt-1 truncate">
-                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="truncate">Delivering to: <strong className="text-slate-700 dark:text-zinc-300 font-semibold">{formattedAddress}</strong></span>
-              </p>
-            </motion.div>
-
-            {/* Receipt Ticket Stub & Order Items Breakdown */}
-            <motion.div
-              variants={itemVariants}
-              className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-3xl p-4 space-y-3.5 shadow-xs"
-            >
-              <div className="flex justify-between items-center pb-2.5 border-b border-slate-100 dark:border-zinc-800">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <Package className="w-3.5 h-3.5 text-amber-500" />
-                  Order Summary ({order.items.length} {order.items.length === 1 ? "Item" : "Items"})
-                </h2>
-                <div className="text-sm font-extrabold text-slate-900 dark:text-white">
-                  <NumberTicker value={order.total} />
-                </div>
-              </div>
-
-              <div className="space-y-3">
+              <div className="divide-y divide-stone-100">
                 {order.items.map((item: any, idx: number) => (
-                  <div key={item._id || idx} className="flex gap-3 items-center">
-                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden border border-slate-200/80 dark:border-zinc-800 shrink-0 bg-slate-100">
+                  <div key={item._id || idx} className="py-3.5 flex items-center gap-3.5">
+                    <div className="relative w-14 h-18 rounded-xl overflow-hidden bg-stone-50 border border-stone-100 shrink-0">
                       <Image
                         src={item.imageUrl || "/placeholder.png"}
                         alt={item.productName || "Product"}
@@ -370,28 +381,26 @@ export default function OrderDetailPage() {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      <h3 className="text-xs font-semibold text-stone-900 truncate">
                         {item.productName || "Product"}
                       </h3>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-stone-500">
+                        <span className="bg-stone-100 px-1.5 py-0.5 rounded text-stone-600 font-medium">
                           Size: {item.variantSize || "Free"}
                         </span>
-                        <span className="text-[10px] font-semibold text-slate-400">
-                          Qty: {item.quantity || 1}
-                        </span>
+                        <span>Qty: {item.quantity || 1}</span>
                       </div>
-                      {/* Demoted Elegant Boutique Attribution */}
-                      <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold mt-1">
-                        Fulfilled by {order.boutiqueName || "Boutique Partner"}
+                      <p className="text-[10px] text-stone-400 mt-1 truncate">
+                        From {item.boutiqueName || order.boutiqueName || "Verified Partner"}
                       </p>
                     </div>
-                    <span className="text-xs font-extrabold text-slate-900 dark:text-zinc-100 shrink-0">
+                    <span className="text-xs font-semibold text-stone-900 shrink-0 tabular-nums">
                       {formatCurrency(item.priceAtPurchase || 0)}
                     </span>
                   </div>
                 ))}
               </div>
+
               <CustomerPriceBreakdown
                 subtotal={order.subtotal / 100}
                 handlingCharge={(order as any).pricingSnapshot?.handlingChargePaise != null ? (order as any).pricingSnapshot.handlingChargePaise / 100 : undefined}
@@ -402,165 +411,126 @@ export default function OrderDetailPage() {
                 total={order.total / 100}
                 isEstimatedDelivery={false}
                 showHelpSection={true}
-                className="mt-4 border-t border-slate-100 dark:border-zinc-800 pt-4"
+                className="mt-3 pt-3 border-t border-stone-100"
               />
-            </motion.div>
+            </motion.section>
 
-            {/* Dynamic Seller Return Policy & Fit Guarantee Card */}
-            {(() => {
-              const isFinalSale = (order as any).returnsAccepted === false || (order as any).items?.every((i: any) => i.returnsAccepted === false);
-              const isDelivered = order.status === "delivered";
-              // Window runs from delivery, matching the server.
-              const deliveredTime = order.deliveredAt || order.updatedAt;
-              const hoursSinceDelivery = isDelivered ? (Date.now() - deliveredTime) / (1000 * 60 * 60) : 0;
-              const isWindowActive = isDelivered && hoursSinceDelivery <= 24;
+            {/* ── Returns & Exchanges Policy ─────────────────────────────────── */}
+            <motion.section variants={itemVariants} className="space-y-1.5 pt-1 border-t border-stone-100">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-400 block pt-3">
+                Returns & Exchanges
+              </span>
+              <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200/70 text-xs text-stone-600 space-y-1">
+                <div className="flex items-center justify-between font-semibold text-stone-900">
+                  <span>{isFinalSale ? "Final Sale" : isWindowActive ? "Return Window Active" : "24-Hour Return Window"}</span>
+                  {isWindowActive && (
+                    <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                      {Math.max(0, Math.floor(24 - hoursSinceDelivery))}h remaining
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-stone-500 leading-relaxed font-normal">
+                  {isFinalSale
+                    ? "This item is configured as Final Sale. Voluntary returns or size exchanges are disabled. Damaged, defective, or incorrect items remain 100% covered."
+                    : isDelivered
+                      ? isWindowActive
+                        ? "Your 24-hour return window is active. Submit return or exchange requests within 24 hours of delivery."
+                        : "Voluntary return window has ended (24h past delivery). Damaged or wrong item claims remain covered."
+                      : "Voluntary 24-hour size exchanges and returns activate upon delivery."}
+                </p>
+              </div>
 
-              if (isFinalSale) {
-                return (
-                  <motion.div
-                    variants={itemVariants}
-                    className="relative overflow-hidden bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-4 flex items-start gap-3 shadow-xs"
-                  >
-                    <div className="w-8 h-8 rounded-xl bg-slate-200 dark:bg-zinc-800 flex items-center justify-center text-slate-700 dark:text-zinc-300 shrink-0 mt-0.5">
-                      <ShieldCheck className="w-4.5 h-4.5" />
-                    </div>
-                    <div className="text-xs space-y-1">
-                      <h3 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                        <span>Final Sale — Voluntary Returns Disabled</span>
-                        <span className="text-[9px] bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-bold px-2 py-0.5 rounded-full">
-                          Seller Policy
-                        </span>
-                      </h3>
-                      <p className="text-slate-600 dark:text-zinc-400 leading-relaxed text-[11px]">
-                        This boutique listing is configured as Final Sale. Voluntary returns or size exchanges are disabled. Damaged, defective, or incorrect items remain 100% covered.
-                      </p>
-                    </div>
-                  </motion.div>
-                );
-              }
-
-              return (
-                <motion.div
-                  variants={itemVariants}
-                  className="relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-3xl p-4 flex items-start gap-3 shadow-xs"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
-                    <RotateCcw className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="text-xs space-y-1">
-                    <h3 className="font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                      <span>{isWindowActive ? "1-Day Return Window Active" : "24-Hour Return Policy"}</span>
-                      {isWindowActive && (
-                        <span className="text-[9px] bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold px-2 py-0.5 rounded-full">
-                          {Math.max(0, Math.floor(24 - hoursSinceDelivery))}h Remaining
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-slate-600 dark:text-zinc-400 leading-relaxed text-[11px]">
-                      {isDelivered
-                        ? isWindowActive
-                          ? "Your 24-hour return window is active. Submit return or exchange requests within 24 hours of delivery."
-                          : "Voluntary return window has ended (24h past delivery). Damaged or wrong item claims remain covered."
-                        : "Voluntary 24-hour size exchanges and returns will activate upon doorstep delivery."}
-                    </p>
-                  </div>
-                </motion.div>
-              );
-            })()}
+              {/* In-progress or available return actions */}
+              {isDelivered && !isFinalSale && (
+                <div className="pt-2">
+                  <ReturnExchangeActions
+                    orderId={order._id}
+                    orderNumber={order.orderNumber}
+                    returnStatus={(order as any).returnStatus}
+                    isWindowActive={isWindowActive}
+                  />
+                </div>
+              )}
+            </motion.section>
           </>
         )}
 
-        {/* ── High-Conversion Action Button Stack ────────────────────────────── */}
-        <motion.div variants={itemVariants} className="pt-2 space-y-2.5">
+        {/* ── Action Stack with Explicit Hierarchy ───────────────────────────── */}
+        <motion.div variants={itemVariants} className="pt-4 space-y-2.5">
           {!isCancelled && (
-            <div className="space-y-2">
-              <Link
-                href={`/orders/${order._id}/track`}
-                className="relative overflow-hidden w-full py-3.5 bg-hive-amber hover:bg-hive-amber-dark text-white font-black text-xs uppercase tracking-wider rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-hive-amber/20 active:scale-[0.98] transition-all cursor-pointer group"
-              >
-                <span className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out pointer-events-none" />
-                <ShoppingBag className="w-4 h-4" />
-                <span>Track Order Status</span>
-              </Link>
-
-              {/* Dynamic Return Action Button */}
-              {(() => {
-                const isFinalSale = (order as any).returnsAccepted === false || (order as any).items?.every((i: any) => i.returnsAccepted === false);
-                const isDelivered = order.status === "delivered";
-                // Window runs from delivery, matching the server.
-                const deliveredTime = order.deliveredAt || order.updatedAt;
-                const isWindowActive =
-                  isDelivered && (Date.now() - deliveredTime) / (1000 * 60 * 60) <= 24;
-
-                if (isFinalSale) {
-                  return (
-                    <div className="space-y-2">
-                      <a
-                        href={`https://wa.me/917356019103?text=${encodeURIComponent(`Hi Hive Support, I need help with my Final Sale order ${order.orderNumber} (damaged or incorrect item).`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full py-3 bg-amber-50 hover:bg-amber-100 text-amber-950 font-bold text-xs rounded-2xl flex items-center justify-center gap-2 border border-amber-300 transition-all cursor-pointer shadow-xs"
-                      >
-                        <AlertCircle className="w-4 h-4 text-amber-700" />
-                        <span>Report Damaged / Incorrect Item</span>
-                      </a>
-                      <div className="flex items-center justify-center gap-3 text-[11px] text-slate-500 font-medium pt-0.5">
-                        <span>Helpline: <a href="tel:+917356019103" className="font-bold text-slate-800 underline">+91 73560 19103</a></span>
-                        <span>•</span>
-                        <a href={`mailto:support@hivenow.in?subject=Report Damaged/Defective Item Order ${order.orderNumber}`} className="text-slate-800 underline font-medium">Email Support</a>
-                      </div>
-                    </div>
-                  );
-                }
-
-                // Live return/exchange actions. The component also renders the
-                // in-progress state, so it stays mounted once a request exists
-                // even after the 24h window closes.
-                if (isDelivered) {
-                  return (
-                    <ReturnExchangeActions
-                      orderId={order._id}
-                      orderNumber={order.orderNumber}
-                      returnStatus={(order as any).returnStatus}
-                      isWindowActive={isWindowActive}
-                    />
-                  );
-                }
-
-                return (
+            <>
+              {hasLiveTracking ? (
+                <>
+                  {/* Primary CTA when live tracking is active */}
                   <a
-                    href={`mailto:support@hivenow.in?subject=Order Issue Order ${order.orderNumber}`}
-                    className="w-full py-3 bg-white dark:bg-zinc-900 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 font-semibold text-xs rounded-2xl flex items-center justify-center gap-2 border border-slate-200 dark:border-zinc-800 transition-all cursor-pointer"
+                    href={order.driverDetails.liveTrackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full h-12 bg-stone-950 hover:bg-stone-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99] cursor-pointer"
                   >
-                    <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Report Wrong Item or Defect</span>
+                    <span>Track Live Delivery</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-stone-400" />
                   </a>
-                );
-              })()}
-            </div>
+
+                  {/* Secondary CTA */}
+                  <Link
+                    href="/products"
+                    className="w-full h-11 bg-white hover:bg-stone-50 border border-stone-200 text-stone-800 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all active:scale-[0.99]"
+                  >
+                    <span>Continue Shopping</span>
+                  </Link>
+                </>
+              ) : (
+                /* Primary CTA when no live tracking URL is available */
+                <Link
+                  href="/products"
+                  className="w-full h-12 bg-stone-950 hover:bg-stone-900 text-white rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99]"
+                >
+                  <span>Continue Shopping</span>
+                </Link>
+              )}
+            </>
           )}
 
-          <div className="grid grid-cols-2 gap-2.5">
+          {/* Secondary Utilities: Invoice & Issue Reporting */}
+          <div className="grid grid-cols-2 gap-2.5 pt-1">
             <button
               type="button"
               disabled={isDownloading(order._id)}
               onClick={() => downloadInvoiceByOrderId(order._id, order)}
-              className="py-3 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-200 text-xs font-bold rounded-2xl flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-[0.98] cursor-pointer disabled:opacity-50"
+              className="h-11 bg-white hover:bg-stone-50 border border-stone-200 text-stone-800 text-xs font-bold rounded-2xl flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-[0.98] cursor-pointer disabled:opacity-50"
             >
-              <Download className="w-3.5 h-3.5 text-amber-500" />
+              <Download className="w-3.5 h-3.5 text-stone-500" />
               <span>{isDownloading(order._id) ? "Downloading..." : "Invoice"}</span>
             </button>
 
-            <Link
-              href="/shop"
-              className="py-3 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-200 text-xs font-bold rounded-2xl flex items-center justify-center gap-1.5 transition-all text-center shadow-xs active:scale-[0.98] cursor-pointer"
+            <a
+              href={`mailto:support@hivenow.in?subject=Order Issue - ${order.orderNumber}`}
+              className="h-11 bg-white hover:bg-stone-50 border border-stone-200 text-stone-700 text-xs font-semibold rounded-2xl flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-[0.98] text-center"
             >
-              <span>Continue Shopping</span>
-            </Link>
+              <AlertCircle className="w-3.5 h-3.5 text-stone-400" />
+              <span>Report Issue</span>
+            </a>
           </div>
-        </motion.div>
 
+          {/* Direct WhatsApp Helpline for Final Sale issues */}
+          {isFinalSale && !isCancelled && (
+            <div className="text-center pt-2">
+              <a
+                href={`https://wa.me/917356019103?text=${encodeURIComponent(
+                  `Hi Hive Support, I need assistance with my order #${order.orderNumber}.`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-stone-500 hover:text-stone-900 underline font-medium"
+              >
+                Need immediate help? Chat with Hive on WhatsApp
+              </a>
+            </div>
+          )}
+        </motion.div>
       </motion.main>
     </div>
   );
 }
+
