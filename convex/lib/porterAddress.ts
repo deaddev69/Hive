@@ -125,18 +125,35 @@ export function buildCustomerPorterAddress(
   const line2 = clean(address.line2);
   const locality = clean(address.locality);
 
-  // When line1 carries the street, formattedAddress is still useful as the
-  // supporting line; when it does not, formattedAddress *is* the street line.
-  // Locality backs both up — a typed line1 with no reverse-geocoded string
-  // would otherwise send the rider a street name with no area attached.
-  const street1 = line1 ?? formatted ?? "Delivery address";
-  const street2 = line2 ?? (line1 ? formatted : locality) ?? locality;
+  // Whose words lead the street line matters more than it looks.
+  //
+  // A map-picked address has no `line1`, so `formattedAddress` used to lead —
+  // and reverse geocoding names the nearest PROMINENT PLACE, not the customer's
+  // home. One real delivery went out as "Data Tower, Infopark Rd" (an office
+  // block) when the destination was a house identified only by the landmark the
+  // customer typed themselves. The rider went to the office block.
+  //
+  // So when the customer typed a landmark and the street line would otherwise
+  // be a machine's guess, their landmark leads and the geocoded string drops to
+  // the supporting line as area context. A hand-typed `line1` always wins over
+  // both — that is the customer describing their own street.
+  const landmark = clean(address.landmark);
+  const street1 = line1 ?? landmark ?? formatted ?? "Delivery address";
+
+  // Whatever did not become the street line, in most-useful order, minus
+  // anything already sent.
+  const street2 =
+    line2 ??
+    (line1 ? (formatted ?? locality) : street1 === landmark ? formatted ?? locality : locality) ??
+    locality;
 
   return compact({
     apartment_address: clean(address.houseNumber),
     street_address1: street1,
     street_address2: street2 === street1 ? undefined : street2,
-    landmark: clean(address.landmark),
+    // Porter shows this separately to the rider, so it is worth repeating even
+    // when it is also leading the street line.
+    landmark,
     city: clean(address.city),
     state: clean(address.state),
     pincode: clean(address.pincode),

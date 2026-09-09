@@ -1228,8 +1228,18 @@ export const initiateReturnAdmin = mutation({
     //   pickupAddress  = CUSTOMER (order.deliveryAddress)
     //   deliveryAddress = BOUTIQUE (order.pickupAddress / boutique record)
 
+    // Who the rider is collecting from. This used to be the address LABEL —
+    // "Home" — so the seller and admin panels showed a contact person called
+    // Home, and a rider given a name like that has no idea who they are meant
+    // to be asking for at the door.
+    const returnContactName =
+      (order.deliveryAddress as any).receiverName?.trim() ||
+      (customer as any)?.name?.trim() ||
+      customer?.email ||
+      "Customer";
+
     const returnPickupAddress = {
-      name: order.deliveryAddress.label || customer?.email || "Customer",
+      name: returnContactName,
       line1: order.deliveryAddress.line1 || order.deliveryAddress.formattedAddress || "No Address",
       city: order.deliveryAddress.city,
       state: order.deliveryAddress.state,
@@ -1286,8 +1296,18 @@ export const initiateReturnAdmin = mutation({
     // ── Schedule Porter createOrder ──────────────────────────────────────
     // CRITICAL: pickup = CUSTOMER, drop = BOUTIQUE
     // Uses the exact same Porter address format as forward booking (lines 938-967)
+    // On a return the rider collects from the CUSTOMER, so the pickup contact
+    // must be the customer's number and the drop contact the boutique's. Both
+    // are resolved explicitly here rather than left to a fallback chain, and
+    // the two are checked against each other below.
     const customerPhone = order.deliveryAddress.phone || customer?.phone || "";
     const boutiquePhone = orderPickup?.phone || boutique?.phone || "";
+
+    if (!customerPhone) {
+      throw new ConvexError(
+        "Cannot arrange a return: no contact number for the customer, so the rider would have no way to reach them."
+      );
+    }
 
     // The boutique snapshot taken at order time wins over the live record, so a
     // seller who has since moved still gets the return at the address the parcel

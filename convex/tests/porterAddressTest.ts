@@ -61,8 +61,13 @@ export function runPorterAddressTests() {
   const drop = buildCustomerPorterAddress(mapPicked, "Athul Krishna");
 
   check("Door number goes to apartment_address", drop.apartment_address, "4B");
-  check("Street line falls back to formattedAddress", drop.street_address1, mapPicked.formattedAddress);
-  check("Landmark is kept in its own field", drop.landmark, "Madathiparambil House");
+  // The customer's own landmark leads: `formattedAddress` here names Data
+  // Tower, an office block, because reverse geocoding returns the nearest
+  // prominent place rather than a house. A rider following that line drove to
+  // the office block on a real delivery.
+  check("The customer's landmark leads the street line", drop.street_address1, "Madathiparambil House");
+  check("The geocoded guess drops to the supporting line", drop.street_address2, mapPicked.formattedAddress);
+  check("Landmark is still sent in its own field", drop.landmark, "Madathiparambil House");
   check("City survives", drop.city, "Kakkanad");
   check("State survives", drop.state, "Kerala");
   check("Pincode survives", drop.pincode, "682030");
@@ -160,6 +165,38 @@ export function runPorterAddressTests() {
     "Ramakrishna Mens PG, Room 411"
   );
   check("A trailing space is trimmed off the landmark", typedNoFormatted.landmark, "Near alakapuri hotel kakkanad");
+
+  // ── A map-picked address with NO landmark still uses the geocode ─────────
+  const noLandmark = buildCustomerPorterAddress(
+    { ...mapPicked, landmark: undefined },
+    "Customer"
+  );
+  check(
+    "With no landmark the geocoded string leads",
+    noLandmark.street_address1,
+    mapPicked.formattedAddress
+  );
+  check(
+    "And the locality supports it",
+    noLandmark.street_address2,
+    undefined
+  );
+
+  // ── A hand-typed street always beats both ────────────────────────────────
+  const typedBeatsLandmark = buildCustomerPorterAddress(
+    { ...typed, line2: undefined },
+    "Customer"
+  );
+  check(
+    "A typed line1 outranks the customer's landmark",
+    typedBeatsLandmark.street_address1,
+    typed.line1
+  );
+  check(
+    "The landmark still rides in its own field",
+    typedBeatsLandmark.landmark,
+    typed.landmark
+  );
 
   // ── The same line is never sent twice ────────────────────────────────────
   const duplicated = buildCustomerPorterAddress(
