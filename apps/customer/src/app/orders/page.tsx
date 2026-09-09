@@ -39,6 +39,7 @@ const ACTIVE_STATUSES = [
   "picked_up",
   "in_transit",
   "out_for_delivery",
+  "replacement_dispatched",
 ];
 const CANCELLED_STATUSES = [
   "cancelled",
@@ -365,7 +366,9 @@ function OrderCard({
               {/* Only show minimal status tag if active in-flight; NEVER redundant DELIVERED badge */}
               {isActive && (
                 <span className="text-[9px] font-mono font-semibold uppercase tracking-wider text-stone-600 bg-stone-100 border border-stone-200/80 px-2 py-0.5 rounded">
-                  {uiStatus.replace(/_/g, " ")}
+                  {order.status === "replacement_dispatched"
+                    ? "Replacement Dispatched"
+                    : uiStatus.replace(/_/g, " ")}
                 </span>
               )}
               {isCancelled && (
@@ -401,6 +404,11 @@ function OrderCard({
               <span className="flex items-center gap-1.5 text-stone-500">
                 <Ban className="w-3.5 h-3.5" />
                 {order.status === "refunded" ? "Refunded" : order.status === "booking_failed" ? "Delivery Unsuccessful" : "Cancelled"} • {formatDate(order.createdAt)}
+              </span>
+            ) : order.status === "replacement_dispatched" ? (
+              <span className="flex items-center gap-1.5 text-stone-700 font-medium">
+                <Package className="w-3.5 h-3.5 text-stone-600" />
+                Replacement in transit • Ordered {formatDate(order.createdAt)}
               </span>
             ) : (
               <>

@@ -107,15 +107,17 @@ function getOrderHero(status: string) {
         title: "Order Delivered",
         description: "Delivered • Size exchange approved by designer.",
       };
-    case "replacement_dispatched":
-      return {
-        title: "Order Delivered",
-        description: "Delivered • Replacement piece is on the way.",
-      };
     case "refund_requested":
       return {
         title: "Order Delivered",
         description: "Delivered • Return refund request received.",
+      };
+
+    // ── In-transit replacement dispatch
+    case "replacement_dispatched":
+      return {
+        title: "Replacement Dispatched",
+        description: "Your replacement piece is in transit with our delivery partner.",
       };
 
     // ── Terminal & Problem states (explicitly non-guessing)
@@ -192,12 +194,12 @@ function getActiveStepIndex(status: string): number {
     case "picked_up":
     case "in_transit":
     case "out_for_delivery":
+    case "replacement_dispatched":
       return 2; // Dispatched
     case "delivered":
     case "claim_submitted":
     case "replacement_requested":
     case "replacement_approved":
-    case "replacement_dispatched":
     case "replacement_delivered":
     case "refund_requested":
       return 3; // Delivered
@@ -595,16 +597,18 @@ export default function OrderDetailPage() {
                 <p className="text-[11px] text-stone-500 leading-relaxed font-normal">
                   {isFinalSale
                     ? "This item is configured as Final Sale. Voluntary returns or size exchanges are disabled. Damaged, defective, or incorrect items remain 100% covered."
-                    : isDelivered
-                      ? isWindowActive
-                        ? "Your 24-hour return window is active. Submit return or exchange requests within 24 hours of delivery."
-                        : "Voluntary return window has ended (24h past delivery). Damaged or wrong item claims remain covered."
-                      : "Voluntary 24-hour size exchanges and returns activate upon delivery."}
+                    : order.status === "replacement_dispatched"
+                      ? "Your replacement item has been dispatched and is currently en route."
+                      : isDelivered
+                        ? isWindowActive
+                          ? "Your 24-hour return window is active. Submit return or exchange requests within 24 hours of delivery."
+                          : "Voluntary return window has ended (24h past delivery). Damaged or wrong item claims remain covered."
+                        : "Voluntary 24-hour size exchanges and returns activate upon delivery."}
                 </p>
               </div>
 
               {/* In-progress or available return actions */}
-              {isDelivered && !isFinalSale && (
+              {(isDelivered || order.status === "replacement_dispatched") && !isFinalSale && (
                 <div className="pt-2">
                   <ReturnExchangeActions
                     orderId={order._id}
