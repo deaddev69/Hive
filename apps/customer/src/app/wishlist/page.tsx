@@ -75,22 +75,22 @@ export default function WishlistPage() {
           /* Editorial Fashion Empty State */
           <div className="animate-[fadeIn_0.3s_ease-out]">
             {/* Editorial Hero Visual & Copy */}
-            <div className="py-2 sm:py-6 text-center max-w-lg mx-auto flex flex-col items-center select-none">
+            <div className="py-1 sm:py-3 text-center max-w-lg mx-auto flex flex-col items-center select-none">
               {/* Editorial Artwork */}
-              <div className="relative w-full max-w-[340px] sm:max-w-[400px] md:max-w-[430px] aspect-[413/252] mx-auto mb-4 sm:mb-6">
+              <div className="relative w-full max-w-[320px] sm:max-w-[380px] md:max-w-[410px] aspect-[1024/682] mx-auto mb-3 sm:mb-4">
                 <Image
                   src="/brand/wishlist-empty-editorial.png"
                   alt="Hive Wishlist - Good Style Takes Time"
                   fill
                   priority
-                  sizes="(max-width: 640px) 340px, 430px"
+                  sizes="(max-width: 640px) 320px, 410px"
                   className="object-contain mix-blend-multiply pointer-events-none"
                 />
               </div>
 
               {/* Headline & Body Copy */}
-              <div className="space-y-2 text-center max-w-[340px] sm:max-w-[380px] mx-auto px-2">
-                <h2 className="font-serif text-2xl sm:text-3xl md:text-[32px] font-medium text-stone-900 tracking-tight leading-tight">
+              <div className="space-y-1.5 text-center max-w-[340px] sm:max-w-[380px] mx-auto px-2">
+                <h2 className="font-serif text-2xl sm:text-3xl font-medium text-stone-900 tracking-tight leading-tight">
                   Save what you love
                 </h2>
                 <p className="text-xs sm:text-sm text-stone-500 leading-relaxed font-normal">
@@ -99,21 +99,21 @@ export default function WishlistPage() {
               </div>
 
               {/* Primary Action Button */}
-              <Link href="/products" className="mt-5 sm:mt-6">
+              <Link href="/products" className="mt-3.5 sm:mt-4">
                 <button
                   type="button"
-                  className="h-11 sm:h-12 px-7 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-full text-xs font-bold uppercase tracking-widest shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2"
+                  className="h-10 sm:h-11 px-6 sm:px-7 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-full text-xs font-bold uppercase tracking-widest shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2"
                 >
                   <span>Explore Styles</span>
-                  <ArrowRight className="w-4 h-4 text-stone-300" />
+                  <ArrowRight className="w-3.5 h-3.5 text-stone-300" />
                 </button>
               </Link>
             </div>
 
             {/* Inspiration Rail: Curated for you */}
             {curatedProducts.length > 0 && (
-              <div className="mt-10 sm:mt-16 pt-8 border-t border-stone-100 text-left">
-                <div className="flex items-end justify-between mb-4 sm:mb-6">
+              <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-stone-100 text-left">
+                <div className="flex items-end justify-between mb-3 sm:mb-4">
                   <div className="space-y-0.5">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
                       Some Inspiration
