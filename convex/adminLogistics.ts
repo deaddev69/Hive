@@ -1815,12 +1815,20 @@ const POLL_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 /** Porter rate-limits the account, so each tick asks about very few trips. */
 const POLL_BATCH = 4;
 /**
- * Porter also rate-limits per ORDER, separately from the account, and answers
- * "maximum number of request exceeded for this order" once a single CRN has
- * been asked about too often. So a trip is left alone for a while after each
- * successful read rather than being polled on every tick.
+ * Porter rate-limits per ORDER, separately from the account, and the limit is
+ * not a short rolling window: a CRN read too many times answered "maximum
+ * number of request exceeded for this order" and was still refusing forty
+ * minutes later. Treat reads of a single trip as a scarce, near-exhaustible
+ * budget rather than something to spend every couple of minutes.
+ *
+ * Ten minutes gives roughly four or five reads across a typical hyperlocal
+ * delivery, which is enough to notice each transition without burning the
+ * allowance before the one read that matters — the completion.
+ *
+ * This is a floor under the webhooks, not a replacement for them. Polling
+ * cannot be made frequent enough to be the primary mechanism.
  */
-const POLL_MIN_SPACING_MS = 4 * 60 * 1000;
+const POLL_MIN_SPACING_MS = 10 * 60 * 1000;
 
 export const listPollableShipmentsInternal = internalQuery({
   args: {},

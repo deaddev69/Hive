@@ -60,9 +60,13 @@ crons.interval(
 // Porter's webhooks are the fast path; this is the floor under them. When they
 // stop arriving, nothing else asked Porter what had happened, and orders sat at
 // "booking requested" while a real rider delivered the parcel.
+//
+// Porter caps how often a single order may be read, so the poll itself spaces
+// each trip ten minutes apart. This interval only decides how promptly a trip
+// that is due becomes eligible.
 crons.interval(
-  "poll_active_porter_shipments_every_2_minutes",
-  { minutes: 2 },
+  "poll_active_porter_shipments_every_3_minutes",
+  { minutes: 3 },
   internal.adminLogistics.pollActivePorterShipments
 );
 
