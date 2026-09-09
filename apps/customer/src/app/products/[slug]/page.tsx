@@ -8,7 +8,9 @@ import { Metadata } from "next";
 import { cleanProductTitle } from "@/components/product/ProductCard";
 import { getCategoryContent } from "@/lib/content/categoryContent";
 import { getCategoryMetadata } from "@/lib/seo";
+import { SITE_URL } from "@/lib/seo";
 import { BreadcrumbSchema } from "@/components/seo/BreadcrumbSchema";
+import { ProductSchema } from "@/components/seo/ProductSchema";
 import { ProductsClient } from "../ProductsClient";
 
 export const revalidate = 0;
@@ -83,6 +85,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return {
       title: `${cleanProductTitle(product.name)} — Hive`,
       description: product.description || `Discover and shop ${product.name} on Hive.`,
+      alternates: {
+        canonical: `${SITE_URL}/products/${product.slug}`,
+      },
       openGraph: {
         title: `${cleanProductTitle(product.name)} — Hive`,
         description: product.description || `Discover and shop ${product.name} on Hive.`,
@@ -159,6 +164,16 @@ export default async function ProductOrCategoryPage({ params }: Props) {
   }
 
   return (
-    <ProductDetailPageClient product={initialProduct} />
+    <>
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Products", url: "/products" },
+          { name: cleanProductTitle(initialProduct.name), url: `/products/${initialProduct.slug}` },
+        ]}
+      />
+      <ProductSchema product={initialProduct} />
+      <ProductDetailPageClient product={initialProduct} />
+    </>
   );
 }

@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Hive Marketplace",
     short_name: "Hive",
-    description: "Curated local fashion delivered to your door.",
+    description: "Discover fashion from boutiques, brands and designers across Kochi and Ernakulam. Delivered in 90 minutes.",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",

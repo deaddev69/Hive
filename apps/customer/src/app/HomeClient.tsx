@@ -89,7 +89,7 @@ export function HomeClient() {
       <div className="flex flex-col items-center bg-white min-h-screen text-hive-text w-full select-none">
 
         {/* Visually hidden H1 for SEO compliance */}
-        <h1 className="sr-only">Instant Clothes Delivery in Kochi (1-2 Hours)</h1>
+        <h1 className="sr-only">Shop Fashion in Kochi &amp; Ernakulam — Delivered in 90 Minutes</h1>
 
         {/* ── DYNAMIC HOMEPAGE ENGINE ── */}
         {experienceBlocks?.map((block) => (

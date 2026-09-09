@@ -7,18 +7,34 @@ export function FaqSchema() {
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "Can I get clothes delivered in 1-2 hours in Kochi?",
+        "name": "What is Hive (HiveNow)?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes, Hive provides instant clothes delivery in 1-2 hours in Kochi. You can shop from your favorite local boutiques in Ernakulam and get outfits delivered to your doorstep express."
+          "text": "Hive (hivenow.in) is a hyperlocal fashion marketplace based in Kochi, Kerala, India. It lets shoppers discover and buy fashion products from local boutiques, brands and designers across Kochi and Ernakulam and get them delivered in 90 minutes. Hive is operated by Beelyn LLP."
         }
       },
       {
         "@type": "Question",
-        "name": "Which is the fastest clothes delivery app in Kochi?",
+        "name": "Can I get fashion delivered in 90 minutes in Kochi?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Hive is the fastest clothes delivery app in Kochi, offering delivery of outfits, dresses, and clothes in just 1-2 hours across Ernakulam and Kakkanad."
+          "text": "Yes. Hive offers fashion delivery in approximately 90 minutes across Kochi and Ernakulam. You can shop kurtis, dresses, shirts, jeans, footwear, sarees, accessories and more from local fashion boutiques and get them delivered directly to your door."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which is the fastest fashion delivery app in Kochi?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Hive is a leading fashion delivery platform in Kochi, offering delivery of outfits, dresses, and clothing from local boutiques in approximately 90 minutes across Ernakulam, Kakkanad, Edappally, Panampilly Nagar and other areas."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Where does Hive deliver fashion in Kochi?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Hive delivers fashion across Kochi and Ernakulam district including areas such as Kakkanad, Edappally, Panampilly Nagar, Vyttila, Aluva, MG Road, Kaloor, and Fort Kochi."
         }
       }
     ]

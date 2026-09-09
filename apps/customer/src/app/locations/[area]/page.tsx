@@ -4,6 +4,7 @@ import Link from "next/link";
 import { MapPin, Truck, Clock, ArrowRight, ChevronRight, Zap, ShieldCheck, ShoppingBag, Store } from "lucide-react";
 import { KOCHI_LOCATIONS } from "@/lib/locations";
 import { SITE_URL } from "@/lib/seo";
+import { BreadcrumbSchema } from "@/components/seo/BreadcrumbSchema";
 
 interface Props {
   params: Promise<{ area: string }>;
@@ -43,7 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: "website",
       images: [
         {
-          url: "/og-image.jpg",
+          url: `${SITE_URL}/icon-512x512.png`,
           width: 1200,
           height: 630,
           alt: location.metaTitle,
@@ -54,7 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title: location.metaTitle,
       description: location.metaDescription,
-      images: ["/og-image.jpg"],
+      images: [`${SITE_URL}/icon-512x512.png`],
     },
   };
 }
@@ -111,7 +112,14 @@ export default async function LocationPage({ params }: Props) {
 
   return (
     <>
-      {/* Structured Data Script */}
+      {/* Structured Data Scripts */}
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: "/" },
+          { name: "Locations", url: "/locations" },
+          { name: location.name, url: `/locations/${location.slug}` },
+        ]}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
