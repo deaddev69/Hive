@@ -377,11 +377,6 @@ export default function CartPage() {
                 <span>Secure Checkout →</span>
               </button>
 
-              <div className="flex items-center justify-center gap-1.5 mt-2.5 text-[10px] font-bold text-hive-text-muted">
-                <Zap className="w-3 h-3 text-hive-amber fill-hive-amber" />
-                <span>90-Minute Delivery across Kochi</span>
-              </div>
-
               {hasIssues && blockingReason && (
                 <div className="flex flex-col gap-2 mt-4 text-left p-3.5 bg-red-50 border border-red-200/60 rounded-2xl animate-fade">
                   <div className="flex items-center gap-2 text-xs font-bold text-red-700">

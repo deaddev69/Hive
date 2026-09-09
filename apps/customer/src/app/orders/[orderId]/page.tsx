@@ -16,6 +16,9 @@ import {
   AlertCircle,
   ChevronRight,
   ExternalLink,
+  Package,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
@@ -53,6 +56,19 @@ function NumberTicker({ value }: { value: number }) {
   }, [value]);
 
   return <span>{formatCurrency(displayValue).replace(".00", "")}</span>;
+}
+
+function formatDate(epochMs?: number) {
+  if (!epochMs) return "Recently";
+  try {
+    return new Date(epochMs).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return "Recently";
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -129,10 +145,10 @@ function OrderStepper({ status }: { status: string }) {
               <span
                 className={`text-[11px] tracking-tight ${
                   isCurrent
-                    ? "text-stone-950 font-semibold"
+                    ? "text-stone-950 font-bold"
                     : isDone
-                      ? "text-stone-700 font-medium"
-                      : "text-stone-400"
+                      ? "text-stone-800 font-semibold"
+                      : "text-stone-400 font-medium"
                 }`}
               >
                 {step.label}
@@ -304,54 +320,64 @@ export default function OrderDetailPage() {
           <>
             {/* ── Dominant Editorial Hero: Order Confirmed ────────────────────── */}
             <motion.div variants={itemVariants} className="text-center space-y-3 pt-2">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-600 flex items-center justify-center mx-auto shadow-2xs">
-                <CheckCircle2 className="w-6 h-6 stroke-[2.2]" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 block">
+                Your Purchase
+              </span>
+
+              <div className="w-12 h-12 rounded-full bg-stone-900 text-white flex items-center justify-center mx-auto shadow-2xs">
+                <CheckCircle2 className="w-6 h-6 stroke-[2]" />
               </div>
 
               <div className="space-y-1">
-                <h1 className="font-serif text-3xl sm:text-4xl font-normal text-stone-900 tracking-tight">
+                <h1 className="text-3xl sm:text-4xl font-serif font-bold text-stone-900 tracking-tight">
                   Order Confirmed
                 </h1>
-                <p className="text-xs text-stone-500 max-w-xs mx-auto leading-relaxed font-normal">
+                <p className="text-xs text-stone-500 max-w-xs mx-auto leading-relaxed font-medium">
                   We&apos;ve received your order and are preparing your pieces for delivery.
                 </p>
               </div>
 
-              {/* Order ID Pill with Copy Feedback */}
-              <button
-                type="button"
-                onClick={() => handleCopyOrderId(order.orderNumber)}
-                className="inline-flex items-center gap-2 px-3 py-1 bg-stone-50 hover:bg-stone-100 border border-stone-200 rounded-full text-xs font-mono font-medium text-stone-700 transition-colors cursor-pointer group active:scale-95"
-              >
-                <span>ID: {order.orderNumber}</span>
-                {copied ? (
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 transition-colors" />
-                )}
-              </button>
+              {/* Order ID Pill with Copy Feedback & Date */}
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => handleCopyOrderId(order.orderNumber)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-stone-50 hover:bg-stone-100 border border-stone-200/90 rounded-full text-xs font-mono font-bold text-stone-900 tracking-wider transition-colors cursor-pointer group active:scale-95 shadow-2xs"
+                >
+                  <span>#{order.orderNumber}</span>
+                  {copied ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-700 transition-colors" />
+                  )}
+                </button>
 
-              <div className="pt-1">
-                <OrderConfirmationPushPrompt userId={order.customerId} />
+                {order.createdAt && (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-stone-500 font-medium">
+                    <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                    <span>{formatDate(order.createdAt)}</span>
+                  </span>
+                )}
               </div>
             </motion.div>
 
             {/* ── Restrained 4-Step Status Tracker ────────────────────────────── */}
-            <motion.div variants={itemVariants} className="pt-2 pb-1 border-y border-stone-100">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-400 block mb-3">
+            <motion.div variants={itemVariants} className="pt-2 pb-1 border-y border-stone-100 space-y-3">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 block">
                 Order Status
               </span>
               <OrderStepper status={order.status} />
+              <OrderConfirmationPushPrompt userId={order.customerId} className="mt-1" />
             </motion.div>
 
             {/* ── Delivery Address ───────────────────────────────────────────── */}
             <motion.section variants={itemVariants} className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-400 block">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 block">
                 Delivery Address
               </span>
               <div className="flex items-start gap-2 pt-0.5">
                 <MapPin className="w-3.5 h-3.5 text-stone-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-stone-700 leading-relaxed font-normal">
+                <p className="text-xs text-stone-700 leading-relaxed font-medium">
                   {formattedAddress}
                 </p>
               </div>
@@ -360,45 +386,57 @@ export default function OrderDetailPage() {
             {/* ── Order Summary & Items ──────────────────────────────────────── */}
             <motion.section variants={itemVariants} className="space-y-3 pt-1 border-t border-stone-100">
               <div className="flex items-baseline justify-between pt-3 pb-1">
-                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-400">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500">
                   Order Summary ({order.items.length} {order.items.length === 1 ? "Item" : "Items"})
                 </span>
-                <span className="text-sm font-semibold text-stone-900">
+                <span className="text-sm font-mono font-bold text-stone-900">
                   <NumberTicker value={order.total} />
                 </span>
               </div>
 
               <div className="divide-y divide-stone-100">
-                {order.items.map((item: any, idx: number) => (
-                  <div key={item._id || idx} className="py-3.5 flex items-center gap-3.5">
-                    <div className="relative w-14 h-18 rounded-xl overflow-hidden bg-stone-50 border border-stone-100 shrink-0">
-                      <Image
-                        src={item.imageUrl || "/placeholder.png"}
-                        alt={item.productName || "Product"}
-                        fill
-                        sizes="56px"
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-xs font-semibold text-stone-900 truncate">
-                        {item.productName || "Product"}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1 text-[10px] text-stone-500">
-                        <span className="bg-stone-100 px-1.5 py-0.5 rounded text-stone-600 font-medium">
-                          Size: {item.variantSize || "Free"}
-                        </span>
-                        <span>Qty: {item.quantity || 1}</span>
+                {order.items.map((item: any, idx: number) => {
+                  const rawSeller = item.boutiqueName || order.boutiqueName || "Independent Designer";
+                  const cleanedSeller = rawSeller.replace(/\s*boutique\s*/gi, " ").trim();
+
+                  return (
+                    <div key={item._id || idx} className="py-3.5 flex items-center gap-3.5">
+                      <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-stone-100 border border-stone-200/80 shadow-2xs shrink-0 flex items-center justify-center">
+                        {item?.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.productName || "Product"}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = "none";
+                            }}
+                          />
+                        ) : (
+                          <Package className="w-5 h-5 text-stone-400" />
+                        )}
                       </div>
-                      <p className="text-[10px] text-stone-400 mt-1 truncate">
-                        From {item.boutiqueName || order.boutiqueName || "Verified Partner"}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-serif font-bold text-stone-900 truncate leading-snug">
+                          {item.productName || "Product"}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className="text-[9px] font-bold text-stone-600 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded">
+                            Size: {item.variantSize || "Free"}
+                          </span>
+                          <span className="text-[10px] text-stone-500 font-medium">
+                            Qty: {item.quantity || 1}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 mt-1 truncate">
+                          Curated by {cleanedSeller || "Independent Designer"}
+                        </p>
+                      </div>
+                      <span className="text-sm font-mono font-bold text-stone-900 shrink-0 tabular-nums">
+                        {formatCurrency(item.priceAtPurchase || 0)}
+                      </span>
                     </div>
-                    <span className="text-xs font-semibold text-stone-900 shrink-0 tabular-nums">
-                      {formatCurrency(item.priceAtPurchase || 0)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <CustomerPriceBreakdown
@@ -417,11 +455,11 @@ export default function OrderDetailPage() {
 
             {/* ── Returns & Exchanges Policy ─────────────────────────────────── */}
             <motion.section variants={itemVariants} className="space-y-1.5 pt-1 border-t border-stone-100">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-400 block pt-3">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-stone-500 block pt-3">
                 Returns & Exchanges
               </span>
               <div className="p-3.5 rounded-2xl bg-stone-50 border border-stone-200/70 text-xs text-stone-600 space-y-1">
-                <div className="flex items-center justify-between font-semibold text-stone-900">
+                <div className="flex items-center justify-between font-bold text-stone-900">
                   <span>{isFinalSale ? "Final Sale" : isWindowActive ? "Return Window Active" : "24-Hour Return Window"}</span>
                   {isWindowActive && (
                     <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
