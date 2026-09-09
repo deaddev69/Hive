@@ -864,28 +864,33 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
     if (order) {
       if (args.status === "created") {
         orderPatch.status = "confirmed";
+        // Porter tells us WHEN each transition happened. The shipment already
+        // recorded `eventTs`; the order recorded the moment Hive found out, so
+        // a retried webhook — or the poll, which can run minutes later — put a
+        // discovery time on the order and the real time on its shipment. The
+        // two disagreed by nearly seven minutes on the first live delivery.
       } else if (args.status === "pickup_scheduled") {
         orderPatch.status = "pickup_scheduled";
-        orderPatch.pickupScheduledAt = now;
+        orderPatch.pickupScheduledAt = eventTs;
         if (!order.readyForPickupAt) {
-          orderPatch.readyForPickupAt = now;
+          orderPatch.readyForPickupAt = eventTs;
         }
       } else if (args.status === "driver_assigned") {
         orderPatch.status = "pickup_scheduled";
-        orderPatch.pickupScheduledAt = now;
+        orderPatch.pickupScheduledAt = eventTs;
       } else if (args.status === "driver_arrived") {
         orderPatch.status = "pickup_scheduled";
       } else if (args.status === "picked_up") {
         orderPatch.status = "picked_up";
-        orderPatch.pickedUpAt = now;
+        orderPatch.pickedUpAt = eventTs;
       } else if (args.status === "in_transit") {
         orderPatch.status = "in_transit";
-        orderPatch.inTransitAt = now;
+        orderPatch.inTransitAt = eventTs;
         // The parcel is in the rider's hands, so it was collected.
-        if (!order.pickedUpAt) orderPatch.pickedUpAt = now;
+        if (!order.pickedUpAt) orderPatch.pickedUpAt = eventTs;
       } else if (args.status === "out_for_delivery") {
         orderPatch.status = "out_for_delivery";
-        orderPatch.outForDeliveryAt = now;
+        orderPatch.outForDeliveryAt = eventTs;
       } else if (args.status === "delivered") {
         orderPatch.status = "delivered";
         orderPatch.deliveredAt = eventTs;
