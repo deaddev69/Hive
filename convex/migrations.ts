@@ -1123,3 +1123,106 @@ export const expandMensAndAccessories = internalMutation({
     };
   },
 });
+
+/**
+ * Removes the five collectionProducts mappings whose products were hard-deleted.
+ *
+ * deleteProduct (products.ts) removes the product document and its image storage but leaves the
+ * collectionProducts rows pointing at it. A merchandiser then sees a curated rail silently render
+ * fewer cards than it is configured for, with nothing to indicate why: "Trending in Kochi" is
+ * bound to seven products and can only draw four, and "The Premium Edit" is capped at seven with
+ * three mapped.
+ *
+ * Deliberately NOT a "delete every mapping whose product is missing" sweep. Each row is named
+ * explicitly, with the productId it is expected to carry, so this cannot widen its own blast
+ * radius if the data shifts between review and execution — a product created mid-write, or a
+ * mapping edited since the audit, aborts the whole run rather than being swept up in it.
+ *
+ * The five were audited individually first: every one points at a genuinely deleted product
+ * document (a valid products id that no longer resolves), none is pinned, and both owning
+ * boutiques still exist and are APPROVED. No mapping in the table was merely inactive or out of
+ * stock, so there is no ambiguous case being caught up in this.
+ *
+ * Convex mutations are transactional: any throw below rolls the whole thing back, so a failed
+ * precondition leaves the table exactly as it was rather than half-cleaned.
+ *
+ * Run:  npx convex run --prod migrations:removeDanglingCollectionProducts
+ *       npx convex run --prod migrations:removeDanglingCollectionProducts '{"apply":true}'
+ */
+export const removeDanglingCollectionProducts = internalMutation({
+  args: { apply: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    const apply = args.apply === true;
+
+    const MAPPINGS = [
+      { mappingId: "v976gbyknpngcny5fqhzd3rssx8bxswa", expectedProductId: "n175txpen5a854gpfjpq0wtx9n8a2sd7", collectionSlug: "trending-in-kochi" },
+      { mappingId: "v97d9h8mrcpvh1xzsg9yg2x3mx8cnye4", expectedProductId: "n17ancnepf9cenrc3ss30n3zv58cac4w", collectionSlug: "trending-in-kochi" },
+      { mappingId: "v976r04kdt9bbvf17xqs4rr10n8cmvc5", expectedProductId: "n170368031hywgp0rkxche9vhd8ca5d4", collectionSlug: "trending-in-kochi" },
+      { mappingId: "v97cda8ctccpz2vh7en1bj52b98cnmk4", expectedProductId: "n170368031hywgp0rkxche9vhd8ca5d4", collectionSlug: "quiet-luxury" },
+      { mappingId: "v972zgh14p1hea8912zjacz2wx8cmbc8", expectedProductId: "n17ancnepf9cenrc3ss30n3zv58cac4w", collectionSlug: "quiet-luxury" },
+    ];
+
+    const before = (await ctx.db.query("collectionProducts").collect()).length;
+    const plan: string[] = [];
+
+    for (const target of MAPPINGS) {
+      const mapping = await ctx.db.get(target.mappingId as Id<"collectionProducts">);
+      if (!mapping) {
+        throw new Error(
+          `Aborted: collectionProducts row ${target.mappingId} no longer exists. It may already have been removed — re-run the audit before retrying.`
+        );
+      }
+
+      // The row must still name the product the audit found on it. If it names a different one,
+      // the mapping was re-pointed after the audit and is no longer the row that was reviewed.
+      if (String(mapping.productId) !== target.expectedProductId) {
+        throw new Error(
+          `Aborted: mapping ${target.mappingId} now points at product ${String(mapping.productId)}, expected ${target.expectedProductId}.`
+        );
+      }
+
+      // Defensive precondition, and the actual justification for the delete: the product must
+      // still be absent. A resolving product here means it came back (restored, or the id was
+      // reused) and the mapping is live again, so nothing should be removed.
+      const product = await ctx.db.get(mapping.productId);
+      if (product) {
+        throw new Error(
+          `Aborted: product ${target.expectedProductId} now exists, so mapping ${target.mappingId} is no longer dangling.`
+        );
+      }
+
+      // collectionProducts.collectionId is a plain string in the schema, not a typed id, so it
+      // has to be normalised before it can be read.
+      const collectionRef = ctx.db.normalizeId("collections", mapping.collectionId);
+      const collection = collectionRef ? await ctx.db.get(collectionRef) : null;
+      const slug = collection ? (collection as any).slug : "(collection missing)";
+      if (collection && slug !== target.collectionSlug) {
+        throw new Error(
+          `Aborted: mapping ${target.mappingId} belongs to collection "${slug}", expected "${target.collectionSlug}".`
+        );
+      }
+
+      plan.push(`${target.collectionSlug}: drop mapping ${target.mappingId} -> deleted product ${target.expectedProductId}`);
+    }
+
+    if (apply) {
+      for (const target of MAPPINGS) {
+        await ctx.db.delete(target.mappingId as Id<"collectionProducts">);
+      }
+    }
+
+    const after = apply ? (await ctx.db.query("collectionProducts").collect()).length : before;
+
+    return {
+      applied: apply,
+      matched: MAPPINGS.length,
+      deleted: apply ? MAPPINGS.length : 0,
+      collectionProductsBefore: before,
+      collectionProductsAfter: after,
+      plan,
+      note: apply
+        ? "Only collectionProducts rows were deleted. No product, collection, order, inventory or block was read for writing."
+        : 'Dry run. Re-run with "apply":true to write.',
+    };
+  },
+});
