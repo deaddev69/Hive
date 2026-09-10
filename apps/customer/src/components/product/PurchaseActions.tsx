@@ -146,14 +146,14 @@ export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
             "h-full w-[55%] rounded-r-2xl rounded-l-none border-2 border-l-0 border-hive-dark",
             isDisabled
               ? "bg-stone-200 border-stone-200 text-stone-400 cursor-not-allowed"
-              : "bg-hive-dark hover:bg-hive-dark/90 text-hive-gold active:scale-[0.98] shadow-sm"
+              : "bg-hive-cream hover:bg-hive-cream/80 text-hive-dark active:scale-[0.98] shadow-sm"
           )
         ) : (
           cn(
             "h-12 w-full rounded-2xl border-2 border-hive-dark",
             isDisabled
               ? "border-stone-200 text-stone-300 cursor-not-allowed bg-stone-100"
-              : "bg-hive-dark hover:bg-hive-dark/90 text-hive-gold shadow-sm active:scale-[0.98]"
+              : "bg-hive-cream hover:bg-hive-cream/80 text-hive-dark shadow-sm active:scale-[0.98]"
           )
         ),
         className
@@ -166,7 +166,7 @@ export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
           ? "Pre-Order"
           : "Buy Now"}
       </span>
-      <ArrowRight className="w-3.5 h-3.5 text-hive-gold/70 group-hover:translate-x-0.5 transition-transform" />
+      <ArrowRight className="w-3.5 h-3.5 text-hive-gold group-hover:translate-x-0.5 transition-transform" />
     </button>
   );
 };

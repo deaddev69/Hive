@@ -94,13 +94,13 @@ export const SwipeToPayButton: React.FC<SwipeToPayButtonProps> = ({
       aria-disabled={disabled}
       aria-label={showSpinner ? "Payment processing" : `${label} to confirm and pay`}
       onKeyDown={handleKeyDown}
-      className={`relative h-14 w-full rounded-full bg-hive-dark p-1 overflow-hidden select-none touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
+      className={`relative h-14 w-full rounded-full bg-hive-cream border-2 border-hive-dark p-1 overflow-hidden select-none touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-dark/30 ${
         disabled ? "opacity-50 pointer-events-none" : ""
       } ${className}`}
     >
       <motion.span
         style={{ opacity: textOpacity }}
-        className="absolute inset-0 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-hive-gold pointer-events-none"
+        className="absolute inset-0 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-hive-dark pointer-events-none"
       >
         {label}
         <ArrowRight className="w-3.5 h-3.5" />
@@ -113,7 +113,7 @@ export const SwipeToPayButton: React.FC<SwipeToPayButtonProps> = ({
         dragMomentum={false}
         onDragEnd={handleDragEnd}
         style={{ x, width: THUMB_SIZE, height: THUMB_SIZE }}
-        className="relative z-10 rounded-full bg-white shadow-md flex items-center justify-center cursor-grab active:cursor-grabbing"
+        className="relative z-10 rounded-full bg-hive-dark shadow-md flex items-center justify-center cursor-grab active:cursor-grabbing"
       >
         {showSpinner ? (
           <Loader2 className="w-5 h-5 text-hive-gold animate-spin" />
