@@ -4,7 +4,7 @@
 
 import { mutation, internalMutation, action, internalAction, MutationCtx, internalQuery, query } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
-import { getAuthenticatedUser, requireRole } from "./lib/auth";
+import { getAuthenticatedUser, getCurrentUserOrNull, requireRole } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
 import { incrementBoutiqueOrderCount } from "./lib/boutiqueCounters";
 import { validateProductSizeAndStock, MOCK_INVENTORY } from "./lib/mockInventory";
@@ -1405,7 +1405,12 @@ export const getLastUsedPaymentMethod = query({
     token: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await getAuthenticatedUser(ctx, args.token);
+    // getCurrentUserOrNull, not getAuthenticatedUser: this query fires unconditionally on
+    // checkout load, including the brief window before the client's auth token has attached
+    // (or for a guest). Throwing there surfaced as a live production error — an absent
+    // remembered method is just "don't show the row," not a failure.
+    const user = await getCurrentUserOrNull(ctx, args.token);
+    if (!user) return null;
 
     const payments = await ctx.db
       .query("payments")
