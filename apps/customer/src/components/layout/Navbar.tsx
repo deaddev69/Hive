@@ -490,11 +490,9 @@ export const Navbar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="group flex-1 h-11 pl-2 pr-4 rounded-full bg-hive-cream-deep border border-hive-border/70 hover:border-hive-gold/60 hover:shadow-[0_2px_12px_rgba(212,175,55,0.14)] text-left flex items-center gap-2.5 cursor-pointer transition-all duration-200"
+                className="group flex-1 h-11 px-4 rounded-full bg-white border border-hive-dark/15 hover:border-hive-dark/35 text-left flex items-center gap-2.5 cursor-pointer transition-all duration-200"
               >
-                <span className="w-7 h-7 rounded-full bg-hive-gold/15 group-hover:bg-hive-gold/25 flex items-center justify-center flex-shrink-0 transition-colors duration-200">
-                  <Search className="w-3.5 h-3.5 text-hive-amber-dark" strokeWidth={2.4} />
-                </span>
+                <Search className="w-4.5 h-4.5 text-hive-dark/60 flex-shrink-0" strokeWidth={2} />
                 <span className="relative flex-1 h-5 overflow-hidden flex items-center">
                   <span
                     className={cn(
@@ -684,11 +682,9 @@ export const Navbar: React.FC = () => {
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="flex-1 h-10 pl-1.5 pr-3.5 rounded-full bg-hive-cream-deep border border-hive-border/70 active:border-hive-gold/60 text-left flex items-center gap-2 cursor-pointer transition-all duration-200"
+            className="flex-1 h-10 px-3.5 rounded-full bg-white border border-hive-dark/15 active:border-hive-dark/35 text-left flex items-center gap-2 cursor-pointer transition-all duration-200"
           >
-            <span className="w-6 h-6 rounded-full bg-hive-gold/15 flex items-center justify-center flex-shrink-0">
-              <Search className="w-3.5 h-3.5 text-hive-amber-dark" strokeWidth={2.4} />
-            </span>
+            <Search className="w-4 h-4 text-hive-dark/60 flex-shrink-0" strokeWidth={2} />
             <span className="relative flex-1 h-5 overflow-hidden flex items-center">
               <span
                 className={cn(
@@ -948,9 +944,7 @@ export const Navbar: React.FC = () => {
             </button>
             
             <div className="flex-1 relative flex items-center">
-              <span className="absolute left-2 w-7 h-7 rounded-full bg-hive-gold/15 flex items-center justify-center pointer-events-none">
-                <Search className="w-3.5 h-3.5 text-hive-amber-dark" strokeWidth={2.4} />
-              </span>
+              <Search className="w-4 h-4 text-hive-dark/60 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={2} />
               <input
                 ref={inputRef}
                 type="text"
@@ -964,7 +958,7 @@ export const Navbar: React.FC = () => {
                     setSearchOpen(false);
                   }
                 }}
-                className="w-full h-11 pl-11 pr-10 rounded-full bg-hive-cream-deep dark:bg-neutral-900 border border-hive-border/80 dark:border-neutral-800 focus:outline-none focus:ring-2 focus:ring-hive-gold/35 focus:border-hive-gold/60 text-sm font-medium text-stone-900 dark:text-white placeholder-hive-text-muted transition-all"
+                className="w-full h-11 pl-10 pr-10 rounded-full bg-white dark:bg-neutral-900 border border-hive-dark/15 dark:border-neutral-800 focus:outline-none focus:ring-2 focus:ring-hive-dark/12 focus:border-hive-dark/40 text-sm font-medium text-stone-900 dark:text-white placeholder-hive-text-muted transition-all"
               />
               {searchQuery && (
                 <button
