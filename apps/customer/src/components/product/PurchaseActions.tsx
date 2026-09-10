@@ -70,30 +70,30 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
         "flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all duration-200 relative outline-none select-none group cursor-pointer",
         isUnified ? (
           cn(
-            "h-full w-[45%] rounded-l-2xl rounded-r-none border-2 border-r border-stone-950",
+            "h-full w-[45%] rounded-l-2xl rounded-r-none border-2 border-r border-hive-dark",
             isDisabled
               ? "bg-stone-100 border-stone-200 text-stone-400 cursor-not-allowed"
-              : "bg-white hover:bg-stone-50 text-stone-950 active:scale-[0.98]"
+              : "bg-white hover:bg-stone-50 text-hive-dark active:scale-[0.98]"
           )
         ) : (
           cn(
-            "h-12 w-full rounded-2xl border-2 border-stone-950",
+            "h-12 w-full rounded-2xl border-2 border-hive-dark",
             isDisabled
               ? "bg-stone-100 border-stone-200 text-stone-400 cursor-not-allowed"
-              : "bg-white hover:bg-stone-950 hover:text-white text-stone-950 active:scale-[0.98]"
+              : "bg-white hover:bg-hive-dark hover:text-hive-gold text-hive-dark active:scale-[0.98]"
           )
         ),
         className
       )}
     >
       {loading ? (
-        <span className="w-4 h-4 rounded-full border-2 border-stone-950 border-t-transparent animate-spin" />
+        <span className="w-4 h-4 rounded-full border-2 border-hive-dark border-t-transparent animate-spin" />
       ) : !isServiceable ? (
         <span>Unavailable</span>
       ) : (
         <>
           <ShoppingBag className={cn(
-            "w-3.5 h-3.5 text-stone-700 transition-all duration-200",
+            "w-3.5 h-3.5 text-hive-gold transition-all duration-200",
             !isDisabled && "group-hover:scale-110"
           )} />
           <span className="text-[11px] font-bold">
@@ -143,17 +143,17 @@ export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
         "font-bold uppercase tracking-wider text-xs transition-all duration-200 flex items-center justify-center gap-1.5 outline-none select-none group cursor-pointer",
         isUnified ? (
           cn(
-            "h-full w-[55%] rounded-r-2xl rounded-l-none border-2 border-l-0 border-stone-950",
+            "h-full w-[55%] rounded-r-2xl rounded-l-none border-2 border-l-0 border-hive-dark",
             isDisabled
               ? "bg-stone-200 border-stone-200 text-stone-400 cursor-not-allowed"
-              : "bg-stone-950 hover:bg-stone-900 text-white active:scale-[0.98] shadow-sm"
+              : "bg-hive-dark hover:bg-hive-dark/90 text-hive-gold active:scale-[0.98] shadow-sm"
           )
         ) : (
           cn(
-            "h-12 w-full rounded-2xl border-2 border-stone-950",
+            "h-12 w-full rounded-2xl border-2 border-hive-dark",
             isDisabled
               ? "border-stone-200 text-stone-300 cursor-not-allowed bg-stone-100"
-              : "bg-stone-950 hover:bg-stone-900 text-white shadow-sm active:scale-[0.98]"
+              : "bg-hive-dark hover:bg-hive-dark/90 text-hive-gold shadow-sm active:scale-[0.98]"
           )
         ),
         className
@@ -166,7 +166,7 @@ export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
           ? "Pre-Order"
           : "Buy Now"}
       </span>
-      <ArrowRight className="w-3.5 h-3.5 text-stone-300 group-hover:translate-x-0.5 transition-transform" />
+      <ArrowRight className="w-3.5 h-3.5 text-hive-gold/70 group-hover:translate-x-0.5 transition-transform" />
     </button>
   );
 };

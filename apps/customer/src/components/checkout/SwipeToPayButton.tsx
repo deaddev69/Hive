@@ -100,7 +100,7 @@ export const SwipeToPayButton: React.FC<SwipeToPayButtonProps> = ({
     >
       <motion.span
         style={{ opacity: textOpacity }}
-        className="absolute inset-0 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-white/90 pointer-events-none"
+        className="absolute inset-0 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-hive-gold pointer-events-none"
       >
         {label}
         <ArrowRight className="w-3.5 h-3.5" />
@@ -116,9 +116,9 @@ export const SwipeToPayButton: React.FC<SwipeToPayButtonProps> = ({
         className="relative z-10 rounded-full bg-white shadow-md flex items-center justify-center cursor-grab active:cursor-grabbing"
       >
         {showSpinner ? (
-          <Loader2 className="w-5 h-5 text-hive-dark animate-spin" />
+          <Loader2 className="w-5 h-5 text-hive-gold animate-spin" />
         ) : (
-          <ArrowRight className="w-5 h-5 text-hive-dark" />
+          <ArrowRight className="w-5 h-5 text-hive-gold" />
         )}
       </motion.div>
     </div>

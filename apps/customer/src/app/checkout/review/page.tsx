@@ -957,10 +957,10 @@ export default function OrderReviewPage() {
                 type="button"
                 disabled={isPlacingOrder || isQuoteLoading}
                 onClick={handlePay}
-                className="w-full h-14 bg-hive-dark text-white hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 bg-hive-dark text-hive-gold hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isPlacingOrder ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-hive-dark" />
+                  <Loader2 className="w-4 h-4 animate-spin text-hive-gold" />
                 ) : (
                   <span>Pay Now →</span>
                 )}
