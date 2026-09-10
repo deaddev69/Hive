@@ -33,6 +33,15 @@ import { Id } from "../../../../../../convex/_generated/dataModel";
 import { formatRupees, toast } from "@hive/utils";
 import { getCustomerErrorMessage, getCustomerErrorCode } from "@/lib/customerErrors";
 
+// ── Payment Method Labels ────────────────────────────────────────────────────
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  upi: "UPI",
+  card: "Card",
+  netbanking: "Netbanking",
+  wallet: "Wallet",
+  emi: "EMI",
+};
+
 // ── Razorpay Script Loader ──────────────────────────────────────────────────
 function loadScript(src: string): Promise<boolean> {
   return new Promise((resolve) => {
@@ -98,6 +107,9 @@ export default function OrderReviewPage() {
   const convexAddresses = useQuery(api.addresses.list, { token: token || undefined }) ?? [];
   const cartData = useQuery(api.cart.getCart, { token: token || undefined });
   const currentUser = user;
+  const lastUsedPaymentMethod = useQuery(api.payments.getLastUsedPaymentMethod, { token: token || undefined });
+  // Defaults to remembering the last method; "Change" drops it so Razorpay opens its full picker instead of jumping straight to one tab.
+  const [useRememberedMethod, setUseRememberedMethod] = useState(true);
   const createCheckoutSession = useAction(api.payments.createCheckoutSession);
   const placeCouponFundedOrder = useConvexMutation(api.payments.placeCouponFundedOrder);
   const convex = useConvex();
@@ -612,6 +624,9 @@ export default function OrderReviewPage() {
           name: (currentUser as any)?.name || currentUser?.email?.split("@")[0] || "Hive Customer",
           email: currentUser?.email || "",
           contact: selectedAddress?.phone || currentUser?.phone || "",
+          ...(useRememberedMethod && lastUsedPaymentMethod
+            ? { method: lastUsedPaymentMethod }
+            : {}),
         },
         theme: {
           color: "#E2B93B",
@@ -952,6 +967,21 @@ export default function OrderReviewPage() {
                 </div>
               )}
 
+              {lastUsedPaymentMethod && useRememberedMethod && (
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-xs text-hive-text-muted">
+                    Pay using <span className="font-bold text-hive-dark">{PAYMENT_METHOD_LABELS[lastUsedPaymentMethod] ?? lastUsedPaymentMethod}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setUseRememberedMethod(false)}
+                    className="text-xs font-bold text-hive-dark underline underline-offset-2 hover:text-hive-dark/70 transition-colors"
+                  >
+                    Change
+                  </button>
+                </div>
+              )}
+
               {/* Proceed to Payment CTA */}
               <button
                 type="button"
@@ -1071,6 +1101,21 @@ export default function OrderReviewPage() {
               {formatRupees(total)}
             </span>
           </button>
+
+          {lastUsedPaymentMethod && useRememberedMethod && (
+            <div className="flex items-center justify-between -mt-1">
+              <span className="text-[11px] text-hive-text-muted">
+                Pay using <span className="font-bold text-hive-dark">{PAYMENT_METHOD_LABELS[lastUsedPaymentMethod] ?? lastUsedPaymentMethod}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setUseRememberedMethod(false)}
+                className="text-[11px] font-bold text-hive-dark underline underline-offset-2"
+              >
+                Change
+              </button>
+            </div>
+          )}
 
           <SwipeToPayButton
             onComplete={handlePay}

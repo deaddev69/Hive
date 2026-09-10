@@ -1391,6 +1391,35 @@ export const verifyPaymentAndPlaceOrder = mutation({
 });
 
 /**
+ * The payment method (upi/card/netbanking/wallet/emi) from the customer's most recent
+ * captured payment, so checkout can show "Pay using UPI" and prefill Razorpay straight to
+ * that tab instead of always opening the full method picker.
+ */
+// Only these are real Razorpay payment methods — the client-side verify path stamps a
+// generic "online" placeholder onto `payments.method` before the webhook (which carries the
+// true method) lands, so anything outside this set is that placeholder, not a method to show.
+const KNOWN_PAYMENT_METHODS = new Set(["upi", "card", "netbanking", "wallet", "emi"]);
+
+export const getLastUsedPaymentMethod = query({
+  args: {
+    token: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx, args.token);
+
+    const payments = await ctx.db
+      .query("payments")
+      .withIndex("by_customerId", (q) => q.eq("customerId", user._id))
+      .filter((q) => q.eq(q.field("status"), "captured"))
+      .order("desc")
+      .take(20);
+
+    const lastWithMethod = payments.find((p) => p.method && KNOWN_PAYMENT_METHODS.has(p.method));
+    return lastWithMethod?.method ?? null;
+  },
+});
+
+/**
  * Place an order that an exchange coupon covers in full.
  *
  * There is no Razorpay payment here — the customer owes nothing, and the money
