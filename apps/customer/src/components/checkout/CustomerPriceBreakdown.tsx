@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { HelpCircle, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
+import React from "react";
+import { HelpCircle, AlertCircle } from "lucide-react";
 
 export interface CustomerPriceBreakdownProps {
   subtotal: number;          // Product total in Rupees
@@ -39,8 +39,6 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
   isError = false,
   className = "",
 }) => {
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
-
   const deliveryLabel = isEstimatedDelivery ? "Estimated Delivery Fee" : "Delivery Partner Fee";
 
   if (isError) {
@@ -76,14 +74,38 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
         </h3>
 
         <div className="space-y-2.5 text-xs font-medium text-stone-600">
-          {/* 1. Product Total (All-Inclusive) */}
+          {/* 1. Product Total (All-Inclusive), broken down into what it's made of */}
           <div className="flex justify-between items-center">
-            <div className="flex flex-col">
-              <span className="text-stone-700">Product Total</span>
-              <span className="text-[10px] text-stone-400 font-normal">Incl. all taxes & charges</span>
-            </div>
+            <span className="text-stone-700">Product Total</span>
             <span className="font-mono text-stone-900 text-sm font-bold">{formatCurrency(subtotal)}</span>
           </div>
+
+          {(handlingCharge > 0 || platformFee > 0 || gstOnCharges > 0) && (
+            <div className="ml-3 pl-3 border-l-2 border-stone-100 space-y-1.5">
+              <div className="flex justify-between items-center text-[11px] text-stone-500">
+                <span>Base Price</span>
+                <span className="font-mono">{formatCurrency(Math.max(0, subtotal - handlingCharge - platformFee - gstOnCharges))}</span>
+              </div>
+              {handlingCharge > 0 && (
+                <div className="flex justify-between items-center text-[11px] text-stone-500">
+                  <span>Handling Fee</span>
+                  <span className="font-mono">{formatCurrency(handlingCharge)}</span>
+                </div>
+              )}
+              {platformFee > 0 && (
+                <div className="flex justify-between items-center text-[11px] text-stone-500">
+                  <span>Platform Fee</span>
+                  <span className="font-mono">{formatCurrency(platformFee)}</span>
+                </div>
+              )}
+              {gstOnCharges > 0 && (
+                <div className="flex justify-between items-center text-[11px] text-stone-500">
+                  <span>GST on Fees</span>
+                  <span className="font-mono">{formatCurrency(gstOnCharges)}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 2. Delivery Fee */}
           <div className="flex justify-between items-center">
@@ -117,61 +139,12 @@ export const CustomerPriceBreakdown: React.FC<CustomerPriceBreakdownProps> = ({
         </div>
       </div>
 
-      {/* Customer Help Section */}
+      {/* Trust strip — the fee breakdown above already answers "why am I paying this?" directly,
+          so this is a plain reassurance line rather than a second hidden copy of the same numbers. */}
       {showHelpSection && (
-        <div className="bg-stone-50/80 border border-stone-200/70 rounded-xl p-3.5 text-left text-xs space-y-2">
-          <button
-            type="button"
-            onClick={() => setIsHelpOpen(!isHelpOpen)}
-            className="w-full flex items-center justify-between font-bold text-stone-900 text-xs focus:outline-none cursor-pointer"
-          >
-            <span className="flex items-center gap-1.5">
-              <HelpCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>Why am I paying this?</span>
-            </span>
-            {isHelpOpen ? (
-              <ChevronUp className="w-3.5 h-3.5 text-stone-400" />
-            ) : (
-              <ChevronDown className="w-3.5 h-3.5 text-stone-400" />
-            )}
-          </button>
-
-          {isHelpOpen && (
-            <div className="pt-2.5 border-t border-stone-200/50 space-y-2.5 text-[11px] text-stone-600 animate-[fadeIn_0.2s_ease-out]">
-              <p className="font-bold text-stone-900 text-xs">
-                Transparent All-Inclusive Pricing:
-              </p>
-              <div className="bg-white rounded-xl p-3 space-y-2 border border-stone-200/70 text-[11px]">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold text-stone-700">Product Price (All-Inclusive)</span>
-                  <span className="font-mono font-bold text-stone-900">{formatCurrency(subtotal)}</span>
-                </div>
-                <p className="text-[10px] text-stone-400 pl-1 leading-normal font-sans">
-                  ↳ All taxes, platform charges, and packaging are already included directly in the product price from the start. No surprise checkout fees!
-                </p>
-                <div className="flex justify-between items-center border-t border-stone-100 pt-1.5">
-                  <span className="font-semibold text-stone-700">Delivery Partner Fee</span>
-                  <span className="font-mono font-bold text-stone-900">{formatCurrency(deliveryFee)}</span>
-                </div>
-                <p className="text-[10px] text-stone-400 pl-1 leading-normal font-sans">
-                  ↳ 100% passed to the hyper-local delivery partner for immediate doorstep fulfillment.
-                </p>
-                {discount > 0 && (
-                  <div className="flex justify-between items-center text-emerald-700 font-bold border-t border-stone-100 pt-1.5">
-                    <span>Coupon Discount</span>
-                    <span className="font-mono">-{formatCurrency(discount)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center border-t border-stone-200 pt-2 font-bold text-stone-900 text-xs">
-                  <span>Grand Total</span>
-                  <span className="font-mono text-sm">{formatCurrency(total)}</span>
-                </div>
-              </div>
-              <p className="text-[10px] text-stone-500 leading-relaxed font-sans">
-                Zero hidden charges. What you see is exactly what you pay.
-              </p>
-            </div>
-          )}
+        <div className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-stone-50/80 border border-stone-200/70 text-[10.5px] text-stone-500 font-medium">
+          <HelpCircle className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+          <span>Every fee is shown above — nothing new is added at checkout.</span>
         </div>
       )}
 

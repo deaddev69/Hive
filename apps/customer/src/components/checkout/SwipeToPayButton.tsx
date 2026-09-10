@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { motion, useMotionValue, useTransform, animate, PanInfo } from "framer-motion";
+import { motion, useMotionValue, useTransform, animate, useDragControls, PanInfo } from "framer-motion";
 import { ArrowRight, Loader2 } from "lucide-react";
 
 const THUMB_SIZE = 48; // px
 const TRACK_PADDING = 4; // px, matches p-1 on the track
-const COMPLETE_THRESHOLD = 0.82; // fraction of travel distance that counts as a full swipe
+const COMPLETE_THRESHOLD = 0.65; // fraction of travel distance that counts as a full swipe
+const FLICK_VELOCITY = 500; // px/s — a fast partial swipe past FLICK_MIN_PROGRESS completes early
+const FLICK_MIN_PROGRESS = 0.15; // guards against a stray tap registering as a flick
 
 export interface SwipeToPayButtonProps {
   /** Fired once, when the user drags past the threshold or activates via keyboard. */
@@ -31,6 +33,7 @@ export const SwipeToPayButton: React.FC<SwipeToPayButtonProps> = ({
   const [completed, setCompleted] = useState(false);
   const x = useMotionValue(0);
   const textOpacity = useTransform(x, [0, maxDrag || 1], [1, 0]);
+  const dragControls = useDragControls();
 
   useEffect(() => {
     const measure = () => {
@@ -62,10 +65,21 @@ export const SwipeToPayButton: React.FC<SwipeToPayButtonProps> = ({
     wasProcessing.current = isProcessing;
   }, [isProcessing, x]);
 
+  // Starting the drag from anywhere on the track (not just the small thumb) is what actually
+  // fixes the one-handed reach complaint — the shopper doesn't have to land a precise touch on a
+  // 48px circle before they can even begin dragging. snapToCursor jumps the thumb to wherever
+  // they pressed, and dragListener={false} on the thumb below means this is the only way a drag
+  // starts, so there's no double-handling between the track and the thumb.
+  const handleTrackPointerDown = (e: React.PointerEvent) => {
+    if (disabled || completed || isProcessing) return;
+    dragControls.start(e, { snapToCursor: true });
+  };
+
   const handleDragEnd = (_e: unknown, info: PanInfo) => {
     if (disabled || completed || maxDrag === 0) return;
     const progress = x.get() / maxDrag;
-    if (progress >= COMPLETE_THRESHOLD) {
+    const isFlick = info.velocity.x > FLICK_VELOCITY && progress > FLICK_MIN_PROGRESS;
+    if (progress >= COMPLETE_THRESHOLD || isFlick) {
       setCompleted(true);
       animate(x, maxDrag, { type: "spring", stiffness: 500, damping: 45 });
       onComplete();
@@ -94,6 +108,7 @@ export const SwipeToPayButton: React.FC<SwipeToPayButtonProps> = ({
       aria-disabled={disabled}
       aria-label={showSpinner ? "Payment processing" : `${label} to confirm and pay`}
       onKeyDown={handleKeyDown}
+      onPointerDown={handleTrackPointerDown}
       className={`relative h-14 w-full rounded-full bg-white border-[3px] border-hive-dark p-1 overflow-hidden select-none touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-dark/30 ${
         disabled ? "opacity-50 pointer-events-none" : ""
       } ${className}`}
@@ -108,6 +123,8 @@ export const SwipeToPayButton: React.FC<SwipeToPayButtonProps> = ({
 
       <motion.div
         drag={disabled || showSpinner ? false : "x"}
+        dragListener={false}
+        dragControls={dragControls}
         dragConstraints={{ left: 0, right: maxDrag }}
         dragElastic={0}
         dragMomentum={false}
