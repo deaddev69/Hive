@@ -197,7 +197,7 @@ export function applyCatalogSort<T extends CatalogCard>(
  */
 export function applyCatalogFilters<T extends CatalogCard>(
   products: T[],
-  opts: { newArrivals?: boolean; occasions?: string[] }
+  opts: { newArrivals?: boolean; occasions?: string[]; sizes?: string[] }
 ): T[] {
   let result = products;
   if (opts.newArrivals) {
@@ -205,6 +205,11 @@ export function applyCatalogFilters<T extends CatalogCard>(
   }
   if (opts.occasions && opts.occasions.length > 0) {
     result = result.filter((p) => opts.occasions!.includes(p.occasion));
+  }
+  if (opts.sizes && opts.sizes.length > 0) {
+    result = result.filter((p) =>
+      p.sizes && p.sizes.some((s) => opts.sizes!.includes(s))
+    );
   }
   return result;
 }

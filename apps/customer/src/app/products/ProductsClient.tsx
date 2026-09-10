@@ -5,10 +5,16 @@ import Link from "next/link";
 import { CatalogLayout } from "@/components/catalog/CatalogLayout";
 import { CatalogFilters } from "@/components/catalog/CatalogFilters";
 import { MobileFilterDrawer } from "@/components/catalog/MobileFilterDrawer";
-import { getCategoryContent, resolveCategoryContent } from "@/lib/content/categoryContent";
+import {
+  getCategoryContent,
+  resolveCategoryContent,
+} from "@/lib/content/categoryContent";
 import { CategorySEOBlock } from "@/components/seo/CategorySEOBlock";
 import { CatalogHeader } from "@/components/catalog/CatalogHeader";
-import { CatalogToolbar } from "@/components/catalog/CatalogToolbar";
+import {
+  CatalogToolbar,
+  FilterTabKey,
+} from "@/components/catalog/CatalogToolbar";
 import { CatalogPagination } from "@/components/catalog/CatalogPagination";
 import { CatalogEmptyState } from "@/components/catalog/CatalogEmptyState";
 import { CategoryPillRail } from "@/components/catalog/CategoryPillRail";
@@ -29,6 +35,7 @@ import {
   PRICE_MAX,
 } from "@/lib/catalogFilters";
 import { ProductSortOption, DEFAULT_SORT } from "@/lib/catalogSort";
+import { resolveEmptyStateReason } from "@/lib/catalogEmptyState";
 
 const PAGE_SIZE = 12;
 
@@ -37,43 +44,91 @@ const PAGE_SIZE = 12;
 // full candidate set in convex/shared/catalog.ts, which is what lets the grid
 // receive one ordered page instead of everything.
 
-export function ProductsClient({ initialCategorySlug }: { initialCategorySlug?: string }) {
+export function ProductsClient({
+  initialCategorySlug,
+}: {
+  initialCategorySlug?: string;
+}) {
   return (
-    <React.Suspense fallback={<LoadingState message="Discovering catalog items..." variant="full" />}>
+    <React.Suspense
+      fallback={
+        <LoadingState message="Discovering catalog items..." variant="full" />
+      }
+    >
       <ProductsCatalog initialCategorySlug={initialCategorySlug} />
     </React.Suspense>
   );
 }
 
-function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string }) {
+function ProductsCatalog({
+  initialCategorySlug,
+}: {
+  initialCategorySlug?: string;
+}) {
   const searchParams = useSearchParams();
   const browseAllFromUrl = searchParams.get("browse") === "all";
   const boutiqueIdFromUrl = searchParams.get("boutiqueId");
 
-  const { latitude, longitude, browseAllProducts, setDrawerOpen: setLocationDrawerOpen } = useLocation();
+  const {
+    latitude,
+    longitude,
+    browseAllProducts,
+    setDrawerOpen: setLocationDrawerOpen,
+  } = useLocation();
   const router = useRouter();
 
   // Bypass delivery-radius filtering if user clicked "Browse Products Anyway"
   // OR if the URL carries ?browse=all
   const browseAll = browseAllFromUrl || browseAllProducts;
 
-  const [filters, setFilters] = useState<CatalogFilterState>(DEFAULT_FILTER_STATE);
+  const [filters, setFilters] =
+    useState<CatalogFilterState>(DEFAULT_FILTER_STATE);
   const [sortOption, setSortOption] = useState<ProductSortOption>(DEFAULT_SORT);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [filterDrawerTab, setFilterDrawerTab] =
+    useState<FilterTabKey>("category");
   const [currentPage, setCurrentPage] = useState(1);
-  const [quickViewModal, setQuickViewModal] = useState<{ open: boolean, productId: string | null }>({ open: false, productId: null });
+  const [quickViewModal, setQuickViewModal] = useState<{
+    open: boolean;
+    productId: string | null;
+  }>({ open: false, productId: null });
 
-  const categorySlugFromUrl = initialCategorySlug || searchParams.get("category");
+  const categorySlugFromUrl =
+    initialCategorySlug || searchParams.get("category");
 
   // Fetch DB categories for resolving names in the toolbar summary
-  const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
+  const dbCategories = useQuery(api.categories.getCategories, {
+    onlyActive: true,
+  });
+
+  // Fetch Category Hierarchy with global and serviceable counts
+  const hierarchyArgs = useMemo(() => {
+    const args: Record<string, any> = {};
+    if (
+      !browseAll &&
+      latitude !== null &&
+      longitude !== null &&
+      !(latitude === 0 && longitude === 0)
+    ) {
+      Object.assign(args, toQueryCoords(latitude, longitude));
+    }
+    if (boutiqueIdFromUrl) {
+      args.boutiqueId = boutiqueIdFromUrl as Id<"boutiques">;
+    }
+    return args;
+  }, [browseAll, latitude, longitude, boutiqueIdFromUrl]);
+
+  const categoryHierarchy = useQuery(
+    api.categories.getCategoryHierarchy,
+    hierarchyArgs,
+  );
 
   // Fetch DB approved boutiques to resolve boutiqueName when boutiqueId is in query params
   const dbBoutiques = useQuery(api.boutiques.getApprovedBoutiques) ?? [];
 
   const activeBoutique = useMemo(() => {
     if (!boutiqueIdFromUrl) return null;
-    return dbBoutiques.find((b) => b._id === boutiqueIdFromUrl);
+    return dbBoutiques.find((b: any) => b._id === boutiqueIdFromUrl);
   }, [dbBoutiques, boutiqueIdFromUrl]);
 
   // Resolve ?category=<slug> against the database by exact slug, and nothing else.
@@ -93,9 +148,13 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
     if (!categorySlugFromUrl) return { status: "none" };
     if (dbCategories === undefined) return { status: "pending" };
     const wanted = categorySlugFromUrl.trim().toLowerCase();
-    const match = dbCategories.find((c) => c.slug.toLowerCase() === wanted);
+    const match = dbCategories.find((c: any) => c.slug.toLowerCase() === wanted);
     return match
-      ? { status: "resolved", id: match._id as Id<"categories">, name: match.name }
+      ? {
+          status: "resolved",
+          id: match._id as Id<"categories">,
+          name: match.name,
+        }
       : { status: "unknown", slug: categorySlugFromUrl };
   }, [categorySlugFromUrl, dbCategories]);
 
@@ -110,7 +169,7 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
 
   const seoCategory = useMemo(() => {
     if (categoryResolution.status !== "resolved" || !dbCategories) return null;
-    const match = dbCategories.find((c) => c._id === categoryResolution.id);
+    const match = dbCategories.find((c: any) => c._id === categoryResolution.id);
     return match
       ? {
           name: match.name,
@@ -125,9 +184,82 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
   const selectedCategoryNames = useMemo(() => {
     if (!dbCategories || filters.categories.length === 0) return [];
     return filters.categories
-      .map((id) => dbCategories.find((c) => c._id === id)?.name)
+      .map((id) => dbCategories.find((c: any) => c._id === id)?.name)
       .filter(Boolean) as string[];
   }, [dbCategories, filters.categories]);
+
+  // Build category count lookup map from hierarchy
+  const categoryCounts = useMemo(() => {
+    if (!categoryHierarchy) return null;
+
+    const countsMap = new Map<
+      string,
+      { globalCount: number; serviceableCount: number }
+    >();
+    for (const root of categoryHierarchy.roots) {
+      countsMap.set(root._id, {
+        globalCount: root.globalCount,
+        serviceableCount: root.serviceableCount,
+      });
+      for (const child of root.children) {
+        countsMap.set(child._id, {
+          globalCount: child.globalCount,
+          serviceableCount: child.serviceableCount,
+        });
+      }
+    }
+    return countsMap;
+  }, [categoryHierarchy]);
+
+  // Context counts for the currently viewed category or store
+  const { currentGlobalCount, currentServiceableCount } = useMemo(() => {
+    if (!categoryHierarchy) {
+      return { currentGlobalCount: null, currentServiceableCount: null };
+    }
+
+    const firstCategory = filters.categories[0];
+    if (filters.categories.length === 1 && firstCategory) {
+      const counts = categoryCounts?.get(firstCategory);
+      return {
+        currentGlobalCount: counts?.globalCount ?? 0,
+        currentServiceableCount: counts?.serviceableCount ?? 0,
+      };
+    }
+
+    if (filters.categories.length > 1) {
+      let g = 0;
+      let s = 0;
+      for (const id of filters.categories) {
+        const counts = categoryCounts?.get(id);
+        if (counts) {
+          g += counts.globalCount;
+          s += counts.serviceableCount;
+        }
+      }
+      return { currentGlobalCount: g, currentServiceableCount: s };
+    }
+
+    // No category selected ("All Items" store context)
+    return {
+      currentGlobalCount: categoryHierarchy.totalGlobalCount,
+      currentServiceableCount: categoryHierarchy.totalServiceableCount,
+    };
+  }, [categoryHierarchy, categoryCounts, filters.categories]);
+
+  // Location is known when coordinates are available and browseAll is not active
+  const hasKnownLocation =
+    !browseAll &&
+    latitude !== null &&
+    longitude !== null &&
+    !(latitude === 0 && longitude === 0);
+
+  const emptyStateReason = useMemo(() => {
+    return resolveEmptyStateReason({
+      currentGlobalCount,
+      currentServiceableCount,
+      hasKnownLocation,
+    });
+  }, [currentGlobalCount, currentServiceableCount, hasKnownLocation]);
 
   // Build query args — the backend does all filtering, ordering and paging.
   const queryArgs = useMemo(() => {
@@ -143,6 +275,9 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
     }
     if (filters.categories.length > 0) {
       args.categoryIds = filters.categories as Id<"categories">[];
+    }
+    if (filters.sizes && filters.sizes.length > 0) {
+      args.sizes = filters.sizes;
     }
     if (filters.minPrice > PRICE_MIN) {
       args.minPrice = filters.minPrice;
@@ -160,13 +295,22 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
       args.boutiqueId = boutiqueIdFromUrl as Id<"boutiques">;
     }
     return args;
-  }, [browseAll, latitude, longitude, filters, boutiqueIdFromUrl, currentPage, sortOption]);
+  }, [
+    browseAll,
+    latitude,
+    longitude,
+    filters,
+    boutiqueIdFromUrl,
+    currentPage,
+    sortOption,
+  ]);
 
   // A URL that names a category must never fall through to an unfiltered grid.
   // While the slug is still resolving, and permanently if it resolves to
   // nothing, the catalogue query is skipped rather than run without a category.
   const catalogQueryArgs =
-    categoryResolution.status === "pending" || categoryResolution.status === "unknown"
+    categoryResolution.status === "pending" ||
+    categoryResolution.status === "unknown"
       ? "skip"
       : queryArgs;
 
@@ -176,8 +320,10 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
 
   // The category a category route imposes, as opposed to one the shopper picked in the sidebar.
   // Both end up in filters.categories, which is why activeFilterCount cannot tell them apart.
-  const routeCategoryId = categoryResolution.status === "resolved" ? categoryResolution.id : null;
-  const routeCategoryName = categoryResolution.status === "resolved" ? categoryResolution.name : null;
+  const routeCategoryId =
+    categoryResolution.status === "resolved" ? categoryResolution.id : null;
+  const routeCategoryName =
+    categoryResolution.status === "resolved" ? categoryResolution.name : null;
 
   // Filters the shopper actually chose, and could therefore undo. On /products/sarees the
   // injected category makes activeFilterCount at least 1 even when nothing has been touched, so
@@ -227,7 +373,7 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
     setFilters(
       routeCategoryId
         ? { ...DEFAULT_FILTER_STATE, categories: [routeCategoryId] }
-        : DEFAULT_FILTER_STATE
+        : DEFAULT_FILTER_STATE,
     );
     setCurrentPage(1);
   };
@@ -238,14 +384,16 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
     return (
       <CatalogLayout breadcrumbs={[{ label: "All Products" }]}>
         <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 w-full">
-          <CategoryPillRail />
+          <CategoryPillRail
+            activeCategorySlug={categorySlugFromUrl ?? undefined}
+          />
           <div className="w-full flex flex-col items-center justify-center py-20 px-6 text-center gap-3">
             <h1 className="text-xl font-serif font-extrabold text-hive-dark">
               We couldn&apos;t find that category
             </h1>
             <p className="text-sm text-hive-text-muted max-w-sm leading-relaxed">
-              &ldquo;{categoryResolution.slug}&rdquo; isn&apos;t one of our categories any
-              more. Pick one above, or browse everything.
+              &ldquo;{categoryResolution.slug}&rdquo; isn&apos;t one of our
+              categories any more. Pick one above, or browse everything.
             </p>
             <Link
               href="/products?browse=all"
@@ -269,22 +417,33 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
 
   return (
     <CatalogLayout breadcrumbs={[{ label: "All Products" }]}>
-      {/* Minimal Category Heading */}
-      <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 w-full mt-2">
-        <h1 className="text-base font-bold text-slate-900 tracking-tight my-1 px-1">
-          {activeBoutique ? activeBoutique.boutiqueName : (selectedCategoryNames.length > 0 ? selectedCategoryNames.join(", ") : "All Products")}
-        </h1>
-      </div>
+      {/* Screen-reader heading preserving SEO semantics without redundant visual vertical space */}
+      <h1 className="sr-only">
+        {activeBoutique
+          ? activeBoutique.boutiqueName
+          : selectedCategoryNames.length > 0
+            ? selectedCategoryNames.join(", ")
+            : "All Products"}
+      </h1>
 
-      <CategoryPillRail />
+      <CategoryPillRail
+        activeCategorySlug={categorySlugFromUrl ?? undefined}
+      />
 
       {/* Designer exclusive collections banner */}
       {boutiqueIdFromUrl && (
         <div className="max-w-[1440px] mx-auto px-6 lg:px-8 w-full mt-4">
           <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3.5 rounded-2xl text-xs font-semibold flex items-center justify-between gap-2 shadow-sm">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center bg-amber-200 text-amber-800 rounded-full w-5 h-5 font-extrabold text-[10px]">✓</span>
-              <span>Showing exclusive collections from <strong className="font-extrabold">{activeBoutique?.boutiqueName || "Designer"}</strong></span>
+              <span className="inline-flex items-center justify-center bg-amber-200 text-amber-800 rounded-full w-5 h-5 font-extrabold text-[10px]">
+                ✓
+              </span>
+              <span>
+                Showing exclusive collections from{" "}
+                <strong className="font-extrabold">
+                  {activeBoutique?.boutiqueName || "Designer"}
+                </strong>
+              </span>
             </div>
             <button
               onClick={() => {
@@ -304,7 +463,9 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
       {browseAll && (
         <div className="max-w-[1440px] mx-auto px-6 lg:px-8 w-full mt-4">
           <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2">
-            <span className="inline-flex items-center justify-center bg-amber-200 text-amber-800 rounded-full w-5 h-5 font-extrabold text-[10px]">!</span>
+            <span className="inline-flex items-center justify-center bg-amber-200 text-amber-800 rounded-full w-5 h-5 font-extrabold text-[10px]">
+              !
+            </span>
             Showing all products — some may not be deliverable to your area.
           </div>
         </div>
@@ -314,14 +475,22 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
       <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 w-full flex flex-col mt-2 mb-3 gap-3">
         {/* Toolbar */}
         <CatalogToolbar
-          activeFilterCount={activeFilterCount}
+          activeFilterCount={userFilterCount}
           resultCount={resultCount}
           sortOption={sortOption}
           onChangeSort={setSortOption}
-          onOpenMobileFilters={() => setDrawerOpen(true)}
+          onOpenMobileFilters={(tab = "category") => {
+            setFilterDrawerTab(tab);
+            setDrawerOpen(true);
+          }}
           onClearFilters={clearFilters}
-          accentColor="#C9A84C"
-          categoryNames={selectedCategoryNames}
+          filters={filters}
+          onToggleNewArrivals={() => {
+            setFilters((prev) => ({
+              ...prev,
+              newArrivals: !prev.newArrivals,
+            }));
+          }}
         />
 
         <div className="w-full flex gap-8 items-start">
@@ -335,15 +504,17 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
             {paginatedProducts.length > 0 ? (
               <>
                 <div className="relative z-0 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
-                  {paginatedProducts.map((product, idx) => (
+                  {paginatedProducts.map((product: any, idx: number) => (
                     <div
                       key={`${sortOption}-${currentPage}-${product.id}`}
                       className="relative z-0 animate-[cardIn_0.45s_cubic-bezier(0.215,0.61,0.355,1)_forwards] opacity-0"
                       style={{ animationDelay: `${idx * 40}ms` }}
                     >
-                      <ProductCard 
-                        product={product} 
-                        onQuickView={(id) => setQuickViewModal({ open: true, productId: id })} 
+                      <ProductCard
+                        product={product}
+                        onQuickView={(id) =>
+                          setQuickViewModal({ open: true, productId: id })
+                        }
                       />
                     </div>
                   ))}
@@ -362,15 +533,13 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
               <CatalogEmptyState
                 onClearFilters={clearFilters}
                 accentColor="#C9A84C"
-                // With nothing the shopper chose, and a location in hand, filters cannot be why
-                // the grid is empty — no boutique reaches them. Offering to reset filters there
-                // would point at the wrong cause.
-                reason={
-                  userFilterCount === 0 && !browseAll && latitude !== null && longitude !== null
-                    ? "location"
-                    : "filters"
+                reason={emptyStateReason}
+                categoryName={
+                  routeCategoryName ||
+                  (selectedCategoryNames.length === 1
+                    ? selectedCategoryNames[0]
+                    : null)
                 }
-                categoryName={routeCategoryName}
                 onChangeLocation={() => setLocationDrawerOpen(true)}
               />
             )}
@@ -391,6 +560,11 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
         onChange={setFilters}
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        initialTab={filterDrawerTab}
+        latitude={latitude}
+        longitude={longitude}
+        browseAll={browseAll}
+        boutiqueId={boutiqueIdFromUrl}
       />
 
       {quickViewModal.open && quickViewModal.productId && (
@@ -400,7 +574,9 @@ function ProductsCatalog({ initialCategorySlug }: { initialCategorySlug?: string
           productSlug={quickViewModal.productId}
           // Seeded from the current page rather than the whole catalogue —
           // quick view can only be opened from a card that is on screen.
-          initialProduct={paginatedProducts.find((p) => p.slug === quickViewModal.productId)}
+          initialProduct={paginatedProducts.find(
+            (p: any) => p.slug === quickViewModal.productId,
+          )}
         />
       )}
 

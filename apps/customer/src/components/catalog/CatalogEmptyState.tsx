@@ -1,19 +1,18 @@
 import React from "react";
 import Link from "next/link";
-import { SearchX, RotateCcw, LayoutGrid, MapPin } from "lucide-react";
+import { SearchX, RotateCcw, LayoutGrid, MapPin, Clock } from "lucide-react";
 
 export interface CatalogEmptyStateProps {
   onClearFilters: () => void;
   /** Optional accent colour — used for collection pages */
   accentColor?: string;
   /**
-   * Why the grid is empty. "filters" is the default and offers to reset them.
-   *
-   * "location" is for the case the filters cannot explain: nothing is filtered, yet no boutique
-   * can deliver to where the shopper is. Offering "reset filters" there sends someone to clear
-   * filters they never set, and leaves the real reason unsaid.
+   * Why the grid is empty:
+   * - "coming_soon": Global category product count is 0.
+   * - "location": Products exist globally, but none are serviceable at current known location.
+   * - "filters": Products are available in the area, but active user filters yielded 0 results.
    */
-  reason?: "filters" | "location";
+  reason?: "coming_soon" | "location" | "filters";
   /** Opens the location drawer. Only used by the "location" reason. */
   onChangeLocation?: () => void;
   /**
@@ -32,44 +31,68 @@ export const CatalogEmptyState: React.FC<CatalogEmptyStateProps> = ({
 }) => {
   const accent = accentColor ?? "#C9A84C";
 
+  if (reason === "coming_soon") {
+    return (
+      <div className="w-full flex flex-col items-center justify-center py-20 px-6 text-center">
+        <div className="w-14 h-14 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center mb-5 text-stone-600">
+          <Clock className="w-6 h-6" strokeWidth={1.75} />
+        </div>
+
+        <h3 className="text-lg font-bold text-stone-900 tracking-tight mb-2">
+          {categoryName ? `${categoryName} — Coming Soon` : "Coming Soon"}
+        </h3>
+        <p className="text-xs text-stone-500 max-w-xs leading-relaxed mb-6">
+          More styles are being added to this collection.
+        </p>
+
+        <div className="flex flex-col sm:flex-row items-center gap-2.5">
+          <Link
+            href="/products?browse=all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold border border-stone-200 bg-white text-stone-800 hover:border-stone-400 hover:text-stone-900 transition-colors cursor-pointer"
+          >
+            <LayoutGrid className="w-3.5 h-3.5 text-stone-500" strokeWidth={2} />
+            Browse All Styles
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (reason === "location") {
     return (
       <div className="w-full flex flex-col items-center justify-center py-20 px-6 text-center">
-        <div
-          className="relative w-20 h-20 rounded-full flex items-center justify-center mb-6"
-          style={{ background: `${accent}12`, border: `1.5px dashed ${accent}40` }}
-        >
-          <MapPin className="w-8 h-8" style={{ color: accent }} strokeWidth={1.5} />
+        {/* Neutral Icon ring */}
+        <div className="w-14 h-14 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center mb-5 text-stone-700">
+          <MapPin className="w-6 h-6" strokeWidth={1.75} />
         </div>
 
-        <h3 className="text-xl font-serif font-extrabold text-hive-dark mb-2">
+        <h3 className="text-lg font-bold text-stone-900 tracking-tight mb-2">
           {categoryName
-            ? `No ${categoryName.toLowerCase()} delivered to this location yet`
-            : "No styles available here yet"}
+            ? `${categoryName} not available in your area`
+            : "Not available in your area"}
         </h3>
-        <p className="text-sm text-hive-text-muted max-w-xs leading-relaxed mb-8">
-          Try a different location, or browse everything on Hive.
+        <p className="text-xs text-stone-500 max-w-xs leading-relaxed mb-6">
+          Try another location or browse all styles on Hive.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-2.5">
           {onChangeLocation && (
             <button
               type="button"
               onClick={onChangeLocation}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-extrabold uppercase tracking-widest text-white hover:opacity-90 transition-all duration-200 shadow-md"
-              style={{ background: accent, boxShadow: `0 4px 18px ${accent}30` }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-stone-900 hover:bg-stone-800 transition-colors shadow-xs cursor-pointer"
             >
-              <MapPin className="w-3.5 h-3.5" strokeWidth={2.5} />
+              <MapPin className="w-3.5 h-3.5" strokeWidth={2} />
               Change Location
             </button>
           )}
 
           <Link
             href="/products?browse=all"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold border border-hive-border/60 text-hive-dark hover:border-hive-gold/50 hover:bg-hive-comb/10 transition-all duration-200"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold border border-stone-200 bg-white text-stone-800 hover:border-stone-400 hover:text-stone-900 transition-colors cursor-pointer"
           >
-            <LayoutGrid className="w-3.5 h-3.5 text-hive-gold" strokeWidth={2} />
-            Browse All Products
+            <LayoutGrid className="w-3.5 h-3.5 text-stone-500" strokeWidth={2} />
+            Browse All Styles
           </Link>
         </div>
       </div>
@@ -79,47 +102,35 @@ export const CatalogEmptyState: React.FC<CatalogEmptyStateProps> = ({
   return (
     <div className="w-full flex flex-col items-center justify-center py-20 px-6 text-center">
       {/* Icon ring */}
-      <div
-        className="relative w-20 h-20 rounded-full flex items-center justify-center mb-6"
-        style={{ background: `${accent}12`, border: `1.5px dashed ${accent}40` }}
-      >
-        <SearchX className="w-8 h-8" style={{ color: accent }} strokeWidth={1.5} />
-        {/* Animated pulse ring */}
-        <span
-          className="absolute inset-0 rounded-full animate-ping opacity-10"
-          style={{ background: accent }}
-        />
+      <div className="w-14 h-14 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center mb-5 text-stone-600">
+        <SearchX className="w-6 h-6" strokeWidth={1.75} />
       </div>
 
       {/* Copy */}
-      <h3 className="text-xl font-serif font-extrabold text-hive-dark mb-2">
-        No products found
+      <h3 className="text-lg font-bold text-stone-900 tracking-tight mb-2">
+        No matching styles
       </h3>
-      <p className="text-sm text-hive-text-muted max-w-xs leading-relaxed mb-8">
-        Try adjusting your filters or browse all products to discover more boutique designs.
+      <p className="text-xs text-stone-500 max-w-xs leading-relaxed mb-6">
+        Adjust your filters to see more.
       </p>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row items-center gap-3">
+      <div className="flex flex-col sm:flex-row items-center gap-2.5">
         <button
           type="button"
           onClick={onClearFilters}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-extrabold uppercase tracking-widest text-white hover:opacity-90 transition-all duration-200 shadow-md"
-          style={{
-            background: accent,
-            boxShadow: `0 4px 18px ${accent}30`,
-          }}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-stone-900 hover:bg-stone-800 transition-colors shadow-xs cursor-pointer"
         >
-          <RotateCcw className="w-3.5 h-3.5" strokeWidth={2.5} />
-          Reset Filters
+          <RotateCcw className="w-3.5 h-3.5" strokeWidth={2} />
+          Clear Filters
         </button>
 
         <Link
           href="/products?browse=all"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold border border-hive-border/60 text-hive-dark hover:border-hive-gold/50 hover:bg-hive-comb/10 transition-all duration-200"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold border border-stone-200 bg-white text-stone-800 hover:border-stone-400 hover:text-stone-900 transition-colors cursor-pointer"
         >
-          <LayoutGrid className="w-3.5 h-3.5 text-hive-gold" strokeWidth={2} />
-          Browse All Products
+          <LayoutGrid className="w-3.5 h-3.5 text-stone-500" strokeWidth={2} />
+          Browse All Styles
         </Link>
       </div>
     </div>

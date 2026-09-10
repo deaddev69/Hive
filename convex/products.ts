@@ -1452,6 +1452,7 @@ export const getCatalogPage = query({
     boutiqueId: v.optional(v.id("boutiques")),
     // Post-selection filters — neither is indexable. See convex/shared/catalog.ts.
     occasions: v.optional(v.array(v.string())),
+    sizes: v.optional(v.array(v.string())),
     newArrivals: v.optional(v.boolean()),
     sort: v.optional(
       v.union(
@@ -1484,6 +1485,7 @@ export const getCatalogPage = query({
     const filtered = applyCatalogFilters(cards, {
       newArrivals: args.newArrivals,
       occasions: args.occasions,
+      sizes: args.sizes,
     });
     const sorted = applyCatalogSort(filtered, args.sort ?? DEFAULT_SORT);
 

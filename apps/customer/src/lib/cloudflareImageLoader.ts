@@ -72,13 +72,30 @@ function rewriteExistingTransform(src: string, width: number, quality?: number):
   return src.slice(0, paramsStart) + transformParams(width, quality) + src.slice(paramsEnd);
 }
 
+export interface ImageLoaderOptions {
+  /**
+   * Whether the site's own origin sits behind Cloudflare, which decides only the fate of
+   * root-relative assets out of public/. On a deployed origin they can be transformed like any
+   * other file; on localhost there is no Cloudflare in front, so `/cdn-cgi/image/...` is just a
+   * path Next has no route for and every one of them 404s.
+   *
+   * An explicit flag rather than an environment read inside the mapping, so both branches stay
+   * directly testable without a test having to reach into process.env.
+   */
+  originIsBehindCloudflare: boolean;
+}
+
 /**
  * Builds the URL next/image should request for a given rendered width.
  *
- * Local paths are emitted relative to the site origin, which is itself behind Cloudflare, so
- * files in public/ are transformed too rather than being the one category served as stored.
+ * Local paths are emitted relative to the site origin, which in production is itself behind
+ * Cloudflare, so files in public/ are transformed too rather than being the one category served
+ * as stored.
  */
-export function cloudflareImageLoader({ src, width, quality }: ImageLoaderArgs): string {
+export function buildImageUrl(
+  { src, width, quality }: ImageLoaderArgs,
+  { originIsBehindCloudflare }: ImageLoaderOptions
+): string {
   if (isPassThrough(src)) return src;
 
   const rewritten = rewriteExistingTransform(src, width, quality);
@@ -86,8 +103,11 @@ export function cloudflareImageLoader({ src, width, quality }: ImageLoaderArgs):
 
   const params = transformParams(width, quality);
 
-  // Root-relative asset out of public/.
+  // Root-relative asset out of public/. Served as stored when nothing can transform it, which is
+  // only ever true of a local origin — cdn.hivenow.in is reached over the network and keeps
+  // working in development like any other absolute URL.
   if (src.startsWith("/")) {
+    if (!originIsBehindCloudflare) return src;
     return `${TRANSFORM_MARKER}${params}${src}`;
   }
 
@@ -104,6 +124,18 @@ export function cloudflareImageLoader({ src, width, quality }: ImageLoaderArgs):
 
   const path = `${parsed.pathname}${parsed.search}`;
   return `${parsed.origin}${TRANSFORM_MARKER}${params}${path}`;
+}
+
+/**
+ * The loader next/image actually calls.
+ *
+ * Next inlines NODE_ENV at build time, so this resolves to a constant in the deployed bundle and
+ * the development branch is not shipped.
+ */
+export function cloudflareImageLoader(args: ImageLoaderArgs): string {
+  return buildImageUrl(args, {
+    originIsBehindCloudflare: process.env.NODE_ENV !== "development",
+  });
 }
 
 export default cloudflareImageLoader;

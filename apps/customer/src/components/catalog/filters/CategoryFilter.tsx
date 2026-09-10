@@ -96,7 +96,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
   return (
     <FilterSection title="Category" activeCount={selected.length}>
       <div className="flex flex-col gap-3 py-1">
-        {groups.map(({ parent, children }) => (
+        {groups.map(({ parent, children }: any) => (
           <div key={parent._id} className="flex flex-col gap-1.5">
             {/*
               Selecting the parent is a real choice, not just a label: the server

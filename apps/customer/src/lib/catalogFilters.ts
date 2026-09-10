@@ -6,6 +6,8 @@
 export interface CatalogFilterState {
   /** Array of category DB IDs (from Convex categories table) */
   categories: string[];
+  /** Array of size strings (e.g. "XS", "S", "M", "L", "XL", "Free Size") */
+  sizes: string[];
   /** Array of occasion IDs (wedding, festival, workwear, casual, party) */
   occasions: string[];
   minPrice: number;
@@ -15,11 +17,14 @@ export interface CatalogFilterState {
 
 export const DEFAULT_FILTER_STATE: CatalogFilterState = {
   categories: [],
+  sizes: [],
   occasions: [],
   minPrice: 0,
   maxPrice: 10000,
   newArrivals: false,
 };
+
+export const STANDARD_SIZES = ["XS", "S", "M", "L", "XL", "Free Size"] as const;
 
 export const PRICE_MIN = 0;
 export const PRICE_MAX = 10000;
@@ -31,6 +36,7 @@ export const PRICE_MAX = 10000;
 export function countActiveFilters(filters: CatalogFilterState): number {
   let count = 0;
   count += filters.categories.length;
+  count += (filters.sizes || []).length;
   count += filters.occasions.length;
   if (filters.newArrivals) count += 1;
   if (filters.minPrice > PRICE_MIN || filters.maxPrice < PRICE_MAX) count += 1;

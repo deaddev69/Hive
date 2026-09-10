@@ -5,108 +5,194 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
+import { Id } from "../../../../../convex/_generated/dataModel";
+import { useLocation } from "@/context/LocationContext";
+import { toQueryCoords } from "@/lib/distance";
 
 /**
- * Two rails, not one flat list.
+ * High-density fast-fashion category navigation rail.
  *
- * The top rail is the top-level categories. When one of them is the current
- * context — either it is selected, or one of its subcategories is — a second
- * rail appears underneath with that group's subcategories. A flat rail put
- * "Women's Fashion" and "Sarees" side by side at identical weight, which hid
- * the fact that one contains the other.
+ * Structure:
+ * - Level 1: Clean top-level group tabs (All Items, Women's Fashion, Men's Fashion, etc.)
+ * - Level 2: Compact horizontal pill rail for the active group's subcategories:
+ *   [ All ] [ Kurtis ] [ Sarees ] [ Tops ] [ Gowns · Soon ] ...
+ *
+ * Distinguishes:
+ * - Active: solid stone-900 fill
+ * - Available: white pill with stone-200 border
+ * - Coming soon: subtle dashed styling with restrained "Soon" badge (globalCount === 0 only)
+ *
+ * Excludes "In this group", eliminates cream background, and preserves URL parameters.
  */
-export function CategoryPillRail() {
+interface CategoryPillRailProps {
+  activeCategorySlug?: string;
+}
+
+export function CategoryPillRail({ activeCategorySlug }: CategoryPillRailProps = {}) {
   const searchParams = useSearchParams();
-  const activeCategory = searchParams.get("category");
-  const browseAll = searchParams.get("browse") === "all";
+  const activeCategory = activeCategorySlug || searchParams.get("category");
+  const browseAllFromUrl = searchParams.get("browse") === "all";
+  const boutiqueIdFromUrl = searchParams.get("boutiqueId");
 
-  const categories = useQuery(api.categories.getCategories, { onlyActive: true });
+  const { latitude, longitude, browseAllProducts } = useLocation();
+  const browseAll = browseAllFromUrl || browseAllProducts;
 
-  const { roots, childrenOf, activeRootId } = React.useMemo(() => {
-    if (!categories) {
-      return { roots: [], childrenOf: new Map<string, any[]>(), activeRootId: null };
+  const hierarchyArgs = React.useMemo(() => {
+    const args: Record<string, any> = {};
+    if (
+      !browseAll &&
+      latitude !== null &&
+      longitude !== null &&
+      !(latitude === 0 && longitude === 0)
+    ) {
+      Object.assign(args, toQueryCoords(latitude, longitude));
     }
-
-    const byOrder = (a: any, b: any) =>
-      (a.sortOrder || 0) - (b.sortOrder || 0) || a.name.localeCompare(b.name);
-
-    const rootList = categories.filter((c: any) => !c.parentId).sort(byOrder);
-
-    const map = new Map<string, any[]>();
-    for (const root of rootList) {
-      map.set(
-        root._id,
-        categories.filter((c: any) => c.parentId === root._id).sort(byOrder)
-      );
+    if (boutiqueIdFromUrl) {
+      args.boutiqueId = boutiqueIdFromUrl as Id<"boutiques">;
     }
+    return args;
+  }, [browseAll, latitude, longitude, boutiqueIdFromUrl]);
 
-    // Which group the shopper is currently inside — the selected category if it
-    // is top-level, otherwise its parent.
-    const current = activeCategory
-      ? categories.find((c: any) => c.slug === activeCategory)
-      : null;
-    const rootId = current ? ((current as any).parentId ?? current._id) : null;
-
-    return { roots: rootList, childrenOf: map, activeRootId: rootId };
-  }, [categories, activeCategory]);
-
-  if (!categories || categories.length === 0) return null;
-
-  const suffix = browseAll ? "&browse=all" : "";
-  const activeChildren = activeRootId ? (childrenOf.get(activeRootId) ?? []) : [];
-
-  const pill = (
-    label: string,
-    href: string,
-    isActive: boolean,
-    emphasis: "primary" | "secondary"
-  ) => (
-    <Link
-      key={href}
-      href={href}
-      className={`relative shrink-0 px-4 py-2 transition-all duration-300 ${
-        emphasis === "primary"
-          ? "text-[12px] uppercase tracking-widest font-bold"
-          : "text-[11px] tracking-wide font-semibold"
-      } ${isActive ? "text-slate-900" : "text-slate-400 hover:text-slate-700"}`}
-    >
-      {label}
-      {isActive && (
-        <span className="absolute bottom-1 left-4 right-4 h-[2px] bg-slate-900 rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.1)]" />
-      )}
-    </Link>
+  const categoryHierarchy = useQuery(
+    api.categories.getCategoryHierarchy,
+    hierarchyArgs,
   );
 
+  const { roots, activeRoot } = React.useMemo(() => {
+    if (!categoryHierarchy || categoryHierarchy.roots.length === 0) {
+      return { roots: [], activeRoot: null };
+    }
+
+    const rootList = categoryHierarchy.roots;
+    const wanted = activeCategory?.trim().toLowerCase();
+
+    if (!wanted) {
+      return { roots: rootList, activeRoot: null };
+    }
+
+    // Find root either by direct match or because one of its children matched
+    let foundRoot = null;
+    for (const root of rootList) {
+      if (root.slug.toLowerCase() === wanted) {
+        foundRoot = root;
+        break;
+      }
+      const hasChild = root.children.some(
+        (c: any) => c.slug.toLowerCase() === wanted,
+      );
+      if (hasChild) {
+        foundRoot = root;
+        break;
+      }
+    }
+
+    return { roots: rootList, activeRoot: foundRoot };
+  }, [categoryHierarchy, activeCategory]);
+
+  if (!categoryHierarchy || roots.length === 0) return null;
+
+  const suffix = browseAll ? "&browse=all" : "";
+
   return (
-    <div className="w-full bg-white border-b border-slate-100 z-10 relative">
-      <div className="max-w-[1440px] mx-auto pl-4 sm:pl-6 lg:pl-8 py-3 flex flex-col gap-1">
-        {/* Top-level */}
-        <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar pr-4 sm:pr-6 lg:pr-8">
-          {pill("All Items", "/products?browse=all", !activeCategory, "primary")}
-          {roots.map((cat: any) =>
-            pill(
-              cat.name,
-              `/products?category=${cat.slug}${suffix}`,
-              activeCategory === cat.slug,
-              "primary"
-            )
-          )}
+    <div className="w-full bg-white border-b border-stone-100 z-10 relative">
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex flex-col gap-1.5">
+        {/* Level 1: Root Categories */}
+        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
+          {/* All Items tab */}
+          <Link
+            href="/products?browse=all"
+            className={`relative shrink-0 px-3 py-1.5 text-[11px] sm:text-xs uppercase tracking-wider transition-colors duration-200 ${
+              !activeCategory
+                ? "text-stone-900 font-bold"
+                : "text-stone-400 hover:text-stone-700 font-semibold"
+            }`}
+          >
+            All Items
+            {!activeCategory && (
+              <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-stone-900 rounded-full" />
+            )}
+          </Link>
+
+          {/* Root category tabs */}
+          {roots.map((root: any) => {
+            const isRootActive = activeRoot?._id === root._id;
+            return (
+              <Link
+                key={root._id}
+                href={`/products?category=${root.slug}${suffix}`}
+                className={`relative shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] sm:text-xs uppercase tracking-wider transition-colors duration-200 ${
+                  isRootActive
+                    ? "text-stone-900 font-bold"
+                    : "text-stone-400 hover:text-stone-700 font-semibold"
+                }`}
+              >
+                <span>{root.name}</span>
+                {root.isComingSoon && (
+                    <span className="text-[9px] uppercase tracking-wider font-semibold text-stone-500 bg-stone-100/90 border border-stone-200/80 px-1.5 py-0.5 rounded-full">
+                      Soon
+                    </span>
+                )}
+                {isRootActive && (
+                  <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-stone-900 rounded-full" />
+                )}
+              </Link>
+            );
+          })}
         </div>
 
-        {/* Subcategories of the group currently being browsed */}
-        {activeChildren.length > 0 && (
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pr-4 sm:pr-6 lg:pr-8 border-t border-slate-100 pt-1.5">
-            <span className="shrink-0 pl-4 pr-1 text-[10px] uppercase tracking-widest text-slate-300 font-bold">
-              In this group
-            </span>
-            {activeChildren.map((child: any) =>
-              pill(
-                child.name,
-                `/products?category=${child.slug}${suffix}`,
-                activeCategory === child.slug,
-                "secondary"
-              )
-            )}
+        {/* Level 2: Subcategories Rail (Compact horizontal capsule pills) */}
+        {activeRoot && activeRoot.children.length > 0 && (
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1.5 pb-0.5">
+            {/* "All" pill representing the whole group */}
+            <Link
+              href={`/products?category=${activeRoot.slug}${suffix}`}
+              className={`shrink-0 inline-flex items-center px-3.5 py-1.5 rounded-full text-xs transition-all duration-150 ${
+                activeCategory === activeRoot.slug
+                  ? "bg-stone-900 text-white font-semibold shadow-xs"
+                  : "bg-white border border-stone-200 text-stone-700 hover:border-stone-400 hover:text-stone-900 font-medium"
+              }`}
+            >
+              All
+            </Link>
+
+            {/* Child subcategory pills */}
+            {activeRoot.children.map((child: any) => {
+              const isChildActive = activeCategory === child.slug;
+              const isComingSoon = child.isComingSoon;
+
+              if (isComingSoon) {
+                return (
+                  <Link
+                    key={child._id}
+                    href={`/products?category=${child.slug}${suffix}`}
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs transition-all duration-150 ${
+                      isChildActive
+                        ? "bg-stone-800 text-white font-semibold"
+                        : "bg-stone-50 border border-dashed border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-700 font-medium"
+                    }`}
+                  >
+                    <span>{child.name}</span>
+                    <span className="text-[9px] uppercase tracking-wider font-semibold text-stone-500 bg-stone-100/90 border border-stone-200/80 px-1.5 py-0.5 rounded-full">
+                      Soon
+                    </span>
+                  </Link>
+                );
+              }
+
+              return (
+                <Link
+                  key={child._id}
+                  href={`/products?category=${child.slug}${suffix}`}
+                  className={`shrink-0 inline-flex items-center px-3.5 py-1.5 rounded-full text-xs transition-all duration-150 ${
+                    isChildActive
+                      ? "bg-stone-900 text-white font-semibold shadow-xs"
+                      : "bg-white border border-stone-200 text-stone-700 hover:border-stone-400 hover:text-stone-900 font-medium"
+                  }`}
+                >
+                  {child.name}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
