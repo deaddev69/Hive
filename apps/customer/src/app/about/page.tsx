@@ -48,8 +48,8 @@ export default function AboutPage() {
         <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 md:py-16 text-hive-dark text-left">
           {/* ── 1. HERO / HOOK ── */}
           <header className="space-y-7 mb-16 pb-12 border-b border-hive-border">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-hive-gold/10 border border-hive-gold/30 text-hive-amber-dark text-[11px] font-bold uppercase tracking-widest">
-              <Zap className="w-3.5 h-3.5 fill-hive-gold text-hive-amber-dark" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-hive-dark/5 border border-hive-dark/15 text-hive-dark text-[11px] font-bold uppercase tracking-widest">
+              <Zap className="w-3.5 h-3.5 text-hive-dark" />
               <span>About Hive</span>
             </div>
 
@@ -65,7 +65,7 @@ export default function AboutPage() {
               </div>
             </div>
 
-            <div className="border-l-4 border-hive-gold pl-5 sm:pl-6 py-1 space-y-3">
+            <div className="border-l-4 border-hive-dark pl-5 sm:pl-6 py-1 space-y-3">
               <p className="text-base sm:text-lg text-hive-dark font-bold leading-snug">
                 Hive is Kochi&apos;s first fashion platform built for 90-minute delivery.
               </p>
@@ -81,7 +81,7 @@ export default function AboutPage() {
           {/* ── 2. NOT JUST ANOTHER FASHION APP ── */}
           <section className="mb-16 space-y-4">
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-hive-amber-dark block">
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-hive-text-muted block">
                 Convenience Redefined
               </span>
               <h2 className="text-2xl sm:text-3xl font-serif font-bold text-hive-dark tracking-tight">
@@ -93,11 +93,11 @@ export default function AboutPage() {
               <p className="text-hive-text-muted text-sm sm:text-base leading-relaxed">
                 There are plenty of places to shop fashion online.
               </p>
-              <div className="border-l-4 border-hive-gold pl-5 sm:pl-6 py-0.5 space-y-1">
+              <div className="border-l-4 border-hive-dark pl-5 sm:pl-6 py-0.5 space-y-1">
                 <p className="text-hive-dark text-base sm:text-lg font-bold leading-snug">
                   But finding something great and actually getting it today?
                 </p>
-                <p className="text-hive-amber-dark font-medium text-sm sm:text-base">
+                <p className="text-hive-dark font-semibold text-sm sm:text-base">
                   That&apos;s where Hive comes in.
                 </p>
               </div>
@@ -108,7 +108,7 @@ export default function AboutPage() {
                 From that kurti you&apos;ve been looking for to a last-minute outfit, a new pair of jeans, sneakers, a bag or the perfect accessories.
               </p>
               <div className="pt-3 border-t border-hive-border flex items-center gap-2 text-hive-dark font-bold text-sm sm:text-base">
-                <Zap className="w-4 h-4 fill-hive-gold text-hive-amber-dark shrink-0" />
+                <Zap className="w-4 h-4 text-hive-dark shrink-0" />
                 <span>If you want it now, Hive is for you.</span>
               </div>
             </div>
@@ -117,7 +117,7 @@ export default function AboutPage() {
           {/* ── 3. 90 MINUTES. THAT'S THE DIFFERENCE. ── */}
           <section className="mb-16 space-y-4">
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-hive-amber-dark block">
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-hive-text-muted block">
                 Speed At Heart
               </span>
               <h2 className="text-2xl sm:text-3xl font-serif font-bold text-hive-dark tracking-tight">
@@ -157,15 +157,15 @@ export default function AboutPage() {
               </div>
 
               {/* Step 3 */}
-              <div className="bg-hive-gold/10 border border-hive-gold/40 rounded-2xl p-5 sm:p-6 space-y-3">
-                <div className="w-8 h-8 rounded-full bg-hive-gold text-hive-dark flex items-center justify-center text-xs font-mono font-bold">
+              <div className="bg-hive-dark rounded-2xl p-5 sm:p-6 space-y-3">
+                <div className="w-8 h-8 rounded-full bg-hive-cream text-hive-dark flex items-center justify-center text-xs font-mono font-bold">
                   03
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-hive-dark">
+                  <h3 className="text-base font-bold text-hive-cream">
                     Hive.
                   </h3>
-                  <p className="text-xs sm:text-sm text-hive-text leading-relaxed pt-0.5">
+                  <p className="text-xs sm:text-sm text-hive-cream/70 leading-relaxed pt-0.5">
                     Get it at your doorstep in around 90 minutes.
                   </p>
                 </div>
@@ -173,7 +173,7 @@ export default function AboutPage() {
             </div>
 
             <div className="bg-hive-dark text-hive-cream rounded-xl py-3.5 px-5 text-center text-xs sm:text-sm font-semibold tracking-wide flex items-center justify-center gap-2">
-              <Clock className="w-4 h-4 text-hive-gold shrink-0" />
+              <Clock className="w-4 h-4 text-hive-cream/70 shrink-0" />
               <span>Fashion shopping, without the multi-day wait.</span>
             </div>
           </section>
@@ -181,7 +181,7 @@ export default function AboutPage() {
           {/* ── 4. MADE FOR KOCHI ── */}
           <section className="mb-16 space-y-4">
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-hive-amber-dark block">
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-hive-text-muted block">
                 Our Roots &amp; Passion
               </span>
               <h2 className="text-2xl sm:text-3xl font-serif font-bold text-hive-dark tracking-tight">
@@ -189,7 +189,7 @@ export default function AboutPage() {
               </h2>
             </div>
 
-            <div className="border-l-4 border-hive-gold pl-5 sm:pl-6 py-1 space-y-3.5">
+            <div className="border-l-4 border-hive-dark pl-5 sm:pl-6 py-1 space-y-3.5">
               <p className="text-base sm:text-lg text-hive-dark font-bold">
                 Kochi has incredible fashion talent.
               </p>
@@ -213,7 +213,7 @@ export default function AboutPage() {
           {/* ── 5. “I NEED IT TODAY” MOMENTS ── */}
           <section className="mb-16 space-y-4">
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-hive-amber-dark block">
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-hive-text-muted block">
                 For Real-Life Timing
               </span>
               <h2 className="text-2xl sm:text-3xl font-serif font-bold text-hive-dark tracking-tight">
@@ -237,13 +237,13 @@ export default function AboutPage() {
               ))}
             </div>
 
-            <div className="bg-hive-gold/10 border border-hive-gold/30 rounded-2xl p-6 text-center space-y-2">
+            <div className="bg-hive-dark/5 border border-hive-dark/10 rounded-2xl p-6 text-center space-y-2">
               <p className="text-[11px] uppercase tracking-widest text-hive-text-muted font-bold">Or simply...</p>
               <p className="text-2xl sm:text-3xl font-serif font-bold text-hive-dark">“I want this.”</p>
               <p className="text-xs sm:text-sm text-hive-text-muted pt-0.5">
                 You shouldn&apos;t have to wait three days for it.
               </p>
-              <p className="text-base font-bold text-hive-amber-dark pt-0.5">
+              <p className="text-base font-bold text-hive-dark pt-0.5">
                 Hive it.
               </p>
             </div>
@@ -252,7 +252,7 @@ export default function AboutPage() {
           {/* ── 6. WHAT YOU'LL FIND ON HIVE ── */}
           <section className="mb-16 space-y-4">
             <div className="space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-hive-amber-dark block">
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-hive-text-muted block">
                 Product Categories
               </span>
               <h2 className="text-2xl sm:text-3xl font-serif font-bold text-hive-dark tracking-tight">
@@ -292,7 +292,7 @@ export default function AboutPage() {
               </div>
             </div>
 
-            <div className="p-3.5 bg-hive-gold/10 border border-hive-gold/30 rounded-xl text-center">
+            <div className="p-3.5 bg-hive-dark/5 border border-hive-dark/10 rounded-xl text-center">
               <p className="text-xs sm:text-sm font-semibold text-hive-dark">
                 All available across Kochi &amp; Ernakulam, with delivery in around 90 minutes.
               </p>
@@ -365,7 +365,7 @@ export default function AboutPage() {
 
             <Link
               href="/products"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-hive-gold hover:bg-hive-amber text-hive-dark font-bold text-sm transition-all shadow-md shrink-0 active:scale-[0.98] cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-hive-cream hover:bg-white text-hive-dark font-bold text-sm transition-all shadow-md shrink-0 active:scale-[0.98] cursor-pointer"
             >
               <span>Shop Hive</span>
               <ArrowRight className="w-4 h-4" />
