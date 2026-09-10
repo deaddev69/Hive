@@ -29,9 +29,9 @@ export default function RouteError({
     <main className="min-h-[70vh] w-full flex flex-col items-center justify-center px-6 py-20 text-center">
       <div
         className="relative w-20 h-20 rounded-full flex items-center justify-center mb-6"
-        style={{ background: "#C9A84C12", border: "1.5px dashed #C9A84C40" }}
+        style={{ background: "#1A120012", border: "1.5px dashed #1A120040" }}
       >
-        <AlertCircle className="w-8 h-8 text-hive-gold" strokeWidth={1.5} />
+        <AlertCircle className="w-8 h-8 text-hive-dark" strokeWidth={1.5} />
       </div>
 
       <h1 className="text-2xl font-serif font-extrabold text-hive-dark mb-2">
@@ -47,7 +47,7 @@ export default function RouteError({
           type="button"
           onClick={reset}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-extrabold uppercase tracking-widest text-white hover:opacity-90 transition-all duration-200 shadow-md cursor-pointer"
-          style={{ background: "#C9A84C", boxShadow: "0 4px 18px #C9A84C30" }}
+          style={{ background: "#1A1200", boxShadow: "0 4px 18px #1A120030" }}
         >
           <RotateCcw className="w-3.5 h-3.5" strokeWidth={2.5} />
           Try Again
@@ -55,9 +55,9 @@ export default function RouteError({
 
         <Link
           href="/"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold border border-hive-border/60 text-hive-dark hover:border-hive-gold/50 hover:bg-hive-comb/10 transition-all duration-200"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold border border-hive-border/60 text-hive-dark hover:border-hive-dark/30 hover:bg-hive-dark/5 transition-all duration-200"
         >
-          <Home className="w-3.5 h-3.5 text-hive-gold" strokeWidth={2} />
+          <Home className="w-3.5 h-3.5 text-hive-dark" strokeWidth={2} />
           Back to Home
         </Link>
       </div>

@@ -47,14 +47,14 @@ export default function GlobalError({
             width: 72,
             height: 72,
             borderRadius: "9999px",
-            background: "#C9A84C12",
-            border: "1.5px dashed #C9A84C40",
+            background: "#1A120012",
+            border: "1.5px dashed #1A120040",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             marginBottom: "1.5rem",
             fontSize: 28,
-            color: "#C9A84C",
+            color: "#1A1200",
           }}
           aria-hidden="true"
         >
@@ -85,14 +85,14 @@ export default function GlobalError({
             gap: "0.5rem",
             padding: "0.65rem 1.35rem",
             borderRadius: "1rem",
-            background: "#C9A84C",
+            background: "#1A1200",
             color: "#ffffff",
             fontSize: "0.8rem",
             fontWeight: 800,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
             textDecoration: "none",
-            boxShadow: "0 4px 18px #C9A84C30",
+            boxShadow: "0 4px 18px #1A120030",
           }}
         >
           Reload Hive

@@ -26,11 +26,11 @@ export const CollectionHeader: React.FC<CollectionHeaderProps> = ({
   const headerTitle = title || details?.title || "Curated Collection";
   const headerDesc = description || details?.description || "Hand-picked fashion edits from verified local boutiques.";
   const headerCount = productCount ?? resultCount ?? details?.productCount ?? 0;
-  const headerAccent = accentColor || details?.accentColor || "#C9A84C";
+  const headerAccent = accentColor || details?.accentColor || "#1A1200";
   const bgCover = coverImage || details?.imageUrl;
 
   return (
-    <div className="relative w-full overflow-hidden bg-gradient-to-br from-[#FFFDF5] via-white to-[#FFF3CC]/30 border-b border-hive-border/60 py-10 lg:py-14 select-none">
+    <div className="relative w-full overflow-hidden bg-gradient-to-br from-[#FFFDF5] via-white to-white border-b border-hive-border/60 py-10 lg:py-14 select-none">
       {bgCover && (
         <div className="absolute inset-0 opacity-10 blur-xl pointer-events-none">
           <img src={bgCover} alt="" className="w-full h-full object-cover" />
@@ -42,8 +42,8 @@ export const CollectionHeader: React.FC<CollectionHeaderProps> = ({
             className="w-2.5 h-2.5 rounded-full flex-shrink-0 animate-pulse"
             style={{ background: headerAccent }}
           />
-          <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-hive-amber bg-hive-gold/10 border border-hive-gold/25 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-hive-gold" />
+          <span className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-hive-dark bg-hive-dark/5 border border-hive-dark/15 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-hive-dark" />
             <span>BOUTIQUE CURATED EDIT</span>
           </span>
           {isVerified && (
@@ -65,7 +65,7 @@ export const CollectionHeader: React.FC<CollectionHeaderProps> = ({
           </div>
 
           <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/90 backdrop-blur-sm border border-hive-border/60 text-xs font-bold text-hive-dark self-start sm:self-auto shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-hive-amber animate-ping" />
+            <span className="w-2 h-2 rounded-full bg-hive-dark animate-ping" />
             <span>{headerCount} {headerCount === 1 ? "Piece Available" : "Pieces Available"}</span>
           </div>
         </div>

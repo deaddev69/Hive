@@ -245,13 +245,13 @@ export const ProductGallery: React.FC<ProductGalleryProps> = ({
           <svg className="w-full h-full" aria-hidden="true">
             <defs>
               <pattern id="gallery-empty-hc" patternUnits="userSpaceOnUse" width="40" height="70">
-                <path fill="none" stroke="#C9A84C" strokeWidth="1" d="m0,10 20-10 20,10v20l-20,10-20-10z" />
+                <path fill="none" stroke="#1A1200" strokeWidth="1" d="m0,10 20-10 20,10v20l-20,10-20-10z" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#gallery-empty-hc)" />
           </svg>
         </div>
-        <div className="w-16 h-16 rounded-full bg-hive-gold/10 border border-hive-gold/30 flex items-center justify-center text-hive-amber mb-4 animate-pulse">
+        <div className="w-16 h-16 rounded-full bg-hive-dark/5 border border-hive-dark/15 flex items-center justify-center text-hive-dark mb-4 animate-pulse">
           <ImageIcon className="w-7 h-7" strokeWidth={1.5} />
         </div>
         <h3 className="text-base font-serif font-extrabold text-hive-dark">

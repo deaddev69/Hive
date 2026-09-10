@@ -11,16 +11,16 @@ export function BecomeSellerCTA() {
             <path d="M0,100 C30,80 70,80 100,100 L100,0 L0,0 Z" fill="url(#grad)" />
             <defs>
               <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#C9A84C" />
-                <stop offset="100%" stopColor="#8A7334" />
+                <stop offset="0%" stopColor="#FFFDF5" />
+                <stop offset="100%" stopColor="#8A8578" />
               </linearGradient>
             </defs>
           </svg>
         </div>
         
         <div className="relative z-10 max-w-2xl mx-auto flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full bg-hive-gold/20 flex items-center justify-center mb-6">
-            <Store className="w-8 h-8 text-hive-gold" />
+          <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-6">
+            <Store className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white mb-4">
             Own a boutique in Ernakulam?
@@ -30,7 +30,7 @@ export function BecomeSellerCTA() {
           </p>
           <Link
             href="/become-seller"
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-hive-gold hover:bg-hive-amber text-hive-dark font-extrabold text-xs uppercase tracking-widest rounded-full transition-all duration-300 hover:scale-[1.02] shadow-lg shadow-hive-gold/20 group"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-hive-cream hover:bg-white text-hive-dark font-extrabold text-xs uppercase tracking-widest rounded-full transition-all duration-300 hover:scale-[1.02] shadow-lg group"
           >
             Become a Seller
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
