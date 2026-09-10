@@ -216,8 +216,8 @@ function AddressCard({
             {address.label}
           </span>
           {address.isDefault && (
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full">
-              <Star className="w-2.5 h-2.5 fill-amber-700 text-amber-700" />
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-stone-800 bg-stone-100 border border-stone-200/80 px-2.5 py-0.5 rounded-full">
+              <Star className="w-2.5 h-2.5 fill-stone-700 text-stone-700" />
               Default
             </span>
           )}
@@ -246,7 +246,7 @@ function AddressCard({
             <button
               onClick={onSetDefault}
               disabled={settingDefault}
-              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 hover:text-amber-900 transition-colors disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-stone-700 hover:text-stone-900 transition-colors disabled:opacity-50 cursor-pointer"
             >
               {settingDefault ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
@@ -394,7 +394,7 @@ function AddressFormModal({
                 type="button"
                 onClick={handleGPSDetect}
                 disabled={gpsDetecting}
-                className="text-[11px] font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="text-[11px] font-bold text-stone-700 hover:text-stone-900 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {gpsDetecting ? (
                   <>
@@ -691,7 +691,7 @@ function OverviewTab({
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
-                    <Package className="w-5 h-5 text-amber-600" />
+                    <Package className="w-5 h-5 text-stone-500" />
                   </div>
                 )}
                 <span className="absolute top-1 left-1 w-2 h-2 rounded-full bg-green-500 border border-white animate-pulse" />
@@ -716,7 +716,7 @@ function OverviewTab({
                 </div>
                 <div className="flex items-center gap-4 text-[10px] text-stone-500 font-medium">
                   <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                    <Calendar className="w-3.5 h-3.5 text-stone-500" />
                     {formatDate(activeOrder.createdAt)}
                   </span>
                   <span className="flex items-center gap-1 font-bold text-stone-900">
@@ -743,11 +743,11 @@ function OverviewTab({
           />
           <OverviewTile
             href="/wishlist"
-            icon={<Heart className="w-5 h-5 fill-[#F5C22B] stroke-[#F5C22B]" />}
+            icon={<Heart className="w-5 h-5 fill-stone-700 stroke-stone-700" />}
             label="Saved Wishlist"
             meta={`${wishlistCount} saved item${wishlistCount === 1 ? "" : "s"}`}
-            hoverBg="group-hover:bg-amber-50/50"
-            hoverText="group-hover:text-amber-900"
+            hoverBg="group-hover:bg-stone-50"
+            hoverText="group-hover:text-stone-900"
           />
           <OverviewTile
             onClick={() => setActiveTab("addresses")}
@@ -1282,7 +1282,7 @@ function AccountPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-stone-900 font-sans pb-24 antialiased selection:bg-amber-100">
+    <div className="min-h-screen bg-white text-stone-900 font-sans pb-24 antialiased selection:bg-stone-200">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10">
         
         {/* ── TOP IDENTITY CARD (Pure Luxury & Minimalist) ── */}
