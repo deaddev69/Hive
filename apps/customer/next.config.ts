@@ -104,6 +104,31 @@ const nextConfig: NextConfig = {
   // Redirects for legacy links, typos, and retired pages
   async redirects() {
     return [
+      // Legal documents live under /legal, served from data/legal/staticDocs.ts.
+      //
+      // /terms and /return-policy used to render their own hand-built copies of those documents,
+      // and the two sets had drifted apart: the Terms page carried Version 2.0 effective June 12
+      // at ~6,600 words while the /legal copy carried Version 2.0 last updated July 25 at ~11,900,
+      // and the return policies disagreed on version number and date. Which text bound a customer
+      // depended on whether they arrived through the footer or the menu.
+      //
+      // Redirected rather than removed: these URLs are published, linked and indexed, and a legal
+      // document that 404s is worse than one at an old address.
+      {
+        source: "/terms",
+        destination: "/legal/terms-and-conditions",
+        permanent: true,
+      },
+      {
+        source: "/return-policy",
+        destination: "/legal/return-policy",
+        permanent: true,
+      },
+      {
+        source: "/privacy-policy",
+        destination: "/legal/privacy-policy",
+        permanent: true,
+      },
       {
         source: "/collections",
         destination: "/products",

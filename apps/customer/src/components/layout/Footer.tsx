@@ -63,8 +63,8 @@ export const Footer: React.FC = () => {
                   <Link href="/become-seller" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Partner Portal</Link>
                   <Link href="/contact" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Contact Us</Link>
                   <a href="mailto:support@hivenow.in" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Support</a>
-                  <Link href="/terms#section-14" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Returns</Link>
-                  <Link href="/terms" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Terms</Link>
+                  <Link href="/legal/return-policy" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Returns</Link>
+                  <Link href="/legal/terms-and-conditions" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Terms</Link>
                   {/* The privacy policy is its own document, not a section of Terms. This pointed
                       at /terms#privacy-policy, an anchor that does not exist on that page. */}
                   <Link href="/legal/privacy-policy" className="text-hive-cream/55 hover:text-hive-gold transition-colors font-medium">Privacy</Link>

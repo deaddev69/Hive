@@ -3,6 +3,7 @@ import { Metadata } from "next";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../../convex/_generated/api";
 import { STATIC_LEGAL_DOCS } from "@/data/legal/staticDocs";
+import { SITE_URL } from "@/lib/seo";
 import ReactMarkdown from "react-markdown";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -10,6 +11,25 @@ import { ArrowLeft } from "lucide-react";
 interface Props {
   params: Promise<{ slug: string }>;
 }
+
+/**
+ * The address each document should be indexed and linked under.
+ *
+ * staticDocs.ts answers to several slugs per document so older links keep working; these are the
+ * ones the site links to and search engines should settle on.
+ */
+const CANONICAL_LEGAL_SLUGS: Record<string, string> = {
+  privacy: "privacy-policy",
+  "privacy-policy": "privacy-policy",
+  terms: "terms-and-conditions",
+  "terms-of-service": "terms-and-conditions",
+  "terms-and-conditions": "terms-and-conditions",
+  returns: "return-policy",
+  refund: "return-policy",
+  "return-policy": "return-policy",
+  partner: "partner-agreement",
+  "partner-agreement": "partner-agreement",
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -28,11 +48,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // "NONSENSE" for anything typed after /legal/, so it gets a neutral heading instead.
   const title = titleMap[slug] || "Legal";
 
+  // Each document answers on more than one slug — /legal/privacy and /legal/privacy-policy serve
+  // the same text, and /privacy-policy redirects in as well. Without a canonical they compete
+  // with each other in search results, and which one wins is arbitrary.
+  const canonicalSlug = CANONICAL_LEGAL_SLUGS[slug] ?? slug;
+
   return {
     title,
     description: `Official ${title} for Hive Now marketplace.`,
+    alternates: {
+      canonical: `${SITE_URL}/legal/${canonicalSlug}`,
+    },
     robots: {
-      index: true,
+      // An unknown slug is not a document worth indexing.
+      index: Boolean(titleMap[slug]),
       follow: true,
     },
   };

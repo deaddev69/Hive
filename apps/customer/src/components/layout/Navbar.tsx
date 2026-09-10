@@ -875,15 +875,15 @@ export const Navbar: React.FC = () => {
           {/* ── Legal Policy Links ──────────────────────────────────── */}
           <div className="pt-1 pb-1 text-center">
             <div className="flex items-center justify-center gap-2.5 text-[10.5px] text-stone-500 font-medium">
-              <Link href="/legal/returns" onClick={() => setMobileMenuOpen(false)} className="hover:text-stone-900 transition-colors">
+              <Link href="/legal/return-policy" onClick={() => setMobileMenuOpen(false)} className="hover:text-stone-900 transition-colors">
                 Returns
               </Link>
               <span className="text-stone-300 select-none">•</span>
-              <Link href="/legal/privacy" onClick={() => setMobileMenuOpen(false)} className="hover:text-stone-900 transition-colors">
+              <Link href="/legal/privacy-policy" onClick={() => setMobileMenuOpen(false)} className="hover:text-stone-900 transition-colors">
                 Privacy
               </Link>
               <span className="text-stone-300 select-none">•</span>
-              <Link href="/legal/terms" onClick={() => setMobileMenuOpen(false)} className="hover:text-stone-900 transition-colors">
+              <Link href="/legal/terms-and-conditions" onClick={() => setMobileMenuOpen(false)} className="hover:text-stone-900 transition-colors">
                 Terms
               </Link>
             </div>
