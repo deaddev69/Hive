@@ -7,34 +7,34 @@ interface SkeletonCardProps {
 
 const SkeletonCard: React.FC<SkeletonCardProps> = ({ delay = 0 }) => (
   <div
-    className="w-full bg-white border border-hive-border/40 rounded-[24px] p-3 overflow-hidden"
+    className="w-full bg-white border border-gray-100 rounded-[24px] p-3 overflow-hidden"
     style={{ animationDelay: `${delay}ms` }}
   >
     {/* Image placeholder — 4:5 aspect to match ProductCard */}
-    <div className="relative w-full aspect-[4/5] rounded-xl sm:rounded-2xl overflow-hidden bg-hive-comb/20">
-      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+    <div className="relative w-full aspect-[4/5] rounded-xl sm:rounded-2xl overflow-hidden bg-gray-200">
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
     </div>
 
     {/* Content placeholders */}
     <div className="px-1.5 py-3 flex flex-col gap-3">
       {/* Boutique name */}
-      <div className="h-2 w-1/3 rounded-full bg-hive-comb/30 relative overflow-hidden">
-        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_0.1s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+      <div className="h-2 w-1/3 rounded-full bg-gray-200 relative overflow-hidden">
+        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_0.1s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
       </div>
       {/* Product name — 2 lines */}
       <div className="flex flex-col gap-1.5">
-        <div className="h-3 w-full rounded-full bg-hive-comb/30 relative overflow-hidden">
-          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_0.15s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+        <div className="h-3 w-full rounded-full bg-gray-200 relative overflow-hidden">
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_0.15s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
         </div>
-        <div className="h-3 w-3/4 rounded-full bg-hive-comb/30 relative overflow-hidden">
-          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_0.2s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+        <div className="h-3 w-3/4 rounded-full bg-gray-200 relative overflow-hidden">
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_0.2s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
         </div>
       </div>
 
       {/* Price row */}
-      <div className="pt-2 border-t border-hive-border/30">
-        <div className="h-4 w-1/3 rounded-full bg-hive-comb/35 relative overflow-hidden">
-          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_0.35s_infinite] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
+      <div className="pt-2 border-t border-gray-100">
+        <div className="h-4 w-1/3 rounded-full bg-gray-200 relative overflow-hidden">
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_0.35s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
         </div>
       </div>
     </div>
