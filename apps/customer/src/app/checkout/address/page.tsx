@@ -375,6 +375,8 @@ export default function CheckoutAddressPage() {
   const subtotal = backendPricing?.subtotalRupees ?? rawSubtotal;
   const deliveryFee = backendPricing?.deliveryFeeRupees ?? (rawSubtotal >= 10000 ? 0 : 99);
   const gstAmount = backendPricing?.gstRupees ?? 0;
+  const handlingCharge = backendPricing?.handlingChargeRupees ?? 0;
+  const platformFee = backendPricing?.platformFeeRupees ?? 0;
   const total = backendPricing?.totalRupees ?? (subtotal + (isServiceable ? deliveryFee : 0));
 
   const totalQuantity = orderItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -794,6 +796,8 @@ export default function CheckoutAddressPage() {
           <div className="lg:col-span-4 space-y-4 hidden lg:block">
             <CustomerPriceBreakdown
               subtotal={subtotal}
+              handlingCharge={handlingCharge}
+              platformFee={platformFee}
               gstOnCharges={gstAmount}
               deliveryFee={deliveryFee}
               total={total}
@@ -825,6 +829,34 @@ export default function CheckoutAddressPage() {
               <span>Cart Subtotal</span>
               <span>{formatRupees(subtotal)}</span>
             </div>
+
+            {(handlingCharge > 0 || platformFee > 0 || gstAmount > 0) && (
+              <div className="ml-3 pl-3 border-l-2 border-hive-border/40 space-y-1.5">
+                <div className="flex justify-between items-center text-[10.5px] text-hive-text-muted/80">
+                  <span>Base Price</span>
+                  <span>{formatRupees(Math.max(0, subtotal - handlingCharge - platformFee - gstAmount))}</span>
+                </div>
+                {handlingCharge > 0 && (
+                  <div className="flex justify-between items-center text-[10.5px] text-hive-text-muted/80">
+                    <span>Handling Fee</span>
+                    <span>{formatRupees(handlingCharge)}</span>
+                  </div>
+                )}
+                {platformFee > 0 && (
+                  <div className="flex justify-between items-center text-[10.5px] text-hive-text-muted/80">
+                    <span>Platform Fee</span>
+                    <span>{formatRupees(platformFee)}</span>
+                  </div>
+                )}
+                {gstAmount > 0 && (
+                  <div className="flex justify-between items-center text-[10.5px] text-hive-text-muted/80">
+                    <span>GST on Fees</span>
+                    <span>{formatRupees(gstAmount)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {discountAmount > 0 && (
               <div className="flex justify-between items-center text-green-700">
                 <span>Discount</span>

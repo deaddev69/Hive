@@ -1009,6 +1009,34 @@ export default function OrderReviewPage() {
               <span>Cart Subtotal</span>
               <span>{formatRupees(subtotal)}</span>
             </div>
+
+            {(handlingCharge > 0 || platformFee > 0 || gstOnCharges > 0) && (
+              <div className="ml-3 pl-3 border-l-2 border-hive-border/40 space-y-1.5">
+                <div className="flex justify-between items-center text-[10.5px] text-hive-text-muted/80">
+                  <span>Base Price</span>
+                  <span>{formatRupees(Math.max(0, subtotal - handlingCharge - platformFee - gstOnCharges))}</span>
+                </div>
+                {handlingCharge > 0 && (
+                  <div className="flex justify-between items-center text-[10.5px] text-hive-text-muted/80">
+                    <span>Handling Fee</span>
+                    <span>{formatRupees(handlingCharge)}</span>
+                  </div>
+                )}
+                {platformFee > 0 && (
+                  <div className="flex justify-between items-center text-[10.5px] text-hive-text-muted/80">
+                    <span>Platform Fee</span>
+                    <span>{formatRupees(platformFee)}</span>
+                  </div>
+                )}
+                {gstOnCharges > 0 && (
+                  <div className="flex justify-between items-center text-[10.5px] text-hive-text-muted/80">
+                    <span>GST on Fees</span>
+                    <span>{formatRupees(gstOnCharges)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {discountAmount > 0 && (
               <div className="flex justify-between items-center text-green-700">
                 <span>Discount</span>
