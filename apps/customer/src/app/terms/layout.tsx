@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Terms & Conditions | Hive",
+  // The root layout appends " | Hive"; carrying one here doubled it. The openGraph title below
+  // keeps the brand, since the template does not reach it.
+  title: "Terms & Conditions",
   description:
     "Review the Terms of Service, User Agreement, and Platform Conditions for Hive, operated by Beelyn LLP in Kochi, Kerala.",
   alternates: {

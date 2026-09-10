@@ -74,10 +74,30 @@ export function getProductsMetadata(): Metadata {
   });
 }
 
+/**
+ * A slug rendered for reading: "co-ord-sets" -> "Co-ord Sets".
+ *
+ * Titles were previously built by capitalising the slug's first letter alone, which left the
+ * hyphens in ("Co-ord-sets") for every multi-word category.
+ */
+function slugToDisplayName(slug: string): string {
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 export function getCategoryMetadata(category: string): Metadata {
   const content = getCategoryContent(category);
-  const title = content ? content.seoTitle : `${category.charAt(0).toUpperCase() + category.slice(1)}'s Fashion in Ernakulam`;
-  const description = content ? content.metaDescription : `Shop premium ${category.toLowerCase()}'s clothing from Ernakulam boutiques with same-day delivery on Hive.`;
+  const displayName = slugToDisplayName(category);
+  // No possessive. Category slugs are plural nearly without exception, so "${category}'s Fashion"
+  // produced "Sarees's Fashion in Ernakulam" - in the browser tab and in search results - for
+  // almost every category on the site.
+  const title = content ? content.seoTitle : `${displayName} in Ernakulam`;
+  const description = content
+    ? content.metaDescription
+    : `Shop premium ${displayName.toLowerCase()} from Ernakulam boutiques with same-day delivery on Hive.`;
   
   return constructMetadata({
     title,

@@ -13,16 +13,20 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  // No brand suffix on these: the root layout's title template appends " | Hive", so carrying
+  // "| Hive Now" produced "Privacy Policy | Hive Now | Hive".
   const titleMap: Record<string, string> = {
-    privacy: "Privacy Policy | Hive Now",
-    "privacy-policy": "Privacy Policy | Hive Now",
-    terms: "Terms and Conditions | Hive Now",
-    "terms-and-conditions": "Terms and Conditions | Hive Now",
-    returns: "Return and Refund Policy | Hive Now",
-    "return-policy": "Return and Refund Policy | Hive Now",
+    privacy: "Privacy Policy",
+    "privacy-policy": "Privacy Policy",
+    terms: "Terms and Conditions",
+    "terms-and-conditions": "Terms and Conditions",
+    returns: "Return and Refund Policy",
+    "return-policy": "Return and Refund Policy",
   };
 
-  const title = titleMap[slug] || `${slug.replace(/-/g, " ").toUpperCase()} | Hive Now`;
+  // An unrecognised slug is not a document. Naming it after the URL produced titles like
+  // "NONSENSE" for anything typed after /legal/, so it gets a neutral heading instead.
+  const title = titleMap[slug] || "Legal";
 
   return {
     title,

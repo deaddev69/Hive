@@ -93,12 +93,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (!product) return {};
 
     return {
-      title: `${cleanTitle(product.name)} — Hive`,
+      // No brand suffix here: the root layout's title template already appends " | Hive", so
+      // carrying one produced "Pleated Yoke Dress — Hive | Hive" in the tab and in search results.
+      title: cleanTitle(product.name),
       description: product.description || `Discover and shop ${product.name} on Hive.`,
       alternates: {
         canonical: `${SITE_URL}/products/${product.slug}`,
       },
       openGraph: {
+        // The template does not reach openGraph, and a shared link arrives with no surrounding
+        // context, so this one keeps the brand.
         title: `${cleanTitle(product.name)} — Hive`,
         description: product.description || `Discover and shop ${product.name} on Hive.`,
       },

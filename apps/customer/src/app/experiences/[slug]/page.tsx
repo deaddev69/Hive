@@ -14,7 +14,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = `Explore the ${title} editorial experience. Discover curated boutique collections, trends, and stories in Kochi on Hive.`;
 
   return {
-    title: `${title} | Hive`,
+    // The root layout appends " | Hive"; carrying one here doubled it. openGraph and twitter
+    // below keep the brand, since the template does not reach them.
+    title,
     description,
     alternates: {
       canonical: canonicalUrl,

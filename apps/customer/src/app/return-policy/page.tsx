@@ -4,7 +4,8 @@ import { CatalogLayout } from "@/components/catalog/CatalogLayout";
 import { SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Return and Refund Policy | Hive",
+  // The root layout appends " | Hive"; carrying one here doubled it.
+  title: "Return and Refund Policy",
   description:
     "Learn about Hive's transparent return and refund policy for curated fashion purchases in Kochi.",
   alternates: {
