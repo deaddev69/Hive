@@ -28,6 +28,7 @@ import { useConvexMutation } from "@/hooks/useConvexMutation";
 import { getEffectiveCheckoutItems } from "@/lib/getEffectiveCheckoutItems";
 import { useSessionStore } from "@/context/SessionContext";
 import { CustomerPriceBreakdown } from "@/components/checkout/CustomerPriceBreakdown";
+import { SwipeToPayButton } from "@/components/checkout/SwipeToPayButton";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { formatRupees, toast } from "@hive/utils";
 import { getCustomerErrorMessage, getCustomerErrorCode } from "@/lib/customerErrors";
@@ -822,10 +823,10 @@ export default function OrderReviewPage() {
             </div>
 
 
-            {/* 4. Courier Instructions (Order Notes) */}
+            {/* 4. Delivery Instructions (Order Notes) */}
             <div className="bg-white border border-hive-border/50 rounded-2xl p-5 shadow-sm space-y-3">
               <label htmlFor="notes" className="text-xs font-extrabold text-hive-dark uppercase tracking-wider flex items-center gap-2">
-                <span>Courier Instructions (Order Notes)</span>
+                <span>Delivery Instructions</span>
               </label>
               <textarea
                 id="notes"
@@ -1057,11 +1058,11 @@ export default function OrderReviewPage() {
           </p>
         </div>
 
-        <div className="flex items-center justify-between px-5 py-4 gap-4 border-t border-hive-border/20">
+        <div className="flex flex-col gap-3 px-5 py-4 border-t border-hive-border/20">
           <button
             type="button"
             onClick={() => setIsPriceExpanded(!isPriceExpanded)}
-            className="flex flex-col text-left focus:outline-none"
+            className="flex items-center justify-between text-left focus:outline-none"
           >
             <span className="text-[9px] font-bold uppercase tracking-wider text-hive-text-muted flex items-center gap-1">
               Total Payable {isPriceExpanded ? "↓" : "↑"}
@@ -1071,18 +1072,12 @@ export default function OrderReviewPage() {
             </span>
           </button>
 
-          <button
-            type="button"
-            disabled={isPlacingOrder || isQuoteLoading}
-            onClick={handlePay}
-            className="flex-1 max-w-[200px] h-14 bg-hive-dark text-white hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-lg font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-1.5 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isPlacingOrder ? (
-              <Loader2 className="w-4 h-4 animate-spin text-hive-dark" />
-            ) : (
-              <span>Pay Now →</span>
-            )}
-          </button>
+          <SwipeToPayButton
+            onComplete={handlePay}
+            disabled={isQuoteLoading}
+            isProcessing={isPlacingOrder}
+            label="Slide to Pay"
+          />
         </div>
       </div>
     </div>
