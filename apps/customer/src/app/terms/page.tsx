@@ -477,7 +477,10 @@ const SECTIONS: Section[] = [
     num: "32",
     title: "Privacy Policy Linkage",
     content: [
-      `Your use of the Platform is also governed by Hive's Privacy Policy, which is available at https://hivenow.in/terms#privacy-policy. The Privacy Policy forms an integral part of the legal framework governing the Platform and should be read in conjunction with these Terms. By using the Platform, you also accept the terms of the Privacy Policy.`,
+      // The address here pointed at /terms#privacy-policy - this page, at an anchor that does not
+      // exist on it, since anchors render from `num` as #section-N rather than from `id` below.
+      // The Privacy Policy is a separate document; this is where it is actually served.
+      `Your use of the Platform is also governed by Hive's Privacy Policy, which is available at https://hivenow.in/legal/privacy-policy. The Privacy Policy forms an integral part of the legal framework governing the Platform and should be read in conjunction with these Terms. By using the Platform, you also accept the terms of the Privacy Policy.`,
       `These Terms and Conditions are published by BEELYN LLP (LLPIN: ACS-4901) for and on behalf of Hive.`
     ]
   }
