@@ -209,7 +209,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
           <button
             onClick={handleQuickViewOpen}
             aria-label="Quick look"
-            className="absolute top-14 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 hover:text-hive-gold hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+            className="absolute top-14 right-2.5 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center border border-white/20 text-stone-700 hover:text-hive-dark hover:bg-white shadow-sm z-20 transition-all active:scale-90 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300"
           >
             <Eye className="w-4 h-4 text-hive-dark stroke-[2]" />
           </button>
@@ -247,7 +247,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView, 
         {/* Rating — only when the product actually has one, never a fabricated default */}
         {typeof product.rating === "number" && product.rating > 0 && (
           <div className={cn("flex items-center gap-1 text-[10px] leading-none", darkTheme ? "text-white/70" : "text-slate-500")}>
-            <Star className="w-3 h-3 fill-hive-amber text-hive-amber" />
+            <Star className="w-3 h-3 fill-hive-dark text-hive-dark" />
             <span className="font-semibold">{product.rating.toFixed(1)}</span>
             {typeof product.reviewCount === "number" && product.reviewCount > 0 && (
               <span className={darkTheme ? "text-white/40" : "text-slate-400"}>({product.reviewCount})</span>

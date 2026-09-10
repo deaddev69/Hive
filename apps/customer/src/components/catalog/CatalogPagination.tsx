@@ -59,7 +59,7 @@ export const CatalogPagination: React.FC<CatalogPaginationProps> = ({
             disabled={currentPage === 1}
             className={cn(
               "w-10 h-10 rounded-xl border border-hive-border/60 bg-white flex items-center justify-center text-hive-dark transition-all duration-200",
-              "hover:border-hive-gold/50 hover:bg-hive-comb/10 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-hive-border/60 disabled:cursor-not-allowed"
+              "hover:border-hive-dark/30 hover:bg-hive-dark/5 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-hive-border/60 disabled:cursor-not-allowed"
             )}
             aria-label="Previous Page"
           >
@@ -92,8 +92,8 @@ export const CatalogPagination: React.FC<CatalogPaginationProps> = ({
                   className={cn(
                     "w-10 h-10 rounded-xl text-xs font-extrabold flex items-center justify-center transition-all duration-200 border",
                     isActive
-                      ? "text-white shadow-md shadow-hive-gold/10"
-                      : "bg-white border-hive-border/60 text-hive-dark hover:border-hive-gold/50 hover:bg-hive-comb/10"
+                      ? "text-white shadow-md"
+                      : "bg-white border-hive-border/60 text-hive-dark hover:border-hive-dark/30 hover:bg-hive-dark/5"
                   )}
                   style={
                     isActive
@@ -118,7 +118,7 @@ export const CatalogPagination: React.FC<CatalogPaginationProps> = ({
             disabled={currentPage === totalPages}
             className={cn(
               "w-10 h-10 rounded-xl border border-hive-border/60 bg-white flex items-center justify-center text-hive-dark transition-all duration-200",
-              "hover:border-hive-gold/50 hover:bg-hive-comb/10 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-hive-border/60 disabled:cursor-not-allowed"
+              "hover:border-hive-dark/30 hover:bg-hive-dark/5 disabled:opacity-40 disabled:hover:bg-white disabled:hover:border-hive-border/60 disabled:cursor-not-allowed"
             )}
             aria-label="Next Page"
           >

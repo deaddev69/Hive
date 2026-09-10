@@ -59,7 +59,7 @@ export const CatalogFilters: React.FC<CatalogFiltersProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-sm font-extrabold text-hive-dark font-serif">Filters</span>
             {activeCount > 0 && (
-              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-hive-gold text-hive-dark text-[10px] font-extrabold min-w-[20px]">
+              <span className="inline-flex items-center justify-center px-2 py-0.5 rounded-full bg-hive-dark text-white text-[10px] font-extrabold min-w-[20px]">
                 {activeCount}
               </span>
             )}
@@ -139,7 +139,7 @@ const ActiveTag: React.FC<{ label: string; onRemove: () => void }> = ({
   label,
   onRemove,
 }) => (
-  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-hive-gold/15 border border-hive-gold/30 text-[10px] font-bold text-hive-amber capitalize">
+  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-hive-dark/5 border border-hive-dark/15 text-[10px] font-bold text-hive-dark capitalize">
     {label}
     <button
       type="button"
