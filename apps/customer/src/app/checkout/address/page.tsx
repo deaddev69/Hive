@@ -805,7 +805,7 @@ export default function CheckoutAddressPage() {
               type="button"
               disabled={!selectedAddress || !isServiceable || !isAddressComplete(selectedAddress) || !dbBoutiques}
                 onClick={() => router.push("/checkout/review")}
-                className="w-full h-14 bg-hive-comb text-hive-dark hover:bg-hive-comb/80 border-2 border-hive-dark active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 bg-white text-hive-dark hover:bg-stone-50 border-[3px] border-hive-dark active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {!dbBoutiques ? (
                   <Loader2 className="w-4 h-4 animate-spin text-hive-dark" />
@@ -862,7 +862,7 @@ export default function CheckoutAddressPage() {
             type="button"
             disabled={!selectedAddress || !isServiceable || !isAddressComplete(selectedAddress) || !dbBoutiques}
             onClick={() => router.push("/checkout/review")}
-            className="flex-1 max-w-[200px] h-14 bg-hive-comb text-hive-dark hover:bg-hive-comb/80 border-2 border-hive-dark active:scale-[0.98] transition-all rounded-lg font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-1.5 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 max-w-[200px] h-14 bg-white text-hive-dark hover:bg-stone-50 border-[3px] border-hive-dark active:scale-[0.98] transition-all rounded-lg font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-1.5 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {!dbBoutiques ? (
               <Loader2 className="w-4 h-4 animate-spin text-hive-dark" />

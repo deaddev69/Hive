@@ -70,14 +70,14 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
         "flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all duration-200 relative outline-none select-none group cursor-pointer",
         isUnified ? (
           cn(
-            "h-full w-[45%] rounded-l-2xl rounded-r-none border-2 border-r border-hive-dark",
+            "h-full w-[45%] rounded-l-2xl rounded-r-none border-[3px] border-r border-hive-dark",
             isDisabled
               ? "bg-stone-100 border-stone-200 text-stone-400 cursor-not-allowed"
               : "bg-white hover:bg-stone-50 text-hive-dark active:scale-[0.98]"
           )
         ) : (
           cn(
-            "h-12 w-full rounded-2xl border-2 border-hive-dark",
+            "h-12 w-full rounded-2xl border-[3px] border-hive-dark",
             isDisabled
               ? "bg-stone-100 border-stone-200 text-stone-400 cursor-not-allowed"
               : "bg-white hover:bg-hive-dark hover:text-hive-gold text-hive-dark active:scale-[0.98]"
@@ -143,17 +143,17 @@ export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
         "font-bold uppercase tracking-wider text-xs transition-all duration-200 flex items-center justify-center gap-1.5 outline-none select-none group cursor-pointer",
         isUnified ? (
           cn(
-            "h-full w-[55%] rounded-r-2xl rounded-l-none border-2 border-l-0 border-hive-dark",
+            "h-full w-[55%] rounded-r-2xl rounded-l-none border-[3px] border-l-0 border-hive-dark",
             isDisabled
               ? "bg-stone-200 border-stone-200 text-stone-400 cursor-not-allowed"
-              : "bg-hive-comb hover:bg-hive-comb/80 text-hive-dark active:scale-[0.98] shadow-sm"
+              : "bg-white hover:bg-stone-50 text-hive-dark active:scale-[0.98] shadow-sm"
           )
         ) : (
           cn(
-            "h-12 w-full rounded-2xl border-2 border-hive-dark",
+            "h-12 w-full rounded-2xl border-[3px] border-hive-dark",
             isDisabled
               ? "border-stone-200 text-stone-300 cursor-not-allowed bg-stone-100"
-              : "bg-hive-comb hover:bg-hive-comb/80 text-hive-dark shadow-sm active:scale-[0.98]"
+              : "bg-white hover:bg-stone-50 text-hive-dark shadow-sm active:scale-[0.98]"
           )
         ),
         className

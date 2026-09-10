@@ -94,7 +94,7 @@ export const SwipeToPayButton: React.FC<SwipeToPayButtonProps> = ({
       aria-disabled={disabled}
       aria-label={showSpinner ? "Payment processing" : `${label} to confirm and pay`}
       onKeyDown={handleKeyDown}
-      className={`relative h-14 w-full rounded-full bg-hive-comb border-2 border-hive-dark p-1 overflow-hidden select-none touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-dark/30 ${
+      className={`relative h-14 w-full rounded-full bg-white border-[3px] border-hive-dark p-1 overflow-hidden select-none touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-dark/30 ${
         disabled ? "opacity-50 pointer-events-none" : ""
       } ${className}`}
     >
