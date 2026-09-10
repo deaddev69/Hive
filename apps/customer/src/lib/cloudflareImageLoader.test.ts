@@ -10,6 +10,7 @@
 
 import {
   cloudflareImageLoader,
+  buildImageUrl,
   DEFAULT_IMAGE_QUALITY,
   MEDIA_HOSTNAME,
 } from "./cloudflareImageLoader";
@@ -159,6 +160,52 @@ const MEDIA = `https://${MEDIA_HOSTNAME}`;
   }
   passed++;
   console.log("[PASS] every requested width reaches the transform");
+}
+
+// ── Origins that cannot transform ────────────────────────────────────────────
+{
+  // Only a local origin is affected, and only for files out of public/. Rewriting those to
+  // /cdn-cgi/image/ on localhost points them at a path Next has no route for, so every logo and
+  // static asset 404s while developing — observed in a dev browser before this branch existed.
+  const dev = { originIsBehindCloudflare: false };
+  const prod = { originIsBehindCloudflare: true };
+
+  assertEqual(
+    "public/ asset is served as stored when the origin cannot transform",
+    buildImageUrl({ src: "/hive-logo-gold-trimmed.png", width: 256 }, dev),
+    "/hive-logo-gold-trimmed.png"
+  );
+  assertEqual(
+    "its query string survives untouched",
+    buildImageUrl({ src: "/customer-logo.png?v=2", width: 128 }, dev),
+    "/customer-logo.png?v=2"
+  );
+  assertEqual(
+    "the same asset is transformed on a deployed origin",
+    buildImageUrl({ src: "/hive-logo-gold-trimmed.png", width: 256 }, prod),
+    `/cdn-cgi/image/format=auto,width=256,quality=${DEFAULT_IMAGE_QUALITY}/hive-logo-gold-trimmed.png`
+  );
+
+  // The media host is reached over the network, so it transforms in development exactly as it
+  // does in production. Only the site's own origin changes behaviour.
+  const mediaSrc = `https://${MEDIA_HOSTNAME}/product_images/abc/v1/original.png`;
+  assertEqual(
+    "the media host is unaffected by the origin",
+    buildImageUrl({ src: mediaSrc, width: 800 }, dev),
+    buildImageUrl({ src: mediaSrc, width: 800 }, prod)
+  );
+  assertEqual(
+    "and still carries a transform in development",
+    buildImageUrl({ src: mediaSrc, width: 800 }, dev).includes("/cdn-cgi/image/"),
+    true
+  );
+
+  // Pass-through sources are decided before the origin is consulted.
+  assertEqual(
+    "a legacy r2.dev source is untouched either way",
+    buildImageUrl({ src: "https://pub-abc.r2.dev/x.jpg", width: 640 }, dev),
+    "https://pub-abc.r2.dev/x.jpg"
+  );
 }
 
 console.log(`\nCloudflare image loader: ${passed} passed, ${failed} failed.\n`);
