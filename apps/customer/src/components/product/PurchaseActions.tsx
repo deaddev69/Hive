@@ -70,10 +70,10 @@ export const AddToCartButton: React.FC<AddToCartButtonProps> = ({
         "flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all duration-200 relative outline-none select-none group cursor-pointer",
         isUnified ? (
           cn(
-            "h-full w-[45%] rounded-l-2xl rounded-r-none border-[3px] border-r border-hive-dark",
+            "h-full w-[45%] rounded-l-2xl",
             isDisabled
-              ? "bg-stone-100 border-stone-200 text-stone-400 cursor-not-allowed"
-              : "bg-white hover:bg-stone-50 text-hive-dark active:scale-[0.98]"
+              ? "text-stone-400 cursor-not-allowed"
+              : "hover:bg-stone-50 text-hive-dark active:scale-[0.98]"
           )
         ) : (
           cn(
@@ -143,17 +143,17 @@ export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
         "font-bold uppercase tracking-wider text-xs transition-all duration-200 flex items-center justify-center gap-1.5 outline-none select-none group cursor-pointer",
         isUnified ? (
           cn(
-            "h-full w-[55%] rounded-r-2xl rounded-l-none border-[3px] border-l-0 border-hive-dark",
+            "h-full w-[55%] rounded-r-2xl rounded-l-none",
             isDisabled
-              ? "bg-stone-200 border-stone-200 text-stone-400 cursor-not-allowed"
-              : "bg-white hover:bg-stone-50 text-hive-dark active:scale-[0.98] shadow-sm"
+              ? "bg-stone-200 text-stone-400 cursor-not-allowed"
+              : "bg-hive-gold hover:bg-hive-amber text-hive-dark active:scale-[0.98] shadow-sm"
           )
         ) : (
           cn(
-            "h-12 w-full rounded-2xl border-[3px] border-hive-dark",
+            "h-12 w-full rounded-2xl",
             isDisabled
-              ? "border-stone-200 text-stone-300 cursor-not-allowed bg-stone-100"
-              : "bg-white hover:bg-stone-50 text-hive-dark shadow-sm active:scale-[0.98]"
+              ? "text-stone-300 cursor-not-allowed bg-stone-100"
+              : "bg-hive-gold hover:bg-hive-amber text-hive-dark shadow-sm active:scale-[0.98]"
           )
         ),
         className
@@ -166,7 +166,7 @@ export const BuyNowButton: React.FC<BuyNowButtonProps> = ({
           ? "Pre-Order"
           : "Buy Now"}
       </span>
-      <ArrowRight className="w-3.5 h-3.5 text-hive-gold group-hover:translate-x-0.5 transition-transform" />
+      <ArrowRight className="w-3.5 h-3.5 text-hive-dark group-hover:translate-x-0.5 transition-transform" />
     </button>
   );
 };
@@ -329,7 +329,7 @@ export const StickyMobilePurchaseBar: React.FC<StickyMobilePurchaseBarProps> = (
             Sold Out
           </button>
         ) : (
-          <div className="flex w-full h-14 shadow-sm transition-all duration-300 items-stretch">
+          <div className="flex w-full h-14 transition-all duration-300 items-stretch">
             <AddToCartButton
               variant="unified"
               disabled={isOffline}
@@ -978,7 +978,7 @@ export const PurchaseActions: React.FC<PurchaseActionsProps> = ({
           <ReservationInfoBlock />
         </div>
       ) : (
-        <div className="hidden lg:flex w-full h-12 rounded-2xl shadow-sm transition-all duration-300 items-stretch">
+        <div className="hidden lg:flex w-full h-12 transition-all duration-300 items-stretch">
           <AddToCartButton
             variant="unified"
             disabled={!selectedSize}
