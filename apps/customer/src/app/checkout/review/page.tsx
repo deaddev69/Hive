@@ -670,7 +670,7 @@ export default function OrderReviewPage() {
       <div className="min-h-screen bg-hive-cream/30 py-20 px-6 flex items-center justify-center text-left animate-[scaleUp_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards]">
         <div className="max-w-md w-full bg-white border border-hive-border rounded-3xl p-8 shadow-sm space-y-6 flex flex-col items-center">
           <div className="w-16 h-16 rounded-full bg-hive-comb/40 flex items-center justify-center border border-hive-border/40">
-            <PremiumShoppingBag className="w-6 h-6 text-hive-gold" strokeWidth={1.5} />
+            <PremiumShoppingBag className="w-6 h-6 text-hive-dark" strokeWidth={1.5} />
           </div>
           <div className="space-y-2 text-center">
             <h1 className="font-serif text-xl font-bold text-hive-dark">Your Hive Bag is empty</h1>
@@ -697,9 +697,9 @@ export default function OrderReviewPage() {
     <div className="min-h-screen bg-hive-cream/30 py-6 sm:py-12 px-4 sm:px-6 lg:px-8 select-none text-left">
       {isPlacingOrder && (
         <div className="fixed inset-0 z-[9999] bg-black/75 backdrop-blur-md flex flex-col items-center justify-center p-4">
-          <div className="bg-slate-900/90 border border-amber-500/30 rounded-3xl p-8 shadow-2xl flex flex-col items-center justify-center gap-4 text-center max-w-sm w-full animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-slate-900/90 border border-white/15 rounded-3xl p-8 shadow-2xl flex flex-col items-center justify-center gap-4 text-center max-w-sm w-full animate-in fade-in zoom-in-95 duration-200">
             <BeeLoader size="lg" className="p-0" />
-            <p className="font-sans text-base font-bold tracking-wide text-amber-300">Processing your payment...</p>
+            <p className="font-sans text-base font-bold tracking-wide text-white">Processing your payment...</p>
             <p className="text-xs text-slate-400 leading-relaxed">Please do not refresh the page or navigate away.</p>
           </div>
         </div>
@@ -708,7 +708,7 @@ export default function OrderReviewPage() {
 
         {/* Contextual Header */}
         <div className="flex flex-col gap-1 border-b border-hive-border/10 pb-4">
-          <span className="text-[10px] font-extrabold tracking-[0.2em] text-hive-gold uppercase">
+          <span className="text-[10px] font-extrabold tracking-[0.2em] text-hive-text-muted uppercase">
             Step 2 of 2
           </span>
           <h1 className="font-serif text-2xl sm:text-3xl text-hive-dark tracking-tight leading-none">
@@ -749,7 +749,7 @@ export default function OrderReviewPage() {
             {/* 1. Items list review */}
             <div className="bg-white border border-hive-border/50 rounded-2xl p-5 shadow-sm space-y-4">
               <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider border-b border-hive-border/40 pb-2 flex items-center gap-2">
-                <PremiumShoppingBag className="w-4 h-4 text-hive-gold" strokeWidth={1.6} />
+                <PremiumShoppingBag className="w-4 h-4 text-hive-dark" strokeWidth={1.6} />
                 <span>Items in Hive Bag</span>
               </h3>
 
@@ -773,7 +773,7 @@ export default function OrderReviewPage() {
                         <span className="text-[10px] text-hive-text-muted font-medium mt-0.5 block">
                           by {item.boutiqueName || "Designer Partner"}
                         </span>
-                        <span className="inline-flex items-center text-[9px] font-extrabold text-hive-dark bg-hive-comb px-2 py-0.5 rounded-lg mt-1.5 border border-hive-gold/15">
+                        <span className="inline-flex items-center text-[9px] font-extrabold text-hive-dark bg-stone-100 px-2 py-0.5 rounded-lg mt-1.5 border border-stone-200">
                           Size: {item.size}
                         </span>
                       </div>
@@ -798,13 +798,13 @@ export default function OrderReviewPage() {
             <div className="bg-white border border-hive-border/50 rounded-2xl p-5 shadow-sm space-y-3">
               <div className="flex items-center justify-between border-b border-hive-border/40 pb-2">
                 <h3 className="text-xs font-extrabold text-hive-dark uppercase tracking-wider flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-hive-gold" />
+                  <MapPin className="w-4 h-4 text-hive-dark" />
                   <span>Delivery Address</span>
                 </h3>
                 <button
                   type="button"
                   onClick={() => router.push("/checkout/address")}
-                  className="text-[10px] font-bold text-hive-amber uppercase tracking-wider hover:text-hive-dark transition-colors"
+                  className="text-[10px] font-bold text-hive-text-muted uppercase tracking-wider hover:text-hive-dark transition-colors"
                 >
                   Edit
                 </button>
@@ -833,7 +833,7 @@ export default function OrderReviewPage() {
                 placeholder="e.g. Leave with building security gate, call before arrival, or ring bell."
                 value={deliveryInstructions}
                 onChange={(e) => setDeliveryInstructions(e.target.value)}
-                className="w-full p-4 text-xs border border-hive-border/50 rounded-xl focus:outline-none focus:border-hive-amber bg-white font-semibold placeholder:opacity-50"
+                className="w-full p-4 text-xs border border-hive-border/50 rounded-xl focus:outline-none focus:border-hive-dark/40 bg-white font-semibold placeholder:opacity-50"
               />
             </div>
 
@@ -892,11 +892,11 @@ export default function OrderReviewPage() {
                       placeholder="e.g. WELCOME10"
                       value={promoInput}
                       onChange={(e) => setPromoInput(e.target.value)}
-                      className="flex-1 h-9 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-amber bg-white font-medium uppercase placeholder:opacity-50"
+                      className="flex-1 h-9 px-3 text-xs border border-hive-border rounded-xl focus:outline-none focus:border-hive-dark/40 bg-white font-medium uppercase placeholder:opacity-50"
                     />
                     <button
                       type="submit"
-                      className="h-9 px-4 rounded-lg bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all text-xs font-bold uppercase tracking-[0.15em] shadow-sm focus:outline-none"
+                      className="h-9 px-4 rounded-lg bg-white border border-hive-dark text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all text-xs font-bold uppercase tracking-[0.15em] shadow-sm focus:outline-none"
                     >
                       Apply
                     </button>
@@ -956,7 +956,7 @@ export default function OrderReviewPage() {
                 type="button"
                 disabled={isPlacingOrder || isQuoteLoading}
                 onClick={handlePay}
-                className="w-full h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 bg-hive-dark text-white hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isPlacingOrder ? (
                   <Loader2 className="w-4 h-4 animate-spin text-hive-dark" />
@@ -1005,7 +1005,7 @@ export default function OrderReviewPage() {
                   />
                   <button
                     type="submit"
-                    className="h-8 px-3 rounded-lg bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 text-xs font-bold uppercase tracking-[0.15em] focus:outline-none"
+                    className="h-8 px-3 rounded-lg bg-white border border-hive-dark text-hive-dark hover:bg-hive-cream/40 text-xs font-bold uppercase tracking-[0.15em] focus:outline-none"
                   >
                     Apply
                   </button>
@@ -1051,7 +1051,7 @@ export default function OrderReviewPage() {
         <div className="px-5 pb-3">
           <p className="text-[10px] text-hive-text-muted text-center leading-relaxed">
             By placing this order, you agree to our{" "}
-            <Link href="/legal/return-policy" target="_blank" className="font-semibold text-hive-amber hover:underline">
+            <Link href="/legal/return-policy" target="_blank" className="font-semibold text-hive-dark hover:underline">
               Return & Refund Policy
             </Link>.
           </p>
@@ -1075,7 +1075,7 @@ export default function OrderReviewPage() {
             type="button"
             disabled={isPlacingOrder || isQuoteLoading}
             onClick={handlePay}
-            className="flex-1 max-w-[200px] h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-1.5 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 max-w-[200px] h-14 bg-hive-dark text-white hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-lg font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-1.5 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPlacingOrder ? (
               <Loader2 className="w-4 h-4 animate-spin text-hive-dark" />

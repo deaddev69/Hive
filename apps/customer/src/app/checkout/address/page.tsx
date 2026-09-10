@@ -593,8 +593,8 @@ export default function CheckoutAddressPage() {
     return (
       <div className="min-h-screen bg-hive-cream/30 py-20 px-6 flex items-center justify-center text-left animate-[scaleUp_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards]">
         <div className="max-w-md w-full bg-white border border-hive-border rounded-3xl p-8 shadow-sm space-y-6 flex flex-col items-center">
-          <div className="w-16 h-16 rounded-full bg-hive-comb/40 flex items-center justify-center border border-hive-border/40">
-            <PremiumShoppingBag className="w-6 h-6 text-hive-gold" strokeWidth={1.5} />
+          <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center border border-hive-border/40">
+            <PremiumShoppingBag className="w-6 h-6 text-hive-dark" strokeWidth={1.5} />
           </div>
           <div className="space-y-2 text-center">
             <h1 className="font-serif text-xl font-bold text-hive-dark">Your Hive Bag is empty</h1>
@@ -653,7 +653,7 @@ export default function CheckoutAddressPage() {
           </div>
           <Link
             href="/cart"
-            className="flex-shrink-0 text-[10px] font-extrabold text-hive-gold hover:text-hive-dark transition-colors uppercase tracking-widest flex items-center gap-0.5"
+            className="flex-shrink-0 text-[10px] font-extrabold text-hive-text-muted hover:text-hive-dark transition-colors uppercase tracking-widest flex items-center gap-0.5"
           >
             Edit Bag →
           </Link>
@@ -690,7 +690,7 @@ export default function CheckoutAddressPage() {
                           {addr.label}
                         </span>
                         {addr.isDefault && (
-                          <span className="text-[8px] font-bold tracking-[0.12em] text-hive-gold uppercase leading-none ml-2">
+                          <span className="text-[8px] font-bold tracking-[0.12em] text-hive-text-muted uppercase leading-none ml-2">
                             DEFAULT
                           </span>
                         )}
@@ -805,7 +805,7 @@ export default function CheckoutAddressPage() {
               type="button"
               disabled={!selectedAddress || !isServiceable || !isAddressComplete(selectedAddress) || !dbBoutiques}
                 onClick={() => router.push("/checkout/review")}
-                className="w-full h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full h-14 bg-hive-dark text-white hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {!dbBoutiques ? (
                   <Loader2 className="w-4 h-4 animate-spin text-hive-dark" />
@@ -862,7 +862,7 @@ export default function CheckoutAddressPage() {
             type="button"
             disabled={!selectedAddress || !isServiceable || !isAddressComplete(selectedAddress) || !dbBoutiques}
             onClick={() => router.push("/checkout/review")}
-            className="flex-1 max-w-[200px] h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-1.5 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 max-w-[200px] h-14 bg-hive-dark text-white hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-lg font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-1.5 shadow-sm focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {!dbBoutiques ? (
               <Loader2 className="w-4 h-4 animate-spin text-hive-dark" />
@@ -901,7 +901,7 @@ export default function CheckoutAddressPage() {
                 type="button"
                 onClick={handleGPSDetect}
                 disabled={gpsDetecting}
-                className="text-[11px] font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="text-[11px] font-bold text-stone-700 hover:text-stone-900 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {gpsDetecting ? (
                   <>
