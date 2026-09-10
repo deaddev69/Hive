@@ -46,7 +46,7 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-stone-900 antialiased selection:bg-amber-100 pb-24">
+    <div className="min-h-screen bg-white text-stone-900 antialiased selection:bg-stone-200 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 text-left">
         
         {/* Header section */}
@@ -56,7 +56,7 @@ export default function WishlistPage() {
           }`}
         >
           <div className="space-y-0.5">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-hive-text-muted">
               Your Collection
             </span>
             <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900 tracking-tight">
@@ -115,7 +115,7 @@ export default function WishlistPage() {
               <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-stone-100 text-left">
                 <div className="flex items-end justify-between mb-3 sm:mb-4">
                   <div className="space-y-0.5">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-hive-text-muted">
                       Some Inspiration
                     </span>
                     <h3 className="font-serif text-xl sm:text-2xl font-bold text-stone-900 tracking-tight">
