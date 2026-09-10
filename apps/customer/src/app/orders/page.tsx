@@ -24,6 +24,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { useInvoiceDownload } from "@/hooks/useInvoiceDownload";
 import { useSessionStore } from "@/context/SessionContext";
+import { navigateToSignIn } from "@/lib/auth-redirect";
 import { ReviewModal } from "@/components/product/ReviewModal";
 import { formatCurrency } from "@hive/utils";
 import { Tabs, EmptyState } from "@hive/ui";
@@ -84,17 +85,64 @@ function formatDate(epochMs?: number) {
 export default function MyOrdersPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const { token } = useSessionStore();
+  const { token, isAuthenticated, isLoading: sessionLoading } = useSessionStore();
   const [reviewingOrder, setReviewingOrder] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState<"active" | "completed" | "cancelled">("active");
 
-  const convexOrders = useQuery(api.orders.listMyOrders, { token: token || undefined });
+  // Skipped while signed out: without a token the query can only come back empty, and that empty
+  // result was indistinguishable from having no orders.
+  const convexOrders = useQuery(
+    api.orders.listMyOrders,
+    isAuthenticated ? { token: token || undefined } : "skip"
+  );
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  if (!mounted || convexOrders === undefined) {
+  // Session first, so a signed-in shopper never sees the sign-in prompt while their session is
+  // still resolving.
+  if (!mounted || sessionLoading) {
+    return <OrdersSkeleton />;
+  }
+
+  // Signed out is not the same as having no orders, and this page used to conflate them: a
+  // returning customer whose session had expired was told they had never ordered anything, on the
+  // page they had opened to track a delivery. Checkout already distinguishes the two - both of its
+  // steps ask an unauthenticated visitor to sign in rather than showing them an empty checkout.
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-white py-10 px-4 sm:px-6 lg:px-8 select-none text-left antialiased">
+        <div className="max-w-4xl mx-auto flex flex-col gap-6">
+          <div className="pb-6 border-b border-stone-200/80">
+            <div className="flex justify-between items-baseline gap-4">
+              <h1 className="text-3xl font-serif font-bold text-stone-900 tracking-tight">
+                My Orders
+              </h1>
+              <Link
+                href="/products"
+                className="text-xs font-semibold text-stone-700 hover:text-stone-950 transition-colors whitespace-nowrap"
+              >
+                Browse Products →
+              </Link>
+            </div>
+          </div>
+
+          <EmptyState
+            title="Sign in to see your orders"
+            description="Your orders, delivery updates and returns all live here once you're signed in."
+            icon={<Package className="w-6 h-6" />}
+            action={{
+              label: "Sign In",
+              onClick: () => navigateToSignIn(router, "/orders"),
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (convexOrders === undefined) {
     return <OrdersSkeleton />;
   }
 
