@@ -25,7 +25,6 @@ export const CustomerLayout: React.FC<{ children: React.ReactNode }> = ({ childr
   const isCheckoutPage = pathname?.startsWith("/checkout") ?? false;
   const isOrderConfirmation = pathname?.startsWith("/order/success") ?? false;
   const backHref = pathname === "/checkout/review" ? "/checkout/address" : "/cart";
-  const subline = pathname === "/checkout/review" ? "Step 2 of 2 • Review & Pay" : "Step 1 of 2 • Delivery Address";
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -33,7 +32,7 @@ export const CustomerLayout: React.FC<{ children: React.ReactNode }> = ({ childr
       {isOrderConfirmation ? (
         <OrderConfirmationHeader />
       ) : isCheckoutPage ? (
-        <CheckoutHeader backHref={backHref} subline={subline} />
+        <CheckoutHeader backHref={backHref} />
       ) : (
         <Navbar />
       )}

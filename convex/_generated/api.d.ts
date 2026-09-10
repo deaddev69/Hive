@@ -34,8 +34,6 @@ import type * as campaigns from "../campaigns.js";
 import type * as cart from "../cart.js";
 import type * as categories from "../categories.js";
 import type * as claims from "../claims.js";
-import type * as convex__generated_api from "../convex/_generated/api.js";
-import type * as convex__generated_server from "../convex/_generated/server.js";
 import type * as coupons from "../coupons.js";
 import type * as crons from "../crons.js";
 import type * as customerHome from "../customerHome.js";
@@ -222,8 +220,6 @@ declare const fullApi: ApiFromModules<{
   cart: typeof cart;
   categories: typeof categories;
   claims: typeof claims;
-  "convex/_generated/api": typeof convex__generated_api;
-  "convex/_generated/server": typeof convex__generated_server;
   coupons: typeof coupons;
   crons: typeof crons;
   customerHome: typeof customerHome;
