@@ -109,13 +109,16 @@ export const SwipeToPayButton: React.FC<SwipeToPayButtonProps> = ({
       aria-label={showSpinner ? "Payment processing" : `${label} to confirm and pay`}
       onKeyDown={handleKeyDown}
       onPointerDown={handleTrackPointerDown}
-      className={`relative h-14 w-full rounded-full bg-white border-[3px] border-hive-dark p-1 overflow-hidden select-none touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-dark/30 ${
+      className={`relative h-14 w-full rounded-full bg-hive-gold p-1 overflow-hidden select-none touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-hive-dark/30 ${
         disabled ? "opacity-50 pointer-events-none" : ""
       } ${className}`}
     >
+      {/* Centered in the space to the right of the thumb's resting position, not the full
+          track — inset-0 here would center against width the thumb is already sitting on,
+          which is what made the label (and its trailing arrow) look off-center. */}
       <motion.span
-        style={{ opacity: textOpacity }}
-        className="absolute inset-0 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-hive-dark pointer-events-none"
+        style={{ opacity: textOpacity, left: THUMB_SIZE + TRACK_PADDING * 2 }}
+        className="absolute inset-y-0 right-0 flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-hive-dark pointer-events-none"
       >
         {label}
         <ArrowRight className="w-3.5 h-3.5" />
