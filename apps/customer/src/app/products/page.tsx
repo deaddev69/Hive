@@ -1,3 +1,5 @@
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../../convex/_generated/api";
 import { ProductsClient } from "./ProductsClient";
 import { getProductsMetadata } from "@/lib/seo";
 import { BreadcrumbSchema } from "@/components/seo/BreadcrumbSchema";
@@ -5,43 +7,81 @@ import { SITE_URL } from "@/lib/seo";
 
 export const metadata = getProductsMetadata();
 
-const FASHION_CATEGORIES = [
-  { name: "Kurtis", slug: "kurtis" },
-  { name: "Dresses", slug: "dresses" },
-  { name: "Shirts", slug: "shirts" },
-  { name: "Jeans", slug: "jeans" },
-  { name: "Sarees", slug: "sarees" },
-  { name: "Footwear", slug: "footwear" },
-  { name: "Accessories", slug: "accessories" },
-  { name: "Co-ord Sets", slug: "co-ord-sets" },
-];
+interface CategoryListItem {
+  name: string;
+  slug: string;
+}
 
-const itemListSchema = {
-  "@context": "https://schema.org",
-  "@type": "ItemList",
-  name: "Fashion Categories on Hive — Kochi & Ernakulam",
-  description: "Browse fashion categories available for 90-minute delivery across Kochi and Ernakulam on Hive.",
-  url: `${SITE_URL}/products`,
-  itemListElement: FASHION_CATEGORIES.map((cat, i) => ({
-    "@type": "ListItem",
-    position: i + 1,
-    name: cat.name,
-    url: `${SITE_URL}/products/${cat.slug}`,
-  })),
-};
+/**
+ * Categories for the ItemList structured data, read from the catalogue rather than listed here.
+ *
+ * This was a hardcoded array of eight, written against categories that were planned rather than
+ * created: half of them - dresses, footwear, jeans, shirts - had no matching category in
+ * production, so the schema handed search engines four URLs that answer 404. Nothing rendered
+ * them as links, which is why it went unnoticed; only crawlers ever followed them.
+ *
+ * Reading the categories means the list cannot drift from what exists again. Every slug returned
+ * here resolves, since it is the same table /products/[slug] resolves against.
+ */
+async function fetchCategoryList(): Promise<CategoryListItem[]> {
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!url) return [];
 
-export default function ProductsPage() {
+  try {
+    const categories = await new ConvexHttpClient(url).query(
+      api.categories.getCategories,
+      { onlyActive: true }
+    );
+    return (categories ?? [])
+      .filter((c: any) => typeof c?.slug === "string" && typeof c?.name === "string")
+      .map((c: any) => ({ name: c.name, slug: c.slug }));
+  } catch {
+    // Structured data is not worth failing the page over. An absent ItemList costs a little SEO
+    // signal; a thrown error costs the whole catalogue.
+    return [];
+  }
+}
+
+export default async function ProductsPage() {
+  const categories = await fetchCategoryList();
+
+  const itemListSchema =
+    categories.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: "Fashion Categories on Hive — Kochi & Ernakulam",
+          description:
+            "Browse fashion categories available for 90-minute delivery across Kochi and Ernakulam on Hive.",
+          url: `${SITE_URL}/products`,
+          itemListElement: categories.map((cat, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: cat.name,
+            url: `${SITE_URL}/products/${cat.slug}`,
+          })),
+        }
+      : null;
+
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
-      />
-      <BreadcrumbSchema 
+      {itemListSchema && (
+        <script
+          type="application/ld+json"
+          // `<` is escaped because the names in here now come from the categories table rather
+          // than from literals in this file. JSON.stringify does not escape it, so a category
+          // named with a literal "</script>" would otherwise close this block and have whatever
+          // followed parsed as markup.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(itemListSchema).replace(/</g, "\\u003c"),
+          }}
+        />
+      )}
+      <BreadcrumbSchema
         items={[
           { name: "Home", url: "/" },
           { name: "Products", url: "/products" },
-        ]} 
+        ]}
       />
       <ProductsClient />
     </>
