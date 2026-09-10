@@ -490,13 +490,15 @@ export const Navbar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSearchOpen(true)}
-                className="flex-1 h-11 px-4 rounded-xl bg-slate-100 hover:bg-slate-200/70 text-left flex items-center gap-2.5 cursor-pointer transition-all duration-200"
+                className="group flex-1 h-11 pl-2 pr-4 rounded-full bg-hive-cream-deep border border-hive-border/70 hover:border-hive-gold/60 hover:shadow-[0_2px_12px_rgba(212,175,55,0.14)] text-left flex items-center gap-2.5 cursor-pointer transition-all duration-200"
               >
-                <Search className="w-5 h-5 text-slate-500 flex-shrink-0" />
+                <span className="w-7 h-7 rounded-full bg-hive-gold/15 group-hover:bg-hive-gold/25 flex items-center justify-center flex-shrink-0 transition-colors duration-200">
+                  <Search className="w-3.5 h-3.5 text-hive-amber-dark" strokeWidth={2.4} />
+                </span>
                 <span className="relative flex-1 h-5 overflow-hidden flex items-center">
                   <span
                     className={cn(
-                      "absolute inset-0 truncate text-sm font-medium text-slate-400 flex items-center transition-all duration-300 ease-in-out transform",
+                      "absolute inset-0 truncate text-sm font-medium text-hive-text-muted flex items-center transition-all duration-300 ease-in-out transform",
                       placeholderFade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1.5"
                     )}
                   >
@@ -682,13 +684,15 @@ export const Navbar: React.FC = () => {
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="flex-1 h-10 px-3.5 rounded-xl bg-slate-100 border border-transparent text-left flex items-center gap-2.5 cursor-pointer hover:bg-slate-200/70 transition-all duration-200"
+            className="flex-1 h-10 pl-1.5 pr-3.5 rounded-full bg-hive-cream-deep border border-hive-border/70 active:border-hive-gold/60 text-left flex items-center gap-2 cursor-pointer transition-all duration-200"
           >
-            <Search className="w-4.5 h-4.5 text-slate-500 flex-shrink-0" />
+            <span className="w-6 h-6 rounded-full bg-hive-gold/15 flex items-center justify-center flex-shrink-0">
+              <Search className="w-3.5 h-3.5 text-hive-amber-dark" strokeWidth={2.4} />
+            </span>
             <span className="relative flex-1 h-5 overflow-hidden flex items-center">
               <span
                 className={cn(
-                  "absolute inset-0 truncate text-sm font-medium text-slate-400 flex items-center transition-all duration-300 ease-in-out transform",
+                  "absolute inset-0 truncate text-sm font-medium text-hive-text-muted flex items-center transition-all duration-300 ease-in-out transform",
                   placeholderFade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1.5"
                 )}
               >
@@ -944,7 +948,9 @@ export const Navbar: React.FC = () => {
             </button>
             
             <div className="flex-1 relative flex items-center">
-              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <span className="absolute left-2 w-7 h-7 rounded-full bg-hive-gold/15 flex items-center justify-center pointer-events-none">
+                <Search className="w-3.5 h-3.5 text-hive-amber-dark" strokeWidth={2.4} />
+              </span>
               <input
                 ref={inputRef}
                 type="text"
@@ -958,7 +964,7 @@ export const Navbar: React.FC = () => {
                     setSearchOpen(false);
                   }
                 }}
-                className="w-full h-11 pl-10 pr-10 rounded-2xl bg-stone-100 dark:bg-neutral-900 border border-stone-200/60 dark:border-neutral-800 focus:outline-none focus:ring-1 focus:ring-amber-500/50 focus:border-amber-500/50 text-sm font-medium text-stone-900 dark:text-white placeholder-stone-400 transition-all"
+                className="w-full h-11 pl-11 pr-10 rounded-full bg-hive-cream-deep dark:bg-neutral-900 border border-hive-border/80 dark:border-neutral-800 focus:outline-none focus:ring-2 focus:ring-hive-gold/35 focus:border-hive-gold/60 text-sm font-medium text-stone-900 dark:text-white placeholder-hive-text-muted transition-all"
               />
               {searchQuery && (
                 <button

@@ -24,7 +24,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { toQueryCoords } from "@/lib/distance";
-import { LoadingState } from "@hive/ui";
+import { CatalogLoadingState } from "@/components/catalog/CatalogLoadingState";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLocation } from "@/context/LocationContext";
 import {
@@ -52,7 +52,9 @@ export function ProductsClient({
   return (
     <React.Suspense
       fallback={
-        <LoadingState message="Discovering catalog items..." variant="full" />
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 w-full pt-4">
+          <CatalogLoadingState />
+        </div>
       }
     >
       <ProductsCatalog initialCategorySlug={initialCategorySlug} />
@@ -410,7 +412,10 @@ function ProductsCatalog({
   if (catalogPage === undefined) {
     return (
       <CatalogLayout breadcrumbs={[{ label: "All Products" }]}>
-        <LoadingState message="Discovering catalog items..." variant="full" />
+        <CategoryPillRail activeCategorySlug={categorySlugFromUrl ?? undefined} />
+        <div className="max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 w-full mt-2">
+          <CatalogLoadingState />
+        </div>
       </CatalogLayout>
     );
   }

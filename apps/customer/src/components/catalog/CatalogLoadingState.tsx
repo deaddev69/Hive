@@ -52,10 +52,10 @@ export interface CatalogLoadingStateProps {
 }
 
 export const CatalogLoadingState: React.FC<CatalogLoadingStateProps> = ({
-  count = 8,
+  count = 10,
 }) => {
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2.5 sm:gap-5 md:gap-6">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5">
       {Array.from({ length: count }).map((_, idx) => (
         <SkeletonCard key={idx} delay={idx * 60} />
       ))}
