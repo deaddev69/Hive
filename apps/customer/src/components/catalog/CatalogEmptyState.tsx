@@ -29,7 +29,7 @@ export const CatalogEmptyState: React.FC<CatalogEmptyStateProps> = ({
   onChangeLocation,
   categoryName,
 }) => {
-  const accent = accentColor ?? "#C9A84C";
+  const accent = accentColor ?? "#1A1200";
 
   if (reason === "coming_soon") {
     return (

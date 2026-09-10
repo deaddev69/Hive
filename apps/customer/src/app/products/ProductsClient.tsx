@@ -537,7 +537,7 @@ function ProductsCatalog({
             ) : (
               <CatalogEmptyState
                 onClearFilters={clearFilters}
-                accentColor="#C9A84C"
+                accentColor="#1A1200"
                 reason={emptyStateReason}
                 categoryName={
                   routeCategoryName ||
