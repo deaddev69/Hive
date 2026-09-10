@@ -198,6 +198,36 @@ export const backfillBoutiqueSlugs = internalMutation({
 });
 
 /**
+ * One-off fix for demo-seeded products whose slug retained raw spaces from the
+ * product name (seedMutations.ts hyphenated the boutique name but not the
+ * name segment, e.g. "linen-house-formal top-1"). Rewrites any product slug
+ * containing whitespace to hyphenated form; the trailing globalIndex already
+ * made each slug unique, so no collision handling is needed.
+ */
+export const fixSeedProductSlugSpaces = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity !== null) {
+      await requireRole(ctx, "admin");
+    }
+
+    const products = await ctx.db.query("products").collect();
+    let fixedCount = 0;
+
+    for (const p of products) {
+      if (/\s/.test(p.slug)) {
+        const fixedSlug = p.slug.trim().replace(/\s+/g, "-").toLowerCase();
+        await ctx.db.patch(p._id, { slug: fixedSlug });
+        fixedCount++;
+      }
+    }
+
+    return `Fixed ${fixedCount} product slugs containing spaces.`;
+  }
+});
+
+/**
  * Phase 1 Migration: Set basePrice and bump customer price by 15%
  */
 export const migrateProductPricesPhase1 = internalMutation({

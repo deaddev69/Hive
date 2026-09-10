@@ -175,7 +175,7 @@ export const insertMockData = mutation({
         const pId = await ctx.db.insert("products", {
           boutiqueId: bId,
           name: `${b.boutiqueName} ${name} #${i + 1}`,
-          slug: `${b.boutiqueName.replace(/\s+/g, "-").toLowerCase()}-${name.toLowerCase()}-${globalIndex}`,
+          slug: `${b.boutiqueName.replace(/\s+/g, "-").toLowerCase()}-${name.replace(/\s+/g, "-").toLowerCase()}-${globalIndex}`,
           description: `A beautiful ${name.toLowerCase()} from ${b.boutiqueName}.`,
           categoryId: seedCategoryId,
           verticalType: seedVerticalType,
