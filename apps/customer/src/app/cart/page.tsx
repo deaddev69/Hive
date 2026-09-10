@@ -211,7 +211,7 @@ export default function CartPage() {
             {/* Back to shopping action */}
             <Link
               href="/products"
-              className="self-start text-xs font-extrabold uppercase tracking-widest text-hive-dark hover:text-hive-amber transition-colors duration-200 mt-2 flex items-center gap-1.5 focus:outline-none"
+              className="self-start text-xs font-extrabold uppercase tracking-widest text-hive-dark hover:text-hive-dark/60 transition-colors duration-200 mt-2 flex items-center gap-1.5 focus:outline-none"
             >
               <span>Continue Shopping</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -262,7 +262,7 @@ export default function CartPage() {
                       <button
                         type="button"
                         onClick={() => setShowPromoInput(true)}
-                        className="text-xs font-bold text-hive-gold hover:text-hive-dark transition-colors tracking-wide underline decoration-dotted underline-offset-4 focus:outline-none"
+                        className="text-xs font-bold text-hive-dark hover:text-hive-dark/60 transition-colors tracking-wide underline decoration-dotted underline-offset-4 focus:outline-none"
                       >
                         Have a promo code?
                       </button>
@@ -273,11 +273,11 @@ export default function CartPage() {
                           placeholder="e.g. WELCOME10"
                           value={promoInput}
                           onChange={(e) => setPromoInput(e.target.value)}
-                          className="flex-1 h-8 px-2.5 text-xs border border-hive-border rounded-lg focus:outline-none focus:border-hive-amber bg-white font-semibold placeholder:opacity-50 uppercase"
+                          className="flex-1 h-8 px-2.5 text-xs border border-hive-border rounded-lg focus:outline-none focus:border-hive-dark/40 bg-white font-semibold placeholder:opacity-50 uppercase"
                         />
                         <button
                           type="submit"
-                          className="h-8 px-3 rounded-lg bg-white border border-hive-gold text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all text-[10px] font-bold uppercase tracking-[0.15em] shadow-sm focus:outline-none"
+                          className="h-8 px-3 rounded-lg bg-white border border-hive-dark text-hive-dark hover:bg-hive-cream/40 active:scale-[0.98] transition-all text-[10px] font-bold uppercase tracking-[0.15em] shadow-sm focus:outline-none"
                         >
                           Apply
                         </button>
@@ -337,7 +337,7 @@ export default function CartPage() {
                     setIsAuthModalOpen(true);
                   }
                 }}
-                className="w-full h-14 bg-hive-gold text-hive-dark hover:bg-hive-gold/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:bg-hive-border/40 disabled:text-hive-text-muted/50 disabled:cursor-not-allowed"
+                className="w-full h-14 bg-hive-dark text-white hover:bg-hive-dark/90 active:scale-[0.98] transition-all rounded-lg mt-3 font-semibold uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2 shadow-sm focus:outline-none disabled:bg-hive-border/40 disabled:text-hive-text-muted/50 disabled:cursor-not-allowed"
               >
                 <span>Secure Checkout →</span>
               </button>

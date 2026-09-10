@@ -81,7 +81,7 @@ export const CartItemComponent: React.FC<CartItemProps> = ({ item }) => {
           className="cursor-pointer block"
         >
           {/* Product Name (Product First) */}
-          <h3 className="text-xs font-semibold text-stone-900 leading-snug line-clamp-2 pr-2 hover:text-hive-amber transition-colors">
+          <h3 className="text-xs font-semibold text-stone-900 leading-snug line-clamp-2 pr-2 hover:text-hive-dark/70 transition-colors">
             {cleanProductTitle(item.name)}
           </h3>
 

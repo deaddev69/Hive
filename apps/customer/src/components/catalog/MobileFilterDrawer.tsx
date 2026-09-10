@@ -167,6 +167,7 @@ export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
 
   const handleReset = () => {
     setDraftFilters(DEFAULT_FILTER_STATE);
+    onChange(DEFAULT_FILTER_STATE);
   };
 
   const toggleCategory = (catId: string) => {
