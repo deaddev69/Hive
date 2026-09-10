@@ -76,6 +76,7 @@ export default function GlobalError({
           Something on our side went wrong — nothing you did. Reloading usually sorts it.
         </p>
 
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a
           href="/"
           style={{
