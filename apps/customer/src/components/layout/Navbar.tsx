@@ -958,7 +958,7 @@ export const Navbar: React.FC = () => {
                     setSearchOpen(false);
                   }
                 }}
-                className="w-full h-11 pl-10 pr-10 rounded-full bg-white dark:bg-neutral-900 border border-hive-dark/15 dark:border-neutral-800 focus:outline-none focus:ring-2 focus:ring-hive-dark/12 focus:border-hive-dark/40 text-sm font-medium text-stone-900 dark:text-white placeholder-hive-text-muted transition-all"
+                className="w-full h-11 pl-10 pr-10 rounded-full bg-white dark:bg-neutral-900 border border-hive-dark/15 dark:border-neutral-800 focus:outline-none focus:ring-0 focus:border-hive-dark/40 text-sm font-medium text-stone-900 dark:text-white placeholder-hive-text-muted transition-all"
               />
               {searchQuery && (
                 <button

@@ -531,7 +531,7 @@ function ProductsCatalog({
                   onPageChange={setCurrentPage}
                   resultCount={resultCount}
                   pageSize={PAGE_SIZE}
-                  accentColor="#C9A84C"
+                  accentColor="#1A1200"
                 />
               </>
             ) : (

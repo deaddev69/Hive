@@ -17,7 +17,7 @@ export const CatalogPagination: React.FC<CatalogPaginationProps> = ({
   onPageChange,
   resultCount,
   pageSize,
-  accentColor = "#C9A84C",
+  accentColor = "#1A1200",
 }) => {
   if (resultCount === 0) return null;
 
