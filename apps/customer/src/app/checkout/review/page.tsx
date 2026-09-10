@@ -30,6 +30,7 @@ import { useSessionStore } from "@/context/SessionContext";
 import { CustomerPriceBreakdown } from "@/components/checkout/CustomerPriceBreakdown";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { formatRupees, toast } from "@hive/utils";
+import { getCustomerErrorMessage, getCustomerErrorCode } from "@/lib/customerErrors";
 
 // ── Razorpay Script Loader ──────────────────────────────────────────────────
 function loadScript(src: string): Promise<boolean> {
@@ -643,12 +644,19 @@ export default function OrderReviewPage() {
       console.error("Order session failed:", err);
       
       // Self-healing cart UX for stale prices
-      if (err.data?.code === "STALE_CART_PRICE") {
-        toast.error(err.data.message || "Cart prices have been updated. Please review the new total.");
+      if (getCustomerErrorCode(err) === "STALE_CART_PRICE") {
+        toast.error(
+          getCustomerErrorMessage(err, "Cart prices have been updated. Please review the new total.")
+        );
         // The Convex useQuery will automatically reactively update the UI to show the new prices
         // based on the Phase 1 background batch updates on the products table.
       } else {
-        toast.error(err.message || "Failed to initiate transaction. Please try again.");
+        // Not err.message: a Convex failure reads "[CONVEX A(payments:createOrder)] [Request ID:
+        // ...] Server Error", and a shopper who has just pressed Pay is the last person who
+        // should be shown one. The raw error is already on the console above.
+        toast.error(
+          getCustomerErrorMessage(err, "We couldn't start this payment. Please try again.")
+        );
       }
       setIsPlacingOrder(false);
       isOrderPlacing.current = false;

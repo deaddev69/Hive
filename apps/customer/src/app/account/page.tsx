@@ -46,6 +46,7 @@ import { LocationMapPicker, ReverseGeocodeResult } from "@/components/location/L
 import { useWishlistStore } from "@/store/wishlist-store";
 import { calculateDisplayPricing } from "@/lib/pricing";
 import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
+import { getCustomerErrorMessage } from "@/lib/customerErrors";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function toTitleCase(str?: string): string {
@@ -1041,7 +1042,9 @@ function SettingsTab({ user, token }: { user: any; token: string | null }) {
       toast.success("Phone number updated successfully");
     } catch (err: any) {
       console.error("Failed to update phone number:", err);
-      toast.error(err.message || "Failed to save phone number");
+      // The raw error stays on the console above; a Convex failure names an internal function and
+      // a request id, neither of which means anything to the person typing their phone number.
+      toast.error(getCustomerErrorMessage(err, "We couldn't save your phone number. Please try again."));
     }
   };
 

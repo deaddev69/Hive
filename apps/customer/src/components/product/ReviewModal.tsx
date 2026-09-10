@@ -8,6 +8,7 @@ import { Modal } from "@hive/ui";
 import { Star, Loader2, CheckCircle2, PackageCheck, Sparkles, ShieldCheck } from "lucide-react";
 import { toast } from "@hive/utils";
 import { useSessionStore } from "@/context/SessionContext";
+import { getCustomerErrorMessage } from "@/lib/customerErrors";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -58,7 +59,10 @@ export function ReviewModal({
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
-      toast.error("Failed to submit review: " + (err.message || String(err)));
+      // This previously concatenated the raw error unconditionally and logged nothing, so the
+      // shopper got the internals and no one else got the failure at all.
+      console.error("Failed to submit review:", err);
+      toast.error(getCustomerErrorMessage(err, "We couldn't submit your review. Please try again."));
     } finally {
       setSubmitting(false);
     }
