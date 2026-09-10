@@ -32,7 +32,27 @@ export const MobileBottomNav: React.FC = () => {
     ["placed", "confirmed", "preparing", "out_for_delivery", "pending"].includes(o.status)
   ).length;
 
-  const isPDP = pathname !== "/products" && pathname?.startsWith("/products/");
+  // /products/[slug] serves two different pages: a product, or a category listing. Matching on
+  // the path alone cannot tell them apart, so this used to hide the bar on both — a shopper who
+  // tapped into Sarees lost Home, Wishlist and Orders on a pure browsing surface, with only the
+  // browser's back button to get out. Hiding it on a product is deliberate; the purchase bar owns
+  // that space there.
+  //
+  // Resolving the slug against the category list is what the catalogue page itself does. The
+  // query is already in flight on every page with these exact arguments (Navbar, CatalogFilters
+  // and ProductsClient all request it), so Convex serves it from the same cached result rather
+  // than issuing another round trip.
+  const productsSlug = pathname?.match(/^\/products\/([^/]+)$/)?.[1] ?? null;
+  const activeCategories = useQuery(api.categories.getCategories, { onlyActive: true });
+  const isCategoryPage =
+    productsSlug !== null &&
+    (activeCategories ?? []).some(
+      (c: any) => c.slug?.toLowerCase() === productsSlug.toLowerCase()
+    );
+
+  // Until the categories resolve, a /products/<slug> page is treated as a product. That keeps the
+  // bar from flashing over a PDP on every load; a category page gains it a moment later instead.
+  const isPDP = productsSlug !== null && !isCategoryPage;
   const isCheckout = pathname?.startsWith("/checkout");
   if (isPDP || isCheckout) return null;
 
