@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PremiumShoppingBag } from "@/components/shared/PremiumShoppingBag";
+import { EmptyCartState } from "@/components/cart/EmptyCartState";
 import { ArrowRight, Ticket, Check, AlertCircle, Sparkles, Loader2, X, Zap } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { CartItemComponent } from "@/components/cart/CartItem";
@@ -174,43 +174,8 @@ export default function CartPage() {
   // ───────────────────────────────────────────────────────────────────────────
   if (itemsCount === 0) {
     return (
-      <div className="min-h-[70vh] bg-hive-cream/30 py-20 px-6 flex items-center justify-center text-left">
-        <div className="max-w-md w-full text-center space-y-6 animate-[fadeIn_0.4s_ease-out_forwards]">
-          <div className="w-20 h-20 rounded-full bg-hive-comb/40 flex items-center justify-center border border-hive-border/40 mx-auto">
-            <PremiumShoppingBag className="w-8 h-8 text-hive-gold" strokeWidth={1.5} />
-          </div>
-
-          <div className="space-y-2">
-            <h1 className="font-serif text-2xl font-bold text-hive-dark">Your Hive Bag is empty.</h1>
-            <p className="text-xs text-hive-text-muted max-w-[290px] mx-auto leading-relaxed font-medium">
-              Discover curated apparel and exclusive collections from the finest independent fashion sellers near you.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-            <button
-              type="button"
-              onClick={() => router.push("/products")}
-              className="px-6 h-14 bg-stone-950 text-white hover:bg-stone-900 active:scale-[0.98] transition-all rounded-xl text-xs font-semibold uppercase tracking-[0.15em] flex items-center justify-center gap-1.5 shadow-sm"
-            >
-              <span>Explore Styles</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push("/wishlist")}
-              className="px-6 h-14 bg-white border border-stone-200 hover:border-stone-300 text-stone-800 active:scale-[0.98] transition-all rounded-xl text-xs font-semibold uppercase tracking-[0.15em] flex items-center justify-center gap-1.5 shadow-2xs"
-            >
-              <span>View Wishlist</span>
-            </button>
-          </div>
-        </div>
-        
-        <style>{`
-          @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
+      <div className="min-h-[70vh] bg-hive-cream/30 py-16 px-6 flex items-center justify-center">
+        <EmptyCartState />
       </div>
     );
   }
