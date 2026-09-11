@@ -26,7 +26,7 @@
 // Razorpay error at capture, or an order placed before held transfers existed.
 
 import { action, internalAction } from "./_generated/server";
-import { RETURN_WINDOW_MS } from "./lib/payoutHold";
+import { resolveLateTransferHoldUntil } from "./lib/payoutHold";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 
@@ -795,12 +795,7 @@ export const createSellerTransfer = internalAction({
     // order was delivered, so a return inside 24 hours had to claw back money
     // the seller already had. Final Sale orders, and orders whose window has
     // already closed, still settle straight away.
-    const lateHoldUntil: number | null =
-      order.returnsAccepted !== false &&
-      typeof order.deliveredAt === "number" &&
-      order.deliveredAt + RETURN_WINDOW_MS > Date.now() + 60_000
-        ? order.deliveredAt + RETURN_WINDOW_MS
-        : null;
+    const lateHoldUntil = resolveLateTransferHoldUntil(order, Date.now());
 
     const settledPayoutPatch = (transferId: string) =>
       lateHoldUntil
@@ -1045,5 +1040,95 @@ export const retrySellerTransfer: any = action({
       orderId: args.orderId,
       allowRetry: true,
     });
+  },
+});
+
+/**
+ * Read-only: what Razorpay itself says happened to one order's money.
+ *
+ * Hive keeps its own mirror of payment, transfer and refund state. This asks
+ * Razorpay directly, so the mirror is never the only evidence and the two can
+ * be compared side by side. GET requests only — nothing is created or changed.
+ */
+export const inspectOrderMoneyAtRazorpay = internalAction({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args): Promise<any> => {
+    const authHeader = resolveRazorpayAuthHeader();
+    if (!authHeader) return { ok: false, reason: "razorpay_not_configured" };
+
+    const order: any = await ctx.runQuery((internal.orders as any).getById, { id: args.orderId });
+    if (!order) return { ok: false, reason: "order_not_found" };
+
+    const payment: any = order.paymentId
+      ? await ctx.runQuery((internal.payments as any).getPaymentById, { paymentId: order.paymentId })
+      : null;
+    const paymentId = payment?.razorpayPaymentId;
+    if (!paymentId) {
+      return { ok: false, reason: "no_razorpay_payment", orderNumber: order.orderNumber };
+    }
+
+    const get = async (path: string) => {
+      const res = await fetch(`${RAZORPAY_API}${path}`, { headers: { Authorization: authHeader } });
+      const body = await res.json().catch(() => null);
+      return res.ok ? body : { error: res.status, body };
+    };
+    const at = (seconds: unknown) =>
+      typeof seconds === "number" && seconds > 0 ? new Date(seconds * 1000).toISOString() : null;
+    const iso = (ms: unknown) => (typeof ms === "number" && ms > 0 ? new Date(ms).toISOString() : null);
+
+    const [p, transfers, refunds] = await Promise.all([
+      get(`/payments/${paymentId}`),
+      get(`/payments/${paymentId}/transfers`),
+      get(`/payments/${paymentId}/refunds`),
+    ]);
+
+    return {
+      ok: true,
+      orderNumber: order.orderNumber,
+      returnsAccepted: order.returnsAccepted ?? null,
+      hive: {
+        paymentStatus: order.paymentStatus,
+        payoutStatus: order.payoutStatus ?? null,
+        payoutHoldReason: order.payoutHoldReason ?? null,
+        payoutHoldUntil: iso(order.payoutHoldUntil),
+        transferId: order.razorpayTransferId ?? null,
+        transferStatus: order.transferStatus ?? null,
+        refundStatus: order.refundStatus ?? null,
+        returnStatus: order.returnStatus ?? null,
+      },
+      razorpay: {
+        payment: p?.error
+          ? p
+          : {
+              id: p.id,
+              status: p.status,
+              amountPaise: p.amount,
+              amountRefundedPaise: p.amount_refunded,
+              refundStatus: p.refund_status ?? null,
+              method: p.method ?? null,
+              createdAt: at(p.created_at),
+            },
+        transfers: transfers?.error
+          ? transfers
+          : (transfers?.items ?? []).map((t: any) => ({
+              id: t.id,
+              recipient: t.recipient,
+              amountPaise: t.amount,
+              amountReversedPaise: t.amount_reversed ?? 0,
+              onHold: t.on_hold,
+              onHoldUntil: at(t.on_hold_until),
+              settlementStatus: t.settlement_status ?? null,
+              processedAt: at(t.processed_at),
+            })),
+        refunds: refunds?.error
+          ? refunds
+          : (refunds?.items ?? []).map((r: any) => ({
+              id: r.id,
+              amountPaise: r.amount,
+              status: r.status,
+              createdAt: at(r.created_at),
+            })),
+      },
+    };
   },
 });

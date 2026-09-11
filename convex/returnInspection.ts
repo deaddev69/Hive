@@ -237,6 +237,55 @@ export const resolveRejectedReturnAdmin = mutation({
 });
 
 /**
+ * Admin marks the item as physically back at the boutique, without a courier
+ * trip — a return handed over in person, or testing the flow end to end.
+ *
+ * It freezes the seller's payout straight away. A delivered order carries a
+ * 24-hour hold that Razorpay releases on its own; without this, marking an item
+ * returned would leave that timer running, and the seller could be paid while
+ * the item was still waiting to be checked. The customer is refunded only once
+ * the return is accepted, exactly as for a courier return.
+ */
+export const markReturnedAdmin = mutation({
+  args: { orderId: v.id("orders"), note: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const admin = await requireRole(ctx, "admin");
+    const order = await ctx.db.get(args.orderId);
+    if (!order) throw new ConvexError("Order not found.");
+    if (order.status !== "delivered") {
+      throw new ConvexError("Only a delivered order can be marked returned.");
+    }
+    if (order.paymentStatus !== "paid") {
+      throw new ConvexError(`This order's payment is ${order.paymentStatus}, so there is nothing to return.`);
+    }
+    if (order.returnStatus === "completed") {
+      throw new ConvexError("This return has already been settled.");
+    }
+    if (order.returnStatus === "delivered") {
+      return { success: true, reason: "already_returned" };
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(order._id, { returnStatus: "delivered", updatedAt: now });
+
+    if (order.razorpayTransferId) {
+      await ctx.scheduler.runAfter(0, internal.razorpayRoute.updateTransferHold, {
+        orderId: order._id,
+        onHold: true,
+        reason: "return_in_progress",
+      });
+    }
+
+    await audit(ctx, order, "return.marked_returned_manually", "admin", {
+      previousReturnStatus: order.returnStatus ?? null,
+      note: args.note?.trim() || undefined,
+      adminId: admin._id,
+    });
+    return { success: true, reason: "marked_returned" };
+  },
+});
+
+/**
  * A seller's transfer has been reversed by Razorpay (an exchange took the money
  * back). Actions cannot write the database, so the reversal action calls this.
  */

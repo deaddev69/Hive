@@ -188,12 +188,35 @@ function OrderDetailDrawer({
   const approveReturn = useMutation(api.adminOrders.approveReturnAdmin);
   const initiateReturn = useMutation(api.adminOrders.initiateReturnAdmin);
   const acceptReturnAdmin = useMutation(api.returnInspection.acceptReturnedItemAdmin);
+  const markReturned = useMutation(api.returnInspection.markReturnedAdmin);
   const resolveRejection = useMutation(api.returnInspection.resolveRejectedReturnAdmin);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [returnActionLoading, setReturnActionLoading] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!orderId || !order) return;
+
+    // "Returned" is not an order status — returns are tracked separately. It
+    // marks the item back at the boutique, which freezes the seller's payout
+    // and puts the Accept / Reject step in front of the customer's refund.
+    if (newStatus === "returned") {
+      if (
+        !window.confirm(
+          "Mark this item as returned to the boutique? The seller's payout is frozen, and the customer is refunded only once the return is accepted."
+        )
+      ) {
+        return;
+      }
+      setUpdatingStatus(true);
+      try {
+        await markReturned({ orderId });
+      } catch (err: any) {
+        alert("Failed to mark returned: " + err.message);
+      } finally {
+        setUpdatingStatus(false);
+      }
+      return;
+    }
     setUpdatingStatus(true);
     try {
       await updateStatus({ orderId, status: newStatus as any });
@@ -308,7 +331,12 @@ function OrderDetailDrawer({
             <div className="flex items-center gap-3 flex-wrap">
               {/* Inline status updater */}
               <select
-                value={order.status}
+                value={
+                  order.status === "delivered" &&
+                  ["delivered", "completed"].includes(order.returnStatus ?? "")
+                    ? "returned"
+                    : order.status
+                }
                 disabled={updatingStatus}
                 onChange={(e) => handleStatusChange(e.target.value)}
                 className="px-3 py-1.5 rounded-xl text-[10px] font-bold border border-hive-border bg-white focus:outline-none focus:ring-1 focus:ring-hive-gold cursor-pointer disabled:opacity-60 uppercase tracking-wide"
@@ -316,7 +344,7 @@ function OrderDetailDrawer({
                 {[
                   "pending_payment", "pending_confirmation", "confirmed",
                   "pickup_scheduled", "picked_up",
-                  "in_transit", "out_for_delivery", "delivered", "cancelled",
+                  "in_transit", "out_for_delivery", "delivered", "returned", "cancelled",
                 ].map((s) => (
                   <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
                 ))}

@@ -94,3 +94,24 @@ export function resolvePayoutHoldDecision(
 
   return { action: "create_transfer", reason: "eligible" };
 }
+
+/**
+ * How long a seller transfer created AFTER delivery must stay held.
+ *
+ * Only sellers who accept returns hold money back: the transfer waits until
+ * delivery + 24h, so a return inside the window never has to claw money back
+ * from the seller. Final Sale orders are paid at once — there is nothing to
+ * wait for — and so is an order whose window has already closed.
+ *
+ * Razorpay refuses an `on_hold_until` that is not in the future, so a window
+ * closing within the next minute is treated as closed.
+ */
+export function resolveLateTransferHoldUntil(
+  order: { returnsAccepted?: boolean; deliveredAt?: number },
+  now: number
+): number | null {
+  if (order.returnsAccepted === false) return null;
+  if (typeof order.deliveredAt !== "number") return null;
+  const until = order.deliveredAt + RETURN_WINDOW_MS;
+  return until > now + 60_000 ? until : null;
+}

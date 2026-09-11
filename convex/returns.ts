@@ -144,7 +144,10 @@ export const updateReturnStatusAdmin = mutation({
 
     // Keep the payout frozen for as long as the item is in motion, and let it
     // settle again if the return is abandoned.
-    if (["requested", "approved", "initiated", "picked_up", "in_transit"].includes(args.returnStatus)) {
+    // "delivered" is included: the item is back but not yet accepted, and a
+    // return set straight to delivered from here would otherwise leave the
+    // order's 24-hour release timer running under it.
+    if (["requested", "approved", "initiated", "picked_up", "in_transit", "delivered"].includes(args.returnStatus)) {
       await ctx.scheduler.runAfter(0, internal.razorpayRoute.updateTransferHold, {
         orderId: args.orderId,
         onHold: true,
