@@ -9,6 +9,17 @@ export interface HivePublishingOverlayProps {
   productName?: string;
   isComplete?: boolean;
   onFinished?: () => void;
+  /**
+   * An extra choice offered alongside "Back to Products" once publishing
+   * completes (e.g. "+ Add Another Colour"). When present, the auto-advance
+   * timer is disabled — with two choices on screen, the seller picks, nothing
+   * picks for them.
+   */
+  secondaryAction?: {
+    label: string;
+    description?: string;
+    onClick: () => void;
+  };
 }
 
 export const HivePublishingOverlay: React.FC<HivePublishingOverlayProps> = ({
@@ -16,15 +27,16 @@ export const HivePublishingOverlay: React.FC<HivePublishingOverlayProps> = ({
   productName = "Product",
   isComplete = false,
   onFinished,
+  secondaryAction,
 }) => {
   useEffect(() => {
-    if (isComplete && onFinished) {
+    if (isComplete && onFinished && !secondaryAction) {
       const timer = setTimeout(() => {
         onFinished();
       }, 1600);
       return () => clearTimeout(timer);
     }
-  }, [isComplete, onFinished]);
+  }, [isComplete, onFinished, secondaryAction]);
 
   if (!isOpen) return null;
 
@@ -66,14 +78,35 @@ export const HivePublishingOverlay: React.FC<HivePublishingOverlayProps> = ({
               <span className="font-semibold text-slate-700">&ldquo;{productName}&rdquo;</span> is now saved in your catalog.
             </p>
 
+            {secondaryAction && (
+              <div className="w-full mb-2.5">
+                {secondaryAction.description && (
+                  <p className="text-[11px] text-slate-500 mb-2">{secondaryAction.description}</p>
+                )}
+                <button
+                  type="button"
+                  onClick={secondaryAction.onClick}
+                  className="w-full py-2.5 bg-slate-950 hover:bg-slate-900 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+                >
+                  <span>{secondaryAction.label}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             {onFinished && (
               <button
                 type="button"
                 onClick={onFinished}
-                className="w-full py-2.5 bg-slate-950 hover:bg-slate-900 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-xs cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+                className={cn(
+                  "flex items-center justify-center gap-1.5 transition-all cursor-pointer",
+                  secondaryAction
+                    ? "w-full py-1 text-xs font-semibold text-slate-500 hover:text-slate-800"
+                    : "w-full py-2.5 bg-slate-950 hover:bg-slate-900 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-xs active:scale-[0.98]"
+                )}
               >
                 <span>Back to Products</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                {!secondaryAction && <ArrowRight className="w-3.5 h-3.5" />}
               </button>
             )}
           </>

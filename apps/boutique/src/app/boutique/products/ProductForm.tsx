@@ -501,6 +501,14 @@ type ProductFormValues = z.infer<typeof productFormSchema>;
 
 interface ProductFormProps {
   productToEdit?: any;
+  /**
+   * A source product to prefill from when adding another colour of an
+   * existing style. Unlike `productToEdit`, this never switches the submit
+   * to `updateProduct` and never carries over images, color, or stock — every
+   * colour still needs its own fresh photos, its own colour, and its own
+   * stock count.
+   */
+  productToTemplate?: any;
   categories: any[];
 }
 
@@ -581,7 +589,7 @@ async function clearDraftImagesFromIDB() {
   } catch {}
 }
 
-export default function ProductForm({ productToEdit, categories }: ProductFormProps) {
+export default function ProductForm({ productToEdit, productToTemplate, categories }: ProductFormProps) {
   const router = useRouter();
   const createProduct = useMutation(api.products.createProduct);
   const updateProduct = useMutation(api.products.updateProduct);
@@ -592,9 +600,16 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 4-Step Wizard State
+  // The product supplying prefill data — either the one being edited, or (when
+  // adding another colour) the sibling colour this listing is based on. Only
+  // `productToEdit` ever switches the submit to `updateProduct`.
+  const sourceProduct = productToEdit || productToTemplate;
+
+  // 4-Step Wizard State. Adding another colour still starts at step 1 — fresh
+  // photos are mandatory for every colour, so that requirement is enforced
+  // the same way it is for a brand-new product.
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(productToEdit ? 2 : 1);
-  const [maxUnlockedStep, setMaxUnlockedStep] = useState<1 | 2 | 3 | 4>(productToEdit ? 4 : 1);
+  const [maxUnlockedStep, setMaxUnlockedStep] = useState<1 | 2 | 3 | 4>(sourceProduct ? 4 : 1);
 
   // Pickers modal state
   const [isCategoryPickerOpen, setIsCategoryPickerOpen] = useState(false);
@@ -634,6 +649,9 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   const [featured, setFeatured] = useState(false);
   const [active, setActive] = useState(true);
   const [isPublishingComplete, setIsPublishingComplete] = useState(false);
+  // The id of the product just created, so the success screen can offer to
+  // template a new colour off of it via "+ Add Another Colour".
+  const [justCreatedProductId, setJustCreatedProductId] = useState<string | null>(null);
 
   // Progressive Disclosure: visible extra detail chips in Step 4 (excluding mandatory Material and Care)
   const [activeExtraFields, setActiveExtraFields] = useState<Set<string>>(new Set());
@@ -643,10 +661,19 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     productToEdit?.photoSource || "in_store"
   );
 
-  // Extra specifications details (for modular SpecificationEditor)
-  const [extraDetails, setExtraDetails] = useState<Record<string, string>>(
-    productToEdit?.details || {}
-  );
+  // Extra specifications details (for modular SpecificationEditor). When
+  // templating a new colour, `color` is stripped out here — it is a required,
+  // freshly-entered field for the new listing, never carried over from the
+  // sibling colour, and leaving a stale copy in this bag would let it silently
+  // reappear in the submitted `details` alongside the new value.
+  const [extraDetails, setExtraDetails] = useState<Record<string, string>>(() => {
+    if (productToEdit?.details) return productToEdit.details;
+    if (productToTemplate?.details) {
+      const { color: _templateColor, ...rest } = productToTemplate.details;
+      return rest;
+    }
+    return {};
+  });
 
   // Unsaved local draft prompt state
   const [hasDraftToResume, setHasDraftToResume] = useState(false);
@@ -812,8 +839,8 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
   }, [selectedCategoryObj?.parentId, allCategoriesList]);
 
   const currentVerticalConfig = useMemo(() => {
-    return getVerticalConfig(selectedCategoryObj?.verticalType || (productToEdit?.verticalType as any));
-  }, [selectedCategoryObj?.verticalType, productToEdit?.verticalType]);
+    return getVerticalConfig(selectedCategoryObj?.verticalType || (sourceProduct?.verticalType as any));
+  }, [selectedCategoryObj?.verticalType, sourceProduct?.verticalType]);
 
   const resolvedSizing = useMemo(() => {
     return resolveCategorySizing(
@@ -830,15 +857,15 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     if (resolvedSizing.fitOptions.showGarmentFitWidget && resolvedSizing.fitOptions.silhouettes.length > 0) {
       const validValues = resolvedSizing.fitOptions.silhouettes.map((s) => s.value);
       if (!validValues.includes(silhouette)) {
-        const savedSil = productToEdit?.silhouette;
-        if (savedSil && validValues.includes(savedSil) && productToEdit.categoryId === selectedCategoryObj?._id) {
+        const savedSil = sourceProduct?.silhouette;
+        if (savedSil && validValues.includes(savedSil) && sourceProduct.categoryId === selectedCategoryObj?._id) {
           setSilhouette(savedSil as any);
         } else {
           setSilhouette((resolvedSizing.fitOptions.silhouettes[0]?.value as any) || "regular_fit");
         }
       }
     }
-  }, [resolvedSizing.fitOptions, silhouette, productToEdit, selectedCategoryObj?._id]);
+  }, [resolvedSizing.fitOptions, silhouette, sourceProduct, selectedCategoryObj?._id]);
 
   /**
    * The admin-defined attribute schema for the chosen category, if it has one.
@@ -876,9 +903,11 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     setMissingAttributeKeys([]);
   }, [selectedCategoryObj?._id]);
 
-  // Check for saved local draft on mount (only when creating new product)
+  // Check for saved local draft on mount (only for a genuinely blank new
+  // product — a colour-templated form already has its own prefilled state,
+  // and prompting to resume an unrelated old draft over that would be confusing).
   useEffect(() => {
-    if (productToEdit) return;
+    if (sourceProduct) return;
     const checkDraft = async () => {
       try {
         const saved = localStorage.getItem("hive_partner_product_draft");
@@ -897,7 +926,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       } catch {}
     };
     checkDraft();
-  }, [productToEdit]);
+  }, [sourceProduct]);
 
   const handleResumeDraft = async () => {
     try {
@@ -1076,25 +1105,31 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
     }
   }, [isFreeSizeCategory, selectedSizes, productToEdit, selectedCategoryObj?._id]);
 
-  // Load product to edit
+  // Load product to edit, or prefill from a sibling colour being used as a
+  // template for a new one. Everything reusable is carried over from either
+  // source; images, color, and stock are only ever carried over when actually
+  // editing that same product — a templated colour always starts those three
+  // fresh.
   useEffect(() => {
-    if (productToEdit) {
-      setValue("name", productToEdit.name || "");
-      const rawBase = productToEdit.basePrice ?? productToEdit.price;
+    if (sourceProduct) {
+      const isEditingExisting = !!productToEdit;
+
+      setValue("name", sourceProduct.name || "");
+      const rawBase = sourceProduct.basePrice ?? sourceProduct.price;
       setValue("price", rawBase ? Math.round(rawBase / 100).toString() : "");
-      if (productToEdit.mrp || productToEdit.compareAtPrice) {
-        setValue("mrp", Math.round((productToEdit.mrp || productToEdit.compareAtPrice) / 100).toString());
+      if (sourceProduct.mrp || sourceProduct.compareAtPrice) {
+        setValue("mrp", Math.round((sourceProduct.mrp || sourceProduct.compareAtPrice) / 100).toString());
       }
-      if (productToEdit.baseDiscountPrice || productToEdit.discountPrice) {
-        const rawDisc = productToEdit.baseDiscountPrice ?? productToEdit.discountPrice;
+      if (sourceProduct.baseDiscountPrice || sourceProduct.discountPrice) {
+        const rawDisc = sourceProduct.baseDiscountPrice ?? sourceProduct.discountPrice;
         setValue("discountPrice", rawDisc ? Math.round(rawDisc / 100).toString() : "");
       }
-      setValue("categoryId", productToEdit.categoryId || "");
+      setValue("categoryId", sourceProduct.categoryId || "");
 
-      setValue("description", productToEdit.description || "");
-      setValue("story", productToEdit.story || "");
-      
-      const mat = productToEdit.materialType || productToEdit.material || "";
+      setValue("description", sourceProduct.description || "");
+      setValue("story", sourceProduct.story || "");
+
+      const mat = sourceProduct.materialType || sourceProduct.material || "";
       if (MATERIAL_OPTIONS.includes(mat)) {
         setValue("materialType", mat);
       } else if (mat) {
@@ -1102,7 +1137,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         setValue("customMaterialType", mat);
       }
 
-      const cr = productToEdit.care || "";
+      const cr = sourceProduct.care || "";
       if (CARE_OPTIONS.includes(cr)) {
         setValue("care", cr);
       } else if (cr) {
@@ -1110,9 +1145,10 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         setValue("customCare", cr);
       }
 
-      const d = productToEdit.details || {};
-      setValue("fabricType", d.fabricType || d.craft || productToEdit.craft || "");
-      setValue("color", d.color || "");
+      const d = sourceProduct.details || {};
+      setValue("fabricType", d.fabricType || d.craft || sourceProduct.craft || "");
+      // Colour is the one thing a new-colour listing must never inherit.
+      setValue("color", isEditingExisting ? (d.color || "") : "");
       setValue("fabricContent", d.fabricContent || "");
       setValue("fabricDetail", d.fabricDetail || "");
       setValue("neckType", d.neckType || "");
@@ -1126,7 +1162,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       setValue("fabricFamily", d.fabricFamily || "");
 
       const activeChips = new Set<string>();
-      if (d.fabricType || d.craft || productToEdit.craft) activeChips.add("fabricType");
+      if (d.fabricType || d.craft || sourceProduct.craft) activeChips.add("fabricType");
       if (d.fabricContent) activeChips.add("fabricContent");
       if (d.fabricDetail) activeChips.add("fabricDetail");
       if (d.neckType) activeChips.add("neckType");
@@ -1140,26 +1176,36 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
       if (d.fabricFamily) activeChips.add("fabricFamily");
       setActiveExtraFields(activeChips);
 
-      setSelectedSizes(productToEdit.sizes || []);
-      setStockBySize(productToEdit.stockBySize || {});
-      setFitRecommendation(productToEdit.fitRecommendation || "true_to_size");
-      setSilhouette(productToEdit.silhouette || "regular_fit");
-      setFeatured(productToEdit.featured || false);
-      setActive(productToEdit.active !== false);
+      // Sizes carry over (a style is usually cut the same across colours),
+      // but stock is always counted fresh per colour.
+      setSelectedSizes(sourceProduct.sizes || []);
+      setFitRecommendation(sourceProduct.fitRecommendation || "true_to_size");
+      setSilhouette(sourceProduct.silhouette || "regular_fit");
+      setFeatured(sourceProduct.featured || false);
 
-      if (productToEdit.images && Array.isArray(productToEdit.images)) {
-        const loaded = productToEdit.images.map((img: any) => {
-          if (typeof img === "string") {
-            return { url: img, storageId: img };
-          }
-          const url = img.variants?.card || img.objectKey || "";
-          return { url, storageId: img.assetId || img.objectKey };
-        });
-        setLocalPreviews(loaded);
+      if (isEditingExisting) {
+        setStockBySize(sourceProduct.stockBySize || {});
+        setActive(sourceProduct.active !== false);
+
+        if (sourceProduct.images && Array.isArray(sourceProduct.images)) {
+          const loaded = sourceProduct.images.map((img: any) => {
+            if (typeof img === "string") {
+              return { url: img, storageId: img };
+            }
+            const url = img.variants?.card || img.objectKey || "";
+            return { url, storageId: img.assetId || img.objectKey };
+          });
+          setLocalPreviews(loaded);
+        }
+      } else {
+        // Adding another colour: stock and photos always start empty — every
+        // colour needs its own fresh count and its own fresh, colour-specific photos.
+        setStockBySize({});
+        setActive(true);
       }
       setMaxUnlockedStep(4);
     }
-  }, [productToEdit]);
+  }, [productToEdit, productToTemplate]);
 
   // Image Upload Handlers
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1628,7 +1674,8 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
         } catch {}
         setIsPublishingComplete(true);
       } else {
-        await createProduct(payload);
+        const newProductId = await createProduct(payload);
+        setJustCreatedProductId(newProductId as unknown as string);
         try {
           localStorage.removeItem("hive_partner_product_draft");
           clearDraftImagesFromIDB();
@@ -1714,7 +1761,9 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           >
             <X className="w-5 h-5" />
           </button>
-          <span className="text-xs font-bold uppercase tracking-widest text-slate-900">New Product Post</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-900">
+            {productToTemplate ? "Adding Another Colour" : "New Product Post"}
+          </span>
           <div className="w-8" aria-hidden="true" />
         </div>
 
@@ -1787,10 +1836,12 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                 >
                   <ImageIcon className="w-8 h-8 stroke-[1.5] text-slate-500 mb-2.5" />
                   <span className="text-xs font-semibold text-slate-800 tracking-tight mb-0.5">
-                    Select Product Photos
+                    {productToTemplate ? "Add This Colour's Photos" : "Select Product Photos"}
                   </span>
                   <span className="text-[11px] font-normal text-slate-400">
-                    Upload 3 to 5 high-resolution images
+                    {productToTemplate
+                      ? "Upload 3 to 5 photos of this new colour — different from the other listing"
+                      : "Upload 3 to 5 high-resolution images"}
                   </span>
                 </div>
               )}
@@ -2060,7 +2111,22 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4 py-8 font-sans animate-in fade-in duration-200">
-      
+
+      {/* Adding Another Colour — Templated From Banner */}
+      {productToTemplate && (
+        <div className="mb-6 p-3 sm:p-3.5 bg-amber-50 border border-amber-200/70 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+            <Info className="w-4 h-4 text-amber-700" />
+          </div>
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-bold text-amber-900 tracking-tight">Adding Another Colour</span>
+            <span className="text-[11px] text-amber-700/90 truncate">
+              Based on &ldquo;{productToTemplate.name}&rdquo; — everything reusable is pre-filled; just add this colour&rsquo;s photos, colour, and stock.
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Sleek Obsidian Draft Recovery Banner */}
       {hasDraftToResume && (
         <div className="mb-6 p-2.5 sm:p-3 bg-slate-950 text-white rounded-2xl shadow-xl border border-slate-800 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -2350,6 +2416,7 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
                     type="text"
                     placeholder="e.g. Crimson Red"
                     {...register("color")}
+                    autoFocus={!!productToTemplate}
                     autoCapitalize="words"
                     autoCorrect="on"
                     spellCheck={true}
@@ -3077,6 +3144,18 @@ export default function ProductForm({ productToEdit, categories }: ProductFormPr
           setSubmitting(false);
           router.push("/boutique/products");
         }}
+        secondaryAction={
+          !productToEdit && justCreatedProductId
+            ? {
+                label: "+ Add Another Colour",
+                description: "Available in another colour?",
+                onClick: () => {
+                  setSubmitting(false);
+                  router.push(`/boutique/products/new?templateFrom=${justCreatedProductId}`);
+                },
+              }
+            : undefined
+        }
       />
     </div>
   );
