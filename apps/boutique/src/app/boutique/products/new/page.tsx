@@ -24,8 +24,10 @@ function NewProductPageContent() {
   const categories = useQuery(api.categories.getCategories, { onlyActive: true });
   // Fetches the sibling colour to prefill from when the seller arrives via
   // "+ Add Another Colour". `skip` when there's nothing to template from.
+  // Scoped server-side to the caller's own boutique — a seller must not be
+  // able to template a new listing off another boutique's product.
   const templateProduct = useQuery(
-    api.products.getProduct,
+    api.products.getMyProductToTemplate,
     templateFromId ? { id: templateFromId as any } : "skip"
   );
 

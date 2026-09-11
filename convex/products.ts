@@ -1125,7 +1125,24 @@ export const getProduct = query({
   },
 });
 
-
+/**
+ * Fetch a product to use as a "template" when a seller adds another colour of
+ * their own listing. Unlike getProduct (public, used for the customer PDP and
+ * the boutique's own edit flow), this only ever returns a product owned by the
+ * calling boutique — a seller must not be able to prefill a new listing from a
+ * different boutique's product by guessing/passing its id.
+ */
+export const getMyProductToTemplate = query({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    const boutique = await getMyBoutique(ctx, undefined, true);
+    const product = await ctx.db.get(args.id);
+    if (!product || product.boutiqueId !== boutique._id) {
+      return null;
+    }
+    return enrichProduct(ctx, product);
+  },
+});
 
 /**
  * Public query to fetch products matching filters (for Customer App).
