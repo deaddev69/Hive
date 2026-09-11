@@ -266,7 +266,7 @@ export function MobileProductDetails({
       {/* ── SECTION 5: TRUST REASSURANCE ── */}
       <div className="border-t border-stone-200/50 pt-3.5 mt-2 py-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-[10px] font-bold tracking-wider text-stone-500 uppercase select-none">
         <span className={!isReturnsAccepted ? "text-stone-700 font-bold" : "text-stone-700 font-semibold flex items-center gap-1"}>
-          {!isReturnsAccepted ? `🔒 Final Sale — ${sellerName}'s Choice` : "🛡️ 24h Easy Returns"}
+          {!isReturnsAccepted ? "🔒 Final Sale" : "🛡️ 24h Easy Returns"}
         </span>
         <span className="text-stone-300">•</span>
         <span>{product.sameDayEligible ? "Same-Day Delivery" : "Express Delivery"}</span>
@@ -361,15 +361,15 @@ export function MobileProductDetails({
                 <div className="p-3.5 bg-stone-50/80 border border-stone-200/80 rounded-xl space-y-2 text-xs text-stone-800 font-medium">
                   <div className="flex items-center gap-2 font-bold text-stone-900">
                     <RotateCcw className="w-3.5 h-3.5 text-stone-600 flex-shrink-0" />
-                    <span>Final Sale — {sellerName}&apos;s Choice</span>
+                    <span>Final Sale</span>
                   </div>
                   <p className="text-[11px] text-stone-600 leading-relaxed pl-5">
-                    {sellerName} has chosen not to accept voluntary returns or change-of-mind cancellations for this item.
+                    This brand does not accept returns or change-of-mind cancellations for this item.
                   </p>
                   <div className="pt-2 border-t border-stone-200/60 flex items-start gap-2">
-                    <ShieldCheck className="w-3.5 h-3.5 text-stone-700 flex-shrink-0 mt-0.5" />
-                    <p className="text-[11px] text-stone-700 leading-relaxed font-semibold">
-                      Hive Guarantee: Regardless of seller policy, damaged, defective, or incorrect items remain 100% covered. Contact support at +91 73560 19103 or support@hivenow.in for assistance or refund.
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-700 flex-shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-stone-700 leading-relaxed font-medium">
+                      <strong className="font-bold text-stone-900">Hive Guarantee:</strong> We’ve got you covered. If you receive a wrong, damaged, defective, stained, or incorrect item, Hive will accept the return and help you with a refund or resolution.
                     </p>
                   </div>
                 </div>

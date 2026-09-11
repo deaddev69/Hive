@@ -13,7 +13,7 @@ import {
   ChevronUp, ChevronLeft, ChevronRight, Loader2, Sparkles, Image as ImageIcon, 
   Save, CheckCircle2, Search, Plus, Minus, Trash2, HelpCircle, Store, Coins, 
   ShieldCheck, Tag, Layers, Sliders, Scissors, FileText, Info, Camera, Star,
-  Bot, RotateCcw
+  Bot, RotateCcw, Palette
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -652,6 +652,7 @@ export default function ProductForm({ productToEdit, productToTemplate, categori
   // The id of the product just created, so the success screen can offer to
   // template a new colour off of it via "+ Add Another Colour".
   const [justCreatedProductId, setJustCreatedProductId] = useState<string | null>(null);
+  const [isTemplateBannerDismissed, setIsTemplateBannerDismissed] = useState(false);
 
   // Progressive Disclosure: visible extra detail chips in Step 4 (excluding mandatory Material and Care)
   const [activeExtraFields, setActiveExtraFields] = useState<Set<string>>(new Set());
@@ -1762,12 +1763,12 @@ export default function ProductForm({ productToEdit, productToTemplate, categori
             <X className="w-5 h-5" />
           </button>
           <span className="text-xs font-bold uppercase tracking-widest text-slate-900">
-            {productToTemplate ? "Adding Another Colour" : "New Product Post"}
+            {productToTemplate ? "New Colour Variant" : "New Product"}
           </span>
           <div className="w-8" aria-hidden="true" />
         </div>
 
-        {/* Sleek Floating Draft Pill for Step 1 */}
+        {/* Draft Recovery Banner */}
         {hasDraftToResume && (
           <div className="mx-4 mt-2.5 mb-1 p-2.5 sm:p-3 bg-slate-950 text-white rounded-2xl shadow-xl border border-slate-800 flex items-center justify-between gap-3 shrink-0 z-30 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center gap-2.5 min-w-0 pl-1">
@@ -1836,11 +1837,11 @@ export default function ProductForm({ productToEdit, productToTemplate, categori
                 >
                   <ImageIcon className="w-8 h-8 stroke-[1.5] text-slate-500 mb-2.5" />
                   <span className="text-xs font-semibold text-slate-800 tracking-tight mb-0.5">
-                    {productToTemplate ? "Add This Colour's Photos" : "Select Product Photos"}
+                    {productToTemplate ? "Add Colour Photos" : "Select Product Photos"}
                   </span>
                   <span className="text-[11px] font-normal text-slate-400">
                     {productToTemplate
-                      ? "Upload 3 to 5 photos of this new colour — different from the other listing"
+                      ? "Upload 3 to 5 photos for this colour variant"
                       : "Upload 3 to 5 high-resolution images"}
                   </span>
                 </div>
@@ -2100,7 +2101,7 @@ export default function ProductForm({ productToEdit, productToTemplate, categori
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // STEPS 2, 3, 4: BESPOKE LUXURY WIZARD
+  // Steps 2, 3, 4: Product Wizard
   // ───────────────────────────────────────────────────────────────────────────
   const stepItems = [
     { step: 1, label: "Photos" },
@@ -2112,22 +2113,34 @@ export default function ProductForm({ productToEdit, productToTemplate, categori
   return (
     <div className="w-full max-w-2xl mx-auto px-4 py-8 font-sans animate-in fade-in duration-200">
 
-      {/* Adding Another Colour — Templated From Banner */}
-      {productToTemplate && (
-        <div className="mb-6 p-3 sm:p-3.5 bg-amber-50 border border-amber-200/70 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-          <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-            <Info className="w-4 h-4 text-amber-700" />
+      {/* Colour Variant Context Banner */}
+      {productToTemplate && !isTemplateBannerDismissed && (
+        <div className="mb-6 p-3 sm:p-3.5 bg-stone-50 border border-stone-200/80 rounded-2xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-stone-200/60 flex items-center justify-center shrink-0 text-stone-700">
+              <Palette className="w-4 h-4" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-bold text-stone-900 tracking-tight">
+                New Colour Variant for &ldquo;{productToTemplate.name}&rdquo;
+              </span>
+              <span className="text-[11px] text-stone-500 leading-normal">
+                Product details copied. Add photos, colour name, and stock for this shade.
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-bold text-amber-900 tracking-tight">Adding Another Colour</span>
-            <span className="text-[11px] text-amber-700/90 truncate">
-              Based on &ldquo;{productToTemplate.name}&rdquo; — everything reusable is pre-filled; just add this colour&rsquo;s photos, colour, and stock.
-            </span>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsTemplateBannerDismissed(true)}
+            className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg text-xs font-medium cursor-pointer transition-colors shrink-0"
+            title="Dismiss notice"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
-      {/* Sleek Obsidian Draft Recovery Banner */}
+      {/* Draft Recovery Banner */}
       {hasDraftToResume && (
         <div className="mb-6 p-2.5 sm:p-3 bg-slate-950 text-white rounded-2xl shadow-xl border border-slate-800 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center gap-2.5 min-w-0 pl-1">
@@ -2472,7 +2485,7 @@ export default function ProductForm({ productToEdit, productToTemplate, categori
                 </div>
               </div>
 
-              {/* BESPOKE FINANCIAL PANEL (Tier Slabs & Payout Breakdown) */}
+              {/* Financial Details & Payout Breakdown */}
               {pricingBreakdown && (
                 <div className="border border-slate-200/90 rounded-2xl bg-white overflow-hidden shadow-xs">
                   {/* Top 2-Column Metrics */}

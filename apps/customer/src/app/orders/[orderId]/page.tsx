@@ -603,9 +603,7 @@ export default function OrderDetailPage() {
                 </div>
                 <p className="text-[11px] text-stone-500 leading-relaxed font-normal">
                   {isFinalSale
-                    ? (CUSTOMER_FEATURES.EXCHANGES_ENABLED
-                        ? "This item is configured as Final Sale. Voluntary returns or size exchanges are disabled. Damaged, defective, or incorrect items remain 100% covered."
-                        : "This item is configured as Final Sale. Voluntary returns or cancellations are disabled. Damaged, defective, or incorrect items remain 100% covered.")
+                    ? "This item is Final Sale. Returns or change-of-mind cancellations are not accepted. Wrong, damaged, defective, or incorrect items remain 100% covered by Hive Guarantee."
                     : order.status === "replacement_dispatched"
                       ? (CUSTOMER_FEATURES.EXCHANGES_ENABLED
                           ? "Your replacement item has been dispatched and is currently en route."
