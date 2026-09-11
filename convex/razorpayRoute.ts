@@ -1132,3 +1132,61 @@ export const inspectOrderMoneyAtRazorpay = internalAction({
     };
   },
 });
+
+/**
+ * Make Razorpay agree with Hive about every payout Hive calls paid.
+ *
+ * Hive used to mark a held payout paid the moment its release time passed,
+ * without asking Razorpay, and one such transfer was still on hold at Razorpay
+ * a day later. This checks the transfer behind every paid order and releases
+ * any that is still on hold. Safe to run repeatedly: a released transfer is
+ * left alone, and reversed transfers are never touched.
+ */
+export const reconcilePaidTransfersWithRazorpay = internalAction({
+  args: {},
+  handler: async (ctx): Promise<any> => {
+    const authHeader = resolveRazorpayAuthHeader();
+    if (!authHeader) return { ok: false, reason: "razorpay_not_configured" };
+
+    const rows: Array<{ orderId: string; orderNumber: string; transferId: string }> =
+      await ctx.runQuery((internal as any).adminFinance.listPaidRouteOrdersInternal, {});
+
+    const report = {
+      checked: rows.length,
+      alreadyReleased: [] as string[],
+      released: [] as string[],
+      failed: [] as string[],
+    };
+
+    for (const row of rows) {
+      const current = await fetch(`${RAZORPAY_API}/transfers/${row.transferId}`, {
+        headers: { Authorization: authHeader },
+      });
+      if (!current.ok) {
+        report.failed.push(`${row.orderNumber}: could not read transfer (${current.status})`);
+        continue;
+      }
+      const transfer = await current.json();
+      if (!transfer.on_hold) {
+        report.alreadyReleased.push(row.orderNumber);
+        continue;
+      }
+
+      const release = await fetch(`${RAZORPAY_API}/transfers/${row.transferId}`, {
+        method: "PATCH",
+        headers: { Authorization: authHeader, "Content-Type": "application/json" },
+        body: JSON.stringify({ on_hold: false }),
+      });
+      if (release.ok) {
+        report.released.push(row.orderNumber);
+      } else {
+        report.failed.push(
+          `${row.orderNumber}: release refused (${release.status}) ${(await release.text()).slice(0, 200)}`
+        );
+      }
+    }
+
+    console.log(`[reconcilePaidTransfersWithRazorpay] ${JSON.stringify(report)}`);
+    return report;
+  },
+});

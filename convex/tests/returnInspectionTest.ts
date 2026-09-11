@@ -5,7 +5,7 @@ import {
   settlementFlowFor,
 } from "../lib/returnInspection";
 import { recordRoutePayoutInLedger, cancelAccrualForReversal } from "../lib/routeLedger";
-import { resolvePayoutHoldDecision } from "../lib/payoutHold";
+import { resolvePayoutHoldDecision, resolveLateTransferHoldUntil } from "../lib/payoutHold";
 
 /**
  * Regression tests for inspected returns and the Route-backed ledger.
@@ -285,6 +285,64 @@ export async function runReturnInspectionTests() {
       1
     ).action,
     "skip"
+  );
+
+  // ── Only sellers who accept returns hold money back ─────────────────────
+  const deliveredAt = Date.UTC(2026, 8, 9, 7, 56, 22);
+  const DAY = 24 * 3600 * 1000;
+
+  check(
+    "Final Sale, late transfer: paid at once, never held",
+    resolveLateTransferHoldUntil({ returnsAccepted: false, deliveredAt }, deliveredAt + 60_000),
+    null
+  );
+  check(
+    "Returns accepted, late transfer: held until delivery + 24h",
+    resolveLateTransferHoldUntil({ returnsAccepted: true, deliveredAt }, deliveredAt + 60_000),
+    deliveredAt + DAY
+  );
+  check(
+    "No policy recorded is treated as returns accepted",
+    resolveLateTransferHoldUntil({ deliveredAt }, deliveredAt),
+    deliveredAt + DAY
+  );
+  check(
+    "A window already closed pays at once",
+    resolveLateTransferHoldUntil({ returnsAccepted: true, deliveredAt }, deliveredAt + DAY + 3600_000),
+    null
+  );
+  check(
+    "A window closing inside a minute pays at once, not a hold Razorpay would refuse",
+    resolveLateTransferHoldUntil({ returnsAccepted: true, deliveredAt }, deliveredAt + DAY - 30_000),
+    null
+  );
+  check(
+    "Final Sale, held at payment: released the moment it is delivered",
+    resolvePayoutHoldDecision(
+      {
+        status: "delivered",
+        paymentStatus: "paid",
+        razorpayTransferId: "trf_x",
+        payoutHoldReason: "awaiting_delivery",
+        returnsAccepted: false,
+      },
+      deliveredAt
+    ).action,
+    "release"
+  );
+  check(
+    "Returns accepted, held at payment: held until delivery + 24h",
+    resolvePayoutHoldDecision(
+      {
+        status: "delivered",
+        paymentStatus: "paid",
+        razorpayTransferId: "trf_x",
+        payoutHoldReason: "awaiting_delivery",
+        returnsAccepted: true,
+      },
+      deliveredAt
+    ),
+    { action: "hold_until", onHoldUntil: deliveredAt + DAY, reason: "return_window_open" }
   );
 
   console.log(`\nReturn inspection and ledger: ${passed} passed, ${failed} failed.`);

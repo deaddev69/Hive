@@ -1,8 +1,7 @@
 // convex/adminFinance.ts
 // Backend API for Admin Finance, Settlements, Payouts, and Refund Ledgers.
 
-import { query, mutation, internalMutation } from "./_generated/server";
-import { recordRoutePayoutInLedger } from "./lib/routeLedger";
+import { query, mutation, internalMutation, internalQuery } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { requireRole, getAuthenticatedUser } from "./lib/auth";
 import { logSystemAlert } from "./lib/alerts";
@@ -452,21 +451,23 @@ export const reconcileReleasedHolds = internalMutation({
       const holdUntil = (order as any).payoutHoldUntil;
       if (typeof holdUntil !== "number" || holdUntil > now) continue;
 
-      await ctx.db.patch(order._id, {
-        payoutStatus: "paid",
-        payoutProcessedAt: holdUntil,
-        payoutHoldUntil: undefined,
-        payoutHoldReason: undefined,
-        updatedAt: now,
+      // Release it explicitly instead of trusting Razorpay to have done so on
+      // its own. On a real order the transfer was still `on_hold: true` a full
+      // day after its on_hold_until had passed, while Hive — which used to mark
+      // it paid right here, purely by the clock — was telling the seller they
+      // had been paid. The payout now becomes "paid" only once Razorpay confirms
+      // the release, and that confirmation also closes the seller's ledger
+      // accrual. Repeat runs are harmless: releasing a released hold is a no-op.
+      await ctx.scheduler.runAfter(0, internal.razorpayRoute.updateTransferHold, {
+        orderId: order._id,
+        onHold: false,
+        reason: "return_window_closed",
       });
-      // Razorpay released this on its own at on_hold_until. Close the ledger
-      // accrual against it so the seller is not also shown as owed.
-      await recordRoutePayoutInLedger(ctx, order._id, holdUntil);
       released += 1;
     }
 
     if (released > 0) {
-      console.log(`[reconcileReleasedHolds] Marked ${released} auto-released payout(s) as paid.`);
+      console.log(`[reconcileReleasedHolds] Asked Razorpay to release ${released} payout(s) whose return window has closed.`);
     }
     return { scanned: withheld.length, released };
   },
@@ -477,6 +478,24 @@ export const reconcileReleasedHolds = internalMutation({
  * Idempotently generates commission and pending settlement accrual records.
  * Runs in the same database transaction as webhook / admin updates.
  */
+/** Orders Hive believes Route has paid — for checking that against Razorpay. */
+export const listPaidRouteOrdersInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const paid = await ctx.db
+      .query("orders")
+      .withIndex("by_payoutStatus", (q) => q.eq("payoutStatus", "paid"))
+      .take(200);
+    return paid
+      .filter((o) => o.razorpayTransferId && o.transferStatus !== "reversed")
+      .map((o) => ({
+        orderId: o._id,
+        orderNumber: o.orderNumber,
+        transferId: o.razorpayTransferId as string,
+      }));
+  },
+});
+
 export async function markOrderFinanciallyDelivered(ctx: any, orderId: any, now: number) {
   const order = await ctx.db.get(orderId);
   if (!order) throw new Error("Order not found.");
