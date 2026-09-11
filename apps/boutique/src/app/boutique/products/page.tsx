@@ -4,7 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardContent, AnimatedBackground, LoadingState } from "@hive/ui";
-import { Plus, Edit3, Trash2, Loader2, Upload, Search, Image as ImageIcon, ChevronDown } from "lucide-react";
+import { Plus, Edit3, Trash2, Loader2, Upload, Search, Image as ImageIcon, ChevronDown, MoreVertical, Palette } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "@hive/utils";
 
@@ -123,7 +123,8 @@ export default function BoutiqueProducts() {
   const PAGE_SIZE = 10;
 
   const [showMoreActions, setShowMoreActions] = useState(false);
-  
+  const [openRowMenuId, setOpenRowMenuId] = useState<string | null>(null);
+
   const [deletingProductId, setDeletingProductId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -133,6 +134,10 @@ export default function BoutiqueProducts() {
 
   const handleEdit = (product: any) => {
     router.push(`/boutique/products/edit/${product._id}`);
+  };
+
+  const handleAddAnotherColour = (product: any) => {
+    router.push(`/boutique/products/new?templateFrom=${product._id}`);
   };
 
   const handleDelete = (id: string) => {
@@ -496,6 +501,36 @@ export default function BoutiqueProducts() {
                     >
                       <Trash2 className="w-4 h-4 stroke-[1.75]" />
                     </button>
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenRowMenuId(openRowMenuId === prod._id ? null : prod._id);
+                        }}
+                        className="w-8 h-8 flex items-center justify-center bg-transparent hover:bg-slate-100 text-slate-400 hover:text-slate-700 rounded-xl transition-all cursor-pointer active:scale-95"
+                        title="More options"
+                      >
+                        <MoreVertical className="w-4 h-4 stroke-[1.75]" />
+                      </button>
+
+                      {openRowMenuId === prod._id && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute right-0 top-[110%] bg-[#ffffff] border border-[#f1f5f9] rounded-[16px] shadow-lg z-50 w-52 py-1.5 animate-in fade-in slide-in-from-top-1"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOpenRowMenuId(null);
+                              handleAddAnotherColour(prod);
+                            }}
+                            className="w-full px-4 py-2.5 text-[12px] font-bold text-left text-[#334155] hover:bg-slate-50 hover:text-[#0f172a] transition-colors flex items-center gap-2 cursor-pointer"
+                          >
+                            <Palette className="w-3.5 h-3.5 text-[#64748b] stroke-[1.75]" /> Add Another Colour
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

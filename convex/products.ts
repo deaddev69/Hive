@@ -50,6 +50,11 @@ import { haversineKm, resolveServiceability, resolveBoutiqueCoords } from "./lib
 import { ImageAsset } from "./schema";
 import { triggerNotification } from "./lib/notifications";
 
+// Mirrors the seller-facing photo step's requirement (ProductForm.tsx) so the
+// rule holds even when a client bypasses the wizard and calls the mutation directly.
+const MIN_PRODUCT_IMAGES = 3;
+const MAX_PRODUCT_IMAGES = 5;
+
 // Helper to generate unique slugs with robust regex formatting
 function generateSlug(name: string): string {
   const base = name
@@ -514,6 +519,12 @@ export const createProduct = mutation({
         )) ?? {})
       : {};
 
+    if (args.images.length < MIN_PRODUCT_IMAGES || args.images.length > MAX_PRODUCT_IMAGES) {
+      throw new Error(
+        `Please upload between ${MIN_PRODUCT_IMAGES} and ${MAX_PRODUCT_IMAGES} photos (got ${args.images.length}).`
+      );
+    }
+
     // Validate images in parallel (max 5MB, MIME: jpeg/png/webp)
     const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
     const maxImageBytes = 5 * 1024 * 1024;
@@ -755,6 +766,12 @@ export const updateProduct = mutation({
 
     // Validate quality gate if active — pass existing images to skip the URL guard for pre-existing URLs
     await validateProductQuality(ctx, args, product.images as any, verticalType);
+
+    if (args.images.length < MIN_PRODUCT_IMAGES || args.images.length > MAX_PRODUCT_IMAGES) {
+      throw new Error(
+        `Please upload between ${MIN_PRODUCT_IMAGES} and ${MAX_PRODUCT_IMAGES} photos (got ${args.images.length}).`
+      );
+    }
 
     // Validate images in parallel (max 5MB, MIME: jpeg/png/webp)
     const allowedImageMimes = ["image/jpeg", "image/png", "image/webp"];
@@ -1108,7 +1125,24 @@ export const getProduct = query({
   },
 });
 
-
+/**
+ * Fetch a product to use as a "template" when a seller adds another colour of
+ * their own listing. Unlike getProduct (public, used for the customer PDP and
+ * the boutique's own edit flow), this only ever returns a product owned by the
+ * calling boutique — a seller must not be able to prefill a new listing from a
+ * different boutique's product by guessing/passing its id.
+ */
+export const getMyProductToTemplate = query({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    const boutique = await getMyBoutique(ctx, undefined, true);
+    const product = await ctx.db.get(args.id);
+    if (!product || product.boutiqueId !== boutique._id) {
+      return null;
+    }
+    return enrichProduct(ctx, product);
+  },
+});
 
 /**
  * Public query to fetch products matching filters (for Customer App).
