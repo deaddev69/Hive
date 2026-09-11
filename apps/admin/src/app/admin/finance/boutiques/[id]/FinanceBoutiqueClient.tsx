@@ -18,12 +18,10 @@ export function FinanceBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
   const payouts = useQuery(api.adminFinance.getPayoutsAdmin, { boutiqueId: boutiqueId as any });
   const commissions = useQuery(api.adminFinance.getCommissionsAdmin, { boutiqueId: boutiqueId as any });
 
-  const triggerPayout = useMutation(api.adminFinance.triggerBoutiquePayoutAdmin);
   const postAdjustment = useMutation(api.adminFinance.postManualAdjustmentAdmin);
 
   // UI Tabs: "settlements" | "payouts" | "refunds" | "adjustments" | "commissions"
   const [activeTab, setActiveTab] = useState<"settlements" | "payouts" | "refunds" | "adjustments" | "commissions">("settlements");
-  const [processingPayout, setProcessingPayout] = useState(false);
 
   // Manual Adjustment form state
   const [adjustAmount, setAdjustAmount] = useState("");
@@ -42,18 +40,6 @@ export function FinanceBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
       dateStyle: "medium",
       timeStyle: "short",
     });
-  };
-
-  const handleProcessPayout = async () => {
-    setProcessingPayout(true);
-    try {
-      await triggerPayout({ boutiqueId: boutiqueId as any });
-      alert("Payout successfully processed!");
-    } catch (err: any) {
-      alert("Payout failed: " + err.message);
-    } finally {
-      setProcessingPayout(false);
-    }
   };
 
   const handlePostAdjustment = async (e: React.FormEvent) => {
@@ -418,22 +404,13 @@ export function FinanceBoutiqueClient({ boutiqueId }: { boutiqueId: string }) {
               <span className="font-mono text-slate-600">IFSC: HDFC0004321</span>
             </div>
             
-            <button
-              onClick={handleProcessPayout}
-              disabled={wallet.availableBalance <= 0 || processingPayout}
-              className={`py-3 px-4 rounded-xl text-xs font-extrabold shadow-sm flex items-center justify-center gap-2 transition-all ${
-                wallet.availableBalance > 0 && !processingPayout
-                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                  : "bg-slate-100 text-slate-400 border-none cursor-not-allowed"
-              }`}
-            >
-              {processingPayout ? (
-                <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-              ) : (
-                <CreditCard className="w-4 h-4" />
-              )}
-              <span>Disburse {formatCurrency(wallet.availableBalance)}</span>
-            </button>
+            {/* Sellers are paid by Razorpay Route, 24 hours after delivery. The
+                manual Disburse button recorded "success" against a made-up UTR
+                and would have paid Route-settled orders a second time. */}
+            <div className="py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-slate-50 text-slate-500 border border-slate-200">
+              <CreditCard className="w-4 h-4" />
+              <span>Paid automatically by Razorpay Route, 24h after delivery</span>
+            </div>
             {wallet.availableBalance <= 0 && (
               <p className="text-[10px] text-slate-400 italic text-center">No outstanding settled balance to pay out.</p>
             )}

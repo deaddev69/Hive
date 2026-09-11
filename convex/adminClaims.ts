@@ -2,7 +2,7 @@
 // Admin-only claim queries and operations.
 
 import { query, mutation } from "./_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireRole } from "./lib/auth";
 import { logSystemAlert } from "./lib/alerts";
 import { triggerNotification } from "./lib/notifications";
@@ -253,184 +253,18 @@ export const approveClaimRefundAdmin = mutation({
     claimId: v.id("claims"),
     note: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const adminUser = await requireRole(ctx, "admin");
-    const claim = await ctx.db.get(args.claimId);
-    if (!claim) throw new Error("Claim not found");
-
-    const order = await ctx.db.get(claim.orderId);
-    if (!order) throw new Error("Order not found");
-
-    const now = Date.now();
-    const fromStatus = claim.status;
-
-    // Enforce transition rules
-    const allowed = VALID_CLAIM_TRANSITIONS[fromStatus] || [];
-    if (!allowed.includes("refund_approved") && fromStatus !== "refund_approved") {
-      await logSystemAlert(ctx, "claim.transition_failed", `Invalid claim transition: cannot approve refund for claim in status "${fromStatus}" on Claim Number ${claim.claimNumber}`, "critical", { claimId: claim._id });
-      throw new Error(`Invalid claim transition: cannot approve refund for claim in status "${fromStatus}".`);
-    }
-
-    // Update claim status to refund_approved
-    await ctx.db.patch(args.claimId, {
-      status: "refund_approved",
-      refundApprovedAt: now,
-      updatedAt: now,
-    });
-
-    if (fromStatus !== "refund_approved") {
-      const orderItem = await ctx.db.get(claim.orderItemId);
-      if (orderItem) {
-        await incrementProductStats(ctx, orderItem.productId, claim.boutiqueId, {
-          approvedClaimCount: 1,
-        });
-      }
-    }
-
-    // Update order status to refunded
-    await ctx.db.patch(claim.orderId, {
-      status: "refunded",
-      paymentStatus: "refunded",
-      updatedAt: now,
-    });
-
-    const payment = await ctx.db
-      .query("payments")
-      .withIndex("by_orderId", (q) => q.eq("orderId", claim.orderId))
-      .first();
-
-    const refundAmount = payment ? payment.amount : order.total;
-
-    // Trigger claim_approved notification
-    await triggerNotification(
-      ctx,
-      claim.customerId,
-      "email",
-      "claim_approved",
-      "claim",
-      claim._id,
-      JSON.stringify({
-        claimNumber: claim.claimNumber,
-        orderNumber: order.orderNumber,
-        resolution: "refund"
-      })
+  handler: async (ctx, _args) => {
+    await requireRole(ctx, "admin");
+    // This marked the payment refunded and emailed the customer "refund
+    // processed" under a random refund id — no Razorpay refund was ever made.
+    // Damaged or wrong items are reported inside the 24-hour window and handled
+    // as returns, which refund through Razorpay once the item is accepted.
+    throw new ConvexError(
+      "Claim refunds are switched off. Damaged or wrong items go through Returns: approve the return, and the customer is refunded once the boutique or admin accepts the item."
     );
-
-    // Trigger refund_processed notification
-    await triggerNotification(
-      ctx,
-      claim.customerId,
-      "email",
-      "refund_processed",
-      "order",
-      order._id,
-      JSON.stringify({
-        orderNumber: order.orderNumber,
-        amount: refundAmount
-      })
-    );
-
-    if (payment) {
-      await ctx.db.patch(payment._id, {
-        status: "refunded",
-        refundAmount: refundAmount,
-        refundedAt: now,
-        updatedAt: now,
-      });
-    }
-
-    // Create entry in refundLedger
-    const refundNumber = `REF-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(
-      1000 + Math.random() * 9000
-    )}`;
-    await ctx.db.insert("refundLedger", {
-      refundNumber,
-      orderId: claim.orderId,
-      claimId: claim._id,
-      amount: refundAmount,
-      status: "processed",
-      refundType: "full_refund",
-      razorpayRefundId: "re_" + Math.random().toString(36).slice(2, 11),
-      notes: args.note || "Refund approved by admin on claim review",
-      createdAt: now,
-    });
-
-    // Locate original accrual to compute exact deduction
-    const originalAccrual = await ctx.db
-      .query("settlementLedger")
-      .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", claim.boutiqueId))
-      .filter((q) => q.and(q.eq(q.field("orderId"), claim.orderId), q.eq(q.field("type"), "accrual")))
-      .first();
-
-    const originalOrder = await ctx.db.get(claim.orderId);
-
-    let deductionAmount = 0;
-
-    if (originalAccrual && originalOrder) {
-      // Calculate the exact original commission rate applied to this order
-      // e.g., If order total was ₹2,000 and boutique got ₹1,800, effective payout rate is 0.9 (90%)
-      const effectivePayoutRate = originalAccrual.amount / originalOrder.subtotal;
-      
-      // Apply that exact historical payout rate to the partial refund amount
-      // e.g., ₹500 refund * 0.9 = ₹450 clawback from boutique ledger
-      deductionAmount = -Math.floor(refundAmount * effectivePayoutRate);
-    } else {
-      // If the accrual record is missing, pull the boutique's true commission rate 
-      // from the database, falling back to a configuration constant only if everything fails
-      const boutique = await ctx.db.get(claim.boutiqueId);
-      const commissionRate = boutique?.commissionRate ?? 10; // e.g., 10 for 10%
-      const payoutRate = (100 - commissionRate) / 100;       // e.g., 0.90
-      
-      deductionAmount = -Math.floor(refundAmount * payoutRate);
-    }
-
-    // Insert compensating negative deduction entry in settlementLedger
-    await ctx.db.insert("settlementLedger", {
-      boutiqueId: claim.boutiqueId,
-      orderId: claim.orderId,
-      type: "refund_deduction",
-      source: "claim",
-      amount: deductionAmount,
-      status: "available", // Available immediately as a penalty correction
-      createdAt: now,
-      accruedAt: now,
-      settledAt: now,
-    });
-
-    // Insert claim event
-    await ctx.db.insert("claimEvents", {
-      claimId: args.claimId,
-      action: "status_changed",
-      fromStatus,
-      toStatus: "refund_approved",
-      actorId: adminUser._id,
-      note: args.note || "Refund approved by admin",
-      createdAt: now,
-    });
-
-    // Write audit log
-    await ctx.db.insert("auditLogs", {
-      actorId: adminUser._id,
-      actorRole: "admin",
-      action: "claim.refund_approved",
-      entityType: "claims",
-      entityId: args.claimId,
-      metadata: JSON.stringify({
-        note: args.note,
-        orderId: claim.orderId,
-        refundNumber,
-        deductionAmount,
-      }),
-      createdAt: now,
-    });
-
-    return args.claimId;
   },
 });
 
-/**
- * Mark a return shipment as received. Increments inventory stock idempotently.
- */
 export const markClaimReturnReceivedAdmin = mutation({
   args: {
     claimId: v.id("claims"),

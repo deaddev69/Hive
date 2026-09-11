@@ -22,6 +22,7 @@ import { getBoutiqueStatus } from "./shared/boutiqueStatus";
 import { recordOrderActivity } from "./lib/orderActivity";
 import { checkServiceability } from "./lib/serviceability";
 import { refundCancelledOrder } from "./lib/refunds";
+import { recordRoutePayoutInLedger } from "./lib/routeLedger";
 import {
   buildCustomerPorterAddress,
   buildBoutiquePorterAddress,
@@ -1186,9 +1187,13 @@ async function handleOrderStatusChangeLedgerUpdates(
       .first();
 
     if (subsidyRecord) {
-      const surgePaise = Math.floor(Math.random() * 16) * 100; // ₹0 to ₹15 in paise
+      // Until Porter reports the real fare, the best number Hive has is the
+      // courier's own quote. This used to add a random ₹0–15 "surge" and store
+      // the result as the ACTUAL cost, so margin reports were part real and
+      // part noise. Porter's real trip fare replaces this when the trip ends.
       const estimatedCost = subsidyRecord.estimatedCourierCost ?? subsidyRecord.estimatedPorterCost ?? 0;
-      const actualCourierCost = estimatedCost + surgePaise;
+      const actualCourierCost =
+        (subsidyRecord.actualCourierCost ?? 0) > 0 ? subsidyRecord.actualCourierCost : estimatedCost;
       const customerPaidFee = subsidyRecord.customerPaidFee ?? 0;
       const subsidyAmount = actualCourierCost - customerPaidFee;
       const subsidyPercent = subsidyRecord.cartSubtotal > 0 ? (subsidyAmount / subsidyRecord.cartSubtotal) : 0;
@@ -2259,6 +2264,11 @@ export const patchOrderPayoutStatus = internalMutation({
       patch.transferStatus = "processed";
     }
     await ctx.db.patch(args.orderId, patch);
+    // Route has paid the seller. Close their ledger accrual against it, so the
+    // same money cannot also show as owed and be paid a second time.
+    if (args.payoutStatus === "paid") {
+      await recordRoutePayoutInLedger(ctx, args.orderId, args.payoutProcessedAt ?? Date.now());
+    }
   },
 });
 

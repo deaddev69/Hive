@@ -24,6 +24,8 @@ export type PayoutHoldOrder = {
   paymentStatus?: string;
   payoutStatus?: string;
   razorpayTransferId?: string;
+  /** "reversed" once a return or exchange has taken the money back. */
+  transferStatus?: string;
   payoutHoldReason?: string;
   payoutEligibleAt?: number;
   /** Snapshotted at order creation. false === Final Sale. */
@@ -56,6 +58,12 @@ export function resolvePayoutHoldDecision(
     order.payoutStatus === "settled"
   ) {
     return { action: "skip", reason: `already_${order.payoutStatus}` };
+  }
+
+  // A reversed transfer has already gone back to Hive. Releasing it again, or
+  // creating a fresh one, would pay the seller for goods they have back.
+  if (order.transferStatus === "reversed") {
+    return { action: "skip", reason: "transfer_reversed" };
   }
 
   if (order.razorpayTransferId) {

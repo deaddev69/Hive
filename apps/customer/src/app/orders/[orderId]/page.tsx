@@ -630,6 +630,7 @@ export default function OrderDetailPage() {
                     orderNumber={order.orderNumber}
                     returnStatus={(order as any).returnStatus}
                     isWindowActive={isWindowActive}
+                    returnInspection={(order as any).returnInspection}
                   />
                 </div>
               )}

@@ -38,11 +38,17 @@ export function ReturnExchangeActions({
   orderNumber,
   returnStatus,
   isWindowActive,
+  returnInspection,
 }: {
   orderId: Id<"orders">;
   orderNumber: string;
   returnStatus?: string | null;
   isWindowActive: boolean;
+  /** The boutique's check of the returned item, once it has arrived. */
+  returnInspection?: {
+    decision: "accepted" | "rejected";
+    resolution?: "refunded" | "no_refund";
+  } | null;
 }) {
   const exchange = useQuery(api.exchanges.getExchangeForOrder, { orderId });
   const requestReturn = useConvexMutation(api.returns.requestReturn);
@@ -180,19 +186,34 @@ export function ReturnExchangeActions({
       in_transit:
         "Your item is on its way back to the boutique. Once it arrives and they've checked it over, we'll refund what you paid in full.",
       delivered:
-        "The boutique has your item back. Your full refund is on its way to the card or account you paid with.",
+        "The boutique has your item and is checking it. Once they accept it, we'll refund what you paid in full to the card or account you paid with.",
       completed:
         "Refunded in full. It should reach your original payment method within 5-7 working days.",
       failed: "Something went wrong with the return pickup. Contact Hive Support and we'll fix it.",
       cancelled: "This return request was cancelled.",
     };
 
+    // The refund now waits for the boutique to check the item, so the two
+    // outcomes of that check each need their own words.
+    let returnBody = copy[returnStatus] || "Your return is being processed.";
+    if (
+      returnStatus === "delivered" &&
+      returnInspection?.decision === "rejected" &&
+      !returnInspection.resolution
+    ) {
+      returnBody =
+        "The boutique raised a concern about the returned item. Hive is reviewing it and will be in touch shortly.";
+    } else if (returnStatus === "cancelled" && returnInspection?.resolution === "no_refund") {
+      returnBody =
+        "This return wasn't accepted after the item was inspected. Contact Hive Support if you have any questions.";
+    }
+
     return (
       <StatusCard
         tone={returnStatus === "completed" ? "emerald" : "amber"}
         icon={<RotateCcw className="w-4 h-4 text-stone-600" />}
         title={returnStatus === "completed" ? "Return complete" : "Return in progress"}
-        body={copy[returnStatus] || "Your return is being processed."}
+        body={returnBody}
       />
     );
   }

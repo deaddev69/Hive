@@ -741,25 +741,9 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
           await ctx.db.patch(returnOrder._id, { returnStatus, updatedAt: now });
         }
 
-        // The item is physically back with the seller. Settle whichever flow
-        // this leg belongs to: an exchange issues a coupon, a plain return
-        // refunds cash. Both first unwind the seller's held transfer.
-        if (args.status === "delivered") {
-          const exchange = await ctx.db
-            .query("exchangeRequests")
-            .withIndex("by_orderId", (q) => q.eq("orderId", returnOrder._id))
-            .first();
-
-          if (exchange && exchange.status === "accepted") {
-            await ctx.scheduler.runAfter(0, internal.exchanges.completeExchange, {
-              exchangeId: exchange._id,
-            });
-          } else if (!exchange || exchange.status !== "completed") {
-            await ctx.scheduler.runAfter(0, internal.returns.completeReturnRefund, {
-              orderId: returnOrder._id,
-            });
-          }
-        }
+        // The item is physically back with the seller. It no longer settles
+        // itself: the refund or exchange credit waits for the seller or admin to
+        // check the item and accept it (see returnInspection.ts).
       }
 
       // Audit log for return webhook
@@ -820,15 +804,22 @@ export const processLogisticsStatusUpdateInternal = internalMutation({
     }
     // Porter reports the real trip fare on completion — record it before the
     // settlement snapshot is frozen so Hive unit economics use the actual cost.
-    if (args.actualTripFare !== undefined && args.actualTripFare > 0) {
+    // Only the outbound trip is the order's delivery cost; a return leg must
+    // not overwrite it with its own fare.
+    if (args.actualTripFare !== undefined && args.actualTripFare > 0 && !shipment.isReturn) {
       const subsidyRow = await ctx.db
         .query("deliverySubsidyLedger")
         .withIndex("by_orderId", (q) => q.eq("orderId", shipment.orderId))
         .first();
       if (subsidyRow) {
+        // The subsidy was computed from the quote; recompute it from what
+        // Porter actually charged, so the margin reflects the real fare.
+        const subsidyAmount = args.actualTripFare - (subsidyRow.customerPaidFee ?? 0);
         await ctx.db.patch(subsidyRow._id, {
           actualCourierCost: args.actualTripFare,
           actualPorterCost: args.actualTripFare,
+          subsidyAmount,
+          subsidyPercent: subsidyRow.cartSubtotal > 0 ? subsidyAmount / subsidyRow.cartSubtotal : 0,
         });
       }
     }

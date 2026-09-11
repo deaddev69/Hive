@@ -12,7 +12,7 @@
 import { mutation, query, internalMutation } from "./_generated/server";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
-import { getAuthenticatedUser, getMyBoutique, requireRole } from "./lib/auth";
+import { getAuthenticatedUser, getMyBoutique, requireRole, getCurrentUserOrNull } from "./lib/auth";
 import { triggerNotification } from "./lib/notifications";
 import { RETURN_WINDOW_MS } from "./lib/payoutHold";
 
@@ -658,6 +658,29 @@ export const completeExchangeAdmin = mutation({
       throw new ConvexError(
         `Only an accepted exchange can be completed. This one is ${request.status}.`
       );
+    }
+
+    // Credit is issued for goods Hive has seen come back, never before. This
+    // button used to issue the coupon while the item was still with the
+    // customer. Issuing it now is admin accepting the returned item.
+    const order = await ctx.db.get(request.orderId);
+    if (!order) throw new ConvexError("Order not found");
+    if (order.returnStatus !== "delivered") {
+      throw new ConvexError(
+        "The item isn't back with the boutique yet. Mark the return delivered first, then issue the coupon."
+      );
+    }
+    if (!order.returnInspection) {
+      const admin = await getCurrentUserOrNull(ctx);
+      await ctx.db.patch(order._id, {
+        returnInspection: {
+          decision: "accepted",
+          byRole: "admin",
+          byUserId: admin?._id,
+          at: now,
+        },
+        updatedAt: now,
+      });
     }
 
     // 1. Unwind the seller's payout — they have the goods back.

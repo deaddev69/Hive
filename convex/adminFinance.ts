@@ -2,7 +2,8 @@
 // Backend API for Admin Finance, Settlements, Payouts, and Refund Ledgers.
 
 import { query, mutation, internalMutation } from "./_generated/server";
-import { v } from "convex/values";
+import { recordRoutePayoutInLedger } from "./lib/routeLedger";
+import { v, ConvexError } from "convex/values";
 import { requireRole, getAuthenticatedUser } from "./lib/auth";
 import { logSystemAlert } from "./lib/alerts";
 import { triggerNotification } from "./lib/notifications";
@@ -237,192 +238,18 @@ export const getPayoutsAdmin = query({
  */
 export const triggerBoutiquePayoutAdmin = mutation({
   args: { boutiqueId: v.id("boutiques") },
-  handler: async (ctx, args) => {
-    const admin = await requireRole(ctx, "admin");
-
-    const boutique = await ctx.db.get(args.boutiqueId);
-    if (!boutique) throw new Error("Boutique not found");
-
-    // 1. Suspension Payout Freeze Lock
-    if (boutique.status === "SUSPENDED") {
-      await logSystemAlert(
-        ctx,
-        "payout.blocked",
-        `Payout Blocked: Boutique "${boutique.boutiqueName}" is suspended. Payouts are frozen.`,
-        "warning",
-        { boutiqueId: boutique._id }
-      );
-      throw new Error("Payout Blocked: Boutique is suspended. Payouts are frozen pending review.");
-    }
-
-    // 2. Compliance Bank Proof Lock
-    const bankDoc = await ctx.db
-      .query("boutiqueDocuments")
-      .withIndex("by_boutiqueId_type", (q) => q.eq("boutiqueId", args.boutiqueId).eq("type", "bank_proof"))
-      .first();
-    if (!bankDoc || bankDoc.status !== "verified") {
-      await logSystemAlert(
-        ctx,
-        "payout.blocked",
-        `Payout Blocked: Bank Proof document is not verified for boutique "${boutique.boutiqueName}".`,
-        "warning",
-        { boutiqueId: boutique._id }
-      );
-      throw new Error("Payout Blocked: Bank Proof document is not verified.");
-    }
-
-    // Concurrency / double-click protection: assert no scheduled or processing payout exists
-    const activePayouts = await ctx.db
-      .query("payoutLedger")
-      .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", args.boutiqueId))
-      .collect();
-    const hasPendingPayout = activePayouts.some(
-      (p) => p.status === "scheduled" || p.status === "processing"
+  handler: async (ctx, _args) => {
+    await requireRole(ctx, "admin");
+    // Sellers are paid by Razorpay Route: a held transfer at payment, released
+    // automatically 24 hours after delivery when nothing comes back. This
+    // manual path paid the same settlement a second time — and it never moved
+    // money at all, recording "success" against a made-up UTR number.
+    throw new ConvexError(
+      "Seller payouts are paid automatically by Razorpay Route, 24 hours after delivery. Manual payouts are switched off."
     );
-    if (hasPendingPayout) {
-      throw new Error("Payout Blocked: A pending payout is already scheduled or processing for this boutique.");
-    }
-
-    // Fetch all available, unpaid settlements
-    const settlements = await ctx.db
-      .query("settlementLedger")
-      .withIndex("by_boutiqueId", (q) => q.eq("boutiqueId", args.boutiqueId))
-      .collect();
-
-    const unpaidSettled = settlements.filter(
-      (s) => s.status === "available" && s.payoutId === undefined
-    );
-
-    if (unpaidSettled.length === 0) {
-      throw new Error("No available balance eligible for payout.");
-    }
-
-    const availableBalance = unpaidSettled.reduce((sum, s) => sum + s.amount, 0);
-    if (availableBalance <= 0) {
-      throw new Error("No available balance eligible for payout.");
-    }
-
-    // Verify all linked settlements are strictly "available"
-    const hasUnsafeSettlements = unpaidSettled.some((s) => s.status !== "available" || s.payoutId !== undefined);
-    if (hasUnsafeSettlements) {
-      throw new Error("Payout Blocked: One or more linked settlements are not available or already paid.");
-    }
-
-    if (!boutique.bankAccount) {
-      throw new Error("Payout Blocked: Boutique has not configured bank details.");
-    }
-
-    const secret = process.env.BANK_ENCRYPTION_KEY;
-    if (!secret) throw new Error("FATAL: BANK_ENCRYPTION_KEY environment variable is not configured. Cannot process payout.");
-    let decryptedAccountNo = "";
-    try {
-      decryptedAccountNo = await decryptData(boutique.bankAccount.encryptedAccountNo, secret);
-    } catch (err) {
-      console.error("Failed to decrypt boutique bank account:", err);
-      throw new Error("Payout Blocked: BANK_ENCRYPTION_KEY invalid or bank data corrupted.");
-    }
-
-    if (!decryptedAccountNo || !decryptedAccountNo.trim() || decryptedAccountNo.includes("X")) {
-      throw new Error("Payout Blocked: Bank account decryption resulted in empty or masked value.");
-    }
-
-    const holderName = boutique.bankAccount.holderName;
-    const ifsc = boutique.bankAccount.ifsc;
-
-    if (!holderName || !holderName.trim() || !ifsc || !ifsc.trim()) {
-      throw new Error("Payout Blocked: Incomplete bank details (missing holder name or IFSC).");
-    }
-
-    const bankAccount = {
-      holderName,
-      accountNo: decryptedAccountNo,
-      ifsc,
-    };
-
-    const now = Date.now();
-    const payoutNumber = `PAY-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Math.floor(
-      1000 + Math.random() * 9000
-    )}`;
-
-    const settlementIds = unpaidSettled.map((s) => s._id);
-
-    // Create immutable Payout Record
-    const payoutId = await ctx.db.insert("payoutLedger", {
-      payoutNumber,
-      boutiqueId: boutique._id,
-      amount: availableBalance,
-      status: "success", // Mock successful payment completion
-      bankAccount,
-      utrReference: "UTR" + Math.floor(100000000000 + Math.random() * 900000000000),
-      payoutSnapshot: {
-        availableBalance,
-        orderCount: unpaidSettled.filter((s) => s.orderId !== undefined).length,
-        settlementIds,
-        generatedAt: now,
-      },
-      paidAt: now,
-      createdAt: now,
-    });
-
-    // Link settlements to payoutId (Status remains 'available' per instruction)
-    for (const s of unpaidSettled) {
-      await ctx.db.patch(s._id, {
-        payoutId,
-      });
-    }
-
-    // Trigger payout_released notification to boutique owner (WhatsApp or fallback email)
-    const isWhatsAppEnabled = boutique?.whatsAppNotificationsEnabled ?? true;
-    const recipientPhone = boutique?.notificationPhone || boutique?.phone;
-
-    if (isWhatsAppEnabled && recipientPhone) {
-      await ctx.scheduler.runAfter(0, internal.whatsapp.sendTemplateMessage, {
-        recipient: recipientPhone,
-        templateName: "payout_released",
-        parameters: [
-          boutique.ownerName || "Merchant",
-          payoutNumber,
-          `Rs. ${(availableBalance / 100).toFixed(2)}`
-        ],
-      });
-    } else if (boutique.email || boutique.ownerEmail) {
-      await ctx.scheduler.runAfter(0, internal.emails.sendNotificationEmail, {
-        to: boutique.email || boutique.ownerEmail,
-        subject: `Payout Released - ${payoutNumber}`,
-        html: `<p>Dear ${boutique.ownerName || "Merchant"},</p><p>A payout of Rs. ${(availableBalance / 100).toFixed(2)} has been successfully processed under reference number ${payoutNumber}.</p>`,
-        templateName: "payout_released",
-      });
-    }
-
-    // Write audit log
-    await ctx.db.insert("auditLogs", {
-      actorId: admin._id,
-      actorRole: "admin",
-      action: "payout.processed",
-      entityType: "payoutLedger",
-      entityId: payoutId,
-      metadata: JSON.stringify({
-        payoutNumber,
-        boutiqueId: boutique._id,
-        amount: availableBalance,
-        bankAccount: {
-          holderName: bankAccount.holderName,
-          accountNo: bankAccount.accountNo.length > 4
-            ? "X".repeat(bankAccount.accountNo.length - 4) + bankAccount.accountNo.slice(-4)
-            : "XXXX",
-          ifsc: bankAccount.ifsc,
-        },
-      }),
-      createdAt: now,
-    });
-
-    return payoutId;
   },
 });
 
-/**
- * Payout failure recovery mutation. Simulates a payout failure and restores settlement availability.
- */
 export const failBoutiquePayoutAdmin = mutation({
   args: { payoutId: v.id("payoutLedger") },
   handler: async (ctx, args) => {
@@ -632,6 +459,9 @@ export const reconcileReleasedHolds = internalMutation({
         payoutHoldReason: undefined,
         updatedAt: now,
       });
+      // Razorpay released this on its own at on_hold_until. Close the ledger
+      // accrual against it so the seller is not also shown as owed.
+      await recordRoutePayoutInLedger(ctx, order._id, holdUntil);
       released += 1;
     }
 

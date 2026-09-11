@@ -127,6 +127,14 @@ export const updateReturnStatusAdmin = mutation({
     const order = await ctx.db.get(args.orderId);
     if (!order) throw new ConvexError("Order not found");
 
+    // "completed" means the customer has been refunded. Setting it by hand
+    // skipped the refund entirely, so it is only reached by accepting the item.
+    if (args.returnStatus === "completed") {
+      throw new ConvexError(
+        "A return is completed by accepting the item, which is what refunds the customer. Use Accept return instead."
+      );
+    }
+
     const previous = order.returnStatus ?? "none";
 
     await ctx.db.patch(args.orderId, {
@@ -150,23 +158,10 @@ export const updateReturnStatusAdmin = mutation({
       });
     }
 
-    // "delivered" means the seller has it back — settle the right flow.
-    if (args.returnStatus === "delivered") {
-      const exchange = await ctx.db
-        .query("exchangeRequests")
-        .withIndex("by_orderId", (q) => q.eq("orderId", args.orderId))
-        .first();
-
-      if (exchange && exchange.status === "accepted") {
-        await ctx.scheduler.runAfter(0, internal.exchanges.completeExchange, {
-          exchangeId: exchange._id,
-        });
-      } else if (!exchange || exchange.status !== "completed") {
-        await ctx.scheduler.runAfter(0, internal.returns.completeReturnRefund, {
-          orderId: args.orderId,
-        });
-      }
-    }
+    // "delivered" means the item is back at the boutique. It no longer settles
+    // itself: the refund or exchange credit waits until the seller or admin has
+    // checked the item and accepted it (see returnInspection.ts). The seller's
+    // payout stays on hold meanwhile.
 
     await ctx.db.insert("auditLogs", {
       actorId: admin._id,

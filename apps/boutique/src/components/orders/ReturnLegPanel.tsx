@@ -1,7 +1,11 @@
 "use client";
 
 import React from "react";
+import { useMutation } from "convex/react";
 import { RotateCcw, User, Phone, Bike, ExternalLink, PackageCheck } from "lucide-react";
+import { toast } from "@hive/utils";
+import { api } from "../../../../../convex/_generated/api";
+import { Id } from "../../../../../convex/_generated/dataModel";
 
 /**
  * An item on its way back to the boutique.
@@ -11,6 +15,13 @@ import { RotateCcw, User, Phone, Bike, ExternalLink, PackageCheck } from "lucide
  * was the item arriving at the counter. This gives the inbound leg the same
  * detail as the outbound one.
  */
+
+/** The check made once the item is back at the store. */
+type InspectionState = {
+  decision: "accepted" | "rejected";
+  reason?: string;
+  resolution?: "refunded" | "no_refund";
+};
 
 type ReturnShipment = {
   awbNumber: string | null;
@@ -48,8 +59,8 @@ const STAGE: Record<string, { label: string; body: string }> = {
     body: "The item is in transit to your store.",
   },
   delivered: {
-    label: "Back with you",
-    body: "Check the item over. The customer is refunded in full once it is received, and your payout for this order is released back to you.",
+    label: "Back with you — please check it",
+    body: "Check the item over, then accept or reject it below. Accepting refunds the customer in full and cancels your payout for this order. If something is wrong with it, reject it and Hive will review.",
   },
   completed: {
     label: "Return settled",
@@ -77,19 +88,64 @@ function stamp(ms: number | null): string | null {
 }
 
 export function ReturnLegPanel({
+  orderId,
   returnStatus,
   returnShipment,
+  returnInspection,
 }: {
+  orderId: Id<"orders">;
   returnStatus: string | null | undefined;
   returnShipment: ReturnShipment | null | undefined;
+  returnInspection?: InspectionState | null;
 }) {
+  const acceptReturn = useMutation(api.returnInspection.acceptReturnedItemAsSeller);
+  const rejectReturn = useMutation(api.returnInspection.rejectReturnedItemAsSeller);
+  const [busy, setBusy] = React.useState(false);
+
   if (!returnStatus) return null;
+
+  // Nothing refunds the customer until the item has been looked at. Accepting
+  // is what sends their money back; rejecting hands the decision to Hive.
+  const handleAccept = async () => {
+    if (
+      !window.confirm(
+        "Accept this return? The customer is refunded in full and your payout for this order is cancelled."
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await acceptReturn({ orderId });
+      toast.success("Return accepted", "The customer is being refunded.");
+    } catch (err: any) {
+      toast.error("Couldn't accept the return", err?.message || "Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleReject = async () => {
+    const reason = window.prompt(
+      "What's wrong with the returned item? Hive will review it before deciding on the refund."
+    );
+    if (!reason?.trim()) return;
+    setBusy(true);
+    try {
+      await rejectReturn({ orderId, reason: reason.trim() });
+      toast.success("Return rejected", "Hive will review it and get back to you.");
+    } catch (err: any) {
+      toast.error("Couldn't reject the return", err?.message || "Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const stage = STAGE[returnStatus] ?? {
     label: "Return in progress",
     body: "This item is being returned.",
   };
-  const settled = returnStatus === "completed" || returnStatus === "delivered";
+  const settled = returnStatus === "completed";
   const collected = stamp(returnShipment?.pickedUpAt ?? null);
   const arrived = stamp(returnShipment?.deliveredAt ?? null);
 
@@ -183,6 +239,42 @@ export function ReturnLegPanel({
               </span>
             )}
           </div>
+        </div>
+      )}
+
+      {returnStatus === "delivered" && (
+        <div className="mt-2.5 pt-2.5 border-t border-stone-200/70">
+          {!returnInspection ? (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={handleAccept}
+                className="flex-1 py-2 px-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-[10px] font-bold tracking-wide transition-all cursor-pointer disabled:opacity-60"
+              >
+                Accept return
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={handleReject}
+                className="flex-1 py-2 px-2.5 bg-white hover:bg-stone-50 text-stone-800 rounded-lg text-[10px] font-bold tracking-wide transition-all border border-stone-300 cursor-pointer disabled:opacity-60"
+              >
+                Reject
+              </button>
+            </div>
+          ) : returnInspection.decision === "rejected" && !returnInspection.resolution ? (
+            <p className="text-[11px] leading-relaxed text-amber-900">
+              {returnInspection.reason
+                ? `You rejected this return: "${returnInspection.reason}". `
+                : "You rejected this return. "}
+              Hive is reviewing it and will decide whether the customer is refunded.
+            </p>
+          ) : (
+            <p className="text-[11px] leading-relaxed text-emerald-900">
+              Accepted. The customer is being refunded.
+            </p>
+          )}
         </div>
       )}
 

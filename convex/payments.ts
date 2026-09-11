@@ -3,6 +3,7 @@
 // Scope is fully auth-gated to the active customer.
 
 import { mutation, internalMutation, action, internalAction, MutationCtx, internalQuery, query } from "./_generated/server";
+import { cancelAccrualForReversal } from "./lib/routeLedger";
 import { v, ConvexError } from "convex/values";
 import { getAuthenticatedUser, getCurrentUserOrNull, requireRole } from "./lib/auth";
 import { Id } from "./_generated/dataModel";
@@ -1012,7 +1013,11 @@ export async function verifyPaymentAndPlaceOrderInternal(
 
   // We skip calculateDeliveryQuoteAction here because it requires an Action ctx (for fetch and runQuery), and this is a mutation.
   // The frontend already verified the delivery fee, so we just use basic defaults for snapshot metadata.
-  let quote = { serviceable: true, estimatedCourierCost: 9000, estimatedPorterCost: 9000, distanceKm: 5.5, etaMinutes: 45, customerPaidFee: session.deliveryFee };
+  // The delivery fee the customer was charged IS the courier's quote: checkout
+  // prices delivery from Porter's get_quote and passes it through unchanged.
+  // So it is the best available estimate of the trip's cost — this used to be
+  // a flat ₹90 whatever the distance. Porter's real fare replaces it later.
+  let quote = { serviceable: true, estimatedCourierCost: session.deliveryFee, estimatedPorterCost: session.deliveryFee, distanceKm: 5.5, etaMinutes: 45, customerPaidFee: session.deliveryFee };
 
   const orderSnapshot = {
     boutiqueName,
@@ -1831,9 +1836,24 @@ export const completeRefundQueueItem = internalMutation({
             refundStatus: "processed",
             // The refund carried `reverse_all` whenever a transfer existed, so
             // Razorpay has unwound the seller's share along with it.
-            ...(order.razorpayTransferId ? { transferStatus: "reversed" as const } : {}),
+            ...(order.razorpayTransferId
+              ? {
+                  transferStatus: "reversed" as const,
+                  // The seller's share is back with Hive, so nothing is held
+                  // for them any more. Leaving "withheld" here read as a payout
+                  // still pending on a return that had already finished.
+                  payoutStatus: "not_eligible" as const,
+                  payoutHoldReason: "reversed_refunded",
+                  payoutHoldUntil: undefined,
+                }
+              : {}),
             updatedAt: now,
           });
+          // Cancel the seller's accrual too, or it turns payable a week later
+          // for goods they have back.
+          if (order.razorpayTransferId) {
+            await cancelAccrualForReversal(ctx, item.orderId);
+          }
         } else {
           // A failed refund leaves the customer owed money. Say so on the
           // order rather than leaving it reading "pending" indefinitely.

@@ -187,6 +187,8 @@ function OrderDetailDrawer({
   const updateStatus = useMutation(api.adminOrders.updateOrderStatus);
   const approveReturn = useMutation(api.adminOrders.approveReturnAdmin);
   const initiateReturn = useMutation(api.adminOrders.initiateReturnAdmin);
+  const acceptReturnAdmin = useMutation(api.returnInspection.acceptReturnedItemAdmin);
+  const resolveRejection = useMutation(api.returnInspection.resolveRejectedReturnAdmin);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [returnActionLoading, setReturnActionLoading] = useState(false);
 
@@ -221,6 +223,45 @@ function OrderDetailDrawer({
       await initiateReturn({ orderId });
     } catch (err: any) {
       alert("Failed to initiate return: " + err.message);
+    } finally {
+      setReturnActionLoading(false);
+    }
+  };
+
+  // The refund waits for someone to have looked at the returned item.
+  const handleAcceptReturn = async () => {
+    if (!orderId) return;
+    if (
+      !window.confirm(
+        "Accept this returned item? The customer is refunded in full, or given exchange credit, and the seller's payout for this order is cancelled."
+      )
+    ) {
+      return;
+    }
+    setReturnActionLoading(true);
+    try {
+      await acceptReturnAdmin({ orderId });
+    } catch (err: any) {
+      alert("Failed to accept return: " + err.message);
+    } finally {
+      setReturnActionLoading(false);
+    }
+  };
+
+  // Admin decides every return the seller rejected.
+  const handleResolveRejection = async (decision: "refund" | "no_refund") => {
+    if (!orderId) return;
+    const question =
+      decision === "refund"
+        ? "Refund the customer in full, overruling the seller's rejection?"
+        : "Refuse the refund? The customer gets nothing back and the seller is paid for the order.";
+    if (!window.confirm(question)) return;
+    const note = window.prompt("Note for the record (optional):") || undefined;
+    setReturnActionLoading(true);
+    try {
+      await resolveRejection({ orderId, decision, note });
+    } catch (err: any) {
+      alert("Failed to record the decision: " + err.message);
     } finally {
       setReturnActionLoading(false);
     }
@@ -622,9 +663,55 @@ function OrderDetailDrawer({
                       </a>
                     )}
 
-                    {order.returnStatus === "delivered" && (
+                    {order.returnStatus === "delivered" && !order.returnInspection && (
+                      <div className="flex flex-col gap-2 mt-1">
+                        <p className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 font-semibold">
+                          Item is back at the boutique and waiting to be checked. No refund has been made yet.
+                        </p>
+                        <button
+                          onClick={handleAcceptReturn}
+                          disabled={returnActionLoading}
+                          className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {returnActionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                          Accept return and refund customer
+                        </button>
+                      </div>
+                    )}
+
+                    {order.returnStatus === "delivered" &&
+                      order.returnInspection?.decision === "rejected" &&
+                      !order.returnInspection?.resolution && (
+                        <div className="flex flex-col gap-2 mt-1 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
+                          <p className="text-[11px] text-red-900 font-semibold">
+                            The seller rejected the returned item
+                            {order.returnInspection.reason ? `: "${order.returnInspection.reason}"` : "."}
+                          </p>
+                          <p className="text-[10px] text-red-800">
+                            No money has moved. Decide whether the customer is refunded.
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleResolveRejection("refund")}
+                              disabled={returnActionLoading}
+                              className="flex-1 px-3 py-2 rounded-xl bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-700 transition-colors disabled:opacity-50"
+                            >
+                              Refund customer
+                            </button>
+                            <button
+                              onClick={() => handleResolveRejection("no_refund")}
+                              disabled={returnActionLoading}
+                              className="flex-1 px-3 py-2 rounded-xl bg-white text-red-800 border border-red-300 text-[10px] font-bold uppercase tracking-wider hover:bg-red-50 transition-colors disabled:opacity-50"
+                            >
+                              No refund
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                    {order.returnInspection?.decision === "accepted" && (
                       <p className="text-[10px] text-green-700 bg-green-50 border border-green-200 rounded-xl px-3 py-2 font-semibold mt-1">
-                        ✅ Return delivered to boutique. No seller payout triggered.
+                        Accepted by the {order.returnInspection.byRole === "admin" ? "Hive team" : "seller"}. The customer is being refunded.
                       </p>
                     )}
                   </div>

@@ -613,8 +613,10 @@ export default function BoutiqueOrders() {
                         )}
 
                         <ReturnLegPanel
+                          orderId={order._id as Id<"orders">}
                           returnStatus={(order as any).returnStatus}
                           returnShipment={(order as any).returnShipment}
+                          returnInspection={(order as any).returnInspection}
                         />
                         
                         {(order.status === "confirmed" || order.status === "packed" || order.status === "booking_failed") && (

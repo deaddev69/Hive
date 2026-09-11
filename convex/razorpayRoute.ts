@@ -26,6 +26,7 @@
 // Razorpay error at capture, or an order placed before held transfers existed.
 
 import { action, internalAction } from "./_generated/server";
+import { RETURN_WINDOW_MS } from "./lib/payoutHold";
 import { v, ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 
@@ -720,11 +721,17 @@ export const reverseSellerTransfer = internalAction({
       const reversal = await reverseRes.json();
       log("reversed", { reversalId: reversal.id, reversedPaise: outstanding });
 
+      // The money is back with Hive. "withheld" here read as a payout still
+      // waiting to go out on an exchange that had already finished; the hold
+      // reason stays set so a later delivery event cannot release it again.
       await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
         orderId: args.orderId,
-        payoutStatus: "withheld",
-        payoutHoldReason: args.reason,
+        payoutStatus: "not_eligible",
+        payoutHoldReason: `reversed_${args.reason}`,
         payoutHoldUntil: null,
+      });
+      await ctx.runMutation(internal.returnInspection.cancelRouteAccrualInternal, {
+        orderId: args.orderId,
       });
 
       return {
@@ -782,6 +789,33 @@ export const createSellerTransfer = internalAction({
       log("order_not_found");
       return { success: false, reason: "order_not_found" };
     }
+
+    // A transfer created after delivery must honour the same return window as
+    // one created at payment. Without this it paid the seller the moment the
+    // order was delivered, so a return inside 24 hours had to claw back money
+    // the seller already had. Final Sale orders, and orders whose window has
+    // already closed, still settle straight away.
+    const lateHoldUntil: number | null =
+      order.returnsAccepted !== false &&
+      typeof order.deliveredAt === "number" &&
+      order.deliveredAt + RETURN_WINDOW_MS > Date.now() + 60_000
+        ? order.deliveredAt + RETURN_WINDOW_MS
+        : null;
+
+    const settledPayoutPatch = (transferId: string) =>
+      lateHoldUntil
+        ? {
+            payoutStatus: "withheld" as const,
+            payoutHoldUntil: lateHoldUntil,
+            payoutHoldReason: "return_window_open",
+            payoutEligibleAt: lateHoldUntil,
+            razorpayTransferId: transferId,
+          }
+        : {
+            payoutStatus: "paid" as const,
+            payoutProcessedAt: Date.now(),
+            razorpayTransferId: transferId,
+          };
 
     // ── Idempotency: never create a second transfer ──────────────────────────
     if (order.razorpayTransferId) {
@@ -888,9 +922,7 @@ export const createSellerTransfer = internalAction({
       log("transfer_already_exists_at_razorpay", { transferId: preCheck.transfer.id });
       await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
         orderId: args.orderId,
-        payoutStatus: "paid",
-        payoutProcessedAt: Date.now(),
-        razorpayTransferId: preCheck.transfer.id,
+        ...settledPayoutPatch(preCheck.transfer.id),
       });
       return { success: true, reason: "adopted_existing_transfer", transferId: preCheck.transfer.id };
     }
@@ -916,6 +948,9 @@ export const createSellerTransfer = internalAction({
                 account: boutique.razorpayAccountId,
                 amount: payoutPaise,
                 currency: "INR",
+                ...(lateHoldUntil
+                  ? { on_hold: true, on_hold_until: Math.floor(lateHoldUntil / 1000) }
+                  : {}),
                 notes: {
                   orderId: order._id,
                   orderNumber: order.orderNumber,
@@ -939,9 +974,7 @@ export const createSellerTransfer = internalAction({
         if (postCheck.ok && postCheck.transfer?.id) {
           await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
             orderId: args.orderId,
-            payoutStatus: "paid",
-            payoutProcessedAt: Date.now(),
-            razorpayTransferId: postCheck.transfer.id,
+            ...settledPayoutPatch(postCheck.transfer.id),
           });
           return { success: true, reason: "recovered_after_error", transferId: postCheck.transfer.id };
         }
@@ -969,9 +1002,7 @@ export const createSellerTransfer = internalAction({
 
       await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
         orderId: args.orderId,
-        payoutStatus: "paid",
-        payoutProcessedAt: Date.now(),
-        razorpayTransferId: transferId,
+        ...settledPayoutPatch(transferId),
       });
 
       log("paid", { transferId, payoutPaise, source });
@@ -983,9 +1014,7 @@ export const createSellerTransfer = internalAction({
         log("recovered_after_exception", { transferId: postCheck.transfer.id });
         await ctx.runMutation((internal.orders as any).patchOrderPayoutStatus, {
           orderId: args.orderId,
-          payoutStatus: "paid",
-          payoutProcessedAt: Date.now(),
-          razorpayTransferId: postCheck.transfer.id,
+          ...settledPayoutPatch(postCheck.transfer.id),
         });
         return { success: true, reason: "recovered_after_exception", transferId: postCheck.transfer.id };
       }

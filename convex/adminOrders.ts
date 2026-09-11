@@ -697,6 +697,7 @@ export const getOrderDetails = query({
       timeline,
       // Return flow fields
       returnStatus: order.returnStatus ?? null,
+      returnInspection: order.returnInspection ?? null,
       returnShipmentId: order.returnShipmentId ?? null,
       returnShipment: returnShipmentDoc ? {
         _id: returnShipmentDoc._id,

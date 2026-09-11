@@ -944,6 +944,21 @@ export default defineSchema({
                             v.literal("failed")
                           )),
     returnCompletedAt:    v.optional(v.number()),
+    // The check made when a returned item reaches the boutique. Nothing
+    // refunds the customer or issues exchange credit until the seller or admin
+    // accepts it; a seller rejection waits for admin to decide.
+    returnInspection:     v.optional(v.object({
+                            decision: v.union(v.literal("accepted"), v.literal("rejected")),
+                            byRole: v.union(v.literal("seller"), v.literal("admin")),
+                            byName: v.optional(v.string()),
+                            byUserId: v.optional(v.id("users")),
+                            at: v.number(),
+                            reason: v.optional(v.string()),
+                            resolution: v.optional(v.union(v.literal("refunded"), v.literal("no_refund"))),
+                            resolvedAt: v.optional(v.number()),
+                            resolvedByUserId: v.optional(v.id("users")),
+                            resolutionNote: v.optional(v.string()),
+                          })),
     notes:                v.optional(v.string()),
     payoutStatus:         v.optional(v.union(
                             v.literal("pending"),
