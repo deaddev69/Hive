@@ -5,9 +5,10 @@ import React, { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../../../convex/_generated/api";
 import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent } from "@hive/ui";
-import { Plus, Edit3, CheckCircle2, XCircle, AlertCircle, ArrowLeft, Loader2, Search, MapPin, Store, Mail, FileDown, Users, ShieldCheck } from "lucide-react";
+import { Plus, Edit3, CheckCircle2, XCircle, AlertCircle, ArrowLeft, Loader2, Search, MapPin, Store, Mail, FileDown, Users, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { PartnerShowcaseManager } from "../../../components/PartnerShowcaseManager";
 
 // Load BoutiqueMap dynamically with SSR disabled to prevent Leaflet window reference crashes during Next.js builds.
 const BoutiqueMap = dynamic(() => import("../../../components/BoutiqueMap"), {
@@ -31,6 +32,7 @@ export default function AdminBoutiquesPage() {
   const resendInvite = useMutation(api.boutiques.resendBoutiqueInvite);
 
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [adminTab, setAdminTab] = useState<"directory" | "showcase">("directory");
 
   // Form State
   const [boutiqueName, setBoutiqueName] = useState("");
@@ -274,7 +276,39 @@ export default function AdminBoutiquesPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* Top Tab Switcher */}
+      <div className="flex items-center gap-2 border-b border-hive-border pb-2">
+        <button
+          type="button"
+          onClick={() => setAdminTab("directory")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
+            adminTab === "directory"
+              ? "bg-hive-dark text-hive-cream shadow-xs"
+              : "text-hive-text-muted hover:text-hive-dark hover:bg-hive-cream/40"
+          }`}
+        >
+          <Store className="w-4 h-4" />
+          <span>Directory &amp; Onboarding</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAdminTab("showcase")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
+            adminTab === "showcase"
+              ? "bg-hive-dark text-hive-cream shadow-xs"
+              : "text-hive-text-muted hover:text-hive-dark hover:bg-hive-cream/40"
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-amber-400" />
+          <span>About Page Brand Showcase</span>
+        </button>
+      </div>
+
+      {adminTab === "showcase" ? (
+        <PartnerShowcaseManager />
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* Left Side: Form and Map Picker */}
         <form onSubmit={handleSubmit} className="lg:col-span-5 bg-white border border-hive-border rounded-3xl p-6 shadow-sm flex flex-col gap-5">
@@ -726,6 +760,7 @@ export default function AdminBoutiquesPage() {
           )}
         </div>
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 }

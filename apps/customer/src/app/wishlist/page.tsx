@@ -133,7 +133,7 @@ export default function WishlistPage() {
 
                 {/* Product Rail: swipeable on mobile, 4-column grid on desktop */}
                 <div className="flex sm:grid sm:grid-cols-4 gap-3 sm:gap-4 md:gap-5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 pb-3 snap-x">
-                  {curatedProducts.map((prod) => (
+                  {curatedProducts.map((prod: any) => (
                     <div key={prod.slug} className="w-[155px] sm:w-auto shrink-0 snap-start">
                       <ProductCard product={prod as any} />
                     </div>
@@ -145,7 +145,7 @@ export default function WishlistPage() {
         ) : (
           /* Wishlist Grid */
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-            {items.map((item) => {
+            {items.map((item: any) => {
               // Adapt WishlistProduct to ProductCardData schema expectations
               const cardProduct = {
                 id: item.id || item.slug,

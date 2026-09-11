@@ -50,7 +50,7 @@ export function CollectionPageClient({ slug }: { slug: string }) {
       {/* ── Dynamic Header ── */}
       <CollectionHeader
         title={collection.name}
-        description={collection.description || `Hand-picked styles from verified boutiques.`}
+        description={collection.description || `Hand-picked styles from verified brands.`}
         productCount={products.length}
         coverImage={collection.coverImage}
         isVerified={true}

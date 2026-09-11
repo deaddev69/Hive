@@ -49,7 +49,7 @@ export function ExperiencePageClient({ slug }: { slug: string }) {
 
   return (
     <div className="flex flex-col w-full">
-      {experienceBlocks.map((block) => (
+      {experienceBlocks.map((block: any) => (
         <ExperienceBlockRenderer key={block.id} block={block} />
       ))}
     </div>

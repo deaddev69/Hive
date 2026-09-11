@@ -133,7 +133,7 @@ export default function CheckoutAddressPage() {
   const currentUser = user;
   const latestOrder = useOrderStore((state) => state.latestOrder);
 
-  const addresses: Address[] = convexAddresses.map((a) => ({
+  const addresses: Address[] = convexAddresses.map((a: any) => ({
     _id: a._id,
     label: a.label,
     line1: a.line1,
@@ -227,7 +227,7 @@ export default function CheckoutAddressPage() {
 
     for (const item of effectiveItems) {
       const boutique = dbBoutiques.find(
-        (b) => b._id === (item as any).boutiqueId || b.boutiqueName === item.boutiqueName || b.name === item.boutiqueName
+        (b: any) => b._id === (item as any).boutiqueId || b.boutiqueName === item.boutiqueName || b.name === item.boutiqueName
       );
       if (!boutique) continue;
       const bLat = boutique.latitude ?? boutique.addressDetails?.lat;
@@ -251,7 +251,7 @@ export default function CheckoutAddressPage() {
 
     for (const item of effectiveItems) {
       const boutique = dbBoutiques.find(
-        (b) => b._id === (item as any).boutiqueId || b.boutiqueName === item.boutiqueName || b.name === item.boutiqueName
+        (b: any) => b._id === (item as any).boutiqueId || b.boutiqueName === item.boutiqueName || b.name === item.boutiqueName
       );
       if (!boutique) continue;
       const bLat = boutique.latitude ?? boutique.addressDetails?.lat;

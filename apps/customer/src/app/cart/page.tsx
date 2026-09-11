@@ -79,7 +79,7 @@ export default function CartPage() {
   useEffect(() => {
     if (cartData && cartData.items) {
       let changed = false;
-      cartData.items.forEach((backendItem) => {
+      cartData.items.forEach((backendItem: any) => {
         const localItem = items.find(
           (i) => i.productId === backendItem.productId && i.size === backendItem.size
         );

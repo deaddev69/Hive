@@ -77,7 +77,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (state.latitude === null || state.longitude === null) return [];
     if (dbBoutiques.length === 0) return [];
 
-    return dbBoutiques.filter((b) => 
+    return dbBoutiques.filter((b: any) => 
       isWithinDeliveryRadius(state.latitude, state.longitude, b)
     );
   }, [state.latitude, state.longitude, dbBoutiques]);
@@ -249,7 +249,7 @@ export const LocationProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }));
 
     // Log unserviceable location searches for analytics
-    const isServiceableLoc = dbBoutiques.some((b) => {
+    const isServiceableLoc = dbBoutiques.some((b: any) => {
       const bLat = b.latitude ?? b.addressDetails?.lat;
       const bLng = b.longitude ?? b.addressDetails?.lng;
       if (bLat === undefined || bLng === undefined) return false;

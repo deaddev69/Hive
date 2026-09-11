@@ -18,3 +18,5 @@ export * from "./components/Toaster";
 export * from "./components/TextEffect";
 export * from "./components/AnimatedBackground";
 export * from "./components/HivePublishingOverlay";
+export * from "./components/PartnerShowcaseCard";
+export * from "./components/Marquee";

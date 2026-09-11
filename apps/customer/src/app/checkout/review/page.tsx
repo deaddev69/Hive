@@ -173,7 +173,7 @@ export default function OrderReviewPage() {
   const isOrderPlacing = useRef(false);
 
   // Map Convex Address structure to display attributes
-  const addresses = convexAddresses.map((a) => ({
+  const addresses = convexAddresses.map((a: any) => ({
     id: a._id,
     name: a.label,
     phone: a.phone || "—",
@@ -187,8 +187,8 @@ export default function OrderReviewPage() {
     lng: a.lng,
   }));
 
-  const selectedAddressId = storedAddressId || (addresses.find((a) => a.isDefault)?.id || addresses[0]?.id || null);
-  const selectedAddress = addresses.find((addr) => addr.id === selectedAddressId) || null;
+  const selectedAddressId = storedAddressId || (addresses.find((a: any) => a.isDefault)?.id || addresses[0]?.id || null);
+  const selectedAddress = addresses.find((addr: any) => addr.id === selectedAddressId) || null;
 
   const orderItems = getEffectiveCheckoutItems(items, checkoutItems);
   const rawSubtotal = orderItems.reduce((total, item) => {
@@ -301,7 +301,7 @@ export default function OrderReviewPage() {
         navigateToSignIn(router, "/checkout/review");
       } else if (!storedAddressId && convexAddresses.length > 0) {
         // Wait till addresses load before deciding to redirect
-        const defaultId = convexAddresses.find((a) => a.isDefault)?._id || convexAddresses[0]?._id;
+        const defaultId = convexAddresses.find((a: any) => a.isDefault)?._id || convexAddresses[0]?._id;
         if (!defaultId) {
           router.replace("/checkout/address");
         }

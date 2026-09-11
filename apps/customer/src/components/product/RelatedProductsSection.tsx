@@ -138,7 +138,7 @@ export const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ 
   const recommendations = React.useMemo(() => {
     const btqName = (product as any).boutiqueName || product.boutique?.name;
     return products
-      .filter((p) => p.boutiqueName === btqName && p.slug !== product.slug)
+      .filter((p: any) => p.boutiqueName === btqName && p.slug !== product.slug)
       .slice(0, 4);
   }, [product, products]);
 
@@ -174,7 +174,7 @@ export const RelatedProductsSection: React.FC<RelatedProductsSectionProps> = ({ 
 
       {/* Grid: 4 columns desktop, 2 columns tablet, 1 column mobile */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
-        {recommendations.map((item) => (
+        {recommendations.map((item: any) => (
           <div 
             key={item.id} 
             className="relative z-0 group outline-none rounded-2xl"

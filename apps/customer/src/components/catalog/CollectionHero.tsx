@@ -119,10 +119,10 @@ export const CollectionHero: React.FC<CollectionHeroProps> = ({ details }) => {
             {details.featuredBoutiques.length > 0 && (
               <div className="hidden lg:flex flex-col gap-3 min-w-[220px]">
                 <span className="text-[10px] font-extrabold text-white/50 uppercase tracking-widest">
-                  Featured Boutiques
+                  Featured Brands
                 </span>
                 <div className="flex flex-col gap-2">
-                  {details.featuredBoutiques.slice(0, 3).map((b) => (
+                  {details.featuredBoutiques.slice(0, 3).map((b: any) => (
                     <div
                       key={b.id}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm"

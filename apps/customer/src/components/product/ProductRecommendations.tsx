@@ -156,7 +156,7 @@ export const ProductRecommendations: React.FC<ProductRecommendationsProps> = ({
           isOpen={quickViewModal.open}
           onClose={() => setQuickViewModal({ open: false, productId: null })}
           productSlug={quickViewModal.productId}
-          initialProduct={products.find(p => p.slug === quickViewModal.productId)}
+          initialProduct={products.find((p: any) => p.slug === quickViewModal.productId)}
         />
       )}
     </div>

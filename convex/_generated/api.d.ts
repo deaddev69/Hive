@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as about from "../about.js";
 import type * as addresses from "../addresses.js";
 import type * as adminAuditLogs from "../adminAuditLogs.js";
 import type * as adminBoutiques from "../adminBoutiques.js";
@@ -198,6 +199,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  about: typeof about;
   addresses: typeof addresses;
   adminAuditLogs: typeof adminAuditLogs;
   adminBoutiques: typeof adminBoutiques;

@@ -35,7 +35,7 @@ export const CatalogFilters: React.FC<CatalogFiltersProps> = ({
   // the shopper a raw document id instead of the category's name.
   const dbCategories = useQuery(api.categories.getCategories, { onlyActive: true });
   const categoryName = (id: string) =>
-    dbCategories?.find((c) => c._id === id)?.name ?? "Category";
+    dbCategories?.find((c: any) => c._id === id)?.name ?? "Category";
 
   const reset = () => onChange(DEFAULT_FILTER_STATE);
 

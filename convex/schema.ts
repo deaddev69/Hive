@@ -1838,6 +1838,7 @@ export default defineSchema({
     activeHeroBannerIds: v.array(v.id("banners")),
     featuredCategoryIds: v.array(v.id("categories")),
     featuredBoutiqueIds: v.array(v.id("boutiques")),
+    aboutPartnerBoutiqueIds: v.optional(v.array(v.id("boutiques"))),
     enableOccasionSection: v.boolean(),
     enableMostLovedSection: v.boolean(),
     trendingSectionTitle: v.optional(v.string()),

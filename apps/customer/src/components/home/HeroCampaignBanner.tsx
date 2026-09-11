@@ -113,7 +113,7 @@ export function HeroCampaignBanner() {
 
             {/* Pagination Indicators */}
             <div className="absolute bottom-4 right-6 flex items-center gap-1.5">
-              {campaigns.map((_, i) => (
+              {campaigns.map((_: any, i: number) => (
                 <button
                   key={i}
                   type="button"

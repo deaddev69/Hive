@@ -54,7 +54,7 @@ export const CompleteTheLook: React.FC<StyledTogetherProps> = ({ productId }) =>
 
       {/* Horizontal scroll container with smaller cards */}
       <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x scroll-smooth -mx-6 px-6 sm:mx-0 sm:px-0">
-        {recommendations.map((item) => {
+        {recommendations.map((item: any) => {
           return (
             <Link 
               key={item._id} 
